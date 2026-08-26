@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720" role="img" aria-label="Dogger logo">
+  <defs>
+    <linearGradient id="gold" x1="0" x2="1">
+      <stop offset="0%" stop-color="#f5dd7d"/>
+      <stop offset="20%" stop-color="#f6d55d"/>
+      <stop offset="50%" stop-color="#e7b822"/>
+      <stop offset="100%" stop-color="#b77e12"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" x2="1">
+      <stop offset="0%" stop-color="#24a69a"/>
+      <stop offset="100%" stop-color="#0d7b6d"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="10" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <circle cx="360" cy="360" r="280" fill="#f3e0ad"/>
+    <circle cx="360" cy="360" r="250" fill="#d21f1c"/>
+  </g>
+
+  <g font-family="Georgia, 'Times New Roman', serif" text-rendering="geometricPrecision">
+    <path id="topArc" d="M150 360 A210 210 0 0 1 570 360" fill="none"/>
+    <text font-size="44" font-weight="700" letter-spacing="18" fill="#1c1b1b" font-style="italic">
+      <textPath href="#topArc" startOffset="50%" text-anchor="middle">PREMIUM QUALITY</textPath>
+    </text>
+
+    <g transform="translate(90 100)">
+      <text x="210" y="305" font-size="270" font-weight="900" fill="url(#gold)" stroke="#1e1a14" stroke-width="12" paint-order="stroke fill" font-style="italic">Dogger</text>
+      <text x="215" y="312" font-size="270" font-weight="900" fill="none" stroke="#1e1a14" stroke-width="3" opacity="0.8" font-style="italic">Dogger</text>
+    </g>
+
+    <g transform="translate(210 420)">
+      <path d="M20 0 L80 0 L120 30 L80 60 L20 60 L-20 30 Z" fill="url(#teal)" stroke="#1c1b1b" stroke-width="8"/>
+      <path d="M60 22 L60 110 L120 110 L120 22" fill="url(#teal)" stroke="#1c1b1b" stroke-width="8"/>
+      <path d="M94 0 L150 0 L195 30 L150 60 L94 60 L54 30 Z" fill="#f1d357" stroke="#1c1b1b" stroke-width="8"/>
+      <path d="M150 0 L210 0 L250 30 L210 60 L150 60 L110 30 Z" fill="url(#teal)" stroke="#1c1b1b" stroke-width="8"/>
+      <path d="M210 0 L270 0 L310 30 L270 60 L210 60 L170 30 Z" fill="#f1d357" stroke="#1c1b1b" stroke-width="8"/>
+      <path d="M270 0 L330 0 L370 30 L330 60 L270 60 L230 30 Z" fill="url(#teal)" stroke="#1c1b1b" stroke-width="8"/>
+      <path d="M330 0 L390 0 L430 30 L390 60 L330 60 L290 30 Z" fill="#f1d357" stroke="#1c1b1b" stroke-width="8"/>
+    </g>
+  </g>
+</svg>

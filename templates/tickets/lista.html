@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Gestión de Tickets{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block nav_tickets %}is-active{% endblock %}
+{% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
+{% block header_title %}Gestión de Tickets{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver">←</a>
+        <div class="page-head-titles">
+            <h2>Tickets</h2>
+            <p>Filtra, busca y gestiona todas las solicitudes del helpdesk.</p>
+        </div>
+    </div>
+
+    <form method="get" class="table-toolbar" id="filtrosTickets">
+        <label class="search-field">
+            <span>🔎</span>
+            <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código HD o título…" />
+        </label>
+        <select name="estado" data-autosubmit>
+            <option value="">Todos los estados</option>
+            {% for val, label in estados %}
+            <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="prioridad" data-autosubmit>
+            <option value="">Todas las prioridades</option>
+            {% for val, label in prioridades %}
+            <option value="{{ val }}" {% if filtro_prioridad == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="categoria" data-autosubmit>
+            <option value="">Todas las categorías</option>
+            {% for c in categorias %}
+            <option value="{{ c.pk }}" {% if filtro_categoria|stringformat:"s" == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.grupo }} › {{ c.nombre }}</option>
+            {% endfor %}
+        </select>
+        <select name="tecnico" data-autosubmit>
+            <option value="">Todos los técnicos</option>
+            {% for t in tecnicos %}
+            <option value="{{ t.pk }}" {% if filtro_tecnico|stringformat:"s" == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nombre }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
+        {% if q or filtro_estado or filtro_prioridad or filtro_categoria or filtro_tecnico %}
+        <a href="{% url 'tickets:lista' %}" class="link-clear">✕ Limpiar</a>
+        {% endif %}
+        <a class="btn btn-outline-light btn-sm" style="color:var(--dogger-red);border-color:#E4B9B3;" href="{% url 'tickets:exportar_admin' %}?{{ querystring }}">⬇ Excel</a>
+        <span class="toolbar-count">{{ total_resultados }} ticket{{ total_resultados|pluralize }} · página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+    </form>
+
+    <div class="table-card">
+        <div class="table-scroll">
+            <table class="data-table" id="tablaTickets">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Solicitante</th>
+                        <th>Prioridad</th>
+                        <th>Categoría</th>
+                        <th>Técnico</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tickets %}
+                    <tr style="--dot:{% if t.prioridad == 'urgente' %}#D62B1F{% elif t.prioridad == 'alta' %}#F26522{% elif t.prioridad == 'media' %}#F2A900{% else %}#6B9E78{% endif %}">
+                        <td><span class="table-code">{{ t.codigo }}</span>{% if t.adjuntos_count %}<span title="Adjuntos"> 📎{{ t.adjuntos_count }}</span>{% endif %}{% if t.glpi_id %}<span title="Sincronizado en GLPI"> 🔗</span>{% endif %}</td>
+                        <td>{{ t.titulo|truncatechars:42 }}</td>
+                        <td>{{ t.solicitante_nombre }}</td>
+                        <td>{{ t.get_prioridad_display }}</td>
+                        <td>{{ t.categoria.nombre|default:"—" }}</td>
+                        <td>{{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</td>
+                        <td>
+                            <span class="status-pill" style="--pill:{% if t.estado == 'abierto' %}#D62B1F{% elif t.estado == 'en-progreso' %}#F2A900{% elif t.estado == 'resuelto' %}#2F7D4F{% else %}#6B6259{% endif %}">
+                                {{ t.get_estado_display }}
+                            </span>
+                        </td>
+                        <td>{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td style="white-space:nowrap;">
+                            <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}">Ver</a>
+                            {% if t.estado == 'abierto' %}
+                            <form method="post" action="{% url 'tickets:cambiar_estado' t.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="estado" value="en-progreso">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn btn-sm btn-progress">▶ Progreso</button>
+                            </form>
+                            {% endif %}
+                            {% if t.estado != 'cerrado' %}
+                            <form method="post" action="{% url 'tickets:cambiar_estado' t.pk %}" style="display:inline;" onsubmit="return confirm('¿Cerrar este ticket?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="estado" value="cerrado">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn btn-sm btn-outline">✔ Cerrar</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="9" style="text-align:center;color:var(--ink-muted);padding:34px 0;">No hay tickets que coincidan con los filtros.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="pagination-bar">
+            <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} resultados</span>
+            <div class="pagination-links">
+                {% if page_obj.has_previous %}
+                <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
+                {% else %}
+                <span class="page-pill disabled">‹ Anterior</span>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                    <span class="page-pill current">{{ num }}</span>
+                    {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                    <a class="page-pill" href="?{{ querystring }}&page={{ num }}">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Siguiente ›</a>
+                {% else %}
+                <span class="page-pill disabled">Siguiente ›</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Panel Administrador{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block nav_dashboard %}is-active{% endblock %}
+{% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
+{% block header_title %}Panel Administrador{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-head">
+        <div class="page-head-titles">
+            <h2>Resumen general</h2>
+            <p>Estado del helpdesk en tiempo real · solo administradores.</p>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+            <a href="{% url 'tickets:lista' %}" class="btn btn-outline btn-sm">🎫 Ver todos los tickets</a>
+            <a href="{% url 'tickets:reportes' %}" class="btn btn-primary btn-sm">📈 Reportes</a>
+        </div>
+    </div>
+
+    <div class="scoreboard">
+        <a class="score-chip" style="--accent:#FFC72C;text-decoration:none;" href="{% url 'tickets:lista' %}">
+            <span class="score-num">{{ stats.total|default:0 }}</span>
+            <span class="score-label">Total tickets</span>
+        </a>
+        <a class="score-chip" style="--accent:#D62B1F;text-decoration:none;" href="{% url 'tickets:lista' %}?estado=abierto">
+            <span class="score-num">{{ stats.abiertos|default:0 }}</span>
+            <span class="score-label">Abiertos</span>
+        </a>
+        <a class="score-chip" style="--accent:#F2A900;text-decoration:none;" href="{% url 'tickets:lista' %}?estado=en-progreso">
+            <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
+            <span class="score-label">En progreso</span>
+        </a>
+        <a class="score-chip" style="--accent:#2F7D4F;text-decoration:none;" href="{% url 'tickets:lista' %}?estado=resuelto">
+            <span class="score-num">{{ stats.resueltos|default:0 }}</span>
+            <span class="score-label">Resueltos</span>
+        </a>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Tickets por estado</h3>
+            {% if estado_bars %}
+            <div class="vbars">
+                {% for bar in estado_bars %}
+                <div class="vbar-col">
+                    <span class="vbar-value">{{ bar.count }}</span>
+                    <div class="vbar-track"><div class="vbar-fill" style="height: {{ bar.fill_pct|default:5 }}%;"></div></div>
+                    <span class="vbar-label">{{ bar.label }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="chart-empty">Sin datos todavía.</p>
+            {% endif %}
+        </div>
+        <div class="chart-card">
+            <h3>Top categorías</h3>
+            {% if category_bars %}
+            <ul class="report-simple-list">
+                {% for bar in category_bars %}
+                <li style="--priority-color:#D62B1F; --priority-bg:rgba(214,43,31,.10);">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label">{{ bar.label }}</span>
+                    <span class="metric-value">{{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="chart-empty">Sin datos todavía.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if user_bars %}
+    <div class="charts-grid" style="margin-top:16px;">
+        <div class="chart-card" style="grid-column:span 2;">
+            <h3>Tickets por usuario</h3>
+            <ul class="report-simple-list">
+                {% for bar in user_bars %}
+                <li style="--priority-color:#1D4ED8; --priority-bg:rgba(29,78,216,.10);">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%; background:#1D4ED8;"></span>
+                    <span class="metric-label" style="color:#1D4ED8;">{{ bar.label }}</span>
+                    <span class="metric-value" style="color:#1D4ED8;">{{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <h2 class="section-title">Últimos pedidos registrados</h2>
+    <div class="table-card">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Solicitante</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in recientes %}
+                    <tr style="--dot:{% if t.prioridad == 'urgente' %}#D62B1F{% elif t.prioridad == 'alta' %}#F26522{% elif t.prioridad == 'media' %}#F2A900{% else %}#6B9E78{% endif %}">
+                        <td><span class="table-code"><a href="{% url 'tickets:detalle' t.pk %}" style="color:inherit;">{{ t.codigo }}</a></span></td>
+                        <td>{{ t.titulo|truncatechars:48 }}</td>
+                        <td>{{ t.solicitante_nombre }}</td>
+                        <td>{{ t.get_prioridad_display }}</td>
+                        <td>
+                            <span class="status-pill" style="--pill:{% if t.estado == 'abierto' %}#D62B1F{% elif t.estado == 'en-progreso' %}#F2A900{% elif t.estado == 'resuelto' %}#2F7D4F{% else %}#6B6259{% endif %}">
+                                {{ t.get_estado_display }}
+                            </span>
+                        </td>
+                        <td>{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" style="text-align:center;color:var(--ink-muted)">Sin tickets registrados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if recientes_page.paginator.num_pages > 1 %}
+        <div class="pagination-bar">
+            <span class="pagination-info">Página {{ recientes_page.number }} de {{ recientes_page.paginator.num_pages }}</span>
+            <div class="pagination-links">
+                {% if recientes_page.has_previous %}
+                <a class="page-pill" href="?page_recientes={{ recientes_page.previous_page_number }}">‹ Anterior</a>
+                {% else %}
+                <span class="page-pill disabled">‹ Anterior</span>
+                {% endif %}
+                <span class="page-pill current">{{ recientes_page.number }}</span>
+                {% if recientes_page.has_next %}
+                <a class="page-pill" href="?page_recientes={{ recientes_page.next_page_number }}">Siguiente ›</a>
+                {% else %}
+                <span class="page-pill disabled">Siguiente ›</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

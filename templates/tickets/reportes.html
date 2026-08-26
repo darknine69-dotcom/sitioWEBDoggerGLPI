@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Reportes{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block nav_reportes %}is-active{% endblock %}
+{% block header_eyebrow %}Dogger · Analítica{% endblock %}
+{% block header_title %}Reportes{% endblock %}
+
+{% block content %}
+<main class="page reports-page">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver">←</a>
+        <div class="page-head-titles">
+            <h2>Reportes del helpdesk</h2>
+            <p>Haz click en una tarjeta de estado o en el gráfico para ver el detalle.</p>
+        </div>
+        <div style="margin-left:auto;">
+            <a href="{% url 'tickets:exportar_admin' %}?{{ request.GET.urlencode }}" class="btn btn-outline btn-sm">⬇ Exportar Excel</a>
+        </div>
+    </div>
+
+    <div class="scoreboard">
+        {% for val, label in estados %}
+        <button type="button" class="score-chip" data-open-modal="#modal-estado-{{ val }}"
+                style="--accent:{% if val == 'abierto' %}#D62B1F{% elif val == 'en-progreso' %}#F2A900{% elif val == 'resuelto' %}#2F7D4F{% else %}#6B6259{% endif %};"
+                title="Ver usuarios con tickets {{ label|lower }}">
+            <span class="score-num">{% if val == 'abierto' %}{{ stats.abiertos|default:0 }}{% elif val == 'en-progreso' %}{{ stats.en_progreso|default:0 }}{% elif val == 'resuelto' %}{{ stats.resueltos|default:0 }}{% else %}{{ stats.cerrados|default:0 }}{% endif %}</span>
+            <span class="score-label">{{ label }}</span>
+        </button>
+        {% endfor %}
+        <div class="score-chip" style="--accent:#FFC72C;">
+            <span class="score-num">{% if tiempo_promedio %}{{ tiempo_promedio }}{% else %}—{% endif %}</span>
+            <span class="score-label">Prom. resolución</span>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Tickets por estado</h3>
+            {% with total_open=stats.total|default:1 %}
+            {% if estado_bars %}
+            <div class="donut-chart-wrap">
+                <div class="donut-ring" id="donut-estado" data-total="{{ stats.total|default:0 }}"></div>
+                <ul class="donut-legend">
+                    {% for bar in estado_bars %}
+                    <li>
+                        <span class="donut-dot" style="background:{% if bar.label == 'Abierto' %}#D62B1F{% elif bar.label == 'En progreso' %}#F2A900{% elif bar.label == 'Resuelto' %}#2F7D4F{% else %}#6B6259{% endif %};"></span>
+                        <span class="donut-legend-label">{{ bar.label }}</span>
+                        <span class="donut-legend-count">{{ bar.count }}</span>
+                        <span class="donut-legend-pct">{{ bar.pct }}%</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <script>
+            (function(){
+                var ring = document.getElementById('donut-estado');
+                if (!ring) return;
+                var slices = [
+                    {% for bar in estado_bars %}
+                    {pct: {{ bar.pct }}, color: '{% if bar.label == "Abierto" %}#D62B1F{% elif bar.label == "En progreso" %}#F2A900{% elif bar.label == "Resuelto" %}#2F7D4F{% else %}#6B6259{% endif %}'}{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ];
+                var grad = [];
+                var acc = 0;
+                slices.forEach(function(s){
+                    grad.push(s.color + ' ' + acc + '% ' + (acc + s.pct) + '%');
+                    acc += s.pct;
+                });
+                if (acc < 100) grad.push('#eee ' + acc + '% 100%');
+                ring.style.background = 'conic-gradient(' + grad.join(', ') + ')';
+            })();
+            </script>
+            {% else %}<p class="chart-empty">Sin datos todavía.</p>{% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="chart-card">
+            <h3>Tickets por técnico asignado</h3>
+            {% if tecnico_bars %}
+            <ul class="report-simple-list">
+                {% for bar in tecnico_bars %}
+                <li style="--priority-color:#1D4ED8; --priority-bg:rgba(29,78,216,.10);">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label">{{ bar.label }}</span>
+                    <span class="metric-value">{{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}<p class="chart-empty">Aún no hay tickets asignados.</p>{% endif %}
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <section class="chart-card">
+            <h3>Por prioridad</h3>
+            <ul class="report-simple-list">
+                {% for bar in priority_bars %}
+                <li style="--priority-color:{% if bar.label == 'urgente' %}#7B2CBF{% elif bar.label == 'alta' %}#F26522{% elif bar.label == 'media' %}#F2A900{% else %}#2F7D4F{% endif %}; --priority-bg:{% if bar.label == 'urgente' %}rgba(123,44,191,.10){% elif bar.label == 'alta' %}rgba(242,101,34,.10){% elif bar.label == 'media' %}rgba(242,169,0,.12){% else %}rgba(47,125,79,.12){% endif %};">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label" style="color: {% if bar.label == 'urgente' %}#7B2CBF{% elif bar.label == 'alta' %}#F26522{% elif bar.label == 'media' %}#F2A900{% else %}#2F7D4F{% endif %};">{{ bar.label }}</span>
+                    <span class="metric-value" style="color: {% if bar.label == 'urgente' %}#7B2CBF{% elif bar.label == 'alta' %}#F26522{% elif bar.label == 'media' %}#F2A900{% else %}#2F7D4F{% endif %};">{{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="chart-card">
+            <h3>Por categoría</h3>
+            {% if category_bars %}
+            <ul class="report-simple-list">
+                {% for bar in category_bars %}
+                <li style="--priority-color:#1D4ED8; --priority-bg: rgba(29,78,216,.10);">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label">{{ bar.label }}</span>
+                    <span class="metric-value">{{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}<p class="chart-empty">Sin datos todavía.</p>{% endif %}
+        </section>
+
+        <aside class="glpi-report-panel">
+            <div class="glpi-report-head">
+                <div class="glpi-title-wrap">
+                    <span class="glpi-dot"></span>
+                    <h3>Actividad reciente</h3>
+                </div>
+                <span class="glpi-badge">Sincronizado con GLPI</span>
+            </div>
+
+            <ul class="glpi-activity-list">
+                {% for ev in eventos_glpi %}
+                <li class="glpi-activity-item">
+                    <span class="glpi-activity-icon">
+                        {% if ev.tipo == 'cambio-estado' %}🔄{% elif ev.tipo == 'seguimiento' %}💬{% else %}🔔{% endif %}
+                    </span>
+                    <div class="glpi-activity-body">
+                        <p class="glpi-activity-text">
+                            {% if ev.ticket %}<a href="{% url 'tickets:detalle' ev.ticket.pk %}">{{ ev.descripcion }}</a>{% else %}{{ ev.descripcion }}{% endif %}
+                        </p>
+                        <span class="glpi-activity-time">{{ ev.fecha|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="glpi-activity-empty">Sin eventos recientes de GLPI todavía.</li>
+                {% endfor %}
+            </ul>
+
+            {% if eventos_glpi_page.paginator.num_pages > 1 %}
+            <div class="pagination-bar" style="border-radius:0;">
+                {% if eventos_glpi_page.has_previous %}
+                <a href="?page_glpi={{ eventos_glpi_page.previous_page_number }}" class="page-pill">‹</a>
+                {% else %}
+                <span class="page-pill disabled">‹</span>
+                {% endif %}
+                <span class="pagination-info">{{ eventos_glpi_page.number }} / {{ eventos_glpi_page.paginator.num_pages }}</span>
+                {% if eventos_glpi_page.has_next %}
+                <a href="?page_glpi={{ eventos_glpi_page.next_page_number }}" class="page-pill">›</a>
+                {% else %}
+                <span class="page-pill disabled">›</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </aside>
+    </div>
+</main>
+
+{% for em in estados_modal %}
+<div class="modal-overlay" id="modal-estado-{{ em.codigo }}">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>
+                <span class="status-pill" style="--pill:{{ em.color }};">{{ em.label }}</span>
+                <span style="font-size:13px;color:var(--ink-muted);font-weight:400;">{{ em.total }} ticket{{ em.total|pluralize:"s" }}</span>
+            </h3>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            {% if em.usuarios %}
+            <ul class="modal-tickets-list">
+                {% for u in em.usuarios %}
+                <li class="modal-user-row">
+                    <div class="modal-user-avatar">{{ u.iniciales }}</div>
+                    <div class="modal-user-info">
+                        <div class="modal-user-name">{{ u.nombre }}</div>
+                        <div class="modal-user-detail">
+                            {% if u.email %}{{ u.email }}{% endif %}
+                            {% if u.punto %} · {{ u.punto }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="modal-user-count">
+                        {{ u.tickets_count }}
+                        <small>ticket{{ u.tickets_count|pluralize:"s" }}</small>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="modal-empty">No hay usuarios con tickets en estado «{{ em.label }}».</p>
+            {% endif %}
+            <a class="btn btn-outline btn-sm" style="margin-top:14px;" href="{% url 'tickets:lista' %}?estado={{ em.codigo }}">
+                Ver todos los tickets →
+            </a>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+{% block footer %}{% endblock %}

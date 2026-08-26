@@ -1,0 +1,39 @@
+from django.urls import path
+from . import views, webhooks
+
+app_name = "tickets"
+
+urlpatterns = [
+    path("", views.portal, name="portal"),
+    path("reportes/", views.reportes, name="reportes"),
+    path("reportes/exportar/", views.exportar_tickets_admin, name="exportar_admin"),
+    path("categorias/", views.categorias_arbol, name="categorias_arbol"),
+    path("consultar/", views.consultar_ticket, name="consultar"),
+    path("mi-panel/", views.mi_panel, name="mi_panel"),
+    path("tickets/nuevo/", views.crear_ticket, name="crear_ticket"),
+    path("mi-panel/exportar/", views.exportar_mis_tickets, name="exportar_mis_tickets"),
+    path("mi-panel/tickets/<int:pk>/", views.mi_ticket, name="mi_ticket"),
+    path("mi-panel/tickets/<int:pk>/editar/", views.editar_mi_ticket, name="mi_editar"),
+    path("mi-panel/tickets/<int:pk>/reenviar-glpi/", views.reenviar_glpi, name="mi_reenviar_glpi"),
+    path("mi-panel/tickets/<int:pk>/responder/", views.responder_ticket, name="mi_responder"),
+    path("panel/tickets/<int:pk>/reenviar-glpi/", views.reenviar_glpi, name="staff_reenviar_glpi"),
+    path("panel/", views.dashboard, name="dashboard"),
+    path("panel/tickets/", views.lista_tickets, name="lista"),
+    path("panel/tickets/<int:pk>/", views.detalle_ticket, name="detalle"),
+    path("panel/tickets/<int:pk>/estado/", views.cambiar_estado, name="cambiar_estado"),
+    path("panel/tickets/<int:pk>/eliminar/", views.eliminar_ticket, name="eliminar"),
+    path("panel/adjunto/<int:pk>/", views.ver_adjunto, name="adjunto"),
+    path("panel/categorias/crear/", views.categoria_crear, name="categoria_crear"),
+    path("panel/categorias/<int:pk>/actualizar/", views.categoria_actualizar, name="categoria_actualizar"),
+    path("panel/categorias/<int:pk>/toggle/", views.categoria_toggle, name="categoria_toggle"),
+    path("panel/categorias/<int:pk>/eliminar/", views.categoria_eliminar, name="categoria_eliminar"),
+    path("panel/usuarios/", views.usuarios_lista, name="usuarios"),
+    path("panel/usuarios/guardar/", views.usuario_guardar, name="usuario_guardar"),
+    path("panel/usuarios/<int:pk>/toggle/", views.usuario_toggle, name="usuario_toggle"),
+    path("panel/usuarios/<int:pk>/eliminar/", views.usuario_eliminar, name="usuario_eliminar"),
+        path("panel/usuarios/<int:pk>/crear-glpi/", views.usuario_crear_glpi, name="usuario_crear_glpi"),
+        path("panel/usuarios/<int:pk>/sync-glpi/", views.usuario_sync_glpi, name="usuario_sync_glpi"),
+    path("panel/usuarios/importar-glpi/", views.usuarios_importar_glpi, name="usuarios_importar_glpi"),
+    path("panel/usuarios/importar/<int:glpi_id>/", views.usuario_importar_uno, name="usuario_importar_uno"),
+    path("api/glpi/webhook/", webhooks.glpi_webhook, name="glpi_webhook"),
+]

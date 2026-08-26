@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Categorías{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block nav_categorias %}is-active{% endblock %}
+{% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
+{% block header_title %}Categorías{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver">←</a>
+        <div class="page-head-titles">
+            <h2>Categorías</h2>
+            <p>Organiza las solicitudes por grupo y subcategoría · sincronizado con GLPI.</p>
+        </div>
+    </div>
+
+    <div class="cats-manager">
+
+        <form method="post" action="{% url 'tickets:categoria_crear' %}" class="cat-new-form">
+            {% csrf_token %}
+            <strong style="font-size:13.5px;">➕ Nueva subcategoría</strong>
+            <p class="panel-sub" style="margin:4px 0 12px;">Si el grupo ya existe se agrega ahí; si no, se crea uno nuevo.</p>
+            <div class="row">
+                <div>
+                    <label for="id_grupo">Grupo (categoría principal)</label>
+                    <input list="lista-grupos" name="grupo" id="id_grupo" required
+                           placeholder="Ej: Infraestructura" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;">
+                    <datalist id="lista-grupos">
+                        {% for g in grupos_existentes %}<option value="{{ g }}"></option>{% endfor %}
+                    </datalist>
+                </div>
+                <div>
+                    <label for="id_nombre">Nombre de la subcategoría</label>
+                    {{ form.nombre }}
+                </div>
+                <div>
+                    <label for="id_glpi_category_id">ID categoría GLPI (opcional)</label>
+                    {{ form.glpi_category_id }}
+                </div>
+                <div>
+                    <label for="id_tecnico_default">Técnico por defecto</label>
+                    {{ form.tecnico_default }}
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Crear</button>
+            </div>
+        </form>
+
+        {% for grupo in arbol %}
+        <div class="cat-group-card">
+            <div class="cat-group-head" title="Click para plegar/desplegar">
+                <span class="cat-caret">▼</span>
+                <span class="cat-group-title">{{ grupo.grupo }}</span>
+                <span class="cat-count-badge">{{ grupo.subcategorias|length }} subcat. · {{ grupo.total }} ticket{{ grupo.total|pluralize }}</span>
+            </div>
+            <table class="cat-sub-table">
+                <tbody>
+                    {% for sub in grupo.subcategorias %}
+                    <tr>
+                        <td class="cat-sub-name">
+                            {{ sub.nombre }}
+                            {% if sub.glpi_category_id %}<span class="meta-pill meta-glpi" style="margin-left:6px;">GLPI #{{ sub.glpi_category_id }}</span>{% endif %}
+                            {% if sub.tecnico_default %}<span class="file-chip" style="margin-left:6px;">🛠 {{ sub.tecnico_default.nombre }}</span>{% endif %}
+                        </td>
+                        <td style="width:90px;text-align:right;color:var(--ink-muted);">{{ sub.tickets_count }} ticket{{ sub.tickets_count|pluralize }}</td>
+                        <td style="width:230px;">
+                            <div class="cat-actions">
+                                <button type="button" class="mini-btn" data-inline-toggle="editar-cat-{{ sub.pk }}">✏️ Editar</button>
+                                <form method="post" action="{% url 'tickets:categoria_toggle' sub.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="mini-btn ok" title="Ocultar del portal">Desactivar</button>
+                                </form>
+                                <form method="post" action="{% url 'tickets:categoria_eliminar' sub.pk %}"
+                                      onsubmit="return confirm('¿Eliminar «{{ sub.nombre|escapejs }}»? Solo es posible si no tiene tickets.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="mini-btn danger">🗑</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="inline-edit-row" style="padding:0;">
+                        <td colspan="3" style="padding:0;border-top:0;">
+                            <form method="post" action="{% url 'tickets:categoria_actualizar' sub.pk %}" id="editar-cat-{{ sub.pk }}" class="inline-edit">
+                                {% csrf_token %}
+                                <input type="text" name="grupo" value="{{ sub.grupo }}" placeholder="Grupo" required>
+                                <input type="text" name="nombre" value="{{ sub.nombre }}" placeholder="Nombre" required>
+                                <input type="number" name="glpi_category_id" value="{{ sub.glpi_category_id|default_if_none:'' }}" placeholder="GLPI ID" min="1" style="width:110px;">
+                                <select name="tecnico_default">
+                                    <option value="">— Técnico por defecto —</option>
+                                    {% for t in tecnicos %}
+                                    <option value="{{ t.pk }}" {% if sub.tecnico_default_id == t.pk %}selected{% endif %}>{{ t.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                                <button type="button" class="btn btn-outline btn-sm" data-inline-toggle="editar-cat-{{ sub.pk }}">Cancelar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="color:var(--ink-muted);">Grupo sin subcategorías activas.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% empty %}
+        <p class="chart-empty">No hay categorías activas todavía. Crea la primera arriba ⬆</p>
+        {% endfor %}
+
+        {% if inactivos %}
+        <details class="cat-inactivos">
+            <summary>🗄 Categorías desactivadas ({{ inactivos|length }}) — ocultas en el portal</summary>
+            <div style="margin-top:10px;">
+                {% for c in inactivos %}
+                <span class="cat-chip-inactivo">
+                    {{ c.grupo }} › {{ c.nombre }}
+                    <form method="post" action="{% url 'tickets:categoria_toggle' c.pk %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="mini-btn ok" title="Reactivar">↺ Activar</button>
+                    </form>
+                    <form method="post" action="{% url 'tickets:categoria_eliminar' c.pk %}" style="display:inline;"
+                          onsubmit="return confirm('¿Eliminar definitivamente «{{ c.nombre|escapejs }}»?');">
+                        {% csrf_token %}
+                        <button type="submit" class="mini-btn danger" title="Eliminar">🗑</button>
+                    </form>
+                </span>
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+{{ form.media }}
+{% endblock %}
+{% block footer %}{% endblock %}

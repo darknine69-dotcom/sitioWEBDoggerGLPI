@@ -1,0 +1,214 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dogger · Mesa de Ayuda{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260826zb">
+    <script defer src="{% static 'js/dogger.js' %}?v=20260826zb"></script>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% block header %}
+    <header class="brand-header">
+        <div class="brand-id">
+            <a href="{% url 'tickets:portal' %}" class="brand-link" aria-label="Inicio">
+                <img class="logo-badge" src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" />
+            </a>
+            <div class="brand-titles">
+                <p class="eyebrow">{% block header_eyebrow %}Dogger · Mesa de Ayuda{% endblock %}</p>
+                <h1>{% block header_title %}Mesa de Ayuda TI{% endblock %}</h1>
+            </div>
+        </div>
+        <div class="header-actions">
+            {% if request.user.is_authenticated %}
+            <div class="user-chip-wrap">
+                <button type="button" class="user-chip" data-rol="{{ request.user.rol }}" id="userChipToggle" aria-expanded="false" aria-haspopup="true">
+                    {% if request.user.avatar %}
+                    <img src="{{ request.user.avatar.url }}" alt="" class="user-avatar-img">
+                    {% else %}
+                    <span class="user-avatar">{{ request.user.initials }}</span>
+                    {% endif %}
+                    <span class="user-chip-text">{{ request.user.nombre }} <small>· {{ request.user.get_rol_display }}</small></span>
+                    <svg class="user-chip-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="user-dropdown" id="userDropdown" role="menu">
+                    <div class="user-dropdown-header">
+                        {% if request.user.avatar %}
+                        <img src="{{ request.user.avatar.url }}" alt="" class="user-dropdown-avatar">
+                        {% else %}
+                        <div class="user-dropdown-avatar-placeholder">{{ request.user.initials }}</div>
+                        {% endif %}
+                        <div>
+                            <strong>{{ request.user.nombre }}</strong>
+                            <small>{{ request.user.email }}</small>
+                        </div>
+                    </div>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="{% url 'accounts:ajustes' %}" class="user-dropdown-item" role="menuitem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                        Ajustes de cuenta
+                    </a>
+                    <a href="{% url 'tickets:consultar' %}" class="user-dropdown-item" role="menuitem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Consultar ticket HD
+                    </a>
+                    {% if request.user.rol == 'admin' %}
+                    <a href="/admin/" class="user-dropdown-item" role="menuitem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                        Admin Django
+                    </a>
+                    {% endif %}
+                    <div class="user-dropdown-divider"></div>
+                    <form method="post" action="{% url 'accounts:logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="user-dropdown-item danger" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            Cerrar sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <a href="{% url 'accounts:login_usuario' %}" class="btn btn-header btn-sm">Ingresar</a>
+            <a href="{% url 'accounts:login_staff' %}" class="btn btn-outline-light btn-sm">Staff</a>
+            {% endif %}
+            {% block header_actions %}{% endblock %}
+        </div>
+    </header>
+
+    <nav class="main-nav" aria-label="Navegación principal">
+        <div class="main-nav-inner">
+            <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+            </button>
+            <ul class="nav-list" id="navList">
+                <li><a href="{% url 'tickets:portal' %}" class="nav-link {% block nav_inicio %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Inicio</a></li>
+
+                {% if request.user.is_authenticated and request.user.rol == 'usuario' %}
+                <li><a href="{% url 'tickets:mi_panel' %}" class="nav-link {% block nav_mi_panel %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg> Mis tickets</a></li>
+                <li><a href="{% url 'tickets:crear_ticket' %}" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo ticket</a></li>
+                {% endif %}
+
+                {% if request.user.es_staff_helpdesk %}
+                <li><a href="{% url 'tickets:lista' %}" class="nav-link {% block nav_tickets %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg> Tickets</a></li>
+                <li><a href="{% url 'tickets:categorias_arbol' %}" class="nav-link {% block nav_categorias %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Categorías</a></li>
+                {% endif %}
+
+                {% if request.user.rol == 'admin' %}
+                <li><a href="{% url 'tickets:dashboard' %}" class="nav-link {% block nav_dashboard %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Dashboard</a></li>
+                <li><a href="{% url 'tickets:reportes' %}" class="nav-link {% block nav_reportes %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Reportes</a></li>
+                <li><a href="{% url 'tickets:usuarios' %}" class="nav-link {% block nav_usuarios %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Usuarios</a></li>
+                {% endif %}
+            </ul>
+            <div class="nav-side">
+                {% if request.user.is_authenticated and request.user.rol == 'usuario' %}
+                <a class="btn btn-accent btn-sm" href="{% url 'tickets:exportar_mis_tickets' %}">⬇ Exportar mis tickets</a>
+                {% endif %}
+                {% if request.user.rol == 'admin' %}
+                <a class="btn btn-header btn-sm" href="/admin/">⚙️ Admin Django</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    {% endblock %}
+
+    {% if messages %}
+    <div class="page flash-stack" style="padding-bottom:0;padding-top:16px;">
+        {% for message in messages %}
+        <div class="flash flash-{{ message.tags|default:'info' }}" role="status">
+            <span class="flash-icon">
+                {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}⛔{% elif message.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+            </span>
+            <span class="flash-text">{{ message }}</span>
+            <button type="button" class="flash-close" aria-label="Cerrar">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    {% block footer %}
+    <footer class="brand-footer">
+        {% if DOGGER.puntos %}
+        <div class="footer-maps">
+            <div class="maps-side">
+                <p class="footer-kicker">📍 Nuestros puntos Dogger</p>
+                <div class="maps-tabs" role="tablist" aria-label="Puntos Dogger">
+                    {% for punto in DOGGER.puntos %}
+                    <button type="button"
+                            class="maps-tab {% if forloop.first %}active{% endif %}"
+                            data-maps-src="https://www.google.com/maps?q={{ punto.maps_q|urlencode }}&output=embed"
+                            title="{{ punto.detalle }}">
+                        <span class="punto-icon">{% if punto.tipo == 'planta' %}🏭{% elif punto.tipo == 'aeropuerto' %}✈️{% else %}🌭{% endif %}</span>
+                        <span class="maps-tab-body">
+                            <strong>{{ punto.nombre }}</strong>
+                            <small>{{ punto.ciudad }} · {{ punto.detalle }}</small>
+                        </span>
+                    </button>
+                    {% endfor %}
+                    <a class="maps-tab maps-open-all"
+                       href="https://www.google.com/maps/search/?api=1&query=Dogger%20Envigado%20Antioquia"
+                       target="_blank" rel="noopener" title="Abrir en Google Maps">
+                        🗺️ Abrir en Maps ↗
+                    </a>
+                </div>
+            </div>
+            <div class="maps-frame-wrap">
+                <iframe id="doggerMap"
+                        src="https://www.google.com/maps?q={{ DOGGER.puntos.0.maps_q|urlencode }}&output=embed"
+                        loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"
+                        title="Mapa · Puntos Dogger"></iframe>
+                <noscript><p style="color:#A79E93;font-size:12px;">Activa JavaScript para ver el mapa.</p></noscript>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <img src="{% static 'images/dogger-logo.png' %}" alt="" class="footer-logo">
+                <div>
+                    <span class="footer-kicker">Mesa de ayuda TI</span>
+                    <h3>{{ DOGGER.nombre_completo|default:"Productos Alimenticios Dogger S.A.S." }}</h3>
+                    <p>{{ DOGGER.direccion_detalle|default:DOGGER.direccion }}</p>
+                </div>
+            </div>
+            <div class="footer-info">
+                <p class="footer-label">Soporte</p>
+                <a href="mailto:{{ DOGGER.correo_soporte }}">✉️ {{ DOGGER.correo_soporte }}</a>
+                <a href="https://wa.me/57{{ DOGGER.whatsapp_soporte }}" target="_blank" rel="noopener">📱 WhatsApp {{ DOGGER.whatsapp_soporte }}</a>
+                <a href="{% url 'tickets:consultar' %}">🔎 Consultar por código HD</a>
+                {% if not request.user.is_authenticated %}
+                <a href="{% url 'accounts:login_staff' %}">🔐 Acceso staff</a>
+                {% endif %}
+            </div>
+        </div>
+        <p class="footer-copy">© {% now "Y" %} Dogger S.A.S. · Envigado, Antioquia</p>
+    </footer>
+    {% endblock %}
+
+    <script>
+    (function(){
+        var chip = document.getElementById('userChipToggle');
+        var dd = document.getElementById('userDropdown');
+        if (!chip || !dd) return;
+        chip.addEventListener('click', function(e){
+            e.stopPropagation();
+            var open = dd.classList.toggle('open');
+            chip.setAttribute('aria-expanded', open);
+        });
+        document.addEventListener('click', function(){
+            dd.classList.remove('open');
+            chip.setAttribute('aria-expanded','false');
+        });
+        dd.addEventListener('click', function(e){ e.stopPropagation(); });
+    })();
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

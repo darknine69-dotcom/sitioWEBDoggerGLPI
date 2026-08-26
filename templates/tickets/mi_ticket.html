@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ticket.codigo }} · Mi ticket{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
+{% block header_title %}{{ ticket.codigo }}{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'tickets:mi_panel' %}" class="btn btn-outline-light btn-sm">⬅ Mi panel</a>
+{% endblock %}
+
+{% block content %}
+<main class="page ticket-detail-page">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% url 'tickets:mi_panel' %}" title="Volver a mis tickets">←</a>
+        <div class="page-head-titles">
+            <h2 style="font-size:17px;">Ticket {{ ticket.codigo }}</h2>
+            <p>Seguimiento de tu solicitud.</p>
+        </div>
+    </div>
+    <div class="panel ticket-detail-card">
+        <div class="ticket-detail-header">
+            <div>
+                <p class="ticket-detail-kicker">{{ ticket.codigo }}</p>
+                <h2 class="panel-title">{{ ticket.titulo }}</h2>
+            </div>
+            <span class="status-pill" style="--pill:{% if ticket.estado == 'abierto' %}#D62B1F{% elif ticket.estado == 'en-progreso' %}#F2A900{% elif ticket.estado == 'resuelto' %}#2F7D4F{% else %}#6B6259{% endif %}">{{ ticket.get_estado_display }}</span>
+        </div>
+
+        <div class="ticket-meta-row">
+            <span class="meta-pill meta-priority">{{ ticket.get_prioridad_display }}</span>
+            <span class="meta-pill">{{ ticket.categoria.nombre|default:"Sin categoria" }}</span>
+            <span class="meta-pill">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+            {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
+            {% if ticket.tecnico_asignado %}
+            <span class="meta-pill">
+                Técnico: {{ ticket.tecnico_asignado.nombre }}{% if ticket.asignacion_automatica %} (auto){% endif %}
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="share-row" style="margin:12px 0;">
+            {% if ticket.estado == 'abierto' %}
+            <a class="btn btn-outline btn-sm" href="{% url 'tickets:mi_editar' ticket.pk %}">✏️ Editar ticket</a>
+            {% endif %}
+            {% if not ticket.glpi_id or ticket.adjuntos_pendientes_glpi %}
+            <form method="post" action="{% url 'tickets:mi_reenviar_glpi' ticket.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-sm">
+                    🔁 {% if ticket.glpi_id %}Actualizar en GLPI{% else %}Reenviar a GLPI{% endif %}
+                </button>
+            </form>
+            {% if not ticket.glpi_id %}
+            <span style="font-size:12px;color:#6B6259;">Este ticket aún no llegó a GLPI (¿GLPI apagado cuando se creó?).</span>
+            {% endif %}
+            {% endif %}
+        </div>
+
+        <section class="ticket-section">
+            <h3>Descripción</h3>
+            <p class="ticket-description">{{ ticket.descripcion }}</p>
+        </section>
+
+        {% if ticket.adjuntos.all %}
+        <section class="ticket-section">
+            <h3>Adjuntos</h3>
+            <div class="ticket-attachments">
+                {% for adj in ticket.adjuntos.all %}
+                {% if adj.es_imagen %}
+                <a class="ticket-attachment image" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
+                    <img src="{{ adj.archivo.url }}" alt="{{ adj.nombre_original }}" />
+                    <span>{{ adj.nombre_original }}</span>
+                </a>
+                {% else %}
+                <a class="ticket-attachment file" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
+                    <span class="attachment-file-icon">📄</span>
+                    <span>{{ adj.nombre_original }}</span>
+                </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="ticket-section">
+            <h3>Seguimientos</h3>
+            {% for c in ticket.comentarios.all %}
+                {% if not c.es_interno %}
+                <div class="ticket-followup {% if c.usuario and c.usuario.rol == 'usuario' %}followup-user{% else %}followup-support{% endif %}">
+                    <div class="followup-head">
+                        <strong>{{ c.autor_nombre|default:c.usuario.nombre|default:"Mesa de ayuda" }}</strong>
+                        <span>{{ c.fecha|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <div class="followup-body">{{ c.comentario }}</div>
+                </div>
+                {% endif %}
+            {% empty %}
+            <p class="ticket-empty-state">Sin seguimientos aún.</p>
+            {% endfor %}
+        </section>
+
+        <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="ticket-response-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="comentario">Responder a soporte</label>
+                <textarea id="comentario" name="comentario" rows="4" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Enviar respuesta</button>
+        </form>
+
+        {% if ticket.eventos_glpi.all %}
+        <section class="ticket-section glpi-section">
+            <h3>Actividad GLPI</h3>
+            {% for ev in ticket.eventos_glpi.all|slice:":5" %}
+            <div class="glpi-event-item">
+                <div class="glpi-event-head">
+                    <strong>{{ ev.get_tipo_display }}</strong>
+                    <span>{{ ev.fecha|date:"d/m/Y H:i" }}</span>
+                </div>
+                <div class="glpi-event-text">{{ ev.descripcion }}</div>
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        <div class="share-row">
+            <a class="btn-share btn-whatsapp"
+               href="https://wa.me/?text={{ share_text|urlencode }}"
+               target="_blank" rel="noopener">📲 Compartir por WhatsApp</a>
+            <a class="btn-share btn-teams"
+               href="https://teams.microsoft.com/share?href={{ request.build_absolute_uri|urlencode }}&msgText={{ share_text|urlencode }}"
+               target="_blank" rel="noopener">🟪 Compartir en Teams</a>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block footer %}{% endblock %}

@@ -1,0 +1,21 @@
+{% with faqs_list=faqs|default_if_none:None %}
+{% if faqs_list is None %}
+{# FAQs embebidas si no se pasan por contexto #}
+{% endif %}
+<div class="faq-item">
+    <div class="faq-question" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">¿Cómo reinicio el punto POS cuando se congela?</div>
+    <div class="faq-answer" style="display:none;">Mantén presionado el botón de encendido 8 segundos, espera 10 segundos y enciende de nuevo. Si persiste, crea un ticket de Hardware con captura.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">¿Qué hago si no puedo iniciar sesión en SIESA?</div>
+    <div class="faq-answer" style="display:none;">Verifica usuario, contraseña y Bloq Mayús. Si falla, ticket de categoría Accesos.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">¿Cómo solicito la creación de un usuario nuevo?</div>
+    <div class="faq-answer" style="display:none;">Ticket en 'Creación Usuario' con nombre completo, cargo y sede.</div>
+</div>
+<div class="faq-item">
+    <div class="faq-question" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">¿Puedo adjuntar capturas de pantalla?</div>
+    <div class="faq-answer" style="display:none;">Sí. Hasta 5 imágenes (PNG/JPG/WEBP/GIF) o PDF de máximo 8 MB cada uno.</div>
+</div>
+{% endwith %}

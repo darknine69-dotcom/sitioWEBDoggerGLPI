@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Mi panel{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
+{% block header_title %}Mi panel{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'tickets:exportar_mis_tickets' %}" class="btn btn-header btn-sm">⬇ Exportar</a>
+{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="scoreboard">
+        <div class="score-chip" style="--accent:#FFC72C">
+            <span class="score-num">{{ stats.total|default:0 }}</span>
+            <span class="score-label">Total</span>
+        </div>
+        <div class="score-chip" style="--accent:#D62B1F">
+            <span class="score-num">{{ stats.abiertos|default:0 }}</span>
+            <span class="score-label">Abiertos</span>
+        </div>
+        <div class="score-chip" style="--accent:#F2A900">
+            <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
+            <span class="score-label">En progreso</span>
+        </div>
+        <div class="score-chip" style="--accent:#2F7D4F">
+            <span class="score-num">{{ stats.resueltos|default:0 }}</span>
+            <span class="score-label">Resueltos</span>
+        </div>
+    </div>
+
+    <div class="split" style="margin-bottom:24px;">
+        <section class="panel">
+            <h2 class="panel-title">Mi información</h2>
+            <p class="panel-sub">Datos de la cuenta y acceso a tus solicitudes.</p>
+            <div style="display:grid;gap:10px;">
+                <div><strong>Nombre:</strong> {{ usuario.nombre }}</div>
+                <div><strong>Correo:</strong> {{ usuario.email }}</div>
+                <div><strong>Rol:</strong> {{ usuario.get_rol_display }}</div>
+            </div>
+        </section>
+
+        <section class="panel" style="padding:0;overflow:hidden;">
+            <div style="padding:16px 18px 0;">
+                <h2 class="panel-title" style="margin-bottom:4px;">Mis tickets</h2>
+                <p class="panel-sub">Historial de tus solicitudes y respuestas.</p>
+            </div>
+            <form method="get" class="table-toolbar" style="margin:10px 0 0;border:0;box-shadow:none;border-bottom:1px solid var(--line);border-radius:0;">
+                <label class="search-field">
+                    <span>🔎</span>
+                    <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código o título…" />
+                </label>
+                <select name="estado" data-autosubmit>
+                    <option value="">Todos los estados</option>
+                    {% for val, label in estados %}
+                    <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                {% if q or filtro_estado %}
+                <a href="{% url 'tickets:mi_panel' %}" class="link-clear">✕ Limpiar</a>
+                {% endif %}
+            </form>
+            <div style="padding:12px 18px 18px;display:grid;gap:10px;">
+            {% for ticket in tickets %}
+            <div class="ticket-stub">
+                <span class="stub-code">{{ ticket.codigo }}</span>
+                <div class="stub-body">
+                    <p class="stub-title">{{ ticket.titulo }}</p>
+                    <div class="stub-meta">
+                        <span>{{ ticket.get_estado_display }}</span>
+                        {% if ticket.tecnico_asignado %}<span>🛠 {{ ticket.tecnico_asignado.nombre }}</span>{% endif %}
+                        <span>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+                <a href="{% url 'tickets:mi_ticket' ticket.pk %}" class="btn btn-outline btn-sm">Ver</a>
+            </div>
+            {% empty %}
+            <p style="color:var(--ink-muted)">
+                {% if q or filtro_estado %}Ningún ticket coincide con el filtro.{% else %}Todavía no tienes tickets registrados.{% endif %}
+            </p>
+            {% endfor %}
+
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="pagination-bar" style="margin:6px -18px -18px;border-radius:0;">
+                <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                <div class="pagination-links">
+                    {% if page_obj.has_previous %}
+                    <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹</a>
+                    {% else %}
+                    <span class="page-pill disabled">‹</span>
+                    {% endif %}
+                    <span class="page-pill current">{{ page_obj.number }}</span>
+                    {% if page_obj.has_next %}
+                    <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">›</a>
+                    {% else %}
+                    <span class="page-pill disabled">›</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <section id="nuevo-ticket" class="panel ticket-create-panel ticket-public-panel" style="margin-bottom:24px;">
+        <h2 class="panel-title">Levantar pedido</h2>
+        <p class="panel-sub">Crea una nueva solicitud y comparte la información necesaria para atenderla.</p>
+        <div class="ans-note" style="background:var(--dogger-cream);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--ink-muted);">
+            <strong style="color:var(--ink);">Prioridad automática (ANS):</strong> La prioridad se asigna según la categoría seleccionada. No es editable.
+        </div>
+        <form method="post" enctype="multipart/form-data" novalidate class="user-ticket-form">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group {% if field.name == 'descripcion' or field.name == 'adjuntos' %}span-2{% endif %}">
+                {{ field.label_tag }}
+                {{ field }}
+                {% if field.help_text %}<small style="display:block;color:var(--ink-muted);margin-top:6px;">{{ field.help_text }}</small>{% endif %}
+                {% if field.errors %}<div style="color:var(--dogger-red);font-size:12px;margin-top:6px;">{{ field.errors|join:", " }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <div class="ticket-form-actions">
+                <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+            </div>
+        </form>
+    </section>
+
+    <div class="reports-stack dashboard-report-stack">
+        <section class="report-simple-card">
+            <h3>Por prioridad</h3>
+            <ul class="report-simple-list">
+                {% for bar in priority_bars %}
+                <li style="--priority-color:{% if bar.label == 'urgente' %}#7B2CBF{% elif bar.label == 'alta' %}#F26522{% elif bar.label == 'media' %}#F2A900{% else %}#2F7D4F{% endif %}; --priority-bg:{% if bar.label == 'urgente' %}rgba(123,44,191,.10){% elif bar.label == 'alta' %}rgba(242,101,34,.10){% elif bar.label == 'media' %}rgba(242,169,0,.12){% else %}rgba(47,125,79,.12){% endif %};">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label" style="color: {% if bar.label == 'urgente' %}#7B2CBF{% elif bar.label == 'alta' %}#F26522{% elif bar.label == 'media' %}#F2A900{% else %}#2F7D4F{% endif %};">{{ bar.label }}</span>
+                    <span class="metric-value" style="color: {% if bar.label == 'urgente' %}#7B2CBF{% elif bar.label == 'alta' %}#F26522{% elif bar.label == 'media' %}#F2A900{% else %}#2F7D4F{% endif %};">{{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="report-simple-card">
+            <h3>Por categoría</h3>
+            <ul class="report-simple-list">
+                {% for bar in category_bars %}
+                <li style="--priority-color:#1D4ED8; --priority-bg: rgba(29,78,216,.10);">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label" style="color: #1D4ED8;">{{ bar.label }}</span>
+                    <span class="metric-value" style="color: #1D4ED8;">{{ bar.count }}</span>
+                </li>
+                {% empty %}
+                <li style="--priority-color:#1D4ED8; --priority-bg: rgba(29,78,216,.10);">
+                    <span class="metric-fill" style="width: 0%;"></span>
+                    <span class="metric-label" style="color: #1D4ED8;">Sin categoría</span>
+                    <span class="metric-value" style="color: #1D4ED8;">0</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <aside class="glpi-report-panel">
+            <div class="glpi-report-head">
+                <div class="glpi-title-wrap">
+                    <span class="glpi-dot"></span>
+                    <h3>Actividad reciente</h3>
+                </div>
+                <span class="glpi-badge">Sincronizado</span>
+            </div>
+            <ul class="glpi-activity-list">
+                {% for ev in eventos_glpi %}
+                <li class="glpi-activity-item">
+                    <span class="glpi-activity-icon">{% if ev.tipo == 'cambio-estado' %}🔄{% elif ev.tipo == 'seguimiento' %}💬{% else %}🔔{% endif %}</span>
+                    <div class="glpi-activity-body">
+                        <p class="glpi-activity-text">
+                            {% if ev.ticket %}<a href="{% url 'tickets:mi_ticket' ev.ticket.pk %}">{{ ev.descripcion }}</a>{% else %}{{ ev.descripcion }}{% endif %}
+                        </p>
+                        <span class="glpi-activity-time">{{ ev.fecha|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="glpi-activity-empty">Sin actividad reciente.</li>
+                {% endfor %}
+            </ul>
+        </aside>
+    </div>
+
+    <section class="faq-section panel">
+        <h2 class="panel-title">Preguntas frecuentes</h2>
+        <p class="panel-sub">Respuestas rápidas sobre la atención de tus solicitudes.</p>
+        <div class="faq-item">
+            <div class="faq-question">¿Cuánto tarda la respuesta?</div>
+            <div class="faq-answer">La atención depende de la prioridad y la complejidad del caso, pero normalmente el equipo revisa las nuevas solicitudes en el mismo día hábil.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">¿Puedo adjuntar evidencias?</div>
+            <div class="faq-answer">Sí. Puedes subir capturas o archivos PDF para apoyar la descripción del problema y facilitar la resolución.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">¿Cómo sé en qué estado va mi pedido?</div>
+            <div class="faq-answer">En el panel de usuario puedes revisar el estado, el historial y la actividad reciente de cada ticket en el detalle de la solicitud.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">¿Puedo responder desde el portal?</div>
+            <div class="faq-answer">Sí. Desde el detalle del ticket puedes responder directamente con una actualización o evidencia adicional.</div>
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block footer %}{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Editar {{ ticket.codigo }} · Mi ticket{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
+{% block header_title %}Editar {{ ticket.codigo }}{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'tickets:mi_ticket' ticket.pk %}" class="btn btn-outline-light btn-sm">⬅ Volver al ticket</a>
+{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% url 'tickets:mi_ticket' ticket.pk %}" title="Volver al ticket">←</a>
+        <div class="page-head-titles">
+            <h2 style="font-size:17px;">Editar ticket {{ ticket.codigo }}</h2>
+            <p>Los cambios se reflejan en GLPI si ya fue sincronizado.</p>
+        </div>
+    </div>
+    <div class="panel" style="max-width:720px;">
+        <h2 class="panel-title">✏️ Editar ticket {{ ticket.codigo }}</h2>
+        <p class="panel-sub">Solo puedes editar mientras el ticket esté abierto. Los cambios se reflejan en GLPI si ya fue sincronizado.</p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>
+                {{ form.titulo }}
+                {{ form.titulo.errors }}
+            </div>
+
+            <div class="contact-row">
+                <div class="form-group" style="flex:1;">
+                    <label for="{{ form.prioridad.id_for_label }}">{{ form.prioridad.label }}</label>
+                    {{ form.prioridad }}
+                    {{ form.prioridad.errors }}
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label for="{{ form.categoria.id_for_label }}">{{ form.categoria.label }}</label>
+                    {{ form.categoria }}
+                    {{ form.categoria.errors }}
+                    <p style="font-size:12px;color:#6B6259;margin:4px 0 0;">Al cambiar la categoría puede reasignarse el técnico automáticamente.</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.solicitante_punto.id_for_label }}">{{ form.solicitante_punto.label }}</label>
+                {{ form.solicitante_punto }}
+                {{ form.solicitante_punto.errors }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+                {{ form.descripcion }}
+                {{ form.descripcion.errors }}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>
+            <a href="{% url 'tickets:mi_ticket' ticket.pk %}" class="btn btn-outline btn-sm">Cancelar</a>
+        </form>
+    </div>
+</main>
+{% endblock %}
+{% block footer %}{% endblock %}

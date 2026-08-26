@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Nuevo ticket{% endblock %}
+{% block nav_mi_panel %}{% endblock %}
+{% block header_eyebrow %}Dogger · Mesa de Ayuda{% endblock %}
+{% block header_title %}Reportar incidencia{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% if es_usuario_final %}{% url 'tickets:mi_panel' %}{% else %}{% url 'tickets:lista' %}{% endif %}" title="Volver">←</a>
+        <div class="page-head-titles">
+            <h2>Reportar una incidencia</h2>
+            <p>Describe el problema con claridad para una atención más rápida.</p>
+        </div>
+    </div>
+
+    <div class="panel ticket-public-panel" style="max-width:900px;">
+        <div class="ans-note" style="background:var(--dogger-cream);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--ink-muted);">
+            <strong style="color:var(--ink);">Prioridad automática (ANS):</strong> La prioridad se asigna según la categoría seleccionada. No es editable.
+        </div>
+        <form method="post" enctype="multipart/form-data" novalidate class="user-ticket-form form-grid">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group {% if field.name == 'descripcion' or field.name == 'adjuntos' or field.name == 'titulo' %}span-2{% endif %}">
+                {{ field.label_tag }}
+                {{ field }}
+                {% if field.help_text %}<small style="display:block;color:var(--ink-muted);margin-top:6px;">{{ field.help_text }}</small>{% endif %}
+                {% if field.errors %}<div style="color:var(--dogger-red);font-size:12px;margin-top:6px;">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <div class="ticket-form-actions span-2">
+                <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+            </div>
+        </form>
+    </div>
+</main>
+{% endblock %}
+{% block footer %}{% endblock %}
