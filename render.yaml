@@ -15,9 +15,9 @@ services:
       #    DJANGO_ALLOWED_HOSTS=tu-servicio.onrender.com
       #    DJANGO_CSRF_TRUSTED_ORIGINS=https://tu-servicio.onrender.com
       - key: DJANGO_ALLOWED_HOSTS
-        value: ".onrender.com"
+        value: "sitiowebdoggerglpi.onrender.com"
       - key: DJANGO_CSRF_TRUSTED_ORIGINS
-        value: "https://.onrender.com"
+        value: "https://sitiowebdoggerglpi.onrender.com"
       - key: DATABASE_URL
         fromDatabase:
           name: dogger-db

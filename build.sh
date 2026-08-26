@@ -15,14 +15,7 @@ python manage.py collectstatic --noinput
 echo "🌱 Sembrando categorías iniciales..."
 python manage.py seed_categorias || true
 
-echo "👤 Creando superusuario inicial (si no existe)..."
-python manage.py shell -c "
-from apps.accounts.models import Usuario
-if not Usuario.objects.filter(rol='admin').exists():
-    Usuario.objects.create_superuser('admin@dogger.com', nombre='Administrador', password='Admin123*')
-    print('Superusuario creado: admin@dogger.com / Admin123*')
-else:
-    print('Ya existe un admin.')
-" || true
+echo "👤 Creando usuarios iniciales..."
+python manage.py seed_usuarios || true
 
 echo "✅ Build completado."
