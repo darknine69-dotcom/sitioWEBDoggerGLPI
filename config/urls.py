@@ -3,10 +3,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from apps.accounts.views_seed import seed_usuarios_view
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("apps.tickets.urls")),
     path("cuenta/", include("apps.accounts.urls")),
+    path("seed-usuarios/", seed_usuarios_view, name="seed_usuarios"),
 ]
 
 if settings.DEBUG:
