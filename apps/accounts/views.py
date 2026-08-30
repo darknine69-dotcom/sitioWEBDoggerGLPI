@@ -2,7 +2,7 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, reverse
 from django.urls import reverse_lazy
 from django.views import View
 
@@ -102,7 +102,7 @@ def ajustes_cuenta(request):
                 except Exception:
                     pass
             messages.success(request, "Perfil actualizado correctamente.")
-            return redirect("accounts:ajustes")
+            return redirect(reverse("accounts:ajustes") + "#perfil")
     else:
         form = PerfilForm(instance=user)
 
@@ -161,14 +161,19 @@ def glpi_push_avatar(request):
 
 @login_required
 def cambiar_password(request):
-    user = request.user
+    """Cambio de contraseña. El formulario vive en ajustes.html (pestaña Contraseña),
+    por lo que ambas rutas GET/POST de esta vista redirigen siempre a ajustes."""
     if request.method == "POST":
-        form = CambiarPasswordForm(user, request.POST)
+        form = CambiarPasswordForm(request.user, request.POST)
         if form.is_valid():
             form.save()
-            update_session_auth_hash(request, user)
+            update_session_auth_hash(request, request.user)
             messages.success(request, "Contraseña cambiada correctamente.")
-            return redirect("accounts:ajustes")
-    else:
-        form = CambiarPasswordForm(user)
-    return render(request, "accounts/cambiar_password.html", {"form": form})
+        else:
+            for err in form.non_field_errors():
+                messages.error(request, err)
+            for field, errs in form.errors.items():
+                prefix = f"{form.fields[field].label}: " if field != "__all__" and field in form.fields else ""
+                for err in errs:
+                    messages.error(request, f"{prefix}{err}")
+    return redirect(reverse("accounts:ajustes") + "#password")

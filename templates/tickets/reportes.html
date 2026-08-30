@@ -9,26 +9,25 @@
 {% block content %}
 <main class="page reports-page">
     <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver">←</a>
+        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
             <h2>Reportes del helpdesk</h2>
             <p>Haz click en una tarjeta de estado o en el gráfico para ver el detalle.</p>
         </div>
-        <div style="margin-left:auto;">
-            <a href="{% url 'tickets:exportar_admin' %}?{{ request.GET.urlencode }}" class="btn btn-outline btn-sm">⬇ Exportar Excel</a>
+        <div class="page-head-actions">
+            <a href="{% url 'tickets:exportar_admin' %}?{{ request.GET.urlencode }}" class="btn btn-outline btn-sm"><svg class="icon"><use href="#i-download"/></svg> Exportar Excel</a>
         </div>
     </div>
 
     <div class="scoreboard">
         {% for val, label in estados %}
-        <button type="button" class="score-chip" data-open-modal="#modal-estado-{{ val }}"
-                style="--accent:{% if val == 'abierto' %}#D62B1F{% elif val == 'en-progreso' %}#F2A900{% elif val == 'resuelto' %}#2F7D4F{% else %}#6B6259{% endif %};"
+        <button type="button" class="score-chip sc-{{ val }}" data-open-modal="#modal-estado-{{ val }}"
                 title="Ver usuarios con tickets {{ label|lower }}">
             <span class="score-num">{% if val == 'abierto' %}{{ stats.abiertos|default:0 }}{% elif val == 'en-progreso' %}{{ stats.en_progreso|default:0 }}{% elif val == 'resuelto' %}{{ stats.resueltos|default:0 }}{% else %}{{ stats.cerrados|default:0 }}{% endif %}</span>
             <span class="score-label">{{ label }}</span>
         </button>
         {% endfor %}
-        <div class="score-chip" style="--accent:#FFC72C;">
+        <div class="score-chip sc-warning">
             <span class="score-num">{% if tiempo_promedio %}{{ tiempo_promedio }}{% else %}—{% endif %}</span>
             <span class="score-label">Prom. resolución</span>
         </div>
@@ -40,11 +39,11 @@
             {% with total_open=stats.total|default:1 %}
             {% if estado_bars %}
             <div class="donut-chart-wrap">
-                <div class="donut-ring" id="donut-estado" data-total="{{ stats.total|default:0 }}"></div>
+                <div class="donut-ring" id="donut-estado" data-donut data-total="{{ stats.total|default:0 }}"></div>
                 <ul class="donut-legend">
                     {% for bar in estado_bars %}
                     <li>
-                        <span class="donut-dot" style="background:{% if bar.label == 'Abierto' %}#D62B1F{% elif bar.label == 'En progreso' %}#F2A900{% elif bar.label == 'Resuelto' %}#2F7D4F{% else %}#6B6259{% endif %};"></span>
+                        <span class="donut-dot dd-{{ bar.slug }}"></span>
                         <span class="donut-legend-label">{{ bar.label }}</span>
                         <span class="donut-legend-count">{{ bar.count }}</span>
                         <span class="donut-legend-pct">{{ bar.pct }}%</span>
@@ -52,25 +51,6 @@
                     {% endfor %}
                 </ul>
             </div>
-            <script>
-            (function(){
-                var ring = document.getElementById('donut-estado');
-                if (!ring) return;
-                var slices = [
-                    {% for bar in estado_bars %}
-                    {pct: {{ bar.pct }}, color: '{% if bar.label == "Abierto" %}#D62B1F{% elif bar.label == "En progreso" %}#F2A900{% elif bar.label == "Resuelto" %}#2F7D4F{% else %}#6B6259{% endif %}'}{% if not forloop.last %},{% endif %}
-                    {% endfor %}
-                ];
-                var grad = [];
-                var acc = 0;
-                slices.forEach(function(s){
-                    grad.push(s.color + ' ' + acc + '% ' + (acc + s.pct) + '%');
-                    acc += s.pct;
-                });
-                if (acc < 100) grad.push('#eee ' + acc + '% 100%');
-                ring.style.background = 'conic-gradient(' + grad.join(', ') + ')';
-            })();
-            </script>
             {% else %}<p class="chart-empty">Sin datos todavía.</p>{% endif %}
             {% endwith %}
         </div>
@@ -80,7 +60,7 @@
             {% if tecnico_bars %}
             <ul class="report-simple-list">
                 {% for bar in tecnico_bars %}
-                <li style="--priority-color:#1D4ED8; --priority-bg:rgba(29,78,216,.10);">
+                <li class="mr-blue">
                     <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
                     <span class="metric-label">{{ bar.label }}</span>
                     <span class="metric-value">{{ bar.count }}</span>
@@ -96,10 +76,10 @@
             <h3>Por prioridad</h3>
             <ul class="report-simple-list">
                 {% for bar in priority_bars %}
-                <li style="--priority-color:{% if bar.label == 'urgente' %}#7B2CBF{% elif bar.label == 'alta' %}#F26522{% elif bar.label == 'media' %}#F2A900{% else %}#2F7D4F{% endif %}; --priority-bg:{% if bar.label == 'urgente' %}rgba(123,44,191,.10){% elif bar.label == 'alta' %}rgba(242,101,34,.10){% elif bar.label == 'media' %}rgba(242,169,0,.12){% else %}rgba(47,125,79,.12){% endif %};">
+                <li class="mr-{{ bar.label }}">
                     <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
-                    <span class="metric-label" style="color: {% if bar.label == 'urgente' %}#7B2CBF{% elif bar.label == 'alta' %}#F26522{% elif bar.label == 'media' %}#F2A900{% else %}#2F7D4F{% endif %};">{{ bar.label }}</span>
-                    <span class="metric-value" style="color: {% if bar.label == 'urgente' %}#7B2CBF{% elif bar.label == 'alta' %}#F26522{% elif bar.label == 'media' %}#F2A900{% else %}#2F7D4F{% endif %};">{{ bar.count }}</span>
+                    <span class="metric-label">{{ bar.label }}</span>
+                    <span class="metric-value">{{ bar.count }}</span>
                 </li>
                 {% endfor %}
             </ul>
@@ -110,7 +90,7 @@
             {% if category_bars %}
             <ul class="report-simple-list">
                 {% for bar in category_bars %}
-                <li style="--priority-color:#1D4ED8; --priority-bg: rgba(29,78,216,.10);">
+                <li class="mr-blue">
                     <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
                     <span class="metric-label">{{ bar.label }}</span>
                     <span class="metric-value">{{ bar.count }}</span>
@@ -129,26 +109,10 @@
                 <span class="glpi-badge">Sincronizado con GLPI</span>
             </div>
 
-            <ul class="glpi-activity-list">
-                {% for ev in eventos_glpi %}
-                <li class="glpi-activity-item">
-                    <span class="glpi-activity-icon">
-                        {% if ev.tipo == 'cambio-estado' %}🔄{% elif ev.tipo == 'seguimiento' %}💬{% else %}🔔{% endif %}
-                    </span>
-                    <div class="glpi-activity-body">
-                        <p class="glpi-activity-text">
-                            {% if ev.ticket %}<a href="{% url 'tickets:detalle' ev.ticket.pk %}">{{ ev.descripcion }}</a>{% else %}{{ ev.descripcion }}{% endif %}
-                        </p>
-                        <span class="glpi-activity-time">{{ ev.fecha|date:"d/m/Y H:i" }}</span>
-                    </div>
-                </li>
-                {% empty %}
-                <li class="glpi-activity-empty">Sin eventos recientes de GLPI todavía.</li>
-                {% endfor %}
-            </ul>
+            {% include "tickets/_glpi_activity.html" with eventos_glpi=eventos_glpi use_descripcion=True ticket_url="tickets:detalle" empty_text="Sin eventos recientes de GLPI todavía." %}
 
             {% if eventos_glpi_page.paginator.num_pages > 1 %}
-            <div class="pagination-bar" style="border-radius:0;">
+            <div class="pagination-bar radius-0">
                 {% if eventos_glpi_page.has_previous %}
                 <a href="?page_glpi={{ eventos_glpi_page.previous_page_number }}" class="page-pill">‹</a>
                 {% else %}
@@ -171,8 +135,8 @@
     <div class="modal-box">
         <div class="modal-head">
             <h3>
-                <span class="status-pill" style="--pill:{{ em.color }};">{{ em.label }}</span>
-                <span style="font-size:13px;color:var(--ink-muted);font-weight:400;">{{ em.total }} ticket{{ em.total|pluralize:"s" }}</span>
+                {% include "tickets/_estado_pill.html" with estado=em.codigo label=em.label %}
+                <span class="modal-head-muted">{{ em.total }} ticket{{ em.total|pluralize:"s" }}</span>
             </h3>
             <button type="button" class="modal-close">&times;</button>
         </div>
@@ -199,7 +163,7 @@
             {% else %}
             <p class="modal-empty">No hay usuarios con tickets en estado «{{ em.label }}».</p>
             {% endif %}
-            <a class="btn btn-outline btn-sm" style="margin-top:14px;" href="{% url 'tickets:lista' %}?estado={{ em.codigo }}">
+            <a class="btn btn-outline btn-sm mt-14" href="{% url 'tickets:lista' %}?estado={{ em.codigo }}">
                 Ver todos los tickets →
             </a>
         </div>

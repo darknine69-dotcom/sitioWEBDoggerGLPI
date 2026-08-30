@@ -1,4 +1,3 @@
-import json
 import secrets
 import string
 from collections import Counter
@@ -121,6 +120,7 @@ def _build_dashboard_context(request, tickets):
     estado_bars = [
         {
             "label": estado_display.get(k, k),
+            "slug": k,
             "count": estado_counts.get(k, 0),
             "pct": round(estado_counts.get(k, 0) / total_estados * 100),
         }
@@ -223,20 +223,6 @@ def reportes(request):
             "usuarios": usuarios_modal,
         })
 
-    chart_data = {
-        "estado": {
-            "labels": [b["label"] for b in dashboard_context["estado_bars"]],
-            "data": [b["count"] for b in dashboard_context["estado_bars"]],
-        },
-        "categoria": {
-            "labels": [b["label"] for b in dashboard_context["category_bars"]],
-            "data": [b["count"] for b in dashboard_context["category_bars"]],
-        },
-        "tecnico": {
-            "labels": [b["label"] for b in dashboard_context["tecnico_bars"]],
-            "data": [b["count"] for b in dashboard_context["tecnico_bars"]],
-        },
-    }
     return render(
         request,
         "tickets/reportes.html",
@@ -245,7 +231,6 @@ def reportes(request):
             "tiempo_promedio": tiempo_promedio,
             "estados_modal": estados_modal,
             "estados": Ticket.Estado.choices,
-            "chart_data_json": json.dumps(chart_data),
             **dashboard_context,
         },
     )
@@ -506,7 +491,6 @@ def usuarios_lista(request):
             "querystring": _params_sin_page(request),
             "q": q,
             "tab": tab,
-            "form": UsuarioPanelForm(),
             "total": User.objects.count(),
             "n_usuarios_finales": User.objects.filter(rol="usuario").count(),
             "n_tecnicos": User.objects.filter(rol__in=["tecnico", "admin"]).count(),
@@ -852,16 +836,11 @@ def usuarios_importar_glpi(request):
     return redirect("tickets:usuarios")
 
 
-def portal(request):
-    stats = Ticket.estadisticas()
-    tickets = list(
-        Ticket.objects.select_related("categoria", "tecnico_asignado").order_by(
-            "-fecha_creacion"
-        )[:200]
-    )
-    recientes_page = paginate_recent_tickets(request, Ticket.objects.select_related("categoria", "tecnico_asignado"))
-    dashboard_context = _build_dashboard_context(request, tickets)
+def faq(request):
+    return render(request, "tickets/faq.html")
 
+
+def portal(request):
     if request.method == "POST":
         form = TicketForm(request.POST, request.FILES)
         if form.is_valid():
@@ -891,13 +870,7 @@ def portal(request):
     else:
         form = TicketForm()
 
-    context = {
-        "form": form,
-        "stats": stats,
-        "recientes": recientes_page.object_list,
-        "recientes_page": recientes_page,
-    }
-    context.update(dashboard_context)
+    context = {"form": form}
     return render(request, "tickets/portal.html", context)
 
 

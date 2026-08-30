@@ -13,26 +13,26 @@
             <h2>Resumen general</h2>
             <p>Estado del helpdesk en tiempo real · solo administradores.</p>
         </div>
-        <div style="margin-left:auto;display:flex;gap:8px;">
-            <a href="{% url 'tickets:lista' %}" class="btn btn-outline btn-sm">🎫 Ver todos los tickets</a>
-            <a href="{% url 'tickets:reportes' %}" class="btn btn-primary btn-sm">📈 Reportes</a>
+        <div class="page-head-actions">
+            <a href="{% url 'tickets:lista' %}" class="btn btn-outline btn-sm"><svg class="icon"><use href="#i-ticket"/></svg> Ver todos los tickets</a>
+            <a href="{% url 'tickets:reportes' %}" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-chart"/></svg> Reportes</a>
         </div>
     </div>
 
     <div class="scoreboard">
-        <a class="score-chip" style="--accent:#FFC72C;text-decoration:none;" href="{% url 'tickets:lista' %}">
+        <a class="score-chip sc-warning" href="{% url 'tickets:lista' %}">
             <span class="score-num">{{ stats.total|default:0 }}</span>
             <span class="score-label">Total tickets</span>
         </a>
-        <a class="score-chip" style="--accent:#D62B1F;text-decoration:none;" href="{% url 'tickets:lista' %}?estado=abierto">
+        <a class="score-chip sc-abierto" href="{% url 'tickets:lista' %}?estado=abierto">
             <span class="score-num">{{ stats.abiertos|default:0 }}</span>
             <span class="score-label">Abiertos</span>
         </a>
-        <a class="score-chip" style="--accent:#F2A900;text-decoration:none;" href="{% url 'tickets:lista' %}?estado=en-progreso">
+        <a class="score-chip sc-progreso" href="{% url 'tickets:lista' %}?estado=en-progreso">
             <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
             <span class="score-label">En progreso</span>
         </a>
-        <a class="score-chip" style="--accent:#2F7D4F;text-decoration:none;" href="{% url 'tickets:lista' %}?estado=resuelto">
+        <a class="score-chip sc-resuelto" href="{% url 'tickets:lista' %}?estado=resuelto">
             <span class="score-num">{{ stats.resueltos|default:0 }}</span>
             <span class="score-label">Resueltos</span>
         </a>
@@ -60,7 +60,7 @@
             {% if category_bars %}
             <ul class="report-simple-list">
                 {% for bar in category_bars %}
-                <li style="--priority-color:#D62B1F; --priority-bg:rgba(214,43,31,.10);">
+                <li class="mr-abierto">
                     <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
                     <span class="metric-label">{{ bar.label }}</span>
                     <span class="metric-value">{{ bar.count }}</span>
@@ -74,15 +74,15 @@
     </div>
 
     {% if user_bars %}
-    <div class="charts-grid" style="margin-top:16px;">
-        <div class="chart-card" style="grid-column:span 2;">
+    <div class="charts-grid mt-16">
+        <div class="chart-card chart-wide">
             <h3>Tickets por usuario</h3>
             <ul class="report-simple-list">
                 {% for bar in user_bars %}
-                <li style="--priority-color:#1D4ED8; --priority-bg:rgba(29,78,216,.10);">
-                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%; background:#1D4ED8;"></span>
-                    <span class="metric-label" style="color:#1D4ED8;">{{ bar.label }}</span>
-                    <span class="metric-value" style="color:#1D4ED8;">{{ bar.count }}</span>
+                <li class="mr-blue">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label">{{ bar.label }}</span>
+                    <span class="metric-value">{{ bar.count }}</span>
                 </li>
                 {% endfor %}
             </ul>
@@ -93,7 +93,7 @@
     <h2 class="section-title">Últimos pedidos registrados</h2>
     <div class="table-card">
         <div class="table-scroll">
-            <table class="data-table">
+            <table class="data-table cards-mobile">
                 <thead>
                     <tr>
                         <th>Código</th>
@@ -106,20 +106,18 @@
                 </thead>
                 <tbody>
                     {% for t in recientes %}
-                    <tr style="--dot:{% if t.prioridad == 'urgente' %}#D62B1F{% elif t.prioridad == 'alta' %}#F26522{% elif t.prioridad == 'media' %}#F2A900{% else %}#6B9E78{% endif %}">
-                        <td><span class="table-code"><a href="{% url 'tickets:detalle' t.pk %}" style="color:inherit;">{{ t.codigo }}</a></span></td>
-                        <td>{{ t.titulo|truncatechars:48 }}</td>
-                        <td>{{ t.solicitante_nombre }}</td>
-                        <td>{{ t.get_prioridad_display }}</td>
-                        <td>
-                            <span class="status-pill" style="--pill:{% if t.estado == 'abierto' %}#D62B1F{% elif t.estado == 'en-progreso' %}#F2A900{% elif t.estado == 'resuelto' %}#2F7D4F{% else %}#6B6259{% endif %}">
-                                {{ t.get_estado_display }}
-                            </span>
+                    <tr class="tr-{{ t.prioridad }}">
+                        <td data-label="Código"><span class="table-code"><a href="{% url 'tickets:detalle' t.pk %}">{{ t.codigo }}</a></span></td>
+                        <td data-label="Título">{{ t.titulo|truncatechars:48 }}</td>
+                        <td data-label="Solicitante">{{ t.solicitante_nombre }}</td>
+                        <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
+                        <td data-label="Estado">
+                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
                         </td>
-                        <td>{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="6" style="text-align:center;color:var(--ink-muted)">Sin tickets registrados.</td></tr>
+                    <tr class="table-empty"><td colspan="6">Sin tickets registrados.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

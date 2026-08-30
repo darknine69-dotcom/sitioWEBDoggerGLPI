@@ -1,0 +1,34 @@
+<ul class="glpi-activity-list">
+    {% for ev in eventos_glpi %}
+    <li class="glpi-activity-item">
+        <span class="glpi-activity-icon">
+            <svg class="icon icon-sm">
+                {% if ev.tipo == 'cambio-estado' %}<use href="#i-refresh"/>
+                {% elif ev.tipo == 'seguimiento' %}<use href="#i-message"/>
+                {% else %}<use href="#i-bell"/>
+                {% endif %}
+            </svg>
+        </span>
+        <div class="glpi-activity-body">
+            <p class="glpi-activity-text">
+                {% if ev.tipo == 'cambio-estado' %}
+                {% if use_descripcion %}{{ ev.descripcion }}{% else %}{{ ev.linea }}{% endif %}
+                {% elif ev.ticket and ev.ticket.pk %}
+                <a href="{% url ticket_url|default:'tickets:mi_ticket' ev.ticket.pk %}" class="glpi-activity-link">{% if use_descripcion %}{{ ev.descripcion }}{% else %}{{ ev.linea }}{% endif %}</a>
+                {% elif ev.url %}
+                <a href="{{ ev.url }}" class="glpi-activity-link" target="_blank" rel="noopener">{% if use_descripcion %}{{ ev.descripcion }}{% else %}{{ ev.linea }}{% endif %}</a>
+                {% else %}
+                {% if use_descripcion %}{{ ev.descripcion }}{% else %}{{ ev.linea }}{% endif %}
+                {% endif %}
+            </p>
+            <span class="glpi-activity-time">
+                {% if ev.fecha_formateada %}{{ ev.fecha_formateada }}
+                {% else %}{{ ev.fecha|date:"d/m/Y H:i" }}{% endif %}
+                {% if ev.pendiente and ev.pendiente != '0min' %}&nbsp;&middot;&nbsp;hace {{ ev.pendiente }}{% endif %}
+            </span>
+        </div>
+    </li>
+    {% empty %}
+    <li class="glpi-activity-empty">{{ empty_text|default:"Sin actividad reciente." }}</li>
+    {% endfor %}
+</ul>

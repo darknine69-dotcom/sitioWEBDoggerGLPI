@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dogger · Acceso {{ login_role|default:'Staff' }}</title>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260817">
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260830a">
 </head>
 <body>
 <div class="login-screen">
@@ -17,7 +17,7 @@
         <form method="post" novalidate>
             {% csrf_token %}
             {% if form.non_field_errors %}
-            <div style="color:#D62B1F;font-size:13px;margin-bottom:12px;text-align:center;">
+            <div class="login-error">
                 {{ form.non_field_errors }}
             </div>
             {% endif %}
@@ -30,21 +30,21 @@
                 <label for="{{ form.password.id_for_label }}">Contraseña</label>
                 {{ form.password }}
             </div>
-            <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+            <div class="form-group form-check-row">
                 {{ form.remember_me }}
-                <label for="{{ form.remember_me.id_for_label }}" style="margin:0;">Recordarme</label>
+                <label for="{{ form.remember_me.id_for_label }}">Recordarme</label>
             </div>
             <button type="submit" class="btn btn-primary">Iniciar sesión</button>
         </form>
 
         {% if login_role_slug == 'usuario' %}
-        <p style="text-align:center;margin-top:16px;font-size:13px;">
-            <a href="{% url 'accounts:registro' %}" style="color:var(--dogger-red);font-weight:700;">Crear cuenta de usuario</a>
+        <p class="login-footlink">
+            <a href="{% url 'accounts:registro' %}">Crear cuenta de usuario</a>
         </p>
         {% endif %}
 
-        <p style="text-align:center;margin-top:20px;font-size:13px;">
-            <a href="{% url 'tickets:portal' %}" style="color:var(--dogger-red);font-weight:700;">← Volver al portal público</a>
+        <p class="login-footlink">
+            <a href="{% url 'tickets:portal' %}">← Volver al portal público</a>
         </p>
     </div>
 </div>

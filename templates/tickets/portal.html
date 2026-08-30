@@ -7,7 +7,7 @@
 
 {% block header_actions %}
 {% if not request.user.is_authenticated %}
-<a href="{% url 'accounts:registro' %}" class="btn btn-accent btn-sm">✍️ Crear cuenta</a>
+<a href="{% url 'accounts:registro' %}" class="btn btn-accent btn-sm"><svg class="icon"><use href="#i-edit"/></svg> Crear cuenta</a>
 {% endif %}
 {% endblock %}
 
@@ -18,7 +18,7 @@
     <section class="landing-hero">
         <div class="landing-hero-inner">
             <div class="landing-hero-copy">
-                <p class="landing-kicker"><svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Mesa de ayuda TI · Dogger</p>
+                <p class="landing-kicker"><svg class="hc-icon"><use href="#i-layers"/></svg> Mesa de ayuda TI · Dogger</p>
                 <h1>¿Algún problema con tu equipo o sistemas?<br><span>Reporta tu incidencia aquí.</span></h1>
                 <p class="landing-sub">
                     Centraliza tus solicitudes de soporte: POS-FE, SIESA, correos, impresoras y más.
@@ -26,11 +26,11 @@
                 </p>
                 <div class="contact-row">
                     {% if request.user.is_authenticated %}
-                    <a class="btn btn-accent" href="{% url 'tickets:crear_ticket' %}">🎫 Reportar incidencia</a>
-                    <a class="btn btn-header" href="{% url 'tickets:mi_panel' %}">👤 Ir a mi panel</a>
+                    <a class="btn btn-accent" href="{% url 'tickets:crear_ticket' %}"><svg class="icon"><use href="#i-ticket"/></svg> Reportar incidencia</a>
+                    <a class="btn btn-header" href="{% url 'tickets:mi_panel' %}"><svg class="icon"><use href="#i-user"/></svg> Ir a mi panel</a>
                     {% else %}
-                    <a class="btn btn-accent" href="{% url 'accounts:login_usuario' %}">🎫 Reportar incidencia</a>
-                    <a class="btn btn-header" href="{% url 'accounts:registro' %}">✍️ Crear cuenta</a>
+                    <a class="btn btn-accent" href="{% url 'accounts:login_usuario' %}"><svg class="icon"><use href="#i-ticket"/></svg> Reportar incidencia</a>
+                    <a class="btn btn-header" href="{% url 'accounts:registro' %}"><svg class="icon"><use href="#i-edit"/></svg> Crear cuenta</a>
                     {% endif %}
                     <a class="btn btn-outline-light btn-sm" href="#como-funciona">¿Cómo funciona? ↓</a>
                 </div>
@@ -38,10 +38,10 @@
             <div class="landing-hero-card">
                 <img src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" class="hero-logo">
                 <div class="hero-chips">
-                    <span class="hero-chip"><svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Atención en horario hábil</span>
-                    <span class="hero-chip"><svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg> Adjunta fotos o PDFs</span>
-                    <span class="hero-chip"><svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Integrado con GLPI</span>
-                    <span class="hero-chip"><svg class="hc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Responde desde el portal</span>
+                    <span class="hero-chip"><svg class="hc-icon"><use href="#i-clock"/></svg> Atención en horario hábil</span>
+                    <span class="hero-chip"><svg class="hc-icon"><use href="#i-paperclip"/></svg> Adjunta fotos o PDFs</span>
+                    <span class="hero-chip"><svg class="hc-icon"><use href="#i-external"/></svg> Integrado con GLPI</span>
+                    <span class="hero-chip"><svg class="hc-icon"><use href="#i-message"/></svg> Responde desde el portal</span>
                 </div>
             </div>
         </div>
@@ -49,7 +49,7 @@
 
     <!-- CARACTERÍSTICAS (grid 3x3) -->
     <section class="page features-section">
-        <div style="text-align:center;max-width:640px;margin:0 auto 8px;">
+        <div class="features-intro">
             <p class="section-kicker">Características</p>
             <h2 class="features-title">Todo lo que puedes hacer desde este portal</h2>
             <p class="panel-sub">Una sola puerta de entrada para empleados y puntos de venta de todo el país.</p>
@@ -57,47 +57,47 @@
 
         <div class="feature-cards-grid">
             <article class="fcard fcard-red">
-                <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg></span>
+                <span class="fcard-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 <strong>Levantar solicitudes</strong>
                 <small>Registra una incidencia nueva en menos de un minuto, desde cualquier punto.</small>
             </article>
             <article class="fcard">
-                <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                <span class="fcard-icon"><svg class="icon"><use href="#i-search"/></svg></span>
                 <strong>Consultar por código HD</strong>
                 <small>Sin cuenta: revisa el estado real de tu caso con el código recibido.</small>
             </article>
             <article class="fcard">
-                <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></span>
+                <span class="fcard-icon"><svg class="icon"><use href="#i-paperclip"/></svg></span>
                 <strong>Adjuntar evidencias</strong>
                 <small>Fotografías, capturas o PDFs (hasta {{ DOGGER.max_adjuntos }} archivos de {{ DOGGER.max_adjunto_mb }} MB).</small>
             </article>
             <article class="fcard">
-                <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+                <span class="fcard-icon"><svg class="icon"><use href="#i-message"/></svg></span>
                 <strong>Recibir respuestas</strong>
                 <small>El equipo técnico responde dentro del ticket y tú puedes contestar.</small>
             </article>
             <article class="fcard">
-                <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></span>
+                <span class="fcard-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
                 <strong>Categorías claras</strong>
                 <small>Cada caso llega directo al especialista correcto según su categoría.</small>
             </article>
             <article class="fcard">
-                <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                <span class="fcard-icon"><svg class="icon"><use href="#i-users"/></svg></span>
                 <strong>Mi panel personal</strong>
                 <small>Con cuenta propia: historial completo, exportación a Excel y más.</small>
             </article>
             <article class="fcard">
-                <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></span>
+                <span class="fcard-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
                 <strong>Técnicos asignados</strong>
                 <small>Asignación automática según la categoría del problema reportado.</small>
             </article>
             <article class="fcard">
-                <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+                <span class="fcard-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
                 <strong>Seguimiento ágil</strong>
                 <small>Estados visibles: abierto → en progreso → resuelto → cerrado.</small>
             </article>
             <article class="fcard">
-                <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+                <span class="fcard-icon"><svg class="icon"><use href="#i-home"/></svg></span>
                 <strong>Para todos los puntos</strong>
                 <small>Pensado para planta, locales y aeropuertos: un solo canal nacional.</small>
             </article>
@@ -107,7 +107,7 @@
     <!-- CÓMO FUNCIONA -->
     <section id="como-funciona" class="steps-section">
         <div class="page">
-            <p class="section-kicker" style="color:#F7C9C3;">Cómo funciona</p>
+            <p class="section-kicker kicker-light">Cómo funciona</p>
             <h2 class="steps-title">De la incidencia a la solución en 4 pasos</h2>
             <ol class="steps-grid">
                 <li class="step-card"><span class="step-num">1</span><strong>Inicia sesión con tu cuenta</strong><small>Regístrate en un minuto con tu nombre y correo institucional.</small></li>
@@ -127,14 +127,14 @@
                 {% if request.user.is_authenticated %}
                 <p>Hola <strong>{{ request.user.nombre }}</strong>, ya tienes cuenta. Levanta tu solicitud desde el formulario de reporte.</p>
                 <div class="contact-row">
-                    <a class="btn btn-accent" href="{% url 'tickets:crear_ticket' %}">🎫 Ir al formulario</a>
+                    <a class="btn btn-accent" href="{% url 'tickets:crear_ticket' %}"><svg class="icon"><use href="#i-ticket"/></svg> Ir al formulario</a>
                 </div>
                 {% else %}
                 <p>Necesitas <strong>iniciar sesión o crear tu cuenta</strong> para levantar tickets. Así tu historial queda guardado, puedes responder al equipo y descargar tus solicitudes cuando quieras.</p>
                 <div class="contact-row">
-                    <a class="btn btn-accent" href="{% url 'accounts:login_usuario' %}">👤 Iniciar sesión</a>
-                    <a class="btn btn-primary" href="{% url 'accounts:registro' %}">✍️ Crear cuenta gratis</a>
-                    <a class="btn btn-outline" href="{% url 'tickets:consultar' %}">🔎 Solo consultar un código HD</a>
+                    <a class="btn btn-accent" href="{% url 'accounts:login_usuario' %}"><svg class="icon"><use href="#i-lock"/></svg> Iniciar sesión</a>
+                    <a class="btn btn-primary" href="{% url 'accounts:registro' %}"><svg class="icon"><use href="#i-plus"/></svg> Crear cuenta gratis</a>
+                    <a class="btn btn-outline" href="{% url 'tickets:consultar' %}"><svg class="icon"><use href="#i-search"/></svg> Solo consultar un código HD</a>
                 </div>
                 {% endif %}
             </div>

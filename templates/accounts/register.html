@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dogger · Crear cuenta</title>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260817">
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260830a">
 </head>
 <body>
 <div class="login-screen">
@@ -17,7 +17,7 @@
         <form method="post" novalidate>
             {% csrf_token %}
             {% if form.non_field_errors %}
-            <div style="color:#D62B1F;font-size:13px;margin-bottom:12px;text-align:center;">
+            <div class="login-error">
                 {{ form.non_field_errors }}
             </div>
             {% endif %}
@@ -25,35 +25,35 @@
             <div class="form-group">
                 <label for="{{ form.nombre.id_for_label }}">Nombre completo</label>
                 {{ form.nombre }}
-                {% if form.nombre.errors %}<div style="color:#D62B1F;font-size:12px;margin-top:4px;">{{ form.nombre.errors }}</div>{% endif %}
+                {% if form.nombre.errors %}<div class="field-error">{{ form.nombre.errors }}</div>{% endif %}
             </div>
 
             <div class="form-group">
                 <label for="{{ form.email.id_for_label }}">Correo electrónico</label>
                 {{ form.email }}
-                {% if form.email.errors %}<div style="color:#D62B1F;font-size:12px;margin-top:4px;">{{ form.email.errors }}</div>{% endif %}
+                {% if form.email.errors %}<div class="field-error">{{ form.email.errors }}</div>{% endif %}
             </div>
 
             <div class="form-group">
                 <label for="{{ form.password1.id_for_label }}">Contraseña</label>
                 {{ form.password1 }}
-                {% if form.password1.errors %}<div style="color:#D62B1F;font-size:12px;margin-top:4px;">{{ form.password1.errors }}</div>{% endif %}
+                {% if form.password1.errors %}<div class="field-error">{{ form.password1.errors }}</div>{% endif %}
             </div>
 
             <div class="form-group">
                 <label for="{{ form.password2.id_for_label }}">Confirmar contraseña</label>
                 {{ form.password2 }}
-                {% if form.password2.errors %}<div style="color:#D62B1F;font-size:12px;margin-top:4px;">{{ form.password2.errors }}</div>{% endif %}
+                {% if form.password2.errors %}<div class="field-error">{{ form.password2.errors }}</div>{% endif %}
             </div>
 
             <button type="submit" class="btn btn-primary">Crear cuenta</button>
         </form>
 
-        <p style="text-align:center;margin-top:16px;font-size:13px;">
-            <a href="{% url 'accounts:login_usuario' %}" style="color:var(--dogger-red);font-weight:700;">Ya tengo cuenta · Iniciar sesión</a>
+        <p class="login-footlink">
+            <a href="{% url 'accounts:login_usuario' %}">Ya tengo cuenta · Iniciar sesión</a>
         </p>
-        <p style="text-align:center;margin-top:12px;font-size:13px;">
-            <a href="{% url 'tickets:portal' %}" style="color:var(--dogger-red);font-weight:700;">← Volver al portal público</a>
+        <p class="login-footlink">
+            <a href="{% url 'tickets:portal' %}">← Volver al portal público</a>
         </p>
     </div>
 </div>

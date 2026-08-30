@@ -9,7 +9,7 @@
 {% block content %}
 <main class="page">
     <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver">←</a>
+        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
             <h2>Cuentas del sistema</h2>
             <p>Gestiona usuarios finales y técnicos (importados o creados en GLPI).</p>
@@ -18,20 +18,20 @@
 
     <div class="tabs-bar">
         <a class="tab-pill {% if not tab %}active{% endif %}" href="{% url 'tickets:usuarios' %}{% if q %}?q={{ q|urlencode }}{% endif %}">
-            👥 Todos <span>{{ total }}</span>
+            <svg class="icon icon-sm"><use href="#i-users"/></svg> Todos <span>{{ total }}</span>
         </a>
         <a class="tab-pill {% if tab == 'usuario' %}active{% endif %}" href="?rol=usuario{% if q %}&q={{ q|urlencode }}{% endif %}">
-            🧑 Usuarios finales <span>{{ n_usuarios_finales }}</span>
+            <svg class="icon icon-sm"><use href="#i-user"/></svg> Usuarios finales <span>{{ n_usuarios_finales }}</span>
         </a>
         <a class="tab-pill {% if tab == 'tecnico' %}active{% endif %}" href="?rol=tecnico{% if q %}&q={{ q|urlencode }}{% endif %}">
-            🛠 Técnicos <span>{{ n_tecnicos }}</span> <small>({{ n_tecnicos_glpi }} en GLPI)</small>
+            <svg class="icon icon-sm"><use href="#i-wrench"/></svg> Técnicos <span>{{ n_tecnicos }}</span> <small>({{ n_tecnicos_glpi }} en GLPI)</small>
         </a>
     </div>
 
     <form method="get" class="table-toolbar">
         {% if tab %}<input type="hidden" name="rol" value="{{ tab }}">{% endif %}
         <label class="search-field">
-            <span>🔎</span>
+            <svg class="icon icon-sm"><use href="#i-search"/></svg>
             <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre o correo…" />
         </label>
         <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
@@ -39,14 +39,14 @@
         <span class="toolbar-count">{{ page_obj.paginator.count }} cuenta(s) de {{ total }}</span>
         {% if tab == 'tecnico' %}
         <a href="{% url 'tickets:usuarios_importar_glpi' %}" class="link-clear"
-           title="Volver a consultar GLPI ahora (también se sincroniza solo al abrir el panel)">↻ GLPI</a>
+           title="Volver a consultar GLPI ahora (también se sincroniza solo al abrir el panel)"><svg class="icon icon-sm"><use href="#i-refresh"/></svg> GLPI</a>
         {% endif %}
-        <button type="button" class="btn btn-accent btn-sm" data-open-modal="#modal-usuario" data-new-user>➕ Nueva cuenta</button>
+        <button type="button" class="btn btn-accent btn-sm" data-open-modal="#modal-usuario" data-new-user data-default-rol="{{ tab }}"><svg class="icon"><use href="#i-plus"/></svg> Nueva cuenta</button>
     </form>
 
     <div class="table-card">
         <div class="table-scroll">
-            <table class="data-table" id="tablaUsuarios">
+            <table class="data-table cards-mobile" id="tablaUsuarios">
                 <thead>
                     <tr>
                         <th>Nombre</th>
@@ -62,11 +62,11 @@
                     {% for u in usuarios %}
                     <tr data-nombre="{{ u.nombre }}" data-email="{{ u.email }}" data-rol="{{ u.rol }}"
                         data-glpi="{{ u.glpi_user_id|default_if_none:'' }}" data-activo="{{ u.activo|yesno:'1,0' }}">
-                        <td>
+                        <td data-label="Nombre">
                             <strong>{{ u.nombre }}</strong>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
                             {% if u.glpi_perfil %}
-                            <div style="margin-top:4px;display:grid;gap:1px;">
-                                <small class="glpi-live">🟢 En GLPI: login <b>{{ u.glpi_perfil.login|default:"—" }}</b></small>
+                            <div class="glpi-live-grid">
+                                <small class="glpi-live"><span class="live-dot"></span> En GLPI: login <b>{{ u.glpi_perfil.login|default:"—" }}</b></small>
                                 {% if u.glpi_perfil.nombre_real %}<small class="glpi-live">Nombre GLPI: {{ u.glpi_perfil.nombre_real }}</small>{% endif %}
                                 {% if u.glpi_perfil.email %}
                                 <small class="glpi-live">Correo GLPI: {{ u.glpi_perfil.email }}</small>
@@ -74,50 +74,50 @@
                                 <small class="glpi-live">Sin correo en GLPI</small>
                                 {% endif %}
                                 {% if u.glpi_perfil.activo_glpi == False %}
-                                <small class="glpi-live glpi-off">⛔ Estado en GLPI: Inactivo</small>
+                                <small class="glpi-live glpi-off"><span class="live-dot dot-off"></span> Estado en GLPI: Inactivo</small>
                                 {% elif u.glpi_perfil.activo_glpi %}
-                                <small class="glpi-live">✅ Estado en GLPI: Activo</small>
+                                <small class="glpi-live"><span class="live-dot"></span> Estado en GLPI: Activo</small>
                                 {% endif %}
                             </div>
                             {% endif %}
                         </td>
-                        <td>{{ u.email }}</td>
-                        <td><span class="badge-role {{ u.rol }}">{{ u.get_rol_display }}</span></td>
-                        <td>
+                        <td data-label="Correo">{{ u.email }}</td>
+                        <td data-label="Rol"><span class="badge-role {{ u.rol }}">{{ u.get_rol_display }}</span></td>
+                        <td data-label="GLPI">
                             {% if u.glpi_user_id %}
                                 {% if glpi_base %}
                                 <a class="meta-pill meta-glpi" href="{{ glpi_base }}/front/user.form.php?id={{ u.glpi_user_id }}"
-                                   target="_blank" rel="noopener" title="Ver en GLPI">GLPI #{{ u.glpi_user_id }} ↗</a>
+                                   target="_blank" rel="noopener" title="Ver en GLPI">GLPI #{{ u.glpi_user_id }} <svg class="icon icon-sm"><use href="#i-external"/></svg></a>
                                 {% else %}
                                 <span class="meta-pill meta-glpi">#{{ u.glpi_user_id }}</span>
                                 {% endif %}
                             {% elif tab == 'tecnico' %}
-                                <form method="post" action="{% url 'tickets:usuario_crear_glpi' u.pk %}" style="display:inline;"
+                                <form method="post" action="{% url 'tickets:usuario_crear_glpi' u.pk %}" class="inline-form"
                                       onsubmit="return confirm('¿Crear a {{ u.nombre|escapejs }} en GLPI?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="mini-btn ok" title="Publicar esta cuenta en GLPI">☁ Crear en GLPI</button>
+                                    <button type="submit" class="mini-btn ok" title="Publicar esta cuenta en GLPI"><svg class="icon icon-sm"><use href="#i-cloud-upload"/></svg> Crear en GLPI</button>
                                 </form>
                             {% else %}
-                            <span style="color:var(--ink-muted);">—</span>
+                            <span class="hint">—</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td data-label="Estado">
                             {% if u.activo %}<span class="dot-on"></span> Activa
                             {% else %}<span class="dot-off"></span> Inactiva{% endif %}
                         </td>
-                        <td>{{ u.n_tickets|default:0 }}</td>
-                        <td style="white-space:nowrap;">
+                        <td data-label="Tickets asignados">{{ u.n_tickets|default:0 }}</td>
+                        <td data-label="Acciones" class="cell-actions">
                             <div class="cat-actions">
                                 <button type="button" class="mini-btn"
                                         data-open-modal="#modal-usuario"
                                         data-fill-nombre="{{ u.nombre }}" data-fill-email="{{ u.email }}"
                                         data-fill-rol="{{ u.rol }}" data-fill-glpi="{{ u.glpi_user_id|default_if_none:'' }}"
-                                        data-fill-activo="{{ u.activo|yesno:'1,0' }}" data-fill-pk="{{ u.pk }}" title="Editar datos de la cuenta">✏️</button>
+                                        data-fill-activo="{{ u.activo|yesno:'1,0' }}" data-fill-pk="{{ u.pk }}" title="Editar datos de la cuenta"><svg class="icon icon-sm"><use href="#i-edit"/></svg></button>
                                 {% if u.glpi_user_id %}
                                 <form method="post" action="{% url 'tickets:usuario_sync_glpi' u.pk %}">
                                     {% csrf_token %}
                                     <button type="submit" class="mini-btn ok"
-                                            title="Traer de GLPI: nombre, correo y estado activo/inactivo actual">🔄</button>
+                                            title="Traer de GLPI: nombre, correo y estado activo/inactivo actual"><svg class="icon icon-sm"><use href="#i-refresh"/></svg></button>
                                 </form>
                                 {% endif %}
                                 {% if u.pk != request.user.pk %}
@@ -125,20 +125,20 @@
                                     {% csrf_token %}
                                     <button type="submit" class="mini-btn {% if u.activo %}danger{% else %}ok{% endif %}"
                                             title="{% if u.activo %}Desactivar cuenta (no podrá iniciar sesión){% else %}Activar cuenta{% endif %}">
-                                        {% if u.activo %}🚫{% else %}✅{% endif %}
+                                        <svg class="icon icon-sm"><use href="#i-{% if u.activo %}ban{% else %}check{% endif %}"/></svg>
                                     </button>
                                 </form>
                                 <form method="post" action="{% url 'tickets:usuario_eliminar' u.pk %}"
                                       onsubmit="return confirm('¿Eliminar definitivamente a {{ u.nombre|escapejs }}? Los tickets asignados quedarán sin técnico.');">
                                     {% csrf_token %}
-                                    <button type="submit" class="mini-btn danger" title="Eliminar cuenta">🗑</button>
+                                    <button type="submit" class="mini-btn danger" title="Eliminar cuenta"><svg class="icon icon-sm"><use href="#i-trash"/></svg></button>
                                 </form>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="7" style="text-align:center;color:var(--ink-muted);padding:30px 0;">Sin cuentas que coincidan.</td></tr>
+                    <tr class="table-empty"><td colspan="7">Sin cuentas que coincidan.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -146,7 +146,7 @@
 
         {% if glpi_remotos %}
         <div class="glpi-remote-card">
-            <h4>🔎 {{ glpi_remotos|length }} coincidencia(s) en GLPI que aún no están en el aplicativo</h4>
+            <h4><svg class="icon icon-sm"><use href="#i-search"/></svg> {{ glpi_remotos|length }} coincidencia(s) en GLPI que aún no están en el aplicativo</h4>
             {% for r in glpi_remotos %}
             <form method="post" action="{% url 'tickets:usuario_importar_uno' r.glpi_id %}" class="glpi-import-row">
                 {% csrf_token %}
@@ -157,7 +157,7 @@
                     · {{ r.email|default:"sin correo en GLPI" }}
                     · estado: <b>{{ r.activo_glpi|yesno:'Activo,Inactivo,?' }}</b>
                 </span>
-                <button type="submit" class="mini-btn ok">➕ Importar perfil</button>
+                <button type="submit" class="mini-btn ok"><svg class="icon icon-sm"><use href="#i-plus"/></svg> Importar perfil</button>
             </form>
             {% endfor %}
             <p class="glpi-remote-hint">Al importar quedan como técnicos; si GLPI los tiene inactivos llegarán inactivos.</p>
@@ -188,7 +188,7 @@
 <div class="modal-overlay" id="modal-usuario">
     <div class="modal-box">
         <div class="modal-head">
-            <h3>👤 Datos de la cuenta</h3>
+            <h3><svg class="icon icon-sm"><use href="#i-user"/></svg> Datos de la cuenta</h3>
             <button type="button" class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
@@ -197,15 +197,15 @@
                 <input type="hidden" name="pk" id="u-pk" value="">
                 <div class="form-group">
                     <label for="u-nombre">Nombre completo <span class="req">*</span></label>
-                    <input type="text" name="nombre" id="u-nombre" required maxlength="100" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;">
+                    <input type="text" name="nombre" id="u-nombre" required maxlength="100">
                 </div>
                 <div class="form-group">
                     <label for="u-email">Correo <span class="req">*</span></label>
-                    <input type="email" name="email" id="u-email" required style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;">
+                    <input type="email" name="email" id="u-email" required>
                 </div>
                 <div class="form-group">
                     <label for="u-rol">Rol <span class="req">*</span></label>
-                    <select name="rol" id="u-rol" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;">
+                    <select name="rol" id="u-rol">
                         <option value="usuario">Usuario</option>
                         <option value="tecnico">Técnico</option>
                         <option value="admin">Administrador</option>
@@ -213,17 +213,16 @@
                 </div>
                 <div class="form-group">
                     <label for="u-glpi">ID usuario GLPI</label>
-                    <input type="number" name="glpi_user_id" id="u-glpi" min="1" placeholder="Ej: 12" style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;">
+                    <input type="number" name="glpi_user_id" id="u-glpi" min="1" placeholder="Ej: 12">
                 </div>
                 <div class="form-group span-2">
                     <label for="u-pass">Contraseña</label>
                     <input type="password" name="password1" id="u-pass" autocomplete="new-password"
-                           placeholder="{% if not q %}Obligatoria para cuentas nuevas{% endif %}Dejar vacía = sin cambios"
-                           style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;">
+                           placeholder="{% if not q %}Obligatoria para cuentas nuevas{% endif %}Dejar vacía = sin cambios">
                 </div>
-                <div class="form-group span-2" style="display:flex;align-items:center;gap:8px;">
+                <div class="form-group span-2 form-check-row">
                     <input type="checkbox" name="activo" id="u-activo" checked>
-                    <label for="u-activo" style="margin:0;">Cuenta activa (puede iniciar sesión)</label>
+                    <label for="u-activo">Cuenta activa (puede iniciar sesión)</label>
                 </div>
                 <div class="modal-actions">
                     <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>
@@ -233,35 +232,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-(function () {
-    document.body.dataset.tab = "{{ tab }}";
-    var modal = document.getElementById("modal-usuario");
-    document.querySelectorAll("[data-fill-pk]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-            document.getElementById("u-pk").value = btn.getAttribute("data-fill-pk") || "";
-            document.getElementById("u-nombre").value = btn.getAttribute("data-fill-nombre") || "";
-            document.getElementById("u-email").value = btn.getAttribute("data-fill-email") || "";
-            document.getElementById("u-rol").value = btn.getAttribute("data-fill-rol") || "usuario";
-            document.getElementById("u-glpi").value = btn.getAttribute("data-fill-glpi") || "";
-            document.getElementById("u-activo").checked = btn.getAttribute("data-fill-activo") === "1";
-            document.getElementById("u-pass").value = "";
-            document.getElementById("u-pass").placeholder = "Dejar vacía = sin cambios";
-        });
-    });
-    var nuevo = document.querySelector('[data-open-modal][data-new-user]');
-    if (nuevo) {
-        nuevo.addEventListener("click", function () {
-            ["u-pk","u-nombre","u-email","u-glpi"].forEach(function (id) { document.getElementById(id).value = ""; });
-            document.getElementById("u-rol").value = document.body.dataset.tab === "tecnico" ? "tecnico" : "usuario";
-            document.getElementById("u-activo").checked = true;
-            document.getElementById("u-pass").value = "";
-            document.getElementById("u-pass").placeholder = "Obligatoria para cuentas nuevas";
-        });
-    }
-})();
-</script>
 {% endblock %}

@@ -6,15 +6,15 @@
 {% block header_title %}{{ ticket.codigo }}{% endblock %}
 
 {% block header_actions %}
-<a href="{% url 'tickets:mi_panel' %}" class="btn btn-outline-light btn-sm">⬅ Mi panel</a>
+<a href="{% url 'tickets:mi_panel' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Mi panel</a>
 {% endblock %}
 
 {% block content %}
 <main class="page ticket-detail-page">
     <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:mi_panel' %}" title="Volver a mis tickets">←</a>
+        <a class="back-btn" data-back href="{% url 'tickets:mi_panel' %}" title="Volver a mis tickets"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
-            <h2 style="font-size:17px;">Ticket {{ ticket.codigo }}</h2>
+            <h2>Ticket {{ ticket.codigo }}</h2>
             <p>Seguimiento de tu solicitud.</p>
         </div>
     </div>
@@ -24,7 +24,7 @@
                 <p class="ticket-detail-kicker">{{ ticket.codigo }}</p>
                 <h2 class="panel-title">{{ ticket.titulo }}</h2>
             </div>
-            <span class="status-pill" style="--pill:{% if ticket.estado == 'abierto' %}#D62B1F{% elif ticket.estado == 'en-progreso' %}#F2A900{% elif ticket.estado == 'resuelto' %}#2F7D4F{% else %}#6B6259{% endif %}">{{ ticket.get_estado_display }}</span>
+            {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}
         </div>
 
         <div class="ticket-meta-row">
@@ -39,19 +39,19 @@
             {% endif %}
         </div>
 
-        <div class="share-row" style="margin:12px 0;">
+        <div class="share-row">
             {% if ticket.estado == 'abierto' %}
-            <a class="btn btn-outline btn-sm" href="{% url 'tickets:mi_editar' ticket.pk %}">✏️ Editar ticket</a>
+            <a class="btn btn-outline btn-sm" href="{% url 'tickets:mi_editar' ticket.pk %}"><svg class="icon"><use href="#i-edit"/></svg> Editar ticket</a>
             {% endif %}
             {% if not ticket.glpi_id or ticket.adjuntos_pendientes_glpi %}
-            <form method="post" action="{% url 'tickets:mi_reenviar_glpi' ticket.pk %}" style="display:inline;">
+            <form method="post" action="{% url 'tickets:mi_reenviar_glpi' ticket.pk %}" class="inline-form">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-primary btn-sm">
-                    🔁 {% if ticket.glpi_id %}Actualizar en GLPI{% else %}Reenviar a GLPI{% endif %}
+                    <svg class="icon"><use href="#i-refresh"/></svg> {% if ticket.glpi_id %}Actualizar en GLPI{% else %}Reenviar a GLPI{% endif %}
                 </button>
             </form>
             {% if not ticket.glpi_id %}
-            <span style="font-size:12px;color:#6B6259;">Este ticket aún no llegó a GLPI (¿GLPI apagado cuando se creó?).</span>
+            <span class="hint">Este ticket aún no llegó a GLPI (¿GLPI apagado cuando se creó?).</span>
             {% endif %}
             {% endif %}
         </div>
@@ -73,7 +73,7 @@
                 </a>
                 {% else %}
                 <a class="ticket-attachment file" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
-                    <span class="attachment-file-icon">📄</span>
+                    <svg class="icon attachment-file-icon"><use href="#i-file"/></svg>
                     <span>{{ adj.nombre_original }}</span>
                 </a>
                 {% endif %}
@@ -123,14 +123,7 @@
         </section>
         {% endif %}
 
-        <div class="share-row">
-            <a class="btn-share btn-whatsapp"
-               href="https://wa.me/?text={{ share_text|urlencode }}"
-               target="_blank" rel="noopener">📲 Compartir por WhatsApp</a>
-            <a class="btn-share btn-teams"
-               href="https://teams.microsoft.com/share?href={{ request.build_absolute_uri|urlencode }}&msgText={{ share_text|urlencode }}"
-               target="_blank" rel="noopener">🟪 Compartir en Teams</a>
-        </div>
+        {% include "tickets/_share_row.html" %}
     </div>
 </main>
 {% endblock %}

@@ -135,7 +135,7 @@
             Array.from(input.files).slice(0, 6).forEach(function (f) {
                 var item = document.createElement("span");
                 item.className = "file-chip";
-                item.textContent = "📎 " + f.name + " (" + Math.round(f.size / 1024) + " KB)";
+                item.textContent = f.name + " (" + Math.round(f.size / 1024) + " KB)";
                 box.appendChild(item);
             });
             if (input.files.length > 6) {
@@ -146,4 +146,116 @@
             }
         });
     });
+
+    /* ---- Donut de reportes: conic-gradient desde la leyenda ---- */
+    document.querySelectorAll(".donut-ring[data-donut]").forEach(function (ring) {
+        var wrap = ring.closest(".donut-chart-wrap");
+        var total = parseInt(ring.getAttribute("data-total") || "0", 10);
+        if (!wrap || !total) return;
+        var grad = [];
+        var acc = 0;
+        wrap.querySelectorAll(".donut-legend li").forEach(function (li) {
+            var dot = li.querySelector(".donut-dot");
+            var countEl = li.querySelector(".donut-legend-count");
+            var count = parseInt((countEl ? countEl.textContent : "") || "0", 10);
+            var pct = count ? Math.round(count / total * 100) : 0;
+            var color = dot ? getComputedStyle(dot).backgroundColor : "#eee";
+            grad.push(color + " " + acc + "% " + (acc + pct) + "%");
+            acc += pct;
+        });
+        if (acc < 100) grad.push("#eee " + acc + "% 100%");
+        ring.style.background = "conic-gradient(" + grad.join(", ") + ")";
+    });
+
+    /* ---- Modal de usuario (usuarios.html): rellenar formulario ---- */
+    document.querySelectorAll("[data-fill-pk]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            [
+                ["pk", "value", "data-fill-pk", ""],
+                ["nombre", "value", "data-fill-nombre", ""],
+                ["email", "value", "data-fill-email", ""],
+                ["rol", "value", "data-fill-rol", "usuario"],
+                ["glpi", "value", "data-fill-glpi", ""],
+                ["activo", "checked", "data-fill-activo", null],
+                ["pass", "value", "", ""]
+            ].forEach(function (spec) {
+                var el = document.getElementById("u-" + spec[0]);
+                if (!el) return;
+                if (spec[2]) {
+                    if (spec[1] === "checked") el.checked = btn.getAttribute(spec[2]) === "1";
+                    else el.value = btn.getAttribute(spec[2]) || spec[3];
+                } else {
+                    el.value = spec[3];
+                }
+            });
+            var pass = document.getElementById("u-pass");
+            if (pass) pass.placeholder = "Dejar vacía = sin cambios";
+        });
+    });
+    document.querySelectorAll("[data-new-user]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            ["pk", "nombre", "email", "glpi"].forEach(function (f) {
+                var el = document.getElementById("u-" + f);
+                if (el) el.value = "";
+            });
+            var rol = document.getElementById("u-rol");
+            if (rol) rol.value = btn.getAttribute("data-default-rol") === "tecnico" ? "tecnico" : "usuario";
+            var activo = document.getElementById("u-activo");
+            if (activo) activo.checked = true;
+            var pass = document.getElementById("u-pass");
+            if (pass) { pass.value = ""; pass.placeholder = "Obligatoria para cuentas nuevas"; }
+        });
+    });
+
+    /* ---- Ajustes de cuenta: tabs + preview de avatar ---- */
+    document.querySelectorAll("[data-settings-tab]").forEach(function (tab) {
+        tab.addEventListener("click", function (e) {
+            e.preventDefault();
+            document.querySelectorAll("[data-settings-tab]").forEach(function (t) { t.classList.remove("active"); });
+            document.querySelectorAll("[data-settings-panel]").forEach(function (p) { p.classList.remove("active"); });
+            tab.classList.add("active");
+            var target = document.querySelector('[data-settings-panel="' + tab.getAttribute("data-settings-tab") + '"]');
+            if (target) target.classList.add("active");
+        });
+    });
+    function openSettingsPanel(name) {
+        var tab = document.querySelector('[data-settings-tab="' + name + '"]');
+        var panel = document.querySelector('[data-settings-panel="' + name + '"]');
+        if (!tab || !panel) return;
+        document.querySelectorAll("[data-settings-tab]").forEach(function (t) { t.classList.remove("active"); });
+        document.querySelectorAll("[data-settings-panel]").forEach(function (p) { p.classList.remove("active"); });
+        tab.classList.add("active");
+        panel.classList.add("active");
+        setTimeout(function () {
+            if (panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 50);
+    }
+    if (location.hash && location.hash.length > 1) {
+        openSettingsPanel(location.hash.slice(1));
+    }
+    window.addEventListener("hashchange", function () {
+        if (location.hash && location.hash.length > 1) openSettingsPanel(location.hash.slice(1));
+    });
+    var avatarInput = document.getElementById("id_avatar");
+    var avatarPreview = document.getElementById("avatar-preview");
+    if (avatarInput && avatarPreview) {
+        avatarInput.addEventListener("change", function () {
+            var file = avatarInput.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                if (avatarPreview.tagName === "IMG") {
+                    avatarPreview.src = e.target.result;
+                } else {
+                    var img = document.createElement("img");
+                    img.src = e.target.result;
+                    img.alt = "";
+                    img.className = "settings-avatar-img";
+                    img.id = "avatar-preview";
+                    avatarPreview.parentNode.replaceChild(img, avatarPreview);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 })();

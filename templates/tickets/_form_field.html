@@ -1,0 +1,6 @@
+<div class="form-group {% if field.name in span2_fields|default:'' %}span-2{% endif %}">
+    {{ field.label_tag }}
+    {{ field }}
+    {% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
+    {% if field.errors %}<div class="field-error">{{ field.errors|join:", " }}</div>{% endif %}
+</div>

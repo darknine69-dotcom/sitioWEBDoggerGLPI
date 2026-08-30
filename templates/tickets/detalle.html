@@ -4,16 +4,16 @@
 {% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
 {% block header_title %}{{ ticket.codigo }}{% endblock %}
 {% block header_actions %}
-<a href="{% url 'tickets:lista' %}" class="btn btn-outline-light btn-sm">⬅ Tickets</a>
+<a href="{% url 'tickets:lista' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Tickets</a>
 <a href="{% url 'tickets:dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
 {% endblock %}
 
 {% block content %}
 <main class="page">
     <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver a tickets">←</a>
+        <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver a tickets"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
-            <h2 style="font-size:17px;">Ticket {{ ticket.codigo }}</h2>
+            <h2>Ticket {{ ticket.codigo }}</h2>
             <p>Detalle completo y gestión interna.</p>
         </div>
     </div>
@@ -24,16 +24,16 @@
             {% if ticket.solicitante_email %} · {{ ticket.solicitante_email }}{% endif %}
             {% if ticket.solicitante_punto %} · {{ ticket.solicitante_punto }}{% endif %}
             · {{ ticket.get_prioridad_display }}
-            · <span class="status-pill" style="--pill:{% if ticket.estado == 'abierto' %}#D62B1F{% elif ticket.estado == 'en-progreso' %}#F2A900{% elif ticket.estado == 'resuelto' %}#2F7D4F{% else %}#6B6259{% endif %}">{{ ticket.get_estado_display }}</span>
+            · {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}
             · {{ ticket.categoria.nombre|default:"Sin categoria" }}
             · {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}
             {% if ticket.glpi_id %} · <strong>GLPI #{{ ticket.glpi_id }}</strong>{% endif %}
-            {% if ticket.tecnico_asignado %} · Tecnico: {{ ticket.tecnico_asignado.nombre }}{% endif %}
+            {% if ticket.tecnico_asignado %} · Técnico: {{ ticket.tecnico_asignado.nombre }}{% endif %}
         </p>
 
-        <p style="white-space:pre-wrap;font-size:14.5px;line-height:1.55;margin:0 0 24px;">{{ ticket.descripcion }}</p>
+        <p class="ticket-desc">{{ ticket.descripcion }}</p>
 
-        <h3 style="font-family:var(--font-display);font-weight:400;margin:0 0 12px;">Capturas / adjuntos</h3>
+        <h3 class="section-title section-title--flush">Capturas / adjuntos</h3>
         {% if ticket.adjuntos.all %}
         <div class="adjuntos-grid">
             {% for a in ticket.adjuntos.all %}
@@ -41,60 +41,60 @@
                 {% if a.es_imagen %}
                 <img src="{% url 'tickets:adjunto' a.pk %}" alt="{{ a.nombre_original }}">
                 {% else %}
-                <div style="height:90px;display:flex;align-items:center;justify-content:center;font-size:32px;">📄</div>
+                <div class="adjunto-placeholder"><svg class="icon"><use href="#i-file"/></svg></div>
                 {% endif %}
                 <div class="adjunto-meta">{{ a.nombre_original }}</div>
             </a>
             {% endfor %}
         </div>
         {% else %}
-        <p style="color:var(--ink-muted);font-size:13px;">Sin adjuntos</p>
+        <p class="empty-hint">Sin adjuntos</p>
         {% endif %}
 
-        <h3 style="font-family:var(--font-display);font-weight:400;margin:28px 0 12px;">Asignar tecnico</h3>
+        <h3 class="section-title">Asignar técnico</h3>
         <form method="post" class="contact-row">
             {% csrf_token %}
             <input type="hidden" name="action" value="asignar">
             {{ asignar_form.tecnico }}
             <button type="submit" class="btn btn-outline btn-sm">Guardar</button>
         </form>
-        {% if ticket.asignacion_automatica %}<p style="font-size:12px;color:#6B6259;">Asignado automáticamente según la categoría.</p>{% endif %}
+        {% if ticket.asignacion_automatica %}<p class="hint">Asignado automáticamente según la categoría.</p>{% endif %}
 
-        <div style="margin-top:16px;">
-            <form method="post" action="{% url 'tickets:staff_reenviar_glpi' ticket.pk %}" style="display:inline;">
+        <div class="mt-16">
+            <form method="post" action="{% url 'tickets:staff_reenviar_glpi' ticket.pk %}" class="inline-form">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-outline btn-sm">
-                    🔁 {% if ticket.glpi_id %}Actualizar en GLPI{% else %}Reenviar a GLPI{% endif %}
+                    <svg class="icon"><use href="#i-refresh"/></svg> {% if ticket.glpi_id %}Actualizar en GLPI{% else %}Reenviar a GLPI{% endif %}
                 </button>
             </form>
-            {% if not ticket.glpi_id %}<span style="font-size:12px;color:#6B6259;">Sin registro en GLPI (¿estaba apagado?). También: python manage.py sync_glpi_pendientes</span>{% endif %}
+            {% if not ticket.glpi_id %}<span class="hint">Sin registro en GLPI (¿estaba apagado?). También: python manage.py sync_glpi_pendientes</span>{% endif %}
         </div>
 
-        <h3 style="font-family:var(--font-display);font-weight:400;margin:28px 0 12px;">Seguimientos</h3>
+        <h3 class="section-title">Seguimientos</h3>
         {% for c in ticket.comentarios.all %}
-        <div style="border-left:3px solid {% if c.es_interno %}#6B6259{% else %}var(--dogger-red){% endif %};padding:10px 14px;margin-bottom:10px;background:var(--dogger-cream);border-radius:0 8px 8px 0;">
-            <div style="font-size:12px;color:var(--ink-muted);">
+        <div class="followup {% if c.es_interno %}followup-interno{% else %}followup-publico{% endif %}">
+            <div class="followup-meta">
                 {{ c.autor_nombre|default:c.usuario.nombre|default:"Staff" }}
                 · {{ c.fecha|date:"d/m/Y H:i" }}
                 {% if c.es_interno %}<strong> · INTERNO</strong>{% endif %}
             </div>
-            <div style="margin-top:4px;white-space:pre-wrap;">{{ c.comentario }}</div>
+            <div class="followup-text">{{ c.comentario }}</div>
         </div>
         {% empty %}
-        <p style="color:var(--ink-muted);font-size:13px;">Sin seguimientos aun.</p>
+        <p class="empty-hint">Sin seguimientos aún.</p>
         {% endfor %}
 
-        <form method="post" style="margin-top:16px;">
+        <form method="post" class="mt-16">
             {% csrf_token %}
             <input type="hidden" name="action" value="comentario">
             <div class="form-group">{{ comentario_form.comentario }}</div>
-            <div class="form-group">
+            <div class="form-group-check">
                 <label>{{ comentario_form.es_interno }} Comentario interno (solo staff)</label>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">Agregar seguimiento</button>
         </form>
 
-        <div class="contact-row" style="margin-top:28px;">
+        <div class="contact-row mt-28">
             {% if ticket.estado == 'abierto' %}
             <form method="post" action="{% url 'tickets:cambiar_estado' ticket.pk %}">
                 {% csrf_token %}
@@ -121,14 +121,7 @@
             {% endif %}
         </div>
 
-        <div class="share-row">
-            <a class="btn-share btn-whatsapp"
-               href="https://wa.me/?text={{ share_text|urlencode }}"
-               target="_blank" rel="noopener">📲 Compartir por WhatsApp</a>
-            <a class="btn-share btn-teams"
-               href="https://teams.microsoft.com/share?href={{ request.build_absolute_uri|urlencode }}&msgText={{ share_text|urlencode }}"
-               target="_blank" rel="noopener">🟪 Compartir en Teams</a>
-        </div>
+        {% include "tickets/_share_row.html" %}
     </div>
 </main>
 {% endblock %}
