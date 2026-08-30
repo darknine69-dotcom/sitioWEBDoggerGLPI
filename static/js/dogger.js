@@ -258,4 +258,100 @@
             reader.readAsDataURL(file);
         });
     }
+
+    /* ---- Sugerencia de categoría por título/descripción (crear ticket) ---- */
+    var catKeywordsEl = document.getElementById("dogger-cat-keywords");
+    var tituloEl = document.getElementById("id_titulo");
+    var descEl = document.getElementById("id_descripcion");
+    var catSelEl = document.getElementById("id_categoria");
+    var suggestChip = document.getElementById("cat-suggest");
+    if (catKeywordsEl && tituloEl && catSelEl && suggestChip) {
+        var CATS = JSON.parse(catKeywordsEl.textContent);
+        var suggestName = document.getElementById("cat-suggest-name");
+        var suggestionsEnabled = true;
+
+        function normText(s) {
+            return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+        function escapeRx(s) {
+            return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        }
+        function suggestHide() {
+            suggestChip.hidden = true;
+        }
+        function suggestShow() {
+            suggestChip.hidden = false;
+        }
+        function evalSuggestion() {
+            if (!suggestionsEnabled) return;
+            var text = (normText(tituloEl.value) + " " + normText(descEl ? descEl.value : "")).trim();
+            if (text.length < 12) {
+                suggestHide();
+                return;
+            }
+            var best = null, bestScore = 0, i, j;
+            for (i = 0; i < CATS.length; i++) {
+                var c = CATS[i], score = 0, claves = c.claves || [];
+                for (j = 0; j < claves.length; j++) {
+                    var k = normText(claves[j]);
+                    if (!k) continue;
+                    if (k.indexOf(" ") > -1) {
+                        if (text.indexOf(k) > -1) score += 3;
+                    } else {
+                        var re = new RegExp("\\b" + escapeRx(k) + "\\b");
+                        if (re.test(text)) score += 2;
+                        else if (text.indexOf(k) > -1) score += 1;
+                    }
+                }
+                if (normText(c.nombre) && text.indexOf(normText(c.nombre)) > -1) score += 2;
+                if (normText(c.grupo) && text.indexOf(normText(c.grupo)) > -1) score += 1;
+                if (score > bestScore) { best = c; bestScore = score; }
+            }
+            if (!best || bestScore < 2) {
+                suggestHide();
+                return;
+            }
+            if (catSelEl.value && String(catSelEl.value) === String(best.id)) {
+                suggestHide();
+                return;
+            }
+            suggestName.textContent = best.nombre + " (" + best.grupo + ")";
+            suggestChip.setAttribute("data-best", best.id);
+            suggestShow();
+        }
+        var suggestTimer = null;
+        function suggestOnInput() {
+            clearTimeout(suggestTimer);
+            suggestTimer = setTimeout(evalSuggestion, 220);
+        }
+        tituloEl.addEventListener("input", suggestOnInput);
+        if (descEl) descEl.addEventListener("input", suggestOnInput);
+        document.addEventListener("click", function (e) {
+            var apply = e.target.closest ? e.target.closest("[data-suggest-apply]") : null;
+            if (apply && suggestChip) {
+                e.preventDefault();
+                var pk = suggestChip.getAttribute("data-best");
+                if (pk) {
+                    catSelEl.value = pk;
+                    catSelEl.classList.remove("suggest-applied");
+                    void catSelEl.offsetWidth;
+                    catSelEl.classList.add("suggest-applied");
+                    catSelEl.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+                suggestionsEnabled = false;
+                suggestHide();
+                return;
+            }
+            var dismiss = e.target.closest ? e.target.closest("[data-suggest-dismiss]") : null;
+            if (dismiss && suggestChip) {
+                e.preventDefault();
+                suggestionsEnabled = false;
+                suggestHide();
+            }
+        });
+        catSelEl.addEventListener("change", function () {
+            suggestionsEnabled = false;
+            suggestHide();
+        });
+    }
 })();

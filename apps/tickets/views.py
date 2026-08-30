@@ -1,3 +1,4 @@
+import json
 import secrets
 import string
 from collections import Counter
@@ -36,6 +37,7 @@ from .services.glpi_client import (
     sync_followup_to_glpi,
     sync_ticket_to_glpi,
 )
+from .sugerencia_categoria import claves_para_json
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -1022,6 +1024,7 @@ def crear_ticket(request):
         {
             "form": form,
             "es_usuario_final": es_usuario_final,
+            "cat_sugerencias_json": json.dumps(claves_para_json(), ensure_ascii=False),
         },
     )
 

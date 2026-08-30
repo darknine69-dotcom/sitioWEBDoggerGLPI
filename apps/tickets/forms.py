@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 
 from .models import Categoria, Ticket, TicketComentario
+from .sugerencia_categoria import sugerir_categoria
 
 User = get_user_model()
 
@@ -19,12 +20,12 @@ ALLOWED_CONTENT_TYPES = {
 def categorias_agrupadas():
     """
     Choices agrupadas por categoría principal para <optgroup>:
-    [( 'Grupo', [(id, nombre), ...] ), ...]
+    [( 'Grupo', [Categoria, ...] ), ...]
     """
     cats = Categoria.objects.filter(activo=True).order_by("grupo", "nombre")
-    grupos: dict[str, list[tuple[int, str]]] = {}
+    grupos: dict[str, list[Categoria]] = {}
     for c in cats:
-        grupos.setdefault(c.grupo, []).append((c.pk, c.nombre))
+        grupos.setdefault(c.grupo, []).append(c)
     return [(grupo, subs) for grupo, subs in grupos.items()]
 
 
@@ -56,6 +57,9 @@ class GroupedModelChoiceIterator(forms.models.ModelChoiceIterator):
 
 class GroupedCategoriaChoiceField(forms.ModelChoiceField):
     iterator = GroupedModelChoiceIterator
+
+    def label_from_instance(self, obj):
+        return obj.nombre
 
 
 def _campo_categoria(**kwargs):
@@ -122,6 +126,17 @@ class TicketForm(forms.ModelForm):
             if f.size > max_bytes:
                 raise forms.ValidationError(f'"{f.name}" supera el limite de {max_mb} MB.')
         return files
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get("categoria"):
+            sugerida = sugerir_categoria(
+                titulo=cleaned.get("titulo", ""),
+                descripcion=cleaned.get("descripcion", ""),
+            )
+            if sugerida:
+                cleaned["categoria"] = sugerida
+        return cleaned
 
     def save(self, commit=True):
         ticket = super().save(commit=False)

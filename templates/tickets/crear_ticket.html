@@ -21,6 +21,16 @@
             {% csrf_token %}
             {% for field in form %}
             {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
+            {% if field.name == 'categoria' %}
+            <div id="cat-suggest" class="cat-suggest" hidden>
+                <svg class="icon icon-sm"><use href="#i-help"/></svg>
+                <span class="cat-suggest-text">Según tu descripción, puedes usar la categoría <strong id="cat-suggest-name"></strong></span>
+                <span class="cat-suggest-actions">
+                    <button type="button" class="btn btn-primary btn-sm" data-suggest-apply>Usar esta categoría</button>
+                    <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Descartar</button>
+                </span>
+            </div>
+            {% endif %}
             {% endfor %}
             <div class="ticket-form-actions span-2">
                 <button type="submit" class="btn btn-primary">Enviar solicitud</button>
@@ -28,5 +38,7 @@
         </form>
     </div>
 </main>
+
+<script type="application/json" id="dogger-cat-keywords">{{ cat_sugerencias_json|safe }}</script>
 {% endblock %}
 {% block footer %}{% endblock %}

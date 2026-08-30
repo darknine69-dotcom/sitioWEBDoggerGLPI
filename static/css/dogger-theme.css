@@ -3822,6 +3822,17 @@ a.score-chip { color: inherit; }
 .features-intro .panel-sub { margin: 0; }
 .kicker-light { color: #FFC72C; }
 
+/* ---- Sugerencia de categoría (crear ticket) ---- */
+.cat-suggest {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #EDF3FC; border: 1px solid #C9DCF5; border-radius: 9px;
+    padding: 10px 12px; font-size: 13px; color: var(--ink);
+}
+.cat-suggest svg { color: #1D4ED8; flex-shrink: 0; }
+.cat-suggest-text { flex: 1; min-width: 200px; }
+.cat-suggest-actions { display: flex; gap: 8px; }
+select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12); }
+
 /* ---- Tabla -> tarjetas en móvil ---- */
 @media (max-width: 640px) {
     table.data-table.cards-mobile { display: block; width: 100%; border-radius: 0; box-shadow: none; }
