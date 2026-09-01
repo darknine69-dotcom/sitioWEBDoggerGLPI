@@ -105,16 +105,41 @@
     </div>
 
     <section id="nuevo-ticket" class="panel ticket-create-panel ticket-public-panel mb-24">
-        <h2 class="panel-title">Levantar pedido</h2>
-        <p class="panel-sub">Crea una nueva solicitud y comparte la información necesaria para atenderla.</p>
+        <div class="create-head">
+            <span class="create-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            <div class="create-head-text">
+                <h2 class="panel-title">Levantar pedido</h2>
+                <p class="panel-sub">Crea una nueva solicitud y comparte la información necesaria para atenderla.</p>
+            </div>
+        </div>
         {% include "tickets/_ans_note.html" %}
         <form method="post" enctype="multipart/form-data" novalidate class="user-ticket-form">
             {% csrf_token %}
             {% for field in form %}
+            {% if field.name == 'categoria' %}
+            <div class="form-group span-2">
+                {{ field.label_tag }}
+                {{ field }}
+                <p id="cat-auto-hint" class="cat-auto-hint" hidden>
+                    <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                    <span>Categoría asignada automáticamente según tu descripción: <strong id="cat-auto-name"></strong>. Si prefieres otra, puedes cambiarla.</span>
+                    <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Cambiar categoría</button>
+                </p>
+                <div id="cat-suggest" class="cat-suggest" hidden>
+                    <svg class="icon icon-sm"><use href="#i-help"/></svg>
+                    <span class="cat-suggest-text">Según tu descripción, probablemente sea la categoría <strong id="cat-suggest-name"></strong></span>
+                    <span class="cat-suggest-actions">
+                        <button type="button" class="btn btn-primary btn-sm" data-suggest-apply>Usar esta categoría</button>
+                        <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Descartar</button>
+                    </span>
+                </div>
+            </div>
+            {% else %}
             {% include "tickets/_form_field.html" with field=field span2_fields="descripcion adjuntos" %}
+            {% endif %}
             {% endfor %}
             <div class="ticket-form-actions">
-                <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+                <button type="submit" class="btn btn-primary"><svg class="icon"><use href="#i-send"/></svg> Enviar solicitud</button>
             </div>
         </form>
     </section>
@@ -166,6 +191,8 @@
 
     {% include "tickets/_faq.html" %}
 </main>
+
+<script type="application/json" id="dogger-cat-keywords">{{ cat_sugerencias_json|safe }}</script>
 {% endblock %}
 
 {% block footer %}{% endblock %}

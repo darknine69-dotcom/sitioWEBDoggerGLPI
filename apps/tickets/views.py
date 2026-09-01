@@ -1011,6 +1011,7 @@ def mi_panel(request):
             "estados": Ticket.Estado.choices,
             "stats": stats,
             "form": form,
+            "cat_sugerencias_json": json.dumps(claves_para_json(), ensure_ascii=False),
             **dashboard_context,
         },
     )
