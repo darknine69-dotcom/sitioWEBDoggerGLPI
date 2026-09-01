@@ -1,0 +1,14 @@
+{% with info=t.info_ans %}
+{% if info.0 %}
+<span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
+    {% if info.0 == 'vencido' %}
+    <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+    {% elif info.0 == 'resuelto' %}
+    <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+    {% else %}
+    <svg class="icon icon-sm"><use href="#i-clock"/></svg>
+    {% endif %}
+    {{ info.1 }}
+</span>
+{% endif %}
+{% endwith %}

@@ -259,16 +259,21 @@
         });
     }
 
-    /* ---- Sugerencia de categoría por título/descripción (crear ticket) ---- */
+    /* ---- Categoría inteligente: auto-selección por título/descripción ---- */
     var catKeywordsEl = document.getElementById("dogger-cat-keywords");
     var tituloEl = document.getElementById("id_titulo");
     var descEl = document.getElementById("id_descripcion");
     var catSelEl = document.getElementById("id_categoria");
     var suggestChip = document.getElementById("cat-suggest");
+    var autoHintEl = document.getElementById("cat-auto-hint");
     if (catKeywordsEl && tituloEl && catSelEl && suggestChip) {
         var CATS = JSON.parse(catKeywordsEl.textContent);
+        var MED_THRESHOLD = 2;   // ofrecer el chip para confirmar
+        var AUTO_THRESHOLD = 4;  // selección automática confiable
         var suggestName = document.getElementById("cat-suggest-name");
+        var autoName = document.getElementById("cat-auto-name");
         var suggestionsEnabled = true;
+        var applyingAuto = false;
 
         function normText(s) {
             return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -276,19 +281,23 @@
         function escapeRx(s) {
             return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         }
-        function suggestHide() {
+        function hideAll() {
             suggestChip.hidden = true;
+            if (autoHintEl) autoHintEl.hidden = true;
         }
-        function suggestShow() {
-            suggestChip.hidden = false;
+        function applyToSelect(pk) {
+            applyingAuto = true;
+            catSelEl.value = pk;
+            catSelEl.classList.remove("suggest-applied");
+            void catSelEl.offsetWidth;
+            catSelEl.classList.add("suggest-applied");
+            catSelEl.dispatchEvent(new Event("change", { bubbles: true }));
+            applyingAuto = false;
         }
         function evalSuggestion() {
             if (!suggestionsEnabled) return;
             var text = (normText(tituloEl.value) + " " + normText(descEl ? descEl.value : "")).trim();
-            if (text.length < 12) {
-                suggestHide();
-                return;
-            }
+            if (text.length < 12) { hideAll(); return; }
             var best = null, bestScore = 0, i, j;
             for (i = 0; i < CATS.length; i++) {
                 var c = CATS[i], score = 0, claves = c.claves || [];
@@ -296,7 +305,7 @@
                     var k = normText(claves[j]);
                     if (!k) continue;
                     if (k.indexOf(" ") > -1) {
-                        if (text.indexOf(k) > -1) score += 3;
+                        if (text.indexOf(k) > -1) score += 4;
                     } else {
                         var re = new RegExp("\\b" + escapeRx(k) + "\\b");
                         if (re.test(text)) score += 2;
@@ -307,17 +316,30 @@
                 if (normText(c.grupo) && text.indexOf(normText(c.grupo)) > -1) score += 1;
                 if (score > bestScore) { best = c; bestScore = score; }
             }
-            if (!best || bestScore < 2) {
-                suggestHide();
+            if (!best || bestScore < MED_THRESHOLD) { hideAll(); return; }
+
+            if (bestScore >= AUTO_THRESHOLD) {
+                // Coincidencia clara: se auto-selecciona y se avisa al usuario.
+                if (!catSelEl.value || String(catSelEl.value) !== String(best.id)) {
+                    applyToSelect(best.id);
+                }
+                if (autoHintEl) {
+                    autoName.textContent = best.nombre + " (" + best.grupo + ")";
+                    autoHintEl.hidden = false;
+                }
+                suggestChip.hidden = true;
                 return;
             }
+
+            // Coincidencia media: se ofrece el chip para confirmar.
             if (catSelEl.value && String(catSelEl.value) === String(best.id)) {
-                suggestHide();
+                hideAll();
                 return;
             }
             suggestName.textContent = best.nombre + " (" + best.grupo + ")";
             suggestChip.setAttribute("data-best", best.id);
-            suggestShow();
+            if (autoHintEl) autoHintEl.hidden = true;
+            suggestChip.hidden = false;
         }
         var suggestTimer = null;
         function suggestOnInput() {
@@ -331,27 +353,26 @@
             if (apply && suggestChip) {
                 e.preventDefault();
                 var pk = suggestChip.getAttribute("data-best");
-                if (pk) {
-                    catSelEl.value = pk;
-                    catSelEl.classList.remove("suggest-applied");
-                    void catSelEl.offsetWidth;
-                    catSelEl.classList.add("suggest-applied");
-                    catSelEl.dispatchEvent(new Event("change", { bubbles: true }));
-                }
+                if (pk) applyToSelect(pk);
                 suggestionsEnabled = false;
-                suggestHide();
+                hideAll();
                 return;
             }
             var dismiss = e.target.closest ? e.target.closest("[data-suggest-dismiss]") : null;
-            if (dismiss && suggestChip) {
+            if (dismiss) {
                 e.preventDefault();
                 suggestionsEnabled = false;
-                suggestHide();
+                catSelEl.classList.remove("suggest-applied");
+                hideAll();
+                return;
             }
         });
         catSelEl.addEventListener("change", function () {
+            if (applyingAuto) return;
+            // El usuario eligió manualmente: detener la auto-selección.
             suggestionsEnabled = false;
-            suggestHide();
+            catSelEl.classList.remove("suggest-applied");
+            hideAll();
         });
     }
 })();

@@ -45,7 +45,7 @@
                     <label for="{{ form.categoria.id_for_label }}">{{ form.categoria.label }}</label>
                     {{ form.categoria }}
                     {{ form.categoria.errors }}
-                    <p class="hint">Al cambiar la categoría puede reasignarse el técnico automáticamente.</p>
+                    <p class="hint">Al cambiar la categoría puede reasignarse el técnico automáticamente. La categoría define el plazo ANS (4h urgente · 8h alta · 24h media · 48h baja).</p>
                 </div>
             </div>
 
@@ -61,8 +61,10 @@
                 {{ form.descripcion.errors }}
             </div>
 
-            <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>
-            <a href="{% url 'tickets:mi_ticket' ticket.pk %}" class="btn btn-outline btn-sm">Cancelar</a>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary"><svg class="icon"><use href="#i-check"/></svg> Guardar cambios</button>
+                <a href="{% url 'tickets:mi_ticket' ticket.pk %}" class="btn btn-outline">Cancelar</a>
+            </div>
         </form>
     </div>
 </main>

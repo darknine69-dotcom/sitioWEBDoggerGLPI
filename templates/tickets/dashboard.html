@@ -71,6 +71,30 @@
             <p class="chart-empty">Sin datos todavía.</p>
             {% endif %}
         </div>
+        <div class="chart-card">
+            <h3>Cumplimiento ANS (abiertos)</h3>
+            {% if ans_stats.vencidos or ans_stats.por_vencer or ans_stats.ok %}
+            <ul class="report-simple-list">
+                <li class="mr-danger">
+                    <span class="metric-fill" style="width: {{ ans_stats.bar_vencidos|default:0 }}%;"></span>
+                    <span class="metric-label">Vencidos</span>
+                    <span class="metric-value">{{ ans_stats.vencidos }}</span>
+                </li>
+                <li class="mr-warning">
+                    <span class="metric-fill" style="width: {{ ans_stats.bar_por_vencer|default:0 }}%;"></span>
+                    <span class="metric-label">Por vencer</span>
+                    <span class="metric-value">{{ ans_stats.por_vencer }}</span>
+                </li>
+                <li class="mr-ok">
+                    <span class="metric-fill" style="width: {{ ans_stats.bar_ok|default:0 }}%;"></span>
+                    <span class="metric-label">Cumpliendo</span>
+                    <span class="metric-value">{{ ans_stats.ok }}</span>
+                </li>
+            </ul>
+            {% else %}
+            <p class="chart-empty">Sin tickets abiertos todavía.</p>
+            {% endif %}
+        </div>
     </div>
 
     {% if user_bars %}
@@ -100,6 +124,7 @@
                         <th>Título</th>
                         <th>Solicitante</th>
                         <th>Prioridad</th>
+                        <th>ANS</th>
                         <th>Estado</th>
                         <th>Fecha</th>
                     </tr>
@@ -111,13 +136,14 @@
                         <td data-label="Título">{{ t.titulo|truncatechars:48 }}</td>
                         <td data-label="Solicitante">{{ t.solicitante_nombre }}</td>
                         <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
+                        <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
                         <td data-label="Estado">
                             {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
                         </td>
                         <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
                     </tr>
                     {% empty %}
-                    <tr class="table-empty"><td colspan="6">Sin tickets registrados.</td></tr>
+                    <tr class="table-empty"><td colspan="7">Sin tickets registrados.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

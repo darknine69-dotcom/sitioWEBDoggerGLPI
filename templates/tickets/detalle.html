@@ -31,6 +31,25 @@
             {% if ticket.tecnico_asignado %} · Técnico: {{ ticket.tecnico_asignado.nombre }}{% endif %}
         </p>
 
+        {% with estado_ans=ticket.info_ans.0 %}
+        <div class="ans-meta">
+            <div class="ans-meta-item">
+                <span class="ans-meta-label">Prioridad (ANS)</span>
+                <span class="ans-meta-value ans-{{ estado_ans|default:'none' }}">
+                    {{ ticket.get_prioridad_display }}{% if ticket.ans_horas %} · {{ ticket.ans_horas }}h{% endif %}
+                </span>
+            </div>
+            <div class="ans-meta-item">
+                <span class="ans-meta-label">Límite de resolución</span>
+                <span class="ans-meta-value">{{ ticket.fecha_limite_ans|date:"d/m/Y H:i"|default:"—" }}</span>
+            </div>
+            <div class="ans-meta-item">
+                <span class="ans-meta-label">Estado ANS</span>
+                <span class="ans-meta-value">{% include "tickets/_ans_time.html" with t=ticket %}</span>
+            </div>
+        </div>
+        {% endwith %}
+
         <p class="ticket-desc">{{ ticket.descripcion }}</p>
 
         <h3 class="section-title section-title--flush">Capturas / adjuntos</h3>
@@ -71,18 +90,7 @@
         </div>
 
         <h3 class="section-title">Seguimientos</h3>
-        {% for c in ticket.comentarios.all %}
-        <div class="followup {% if c.es_interno %}followup-interno{% else %}followup-publico{% endif %}">
-            <div class="followup-meta">
-                {{ c.autor_nombre|default:c.usuario.nombre|default:"Staff" }}
-                · {{ c.fecha|date:"d/m/Y H:i" }}
-                {% if c.es_interno %}<strong> · INTERNO</strong>{% endif %}
-            </div>
-            <div class="followup-text">{{ c.comentario }}</div>
-        </div>
-        {% empty %}
-        <p class="empty-hint">Sin seguimientos aún.</p>
-        {% endfor %}
+        {% include "tickets/_chat_thread.html" %}
 
         <form method="post" class="mt-16">
             {% csrf_token %}

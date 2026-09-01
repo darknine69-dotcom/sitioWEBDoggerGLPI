@@ -31,6 +31,7 @@
             <span class="meta-pill meta-priority">{{ ticket.get_prioridad_display }}</span>
             <span class="meta-pill">{{ ticket.categoria.nombre|default:"Sin categoria" }}</span>
             <span class="meta-pill">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+            <span class="meta-pill">{% include "tickets/_ans_time.html" with t=ticket %}</span>
             {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
             {% if ticket.tecnico_asignado %}
             <span class="meta-pill">
@@ -83,45 +84,15 @@
         {% endif %}
 
         <section class="ticket-section">
-            <h3>Seguimientos</h3>
-            {% for c in ticket.comentarios.all %}
-                {% if not c.es_interno %}
-                <div class="ticket-followup {% if c.usuario and c.usuario.rol == 'usuario' %}followup-user{% else %}followup-support{% endif %}">
-                    <div class="followup-head">
-                        <strong>{{ c.autor_nombre|default:c.usuario.nombre|default:"Mesa de ayuda" }}</strong>
-                        <span>{{ c.fecha|date:"d/m/Y H:i" }}</span>
-                    </div>
-                    <div class="followup-body">{{ c.comentario }}</div>
-                </div>
-                {% endif %}
-            {% empty %}
-            <p class="ticket-empty-state">Sin seguimientos aún.</p>
-            {% endfor %}
+            <h3>Actividad</h3>
+            {% include "tickets/_chat_thread.html" %}
         </section>
 
-        <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="ticket-response-form">
+        <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer">
             {% csrf_token %}
-            <div class="form-group">
-                <label for="comentario">Responder a soporte</label>
-                <textarea id="comentario" name="comentario" rows="4" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm">Enviar respuesta</button>
+            <textarea id="comentario" name="comentario" rows="2" aria-label="Escribe tu respuesta para la mesa de ayuda" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
+            <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-send"/></svg> Enviar</button>
         </form>
-
-        {% if ticket.eventos_glpi.all %}
-        <section class="ticket-section glpi-section">
-            <h3>Actividad GLPI</h3>
-            {% for ev in ticket.eventos_glpi.all|slice:":5" %}
-            <div class="glpi-event-item">
-                <div class="glpi-event-head">
-                    <strong>{{ ev.get_tipo_display }}</strong>
-                    <span>{{ ev.fecha|date:"d/m/Y H:i" }}</span>
-                </div>
-                <div class="glpi-event-text">{{ ev.descripcion }}</div>
-            </div>
-            {% endfor %}
-        </section>
-        {% endif %}
 
         {% include "tickets/_share_row.html" %}
     </div>

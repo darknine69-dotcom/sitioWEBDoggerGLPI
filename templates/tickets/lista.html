@@ -62,6 +62,7 @@
                         <th>Título</th>
                         <th>Solicitante</th>
                         <th>Prioridad</th>
+                        <th>ANS</th>
                         <th>Categoría</th>
                         <th>Técnico</th>
                         <th>Estado</th>
@@ -76,6 +77,7 @@
                         <td data-label="Título">{{ t.titulo|truncatechars:42 }}</td>
                         <td data-label="Solicitante">{{ t.solicitante_nombre }}</td>
                         <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
+                        <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
                         <td data-label="Categoría">{{ t.categoria.nombre|default:"—" }}</td>
                         <td data-label="Técnico">{{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</td>
                         <td data-label="Estado">
@@ -103,7 +105,7 @@
                         </td>
                     </tr>
                     {% empty %}
-                    <tr class="table-empty"><td colspan="9">No hay tickets que coincidan con los filtros.</td></tr>
+                    <tr class="table-empty"><td colspan="10">No hay tickets que coincidan con los filtros.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

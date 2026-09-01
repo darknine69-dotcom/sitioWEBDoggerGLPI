@@ -31,7 +31,7 @@ PALABRAS_CLAVE = {
     "SIESA ERP::POS-FE": [
         "pos", "pos-fe", "caja", "cajero", "factura", "facturacion", "fiscal",
         "impresora fiscal", "venta", "ticket de venta", "cierre de caja", "arqueo",
-        "facturador",
+        "facturador", "pos no imprime", "no imprime el ticket", "no imprime tickets",
     ],
     "SIESA ERP::Biable": [
         "biable", "business intelligence", "reporte gerencial", "dashboard", "kpi", "inteligencia",
@@ -141,7 +141,9 @@ PALABRAS_CLAVE = {
     # ---- Administrativo TI ----
     "Administrativo TI::Creacion Usuario": [
         "crear usuario", "creacion de usuario", "nuevo usuario", "cuenta nueva",
-        "alta de usuario", "usuario directorio", "crear cuenta",
+        "alta de usuario", "usuario directorio", "crear cuenta", "crear un usuario",
+        "usuario nuevo", "crear usuario nuevo", "no puedo crear usuario",
+        "creacion del usuario",
     ],
     "Administrativo TI::Permisos": [
         "permisos", "permiso de acceso", "carpeta compartida", "acceso a carpeta",
@@ -175,7 +177,7 @@ def _puntaje(texto, categoria):
             continue
         if " " in k:
             if k in texto:
-                score += 3
+                score += 4
         else:
             if re.search(r"\b" + re.escape(k) + r"\b", texto):
                 score += 2

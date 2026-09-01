@@ -22,9 +22,18 @@
             {% for field in form %}
             {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
             {% if field.name == 'categoria' %}
+            <p class="cat-note">
+                <svg class="icon icon-sm"><use href="#i-help"/></svg>
+                <span>La categoría se selecciona <strong>automáticamente</strong> mientras escribes el título o la descripción. Siempre puedes cambiarla manualmente.</span>
+            </p>
+            <p id="cat-auto-hint" class="cat-auto-hint" hidden>
+                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                <span>Categoría asignada automáticamente según tu descripción: <strong id="cat-auto-name"></strong>. Si prefieres otra, puedes cambiarla.</span>
+                <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Cambiar categoría</button>
+            </p>
             <div id="cat-suggest" class="cat-suggest" hidden>
                 <svg class="icon icon-sm"><use href="#i-help"/></svg>
-                <span class="cat-suggest-text">Según tu descripción, puedes usar la categoría <strong id="cat-suggest-name"></strong></span>
+                <span class="cat-suggest-text">Según tu descripción, probablemente sea la categoría <strong id="cat-suggest-name"></strong></span>
                 <span class="cat-suggest-actions">
                     <button type="button" class="btn btn-primary btn-sm" data-suggest-apply>Usar esta categoría</button>
                     <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Descartar</button>

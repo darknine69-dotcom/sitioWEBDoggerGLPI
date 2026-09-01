@@ -1,0 +1,37 @@
+<div class="chat-thread" id="chat-thread">
+    {% for item in timeline %}
+        {% if item.tipo == 'sistema' %}
+        <div class="chat-event">
+            <span class="chat-event-icon">
+                <svg class="icon icon-sm">
+                    {% if item.evento == 'cambio-estado' %}<use href="#i-refresh"/>
+                    {% elif item.evento == 'seguimiento' %}<use href="#i-message"/>
+                    {% else %}<use href="#i-bell"/>
+                    {% endif %}
+                </svg>
+            </span>
+            <span class="chat-event-text">{{ item.texto }}</span>
+            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% elif item.tipo == 'interno' %}
+        <div class="chat-event chat-event-interno">
+            <span class="chat-event-icon">
+                <svg class="icon icon-sm"><use href="#i-lock"/></svg>
+            </span>
+            <span class="chat-event-text"><strong>INTERNO · {{ item.autor }}</strong> — {{ item.texto }}</span>
+            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% else %}
+        <div class="chat-msg chat-msg-{{ item.tipo }}">
+            <div class="chat-meta">
+                <span class="chat-avatar">{{ item.autor|slice:":1"|upper }}</span>
+                <strong>{{ item.autor }}</strong>
+                <span class="chat-meta-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="chat-bubble">{{ item.texto }}</div>
+        </div>
+        {% endif %}
+    {% empty %}
+    <p class="ticket-empty-state">Sin actividad aún. Envía tu primer mensaje a la mesa de ayuda.</p>
+    {% endfor %}
+</div>

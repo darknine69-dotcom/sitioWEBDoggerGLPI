@@ -69,6 +69,7 @@
                     <p class="stub-title">{{ ticket.titulo }}</p>
                     <div class="stub-meta">
                         <span>{{ ticket.get_estado_display }}</span>
+                        <span>{% include "tickets/_ans_time.html" with t=ticket %}</span>
                         {% if ticket.tecnico_asignado %}<span><svg class="icon icon-sm"><use href="#i-wrench"/></svg> {{ ticket.tecnico_asignado.nombre }}</span>{% endif %}
                         <span>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
                     </div>

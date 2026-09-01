@@ -1,10 +1,13 @@
 import uuid
+from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
 from django.db import models
 from django.db.models import Count, Q
 from django.utils import timezone
+
+from .sla import horas_por_prioridad, formatear_duracion
 
 
 class Categoria(models.Model):
@@ -21,6 +24,11 @@ class Categoria(models.Model):
         choices=[("baja", "Baja"), ("media", "Media"), ("alta", "Alta"), ("urgente", "Urgente")],
         default="media",
         help_text="Prioridad que se asigna automáticamente según el ANS de esta categoría",
+    )
+    ans_horas = models.PositiveIntegerField(
+        "Horas ANS",
+        default=24,
+        help_text="Tiempo máximo (horas) para resolver tickets de esta categoría. Si no se define, se usa el valor base de la prioridad.",
     )
     glpi_category_id = models.PositiveIntegerField(
         "ID categoria GLPI", null=True, blank=True
@@ -163,6 +171,52 @@ class Ticket(models.Model):
         if not self.pk:
             return False
         return self.adjuntos.filter(sincronizado_glpi=False).exists()
+
+    # ------------------------------------------------------------------
+    # ANS: tiempos objetivo de resolución según prioridad de la categoría
+    # ------------------------------------------------------------------
+    @property
+    def ans_horas(self) -> int:
+        if self.categoria_id and self.categoria and self.categoria.ans_horas:
+            return self.categoria.ans_horas
+        return horas_por_prioridad(self.prioridad)
+
+    @property
+    def fecha_limite_ans(self):
+        if not self.fecha_creacion:
+            return None
+        return self.fecha_creacion + timedelta(hours=self.ans_horas)
+
+    @property
+    def info_ans(self):
+        """
+        Tupla (estado, texto, detalle) para mostrar el ANS del ticket.
+
+        estado: 'ok' | 'por-vencer' | 'vencido' | 'resuelto' | None
+          - abiertos/en progreso: tiempo restante para el límite (o vencido).
+          - resuelto/cerrado: tiempo tomado en resolverse.
+        """
+        if self.estado in (self.Estado.RESUELTO, self.Estado.CERRADO):
+            if self.fecha_cierre and self.fecha_creacion:
+                duracion = self.fecha_cierre - self.fecha_creacion
+                return ("resuelto", f"Resuelto en {formatear_duracion(duracion)}", None)
+            return ("resuelto", "Resuelto", None)
+        if not self.fecha_creacion or not self.ans_horas:
+            return (None, "Sin ANS", None)
+        ahora = timezone.now()
+        limite = self.fecha_limite_ans
+        detalle = f"Límite {limite:%d/%m %H:%M} · ANS {self.ans_horas}h · {self.get_prioridad_display()}"
+        if ahora >= limite:
+            return (
+                "vencido",
+                f"ANS vencido {formatear_duracion(ahora - limite)}",
+                detalle,
+            )
+        restante = limite - ahora
+        total = limite - self.fecha_creacion
+        margen = total * 0.25
+        estado = "por-vencer" if (restante <= margen or restante <= timedelta(hours=2)) else "ok"
+        return (estado, f"Faltan {formatear_duracion(restante)}", detalle)
 
     @classmethod
     def estadisticas(cls):

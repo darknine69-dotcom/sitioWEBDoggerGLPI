@@ -27,6 +27,7 @@ from .forms import (
     UsuarioPanelForm,
 )
 from .models import Categoria, GlpiEvento, Ticket, TicketAdjunto, TicketComentario
+from .sla import orden_prioridad_annotation
 from .services.glpi_client import (
     GlpiClient,
     GlpiError,
@@ -155,6 +156,26 @@ def _build_dashboard_context(request, tickets):
     paginator = Paginator(eventos_qs, 4)
     eventos_glpi_page = paginator.get_page(page_number)
 
+    # Cumplimiento ANS entre los tickets abiertos/en progreso
+    ans_vencidos = ans_por_vencer = ans_ok = 0
+    for t in tickets:
+        estado = t.info_ans[0]
+        if estado == "vencido":
+            ans_vencidos += 1
+        elif estado == "por-vencer":
+            ans_por_vencer += 1
+        elif estado == "ok":
+            ans_ok += 1
+    ans_total = max(ans_vencidos + ans_por_vencer + ans_ok, 1)
+    ans_stats = {
+        "vencidos": ans_vencidos,
+        "por_vencer": ans_por_vencer,
+        "ok": ans_ok,
+        "bar_vencidos": round(ans_vencidos / ans_total * 100),
+        "bar_por_vencer": round(ans_por_vencer / ans_total * 100),
+        "bar_ok": round(ans_ok / ans_total * 100),
+    }
+
     return {
         "priority_bars": priority_bars,
         "category_bars": category_bars,
@@ -163,11 +184,17 @@ def _build_dashboard_context(request, tickets):
         "user_bars": user_bars,
         "eventos_glpi": eventos_glpi_page.object_list,
         "eventos_glpi_page": eventos_glpi_page,
+        "ans_stats": ans_stats,
     }
 
 
 def paginate_recent_tickets(request, queryset, page_param="page_recientes", per_page=5):
-    paginator = Paginator(queryset.order_by("-fecha_creacion"), per_page)
+    paginator = Paginator(
+        queryset.annotate(
+            _prioridad_orden=orden_prioridad_annotation()
+        ).order_by("_prioridad_orden", "-fecha_creacion"),
+        per_page,
+    )
     page_number = request.GET.get(page_param, 1)
     page_obj = paginator.get_page(page_number)
     return page_obj
@@ -270,6 +297,7 @@ def categorias_arbol(request):
                 .values_list("grupo", flat=True).distinct()
             ),
             "form": CategoriaForm(),
+            "prioridad_choices": Ticket.Prioridad.choices,
             "tecnicos": User.objects.filter(
                 activo=True, rol__in=["admin", "tecnico"]
             ).order_by("nombre"),
@@ -325,6 +353,12 @@ def categoria_actualizar(request, pk):
     categoria.grupo = grupo
     categoria.glpi_category_id = int(glpi_id) if glpi_id.isdigit() else None
     categoria.tecnico_default_id = int(tecnico_id) if tecnico_id.isdigit() else None
+    prioridad = request.POST.get("prioridad_default", "").strip()
+    if prioridad in dict(Ticket.Prioridad.choices):
+        categoria.prioridad_default = prioridad
+    ans_horas = request.POST.get("ans_horas", "").strip()
+    if ans_horas.isdigit() and int(ans_horas) > 0:
+        categoria.ans_horas = int(ans_horas)
     try:
         categoria.save()
         messages.success(request, f"Categoría actualizada: {categoria}.")
@@ -957,7 +991,12 @@ def mi_panel(request):
             estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO],
         ).count(),
     }
-    page_obj = _paginar(tickets_qs.order_by("-fecha_creacion"), request)
+    page_obj = _paginar(
+        tickets_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
+            "_prioridad_orden", "-fecha_creacion"
+        ),
+        request,
+    )
     dashboard_context = _build_dashboard_context(request, list(page_obj.object_list))
     return render(
         request,
@@ -1037,6 +1076,47 @@ def exportar_mis_tickets(request):
     return generar_excel_tickets(tickets, titulo=f"Mis tickets · {request.user.nombre}")
 
 
+def _timeline_ticket(ticket, include_internos=False):
+    """Feed cronológico unificado (chat): seguimientos públicos + eventos GLPI."""
+    items = []
+    for c in ticket.comentarios.all():
+        if c.es_interno:
+            if not include_internos:
+                continue
+            items.append(
+                {
+                    "tipo": "interno",
+                    "fecha": c.fecha,
+                    "autor": c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Staff"),
+                    "texto": c.comentario,
+                }
+            )
+            continue
+        es_usuario = bool(c.usuario_id and getattr(c.usuario, "rol", None) == "usuario")
+        autor = c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda")
+        items.append(
+            {
+                "tipo": "usuario" if es_usuario else "soporte",
+                "fecha": c.fecha,
+                "autor": autor,
+                "texto": c.comentario,
+            }
+        )
+    for ev in ticket.eventos_glpi.all():
+        items.append(
+            {
+                "tipo": "sistema",
+                "fecha": ev.fecha,
+                "autor": "GLPI",
+                "texto": ev.descripcion,
+                "evento": ev.tipo,
+                "etiqueta": ev.get_tipo_display(),
+            }
+        )
+    items.sort(key=lambda i: i["fecha"])
+    return items
+
+
 @user_required
 def mi_ticket(request, pk):
     ticket = get_object_or_404(
@@ -1053,6 +1133,7 @@ def mi_ticket(request, pk):
         "tickets/mi_ticket.html",
         {
             "ticket": ticket,
+            "timeline": _timeline_ticket(ticket),
             "comentario_form": ComentarioForm(),
             "usuario": request.user,
             "share_text": f"Ticket {ticket.codigo} — {ticket.titulo} ({ticket.get_estado_display()})",
@@ -1221,7 +1302,11 @@ def dashboard(request):
         Ticket.objects.select_related("categoria", "tecnico_asignado")
         .filter(estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO])
     )
-    tickets = list(tickets_qs.order_by("-fecha_creacion")[:200])
+    tickets = list(
+        tickets_qs.annotate(
+            _prioridad_orden=orden_prioridad_annotation()
+        ).order_by("_prioridad_orden", "-fecha_creacion")[:200]
+    )
     recientes_page = paginate_recent_tickets(request, tickets_qs, per_page=10)
     dashboard_context = _build_dashboard_context(request, tickets)
     return render(
@@ -1279,7 +1364,13 @@ def lista_tickets(request):
             condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
         qs = qs.filter(condicion)
 
-    page_obj = _paginar(qs.order_by("-fecha_creacion"), request, per_page=6)
+    page_obj = _paginar(
+        qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
+            "_prioridad_orden", "-fecha_creacion"
+        ),
+        request,
+        per_page=6,
+    )
 
     filtros_activos = any([estado, prioridad, categoria, tecnico, q])
     return render(
@@ -1364,6 +1455,7 @@ def detalle_ticket(request, pk):
         "tickets/detalle.html",
         {
             "ticket": ticket,
+            "timeline": _timeline_ticket(ticket, include_internos=True),
             "comentario_form": comentario_form,
             "asignar_form": asignar_form,
             "share_text": f"Ticket {ticket.codigo} — {ticket.titulo} ({ticket.get_estado_display()})",

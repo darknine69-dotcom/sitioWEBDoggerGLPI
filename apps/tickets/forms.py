@@ -172,7 +172,7 @@ class TicketEdicionForm(forms.ModelForm):
 class CategoriaForm(forms.ModelForm):
     class Meta:
         model = Categoria
-        fields = ["grupo", "nombre", "prioridad_default", "glpi_category_id", "tecnico_default"]
+        fields = ["grupo", "nombre", "prioridad_default", "ans_horas", "glpi_category_id", "tecnico_default"]
         widgets = {
             "grupo": forms.TextInput(
                 attrs={"list": "lista-grupos", "placeholder": "Ej: SIESA ERP"}

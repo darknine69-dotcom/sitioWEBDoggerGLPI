@@ -114,6 +114,7 @@ else:
             "PORT": os.getenv("DB_PORT", "1433"),
             "OPTIONS": {
                 "driver": os.getenv("DB_DRIVER", "ODBC Driver 18 for SQL Server"),
+                "host_is_server": True,
                 "extra_params": os.getenv(
                     "DB_EXTRA_PARAMS",
                     "TrustServerCertificate=yes",

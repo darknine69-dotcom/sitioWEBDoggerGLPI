@@ -43,6 +43,19 @@
                     <label for="id_tecnico_default">Técnico por defecto</label>
                     {{ form.tecnico_default }}
                 </div>
+                <div>
+                    <label for="id_prioridad_default">Prioridad ANS</label>
+                    <select name="prioridad_default" id="id_prioridad_default">
+                        {% for val, label in prioridad_choices %}
+                        <option value="{{ val }}" {% if form.prioridad_default.value == val or form.prioridad_default.initial == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="id_ans_horas">Horas ANS</label>
+                    <input type="number" name="ans_horas" id="id_ans_horas" min="1" step="1"
+                           value="{{ form.ans_horas.value|default:24 }}" placeholder="Ej: 24">
+                </div>
                 <button type="submit" class="btn btn-primary btn-sm">Crear</button>
             </div>
         </form>
@@ -61,6 +74,8 @@
                         <td class="cat-sub-name">
                             {{ sub.nombre }}
                             {% if sub.glpi_category_id %}<span class="meta-pill meta-glpi ml-6">GLPI #{{ sub.glpi_category_id }}</span>{% endif %}
+                            <span class="meta-pill meta-{{ sub.prioridad_default }} ml-6">{{ sub.get_prioridad_default_display }}</span>
+                            <span class="meta-pill ml-6">ANS {{ sub.ans_horas }}h</span>
                             {% if sub.tecnico_default %}<span class="file-chip ml-6"><svg class="icon icon-sm"><use href="#i-wrench"/></svg> {{ sub.tecnico_default.nombre }}</span>{% endif %}
                         </td>
                         <td class="cat-count-cell">{{ sub.tickets_count }} ticket{{ sub.tickets_count|pluralize }}</td>
@@ -85,6 +100,12 @@
                                 {% csrf_token %}
                                 <input type="text" name="grupo" value="{{ sub.grupo }}" placeholder="Grupo" required>
                                 <input type="text" name="nombre" value="{{ sub.nombre }}" placeholder="Nombre" required>
+                                <select name="prioridad_default">
+                                    {% for val, label in prioridad_choices %}
+                                    <option value="{{ val }}" {% if sub.prioridad_default == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="number" name="ans_horas" value="{{ sub.ans_horas }}" min="1" step="1" class="field-id" placeholder="Horas ANS">
                                 <input type="number" name="glpi_category_id" value="{{ sub.glpi_category_id|default_if_none:'' }}" placeholder="GLPI ID" min="1" class="field-id">
                                 <select name="tecnico_default">
                                     <option value="">— Técnico por defecto —</option>

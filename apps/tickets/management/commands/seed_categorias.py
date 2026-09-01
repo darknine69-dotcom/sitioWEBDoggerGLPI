@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from apps.tickets.models import Categoria
+from apps.tickets.sla import horas_por_prioridad
 
 # Categorías alineadas al diagrama STATU QUO de Dogger S.A.S.
 # (grupo, nombre, prioridad_ans)
@@ -58,13 +59,14 @@ class Command(BaseCommand):
             cat, created = Categoria.objects.get_or_create(
                 grupo=grupo,
                 nombre=nombre,
-                defaults={"activo": True, "prioridad_default": prioridad},
+                defaults={"activo": True, "prioridad_default": prioridad, "ans_horas": horas_por_prioridad(prioridad)},
             )
             if created:
                 creadas += 1
-            elif cat.prioridad_default != prioridad:
+            elif cat.prioridad_default != prioridad or cat.ans_horas != horas_por_prioridad(prioridad):
                 cat.prioridad_default = prioridad
-                cat.save(update_fields=["prioridad_default"])
+                cat.ans_horas = horas_por_prioridad(prioridad)
+                cat.save(update_fields=["prioridad_default", "ans_horas"])
                 actualizadas += 1
         self.stdout.write(
             self.style.SUCCESS(
