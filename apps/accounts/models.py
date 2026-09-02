@@ -36,6 +36,17 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField("Correo", max_length=150, unique=True)
     telefono = models.CharField("Teléfono", max_length=20, blank=True, default="")
     avatar = models.ImageField("Foto de perfil", upload_to=avatar_upload_to, blank=True, null=True)
+
+    class Genero(models.TextChoices):
+        MASCULINO = "masculino", "Masculino"
+        FEMENINO = "femenino", "Femenino"
+
+    genero = models.CharField(
+        "Género",
+        max_length=20,
+        choices=Genero.choices,
+        default=Genero.MASCULINO,
+    )
     rol = models.CharField(
         max_length=20,
         choices=Rol.choices,

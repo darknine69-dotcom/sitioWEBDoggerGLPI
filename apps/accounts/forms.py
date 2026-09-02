@@ -45,6 +45,11 @@ class UserRegisterForm(forms.Form):
         label="Correo electrónico",
         widget=forms.EmailInput(attrs={"placeholder": "usuario@correo.com"}),
     )
+    genero = forms.ChoiceField(
+        label="Género",
+        choices=User.Genero.choices,
+        widget=forms.Select,
+    )
     password1 = forms.CharField(
         label="Contraseña",
         widget=forms.PasswordInput(attrs={"placeholder": "••••••••"}),
@@ -72,6 +77,7 @@ class UserRegisterForm(forms.Form):
         user = User.objects.create_user(
             email=self.cleaned_data["email"],
             nombre=self.cleaned_data["nombre"],
+            genero=self.cleaned_data["genero"],
             password=self.cleaned_data["password1"],
             rol="usuario",
             is_staff=False,

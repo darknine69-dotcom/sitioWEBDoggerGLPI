@@ -3,98 +3,209 @@
 {% block body_class %}admin-shell{% endblock %}
 {% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
 {% block header_title %}{{ ticket.codigo }}{% endblock %}
+
+{% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260904">
+{% endblock %}
+
 {% block header_actions %}
 <a href="{% url 'tickets:lista' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Tickets</a>
 <a href="{% url 'tickets:dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
 {% endblock %}
 
 {% block content %}
-<main class="page">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver a tickets"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Ticket {{ ticket.codigo }}</h2>
-            <p>Detalle completo y gestión interna.</p>
+<main class="page page-corporate ticket-detail-page">
+    <section class="corp-card corp-detail-card">
+        <div class="corp-detail-head">
+            <div class="corp-title-wrap">
+                <span class="corp-title-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <div>
+                    <p class="corp-kicker"><span class="corp-dot"></span> Ticket {{ ticket.codigo }}</p>
+                    <h2>{{ ticket.titulo }}</h2>
+                    <p class="corp-sub">
+                        {{ ticket.solicitante_nombre }}
+                        {% if ticket.solicitante_email %} · {{ ticket.solicitante_email }}{% endif %}
+                        {% if ticket.solicitante_punto %} · {{ ticket.solicitante_punto }}{% endif %}
+                    </p>
+                </div>
+            </div>
+            {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}
         </div>
-    </div>
-    <div class="panel">
-        <h2 class="panel-title">{{ ticket.titulo }}</h2>
-        <p class="panel-sub">
-            {{ ticket.solicitante_nombre }}
-            {% if ticket.solicitante_email %} · {{ ticket.solicitante_email }}{% endif %}
-            {% if ticket.solicitante_punto %} · {{ ticket.solicitante_punto }}{% endif %}
-            · {{ ticket.get_prioridad_display }}
-            · {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}
-            · {{ ticket.categoria.nombre|default:"Sin categoria" }}
-            · {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}
-            {% if ticket.glpi_id %} · <strong>GLPI #{{ ticket.glpi_id }}</strong>{% endif %}
-            {% if ticket.tecnico_asignado %} · Técnico: {{ ticket.tecnico_asignado.nombre }}{% endif %}
-        </p>
+
+        <div class="corp-detail-badges ticket-meta-row">
+            <span class="meta-pill meta-prio meta-prio-{{ ticket.prioridad }}">
+                <svg class="icon icon-xs"><use href="#i-alert"/></svg> {{ ticket.get_prioridad_display }}</span>
+            <span class="meta-pill"><svg class="icon icon-xs"><use href="#i-folder"/></svg> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
+            <span class="meta-pill"><svg class="icon icon-xs"><use href="#i-clock"/></svg> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+            <span class="meta-pill">{% include "tickets/_ans_time.html" with t=ticket %}</span>
+            {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
+            {% if ticket.tecnico_asignado %}
+            <span class="meta-pill"><svg class="icon icon-xs"><use href="#i-wrench"/></svg> {{ ticket.tecnico_asignado.nombre }}{% if ticket.asignacion_automatica %} (auto){% endif %}</span>
+            {% endif %}
+        </div>
 
         {% with estado_ans=ticket.info_ans.0 %}
-        <div class="ans-meta">
-            <div class="ans-meta-item">
+        <div class="corp-ans-row">
+            <div class="corp-ans-item">
                 <span class="ans-meta-label">Prioridad (ANS)</span>
-                <span class="ans-meta-value ans-{{ estado_ans|default:'none' }}">
+                <span class="ans-meta-value meta-prio meta-prio-{{ ticket.prioridad }}">
                     {{ ticket.get_prioridad_display }}{% if ticket.ans_horas %} · {{ ticket.ans_horas }}h{% endif %}
                 </span>
             </div>
-            <div class="ans-meta-item">
+            <div class="corp-ans-item">
                 <span class="ans-meta-label">Límite de resolución</span>
-                <span class="ans-meta-value">{{ ticket.fecha_limite_ans|date:"d/m/Y H:i"|default:"—" }}</span>
-            </div>
-            <div class="ans-meta-item">
-                <span class="ans-meta-label">Estado ANS</span>
-                <span class="ans-meta-value">{% include "tickets/_ans_time.html" with t=ticket %}</span>
+                <span class="ans-meta-value meta-prio meta-prio-{{ ticket.prioridad }}">{{ ticket.fecha_limite_ans|date:"d/m/Y H:i"|default:"—" }}</span>
             </div>
         </div>
         {% endwith %}
 
-        <p class="ticket-desc">{{ ticket.descripcion }}</p>
-
-        <h3 class="section-title section-title--flush">Capturas / adjuntos</h3>
-        {% if ticket.adjuntos.all %}
-        <div class="adjuntos-grid">
-            {% for a in ticket.adjuntos.all %}
-            <a class="adjunto-card" href="{% url 'tickets:adjunto' a.pk %}" target="_blank" rel="noopener">
-                {% if a.es_imagen %}
-                <img src="{% url 'tickets:adjunto' a.pk %}" alt="{{ a.nombre_original }}">
-                {% else %}
-                <div class="adjunto-placeholder"><svg class="icon"><use href="#i-file"/></svg></div>
-                {% endif %}
-                <div class="adjunto-meta">{{ a.nombre_original }}</div>
-            </a>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="empty-hint">Sin adjuntos</p>
-        {% endif %}
-
-        <h3 class="section-title">Asignar técnico</h3>
-        <form method="post" class="contact-row">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="asignar">
-            {{ asignar_form.tecnico }}
-            <button type="submit" class="btn btn-outline btn-sm">Guardar</button>
-        </form>
-        {% if ticket.asignacion_automatica %}<p class="hint">Asignado automáticamente según la categoría.</p>{% endif %}
-
-        <div class="mt-16">
+        <div class="corp-detail-toolbar">
             <form method="post" action="{% url 'tickets:staff_reenviar_glpi' ticket.pk %}" class="inline-form">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-outline btn-sm">
-                    <svg class="icon"><use href="#i-refresh"/></svg> {% if ticket.glpi_id %}Actualizar en GLPI{% else %}Reenviar a GLPI{% endif %}
+                    <svg class="icon icon-xs"><use href="#i-refresh"/></svg> {% if ticket.glpi_id %}Actualizar en GLPI{% else %}Reenviar a GLPI{% endif %}
                 </button>
             </form>
-            {% if not ticket.glpi_id %}<span class="hint">Sin registro en GLPI (¿estaba apagado?). También: python manage.py sync_glpi_pendientes</span>{% endif %}
+            {% if not ticket.glpi_id %}<span class="corp-hint">Sin registro en GLPI (¿estaba apagado?). También: python manage.py sync_glpi_pendientes</span>{% endif %}
+
+            <div class="corp-state-actions">
+                {% if ticket.estado == 'abierto' %}
+                <form method="post" action="{% url 'tickets:cambiar_estado' ticket.pk %}">
+                    {% csrf_token %}<input type="hidden" name="estado" value="en-progreso">
+                    <input type="hidden" name="next" value="{% url 'tickets:detalle' ticket.pk %}">
+                    <button type="submit" class="btn btn-progress btn-sm">Marcar en progreso</button>
+                </form>
+                {% endif %}
+                {% if ticket.estado == 'en-progreso' %}
+                <form method="post" action="{% url 'tickets:cambiar_estado' ticket.pk %}">
+                    {% csrf_token %}<input type="hidden" name="estado" value="resuelto">
+                    <input type="hidden" name="next" value="{% url 'tickets:detalle' ticket.pk %}">
+                    <button type="submit" class="btn btn-resolved btn-sm">Marcar resuelto</button>
+                </form>
+                {% endif %}
+                {% if ticket.estado != 'cerrado' %}
+                <form method="post" action="{% url 'tickets:cambiar_estado' ticket.pk %}">
+                    {% csrf_token %}<input type="hidden" name="estado" value="cerrado">
+                    <input type="hidden" name="next" value="{% url 'tickets:detalle' ticket.pk %}">
+                    <button type="submit" class="btn btn-outline btn-sm">Cerrar ticket</button>
+                </form>
+                {% endif %}
+            </div>
         </div>
 
-        <h3 class="section-title">Seguimientos</h3>
-        {% include "tickets/_chat_thread.html" %}
+        <div class="corp-desc-plain">
+            <button type="button" class="corp-subsection-head corp-desc-toggle" id="corp-desc-toggle" aria-expanded="false">
+                <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
+                <h3>Descripción</h3>
+                <svg class="icon corp-chevron"><use href="#i-chevron-down"/></svg>
+            </button>
+            <div class="corp-seg-content" id="corp-desc-content" hidden>
+                <p class="ticket-description">{{ ticket.descripcion }}</p>
+            </div>
+        </div>
 
-        <form method="post" class="mt-16">
+        <div class="corp-detail-sections">
+
+            <section class="corp-subsection corp-timeline-wrap">
+                    <button type="button" class="corp-subsection-head corp-desc-toggle" id="corp-seg-toggle" aria-expanded="false">
+                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-clock"/></svg></span>
+                        <h3>Seguimiento · {{ ticket.codigo }}</h3>
+                        <svg class="icon corp-chevron"><use href="#i-chevron-down"/></svg>
+                    </button>
+                    <div class="corp-seg-content" id="corp-seg-content" hidden>
+                    <div class="corp-timeline" id="corp-timeline" data-estado="{{ ticket.estado }}" data-pk="{{ ticket.pk }}">
+                        <div class="corp-tl-step is-done" data-step="1">
+                            <span class="corp-tl-marker"><svg class="icon"><use href="#i-check"/></svg></span>
+                            <div class="corp-tl-body">
+                                <strong>Solicitud creada</strong>
+                                <small>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                            </div>
+                        </div>
+
+                        <div class="corp-tl-step corp-tl-step-assign{% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'abierto' %} is-active{% endif %}" data-step="2">
+                            <span class="corp-tl-marker">
+                                {% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
+                            </span>
+                            <div class="corp-tl-body">
+                                <button type="button" class="corp-tl-assign-toggle" id="corp-tl-assign-toggle" aria-expanded="false">
+                                    <strong>En revisión por un técnico</strong>
+                                    <small>{% if ticket.tecnico_asignado %}{{ ticket.tecnico_asignado.nombre }}{% elif ticket.estado == 'abierto' %}Esperando asignación…{% else %}Revisado{% endif %}</small>
+                                    <small class="corp-tl-assign-hint">Asignar un técnico ▾</small>
+                                </button>
+                                <form method="post" action="{% url 'tickets:detalle' ticket.pk %}" class="corp-tl-assign-form" id="corp-tl-assign-form" hidden>
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="asignar">
+                                    {{ asignar_form.tecnico }}
+                                    <div class="corp-tl-assign-actions">
+                                        <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                                        <button type="button" class="btn btn-outline btn-sm corp-tl-assign-cancel">Cancelar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="corp-tl-step{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'en-progreso' %} is-active{% endif %}" data-step="3">
+                            <span class="corp-tl-marker">
+                                {% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
+                            </span>
+                            <div class="corp-tl-body">
+                                <strong>Entregar solución</strong>
+                                <small>{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}{% if ticket.fecha_cierre %}{{ ticket.fecha_cierre|date:"d/m/Y H:i" }}{% else %}Tarea completada{% endif %}{% else %}Pendiente{% endif %}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="corp-notif-inline-head">
+                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
+                        <strong>Actividad</strong>
+                        <button type="button" class="corp-notif-btn" id="corp-notif-toggle" aria-expanded="false"
+                                title="Ver seguimientos de esta solicitud">
+                            <svg class="icon"><use href="#i-bell"/></svg>
+                        </button>
+                    </div>
+                    <div class="corp-notif-body" id="corp-notif-body" hidden>
+                        {% include "tickets/_chat_thread.html" %}
+                    </div>
+                    </div>
+                    </section>
+
+            {% if ticket.adjuntos.all %}
+            <section class="corp-subsection">
+                <div class="corp-subsection-head">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-paperclip"/></svg></span>
+                    <h3>Capturas / adjuntos</h3>
+                </div>
+                {% if ticket.adjuntos.all %}
+                <div class="ticket-attachments">
+                    {% for a in ticket.adjuntos.all %}
+                    {% if a.es_imagen %}
+                    <a class="ticket-attachment image" href="{% url 'tickets:adjunto' a.pk %}" target="_blank" rel="noopener">
+                        <img src="{% url 'tickets:adjunto' a.pk %}" alt="{{ a.nombre_original }}" />
+                        <span>{{ a.nombre_original }}</span>
+                    </a>
+                    {% else %}
+                    <a class="ticket-attachment file" href="{% url 'tickets:adjunto' a.pk %}" target="_blank" rel="noopener">
+                        <svg class="icon attachment-file-icon"><use href="#i-file"/></svg>
+                        <span>{{ a.nombre_original }}</span>
+                    </a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="empty-hint">Sin adjuntos</p>
+                {% endif %}
+            </section>
+            {% endif %}
+        </div>
+
+        <form method="post" class="corp-comment-form">
             {% csrf_token %}
             <input type="hidden" name="action" value="comentario">
+            <div class="corp-subsection-head">
+                <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
+                <h3>Agregar seguimiento</h3>
+            </div>
             <div class="form-group">{{ comentario_form.comentario }}</div>
             <div class="form-group-check">
                 <label>{{ comentario_form.es_interno }} Comentario interno (solo staff)</label>
@@ -102,35 +213,101 @@
             <button type="submit" class="btn btn-primary btn-sm">Agregar seguimiento</button>
         </form>
 
-        <div class="contact-row mt-28">
-            {% if ticket.estado == 'abierto' %}
-            <form method="post" action="{% url 'tickets:cambiar_estado' ticket.pk %}">
-                {% csrf_token %}
-                <input type="hidden" name="estado" value="en-progreso">
-                <input type="hidden" name="next" value="{% url 'tickets:detalle' ticket.pk %}">
-                <button type="submit" class="btn btn-progress">Marcar en progreso</button>
-            </form>
-            {% endif %}
-            {% if ticket.estado == 'en-progreso' %}
-            <form method="post" action="{% url 'tickets:cambiar_estado' ticket.pk %}">
-                {% csrf_token %}
-                <input type="hidden" name="estado" value="resuelto">
-                <input type="hidden" name="next" value="{% url 'tickets:detalle' ticket.pk %}">
-                <button type="submit" class="btn btn-resolved">Marcar resuelto</button>
-            </form>
-            {% endif %}
-            {% if ticket.estado != 'cerrado' %}
-            <form method="post" action="{% url 'tickets:cambiar_estado' ticket.pk %}">
-                {% csrf_token %}
-                <input type="hidden" name="estado" value="cerrado">
-                <input type="hidden" name="next" value="{% url 'tickets:detalle' ticket.pk %}">
-                <button type="submit" class="btn btn-outline">Cerrar ticket</button>
-            </form>
-            {% endif %}
-        </div>
-
         {% include "tickets/_share_row.html" %}
-    </div>
+    </section>
 </main>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var btn = document.getElementById("corp-notif-toggle");
+    var body = document.getElementById("corp-notif-body");
+    if (!btn || !body) return;
+    btn.addEventListener("click", function () {
+        var open = body.hidden;
+        body.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        btn.classList.toggle("is-open", open);
+    });
+})();
+
+(function () {
+    var tl = document.getElementById("corp-timeline");
+    if (!tl) return;
+    var pk = tl.getAttribute("data-pk");
+    function apply(estado) {
+        var steps = tl.querySelectorAll(".corp-tl-step");
+        steps.forEach(function (s) {
+            var n = s.getAttribute("data-step");
+            s.classList.remove("is-active", "is-done");
+            if (n === "1") { s.classList.add("is-done"); return; }
+            if (n === "2") {
+                if (estado === "en-progreso" || estado === "resuelto" || estado === "cerrado") s.classList.add("is-done");
+                else if (estado === "abierto") s.classList.add("is-active");
+                return;
+            }
+            if (n === "3") {
+                if (estado === "resuelto" || estado === "cerrado") s.classList.add("is-done");
+                else if (estado === "en-progreso") s.classList.add("is-active");
+                return;
+            }
+        });
+        tl.setAttribute("data-estado", estado);
+    }
+    function poll() {
+        fetch("/panel/api/tickets/" + pk + "/estado/", { headers: { "Accept": "application/json" } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) { if (data && data.ok && data.estado) apply(data.estado); })
+            .catch(function () {});
+    }
+    setInterval(poll, 8000);
+})();
+
+(function () {
+    var tgl = document.getElementById("corp-seg-toggle");
+    var content = document.getElementById("corp-seg-content");
+    if (!tgl || !content) return;
+    tgl.addEventListener("click", function () {
+        var open = content.hidden;
+        content.hidden = !open;
+        tgl.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+})();
+
+(function () {
+    var tgl = document.getElementById("corp-desc-toggle");
+    var content = document.getElementById("corp-desc-content");
+    if (!tgl || !content) return;
+    tgl.addEventListener("click", function () {
+        var open = content.hidden;
+        content.hidden = !open;
+        tgl.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+})();
+
+(function () {
+    var btn = document.getElementById("corp-tl-assign-toggle");
+    var form = document.getElementById("corp-tl-assign-form");
+    if (!btn || !form) return;
+    btn.addEventListener("click", function () {
+        var open = form.hidden;
+        form.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        if (open) {
+            var sel = form.querySelector("select");
+            if (sel) sel.focus();
+        }
+    });
+    var cancel = form.querySelector(".corp-tl-assign-cancel");
+    if (cancel) {
+        cancel.addEventListener("click", function () {
+            form.hidden = true;
+            btn.setAttribute("aria-expanded", "false");
+        });
+    }
+})();
+</script>
+{% endblock %}
+
 {% block footer %}{% endblock %}

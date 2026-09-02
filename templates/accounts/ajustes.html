@@ -60,7 +60,7 @@
             <section id="perfil" class="settings-panel active" data-settings-panel="perfil">
                 <div class="settings-panel-header">
                     <h3>Información personal</h3>
-                    <p>Actualiza tu nombre, correo, teléfono y foto de perfil.</p>
+                    <p>Actualiza tu nombre, correo, género, teléfono y foto de perfil.</p>
                 </div>
                 <form method="post" action="{% url 'accounts:ajustes' %}" enctype="multipart/form-data" class="settings-form">
                     {% csrf_token %}
@@ -89,6 +89,10 @@
                             <label for="id_email">Correo electrónico</label>
                             {{ form.email }}
                             {% if form.email.errors %}<small class="field-error">{{ form.email.errors.0 }}</small>{% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="id_genero">Género</label>
+                            <input type="text" id="id_genero" value="{{ request.user.get_genero_display }}" disabled class="is-readonly">
                         </div>
                         <div class="form-group">
                             <label for="id_telefono">Teléfono</label>

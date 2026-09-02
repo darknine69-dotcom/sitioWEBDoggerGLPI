@@ -11,8 +11,10 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Prefetch, Q
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render, reverse
+from django.utils import timezone
+from django.utils.dateformat import DateFormat
 from django.views.decorators.http import require_POST
 
 from .decorators import admin_required, staff_required, user_required
@@ -1003,6 +1005,7 @@ def mi_panel(request):
         "tickets/mi_panel.html",
         {
             "usuario": request.user,
+            "saludo": "Bienvenida" if request.user.genero == "femenino" else "Bienvenido",
             "tickets": page_obj.object_list,
             "page_obj": page_obj,
             "querystring": _params_sin_page(request),
@@ -1129,12 +1132,14 @@ def mi_ticket(request, pk):
         pk=pk,
         solicitante_email=request.user.email,
     )
+    timeline = _timeline_ticket(ticket)
     return render(
         request,
         "tickets/mi_ticket.html",
         {
             "ticket": ticket,
-            "timeline": _timeline_ticket(ticket),
+            "timeline": timeline,
+            "eventos_count": sum(1 for i in timeline if i["tipo"] == "sistema"),
             "comentario_form": ComentarioForm(),
             "usuario": request.user,
             "share_text": f"Ticket {ticket.codigo} — {ticket.titulo} ({ticket.get_estado_display()})",
@@ -1451,17 +1456,25 @@ def detalle_ticket(request, pk):
                     messages.success(request, "Tecnico actualizado")
                 return redirect("tickets:detalle", pk=pk)
 
+    timeline_data_ = _timeline_ticket(ticket, include_internos=True)
     return render(
         request,
         "tickets/detalle.html",
         {
             "ticket": ticket,
-            "timeline": _timeline_ticket(ticket, include_internos=True),
+            "timeline": timeline_data_,
+            "eventos_count": sum(1 for i in timeline_data_ if i["tipo"] == "sistema"),
             "comentario_form": comentario_form,
             "asignar_form": asignar_form,
             "share_text": f"Ticket {ticket.codigo} — {ticket.titulo} ({ticket.get_estado_display()})",
         },
     )
+
+
+@staff_required
+def ticket_estado_ajax(request, pk):
+    ticket = get_object_or_404(Ticket, pk=pk)
+    return JsonResponse({"ok": True, "estado": ticket.estado})
 
 
 @staff_required
@@ -1512,3 +1525,243 @@ def ver_adjunto(request, pk):
         )
     except FileNotFoundError:
         raise Http404("Archivo no encontrado en disco")
+
+
+# ---------------------------------------------------------------------------
+# Mi panel corporativo — endpoints AJAX (editar / ver respuestas / cerrar)
+# ---------------------------------------------------------------------------
+def _mi_ticket_del_usuario(request, pk):
+    return get_object_or_404(
+        Ticket.objects.select_related("categoria"),
+        pk=pk,
+        solicitante_email=request.user.email,
+    )
+
+
+def _respuestas_para(ticket):
+    """Historial de mensajes del ticket (comentarios de soporte + del usuario)."""
+    items = []
+    for c in ticket.comentarios.order_by("fecha"):
+        autor = c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda")
+        rol = "soporte"
+        if c.usuario_id and getattr(c.usuario, "rol", None) == "usuario":
+            rol = "usuario"
+        items.append(
+            {
+                "rol": rol,
+                "autor": autor,
+                "fecha": c.fecha.isoformat() if c.fecha else "",
+                "fecha_label": c.fecha.strftime("%d/%m/%Y %H:%M") if c.fecha else "",
+                "texto": c.comentario,
+            }
+        )
+    for ev in ticket.eventos_glpi.order_by("fecha"):
+        items.append(
+            {
+                "rol": "sistema",
+                "autor": "GLPI",
+                "fecha": ev.fecha.isoformat() if ev.fecha else "",
+                "fecha_label": ev.fecha.strftime("%d/%m/%Y %H:%M") if ev.fecha else "",
+                "texto": ev.descripcion,
+            }
+        )
+    items.sort(key=lambda i: i["fecha"])
+    return items
+
+
+@user_required
+def mi_ticket_info_ajax(request, pk):
+    """Datos del ticket para editar y su historial de respuestas (JSON)."""
+    ticket = _mi_ticket_del_usuario(request, pk)
+    imagenes = [
+        {
+            "pk": a.pk,
+            "url": a.archivo.url if a.archivo else "",
+            "nombre": a.nombre_original,
+        }
+        for a in ticket.adjuntos.filter(mime_type__startswith="image/").order_by("fecha_subida")
+    ]
+    return JsonResponse(
+        {
+            "ok": True,
+            "ticket": {
+                "pk": ticket.pk,
+                "codigo": ticket.codigo,
+                "titulo": ticket.titulo,
+                "descripcion": ticket.descripcion,
+                "categoria_id": ticket.categoria_id,
+                "categoria_nombre": ticket.categoria.nombre if ticket.categoria else "Sin categoría",
+                "prioridad": ticket.prioridad,
+                "prioridad_nombre": ticket.get_prioridad_display(),
+                "solicitante_punto": ticket.solicitante_punto,
+                "estado": ticket.estado,
+                "estado_label": ticket.get_estado_display(),
+                "fecha": ticket.fecha_creacion.strftime("%d/%m/%Y %H:%M") if ticket.fecha_creacion else "",
+                "editable": ticket.estado == ticket.Estado.ABIERTO,
+                "cerrable": ticket.estado in (ticket.Estado.ABIERTO, ticket.Estado.EN_PROGRESO),
+            },
+            "imagenes": imagenes,
+            "categorias": [
+                {"id": c.pk, "nombre": f"{c.grupo} · {c.nombre}"}
+                for c in Categoria.objects.filter(activo=True).order_by("grupo", "nombre")
+            ],
+            "respuestas": _respuestas_para(ticket),
+        }
+    )
+
+
+@user_required
+@require_POST
+def mi_ticket_editar_ajax(request, pk):
+    """Guardar la edición del ticket sin recargar la página.
+
+    El usuario solo puede cambiar el título, las observaciones (descripción) y
+    adjuntar/eliminar una imagen. Prioridad y categoría NO se pueden editar.
+    """
+    ticket = _mi_ticket_del_usuario(request, pk)
+    if ticket.estado != ticket.Estado.ABIERTO:
+        return JsonResponse(
+            {"ok": False, "error": "Solo puedes editar tu ticket mientras está abierto."},
+            status=400,
+        )
+
+    titulo = (request.POST.get("titulo") or "").strip()
+    descripcion = (request.POST.get("descripcion") or "").strip()
+    if not titulo:
+        return JsonResponse({"ok": False, "error": "Debes escribir el nombre del ticket."}, status=400)
+
+    # Actualizar SOLO título y descripción (prioridad/categoría se conservan)
+    ticket.titulo = titulo
+    ticket.descripcion = descripcion
+    ticket.save(update_fields=["titulo", "descripcion"])
+
+    # Adjuntar imagen pequeña (si viene un archivo de imagen)
+    archivo = request.FILES.get("imagen")
+    if archivo:
+        if not (archivo.content_type or "").startswith("image/"):
+            return JsonResponse(
+                {"ok": False, "error": "Solo puedes adjuntar imágenes."},
+                status=400,
+            )
+        if archivo.size > 5 * 1024 * 1024:
+            return JsonResponse({"ok": False, "error": "La imagen no puede superar los 5 MB."}, status=400)
+        if ticket.adjuntos.filter(mime_type__startswith="image/").count() >= 1:
+            return JsonResponse({"ok": False, "error": "Solo se permite una imagen por ticket."}, status=400)
+        TicketAdjunto.objects.create(
+            ticket=ticket,
+            nombre_original=archivo.name,
+            archivo=archivo,
+            mime_type=archivo.content_type or "image/png",
+            tamano_bytes=archivo.size,
+            subido_por=ticket.solicitante_email,
+        )
+
+    # Eliminar imagen existente (si se solicita)
+    eliminar_pk = request.POST.get("eliminar_imagen")
+    if eliminar_pk:
+        adj = ticket.adjuntos.filter(mime_type__startswith="image/", pk=eliminar_pk).first()
+        if adj:
+            if adj.archivo:
+                adj.archivo.delete(save=False)
+            adj.delete()
+
+    if ticket.glpi_id:
+        try:
+            sync_edicion_to_glpi(ticket)
+        except GlpiError:
+            pass
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "ticket": {
+                "pk": ticket.pk,
+                "titulo": ticket.titulo,
+                "descripcion": ticket.descripcion,
+                "categoria_id": ticket.categoria_id,
+            },
+        }
+    )
+
+
+@user_required
+@require_POST
+def mi_ticket_cerrar_ajax(request, pk):
+    """Cerrar el ticket del usuario sin recargar la página."""
+    ticket = _mi_ticket_del_usuario(request, pk)
+    if ticket.estado in (ticket.Estado.RESUELTO, ticket.Estado.CERRADO):
+        return JsonResponse(
+            {"ok": False, "error": "Este ticket ya está resuelto o cerrado."},
+            status=400,
+        )
+    ticket.estado = ticket.Estado.CERRADO
+    ticket.save()
+    try:
+        sync_estado_to_glpi(ticket)
+    except GlpiError:
+        pass
+    return JsonResponse({"ok": True, "estado": "cerrado", "estado_label": "Cerrado"})
+
+
+@user_required
+@require_POST
+def mi_ticket_eliminar_ajax(request, pk):
+    """Eliminar el propio ticket del usuario (solo mientras esté abierto)."""
+    ticket = _mi_ticket_del_usuario(request, pk)
+    if ticket.estado != ticket.Estado.ABIERTO:
+        return JsonResponse(
+            {"ok": False, "error": "Solo puedes eliminar tu solicitud mientras esté abierta."},
+            status=400,
+        )
+    codigo = ticket.codigo
+    for adj in ticket.adjuntos.all():
+        if adj.archivo:
+            adj.archivo.delete(save=False)
+    ticket.delete()
+    return JsonResponse({"ok": True, "codigo": codigo})
+
+
+@user_required
+@require_POST
+def mi_responder_ajax(request, pk):
+    """Responder a un ticket propio desde el mini chat (sincroniza con GLPI)."""
+    ticket = _mi_ticket_del_usuario(request, pk)
+    comentario = request.POST.get("comentario", "").strip()
+    if not comentario:
+        return JsonResponse({"ok": False, "error": "Escribe un mensaje para responder."}, status=400)
+
+    TicketComentario.objects.create(
+        ticket=ticket,
+        usuario=request.user,
+        autor_nombre=request.user.nombre,
+        comentario=comentario,
+        es_interno=False,
+    )
+
+    notificado = False
+    if ticket.glpi_id:
+        try:
+            sync_followup_to_glpi(ticket, comentario)
+            notificado = True
+        except GlpiError:
+            notificado = False
+    else:
+        notificado = False
+
+    GlpiEvento.objects.create(
+        ticket=ticket,
+        tipo=GlpiEvento.Tipo.SEGUIMIENTO,
+        descripcion=f"{ticket.codigo}: respuesta del solicitante registrada",
+        payload_bruto={"usuario": request.user.email, "comentario": comentario},
+    )
+
+    return JsonResponse({
+        "ok": True,
+        "notificado": notificado,
+        "mensaje": {
+            "rol": "usuario",
+            "autor": request.user.nombre,
+            "fecha_label": DateFormat(timezone.now()).format("d/m/Y H:i"),
+            "texto": comentario,
+        },
+    })

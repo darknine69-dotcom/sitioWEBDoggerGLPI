@@ -5,42 +5,43 @@
 {% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
 {% block header_title %}{{ ticket.codigo }}{% endblock %}
 
+{% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260902">
+{% endblock %}
+
 {% block header_actions %}
 <a href="{% url 'tickets:mi_panel' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Mi panel</a>
 {% endblock %}
 
 {% block content %}
-<main class="page ticket-detail-page">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:mi_panel' %}" title="Volver a mis tickets"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Ticket {{ ticket.codigo }}</h2>
-            <p>Seguimiento de tu solicitud.</p>
-        </div>
-    </div>
-    <div class="panel ticket-detail-card">
-        <div class="ticket-detail-header">
-            <div>
-                <p class="ticket-detail-kicker">{{ ticket.codigo }}</p>
-                <h2 class="panel-title">{{ ticket.titulo }}</h2>
+<main class="page page-corporate ticket-detail-page">
+    <section class="corp-card corp-detail-card">
+        <div class="corp-detail-head">
+            <div class="corp-title-wrap">
+                <span class="corp-title-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <div>
+                    <p class="corp-kicker"><span class="corp-dot"></span> Ticket {{ ticket.codigo }}</p>
+                    <h2>{{ ticket.titulo }}</h2>
+                    <p class="corp-sub">Seguimiento de tu solicitud en la mesa de ayuda.</p>
+                </div>
             </div>
             {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}
         </div>
 
-        <div class="ticket-meta-row">
-            <span class="meta-pill meta-priority">{{ ticket.get_prioridad_display }}</span>
-            <span class="meta-pill">{{ ticket.categoria.nombre|default:"Sin categoria" }}</span>
-            <span class="meta-pill">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+        <div class="corp-detail-badges ticket-meta-row">
+            <span class="meta-pill meta-prio meta-prio-{{ ticket.prioridad }}">
+                <svg class="icon icon-sm"><use href="#i-alert"/></svg> {{ ticket.get_prioridad_display }}</span>
+            <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-folder"/></svg> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
+            <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-clock"/></svg> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
             <span class="meta-pill">{% include "tickets/_ans_time.html" with t=ticket %}</span>
             {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
             {% if ticket.tecnico_asignado %}
-            <span class="meta-pill">
-                Técnico: {{ ticket.tecnico_asignado.nombre }}{% if ticket.asignacion_automatica %} (auto){% endif %}
-            </span>
+            <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-wrench"/></svg> {{ ticket.tecnico_asignado.nombre }}{% if ticket.asignacion_automatica %} (auto){% endif %}</span>
             {% endif %}
         </div>
 
-        <div class="share-row">
+        <div class="corp-detail-toolbar">
             {% if ticket.estado == 'abierto' %}
             <a class="btn btn-outline btn-sm" href="{% url 'tickets:mi_editar' ticket.pk %}"><svg class="icon"><use href="#i-edit"/></svg> Editar ticket</a>
             {% endif %}
@@ -52,51 +53,167 @@
                 </button>
             </form>
             {% if not ticket.glpi_id %}
-            <span class="hint">Este ticket aún no llegó a GLPI (¿GLPI apagado cuando se creó?).</span>
+            <span class="corp-hint">Este ticket aún no llegó a GLPI (¿GLPI apagado cuando se creó?).</span>
             {% endif %}
             {% endif %}
         </div>
 
-        <section class="ticket-section">
-            <h3>Descripción</h3>
-            <p class="ticket-description">{{ ticket.descripcion }}</p>
-        </section>
+        <div class="corp-detail-sections">
+            <section class="corp-subsection">
+                <button type="button" class="corp-subsection-head corp-desc-toggle" id="corp-desc-toggle" aria-expanded="false">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
+                    <h3>Descripción</h3>
+                    <svg class="icon corp-chevron"><use href="#i-chevron-down"/></svg>
+                </button>
+                <div class="corp-desc-content" id="corp-desc-content" hidden>
+                    <p class="ticket-description">{{ ticket.descripcion }}</p>
+                </div>
+            </section>
 
-        {% if ticket.adjuntos.all %}
-        <section class="ticket-section">
-            <h3>Adjuntos</h3>
-            <div class="ticket-attachments">
-                {% for adj in ticket.adjuntos.all %}
-                {% if adj.es_imagen %}
-                <a class="ticket-attachment image" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
-                    <img src="{{ adj.archivo.url }}" alt="{{ adj.nombre_original }}" />
-                    <span>{{ adj.nombre_original }}</span>
-                </a>
-                {% else %}
-                <a class="ticket-attachment file" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
-                    <svg class="icon attachment-file-icon"><use href="#i-file"/></svg>
-                    <span>{{ adj.nombre_original }}</span>
-                </a>
-                {% endif %}
-                {% endfor %}
-            </div>
-        </section>
-        {% endif %}
+            <section class="corp-subsection corp-timeline-wrap">
+                    <div class="corp-subsection-head">
+                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-clock"/></svg></span>
+                        <h3>Seguimiento · {{ ticket.codigo }}</h3>
+                    </div>
+                    <div class="corp-timeline" id="corp-timeline" data-estado="{{ ticket.estado }}" data-pk="{{ ticket.pk }}">
+                        <div class="corp-tl-step is-done" data-step="1">
+                            <span class="corp-tl-marker"><svg class="icon"><use href="#i-check"/></svg></span>
+                            <div class="corp-tl-body">
+                                <strong>Solicitud creada</strong>
+                                <small>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                            </div>
+                        </div>
 
-        <section class="ticket-section">
-            <h3>Actividad</h3>
-            {% include "tickets/_chat_thread.html" %}
-        </section>
+                        <div class="corp-tl-step{% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'abierto' %} is-active{% endif %}" data-step="2">
+                            <span class="corp-tl-marker">
+                                {% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
+                            </span>
+                            <div class="corp-tl-body">
+                                <strong>En revisión por un técnico</strong>
+                                <small>{% if ticket.tecnico_asignado %}{{ ticket.tecnico_asignado.nombre }}{% elif ticket.estado == 'abierto' %}Esperando asignación…{% else %}Revisado{% endif %}</small>
+                            </div>
+                        </div>
 
-        <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer">
-            {% csrf_token %}
-            <textarea id="comentario" name="comentario" rows="2" aria-label="Escribe tu respuesta para la mesa de ayuda" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
-            <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-send"/></svg> Enviar</button>
-        </form>
+                        <div class="corp-tl-step{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'en-progreso' %} is-active{% endif %}" data-step="3">
+                            <span class="corp-tl-marker">
+                                {% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
+                            </span>
+                            <div class="corp-tl-body">
+                                <strong>Entregar solución</strong>
+                                <small>{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}{% if ticket.fecha_cierre %}{{ ticket.fecha_cierre|date:"d/m/Y H:i" }}{% else %}Tarea completada{% endif %}{% else %}Pendiente{% endif %}</small>
+                            </div>
+                        </div>
+                    </div>
 
-        {% include "tickets/_share_row.html" %}
-    </div>
+                    <div class="corp-notif-inline-head">
+                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
+                        <strong>Actividad</strong>
+                        <button type="button" class="corp-notif-btn" id="corp-notif-toggle" aria-expanded="false"
+                                title="Ver notificaciones de esta solicitud">
+                            <svg class="icon"><use href="#i-bell"/></svg>
+                        </button>
+                    </div>
+                    <div class="corp-notif-body" id="corp-notif-body" hidden>
+                        {% include "tickets/_chat_thread.html" %}
+                    </div>
+                </section>
+
+            {% if ticket.adjuntos.all %}
+            <section class="corp-subsection">
+                <div class="corp-subsection-head">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-paperclip"/></svg></span>
+                    <h3>Adjuntos</h3>
+                </div>
+                <div class="ticket-attachments">
+                    {% for adj in ticket.adjuntos.all %}
+                    {% if adj.es_imagen %}
+                    <a class="ticket-attachment image" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
+                        <img src="{{ adj.archivo.url }}" alt="{{ adj.nombre_original }}" />
+                        <span>{{ adj.nombre_original }}</span>
+                    </a>
+                    {% else %}
+                    <a class="ticket-attachment file" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
+                        <svg class="icon attachment-file-icon"><use href="#i-file"/></svg>
+                        <span>{{ adj.nombre_original }}</span>
+                    </a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+        </div>
+
+            <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer chat-composer-compact">
+                {% csrf_token %}
+                <textarea id="comentario" name="comentario" rows="1" aria-label="Escribe tu respuesta para la mesa de ayuda" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
+                <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-send"/></svg> Enviar</button>
+            </form>
+
+            {% include "tickets/_share_row.html" %}
+        </div>
+    </section>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var btn = document.getElementById("corp-notif-toggle");
+    var body = document.getElementById("corp-notif-body");
+    if (!btn || !body) return;
+    btn.addEventListener("click", function () {
+        var open = body.hidden;
+        body.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        btn.classList.toggle("is-open", open);
+    });
+})();
+
+(function () {
+    var tl = document.getElementById("corp-timeline");
+    if (!tl) return;
+    var pk = tl.getAttribute("data-pk");
+    function apply(estado) {
+        var steps = tl.querySelectorAll(".corp-tl-step");
+        steps.forEach(function (s) {
+            var n = s.getAttribute("data-step");
+            s.classList.remove("is-active", "is-done");
+            if (n === "1") { s.classList.add("is-done"); return; }
+            if (n === "2") {
+                if (estado === "en-progreso" || estado === "resuelto" || estado === "cerrado") s.classList.add("is-done");
+                else if (estado === "abierto") s.classList.add("is-active");
+                return;
+            }
+            if (n === "3") {
+                if (estado === "resuelto" || estado === "cerrado") s.classList.add("is-done");
+                else if (estado === "en-progreso") s.classList.add("is-active");
+                return;
+            }
+        });
+        tl.setAttribute("data-estado", estado);
+    }
+    function poll() {
+        fetch("/mi-panel/api/tickets/" + pk + "/info/", { headers: { "Accept": "application/json" } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data && data.ok && data.ticket && data.ticket.estado) apply(data.ticket.estado);
+            })
+            .catch(function () {});
+    }
+    setInterval(poll, 8000);
+})();
+
+(function () {
+    var tgl = document.getElementById("corp-desc-toggle");
+    var content = document.getElementById("corp-desc-content");
+    if (!tgl || !content) return;
+    tgl.addEventListener("click", function () {
+        var open = content.hidden;
+        content.hidden = !open;
+        tgl.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+})();
+</script>
 {% endblock %}
 
 {% block footer %}{% endblock %}

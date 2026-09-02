@@ -1,198 +1,251 @@
 {% extends "base.html" %}
 
-{% block title %}Dogger · Mi panel{% endblock %}
-{% block body_class %}admin-shell{% endblock %}
-{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
-{% block header_title %}Mi panel{% endblock %}
+{% block title %}Dogger · Mi panel corporativo{% endblock %}
+{% block body_class %}admin-shell mi-panel-shell{% endblock %}
+{% block header_eyebrow %}Dogger · Centro de servicio{% endblock %}
+{% block header_title %}Mis solicitudes{% endblock %}
 
-{% block header_actions %}
-<a href="{% url 'tickets:exportar_mis_tickets' %}" class="btn btn-header btn-sm"><svg class="icon"><use href="#i-download"/></svg> Exportar</a>
+{% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260902">
 {% endblock %}
 
+{% block header_actions %}{% endblock %}
+
 {% block content %}
-<main class="page">
-    <div class="scoreboard">
-        <div class="score-chip sc-warning">
-            <span class="score-num">{{ stats.total|default:0 }}</span>
-            <span class="score-label">Total</span>
-        </div>
-        <div class="score-chip sc-abierto">
-            <span class="score-num">{{ stats.abiertos|default:0 }}</span>
-            <span class="score-label">Abiertos</span>
-        </div>
-        <div class="score-chip sc-progreso">
-            <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
-            <span class="score-label">En progreso</span>
-        </div>
-        <div class="score-chip sc-resuelto">
-            <span class="score-num">{{ stats.resueltos|default:0 }}</span>
-            <span class="score-label">Resueltos</span>
-        </div>
-    </div>
+<main class="page page-corporate">
 
-    <div class="split mb-24">
-        <section class="panel">
-            <h2 class="panel-title">Mi información</h2>
-            <p class="panel-sub">Datos de la cuenta y acceso a tus solicitudes.</p>
-            <div class="info-grid">
-                <div><strong>Nombre:</strong> {{ usuario.nombre }}</div>
-                <div><strong>Correo:</strong> {{ usuario.email }}</div>
-                <div><strong>Rol:</strong> {{ usuario.get_rol_display }}</div>
-            </div>
-        </section>
-
-        <section class="panel panel-flush">
-            <div class="panel-flush-head">
-                <h2 class="panel-title">Mis tickets</h2>
-                <p class="panel-sub">Historial de tus solicitudes y respuestas.</p>
-            </div>
-            <form method="get" class="table-toolbar toolbar-flush">
-                <label class="search-field">
-                    <svg class="icon icon-sm"><use href="#i-search"/></svg>
-                    <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código o título…" />
-                </label>
-                <select name="estado" data-autosubmit>
-                    <option value="">Todos los estados</option>
-                    {% for val, label in estados %}
-                    <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-                {% if q or filtro_estado %}
-                <a href="{% url 'tickets:mi_panel' %}" class="link-clear">✕ Limpiar</a>
-                {% endif %}
-            </form>
-            <div class="panel-flush-body">
-            {% for ticket in tickets %}
-            <div class="ticket-stub">
-                <span class="stub-code">{{ ticket.codigo }}</span>
-                <div class="stub-body">
-                    <p class="stub-title">{{ ticket.titulo }}</p>
-                    <div class="stub-meta">
-                        <span>{{ ticket.get_estado_display }}</span>
-                        <span>{% include "tickets/_ans_time.html" with t=ticket %}</span>
-                        {% if ticket.tecnico_asignado %}<span><svg class="icon icon-sm"><use href="#i-wrench"/></svg> {{ ticket.tecnico_asignado.nombre }}</span>{% endif %}
-                        <span>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
-                    </div>
-                </div>
-                <a href="{% url 'tickets:mi_ticket' ticket.pk %}" class="btn btn-outline btn-sm">Ver</a>
-            </div>
-            {% empty %}
-            <p class="empty-hint">
-                {% if q or filtro_estado %}Ningún ticket coincide con el filtro.{% else %}Todavía no tienes tickets registrados.{% endif %}
-            </p>
-            {% endfor %}
-
-            {% if page_obj.paginator.num_pages > 1 %}
-            <div class="pagination-bar pagination-bar--flush">
-                <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-                <div class="pagination-links">
-                    {% if page_obj.has_previous %}
-                    <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹</a>
-                    {% else %}
-                    <span class="page-pill disabled">‹</span>
-                    {% endif %}
-                    <span class="page-pill current">{{ page_obj.number }}</span>
-                    {% if page_obj.has_next %}
-                    <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">›</a>
-                    {% else %}
-                    <span class="page-pill disabled">›</span>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-            </div>
-        </section>
-    </div>
-
-    <section id="nuevo-ticket" class="panel ticket-create-panel ticket-public-panel mb-24">
-        <div class="create-head">
-            <span class="create-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
-            <div class="create-head-text">
-                <h2 class="panel-title">Levantar pedido</h2>
-                <p class="panel-sub">Crea una nueva solicitud y comparte la información necesaria para atenderla.</p>
+    <!-- ===== Hero corporativo + KPIs ===== -->
+    <section class="corp-hero">
+        <div class="corp-hero-inner">
+            <div class="corp-hero-text">
+                <span class="corp-kicker"><span class="corp-dot"></span> Mesa de Ayuda Dogger</span>
+                <h2>{{ saludo }}, {{ usuario.nombre|default:request.user.nombre }}.</h2>
+                <p>Gestiona tus solicitudes de soporte, consulta sus respuestas y levanta nuevos pedidos desde un solo lugar.</p>
             </div>
         </div>
-        {% include "tickets/_ans_note.html" %}
-        <form method="post" enctype="multipart/form-data" novalidate class="user-ticket-form">
-            {% csrf_token %}
-            {% for field in form %}
-            {% if field.name == 'categoria' %}
-            <div class="form-group span-2">
-                {{ field.label_tag }}
-                {{ field }}
-                <p id="cat-auto-hint" class="cat-auto-hint" hidden>
-                    <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-                    <span>Categoría asignada automáticamente según tu descripción: <strong id="cat-auto-name"></strong>. Si prefieres otra, puedes cambiarla.</span>
-                    <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Cambiar categoría</button>
-                </p>
-                <div id="cat-suggest" class="cat-suggest" hidden>
-                    <svg class="icon icon-sm"><use href="#i-help"/></svg>
-                    <span class="cat-suggest-text">Según tu descripción, probablemente sea la categoría <strong id="cat-suggest-name"></strong></span>
-                    <span class="cat-suggest-actions">
-                        <button type="button" class="btn btn-primary btn-sm" data-suggest-apply>Usar esta categoría</button>
-                        <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Descartar</button>
-                    </span>
-                </div>
-            </div>
-            {% else %}
-            {% include "tickets/_form_field.html" with field=field span2_fields="descripcion adjuntos" %}
-            {% endif %}
-            {% endfor %}
-            <div class="ticket-form-actions">
-                <button type="submit" class="btn btn-primary"><svg class="icon"><use href="#i-send"/></svg> Enviar solicitud</button>
-            </div>
-        </form>
+
+        <div class="corp-kpis">
+            <a class="corp-kpi" href="?">
+                <span class="corp-kpi-num corp-kpi-total">{{ stats.total|default:0 }}</span>
+                <span class="corp-kpi-label">Solicitudes</span>
+            </a>
+            <a class="corp-kpi" href="?estado=abierto">
+                <span class="corp-kpi-num corp-kpi-red">{{ stats.abiertos|default:0 }}</span>
+                <span class="corp-kpi-label">Abiertas</span>
+            </a>
+            <a class="corp-kpi" href="?estado=en-progreso">
+                <span class="corp-kpi-num corp-kpi-yellow">{{ stats.en_progreso|default:0 }}</span>
+                <span class="corp-kpi-label">En progreso</span>
+            </a>
+            <a class="corp-kpi" href="?estado=resuelto">
+                <span class="corp-kpi-num corp-kpi-green">{{ stats.resueltos|default:0 }}</span>
+                <span class="corp-kpi-label">Resueltas</span>
+            </a>
+        </div>
     </section>
 
-    <div class="reports-stack dashboard-report-stack">
-        <section class="report-simple-card">
-            <h3>Por prioridad</h3>
-            <ul class="report-simple-list">
-                {% for bar in priority_bars %}
-                <li class="mr-{{ bar.label }}">
-                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
-                    <span class="metric-label">{{ bar.label }}</span>
-                    <span class="metric-value">{{ bar.count }}</span>
-                </li>
+    <!-- ===== Tabla de tickets con acciones inline ===== -->
+    <section class="corp-card corp-table-card">
+        <div class="corp-card-head">
+            <div class="corp-title-wrap">
+                <span class="corp-title-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <div>
+                    <h3>Mis solicitudes</h3>
+                    <p class="corp-sub">Historial completo de tus pedidos. Usa las acciones de cada fila para ver respuestas, editar o cerrar.</p>
+                </div>
+            </div>
+            <span class="corp-badge">{{ tickets|length }} solicitada(s)</span>
+        </div>
+
+        <form method="get" class="table-toolbar toolbar-corp">
+            <label class="search-field">
+                <svg class="icon icon-sm"><use href="#i-search"/></svg>
+                <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código o título…" />
+            </label>
+            <select name="estado" data-autosubmit>
+                <option value="">Todos los estados</option>
+                {% for val, label in estados %}
+                <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
-            </ul>
+            </select>
+            {% if q or filtro_estado %}
+            <a href="{% url 'tickets:mi_panel' %}" class="link-clear">✕ Limpiar</a>
+            {% endif %}
+        </form>
+
+        <div class="tickets-table-wrap">
+            <table class="tickets-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Categoría</th>
+                        <th>Estado</th>
+                        <th>Prioridad</th>
+                        <th>ANS</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th class="th-actions">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for ticket in tickets %}
+                    <tr class="ticket-row" data-pk="{{ ticket.pk }}"
+                        data-estado="{{ ticket.estado }}"
+                        data-editable="{% if ticket.estado == 'abierto' %}1{% else %}0{% endif %}"
+                        data-cerrable="{% if ticket.estado == 'abierto' or ticket.estado == 'en-progreso' %}1{% else %}0{% endif %}">
+                        <td class="td-code">
+                            <a class="stub-code" href="{% url 'tickets:mi_ticket' ticket.pk %}">{{ ticket.codigo }}</a>
+                        </td>
+                        <td class="td-title">
+                            <span class="row-title">{{ ticket.titulo }}</span>
+                            {% if ticket.tecnico_asignado %}
+                            <span class="row-tech"><svg class="icon icon-sm"><use href="#i-wrench"/></svg> {{ ticket.tecnico_asignado.nombre }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="td-cat">
+                            {% if ticket.categoria %}<span class="cat-chip">{{ ticket.categoria.nombre }}</span>{% else %}<span class="muted">—</span>{% endif %}
+                        </td>
+                        <td class="td-state">{% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}</td>
+                        <td class="td-prio"><span class="meta-pill meta-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span></td>
+                        <td class="td-ans">{% include "tickets/_ans_time.html" with t=ticket %}</td>
+                        <td class="td-date">{{ ticket.fecha_creacion|date:"d/m/Y" }}</td>
+                        <td class="td-time">{{ ticket.fecha_creacion|date:"H:i" }}</td>
+                        <td class="td-actions">
+                            <div class="row-actions">
+                                <a class="icon-btn" href="{% url 'tickets:mi_ticket' ticket.pk %}" title="Ver detalle"><svg class="icon"><use href="#i-eye"/></svg></a>
+                                <button type="button" class="icon-btn" data-action="respuestas" data-pk="{{ ticket.pk }}" data-codigo="{{ ticket.codigo }}" title="Ver respuestas"><svg class="icon"><use href="#i-message"/></svg></button>
+                                {% if ticket.estado == 'abierto' %}
+                                <button type="button" class="icon-btn" data-action="editar" data-pk="{{ ticket.pk }}" data-codigo="{{ ticket.codigo }}" title="Editar" {% if ticket.estado != 'abierto' %}disabled{% endif %}><svg class="icon"><use href="#i-edit"/></svg></button>
+                                {% endif %}
+                                {% if ticket.estado == 'abierto' or ticket.estado == 'en-progreso' %}
+                                <button type="button" class="icon-btn icon-btn-close" data-action="cerrar" data-pk="{{ ticket.pk }}" data-codigo="{{ ticket.codigo }}" title="Cerrar"><svg class="icon"><use href="#i-ban"/></svg></button>
+                                {% endif %}
+                                {% if ticket.estado == 'abierto' %}
+                                <button type="button" class="icon-btn icon-btn-del" data-action="eliminar" data-pk="{{ ticket.pk }}" data-codigo="{{ ticket.codigo }}" title="Eliminar"><svg class="icon"><use href="#i-trash"/></svg></button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <p class="empty-hint">
+                                {% if q or filtro_estado %}Ninguna solicitud coincide con el filtro.{% else %}Todavía no tienes solicitudes registradas. Levanta tu primer pedido más abajo.{% endif %}
+                            </p>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="pagination-bar">
+            <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            <div class="pagination-links">
+                {% if page_obj.has_previous %}
+                <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹</a>
+                {% else %}
+                <span class="page-pill disabled">‹</span>
+                {% endif %}
+                <span class="page-pill current">{{ page_obj.number }}</span>
+                {% if page_obj.has_next %}
+                <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">›</a>
+                {% else %}
+                <span class="page-pill disabled">›</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+    <div class="corp-grid">
+        <!-- ===== Panel de acciones de la solicitud ===== -->
+        <section class="corp-card corp-action-panel">
+            <div class="corp-card-head">
+                <div class="corp-title-wrap">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon" id="accion-icon"><use href="#i-ticket"/></svg></span>
+                    <div>
+                        <h3 id="accion-titulo">Acción de la solicitud</h3>
+                        <p class="corp-sub">Selecciona una acción en una fila de la tabla.</p>
+                    </div>
+                </div>
+            </div>
+            <div id="accion-content" class="corp-action-body">
+                <p class="empty-hint">Pulsa <strong>Editar</strong>, <strong>Ver respuestas</strong>, <strong>Cerrar</strong> o <strong>Eliminar</strong> en alguna de tus solicitudes para gestionarla aquí sin abrir ventanas emergentes.</p>
+            </div>
         </section>
 
-        <section class="report-simple-card">
-            <h3>Por categoría</h3>
-            <ul class="report-simple-list">
-                {% for bar in category_bars %}
-                <li class="mr-blue">
-                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
-                    <span class="metric-label">{{ bar.label }}</span>
-                    <span class="metric-value">{{ bar.count }}</span>
+        <!-- ===== Actividad reciente GLPI + mini chat ===== -->
+        <section class="corp-card corp-activity-panel">
+            <div class="corp-card-head">
+                <div class="corp-title-wrap">
+                    <span class="corp-title-icon"><svg class="icon"><use href="#i-bell"/></svg></span>
+                    <div>
+                        <h3>Actividad reciente GLPI</h3>
+                        <p class="corp-sub">Haz clic en un evento para abrir el mini chat de esa solicitud.</p>
+                    </div>
+                </div>
+            </div>
+            <ul class="glpi-activity-list mi-glpi-activity">
+                {% for ev in eventos_glpi %}
+                <li class="glpi-activity-item {% if ev.ticket and ev.ticket.pk %}glpi-clickable{% endif %}"
+                    {% if ev.ticket and ev.ticket.pk %}data-chat-pk="{{ ev.ticket.pk }}" data-chat-codigo="{{ ev.ticket.codigo }}"{% endif %}
+                    title="{% if ev.ticket.codigo %}Abrir chat de {{ ev.ticket.codigo }}{% else %}Sin ticket asociado{% endif %}">
+                    <span class="glpi-activity-icon">
+                        <svg class="icon icon-sm">
+                            {% if ev.tipo == 'cambio-estado' %}<use href="#i-refresh"/>
+                            {% elif ev.tipo == 'seguimiento' %}<use href="#i-message"/>
+                            {% else %}<use href="#i-bell"/>
+                            {% endif %}
+                        </svg>
+                    </span>
+                    <div class="glpi-activity-body">
+                        <p class="glpi-activity-text">
+                            {{ ev.descripcion }}
+                        </p>
+                        <span class="glpi-activity-time">
+                            {% if ev.fecha_formateada %}{{ ev.fecha_formateada }}
+                            {% else %}{{ ev.fecha|date:"d/m/Y H:i" }}{% endif %}
+                            {% if ev.ticket and ev.ticket.pk %}&nbsp;&middot;&nbsp;{{ ev.ticket.codigo }}{% endif %}
+                        </span>
+                    </div>
                 </li>
                 {% empty %}
-                <li class="mr-blue">
-                    <span class="metric-fill"></span>
-                    <span class="metric-label">Sin categoría</span>
-                    <span class="metric-value">0</span>
-                </li>
+                <li class="glpi-activity-empty">Sin actividad reciente.</li>
                 {% endfor %}
             </ul>
-        </section>
 
-        <aside class="glpi-report-panel">
-            <div class="glpi-report-head">
-                <div class="glpi-title-wrap">
-                    <span class="glpi-dot"></span>
-                    <h3>Actividad reciente</h3>
+            <!-- Mini chat anclado de la actividad -->
+            <div id="mini-chat" class="mini-chat" hidden>
+                <div class="mini-chat-head">
+                    <span class="mini-chat-avatar"><svg class="icon"><use href="#i-message"/></svg></span>
+                    <div class="mini-chat-titles">
+                        <strong>Chat · <span id="mini-chat-codigo"></span></strong>
+                        <small>Mesa de ayuda GLPI</small>
+                    </div>
+                    <button type="button" class="mini-chat-close" id="mini-chat-close" aria-label="Cerrar chat">&times;</button>
                 </div>
-                <span class="glpi-badge">Sincronizado</span>
+                <div id="mini-chat-body" class="mini-chat-body">
+                    <p class="empty-hint">Cargando conversación…</p>
+                </div>
+                <form class="mini-chat-composer" id="mini-chat-form" novalidate>
+                    <textarea id="mini-chat-text" rows="1" placeholder="Escribe a la mesa de ayuda…"></textarea>
+                    <button type="submit" class="btn btn-primary btn-sm" title="Enviar"><svg class="icon"><use href="#i-send"/></svg></button>
+                </form>
             </div>
-            {% include "tickets/_glpi_activity.html" with eventos_glpi=eventos_glpi use_descripcion=True %}
-        </aside>
+        </section>
     </div>
-
-    {% include "tickets/_faq.html" %}
 </main>
 
 <script type="application/json" id="dogger-cat-keywords">{{ cat_sugerencias_json|safe }}</script>
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/mi-panel-corp.js' %}?v=20260902"></script>
 {% endblock %}
 
 {% block footer %}{% endblock %}
