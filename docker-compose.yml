@@ -1,0 +1,57 @@
+# Dogger HelpDesk — despliegue con Docker (VPS, Docker Host, etc.)
+# Software 100% libre: Django + Gunicorn + PostgreSQL + Nginx
+#
+# Uso:
+#   1) Copia .env.example a .env y ajusta DJANGO_SECRET_KEY, contraseñas y dominio.
+#   2) docker compose up -d --build
+#   3) Configura tu proxy/TLS (ver README) apuntando a https://localhost o directo.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dogger}
+      POSTGRES_USER: ${POSTGRES_USER:-dogger}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-clave}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dogger}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dogger}:${POSTGRES_PASSWORD:-cambia-esta-clave}@db:5432/${POSTGRES_DB:-dogger}
+      DJANGO_MEDIA_ROOT: /app/media
+    volumes:
+      - media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./staticfiles:/app/staticfiles:ro
+      - media:/app/media:ro
+      - ./certs:/etc/nginx/certs:ro
+
+volumes:
+  pgdata:
+  media:

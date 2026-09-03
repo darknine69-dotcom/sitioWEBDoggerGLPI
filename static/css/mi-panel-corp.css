@@ -477,7 +477,22 @@
     max-width: 100%;
 }
 .corp-subsection .chat-composer { padding-top: 6px; }
+.corp-timeline-plain {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+}
 .corp-timeline-wrap { max-width: 100%; }
+.corp-timeline-wrap.corp-subsection {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+}
 .corp-timeline-actividad { align-items: stretch; }
 .corp-notif-inline-head {
     display: flex;

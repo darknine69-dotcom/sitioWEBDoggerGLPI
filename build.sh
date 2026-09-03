@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build.sh — Render build script
+# build.sh — Script de build genérico para PaaS / VPS / Docker
 set -o errexit
 
 echo "📦 Instalando dependencias..."
