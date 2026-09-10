@@ -27,6 +27,13 @@
 .tec-ans-vencido { color: var(--dogger-red); }
 .tec-item .status-pill { font-size: 11px; }
 .tec-panel-empty { text-align: center; padding: 40px 20px; color: var(--ink-muted); }
+.coleccion-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 26px; padding: 0 2px; }
+.coleccion-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 19px; margin: 0; }
+.coleccion-head p { color: var(--ink-muted); font-size: 13px; margin: 2px 0 0; }
+.mt-24 { margin-top: 24px; }
+.sol-punto { color: var(--ink-muted); font-size: 12px; display: block; }
+.sin-asignar { color: var(--ink-muted); font-size: 13px; font-style: italic; }
+.chart-empty { color: var(--ink-muted); font-size: 13px; }
 
 .tec-chat { background: var(--dogger-paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; min-height: 480px; display: flex; flex-direction: column; }
 .tec-chat-head { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
@@ -173,6 +180,83 @@
         </div>
     </div>
     {% endif %}
+
+    <div class="coleccion-head mt-24">
+        <div>
+            <h2>Solicitudes de usuarios</h2>
+            <p>Tickets montados desde el portal. Toma un ticket sin técnico para atenderlo.</p>
+        </div>
+        <span class="tec-count">{{ solicitudes_page.paginator.count }} no cerrado{{ solicitudes_page.paginator.count|pluralize }}</span>
+    </div>
+
+    <div class="table-card">
+        <div class="table-scroll">
+            <table class="data-table cards-mobile" id="tablaSolicitudes">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Solicitante</th>
+                        <th>Prioridad</th>
+                        <th>ANS</th>
+                        <th>Técnico</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in solicitudes %}
+                    <tr class="tr-{{ t.prioridad }}">
+                        <td data-label="Código"><span class="table-code">{{ t.codigo }}</span>{% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}</td>
+                        <td data-label="Título">{{ t.titulo|truncatechars:42 }}</td>
+                        <td data-label="Solicitante">{{ t.solicitante_nombre }}{% if t.solicitante_punto %}<span class="sol-punto"> · {{ t.solicitante_punto }}</span>{% endif %}</td>
+                        <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
+                        <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
+                        <td data-label="Técnico">
+                            {% if t.tecnico_asignado_id %}
+                                {% if t.tecnico_asignado == request.user %}
+                                <span class="status-pill status-en-progreso">Tuyo</span>
+                                {% else %}
+                                <span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-lock"/></svg></span>{{ t.tecnico_asignado.nombre }}
+                                {% endif %}
+                            {% else %}
+                            <span class="sin-asignar">Sin asignar</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Estado">
+                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+                        </td>
+                        <td data-label="Acciones" class="cell-actions">
+                            <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}" target="_blank" rel="noopener">Ver</a>
+                            {% if not t.tecnico_asignado_id %}
+                            <form method="post" action="{% url 'tickets:panel_tecnico_tomar' t.pk %}" class="inline-form" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-progress">Tomar</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="table-empty"><td colspan="8">No hay solicitudes de usuarios pendientes.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if solicitudes_page.paginator.num_pages > 1 %}
+        <div class="pagination-bar">
+            <span class="pagination-info">Página {{ solicitudes_page.number }} de {{ solicitudes_page.paginator.num_pages }} — {{ solicitudes_page.paginator.count }} resultados</span>
+            <div class="pagination-links">
+                {% if solicitudes_page.has_previous %}
+                <a class="page-pill" href="?page_sol={{ solicitudes_page.previous_page_number }}">‹ Anterior</a>
+                {% endif %}
+                {% if solicitudes_page.has_next %}
+                <a class="page-pill" href="?page_sol={{ solicitudes_page.next_page_number }}">Siguiente ›</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
 
     <form method="get" class="table-toolbar" id="filtrosTecnico">
         <label class="search-field">

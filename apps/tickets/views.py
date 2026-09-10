@@ -1849,6 +1849,17 @@ def panel_tecnico(request):
         list(base_qs.select_related("categoria", "tecnico_asignado"))
     )
 
+    # Cola de solicitudes de usuarios: tickets sin cerrar que el técnico puede tomar
+    solicitudes_page = _paginar(
+        Ticket.objects.select_related("categoria", "tecnico_asignado")
+        .exclude(estado=Ticket.Estado.CERRADO)
+        .annotate(_prioridad_orden=orden_prioridad_annotation())
+        .order_by("_prioridad_orden", "-fecha_creacion"),
+        request,
+        per_page=10,
+        param="page_sol",
+    )
+
     page_obj = _paginar(
         qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
             "_prioridad_orden", "-fecha_creacion"
@@ -1879,6 +1890,8 @@ def panel_tecnico(request):
         {
             "tickets": page_obj.object_list,
             "page_obj": page_obj,
+            "solicitudes": solicitudes_page.object_list,
+            "solicitudes_page": solicitudes_page,
             "querystring": _params_sin_page(request),
             "filtro_estado": estado,
             "q": q,
@@ -1891,6 +1904,42 @@ def panel_tecnico(request):
             **chart_context,
         },
     )
+
+
+@staff_required
+@require_POST
+def panel_tecnico_tomar(request, pk):
+    """Asigna (toma) un ticket sin técnico a quien lo solicita."""
+    ticket = get_object_or_404(
+        Ticket.objects.select_related("tecnico_asignado"),
+        pk=pk,
+    )
+    if ticket.tecnico_asignado_id:
+        messages.warning(
+            request,
+            f"El ticket {ticket.codigo} ya está asignado a "
+            f"{ticket.tecnico_asignado.nombre if ticket.tecnico_asignado else 'otro técnico'}.",
+        )
+        return redirect("tickets:panel_tecnico")
+
+    ticket.tecnico_asignado = request.user
+    ticket.asignacion_automatica = False
+    ticket.save(update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"])
+
+    if request.user.glpi_user_id:
+        try:
+            if sync_asignacion_to_glpi(ticket):
+                messages.success(request, f"Ticket {ticket.codigo} tomado (también en GLPI).")
+            else:
+                messages.success(request, f"Ticket {ticket.codigo} tomado.")
+        except GlpiError as exc:
+            messages.warning(request, f"Ticket {ticket.codigo} tomado localmente; no se reflejó en GLPI: {exc}")
+    else:
+        messages.success(
+            request,
+            f"Ticket {ticket.codigo} tomado. Configura tu 'ID usuario GLPI' en Admin para reflejarlo allá.",
+        )
+    return redirect("tickets:panel_tecnico")
 
 
 @staff_required

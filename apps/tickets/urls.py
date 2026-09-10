@@ -28,6 +28,7 @@ urlpatterns = [
     path("panel/tickets/", views.lista_tickets, name="lista"),
     path("panel/tickets/<int:pk>/", views.detalle_ticket, name="detalle"),
     path("panel/tecnico/", views.panel_tecnico, name="panel_tecnico"),
+    path("panel/tecnico/tomar/<int:pk>/", views.panel_tecnico_tomar, name="panel_tecnico_tomar"),
     path("panel/tecnico/api/chat/<int:pk>/mensajes/", views.panel_tecnico_msgs_ajax, name="panel_tecnico_msgs"),
     path("panel/tecnico/api/chat/<int:pk>/enviar/", views.panel_tecnico_chat_ajax, name="panel_tecnico_chat"),
     path("panel/api/tickets/<int:pk>/estado/", views.ticket_estado_ajax, name="staff_api_estado"),
