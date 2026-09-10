@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Política de Tratamiento de Datos · Dogger{% endblock %}
+{% block header_title %}Política de Tratamiento de Datos Personales{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'tickets:portal' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Portal</a>
+{% endblock %}
+
+{% block content %}
+<main class="page">
+    <section class="faq-section panel legal-panel">
+        <h2 class="panel-title">Política de Tratamiento de Datos Personales</h2>
+        <p class="panel-sub">Vigencia y aplicación conforme a la normatividad colombiana vigente.</p>
+
+        <p class="legal-lead">
+            DOGGER, en cumplimiento de la <strong>Ley 1581 de 2012</strong>, el
+            <strong>Decreto 1074 de 2015</strong> y demás normas aplicables, informa que los datos
+            personales suministrados por sus clientes, usuarios, proveedores y demás titulares
+            serán recolectados, almacenados, utilizados, transmitidos y tratados de forma segura
+            para las finalidades aquí descritas.
+        </p>
+
+        <h3 class="legal-h">1. Finalidades del tratamiento</h3>
+        <p class="legal-p">
+            Los datos personales podrán ser utilizados para gestionar pedidos, procesar pagos,
+            emitir facturas, coordinar entregas, atender solicitudes, cambios, devoluciones,
+            garantías, peticiones, quejas y reclamos, cumplir obligaciones legales, prevenir
+            fraudes, mejorar nuestros productos y servicios, realizar análisis estadísticos y
+            optimizar la experiencia de compra.
+        </p>
+
+        <h3 class="legal-h">2. Comunicaciones comerciales</h3>
+        <p class="legal-p">
+            DOGGER podrá enviar información relacionada con productos, promociones, descuentos,
+            novedades, eventos, campañas publicitarias, programas de fidelización, encuestas de
+            satisfacción y demás comunicaciones comerciales a través de correo electrónico,
+            WhatsApp, SMS, llamadas telefónicas y otros medios físicos o digitales.
+        </p>
+
+        <h3 class="legal-h">3. Compartición de información</h3>
+        <p class="legal-p">
+            DOGGER podrá compartir información con proveedores tecnológicos, operadores
+            logísticos, pasarelas de pago, aliados comerciales y autoridades competentes cuando
+            sea necesario para la prestación de los servicios o el cumplimiento de obligaciones
+            legales, garantizando medidas razonables de protección de la información.
+        </p>
+
+        <h3 class="legal-h">4. Derechos del titular</h3>
+        <p class="legal-p">
+            El titular de los datos tiene derecho a conocer, actualizar, rectificar y suprimir sus
+            datos personales, solicitar prueba de la autorización otorgada, revocar la autorización
+            cuando sea procedente y presentar consultas o reclamos conforme a la ley.
+        </p>
+
+        <h3 class="legal-h">5. Seguridad de la información</h3>
+        <p class="legal-p">
+            DOGGER implementa medidas técnicas, administrativas y humanas razonables para proteger
+            la información personal; sin embargo, ningún sistema de seguridad puede garantizar
+            protección absoluta frente a accesos no autorizados.
+        </p>
+
+        <h3 class="legal-h">6. Aceptación</h3>
+        <p class="legal-p">
+            La aceptación de esta política y el suministro de información personal constituyen
+            autorización para el tratamiento de los datos conforme a las finalidades aquí descritas.
+        </p>
+    </section>
+</main>
+{% endblock %}
