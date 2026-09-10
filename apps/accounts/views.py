@@ -51,8 +51,11 @@ class BaseRoleLoginView(LoginView):
 
     def get_success_url(self):
         user = self.request.user
-        if getattr(user, "rol", None) == "usuario":
+        rol = getattr(user, "rol", None)
+        if rol == "usuario":
             return reverse_lazy("tickets:mi_panel")
+        if rol == "tecnico":
+            return reverse_lazy("tickets:panel_tecnico")
         return reverse_lazy("tickets:dashboard")
 
 

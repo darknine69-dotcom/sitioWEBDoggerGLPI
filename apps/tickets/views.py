@@ -1840,15 +1840,16 @@ def panel_tecnico(request):
     eventos_count = 0
     ticket_pk = request.GET.get("ticket")
     if ticket_pk:
-        ticket = get_object_or_404(
-            Ticket.objects.select_related("categoria", "tecnico_asignado").prefetch_related(
+        try:
+            ticket = Ticket.objects.select_related(
+                "categoria", "tecnico_asignado"
+            ).prefetch_related(
                 "comentarios", "comentarios__usuario", "eventos_glpi", "adjuntos"
-            ),
-            pk=ticket_pk,
-            tecnico_asignado=tecnico,
-        )
-        timeline = _timeline_ticket(ticket, include_internos=True)
-        eventos_count = sum(1 for i in timeline if i["tipo"] == "sistema")
+            ).get(pk=ticket_pk, tecnico_asignado=tecnico)
+            timeline = _timeline_ticket(ticket, include_internos=True)
+            eventos_count = sum(1 for i in timeline if i["tipo"] == "sistema")
+        except Ticket.DoesNotExist:
+            ticket = None
 
     return render(
         request,
@@ -1871,11 +1872,13 @@ def panel_tecnico(request):
 @staff_required
 def panel_tecnico_msgs_ajax(request, pk):
     """JSON con los mensajes del ticket para refrescar el chat sin recargar."""
-    ticket = get_object_or_404(
-        Ticket.objects.select_related("tecnico_asignado"),
-        pk=pk,
-        tecnico_asignado=request.user,
-    )
+    try:
+        ticket = Ticket.objects.select_related("tecnico_asignado").get(
+            pk=pk,
+            tecnico_asignado=request.user,
+        )
+    except Ticket.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Ticket no encontrado o no asignado."}, status=404)
     return JsonResponse({"ok": True, "mensajes": _respuestas_para(ticket, include_internos=True)})
 
 
@@ -1883,11 +1886,13 @@ def panel_tecnico_msgs_ajax(request, pk):
 @require_POST
 def panel_tecnico_chat_ajax(request, pk):
     """Envía un mensaje del técnico al solicitante en el chat del panel."""
-    ticket = get_object_or_404(
-        Ticket.objects.select_related("tecnico_asignado"),
-        pk=pk,
-        tecnico_asignado=request.user,
-    )
+    try:
+        ticket = Ticket.objects.select_related("tecnico_asignado").get(
+            pk=pk,
+            tecnico_asignado=request.user,
+        )
+    except Ticket.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Ticket no encontrado o no asignado."}, status=404)
     comentario = request.POST.get("comentario", "").strip()
     if not comentario:
         return JsonResponse({"ok": False, "error": "Escribe un mensaje para responder."}, status=400)

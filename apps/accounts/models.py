@@ -15,6 +15,10 @@ class UsuarioManager(BaseUserManager):
         if not email:
             raise ValueError("El correo es obligatorio")
         email = self.normalize_email(email)
+        # Mantener sincronizados los flags de "activo" (app) e "is_active" (auth Django):
+        # el login de Django usa is_active, y la vista/permisos leen activo.
+        if "activo" in extra and "is_active" not in extra:
+            extra["is_active"] = bool(extra["activo"])
         user = self.model(email=email, nombre=nombre, **extra)
         user.set_password(password)
         user.save(using=self._db)
@@ -83,7 +87,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     @property
     def es_staff_helpdesk(self):
         """Admin o técnico pueden gestionar tickets."""
-        return self.rol in (self.Rol.ADMIN, self.Rol.TECNICO) and self.activo
+        return self.rol in (self.Rol.ADMIN, self.Rol.TECNICO) and self.is_active
 
     @property
     def initials(self):
