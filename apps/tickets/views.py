@@ -91,7 +91,8 @@ def _sincronizar_ticket_nuevo(request, ticket, files):
             messages.warning(request, f"No se pudieron subir los adjuntos a GLPI: {exc}")
 
 
-def _build_dashboard_context(request, tickets):
+def _build_chart_context(tickets):
+    """Gráficas y ANS a partir de una iterable de tickets (sin eventos GLPI)."""
     pri_counts = Counter(t.prioridad for t in tickets)
     total = max(len(tickets), 1)
     priority_labels = ("urgente", "alta", "media", "baja")
@@ -123,12 +124,14 @@ def _build_dashboard_context(request, tickets):
     estado_display = dict(Ticket.Estado.choices)
     estado_counts = Counter(t.estado for t in tickets)
     total_estados = max(sum(estado_counts.values()), 1)
+    max_estado_count = max((estado_counts.get(k, 0) for k in estado_labels), default=0)
     estado_bars = [
         {
             "label": estado_display.get(k, k),
             "slug": k,
             "count": estado_counts.get(k, 0),
             "pct": round(estado_counts.get(k, 0) / total_estados * 100),
+            "fill_pct": 0 if max_estado_count == 0 else round((estado_counts.get(k, 0) / max_estado_count) * 100),
         }
         for k in estado_labels
     ]
@@ -153,11 +156,6 @@ def _build_dashboard_context(request, tickets):
         }
         for k, v in user_counts.most_common(10)
     ]
-
-    eventos_qs = GlpiEvento.objects.select_related("ticket").order_by("-fecha")
-    page_number = request.GET.get("page_glpi", 1)
-    paginator = Paginator(eventos_qs, 4)
-    eventos_glpi_page = paginator.get_page(page_number)
 
     # Cumplimiento ANS entre los tickets abiertos/en progreso
     ans_vencidos = ans_por_vencer = ans_ok = 0
@@ -185,10 +183,21 @@ def _build_dashboard_context(request, tickets):
         "estado_bars": estado_bars,
         "tecnico_bars": tecnico_bars,
         "user_bars": user_bars,
-        "eventos_glpi": eventos_glpi_page.object_list,
-        "eventos_glpi_page": eventos_glpi_page,
         "ans_stats": ans_stats,
     }
+
+
+def _build_dashboard_context(request, tickets):
+    chart_context = _build_chart_context(tickets)
+    eventos_qs = GlpiEvento.objects.select_related("ticket").order_by("-fecha")
+    page_number = request.GET.get("page_glpi", 1)
+    paginator = Paginator(eventos_qs, 4)
+    eventos_glpi_page = paginator.get_page(page_number)
+    chart_context.update({
+        "eventos_glpi": eventos_glpi_page.object_list,
+        "eventos_glpi_page": eventos_glpi_page,
+    })
+    return chart_context
 
 
 def paginate_recent_tickets(request, queryset, page_param="page_recientes", per_page=5):
@@ -1827,6 +1836,19 @@ def panel_tecnico(request):
             condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
         qs = qs.filter(condicion)
 
+    # Dashboard del técnico: resumen completo de SUS tickets (sin filtros de búsqueda)
+    base_qs = Ticket.objects.filter(tecnico_asignado=tecnico)
+    stats = base_qs.aggregate(
+        total=Count("id"),
+        abiertos=Count("id", filter=Q(estado=Ticket.Estado.ABIERTO)),
+        en_progreso=Count("id", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
+        resueltos=Count("id", filter=Q(estado=Ticket.Estado.RESUELTO)),
+        cerrados=Count("id", filter=Q(estado=Ticket.Estado.CERRADO)),
+    )
+    chart_context = _build_chart_context(
+        list(base_qs.select_related("categoria", "tecnico_asignado"))
+    )
+
     page_obj = _paginar(
         qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
             "_prioridad_orden", "-fecha_creacion"
@@ -1865,6 +1887,8 @@ def panel_tecnico(request):
             "ticket": ticket,
             "timeline": timeline,
             "eventos_count": eventos_count,
+            "stats": stats,
+            **chart_context,
         },
     )
 

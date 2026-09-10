@@ -63,6 +63,117 @@
         </div>
     </div>
 
+    <div class="scoreboard">
+        <a class="score-chip sc-warning" href="?">
+            <span class="score-num">{{ stats.total|default:0 }}</span>
+            <span class="score-label">Total asignados</span>
+        </a>
+        <a class="score-chip sc-abierto" href="?estado=abierto">
+            <span class="score-num">{{ stats.abiertos|default:0 }}</span>
+            <span class="score-label">Abiertos</span>
+        </a>
+        <a class="score-chip sc-progreso" href="?estado=en-progreso">
+            <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
+            <span class="score-label">En progreso</span>
+        </a>
+        <a class="score-chip sc-resuelto" href="?estado=resuelto">
+            <span class="score-num">{{ stats.resueltos|default:0 }}</span>
+            <span class="score-label">Resueltos</span>
+        </a>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Tickets por prioridad</h3>
+            {% if priority_bars %}
+            <ul class="report-simple-list">
+                {% for bar in priority_bars %}
+                <li class="{% if bar.label == 'urgente' %}mr-danger{% elif bar.label == 'alta' %}mr-warning{% else %}mr-abierto{% endif %}">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label">{{ bar.label|capfirst }}</span>
+                    <span class="metric-value">{{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="chart-empty">Sin datos todavía.</p>
+            {% endif %}
+        </div>
+        <div class="chart-card">
+            <h3>Tickets por estado</h3>
+            {% if estado_bars %}
+            <div class="vbars">
+                {% for bar in estado_bars %}
+                <div class="vbar-col">
+                    <span class="vbar-value">{{ bar.count }}</span>
+                    <div class="vbar-track"><div class="vbar-fill" style="height: {{ bar.fill_pct|default:5 }}%;"></div></div>
+                    <span class="vbar-label">{{ bar.label }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="chart-empty">Sin datos todavía.</p>
+            {% endif %}
+        </div>
+        <div class="chart-card">
+            <h3>Cumplimiento ANS (abiertos)</h3>
+            {% if ans_stats.vencidos or ans_stats.por_vencer or ans_stats.ok %}
+            <ul class="report-simple-list">
+                <li class="mr-danger">
+                    <span class="metric-fill" style="width: {{ ans_stats.bar_vencidos|default:0 }}%;"></span>
+                    <span class="metric-label">Vencidos</span>
+                    <span class="metric-value">{{ ans_stats.vencidos }}</span>
+                </li>
+                <li class="mr-warning">
+                    <span class="metric-fill" style="width: {{ ans_stats.bar_por_vencer|default:0 }}%;"></span>
+                    <span class="metric-label">Por vencer</span>
+                    <span class="metric-value">{{ ans_stats.por_vencer }}</span>
+                </li>
+                <li class="mr-ok">
+                    <span class="metric-fill" style="width: {{ ans_stats.bar_ok|default:0 }}%;"></span>
+                    <span class="metric-label">Cumpliendo</span>
+                    <span class="metric-value">{{ ans_stats.ok }}</span>
+                </li>
+            </ul>
+            {% else %}
+            <p class="chart-empty">Sin tickets abiertos todavía.</p>
+            {% endif %}
+        </div>
+        <div class="chart-card">
+            <h3>Top categorías</h3>
+            {% if category_bars %}
+            <ul class="report-simple-list">
+                {% for bar in category_bars %}
+                <li class="mr-abierto">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label">{{ bar.label }}</span>
+                    <span class="metric-value">{{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="chart-empty">Sin datos todavía.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if user_bars %}
+    <div class="charts-grid mt-16">
+        <div class="chart-card chart-wide">
+            <h3>Tickets por solicitante</h3>
+            <ul class="report-simple-list">
+                {% for bar in user_bars %}
+                <li class="mr-blue">
+                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
+                    <span class="metric-label">{{ bar.label }}</span>
+                    <span class="metric-value">{{ bar.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
     <form method="get" class="table-toolbar" id="filtrosTecnico">
         <label class="search-field">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
