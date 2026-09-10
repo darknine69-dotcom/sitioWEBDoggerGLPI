@@ -1884,6 +1884,8 @@ def panel_tecnico(request):
         except Ticket.DoesNotExist:
             ticket = None
 
+    vista = request.GET.get("vista", "").strip() or ("mis" if ticket_pk else "panel")
+
     return render(
         request,
         "tickets/panel_tecnico.html",
@@ -1892,6 +1894,8 @@ def panel_tecnico(request):
             "page_obj": page_obj,
             "solicitudes": solicitudes_page.object_list,
             "solicitudes_page": solicitudes_page,
+            "cola_count": solicitudes_page.paginator.count,
+            "vista": vista,
             "querystring": _params_sin_page(request),
             "filtro_estado": estado,
             "q": q,

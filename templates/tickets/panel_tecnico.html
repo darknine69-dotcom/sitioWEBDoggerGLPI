@@ -8,9 +8,51 @@
 
 {% block extra_css %}
 <style>
-.tec-panel { display: grid; grid-template-columns: minmax(320px, 430px) 1fr; gap: 22px; align-items: start; margin-top: 18px; }
+/* ---- Resumen: tarjetas KPI ---- */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+    background: var(--dogger-paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
+    padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 10px;
+    text-decoration: none; color: inherit; position: relative; overflow: hidden;
+    transition: transform .14s ease, box-shadow .14s ease;
+}
+.stat-card::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--stat-color, var(--line));
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(0,0,0,.09); }
+.stat-top { display: flex; align-items: center; justify-content: space-between; }
+.stat-icon { width: 40px; height: 40px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; background: var(--stat-bg, #f3f0e8); color: var(--stat-color, #5a5346); }
+.stat-icon .icon { width: 20px; height: 20px; }
+.stat-num { font-size: 30px; line-height: 1; font-weight: 800; letter-spacing: -.02em; color: #1d1b16; }
+.stat-label { color: var(--ink-muted); font-size: 12.5px; font-weight: 600; }
+.stat-total  { --stat-bg: #f0ede4; --stat-color: #6b6352; }
+.stat-abierto { --stat-bg: #fdeceb; --stat-color: var(--dogger-red); }
+.stat-progreso { --stat-bg: #fff3e2; --stat-color: #b7791f; }
+.stat-resuelto { --stat-bg: #e9f5ec; --stat-color: #2e7d32; }
+@media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* ---- Encabezados de sección ---- */
+.section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 22px 0 12px; flex-wrap: wrap; }
+.section-head .section-title { font-family: var(--font-display); font-weight: 400; font-size: 19px; margin: 0; display: flex; align-items: center; gap: 10px; }
+.section-head .section-title .section-ic { width: 34px; height: 34px; border-radius: 10px; background: #212121; color: #FBC02D; display: inline-flex; align-items: center; justify-content: center; }
+.section-head .section-title .section-ic .icon { width: 17px; height: 17px; }
+.section-head p { color: var(--ink-muted); font-size: 13px; margin: 3px 0 0; }
+.section-count { background: var(--dogger-cream); border: 1px solid var(--line); color: var(--ink-muted); font-size: 12px; font-weight: 700; border-radius: 999px; padding: 4px 13px; white-space: nowrap; }
+
+.chart-empty { color: var(--ink-muted); font-size: 13px; }
+
+/* ---- Workspace: lista + chat ---- */
+.tec-panel { display: grid; grid-template-columns: minmax(320px, 430px) 1fr; gap: 22px; align-items: start; margin-top: 6px; }
 .tec-list-card { background: var(--dogger-paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; }
 .tec-list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.tec-list-title { display: flex; align-items: center; gap: 10px; }
+.tec-list-title .sec-ic { width: 30px; height: 30px; border-radius: 9px; background: #212121; color: #FBC02D; display: inline-flex; align-items: center; justify-content: center; }
+.tec-list-title .sec-ic .icon { width: 15px; height: 15px; }
 .tec-list-head h3 { font-family: var(--font-display); font-weight: 400; font-size: 16px; margin: 0; }
 .tec-list-head .tec-count { font-size: 12px; color: var(--ink-muted); }
 .tec-list { display: flex; flex-direction: column; max-height: 70vh; overflow-y: auto; }
@@ -27,13 +69,6 @@
 .tec-ans-vencido { color: var(--dogger-red); }
 .tec-item .status-pill { font-size: 11px; }
 .tec-panel-empty { text-align: center; padding: 40px 20px; color: var(--ink-muted); }
-.coleccion-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 26px; padding: 0 2px; }
-.coleccion-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 19px; margin: 0; }
-.coleccion-head p { color: var(--ink-muted); font-size: 13px; margin: 2px 0 0; }
-.mt-24 { margin-top: 24px; }
-.sol-punto { color: var(--ink-muted); font-size: 12px; display: block; }
-.sin-asignar { color: var(--ink-muted); font-size: 13px; font-style: italic; }
-.chart-empty { color: var(--ink-muted); font-size: 13px; }
 
 .tec-chat { background: var(--dogger-paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; min-height: 480px; display: flex; flex-direction: column; }
 .tec-chat-head { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
@@ -48,10 +83,14 @@
 .tec-chat-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .tec-interno-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-muted); cursor: pointer; }
 .tec-interno-label input { accent-color: var(--dogger-red); }
-.tec-state-row { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+.tec-state-row { display: flex; gap: 6px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
 .tec-state-row select { font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 10px; background: var(--dogger-paper); }
 .tec-state-row select:focus { outline: none; border-color: var(--dogger-red); }
 .tec-empty-chat { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--ink-muted); text-align: center; padding: 30px; }
+
+.sol-punto { color: var(--ink-muted); font-size: 12px; display: block; }
+.sin-asignar { color: var(--ink-muted); font-size: 13px; font-style: italic; }
+
 @media (max-width: 900px) {
     .tec-panel { grid-template-columns: 1fr; }
     .tec-list { max-height: 320px; }
@@ -66,27 +105,38 @@
         <a class="back-btn" data-back href="{% url 'tickets:portal' %}" title="Volver al inicio"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
             <h2>Panel Técnico</h2>
-            <p>Solicitudes asignadas a ti y chat de respuesta directa con el solicitante.</p>
+            <p>Gestiona la cola de solicitudes, tus tickets asignados y la respuesta al solicitante.</p>
         </div>
         <a class="btn btn-outline-light btn-sm" href="{% url 'tickets:mis_tickets' %}"><svg class="icon"><use href="#i-list"/></svg> Mis tickets</a>
     </div>
 
-    <div class="scoreboard">
-        <a class="score-chip sc-warning" href="?">
-            <span class="score-num">{{ stats.total|default:0 }}</span>
-            <span class="score-label">Total asignados</span>
+    <div class="tabs-bar">
+        <a class="tab-pill {% if vista == 'panel' %}active{% endif %}" href="?vista=panel"><svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel</a>
+        <a class="tab-pill {% if vista == 'cola' %}active{% endif %}" href="?vista=cola"><svg class="icon icon-sm"><use href="#i-layers"/></svg> Cola de solicitudes <span>{{ cola_count }}</span></a>
+        <a class="tab-pill {% if vista == 'mis' %}active{% endif %}" href="?vista=mis"><svg class="icon icon-sm"><use href="#i-message"/></svg> Mis solicitudes <span>{{ stats.total }}</span></a>
+    </div>
+
+    {% if vista == 'panel' %}
+    <div class="stats-grid">
+        <a class="stat-card stat-total" href="?vista=mis">
+            <div class="stat-top"><span class="stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span></div>
+            <span class="stat-num">{{ stats.total|default:0 }}</span>
+            <span class="stat-label">Total asignados</span>
         </a>
-        <a class="score-chip sc-abierto" href="?estado=abierto">
-            <span class="score-num">{{ stats.abiertos|default:0 }}</span>
-            <span class="score-label">Abiertos</span>
+        <a class="stat-card stat-abierto" href="?vista=mis&estado=abierto">
+            <div class="stat-top"><span class="stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span></div>
+            <span class="stat-num">{{ stats.abiertos|default:0 }}</span>
+            <span class="stat-label">Abiertos</span>
         </a>
-        <a class="score-chip sc-progreso" href="?estado=en-progreso">
-            <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
-            <span class="score-label">En progreso</span>
+        <a class="stat-card stat-progreso" href="?vista=mis&estado=en-progreso">
+            <div class="stat-top"><span class="stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span></div>
+            <span class="stat-num">{{ stats.en_progreso|default:0 }}</span>
+            <span class="stat-label">En progreso</span>
         </a>
-        <a class="score-chip sc-resuelto" href="?estado=resuelto">
-            <span class="score-num">{{ stats.resueltos|default:0 }}</span>
-            <span class="score-label">Resueltos</span>
+        <a class="stat-card stat-resuelto" href="?vista=mis&estado=resuelto">
+            <div class="stat-top"><span class="stat-icon"><svg class="icon"><use href="#i-check"/></svg></span></div>
+            <span class="stat-num">{{ stats.resueltos|default:0 }}</span>
+            <span class="stat-label">Resueltos</span>
         </a>
     </div>
 
@@ -182,12 +232,17 @@
     </div>
     {% endif %}
 
-    <div class="coleccion-head mt-24">
+    {% elif vista == 'cola' %}
+
+    <div class="section-head">
         <div>
-            <h2>Solicitudes de usuarios</h2>
+            <div class="section-title">
+                <span class="section-ic"><svg class="icon"><use href="#i-layers"/></svg></span>
+                <span>Solicitudes de usuarios</span>
+            </div>
             <p>Tickets montados desde el portal. Toma un ticket sin técnico para atenderlo.</p>
         </div>
-        <span class="tec-count">{{ solicitudes_page.paginator.count }} no cerrado{{ solicitudes_page.paginator.count|pluralize }}</span>
+        <span class="section-count">{{ solicitudes_page.paginator.count }} no cerrado{{ solicitudes_page.paginator.count|pluralize }}</span>
     </div>
 
     <div class="table-card">
@@ -218,7 +273,7 @@
                                 {% if t.tecnico_asignado == request.user %}
                                 <span class="status-pill status-en-progreso">Tuyo</span>
                                 {% else %}
-                                <span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-lock"/></svg></span>{{ t.tecnico_asignado.nombre }}
+                                <span class="row-icon" title="En atención"><svg class="icon icon-sm"><use href="#i-wrench"/></svg></span>{{ t.tecnico_asignado.nombre }}
                                 {% endif %}
                             {% else %}
                             <span class="sin-asignar">Sin asignar</span>
@@ -228,7 +283,7 @@
                             {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
                         </td>
                         <td data-label="Acciones" class="cell-actions">
-                            <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}" target="_blank" rel="noopener">Ver</a>
+                            <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}">Ver</a>
                             {% if not t.tecnico_asignado_id %}
                             <form method="post" action="{% url 'tickets:panel_tecnico_tomar' t.pk %}" class="inline-form" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}?');">
                                 {% csrf_token %}
@@ -249,17 +304,20 @@
             <span class="pagination-info">Página {{ solicitudes_page.number }} de {{ solicitudes_page.paginator.num_pages }} — {{ solicitudes_page.paginator.count }} resultados</span>
             <div class="pagination-links">
                 {% if solicitudes_page.has_previous %}
-                <a class="page-pill" href="?page_sol={{ solicitudes_page.previous_page_number }}">‹ Anterior</a>
+                <a class="page-pill" href="?vista=cola&page_sol={{ solicitudes_page.previous_page_number }}">‹ Anterior</a>
                 {% endif %}
                 {% if solicitudes_page.has_next %}
-                <a class="page-pill" href="?page_sol={{ solicitudes_page.next_page_number }}">Siguiente ›</a>
+                <a class="page-pill" href="?vista=cola&page_sol={{ solicitudes_page.next_page_number }}">Siguiente ›</a>
                 {% endif %}
             </div>
         </div>
         {% endif %}
     </div>
 
+    {% else %}
+
     <form method="get" class="table-toolbar" id="filtrosTecnico">
+        <input type="hidden" name="vista" value="mis">
         <label class="search-field">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
             <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código HD, título, solicitante o punto…" />
@@ -271,13 +329,19 @@
             {% endfor %}
         </select>
         <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        {% if q or filtro_estado %}
+        <a href="?vista=mis" class="link-clear">✕ Limpiar</a>
+        {% endif %}
         <span class="toolbar-count">{{ total_resultados }} solicitud{{ total_resultados|pluralize }} asignada{{ total_resultados|pluralize }}s</span>
     </form>
 
     <div class="tec-panel">
         <div class="tec-list-card">
             <div class="tec-list-head">
-                <h3>Mis solicitudes</h3>
+                <div class="tec-list-title">
+                    <span class="sec-ic"><svg class="icon"><use href="#i-message"/></svg></span>
+                    <h3>Mis solicitudes</h3>
+                </div>
                 <span class="tec-count">{{ page_obj.paginator.count }} en total</span>
             </div>
             {% if tickets %}
@@ -343,7 +407,7 @@
                         <option value="{{ val }}" {% if ticket.estado == val %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                    <a class="btn btn-outline btn-sm" href="{% url 'tickets:detalle' ticket.pk %}" target="_blank" rel="noopener">Ver detalle completo</a>
+                    <a class="btn btn-outline btn-sm" href="{% url 'tickets:detalle' ticket.pk %}">Ver detalle completo</a>
                 </div>
             </div>
 
@@ -401,6 +465,7 @@
         </div>
         {% endif %}
     </div>
+    {% endif %}
 </main>
 {% endblock %}
 
