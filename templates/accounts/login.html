@@ -5,11 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dogger · Acceso {{ login_role|default:'Staff' }}</title>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260901">
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260910">
 </head>
 <body>
 <div class="login-screen">
     <div class="login-card">
+        <a href="{% url 'tickets:portal' %}" class="login-back-arrow" aria-label="Volver al portal público">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        </a>
         <img class="logo-badge" src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" />
         <p class="eyebrow">Dogger · Premium Quality</p>
         <h2>Acceso {{ login_role|default:'Staff' }}</h2>
@@ -37,19 +40,15 @@
             <button type="submit" class="btn btn-primary">Iniciar sesión</button>
         </form>
 
-        <p class="login-footlink">
+        <p class="login-register-link">
             <a href="{% url 'accounts:reset_solicitar' %}">¿Olvidaste tu contraseña?</a>
         </p>
 
         {% if login_role_slug == 'usuario' %}
-        <p class="login-footlink">
+        <p class="login-register-link">
             <a href="{% url 'accounts:registro' %}">Crear cuenta de usuario</a>
         </p>
         {% endif %}
-
-        <p class="login-footlink">
-            <a href="{% url 'tickets:portal' %}">← Volver al portal público</a>
-        </p>
     </div>
 </div>
 </body>

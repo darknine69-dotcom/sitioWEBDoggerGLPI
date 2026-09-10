@@ -5,11 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dogger · Restablecer contraseña</title>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260901">
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260910">
 </head>
 <body>
 <div class="login-screen">
     <div class="login-card">
+        <a href="{% url 'tickets:portal' %}" class="login-back-arrow" aria-label="Volver al portal público">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        </a>
         <img class="logo-badge" src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" />
         <p class="eyebrow">Dogger · Premium Quality</p>
         <h2>Restablecer contraseña</h2>
@@ -30,13 +33,21 @@
                 <div class="login-error">{{ error }}</div>
                 {% endfor %}
             </div>
-            <div class="form-group">
-                <label for="{{ form.codigo.id_for_label }}">Código de verificación</label>
-                {{ form.codigo }}
-                {% for error in form.codigo.errors %}
-                <div class="login-error">{{ error }}</div>
-                {% endfor %}
+
+            <label for="code-digits">Código de verificación</label>
+            <div class="code-digits" id="code-digits">
+                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 1">
+                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 2">
+                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 3">
+                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 4">
+                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 5">
+                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 6">
             </div>
+            <input type="hidden" name="{{ form.codigo.name }}" id="code-full" value="{{ form.codigo.value|default:'' }}">
+            {% for error in form.codigo.errors %}
+            <div class="login-error">{{ error }}</div>
+            {% endfor %}
+
             <div class="form-group">
                 <label for="{{ form.password_nueva.id_for_label }}">Nueva contraseña</label>
                 {{ form.password_nueva }}
@@ -54,13 +65,43 @@
             <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
         </form>
 
-        <p class="login-footlink">
+        <p class="login-register-link">
             <a href="{% url 'accounts:reset_solicitar' %}">↻ No recibí el código, reenviar</a>
         </p>
-        <p class="login-footlink">
-            <a href="{% url 'accounts:login' %}">← Volver al inicio de sesión</a>
+        <p class="login-register-link">
+            <a href="{% url 'accounts:login' %}">Volver al inicio de sesión</a>
         </p>
     </div>
 </div>
+<script>
+(function () {
+    var digits = document.querySelectorAll('.code-digit');
+    var full = document.getElementById('code-full');
+    function sync() {
+        full.value = Array.prototype.map.call(digits, function (d) { return d.value || ''; }).join('');
+    }
+    digits.forEach(function (d, i) {
+        d.addEventListener('input', function () {
+            d.value = d.value.replace(/[^0-9]/g, '').slice(0, 1);
+            sync();
+            if (d.value && i < digits.length - 1) digits[i + 1].focus();
+        });
+        d.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !d.value && i > 0) digits[i - 1].focus();
+        });
+        d.addEventListener('paste', function (e) {
+            e.preventDefault();
+            var txt = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+            for (var j = 0; j < txt.length && j < digits.length; j++) { digits[j].value = txt[j]; }
+            sync();
+            if (txt.length) digits[Math.min(txt.length, digits.length - 1)].focus();
+        });
+    });
+    if (full.value) {
+        var seed = full.value;
+        for (var j = 0; j < seed.length && j < digits.length; j++) { digits[j].value = seed[j]; }
+    }
+})();
+</script>
 </body>
 </html>

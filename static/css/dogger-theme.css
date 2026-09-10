@@ -4056,6 +4056,41 @@ a.score-chip { color: inherit; }
 .login-error { color: #D62B1F; font-size: 13px; margin-bottom: 12px; text-align: center; }
 .login-footlink { text-align: center; margin-top: 14px; font-size: 13px; }
 .login-footlink a { color: var(--dogger-red); font-weight: 700; }
+.login-hint { text-align: center; font-size: 13px; color: var(--dogger-black-soft); margin: 0 0 18px; line-height: 1.5; }
+.login-back-arrow {
+    position: absolute;
+    top: -54px;
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .14);
+    color: #fff;
+    text-decoration: none;
+    transition: transform .2s ease, background .2s ease;
+}
+.login-back-arrow svg { width: 22px; height: 22px; }
+.login-back-arrow:hover { transform: translateX(-4px); background: rgba(255, 255, 255, .28); }
+.login-register-link { text-align: center; margin-top: 16px; font-size: 13px; }
+.login-register-link a { font-weight: 600; color: var(--dogger-red); text-decoration: none; }
+.login-register-link a:hover { text-decoration: underline; }
+.code-digits { display: flex; gap: 8px; justify-content: center; margin: 0 0 16px; }
+.code-digit {
+    width: 44px;
+    height: 52px;
+    text-align: center;
+    font-size: 20px;
+    font-family: var(--font-mono);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--dogger-paper);
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.code-digit:focus { border-color: var(--dogger-red); box-shadow: 0 0 0 2px rgba(214, 43, 31, .18); }
 
 /* ---- FAQ (acordeón con <details>) ---- */
 .faq-item summary { list-style: none; cursor: pointer; }
