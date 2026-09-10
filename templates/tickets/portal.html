@@ -5,19 +5,91 @@
 {% block body_class %}landing-page{% endblock %}
 {% block nav_inicio %}is-active{% endblock %}
 
-{% block header_actions %}
-{% if not request.user.is_authenticated %}
-<a href="{% url 'accounts:registro' %}" class="btn btn-accent btn-sm"><svg class="icon"><use href="#i-edit"/></svg> Crear cuenta</a>
-{% endif %}
+{% block header %}
+{% if request.user.is_authenticated %}{{ block.super }}{% endif %}
+{% endblock %}
+
+{% block header_actions %}{% endblock %}
+
+{% block extra_css %}
+<style>
+.landing-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 26px;
+    background: linear-gradient(120deg, rgba(126,19,12,.55) 0%, rgba(161,27,18,.50) 40%, rgba(214,43,31,.45) 100%);
+    border-bottom: 1px solid rgba(255,255,255,.22);
+    backdrop-filter: blur(8px) saturate(140%);
+    -webkit-backdrop-filter: blur(8px) saturate(140%);
+    color: var(--dogger-cream);
+    transition: box-shadow .3s ease;
+}
+.landing-nav.is-solid {
+    background: linear-gradient(120deg, rgba(126,19,12,.85) 0%, rgba(161,27,18,.80) 40%, rgba(214,43,31,.75) 100%);
+    box-shadow: 0 10px 24px rgba(161,27,18,.25);
+}
+.landing-nav .ln-brand {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+.landing-nav .ln-brand img { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,.2)); }
+.landing-nav ~ .portal-page { padding-top: 0; }
+.landing-nav ~ .portal-page .landing-hero { padding-top: 122px; }
+</style>
 {% endblock %}
 
 {% block content %}
-<main class="portal-page">
+<!-- NAV fijo arriba (solo landing) -->
+{% if not request.user.is_authenticated %}
+<nav class="landing-nav" aria-label="Navegación del portal">
+    <a class="ln-brand" href="#top" aria-label="Dogger, volver arriba">
+        <img src="{% static 'images/dogger-logo.png' %}" alt="Dogger" />
+    </a>
+    <a class="btn btn-outline-light btn-sm" href="{% url 'accounts:login_usuario' %}">Ingresar</a>
+</nav>
+{% endif %}
+
+<main class="portal-page" id="top">
 
     <!-- HERO -->
     <section class="landing-hero">
         <div class="landing-hero-inner">
             <div class="landing-hero-copy">
+                {% if request.user.is_authenticated and request.user.rol == 'admin' %}
+                <p class="landing-kicker"><svg class="hc-icon"><use href="#i-layers"/></svg> Panel de Administración · Dogger</p>
+                <h1>Bienvenido, {{ request.user.nombre }}<br><span>Centro de control del helpdesk.</span></h1>
+                <p class="landing-sub">
+                    Gestiona tickets, usuarios, categorías y revisa el rendimiento del equipo técnico.
+                    Monitorea el cumplimiento ANS y la actividad de GLPI en tiempo real.
+                </p>
+                <div class="contact-row">
+                    <a class="btn btn-accent" href="{% url 'tickets:dashboard' %}"><svg class="icon"><use href="#i-chart"/></svg> Dashboard</a>
+                    <a class="btn btn-header" href="{% url 'tickets:mi_panel' %}"><svg class="icon"><use href="#i-user"/></svg> Mi panel</a>
+                    <a class="btn btn-outline-light btn-sm" href="#como-funciona">¿Cómo funciona? ↓</a>
+                </div>
+
+                {% elif request.user.is_authenticated and request.user.es_staff_helpdesk %}
+                <p class="landing-kicker"><svg class="hc-icon"><use href="#i-layers"/></svg> Panel de Soporte · Dogger</p>
+                <h1>Hola, {{ request.user.nombre }}<br><span>Tus tickets asignados te esperan.</span></h1>
+                <p class="landing-sub">
+                    Revisa los tickets pendientes, actualiza estados y da seguimiento a las incidencias
+                    asignadas desde tu panel de trabajo.
+                </p>
+                <div class="contact-row">
+                    <a class="btn btn-accent" href="{% url 'tickets:lista' %}"><svg class="icon"><use href="#i-ticket"/></svg> Ver tickets</a>
+                    <a class="btn btn-header" href="{% url 'tickets:mi_panel' %}"><svg class="icon"><use href="#i-user"/></svg> Mis tickets</a>
+                    <a class="btn btn-header" href="{% url 'tickets:categorias_arbol' %}"><svg class="icon"><use href="#i-folder"/></svg> Categorías</a>
+                    <a class="btn btn-outline-light btn-sm" href="#como-funciona">¿Cómo funciona? ↓</a>
+                </div>
+
+                {% elif request.user.is_authenticated %}
                 <p class="landing-kicker"><svg class="hc-icon"><use href="#i-layers"/></svg> Mesa de ayuda TI · Dogger</p>
                 <h1>¿Algún problema con tu equipo o sistemas?<br><span>Reporta tu incidencia aquí.</span></h1>
                 <p class="landing-sub">
@@ -25,15 +97,24 @@
                     Recibe un código <strong>HD-XXXX</strong> y haz seguimiento hasta la solución.
                 </p>
                 <div class="contact-row">
-                    {% if request.user.is_authenticated %}
                     <a class="btn btn-accent" href="{% url 'tickets:crear_ticket' %}"><svg class="icon"><use href="#i-ticket"/></svg> Reportar incidencia</a>
                     <a class="btn btn-header" href="{% url 'tickets:mi_panel' %}"><svg class="icon"><use href="#i-user"/></svg> Ir a mi panel</a>
-                    {% else %}
-                    <a class="btn btn-accent" href="{% url 'accounts:login_usuario' %}"><svg class="icon"><use href="#i-ticket"/></svg> Reportar incidencia</a>
-                    <a class="btn btn-header" href="{% url 'accounts:registro' %}"><svg class="icon"><use href="#i-edit"/></svg> Crear cuenta</a>
-                    {% endif %}
                     <a class="btn btn-outline-light btn-sm" href="#como-funciona">¿Cómo funciona? ↓</a>
                 </div>
+
+                {% else %}
+                <p class="landing-kicker"><svg class="hc-icon"><use href="#i-layers"/></svg> Mesa de ayuda TI · Dogger</p>
+                <h1>¿Algún problema con tu equipo o sistemas?<br><span>Reporta tu incidencia aquí.</span></h1>
+                <p class="landing-sub">
+                    Centraliza tus solicitudes de soporte: POS-FE, SIESA, correos, impresoras y más.
+                    Recibe un código <strong>HD-XXXX</strong> y haz seguimiento hasta la solución.
+                </p>
+                <div class="contact-row">
+                    <a class="btn btn-accent" href="{% url 'accounts:login_usuario' %}"><svg class="icon"><use href="#i-ticket"/></svg> Reportar incidencia</a>
+                    <a class="btn btn-header" href="{% url 'accounts:registro' %}"><svg class="icon"><use href="#i-edit"/></svg> Crear cuenta</a>
+                    <a class="btn btn-outline-light btn-sm" href="#como-funciona">¿Cómo funciona? ↓</a>
+                </div>
+                {% endif %}
             </div>
             <div class="landing-hero-card">
                 <img src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" class="hero-logo">
@@ -48,7 +129,7 @@
     </section>
 
     <!-- CARACTERÍSTICAS (grid 3x3) -->
-    <section class="page features-section">
+    <section id="caracteristicas" class="page features-section">
         <div class="features-intro">
             <p class="section-kicker">Características</p>
             <h2 class="features-title">Todo lo que puedes hacer desde este portal</h2>
@@ -121,15 +202,33 @@
     <!-- LLAMADO A CREAR CUENTA -->
     <section class="page account-cta-section">
         <div class="account-cta-panel">
-            <img src="{% static 'images/dogger-logo.png' %}" alt="" class="cta-mini-logo">
+            {% if request.user.is_authenticated %}<img src="{% static 'images/dogger-logo.png' %}" alt="" class="cta-mini-logo">{% endif %}
             <div class="account-cta-copy">
+                {% if request.user.is_authenticated and request.user.rol == 'admin' %}
+                <h2>Centro de administración</h2>
+                <p>Tienes acceso completo al panel de control. Gestiona usuarios, revisa reportes y monitorea el rendimiento del helpdesk.</p>
+                <div class="contact-row">
+                    <a class="btn btn-accent" href="{% url 'tickets:dashboard' %}"><svg class="icon"><use href="#i-chart"/></svg> Ir al Dashboard</a>
+                    <a class="btn btn-primary" href="{% url 'tickets:usuarios' %}"><svg class="icon"><use href="#i-users"/></svg> Gestionar usuarios</a>
+                </div>
+
+                {% elif request.user.is_authenticated and request.user.es_staff_helpdesk %}
+                <h2>Tu panel de trabajo</h2>
+                <p>Revisa los tickets asignados y actualiza su estado. El equipo depende de ti para mantener el servicio activo.</p>
+                <div class="contact-row">
+                    <a class="btn btn-accent" href="{% url 'tickets:lista' %}"><svg class="icon"><use href="#i-ticket"/></svg> Ver tickets</a>
+                    <a class="btn btn-primary" href="{% url 'tickets:mi_panel' %}"><svg class="icon"><use href="#i-user"/></svg> Mis tickets</a>
+                </div>
+
+                {% elif request.user.is_authenticated %}
                 <h2>¿Quieres reportar una incidencia?</h2>
-                {% if request.user.is_authenticated %}
                 <p>Hola <strong>{{ request.user.nombre }}</strong>, ya tienes cuenta. Levanta tu solicitud desde el formulario de reporte.</p>
                 <div class="contact-row">
                     <a class="btn btn-accent" href="{% url 'tickets:crear_ticket' %}"><svg class="icon"><use href="#i-ticket"/></svg> Ir al formulario</a>
                 </div>
+
                 {% else %}
+                <h2>¿Quieres reportar una incidencia?</h2>
                 <p>Necesitas <strong>iniciar sesión o crear tu cuenta</strong> para levantar tickets. Así tu historial queda guardado, puedes responder al equipo y descargar tus solicitudes cuando quieras.</p>
                 <div class="contact-row">
                     <a class="btn btn-accent" href="{% url 'accounts:login_usuario' %}"><svg class="icon"><use href="#i-lock"/></svg> Iniciar sesión</a>
@@ -141,4 +240,24 @@
         </div>
     </section>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+{% if not request.user.is_authenticated %}
+<script>
+(function () {
+    var nav = document.querySelector('.landing-nav');
+    if (!nav) return;
+    function onScroll() {
+        if (window.scrollY > 60) {
+            nav.classList.add('is-solid');
+        } else {
+            nav.classList.remove('is-solid');
+        }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+})();
+</script>
+{% endif %}
 {% endblock %}

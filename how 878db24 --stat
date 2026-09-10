@@ -1,0 +1,17 @@
+[33m721f0af[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: reset: moving to origin/master
+[33m878db24[m HEAD@{1}: reset: moving to HEAD
+[33m878db24[m HEAD@{2}: commit: feat: rediseño del footer del portal, página de política de privacidad y normalización de line endings
+[33md6ea2f4[m HEAD@{3}: reset: moving to origin/master
+[33m5becb87[m HEAD@{4}: pull origin master: Fast-forward
+[33me9cdf2d[m HEAD@{5}: reset: moving to origin/master
+[33m00ab478[m HEAD@{6}: pull origin master --rebase (finish): returning to refs/heads/master
+[33m00ab478[m HEAD@{7}: pull origin master --rebase (start): checkout 00ab478ac4e237c6cbd25adfa7020b743aacb00b
+[33mc0e00de[m HEAD@{8}: commit: feat: auto-sugerencia de categoría y rediseño del formulario Levantar pedido en Mi panel
+[33mdd5fa84[m HEAD@{9}: pull origin master --rebase (finish): returning to refs/heads/master
+[33mdd5fa84[m HEAD@{10}: pull origin master --rebase (start): checkout dd5fa843467a75cbf2c9e3fdec16b473303281ef
+[33m6955fee[m HEAD@{11}: commit: chore: bumpear version de assets static (20260901) para forzar recarga de JS/CSS
+[33m249f8e2[m HEAD@{12}: pull origin master --rebase: Fast-forward
+[33m66d091d[m HEAD@{13}: commit: Add gunicorn for Render deployment
+[33mbbe4dab[m HEAD@{14}: commit: Add gunicorn for Render deployment
+[33m3c797ee[m HEAD@{15}: commit: Actualización completa: reportes, donut chart, seed realista, CSS
+[33meaaa792[m HEAD@{16}: commit (initial): Deploy: preparado para Render + PostgreSQL
