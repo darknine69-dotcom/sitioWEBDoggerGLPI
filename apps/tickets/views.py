@@ -1551,12 +1551,27 @@ def _mi_ticket_del_usuario(request, pk):
     )
 
 
-def _respuestas_para(ticket):
+def _respuestas_para(ticket, include_internos=False):
     """Historial de mensajes del ticket (comentarios de soporte + del usuario)."""
     items = []
     for c in ticket.comentarios.order_by("fecha"):
-        autor = c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda")
+        if c.es_interno:
+            if not include_internos:
+                continue
+            rol = "interno"
+            autor = c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Staff")
+            items.append(
+                {
+                    "rol": rol,
+                    "autor": autor,
+                    "fecha": c.fecha.isoformat() if c.fecha else "",
+                    "fecha_label": c.fecha.strftime("%d/%m/%Y %H:%M") if c.fecha else "",
+                    "texto": c.comentario,
+                }
+            )
+            continue
         rol = "soporte"
+        autor = c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda")
         if c.usuario_id and getattr(c.usuario, "rol", None) == "usuario":
             rol = "usuario"
         items.append(
@@ -1777,6 +1792,137 @@ def mi_responder_ajax(request, pk):
         "mensaje": {
             "rol": "usuario",
             "autor": request.user.nombre,
+            "fecha_label": DateFormat(timezone.now()).format("d/m/Y H:i"),
+            "texto": comentario,
+        },
+    })
+
+
+@staff_required
+def panel_tecnico(request):
+    """
+    Panel del técnico: solicitudes asignadas a él/ella + chat para responderlas.
+    """
+    tecnico = request.user
+    estado = request.GET.get("estado", "").strip()
+    q = request.GET.get("q", "").strip()
+
+    qs = (
+        Ticket.objects.filter(tecnico_asignado=tecnico)
+        .select_related("categoria", "tecnico_asignado")
+        .prefetch_related("comentarios", "eventos_glpi")
+    )
+    if estado:
+        qs = qs.filter(estado=estado)
+    if q:
+        match_codigo = re.match(r"^HD-(\d+)$", q.upper())
+        condicion = (
+            Q(codigo__iexact=q.upper())
+            | Q(titulo__icontains=q)
+            | Q(solicitante_nombre__icontains=q)
+            | Q(solicitante_email__icontains=q)
+            | Q(solicitante_punto__icontains=q)
+        )
+        if match_codigo:
+            condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
+        qs = qs.filter(condicion)
+
+    page_obj = _paginar(
+        qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
+            "_prioridad_orden", "-fecha_creacion"
+        ),
+        request,
+        per_page=8,
+    )
+
+    ticket = None
+    timeline = []
+    eventos_count = 0
+    ticket_pk = request.GET.get("ticket")
+    if ticket_pk:
+        ticket = get_object_or_404(
+            Ticket.objects.select_related("categoria", "tecnico_asignado").prefetch_related(
+                "comentarios", "comentarios__usuario", "eventos_glpi", "adjuntos"
+            ),
+            pk=ticket_pk,
+            tecnico_asignado=tecnico,
+        )
+        timeline = _timeline_ticket(ticket, include_internos=True)
+        eventos_count = sum(1 for i in timeline if i["tipo"] == "sistema")
+
+    return render(
+        request,
+        "tickets/panel_tecnico.html",
+        {
+            "tickets": page_obj.object_list,
+            "page_obj": page_obj,
+            "querystring": _params_sin_page(request),
+            "filtro_estado": estado,
+            "q": q,
+            "estados": Ticket.Estado.choices,
+            "total_resultados": page_obj.paginator.count,
+            "ticket": ticket,
+            "timeline": timeline,
+            "eventos_count": eventos_count,
+        },
+    )
+
+
+@staff_required
+def panel_tecnico_msgs_ajax(request, pk):
+    """JSON con los mensajes del ticket para refrescar el chat sin recargar."""
+    ticket = get_object_or_404(
+        Ticket.objects.select_related("tecnico_asignado"),
+        pk=pk,
+        tecnico_asignado=request.user,
+    )
+    return JsonResponse({"ok": True, "mensajes": _respuestas_para(ticket, include_internos=True)})
+
+
+@staff_required
+@require_POST
+def panel_tecnico_chat_ajax(request, pk):
+    """Envía un mensaje del técnico al solicitante en el chat del panel."""
+    ticket = get_object_or_404(
+        Ticket.objects.select_related("tecnico_asignado"),
+        pk=pk,
+        tecnico_asignado=request.user,
+    )
+    comentario = request.POST.get("comentario", "").strip()
+    if not comentario:
+        return JsonResponse({"ok": False, "error": "Escribe un mensaje para responder."}, status=400)
+    es_interno = request.POST.get("interno") in ("1", "true", "on")
+
+    c = TicketComentario.objects.create(
+        ticket=ticket,
+        usuario=request.user,
+        autor_nombre=request.user.nombre,
+        comentario=comentario,
+        es_interno=es_interno,
+    )
+
+    notificado = False
+    if not es_interno:
+        notificar_comentario(ticket, request.user.nombre, comentario)
+        if ticket.glpi_id:
+            try:
+                sync_followup_to_glpi(ticket, comentario)
+                notificado = True
+            except GlpiError:
+                notificado = False
+        GlpiEvento.objects.create(
+            ticket=ticket,
+            tipo=GlpiEvento.Tipo.SEGUIMIENTO,
+            descripcion=f"{ticket.codigo}: respuesta del técnico registrada",
+            payload_bruto={"usuario": request.user.email, "comentario": comentario},
+        )
+
+    return JsonResponse({
+        "ok": True,
+        "notificado": notificado,
+        "mensaje": {
+            "rol": "interno" if es_interno else "soporte",
+            "autor": c.autor_nombre or request.user.nombre,
             "fecha_label": DateFormat(timezone.now()).format("d/m/Y H:i"),
             "texto": comentario,
         },

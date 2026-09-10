@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Panel Técnico{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block nav_tecnico %}is-active{% endblock %}
+{% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
+{% block header_title %}Panel Técnico{% endblock %}
+
+{% block extra_css %}
+<style>
+.tec-panel { display: grid; grid-template-columns: minmax(320px, 430px) 1fr; gap: 22px; align-items: start; margin-top: 18px; }
+.tec-list-card { background: var(--dogger-paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; }
+.tec-list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.tec-list-head h3 { font-family: var(--font-display); font-weight: 400; font-size: 16px; margin: 0; }
+.tec-list-head .tec-count { font-size: 12px; color: var(--ink-muted); }
+.tec-list { display: flex; flex-direction: column; max-height: 70vh; overflow-y: auto; }
+.tec-item { display: block; padding: 13px 18px; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; transition: background .15s ease, border-color .15s ease; }
+.tec-item:hover { background: var(--dogger-cream); }
+.tec-item.tec-active { background: #FFF3E3; border-left: 4px solid var(--dogger-red); }
+.tec-item-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tec-item-code { font-family: var(--font-mono); font-size: 12px; color: var(--dogger-red); font-weight: 700; }
+.tec-item-title { font-weight: 600; font-size: 14px; margin: 4px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tec-item-sub { font-size: 12px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 10px; }
+.tec-item-ans { font-size: 12px; margin-top: 6px; font-weight: 600; }
+.tec-ans-ok { color: var(--state-resuelto); }
+.tec-ans-por-vencer { color: #B7791F; }
+.tec-ans-vencido { color: var(--dogger-red); }
+.tec-item .status-pill { font-size: 11px; }
+.tec-panel-empty { text-align: center; padding: 40px 20px; color: var(--ink-muted); }
+
+.tec-chat { background: var(--dogger-paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; min-height: 480px; display: flex; flex-direction: column; }
+.tec-chat-head { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.tec-chat-head-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tec-chat-title { font-family: var(--font-display); font-weight: 400; font-size: 18px; margin: 0; }
+.tec-chat-title small { color: var(--ink-muted); font-family: var(--font-mono); font-size: 12px; font-weight: 700; }
+.tec-chat-sub { font-size: 13px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 14px; }
+.tec-chat-body { flex: 1; overflow-y: auto; max-height: 380px; padding: 16px; }
+.tec-chat-form { border-top: 1px solid var(--line); padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.tec-chat-form textarea { width: 100%; resize: vertical; min-height: 62px; border: 1.5px solid var(--line); border-radius: var(--radius); padding: 10px 12px; font: inherit; }
+.tec-chat-form textarea:focus { outline: none; border-color: var(--dogger-red); }
+.tec-chat-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tec-interno-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-muted); cursor: pointer; }
+.tec-interno-label input { accent-color: var(--dogger-red); }
+.tec-state-row { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+.tec-state-row select { font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 10px; background: var(--dogger-paper); }
+.tec-state-row select:focus { outline: none; border-color: var(--dogger-red); }
+.tec-empty-chat { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--ink-muted); text-align: center; padding: 30px; }
+@media (max-width: 900px) {
+    .tec-panel { grid-template-columns: 1fr; }
+    .tec-list { max-height: 320px; }
+    .tec-chat { min-height: 420px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver a Tickets"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
+        <div class="page-head-titles">
+            <h2>Panel Técnico</h2>
+            <p>Solicitudes asignadas a ti y chat de respuesta directa con el solicitante.</p>
+        </div>
+    </div>
+
+    <form method="get" class="table-toolbar" id="filtrosTecnico">
+        <label class="search-field">
+            <svg class="icon icon-sm"><use href="#i-search"/></svg>
+            <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código HD, título, solicitante o punto…" />
+        </label>
+        <select name="estado" data-autosubmit>
+            <option value="">Todos los estados</option>
+            {% for val, label in estados %}
+            <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        <span class="toolbar-count">{{ total_resultados }} solicitud{{ total_resultados|pluralize }} asignada{{ total_resultados|pluralize }}s</span>
+    </form>
+
+    <div class="tec-panel">
+        <div class="tec-list-card">
+            <div class="tec-list-head">
+                <h3>Mis solicitudes</h3>
+                <span class="tec-count">{{ page_obj.paginator.count }} en total</span>
+            </div>
+            {% if tickets %}
+            <div class="tec-list">
+                {% for t in tickets %}
+                <a class="tec-item {% if ticket and ticket.pk == t.pk %}tec-active{% endif %}"
+                   href="?{% if querystring %}{{ querystring }}&{% endif %}ticket={{ t.pk }}">
+                    <div class="tec-item-top">
+                        <span class="tec-item-code">{{ t.codigo }}</span>
+                        <span class="status-pill status-{{ t.estado }}">{{ t.get_estado_display }}</span>
+                    </div>
+                    <div class="tec-item-title">{{ t.titulo }}</div>
+                    <div class="tec-item-sub">
+                        <span>{{ t.solicitante_nombre }}</span>
+                        {% if t.solicitante_punto %}<span>· {{ t.solicitante_punto }}</span>{% endif %}
+                        <span>· {{ t.get_prioridad_display }}</span>
+                    </div>
+                    {% with ans=t.info_ans %}
+                    {% if ans.2 %}<div class="tec-item-ans tec-ans-{{ ans.0 }}">{{ ans.1 }}</div>{% endif %}
+                    {% endwith %}
+                </a>
+                {% endfor %}
+            </div>
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="pagination-bar" style="margin:0;">
+                <div class="pagination-links">
+                    {% if page_obj.has_previous %}
+                    <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
+                    {% endif %}
+                    <span class="pagination-info">Página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+                    {% if page_obj.has_next %}
+                    <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Siguiente ›</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="tec-panel-empty">
+                <p>No tienes solicitudes asignadas{% if filtro_estado %} en este estado{% endif %}.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if ticket %}
+        <div class="tec-chat" id="tecChat">
+            <div class="tec-chat-head">
+                <div class="tec-chat-head-top">
+                    <h3 class="tec-chat-title">{{ ticket.titulo }} <small>{{ ticket.codigo }}</small></h3>
+                    <span class="status-pill status-{{ ticket.estado }}">{{ ticket.get_estado_display }}</span>
+                </div>
+                <div class="tec-chat-sub">
+                    <span>Solicitante: <strong>{{ ticket.solicitante_nombre }}</strong></span>
+                    {% if ticket.solicitante_email %}<span>· {{ ticket.solicitante_email }}</span>{% endif %}
+                    {% if ticket.solicitante_punto %}<span>· {{ ticket.solicitante_punto }}</span>{% endif %}
+                    <span>· Prioridad: {{ ticket.get_prioridad_display }}</span>
+                    <span>· {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                    {% if ticket.categoria %}<span>· {{ ticket.categoria.grupo }} › {{ ticket.categoria.nombre }}</span>{% endif %}
+                </div>
+                <div class="tec-state-row">
+                    <label for="tecEstado" style="font-size:13px;color:var(--ink-muted);">Cambiar estado:</label>
+                    <select id="tecEstado" data-ticket="{{ ticket.pk }}" data-next="{{ request.get_full_path }}">
+                        {% for val, label in estados %}
+                        <option value="{{ val }}" {% if ticket.estado == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <a class="btn btn-outline btn-sm" href="{% url 'tickets:detalle' ticket.pk %}" target="_blank" rel="noopener">Ver detalle completo</a>
+                </div>
+            </div>
+
+            <div class="tec-chat-body" id="tecChatBody">
+                <div class="chat-thread" id="chat-thread">
+                    {% for item in timeline %}
+                        {% if item.tipo == 'sistema' %}
+                        <div class="chat-event">
+                            <span class="chat-event-icon"><svg class="icon icon-sm"><use href="#i-message"/></svg></span>
+                            <span class="chat-event-text">{{ item.texto }}</span>
+                            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        {% elif item.tipo == 'interno' %}
+                        <div class="chat-event chat-event-interno">
+                            <span class="chat-event-icon"><svg class="icon icon-sm"><use href="#i-lock"/></svg></span>
+                            <span class="chat-event-text"><strong>INTERNO · {{ item.autor }}</strong> — {{ item.texto }}</span>
+                            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        {% else %}
+                        <div class="chat-msg chat-msg-{{ item.tipo }}">
+                            <div class="chat-meta">
+                                <span class="chat-avatar">{{ item.autor|slice:":1"|upper }}</span>
+                                <strong>{{ item.autor }}</strong>
+                                <span class="chat-meta-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+                            </div>
+                            <div class="chat-bubble">{{ item.texto }}</div>
+                        </div>
+                        {% endif %}
+                    {% empty %}
+                    <p class="ticket-empty-state">Sin mensajes aún. Escribe la primera respuesta al solicitante.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <form class="tec-chat-form" id="tecChatForm" data-ticket="{{ ticket.pk }}">
+                {% csrf_token %}
+                <textarea name="comentario" id="tecMensaje" placeholder="Escribe tu respuesta al solicitante…" required></textarea>
+                <div class="tec-chat-tools">
+                    <label class="tec-interno-label">
+                        <input type="checkbox" name="interno" id="tecInterno" value="on">
+                        Nota interna (solo staff)
+                    </label>
+                    <button type="submit" class="btn btn-accent btn-sm">
+                        <svg class="icon"><use href="#i-send"/></svg> Enviar respuesta
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <div class="tec-chat">
+            <div class="tec-empty-chat">
+                <svg class="icon" style="width:38px;height:38px;opacity:.4"><use href="#i-message"/></svg>
+                <p>Selecciona una solicitud de la izquierda para ver su chat y responder.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var BODY = document.getElementById('tecChatBody');
+    if (!BODY) return;
+    var thread = document.getElementById('chat-thread');
+    var form = document.getElementById('tecChatForm');
+    var mensaje = document.getElementById('tecMensaje');
+    var interno = document.getElementById('tecInterno');
+    var estadoSel = document.getElementById('tecEstado');
+    var ticketPk = form.dataset.ticket;
+    var csrf = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+        });
+    }
+    function token(c) {
+        return c == null || c === '' ? '' : c.charAt(0).toUpperCase();
+    }
+    function card(m) {
+        var rol = m.rol;
+        if (rol === 'sistema') {
+            return '<div class="chat-event"><span class="chat-event-icon"><svg class="icon icon-sm"><use href="#i-message"/></svg></span><span class="chat-event-text">' + esc(m.texto) + '</span><span class="chat-event-time">' + esc(m.fecha_label) + '</span></div>';
+        }
+        if (rol === 'interno') {
+            return '<div class="chat-event chat-event-interno"><span class="chat-event-icon"><svg class="icon icon-sm"><use href="#i-lock"/></svg></span><span class="chat-event-text"><strong>INTERNO · ' + esc(m.autor) + '</strong> — ' + esc(m.texto) + '</span><span class="chat-event-time">' + esc(m.fecha_label) + '</span></div>';
+        }
+        var cls = (rol === 'usuario' || rol === 'user') ? 'chat-msg-usuario' : 'chat-msg-soporte';
+        return '<div class="chat-msg ' + cls + '"><div class="chat-meta"><span class="chat-avatar">' + esc(token(m.autor)) + '</span><strong>' + esc(m.autor) + '</strong><span class="chat-meta-time">' + esc(m.fecha_label) + '</span></div><div class="chat-bubble">' + esc(m.texto) + '</div></div>';
+    }
+    function render(lista) {
+        if (!lista || !lista.length) return;
+        var empty = thread.querySelector('.ticket-empty-state');
+        if (empty) empty.remove();
+        thread.insertAdjacentHTML('beforeend', lista.map(card).join(''));
+        BODY.scrollTop = BODY.scrollHeight;
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var txt = mensaje.value.trim();
+        if (!txt) return;
+        var fd = new FormData();
+        fd.append('comentario', txt);
+        fd.append('csrfmiddlewaretoken', csrf);
+        if (interno && interno.checked) fd.append('interno', 'on');
+        fetch('{% url "tickets:panel_tecnico_chat" 0 %}'.replace('0', ticketPk), {method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}})
+            .then(function (r) { return r.json().then(function (d) { return {ok: r.ok, d: d}; }); })
+            .then(function (res) {
+                if (res.ok && res.d.ok) { render([res.d.mensaje]); mensaje.value = ''; }
+                else { alert((res.d && res.d.error) || 'No se pudo enviar el mensaje.'); }
+            })
+            .catch(function () { alert('Error de conexión al enviar el mensaje.'); });
+    });
+
+    if (estadoSel) {
+        estadoSel.addEventListener('change', function () {
+            var url = '{% url "tickets:cambiar_estado" 0 %}'.replace('0', ticketPk);
+            var fd = new FormData();
+            fd.append('estado', estadoSel.value);
+            fd.append('csrfmiddlewaretoken', csrf);
+            fd.append('next', estadoSel.dataset.next);
+            fetch(url, {method: 'POST', body: fd, headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                .then(function () { location.reload(); })
+                .catch(function () { location.reload(); });
+        });
+    }
+
+    setInterval(function () {
+        fetch('{% url "tickets:panel_tecnico_msgs" 0 %}'.replace('0', ticketPk), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.ok) {
+                    var actuales = thread.querySelectorAll('.chat-msg, .chat-event').length;
+                    if (d.mensajes.length > actuales) {
+                        thread.innerHTML = '';
+                        render(d.mensajes);
+                    }
+                }
+            }).catch(function () {});
+    }, 10000);
+})();
+</script>
+{% endblock %}
