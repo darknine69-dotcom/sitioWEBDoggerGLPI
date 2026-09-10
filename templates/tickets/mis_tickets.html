@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Mis Tickets{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block nav_mis_tickets %}is-active{% endblock %}
+{% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
+{% block header_title %}Mis Tickets{% endblock %}
+
+{% block extra_css %}
+<style>.table-sub { color: var(--ink-muted); font-size: 12px; display: block; }</style>
+{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% url 'tickets:panel_tecnico' %}" title="Volver al panel técnico"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
+        <div class="page-head-titles">
+            <h2>Mis tickets</h2>
+            <p>Todos los tickets asignados a ti, con sus acciones rápidas.</p>
+        </div>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'tickets:panel_tecnico' %}"><svg class="icon"><use href="#i-message"/></svg> Chat del panel</a>
+    </div>
+
+    <form method="get" class="table-toolbar" id="filtrosMisTickets">
+        <label class="search-field">
+            <svg class="icon icon-sm"><use href="#i-search"/></svg>
+            <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código HD, título, solicitante o punto…" />
+        </label>
+        <select name="estado" data-autosubmit>
+            <option value="">Todos los estados</option>
+            {% for val, label in estados %}
+            <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="prioridad" data-autosubmit>
+            <option value="">Todas las prioridades</option>
+            {% for val, label in prioridades %}
+            <option value="{{ val }}" {% if filtro_prioridad == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
+        {% if q or filtro_estado or filtro_prioridad %}
+        <a href="{% url 'tickets:mis_tickets' %}" class="link-clear">✕ Limpiar</a>
+        {% endif %}
+        <span class="toolbar-count">{{ total_resultados }} ticket{{ total_resultados|pluralize }} asignado{{ total_resultados|pluralize }} · página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+    </form>
+
+    <div class="table-card">
+        <div class="table-scroll">
+            <table class="data-table cards-mobile" id="tablaMisTickets">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Solicitante</th>
+                        <th>Prioridad</th>
+                        <th>ANS</th>
+                        <th>Categoría</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tickets %}
+                    <tr class="tr-{{ t.prioridad }}">
+                        <td data-label="Código"><span class="table-code">{{ t.codigo }}</span>{% if t.adjuntos_count %}<span class="row-icon" title="Adjuntos"><svg class="icon icon-sm"><use href="#i-paperclip"/></svg>{{ t.adjuntos_count }}</span>{% endif %}{% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}</td>
+                        <td data-label="Título">{{ t.titulo|truncatechars:42 }}</td>
+                        <td data-label="Solicitante">{{ t.solicitante_nombre }}{% if t.solicitante_punto %}<span class="table-sub"> · {{ t.solicitante_punto }}</span>{% endif %}</td>
+                        <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
+                        <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
+                        <td data-label="Categoría">{{ t.categoria.nombre|default:"—" }}</td>
+                        <td data-label="Estado">
+                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+                        </td>
+                        <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td data-label="Acciones" class="cell-actions">
+                            <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}" target="_blank" rel="noopener">
+                                <svg class="icon icon-sm"><use href="#i-external"/></svg> Ver
+                            </a>
+                            <a class="btn btn-sm btn-accent" href="{% url 'tickets:panel_tecnico' %}?ticket={{ t.pk }}">
+                                <svg class="icon icon-sm"><use href="#i-message"/></svg> Chat
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="table-empty"><td colspan="9">No tienes tickets asignados{% if filtro_estado or filtro_prioridad or q %} con estos filtros{% endif %}.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="pagination-bar">
+            <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} resultados</span>
+            <div class="pagination-links">
+                {% if page_obj.has_previous %}
+                <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Siguiente ›</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

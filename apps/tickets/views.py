@@ -1943,6 +1943,61 @@ def panel_tecnico_tomar(request, pk):
 
 
 @staff_required
+def mis_tickets_tecnico(request):
+    """Vista completa de los tickets asignados al técnico (tabla con filtros y acciones)."""
+    tecnico = request.user
+    estado = request.GET.get("estado", "").strip()
+    prioridad = request.GET.get("prioridad", "").strip()
+    q = request.GET.get("q", "").strip()
+
+    qs = (
+        Ticket.objects.filter(tecnico_asignado=tecnico)
+        .select_related("categoria", "tecnico_asignado")
+        .prefetch_related("adjuntos")
+    )
+    if estado:
+        qs = qs.filter(estado=estado)
+    if prioridad:
+        qs = qs.filter(prioridad=prioridad)
+    if q:
+        condicion = (
+            Q(codigo__iexact=q.upper())
+            | Q(titulo__icontains=q)
+            | Q(solicitante_nombre__icontains=q)
+            | Q(solicitante_email__icontains=q)
+            | Q(solicitante_punto__icontains=q)
+        )
+        if re.match(r"^HD-(\d+)$", q.upper()):
+            condicion = Q(codigo__iexact=q.upper())
+        qs = qs.filter(condicion)
+
+    adj_count = qs.annotate(adjuntos_count=Count("adjuntos"))
+    page_obj = _paginar(
+        adj_count.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
+            "_prioridad_orden", "-fecha_creacion"
+        ),
+        request,
+        per_page=15,
+    )
+
+    return render(
+        request,
+        "tickets/mis_tickets.html",
+        {
+            "tickets": page_obj.object_list,
+            "page_obj": page_obj,
+            "querystring": _params_sin_page(request),
+            "filtro_estado": estado,
+            "filtro_prioridad": prioridad,
+            "q": q,
+            "estados": Ticket.Estado.choices,
+            "prioridades": Ticket.Prioridad.choices,
+            "total_resultados": page_obj.paginator.count,
+        },
+    )
+
+
+@staff_required
 def panel_tecnico_msgs_ajax(request, pk):
     """JSON con los mensajes del ticket para refrescar el chat sin recargar."""
     try:

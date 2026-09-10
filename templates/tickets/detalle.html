@@ -7,16 +7,52 @@
 {% block extra_css %}
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260904">
+<style>
+.ticket-detail-page { max-width: 1120px; }
+.ticket-detail-hero {
+    padding: 24px 28px 20px;
+    margin-bottom: 22px;
+    background: linear-gradient(165deg, #ffffff 0%, #fdfaf3 55%, #f7f0e0 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+}
+.ticket-detail-hero .corp-detail-toolbar { margin-top: 18px; border-top: 1px dashed var(--line); padding-top: 14px; }
+.ticket-detail-grid { display: grid; grid-template-columns: 1.55fr 1fr; gap: 22px; align-items: start; }
+.ticket-main-col, .ticket-side-col { display: flex; flex-direction: column; gap: 20px; }
+.ticket-side-col { position: sticky; top: 22px; max-height: calc(100vh - 44px); overflow-y: auto; }
+.ficha-list { display: flex; flex-direction: column; gap: 9px; }
+.ficha-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13.5px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 10px; background: #fff;
+}
+.ficha-row .ficha-icon { color: var(--ink-muted); display: inline-flex; align-items: center; }
+.ficha-row .ficha-icon .icon { width: 16px; height: 16px; }
+.ficha-row .ficha-k { color: var(--ink-muted); margin-right: auto; }
+.ficha-row .ficha-v { font-weight: 600; text-align: right; line-height: 1.3; }
+.ficha-row .ficha-v small { display: block; font-weight: 400; color: var(--ink-muted); font-size: 12px; }
+.ficha-row.ficha-destacada { background: #fffdf7; border-color: #e8dcb8; }
+@media (max-width: 920px) {
+    .ticket-detail-grid { grid-template-columns: 1fr; }
+    .ticket-side-col { position: static; max-height: none; overflow: visible; }
+}
+</style>
 {% endblock %}
 
 {% block header_actions %}
+{% if request.user.rol == 'admin' %}
 <a href="{% url 'tickets:lista' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Tickets</a>
 <a href="{% url 'tickets:dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
+{% else %}
+<a href="{% url 'tickets:panel_tecnico' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Panel técnico</a>
+<a href="{% url 'tickets:mis_tickets' %}" class="btn btn-outline-light btn-sm">Mis tickets</a>
+{% endif %}
 {% endblock %}
 
 {% block content %}
 <main class="page page-corporate ticket-detail-page">
-    <section class="corp-card corp-detail-card">
+    <section class="ticket-detail-hero">
         <div class="corp-detail-head">
             <div class="corp-title-wrap">
                 <span class="corp-title-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
@@ -44,21 +80,6 @@
             <span class="meta-pill"><svg class="icon icon-xs"><use href="#i-wrench"/></svg> {{ ticket.tecnico_asignado.nombre }}{% if ticket.asignacion_automatica %} (auto){% endif %}</span>
             {% endif %}
         </div>
-
-        {% with estado_ans=ticket.info_ans.0 %}
-        <div class="corp-ans-row">
-            <div class="corp-ans-item">
-                <span class="ans-meta-label">Prioridad (ANS)</span>
-                <span class="ans-meta-value meta-prio meta-prio-{{ ticket.prioridad }}">
-                    {{ ticket.get_prioridad_display }}{% if ticket.ans_horas %} · {{ ticket.ans_horas }}h{% endif %}
-                </span>
-            </div>
-            <div class="corp-ans-item">
-                <span class="ans-meta-label">Límite de resolución</span>
-                <span class="ans-meta-value meta-prio meta-prio-{{ ticket.prioridad }}">{{ ticket.fecha_limite_ans|date:"d/m/Y H:i"|default:"—" }}</span>
-            </div>
-        </div>
-        {% endwith %}
 
         <div class="corp-detail-toolbar">
             <form method="post" action="{% url 'tickets:staff_reenviar_glpi' ticket.pk %}" class="inline-form">
@@ -93,27 +114,28 @@
                 {% endif %}
             </div>
         </div>
+    </section>
 
-        <div class="corp-desc-plain">
-            <button type="button" class="corp-subsection-head corp-desc-toggle" id="corp-desc-toggle" aria-expanded="false">
-                <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
-                <h3>Descripción</h3>
-                <svg class="icon corp-chevron"><use href="#i-chevron-down"/></svg>
-            </button>
-            <div class="corp-seg-content" id="corp-desc-content" hidden>
-                <p class="ticket-description">{{ ticket.descripcion }}</p>
-            </div>
-        </div>
+    <div class="ticket-detail-grid">
+        <div class="ticket-main-col">
+            <section class="corp-subsection">
+                <button type="button" class="corp-subsection-head corp-desc-toggle" id="corp-desc-toggle" aria-expanded="false">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
+                    <h3>Descripción</h3>
+                    <svg class="icon corp-chevron"><use href="#i-chevron-down"/></svg>
+                </button>
+                <div class="corp-seg-content" id="corp-desc-content" hidden>
+                    <p class="ticket-description">{{ ticket.descripcion }}</p>
+                </div>
+            </section>
 
-        <div class="corp-timeline-plain">
-
-            <section class="corp-subsection corp-timeline-wrap">
-                    <button type="button" class="corp-subsection-head corp-desc-toggle" id="corp-seg-toggle" aria-expanded="false">
-                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-clock"/></svg></span>
-                        <h3>Seguimiento · {{ ticket.codigo }}</h3>
-                        <svg class="icon corp-chevron"><use href="#i-chevron-down"/></svg>
-                    </button>
-                    <div class="corp-seg-content" id="corp-seg-content" hidden>
+            <section class="corp-subsection">
+                <button type="button" class="corp-subsection-head corp-desc-toggle" id="corp-seg-toggle" aria-expanded="false">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-clock"/></svg></span>
+                    <h3>Seguimiento · {{ ticket.codigo }}</h3>
+                    <svg class="icon corp-chevron"><use href="#i-chevron-down"/></svg>
+                </button>
+                <div class="corp-seg-content" id="corp-seg-content" hidden>
                     <div class="corp-timeline" id="corp-timeline" data-estado="{{ ticket.estado }}" data-pk="{{ ticket.pk }}">
                         <div class="corp-tl-step is-done" data-step="1">
                             <span class="corp-tl-marker"><svg class="icon"><use href="#i-check"/></svg></span>
@@ -155,24 +177,93 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </section>
 
-                    <div class="corp-notif-inline-head">
-                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
-                        <strong>Actividad</strong>
-                        <button type="button" class="corp-notif-btn" id="corp-notif-toggle" aria-expanded="false"
-                                title="Ver seguimientos de esta solicitud">
-                            <svg class="icon"><use href="#i-bell"/></svg>
-                        </button>
-                    </div>
-                    <div class="corp-notif-body" id="corp-notif-body" hidden>
-                        {% include "tickets/_chat_thread.html" %}
-                    </div>
-                    </div>
-                    </section>
+            <section class="corp-subsection">
+                <div class="corp-notif-inline-head">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
+                    <strong>Actividad</strong>
+                    <button type="button" class="corp-notif-btn" id="corp-notif-toggle" aria-expanded="false"
+                            title="Ver seguimientos de esta solicitud">
+                        <svg class="icon"><use href="#i-bell"/></svg>
+                    </button>
+                </div>
+                <div class="corp-notif-body" id="corp-notif-body" hidden>
+                    {% include "tickets/_chat_thread.html" %}
+                </div>
+            </section>
 
+            <form method="post" class="corp-comment-form corp-subsection">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="comentario">
+                <div class="corp-subsection-head">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-plus"/></svg></span>
+                    <h3>Agregar seguimiento</h3>
+                </div>
+                <div class="form-group">{{ comentario_form.comentario }}</div>
+                <div class="form-group-check">
+                    <label>{{ comentario_form.es_interno }} Comentario interno (solo staff)</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Agregar seguimiento</button>
+            </form>
         </div>
 
-        <div class="corp-detail-sections">
+        <aside class="ticket-side-col">
+            <section class="corp-subsection">
+                <div class="corp-subsection-head">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
+                    <h3>Ficha del ticket</h3>
+                </div>
+                <div class="ficha-list">
+                    <div class="ficha-row">
+                        <span class="ficha-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+                        <span class="ficha-k">Prioridad</span>
+                        <span class="ficha-v meta-prio meta-prio-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span>
+                    </div>
+                    <div class="ficha-row ficha-destacada">
+                        <span class="ficha-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
+                        <span class="ficha-k">Límite de resolución</span>
+                        <span class="ficha-v">{{ ticket.fecha_limite_ans|date:"d/m/Y H:i"|default:"—" }}{% if ticket.ans_horas %}<small>{{ ticket.ans_horas }}h para {{ ticket.get_prioridad_display }}</small>{% endif %}</span>
+                    </div>
+                    <div class="ficha-row">
+                        <span class="ficha-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
+                        <span class="ficha-k">Categoría</span>
+                        <span class="ficha-v">{{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
+                    </div>
+                    <div class="ficha-row">
+                        <span class="ficha-icon"><svg class="icon"><use href="#i-calendar"/></svg></span>
+                        <span class="ficha-k">Creado</span>
+                        <span class="ficha-v">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% if ticket.fecha_actualizacion %}
+                    <div class="ficha-row">
+                        <span class="ficha-icon"><svg class="icon"><use href="#i-refresh"/></svg></span>
+                        <span class="ficha-k">Actualizado</span>
+                        <span class="ficha-v">{{ ticket.fecha_actualizacion|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if ticket.fecha_cierre %}
+                    <div class="ficha-row">
+                        <span class="ficha-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                        <span class="ficha-k">Cerrado</span>
+                        <span class="ficha-v">{{ ticket.fecha_cierre|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="ficha-row">
+                        <span class="ficha-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                        <span class="ficha-k">Técnico</span>
+                        <span class="ficha-v">{% if ticket.tecnico_asignado %}{{ ticket.tecnico_asignado.nombre }}{% if ticket.asignacion_automatica %}<small>asignación automática</small>{% endif %}{% else %}Sin asignar{% endif %}</span>
+                    </div>
+                    {% if ticket.glpi_id %}
+                    <div class="ficha-row">
+                        <span class="ficha-icon"><svg class="icon"><use href="#i-external"/></svg></span>
+                        <span class="ficha-k">GLPI</span>
+                        <span class="ficha-v">#{{ ticket.glpi_id }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
 
             {% if ticket.adjuntos.all %}
             <section class="corp-subsection">
@@ -180,7 +271,6 @@
                     <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-paperclip"/></svg></span>
                     <h3>Capturas / adjuntos</h3>
                 </div>
-                {% if ticket.adjuntos.all %}
                 <div class="ticket-attachments">
                     {% for a in ticket.adjuntos.all %}
                     {% if a.es_imagen %}
@@ -196,29 +286,12 @@
                     {% endif %}
                     {% endfor %}
                 </div>
-                {% else %}
-                <p class="empty-hint">Sin adjuntos</p>
-                {% endif %}
             </section>
             {% endif %}
-        </div>
+        </aside>
+    </div>
 
-        <form method="post" class="corp-comment-form">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="comentario">
-            <div class="corp-subsection-head">
-                <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
-                <h3>Agregar seguimiento</h3>
-            </div>
-            <div class="form-group">{{ comentario_form.comentario }}</div>
-            <div class="form-group-check">
-                <label>{{ comentario_form.es_interno }} Comentario interno (solo staff)</label>
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm">Agregar seguimiento</button>
-        </form>
-
-        {% include "tickets/_share_row.html" %}
-    </section>
+    {% include "tickets/_share_row.html" %}
 </main>
 {% endblock %}
 
