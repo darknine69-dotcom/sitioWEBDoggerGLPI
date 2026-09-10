@@ -1,12 +1,25 @@
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
+from django.conf import settings
 from django.contrib import messages
+from django.core.mail import send_mail
 from django.shortcuts import redirect, render, reverse
 from django.urls import reverse_lazy
 from django.views import View
+import logging
 
-from .forms import LoginForm, UserRegisterForm, PerfilForm, CambiarPasswordForm
+from .forms import (
+    CambiarPasswordForm,
+    LoginForm,
+    PerfilForm,
+    RestablecerPasswordForm,
+    SolicitarResetForm,
+    UserRegisterForm,
+)
+from .models import ResetPasswordToken
+
+logger = logging.getLogger(__name__)
 
 
 def _glpi_available():
@@ -177,3 +190,52 @@ def cambiar_password(request):
                 for err in errs:
                     messages.error(request, f"{prefix}{err}")
     return redirect(reverse("accounts:ajustes") + "#password")
+
+
+def solicitar_reset(request):
+    """Paso 1 — el usuario escribe su correo y recibe un código de 6 dígitos."""
+    if request.method == "POST":
+        form = SolicitarResetForm(request.POST)
+        if form.is_valid():
+            usuario = form.usuario
+            if usuario is None:
+                # No revelar si la cuenta existe: mismo mensaje general.
+                messages.success(request, "Si el correo está registrado, recibirás un código.")
+                return redirect("accounts:login")
+            try:
+                token = ResetPasswordToken.generar(usuario)
+                send_mail(
+                    "Dogger HelpDesk — Código para restablecer contraseña",
+                    (
+                        f"Hola {usuario.nombre}:\n\n"
+                        f"Tu código para restablecer la contraseña es: {token.codigo}\n\n"
+                        "Este código es válido por 30 minutos.\n"
+                        "Si no solicitaste este cambio, ignora este mensaje."
+                    ),
+                    settings.DEFAULT_FROM_EMAIL,
+                    [usuario.email],
+                    fail_silently=True,
+                )
+            except Exception as exc:
+                logger.exception("Error enviando código de reset a %s", usuario.email)
+            messages.success(request, "Te enviamos un código de verificación a tu correo.")
+            return redirect(reverse("accounts:restablecer_password"))
+        return render(request, "accounts/reset_solicitar.html", {"form": form})
+
+    return render(request, "accounts/reset_solicitar.html", {"form": SolicitarResetForm()})
+
+
+def restablecer_password(request):
+    """Paso 2 — ingresa correo + código + nueva contraseña."""
+    if request.method == "POST":
+        form = RestablecerPasswordForm(request.POST)
+        if form.is_valid():
+            usuario = form.save()
+            messages.success(
+                request,
+                f"Contraseña actualizada. Ya puedes iniciar sesión, {usuario.nombre}.",
+            )
+            return redirect("accounts:login")
+        return render(request, "accounts/reset_confirmar.html", {"form": form})
+
+    return render(request, "accounts/reset_confirmar.html", {"form": RestablecerPasswordForm()})

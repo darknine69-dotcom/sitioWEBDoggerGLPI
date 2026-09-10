@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.utils import timezone
 
 
 def avatar_upload_to(instance, filename):
@@ -90,3 +91,40 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         if len(parts) >= 2:
             return (parts[0][0] + parts[-1][0]).upper()
         return (self.nombre or "?")[:2].upper()
+
+
+class ResetPasswordToken(models.Model):
+    """Código de un solo uso para restablecer la contraseña olvidada."""
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name="reset_tokens",
+        db_column="UsuarioId",
+    )
+    codigo = models.CharField("Código", max_length=6)
+    creado = models.DateTimeField(auto_now_add=True)
+    usado = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "ResetPasswordTokens"
+        verbose_name = "Token de restablecimiento"
+        verbose_name_plural = "Tokens de restablecimiento"
+        ordering = ["-creado"]
+
+    def __str__(self):
+        return f"{self.codigo} — {self.usuario.email}"
+
+    @classmethod
+    def generar(cls, usuario):
+        import secrets
+
+        cls.objects.filter(usuario=usuario, usado=False).delete()
+        return cls.objects.create(
+            usuario=usuario,
+            codigo=str(secrets.randbelow(1000000)).zfill(6),
+        )
+
+    @property
+    def expirado(self):
+        # 30 minutos de vigencia
+        return (timezone.now() - self.creado).total_seconds() > 1800

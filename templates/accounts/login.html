@@ -37,6 +37,10 @@
             <button type="submit" class="btn btn-primary">Iniciar sesión</button>
         </form>
 
+        <p class="login-footlink">
+            <a href="{% url 'accounts:reset_solicitar' %}">¿Olvidaste tu contraseña?</a>
+        </p>
+
         {% if login_role_slug == 'usuario' %}
         <p class="login-footlink">
             <a href="{% url 'accounts:registro' %}">Crear cuenta de usuario</a>

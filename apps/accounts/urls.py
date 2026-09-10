@@ -1,5 +1,16 @@
 from django.urls import path
-from .views import StaffLoginView, StaffLogoutView, UserLoginView, UserRegisterView, ajustes_cuenta, cambiar_password, glpi_pull_perfil, glpi_push_avatar
+from .views import (
+    StaffLoginView,
+    StaffLogoutView,
+    UserLoginView,
+    UserRegisterView,
+    ajustes_cuenta,
+    cambiar_password,
+    glpi_pull_perfil,
+    glpi_push_avatar,
+    restablecer_password,
+    solicitar_reset,
+)
 
 app_name = "accounts"
 
@@ -11,6 +22,8 @@ urlpatterns = [
     path("logout/", StaffLogoutView.as_view(), name="logout"),
     path("ajustes/", ajustes_cuenta, name="ajustes"),
     path("cambiar-password/", cambiar_password, name="cambiar_password"),
+    path("reset/solicitar/", solicitar_reset, name="reset_solicitar"),
+    path("reset/confirmar/", restablecer_password, name="restablecer_password"),
     path("glpi/pull-perfil/", glpi_pull_perfil, name="glpi_pull_perfil"),
     path("glpi/push-avatar/", glpi_push_avatar, name="glpi_push_avatar"),
 ]

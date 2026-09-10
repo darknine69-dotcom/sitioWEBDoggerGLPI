@@ -203,6 +203,17 @@ if not DEBUG:
         SECURE_HSTS_PRELOAD = True
 
 # ---------------------------------------------------------------------------
+# Email (SMTP — Servidor Dogger directo)
+# ---------------------------------------------------------------------------
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.office365.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("1", "true", "yes")
+EMAIL_HOST_USER = os.getenv("EMAIL_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("EMAIL_FROM", EMAIL_HOST_USER)
+
+# ---------------------------------------------------------------------------
 # Configuración Dogger
 # ---------------------------------------------------------------------------
 DOGGER = {
@@ -213,6 +224,10 @@ DOGGER = {
     "mapa_google": "https://www.google.com/maps?q=Productos%20Alimenticios%20Dogger%20Envigado%20Antioquia&output=embed",
     "correo_soporte": os.getenv("DOGGER_CORREO", "sistemasbogota@dogger.com.co"),
     "whatsapp_soporte": os.getenv("DOGGER_WHATSAPP", "3103716129"),
+    # Redes sociales (se muestran como iconos en el pie del portal).
+    "facebook": os.getenv("DOGGER_FACEBOOK", "https://web.facebook.com/DoggerColombia"),
+    "instagram": os.getenv("DOGGER_INSTAGRAM", "https://www.instagram.com/dogger1996"),
+    "tiktok": os.getenv("DOGGER_TIKTOK", ""),
     "max_adjuntos": 5,
     "max_adjunto_mb": 8,
     # Puntos Dogger activos (mostrados con mapa en el pie del portal).

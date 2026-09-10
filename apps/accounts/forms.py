@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 
+from .models import ResetPasswordToken
+
 User = get_user_model()
 
 
@@ -139,3 +141,82 @@ class CambiarPasswordForm(forms.Form):
         self.user.set_password(self.cleaned_data["password_nueva"])
         self.user.save()
         return self.user
+
+
+class SolicitarResetForm(forms.Form):
+    email = forms.EmailField(
+        label="Correo corporativo",
+        widget=forms.EmailInput(
+            attrs={
+                "placeholder": "correo@dogger.com.co",
+                "autocomplete": "username",
+                "autofocus": True,
+            }
+        ),
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        # No revelar si la cuenta existe o no (seguridad).
+        self.usuario = User.objects.filter(email__iexact=email, activo=True).first()
+        return email
+
+
+class RestablecerPasswordForm(forms.Form):
+    email = forms.EmailField(
+        label="Correo corporativo",
+        widget=forms.EmailInput(
+            attrs={"placeholder": "correo@dogger.com.co", "autocomplete": "username"}
+        ),
+    )
+    codigo = forms.CharField(
+        label="Código de verificación",
+        max_length=6,
+        min_length=6,
+        widget=forms.TextInput(
+            attrs={"placeholder": "000000", "autocomplete": "one-time-code", "inputmode": "numeric"}
+        ),
+    )
+    password_nueva = forms.CharField(
+        label="Nueva contraseña",
+        widget=forms.PasswordInput(attrs={"placeholder": "Mínimo 8 caracteres", "autocomplete": "new-password"}),
+        min_length=8,
+    )
+    password_confirmar = forms.CharField(
+        label="Confirmar nueva contraseña",
+        widget=forms.PasswordInput(attrs={"placeholder": "Repite la nueva contraseña", "autocomplete": "new-password"}),
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        email = cleaned_data.get("email", "").strip().lower()
+        self.usuario = User.objects.filter(email__iexact=email).first()
+
+        if self.usuario is None:
+            self.add_error("codigo", "El código no es válido para este correo.")
+            return cleaned_data
+
+        token = ResetPasswordToken.objects.filter(
+            usuario=self.usuario, codigo=cleaned_data.get("codigo", ""), usado=False
+        ).first()
+        if not token:
+            self.add_error("codigo", "El código es incorrecto.")
+            return cleaned_data
+        if token.expirado:
+            token.delete()
+            self.add_error("codigo", "El código ha expirado. Solicita uno nuevo.")
+            return cleaned_data
+        self.token = token
+
+        password_nueva = cleaned_data.get("password_nueva")
+        password_confirmar = cleaned_data.get("password_confirmar")
+        if password_nueva and password_confirmar and password_nueva != password_confirmar:
+            self.add_error("password_confirmar", "Las contraseñas no coinciden.")
+        return cleaned_data
+
+    def save(self):
+        self.token.usado = True
+        self.token.save(update_fields=["usado"])
+        self.usuario.set_password(self.cleaned_data["password_nueva"])
+        self.usuario.save(update_fields=["password"])
+        return self.usuario

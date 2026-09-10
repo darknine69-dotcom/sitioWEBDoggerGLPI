@@ -29,6 +29,7 @@ from .forms import (
     UsuarioPanelForm,
 )
 from .models import Categoria, GlpiEvento, Ticket, TicketAdjunto, TicketComentario
+from .notifications import notificar_comentario, notificar_ticket_actualizado, notificar_ticket_creado
 from .sla import orden_prioridad_annotation
 from .services.glpi_client import (
     GlpiClient,
@@ -878,6 +879,10 @@ def faq(request):
     return render(request, "tickets/faq.html")
 
 
+def politica_privacidad(request):
+    return render(request, "tickets/politica_privacidad.html")
+
+
 def portal(request):
     if request.method == "POST":
         form = TicketForm(request.POST, request.FILES)
@@ -898,6 +903,8 @@ def portal(request):
                 )
             # Sync opcional a GLPI (no bloquea si falla)
             _sincronizar_ticket_nuevo(request, ticket, files)
+
+            notificar_ticket_creado(ticket)
 
             n = len(files)
             msg = f"Ticket creado: {ticket.codigo}"
@@ -967,6 +974,7 @@ def mi_panel(request):
                 subido_por=ticket.solicitante_nombre,
             )
         _sincronizar_ticket_nuevo(request, ticket, files)
+        notificar_ticket_creado(ticket)
         messages.success(request, f"Ticket creado: {ticket.codigo}")
         return redirect("tickets:mi_panel")
 
@@ -1056,6 +1064,7 @@ def crear_ticket(request):
                 subido_por=ticket.solicitante_nombre,
             )
         _sincronizar_ticket_nuevo(request, ticket, files)
+        notificar_ticket_creado(ticket)
         messages.success(request, f"Ticket creado: {ticket.codigo}")
         if es_usuario_final:
             return redirect("tickets:mi_ticket", pk=ticket.pk)
@@ -1167,6 +1176,8 @@ def responder_ticket(request, pk):
         comentario=comentario,
         es_interno=False,
     )
+
+    notificar_comentario(ticket, request.user.nombre, comentario)
 
     if ticket.glpi_id:
         try:
@@ -1424,6 +1435,7 @@ def detalle_ticket(request, pk):
                 c.usuario = request.user
                 c.autor_nombre = request.user.nombre
                 c.save()
+                notificar_comentario(ticket, request.user.nombre, c.comentario, c.es_interno)
                 messages.success(request, "Seguimiento agregado")
                 return redirect("tickets:detalle", pk=pk)
         elif action == "asignar":
@@ -1488,6 +1500,7 @@ def cambiar_estado(request, pk):
     else:
         ticket.estado = nuevo
         ticket.save()
+        notificar_ticket_actualizado(ticket, f"cambiado a {ticket.get_estado_display()}")
         try:
             sync_estado_to_glpi(ticket)
         except GlpiError as exc:
@@ -1696,6 +1709,7 @@ def mi_ticket_cerrar_ajax(request, pk):
         )
     ticket.estado = ticket.Estado.CERRADO
     ticket.save()
+    notificar_ticket_actualizado(ticket, "Cerrado", "El solicitante cerro el ticket.")
     try:
         sync_estado_to_glpi(ticket)
     except GlpiError:
@@ -1737,6 +1751,8 @@ def mi_responder_ajax(request, pk):
         comentario=comentario,
         es_interno=False,
     )
+
+    notificar_comentario(ticket, request.user.nombre, comentario)
 
     notificado = False
     if ticket.glpi_id:

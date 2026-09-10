@@ -1,0 +1,66 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dogger · Restablecer contraseña</title>
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260901">
+</head>
+<body>
+<div class="login-screen">
+    <div class="login-card">
+        <img class="logo-badge" src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" />
+        <p class="eyebrow">Dogger · Premium Quality</p>
+        <h2>Restablecer contraseña</h2>
+        <p class="login-hint">Ingresa el código que recibiste por correo y define tu nueva contraseña.</p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="login-error">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}">Correo corporativo</label>
+                {{ form.email }}
+                {% for error in form.email.errors %}
+                <div class="login-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.codigo.id_for_label }}">Código de verificación</label>
+                {{ form.codigo }}
+                {% for error in form.codigo.errors %}
+                <div class="login-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.password_nueva.id_for_label }}">Nueva contraseña</label>
+                {{ form.password_nueva }}
+                {% for error in form.password_nueva.errors %}
+                <div class="login-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.password_confirmar.id_for_label }}">Confirmar nueva contraseña</label>
+                {{ form.password_confirmar }}
+                {% for error in form.password_confirmar.errors %}
+                <div class="login-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
+        </form>
+
+        <p class="login-footlink">
+            <a href="{% url 'accounts:reset_solicitar' %}">↻ No recibí el código, reenviar</a>
+        </p>
+        <p class="login-footlink">
+            <a href="{% url 'accounts:login' %}">← Volver al inicio de sesión</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>
