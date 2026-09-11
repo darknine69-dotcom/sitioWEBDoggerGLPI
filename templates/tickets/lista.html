@@ -123,6 +123,9 @@
                                     {% else %}
                                     <button type="button" class="actions-item" data-estado="abierto">Reabrir</button>
                                     {% endif %}
+                                    <button type="button" class="actions-item is-danger" data-accion-eliminar
+                                            data-eliminar-url="{% url 'tickets:eliminar' t.pk %}"
+                                            data-codigo="{{ t.codigo }}">Eliminar</button>
                                 </div>
                             </div>
                             {% else %}
@@ -212,6 +215,21 @@
             return;
         }
         var item = e.target.closest('.actions-item');
+        if (item && item.dataset.accionEliminar !== undefined) {
+            if (!confirm('¿Eliminar definitivamente el ticket ' + (item.dataset.codigo || '') + '? Esta acción no se puede deshacer.')) return;
+            var form = document.createElement('form');
+            form.method = 'post';
+            form.action = item.dataset.eliminarUrl;
+            [['next', next],
+             ['csrfmiddlewaretoken', token]].forEach(function (p) {
+                var i = document.createElement('input');
+                i.type = 'hidden'; i.name = p[0]; i.value = p[1];
+                form.appendChild(i);
+            });
+            document.body.appendChild(form);
+            form.submit();
+            return;
+        }
         if (item) {
             var confirmText = item.dataset.confirm;
             if (confirmText && !confirm(confirmText)) return;

@@ -70,6 +70,12 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
+    borrar_glpi_al_eliminar = models.BooleanField(
+        "Borrar en GLPI al eliminar",
+        default=False,
+        help_text="Si está activo, al borrar un ticket se eliminará también del sistema GLPI.",
+    )
+
     objects = UsuarioManager()
 
     USERNAME_FIELD = "email"

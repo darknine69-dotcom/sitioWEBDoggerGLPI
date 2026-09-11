@@ -45,7 +45,7 @@
                     <svg class="icon icon-sm"><use href="#i-bell"/></svg>
                     Notificaciones
                 </a>
-                {% if request.user.rol == 'admin' %}
+                {% if request.user.es_staff_helpdesk %}
                 <a href="#glpi" class="settings-nav-link" data-settings-tab="glpi">
                     <svg class="icon icon-sm"><use href="#i-external"/></svg>
                     GLPI
@@ -213,8 +213,8 @@
                 </div>
             </section>
 
-            <!-- GLPI (solo admin) -->
-            {% if request.user.rol == 'admin' %}
+            <!-- GLPI (staff: admin y técnicos) -->
+            {% if request.user.es_staff_helpdesk %}
             <section id="glpi" class="settings-panel" data-settings-panel="glpi">
                 <div class="settings-panel-header">
                     <h3>Sincronización GLPI</h3>
@@ -240,6 +240,28 @@
                         <p class="glpi-status-detail">ID: <code>#{{ request.user.glpi_user_id }}</code></p>
                     </div>
                     {% endif %}
+
+                    <div class="settings-panel-header">
+                        <h3>Eliminación de tickets</h3>
+                        <p>Decide si al borrar un ticket también se elimina del sistema GLPI.</p>
+                    </div>
+                    <form method="post" action="{% url 'accounts:ajustes' %}" class="settings-form">
+                        {% csrf_token %}
+                        <div class="notif-item">
+                            <div class="notif-info">
+                                <strong>Borrar también en GLPI</strong>
+                                <small>Si está activo, eliminar un ticket lo borrará definitivamente en Dogger y en GLPI. Si está apagado, solo se borra localmente y GLPI conserva el ticket.</small>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="borrar_glpi_al_eliminar" value="1"
+                                       {% if request.user.borrar_glpi_al_eliminar %}checked{% endif %}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-actions">
+                            <button type="submit" class="btn btn-primary">Guardar preferencia</button>
+                        </div>
+                    </form>
                 </div>
             </section>
             {% endif %}
