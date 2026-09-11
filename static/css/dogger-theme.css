@@ -3932,6 +3932,37 @@ a.score-chip { color: inherit; }
 
 .user-avatar-img { object-fit: cover; }
 
+/* ---- Celda de solicitante con avatar en las tablas ---- */
+.cell-user { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cell-user-avatar {
+    width: 32px; height: 32px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--dogger-yellow); color: var(--dogger-black);
+    border-radius: 8px; overflow: hidden;
+    font-size: 11.5px; font-weight: 800; letter-spacing: .02em;
+}
+.cell-user-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cell-user-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.cell-user-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.table-sub { color: var(--ink-muted); font-size: 12px; display: block; }
+
+.actions-icon { padding: 6px 7px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.actions-menu { position: relative; display: inline-block; }
+.actions-dropdown {
+    position: absolute; right: 0; top: calc(100% + 4px);
+    width: 190px; z-index: 50;
+    background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: var(--shadow-card); padding: 6px;
+}
+.actions-item {
+    display: block; width: 100%; text-align: left;
+    padding: 8px 10px; border: none; background: transparent;
+    font-size: 13px; font-weight: 600; color: var(--ink);
+    border-radius: 8px; cursor: pointer;
+}
+.actions-item:hover { background: rgba(0, 0, 0, .045); }
+.actions-item.is-danger { color: var(--dogger-red); }
+
 .user-chip-chevron {
     width: 16px;
     height: 16px;

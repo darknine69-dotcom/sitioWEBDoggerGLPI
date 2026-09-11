@@ -1335,12 +1335,13 @@ def dashboard(request):
     )
     recientes_page = paginate_recent_tickets(request, tickets_qs, per_page=10)
     dashboard_context = _build_dashboard_context(request, tickets)
+    recientes = _adjuntar_solicitantes(recientes_page.object_list)
     return render(
         request,
         "tickets/dashboard.html",
         {
             "stats": stats,
-            "recientes": recientes_page.object_list,
+            "recientes": recientes,
             "recientes_page": recientes_page,
             **dashboard_context,
         },
@@ -1359,15 +1360,34 @@ def _params_sin_page(request, param="page"):
     return params.urlencode()
 
 
-@admin_required
+def _adjuntar_solicitantes(tickets):
+    """Adjunta a cada ticket su Usuario (para mostrar avatar/initials) según el correo del solicitante."""
+    emails = {t.solicitante_email.lower() for t in tickets if t.solicitante_email}
+    if not emails:
+        return tickets
+    usuarios = {
+        u.email.lower(): u
+        for u in get_user_model().objects.filter(email__in=list(emails))
+    }
+    for t in tickets:
+        t.solicitante_usuario = usuarios.get((t.solicitante_email or "").lower())
+    return tickets
+
+
+@staff_required
 def lista_tickets(request):
+    """Lista unificada de tickets: el admin ve todos, el técnico solo los suyos."""
+    es_admin = request.user.rol == "admin"
     qs = Ticket.objects.select_related("categoria", "tecnico_asignado").annotate(
         adjuntos_count=Count("adjuntos")
     )
+    if not es_admin:
+        qs = qs.filter(tecnico_asignado=request.user)
+
     estado = request.GET.get("estado", "").strip()
     prioridad = request.GET.get("prioridad", "").strip()
     categoria = request.GET.get("categoria", "").strip()
-    tecnico = request.GET.get("tecnico", "").strip()
+    tecnico = request.GET.get("tecnico", "").strip() if es_admin else ""
     q = request.GET.get("q", "").strip()
 
     if estado:
@@ -1395,15 +1415,16 @@ def lista_tickets(request):
             "_prioridad_orden", "-fecha_creacion"
         ),
         request,
-        per_page=6,
+        per_page=5,
     )
 
     filtros_activos = any([estado, prioridad, categoria, tecnico, q])
+    tickets = _adjuntar_solicitantes(page_obj.object_list)
     return render(
         request,
         "tickets/lista.html",
         {
-            "tickets": page_obj.object_list,
+            "tickets": tickets,
             "page_obj": page_obj,
             "querystring": _params_sin_page(request),
             "filtros_activos": filtros_activos,
@@ -1419,6 +1440,7 @@ def lista_tickets(request):
                 activo=True, rol__in=["admin", "tecnico"]
             ).order_by("nombre"),
             "total_resultados": page_obj.paginator.count,
+            "es_admin": es_admin,
         },
     )
 
@@ -1886,13 +1908,16 @@ def panel_tecnico(request):
 
     vista = request.GET.get("vista", "").strip() or ("mis" if ticket_pk else "panel")
 
+    tickets = _adjuntar_solicitantes(page_obj.object_list)
+    solicitudes = _adjuntar_solicitantes(solicitudes_page.object_list)
+
     return render(
         request,
         "tickets/panel_tecnico.html",
         {
-            "tickets": page_obj.object_list,
+            "tickets": tickets,
             "page_obj": page_obj,
-            "solicitudes": solicitudes_page.object_list,
+            "solicitudes": solicitudes,
             "solicitudes_page": solicitudes_page,
             "cola_count": solicitudes_page.paginator.count,
             "vista": vista,
@@ -1948,57 +1973,8 @@ def panel_tecnico_tomar(request, pk):
 
 @staff_required
 def mis_tickets_tecnico(request):
-    """Vista completa de los tickets asignados al técnico (tabla con filtros y acciones)."""
-    tecnico = request.user
-    estado = request.GET.get("estado", "").strip()
-    prioridad = request.GET.get("prioridad", "").strip()
-    q = request.GET.get("q", "").strip()
-
-    qs = (
-        Ticket.objects.filter(tecnico_asignado=tecnico)
-        .select_related("categoria", "tecnico_asignado")
-        .prefetch_related("adjuntos")
-    )
-    if estado:
-        qs = qs.filter(estado=estado)
-    if prioridad:
-        qs = qs.filter(prioridad=prioridad)
-    if q:
-        condicion = (
-            Q(codigo__iexact=q.upper())
-            | Q(titulo__icontains=q)
-            | Q(solicitante_nombre__icontains=q)
-            | Q(solicitante_email__icontains=q)
-            | Q(solicitante_punto__icontains=q)
-        )
-        if re.match(r"^HD-(\d+)$", q.upper()):
-            condicion = Q(codigo__iexact=q.upper())
-        qs = qs.filter(condicion)
-
-    adj_count = qs.annotate(adjuntos_count=Count("adjuntos"))
-    page_obj = _paginar(
-        adj_count.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
-            "_prioridad_orden", "-fecha_creacion"
-        ),
-        request,
-        per_page=15,
-    )
-
-    return render(
-        request,
-        "tickets/mis_tickets.html",
-        {
-            "tickets": page_obj.object_list,
-            "page_obj": page_obj,
-            "querystring": _params_sin_page(request),
-            "filtro_estado": estado,
-            "filtro_prioridad": prioridad,
-            "q": q,
-            "estados": Ticket.Estado.choices,
-            "prioridades": Ticket.Prioridad.choices,
-            "total_resultados": page_obj.paginator.count,
-        },
-    )
+    """Unificado con la lista general de tickets: redirige a tickets:lista."""
+    return redirect("tickets:lista")
 
 
 @staff_required

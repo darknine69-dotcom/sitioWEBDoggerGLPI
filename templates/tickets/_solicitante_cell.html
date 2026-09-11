@@ -1,0 +1,19 @@
+{% with u=t.solicitante_usuario %}
+<div class="cell-user">
+    <span class="cell-user-avatar">
+        {% if u and u.avatar %}
+        <img src="{{ u.avatar.url }}" alt="" loading="lazy">
+        {% elif u %}
+        {{ u.initials }}
+        {% else %}
+        {{ t.solicitante_nombre|slice:":2"|upper }}
+        {% endif %}
+    </span>
+    <span class="cell-user-text">
+        <span class="cell-user-name">{{ t.solicitante_nombre }}</span>
+        {% if t.solicitante_punto %}
+        <span class="table-sub">{{ t.solicitante_punto }}</span>
+        {% endif %}
+    </span>
+</div>
+{% endwith %}

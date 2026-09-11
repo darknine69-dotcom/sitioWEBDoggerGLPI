@@ -107,7 +107,7 @@
             <h2>Panel Técnico</h2>
             <p>Gestiona la cola de solicitudes, tus tickets asignados y la respuesta al solicitante.</p>
         </div>
-        <a class="btn btn-outline-light btn-sm" href="{% url 'tickets:mis_tickets' %}"><svg class="icon"><use href="#i-list"/></svg> Mis tickets</a>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'tickets:lista' %}"><svg class="icon"><use href="#i-list"/></svg> Mis tickets</a>
     </div>
 
     <div class="tabs-bar">
@@ -265,7 +265,7 @@
                     <tr class="tr-{{ t.prioridad }}">
                         <td data-label="Código"><span class="table-code">{{ t.codigo }}</span>{% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}</td>
                         <td data-label="Título">{{ t.titulo|truncatechars:42 }}</td>
-                        <td data-label="Solicitante">{{ t.solicitante_nombre }}{% if t.solicitante_punto %}<span class="sol-punto"> · {{ t.solicitante_punto }}</span>{% endif %}</td>
+                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
                         <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
                         <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
                         <td data-label="Técnico">

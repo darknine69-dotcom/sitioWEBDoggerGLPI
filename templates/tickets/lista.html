@@ -1,18 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Dogger · Gestión de Tickets{% endblock %}
-{% block body_class %}admin-shell{% endblock %}
+{% block title %}Dogger · {% if es_admin %}Gestión de Tickets{% else %}Mis tickets{% endif %}{% endblock %}
+{% block body_class %}admin-shell lista-page{% endblock %}
 {% block nav_tickets %}is-active{% endblock %}
-{% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
-{% block header_title %}Gestión de Tickets{% endblock %}
+{% block header_eyebrow %}{% endblock %}
+{% block header_title %}{% endblock %}
+
+{% block extra_css %}
+<style>.lista-page .brand-titles { display: none; }</style>
+{% endblock %}
 
 {% block content %}
 <main class="page">
     <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
+        <a class="back-btn" data-back href="{% if es_admin %}{% url 'tickets:dashboard' %}{% else %}{% url 'tickets:panel_tecnico' %}{% endif %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
-            <h2>Tickets</h2>
-            <p>Filtra, busca y gestiona todas las solicitudes del helpdesk.</p>
+            <h2>{% if es_admin %}Tickets{% else %}Mis tickets{% endif %}</h2>
+            <p>{% if es_admin %}Filtra, busca y gestiona todas las solicitudes del helpdesk.{% else %}Tus tickets asignados · responde desde el panel técnico.{% endif %}</p>
         </div>
     </div>
 
@@ -33,6 +37,7 @@
             <option value="{{ val }}" {% if filtro_prioridad == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
+        {% if es_admin %}
         <select name="categoria" data-autosubmit>
             <option value="">Todas las categorías</option>
             {% for c in categorias %}
@@ -45,11 +50,14 @@
             <option value="{{ t.pk }}" {% if filtro_tecnico|stringformat:"s" == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nombre }}</option>
             {% endfor %}
         </select>
+        {% endif %}
         <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
         {% if q or filtro_estado or filtro_prioridad or filtro_categoria or filtro_tecnico %}
         <a href="{% url 'tickets:lista' %}" class="link-clear">✕ Limpiar</a>
         {% endif %}
+        {% if es_admin %}
         <a class="btn btn-outline-light btn-sm btn-danger-outline" href="{% url 'tickets:exportar_admin' %}?{{ querystring }}"><svg class="icon"><use href="#i-download"/></svg> Excel</a>
+        {% endif %}
         <span class="toolbar-count">{{ total_resultados }} ticket{{ total_resultados|pluralize }} · página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
     </form>
 
@@ -59,12 +67,11 @@
                 <thead>
                     <tr>
                         <th>Código</th>
-                        <th>Título</th>
                         <th>Solicitante</th>
                         <th>Prioridad</th>
-                        <th>ANS</th>
+                        <th>Vencimiento</th>
                         <th>Categoría</th>
-                        <th>Técnico</th>
+                        {% if es_admin %}<th>Técnico</th>{% endif %}
                         <th>Estado</th>
                         <th>Fecha</th>
                         <th>Acciones</th>
@@ -73,39 +80,56 @@
                 <tbody>
                     {% for t in tickets %}
                     <tr class="tr-{{ t.prioridad }}">
-                        <td data-label="Código"><span class="table-code">{{ t.codigo }}</span>{% if t.adjuntos_count %}<span class="row-icon" title="Adjuntos"><svg class="icon icon-sm"><use href="#i-paperclip"/></svg>{{ t.adjuntos_count }}</span>{% endif %}{% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}</td>
-                        <td data-label="Título">{{ t.titulo|truncatechars:42 }}</td>
-                        <td data-label="Solicitante">{{ t.solicitante_nombre }}</td>
+                        <td data-label="Código"><a class="table-code" href="{% url 'tickets:detalle' t.pk %}" title="Ver ticket">{{ t.codigo }}</a>{% if t.adjuntos_count %}<span class="row-icon" title="Adjuntos"><svg class="icon icon-sm"><use href="#i-paperclip"/></svg>{{ t.adjuntos_count }}</span>{% endif %}{% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}</td>
+                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
                         <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
-                        <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
+                        <td data-label="Vencimiento">
+                            {% with info=t.info_ans %}
+                            {% if info.0 %}
+                            <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
+                                {% if info.0 == 'vencido' %}
+                                <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                                {% elif info.0 == 'resuelto' %}
+                                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                                {% else %}
+                                <svg class="icon icon-sm"><use href="#i-clock"/></svg>
+                                {% endif %}
+                                {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
+                            </span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
                         <td data-label="Categoría">{{ t.categoria.nombre|default:"—" }}</td>
-                        <td data-label="Técnico">{{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</td>
+                        {% if es_admin %}<td data-label="Técnico">{{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</td>{% endif %}
                         <td data-label="Estado">
                             {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
                         </td>
                         <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
                         <td data-label="Acciones" class="cell-actions">
-                            <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}">Ver</a>
-                            {% if t.estado == 'abierto' %}
-                            <form method="post" action="{% url 'tickets:cambiar_estado' t.pk %}" class="inline-form">
-                                {% csrf_token %}
-                                <input type="hidden" name="estado" value="en-progreso">
-                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <button type="submit" class="btn btn-sm btn-progress"><svg class="icon icon-sm"><use href="#i-arrow-right"/></svg> Progreso</button>
-                            </form>
-                            {% endif %}
-                            {% if t.estado != 'cerrado' %}
-                            <form method="post" action="{% url 'tickets:cambiar_estado' t.pk %}" class="inline-form" onsubmit="return confirm('¿Cerrar este ticket?');">
-                                {% csrf_token %}
-                                <input type="hidden" name="estado" value="cerrado">
-                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <button type="submit" class="btn btn-sm btn-outline"><svg class="icon icon-sm"><use href="#i-check"/></svg> Cerrar</button>
-                            </form>
+                            <a class="btn btn-sm btn-outline actions-icon" title="Ver ticket" href="{% url 'tickets:detalle' t.pk %}"><svg class="icon icon-sm"><use href="#i-eye"/></svg></a>
+                            {% if es_admin %}
+                            <div class="actions-menu" data-estado-url="{% url 'tickets:cambiar_estado' t.pk %}">
+                                <button type="button" class="btn btn-sm btn-outline actions-icon actions-trigger" title="Cambiar estado" aria-expanded="false"><svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
+                                <div class="actions-dropdown" hidden>
+                                    {% if t.estado == 'abierto' %}
+                                    <button type="button" class="actions-item" data-estado="en-progreso">Poner en progreso</button>
+                                    {% elif t.estado == 'en-progreso' %}
+                                    <button type="button" class="actions-item" data-estado="resuelto">Marcar resuelto</button>
+                                    {% endif %}
+                                    {% if t.estado != 'cerrado' %}
+                                    <button type="button" class="actions-item is-danger" data-estado="cerrado" data-confirm="¿Cerrar este ticket?">Cerrar</button>
+                                    {% else %}
+                                    <button type="button" class="actions-item" data-estado="abierto">Reabrir</button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <a class="btn btn-sm btn-accent actions-icon" title="Abrir chat" href="{% url 'tickets:panel_tecnico' %}?ticket={{ t.pk }}"><svg class="icon icon-sm"><use href="#i-message"/></svg></a>
                             {% endif %}
                         </td>
                     </tr>
                     {% empty %}
-                    <tr class="table-empty"><td colspan="10">No hay tickets que coincidan con los filtros.</td></tr>
+                    <tr class="table-empty"><td colspan="{% if es_admin %}9{% else %}8{% endif %}">No hay tickets que coincidan con los filtros.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -137,4 +161,68 @@
         {% endif %}
     </div>
 </main>
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+<script>
+(function () {
+    var csrfEl = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    var token = csrfEl ? csrfEl.value : '';
+    var next = window.location.pathname + window.location.search;
+
+    function cerrarTodos() {
+        document.querySelectorAll('.actions-dropdown').forEach(function (d) {
+            d.setAttribute('hidden', '');
+            d.style.position = ''; d.style.left = ''; d.style.top = '';
+        });
+        document.querySelectorAll('.actions-trigger').forEach(function (t) { t.setAttribute('aria-expanded', 'false'); });
+    }
+
+    function abrir(t, dd) {
+        var mw = 190, mh = 190, pad = 8;
+        var r = t.getBoundingClientRect();
+        var x = Math.max(pad, Math.min(r.right - mw, window.innerWidth - mw - pad));
+        var y = r.bottom + 4;
+        if (y + mh > window.innerHeight - pad) y = Math.max(pad, r.top - mh - 4);
+        dd.style.position = 'fixed';
+        dd.style.left = x + 'px';
+        dd.style.top = y + 'px';
+        dd.removeAttribute('hidden');
+        t.setAttribute('aria-expanded', 'true');
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('.actions-trigger');
+        if (trigger) {
+            e.preventDefault();
+            var dd = trigger.closest('.actions-menu').querySelector('.actions-dropdown');
+            var open = !dd.hasAttribute('hidden');
+            cerrarTodos();
+            if (!open) abrir(trigger, dd);
+            return;
+        }
+        var item = e.target.closest('.actions-item');
+        if (item) {
+            var confirmText = item.dataset.confirm;
+            if (confirmText && !confirm(confirmText)) return;
+            var menu = item.closest('.actions-menu');
+            var form = document.createElement('form');
+            form.method = 'post';
+            form.action = menu.dataset.estadoUrl;
+            [['estado', item.dataset.estado],
+             ['next', next],
+             ['csrfmiddlewaretoken', token]].forEach(function (p) {
+                var i = document.createElement('input');
+                i.type = 'hidden'; i.name = p[0]; i.value = p[1];
+                form.appendChild(i);
+            });
+            document.body.appendChild(form);
+            form.submit();
+            return;
+        }
+        if (!e.target.closest('.actions-menu')) cerrarTodos();
+    });
+    ['scroll', 'resize'].forEach(function (ev) {
+        window.addEventListener(ev, cerrarTodos, true);
+    });
+})();
+</script>
 {% endblock %}

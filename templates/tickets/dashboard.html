@@ -134,7 +134,7 @@
                     <tr class="tr-{{ t.prioridad }}">
                         <td data-label="Código"><span class="table-code"><a href="{% url 'tickets:detalle' t.pk %}">{{ t.codigo }}</a></span></td>
                         <td data-label="Título">{{ t.titulo|truncatechars:48 }}</td>
-                        <td data-label="Solicitante">{{ t.solicitante_nombre }}</td>
+                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
                         <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
                         <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
                         <td data-label="Estado">
