@@ -149,18 +149,28 @@
             </table>
         </div>
 
-        {% if recientes_page.paginator.num_pages > 1 %}
+        {% if recientes_page.paginator.count > 0 %}
         <div class="pagination-bar">
+            <div class="per-page-bar">
+                <label for="perPageRecientes">Filas:</label>
+                <select id="perPageRecientes" data-per-page-param="per_page_recientes">
+                    <option value="5" {% if per_page_recientes == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if per_page_recientes == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page_recientes == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page_recientes == 50 %}selected{% endif %}>50</option>
+                    <option value="0" {% if per_page_recientes == 0 %}selected{% endif %}>Todas</option>
+                </select>
+            </div>
             <span class="pagination-info">Página {{ recientes_page.number }} de {{ recientes_page.paginator.num_pages }}</span>
             <div class="pagination-links">
                 {% if recientes_page.has_previous %}
-                <a class="page-pill" href="?page_recientes={{ recientes_page.previous_page_number }}">‹ Anterior</a>
+                <a class="page-pill" href="?{{ querystring }}&page_recientes={{ recientes_page.previous_page_number }}">‹ Anterior</a>
                 {% else %}
                 <span class="page-pill disabled">‹ Anterior</span>
                 {% endif %}
                 <span class="page-pill current">{{ recientes_page.number }}</span>
                 {% if recientes_page.has_next %}
-                <a class="page-pill" href="?page_recientes={{ recientes_page.next_page_number }}">Siguiente ›</a>
+                <a class="page-pill" href="?{{ querystring }}&page_recientes={{ recientes_page.next_page_number }}">Siguiente ›</a>
                 {% else %}
                 <span class="page-pill disabled">Siguiente ›</span>
                 {% endif %}

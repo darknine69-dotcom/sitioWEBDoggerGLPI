@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dogger · Restablecer contraseña</title>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260910">
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260913">
 </head>
 <body>
 <div class="login-screen">
@@ -16,7 +16,15 @@
         <img class="logo-badge" src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" />
         <p class="eyebrow">Dogger · Premium Quality</p>
         <h2>Restablecer contraseña</h2>
-        <p class="login-hint">Ingresa el código que recibiste por correo y define tu nueva contraseña.</p>
+        <p class="login-hint">Ingresa el código que recibiste por correo para continuar.</p>
+
+        {% if messages %}
+        <div class="login-flash">
+            {% for message in messages %}
+            <p class="login-alert login-alert-{{ message.tags|default:'info' }}">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         <form method="post" novalidate>
             {% csrf_token %}
@@ -27,42 +35,22 @@
             {% endif %}
 
             <div class="form-group">
-                <label for="{{ form.email.id_for_label }}">Correo corporativo</label>
-                {{ form.email }}
-                {% for error in form.email.errors %}
+                <label for="code-digits">Código de verificación</label>
+                <div class="code-digits" id="code-digits">
+                    <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 1" autofocus>
+                    <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 2">
+                    <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 3">
+                    <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 4">
+                    <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 5">
+                    <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 6">
+                </div>
+                <input type="hidden" name="{{ form.codigo.name }}" id="code-full" value="{{ form.codigo.value|default:'' }}">
+                {% for error in form.codigo.errors %}
                 <div class="login-error">{{ error }}</div>
                 {% endfor %}
             </div>
 
-            <label for="code-digits">Código de verificación</label>
-            <div class="code-digits" id="code-digits">
-                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 1">
-                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 2">
-                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 3">
-                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 4">
-                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 5">
-                <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="code-digit" aria-label="Dígito 6">
-            </div>
-            <input type="hidden" name="{{ form.codigo.name }}" id="code-full" value="{{ form.codigo.value|default:'' }}">
-            {% for error in form.codigo.errors %}
-            <div class="login-error">{{ error }}</div>
-            {% endfor %}
-
-            <div class="form-group">
-                <label for="{{ form.password_nueva.id_for_label }}">Nueva contraseña</label>
-                {{ form.password_nueva }}
-                {% for error in form.password_nueva.errors %}
-                <div class="login-error">{{ error }}</div>
-                {% endfor %}
-            </div>
-            <div class="form-group">
-                <label for="{{ form.password_confirmar.id_for_label }}">Confirmar nueva contraseña</label>
-                {{ form.password_confirmar }}
-                {% for error in form.password_confirmar.errors %}
-                <div class="login-error">{{ error }}</div>
-                {% endfor %}
-            </div>
-            <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
+            <button type="submit" class="btn btn-primary">Continuar</button>
         </form>
 
         <p class="login-register-link">

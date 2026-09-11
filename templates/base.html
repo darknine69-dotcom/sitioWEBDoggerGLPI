@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Dogger · Mesa de Ayuda{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260901">
-    <script defer src="{% static 'js/dogger.js' %}?v=20260901"></script>
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260913">
+    <script defer src="{% static 'js/dogger.js' %}?v=20260913"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -226,11 +226,13 @@
 
         <div class="footer-inner">
             <div class="footer-brand">
-                <img src="{% static 'images/dogger-logo.png' %}" alt="" class="footer-logo">
-                <div>
-                    <span class="footer-kicker">Mesa de ayuda TI</span>
-                    <h3>{{ DOGGER.nombre_completo|default:"Productos Alimenticios Dogger S.A.S." }}</h3>
-                    <p>{{ DOGGER.direccion_detalle|default:DOGGER.direccion }}</p>
+                <span class="footer-kicker">Mesa de ayuda TI</span>
+                <div class="footer-brand-body">
+                    <img src="{% static 'images/dogger-logo.png' %}" alt="" class="footer-logo">
+                    <div class="footer-brand-text">
+                        <h3>{{ DOGGER.nombre_completo|default:"Productos Alimenticios Dogger S.A.S." }}</h3>
+                        <p>{{ DOGGER.direccion_detalle|default:DOGGER.direccion }}</p>
+                    </div>
                 </div>
             </div>
             <div class="footer-info">
@@ -268,9 +270,37 @@
                 </div>
             </div>
         </div>
-        <p class="footer-copy">© {% now "Y" %} Dogger S.A.S. · Envigado, Antioquia</p>
+        <p class="footer-copy">Copyright © 2026 Dogger | Powered by Dogger</p>
     </footer>
     {% endblock %}
+
+    <!-- Modal pequeño: cambio de contraseña forzado (tras validar el código de reset) -->
+    {% if request.user.is_authenticated and request.session.force_password_change %}
+    <div class="force-pwd-overlay" role="dialog" aria-modal="true" aria-labelledby="forcePwdTitle">
+        <div class="force-pwd-modal">
+            <span class="force-pwd-icon"><svg class="icon"><use href="#i-lock"/></svg></span>
+            <h3 id="forcePwdTitle">Debes actualizar tu contraseña</h3>
+            <p class="force-pwd-sub">Como ingresaste con tu código de verificación, define una nueva contraseña para continuar.</p>
+
+            {% if request.session.force_password_error %}
+            <div class="login-error force-pwd-error">{{ request.session.force_password_error }}</div>
+            {% endif %}
+
+            <form method="post" action="{% url 'accounts:cambiar_password_forzado' %}" novalidate>
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="forzar_nueva">Nueva contraseña</label>
+                    <input type="password" name="password_nueva" id="forzar_nueva" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required minlength="8">
+                </div>
+                <div class="form-group">
+                    <label for="forzar_confirmar">Confirmar nueva contraseña</label>
+                    <input type="password" name="password_confirmar" id="forzar_confirmar" placeholder="Repite la nueva contraseña" autocomplete="new-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Actualizar contraseña</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Barra flotante de acciones -->
     <aside class="action-float" aria-label="Consultar código HD">

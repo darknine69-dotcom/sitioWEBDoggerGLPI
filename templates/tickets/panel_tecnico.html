@@ -8,34 +8,6 @@
 
 {% block extra_css %}
 <style>
-/* ---- Resumen: tarjetas KPI ---- */
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-.stat-card {
-    background: var(--dogger-paper);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    box-shadow: var(--shadow-card);
-    padding: 16px 18px;
-    display: flex; flex-direction: column; gap: 10px;
-    text-decoration: none; color: inherit; position: relative; overflow: hidden;
-    transition: transform .14s ease, box-shadow .14s ease;
-}
-.stat-card::after {
-    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-    background: var(--stat-color, var(--line));
-}
-.stat-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(0,0,0,.09); }
-.stat-top { display: flex; align-items: center; justify-content: space-between; }
-.stat-icon { width: 40px; height: 40px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; background: var(--stat-bg, #f3f0e8); color: var(--stat-color, #5a5346); }
-.stat-icon .icon { width: 20px; height: 20px; }
-.stat-num { font-size: 30px; line-height: 1; font-weight: 800; letter-spacing: -.02em; color: #1d1b16; }
-.stat-label { color: var(--ink-muted); font-size: 12.5px; font-weight: 600; }
-.stat-total  { --stat-bg: #f0ede4; --stat-color: #6b6352; }
-.stat-abierto { --stat-bg: #fdeceb; --stat-color: var(--dogger-red); }
-.stat-progreso { --stat-bg: #fff3e2; --stat-color: #b7791f; }
-.stat-resuelto { --stat-bg: #e9f5ec; --stat-color: #2e7d32; }
-@media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-
 /* ---- Encabezados de sección ---- */
 .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 22px 0 12px; flex-wrap: wrap; }
 .section-head .section-title { font-family: var(--font-display); font-weight: 400; font-size: 19px; margin: 0; display: flex; align-items: center; gap: 10px; }
@@ -45,6 +17,43 @@
 .section-count { background: var(--dogger-cream); border: 1px solid var(--line); color: var(--ink-muted); font-size: 12px; font-weight: 700; border-radius: 999px; padding: 4px 13px; white-space: nowrap; }
 
 .chart-empty { color: var(--ink-muted); font-size: 13px; }
+
+/* ---- Gráficos: columnas de prioridad ---- */
+.col-chart { display: flex; align-items: flex-end; gap: 12px; height: 200px; padding-top: 18px; }
+.col-chart-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 7px; height: 100%; }
+.col-chart-val { font-size: 13px; font-weight: 800; color: var(--ink); }
+.col-chart-bar { width: 62%; max-width: 48px; flex: 1; display: flex; align-items: flex-end; min-height: 4px; }
+.col-chart-fill { display: block; width: 100%; border-radius: 8px 8px 0 0; min-height: 4px; }
+.col-chart-label { font-size: 11.5px; color: var(--ink-muted); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- Dona de estados ---- */
+.donut-wrap { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.donut-chart { position: relative; width: 150px; height: 150px; flex: none; }
+.donut-chart svg { width: 100%; height: 100%; }
+.donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.donut-center strong { font-size: 26px; font-weight: 800; line-height: 1; color: #1d1b16; }
+.donut-center small { font-size: 11px; color: var(--ink-muted); margin-top: 3px; }
+.donut-legend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 9px; }
+.donut-legend li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink); }
+.donut-legend .donut-dot { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.donut-legend .donut-count { margin-left: auto; font-weight: 800; font-family: var(--font-mono); color: #1d1b16; }
+
+/* ---- Gauge de ANS ---- */
+.gauge-card-body { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.gauge-wrap { position: relative; width: 180px; height: 104px; flex: none; margin: 0 auto 4px; }
+.gauge-wrap svg { width: 100%; height: 100%; }
+.gauge-center { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; }
+.gauge-center strong { font-size: 24px; font-weight: 800; line-height: 1; color: #1d1b16; }
+.gauge-center small { display: block; font-size: 11px; color: var(--ink-muted); margin-top: 3px; }
+.gauge-legend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 9px; }
+.gauge-legend li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink); }
+.gauge-legend .donut-dot { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.gauge-legend .donut-count { margin-left: auto; font-weight: 800; font-family: var(--font-mono); color: #1d1b16; }
+
+@media (max-width: 480px) {
+    .col-chart { gap: 8px; height: 170px; }
+    .donut-wrap, .gauge-card-body { justify-content: center; }
+}
 
 /* ---- Workspace: lista + chat ---- */
 .tec-panel { display: grid; grid-template-columns: minmax(320px, 430px) 1fr; gap: 22px; align-items: start; margin-top: 6px; }
@@ -117,26 +126,22 @@
     </div>
 
     {% if vista == 'panel' %}
-    <div class="stats-grid">
-        <a class="stat-card stat-total" href="?vista=mis">
-            <div class="stat-top"><span class="stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span></div>
-            <span class="stat-num">{{ stats.total|default:0 }}</span>
-            <span class="stat-label">Total asignados</span>
+    <div class="scoreboard">
+        <a class="score-chip sc-warning" href="?vista=mis">
+            <span class="score-num">{{ stats.total|default:0 }}</span>
+            <span class="score-label">Total asignados</span>
         </a>
-        <a class="stat-card stat-abierto" href="?vista=mis&estado=abierto">
-            <div class="stat-top"><span class="stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span></div>
-            <span class="stat-num">{{ stats.abiertos|default:0 }}</span>
-            <span class="stat-label">Abiertos</span>
+        <a class="score-chip sc-abierto" href="?vista=mis&estado=abierto">
+            <span class="score-num">{{ stats.abiertos|default:0 }}</span>
+            <span class="score-label">Abiertos</span>
         </a>
-        <a class="stat-card stat-progreso" href="?vista=mis&estado=en-progreso">
-            <div class="stat-top"><span class="stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span></div>
-            <span class="stat-num">{{ stats.en_progreso|default:0 }}</span>
-            <span class="stat-label">En progreso</span>
+        <a class="score-chip sc-progreso" href="?vista=mis&estado=en-progreso">
+            <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
+            <span class="score-label">En progreso</span>
         </a>
-        <a class="stat-card stat-resuelto" href="?vista=mis&estado=resuelto">
-            <div class="stat-top"><span class="stat-icon"><svg class="icon"><use href="#i-check"/></svg></span></div>
-            <span class="stat-num">{{ stats.resueltos|default:0 }}</span>
-            <span class="stat-label">Resueltos</span>
+        <a class="score-chip sc-resuelto" href="?vista=mis&estado=resuelto">
+            <span class="score-num">{{ stats.resueltos|default:0 }}</span>
+            <span class="score-label">Resueltos</span>
         </a>
     </div>
 
@@ -144,28 +149,14 @@
         <div class="chart-card">
             <h3>Tickets por prioridad</h3>
             {% if priority_bars %}
-            <ul class="report-simple-list">
+            <div class="col-chart">
                 {% for bar in priority_bars %}
-                <li class="{% if bar.label == 'urgente' %}mr-danger{% elif bar.label == 'alta' %}mr-warning{% else %}mr-abierto{% endif %}">
-                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
-                    <span class="metric-label">{{ bar.label|capfirst }}</span>
-                    <span class="metric-value">{{ bar.count }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="chart-empty">Sin datos todavía.</p>
-            {% endif %}
-        </div>
-        <div class="chart-card">
-            <h3>Tickets por estado</h3>
-            {% if estado_bars %}
-            <div class="vbars">
-                {% for bar in estado_bars %}
-                <div class="vbar-col">
-                    <span class="vbar-value">{{ bar.count }}</span>
-                    <div class="vbar-track"><div class="vbar-fill" style="height: {{ bar.fill_pct|default:5 }}%;"></div></div>
-                    <span class="vbar-label">{{ bar.label }}</span>
+                <div class="col-chart-item">
+                    <span class="col-chart-val">{{ bar.count }}</span>
+                    <div class="col-chart-bar">
+                        <span class="col-chart-fill" style="height: {{ bar.fill_pct|default:3 }}%; background: {{ bar.color }};"></span>
+                    </div>
+                    <span class="col-chart-label">{{ bar.label|capfirst }}</span>
                 </div>
                 {% endfor %}
             </div>
@@ -174,25 +165,39 @@
             {% endif %}
         </div>
         <div class="chart-card">
+            <h3>Tickets por estado</h3>
+            {% if stats.total %}
+            <div class="donut-wrap">
+                <div class="donut-chart" data-donut='{{ donut_segments|safe }}'>
+                    <div class="donut-center"><strong>{{ stats.total }}</strong><small>tickets</small></div>
+                </div>
+                <ul class="donut-legend">
+                    {% for bar in estado_bars %}
+                    <li>
+                        <span class="donut-dot" style="background: {{ bar.color }};"></span>
+                        {{ bar.label }}
+                        <span class="donut-count">{{ bar.count }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% else %}
+            <p class="chart-empty">Sin datos todavía.</p>
+            {% endif %}
+        </div>
+        <div class="chart-card">
             <h3>Cumplimiento ANS (abiertos)</h3>
             {% if ans_stats.vencidos or ans_stats.por_vencer or ans_stats.ok %}
-            <ul class="report-simple-list">
-                <li class="mr-danger">
-                    <span class="metric-fill" style="width: {{ ans_stats.bar_vencidos|default:0 }}%;"></span>
-                    <span class="metric-label">Vencidos</span>
-                    <span class="metric-value">{{ ans_stats.vencidos }}</span>
-                </li>
-                <li class="mr-warning">
-                    <span class="metric-fill" style="width: {{ ans_stats.bar_por_vencer|default:0 }}%;"></span>
-                    <span class="metric-label">Por vencer</span>
-                    <span class="metric-value">{{ ans_stats.por_vencer }}</span>
-                </li>
-                <li class="mr-ok">
-                    <span class="metric-fill" style="width: {{ ans_stats.bar_ok|default:0 }}%;"></span>
-                    <span class="metric-label">Cumpliendo</span>
-                    <span class="metric-value">{{ ans_stats.ok }}</span>
-                </li>
-            </ul>
+            <div class="gauge-card-body">
+                <div class="gauge-wrap" data-gauge="{{ ans_stats.pct_ok }}">
+                    <div class="gauge-center"><strong>{{ ans_stats.pct_ok }}%</strong><small>al día</small></div>
+                </div>
+                <ul class="gauge-legend">
+                    <li><span class="donut-dot" style="background: #D62B1F;"></span>Vencidos<span class="donut-count">{{ ans_stats.vencidos }}</span></li>
+                    <li><span class="donut-dot" style="background: #F26522;"></span>Por vencer<span class="donut-count">{{ ans_stats.por_vencer }}</span></li>
+                    <li><span class="donut-dot" style="background: #2F7D4F;"></span>Cumpliendo<span class="donut-count">{{ ans_stats.ok }}</span></li>
+                </ul>
+            </div>
             {% else %}
             <p class="chart-empty">Sin tickets abiertos todavía.</p>
             {% endif %}
@@ -245,16 +250,27 @@
         <span class="section-count">{{ solicitudes_page.paginator.count }} no cerrado{{ solicitudes_page.paginator.count|pluralize }}</span>
     </div>
 
+    <form method="get" class="table-toolbar" id="filtrosCola">
+        <input type="hidden" name="vista" value="cola">
+        <label class="search-field">
+            <svg class="icon icon-sm"><use href="#i-search"/></svg>
+            <input type="search" name="q_cola" value="{{ q_cola }}" placeholder="Buscar por código HD, título, solicitante o punto…" />
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+        {% if q_cola %}
+        <a href="?vista=cola" class="link-clear">✕ Limpiar</a>
+        {% endif %}
+    </form>
+
     <div class="table-card">
         <div class="table-scroll">
             <table class="data-table cards-mobile" id="tablaSolicitudes">
                 <thead>
                     <tr>
                         <th>Código</th>
-                        <th>Título</th>
                         <th>Solicitante</th>
                         <th>Prioridad</th>
-                        <th>ANS</th>
+                        <th>Vencimiento</th>
                         <th>Técnico</th>
                         <th>Estado</th>
                         <th>Acciones</th>
@@ -264,10 +280,24 @@
                     {% for t in solicitudes %}
                     <tr class="tr-{{ t.prioridad }}">
                         <td data-label="Código"><span class="table-code">{{ t.codigo }}</span>{% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}</td>
-                        <td data-label="Título">{{ t.titulo|truncatechars:42 }}</td>
                         <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
                         <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
-                        <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
+                        <td data-label="Vencimiento">
+                            {% with info=t.info_ans %}
+                            {% if info.0 %}
+                            <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
+                                {% if info.0 == 'vencido' %}
+                                <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                                {% elif info.0 == 'resuelto' %}
+                                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                                {% else %}
+                                <svg class="icon icon-sm"><use href="#i-clock"/></svg>
+                                {% endif %}
+                                {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
+                            </span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
                         <td data-label="Técnico">
                             {% if t.tecnico_asignado_id %}
                                 {% if t.tecnico_asignado == request.user %}
@@ -293,21 +323,31 @@
                         </td>
                     </tr>
                     {% empty %}
-                    <tr class="table-empty"><td colspan="8">No hay solicitudes de usuarios pendientes.</td></tr>
+                    <tr class="table-empty"><td colspan="7">No hay solicitudes de usuarios pendientes.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        {% if solicitudes_page.paginator.num_pages > 1 %}
+        {% if solicitudes_page.paginator.count > 0 %}
         <div class="pagination-bar">
+            <div class="per-page-bar">
+                <label for="perPageCola">Filas:</label>
+                <select id="perPageCola" data-per-page-param="per_page_sol">
+                    <option value="5" {% if per_page_sol == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if per_page_sol == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page_sol == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page_sol == 50 %}selected{% endif %}>50</option>
+                    <option value="0" {% if per_page_sol == 0 %}selected{% endif %}>Todas</option>
+                </select>
+            </div>
             <span class="pagination-info">Página {{ solicitudes_page.number }} de {{ solicitudes_page.paginator.num_pages }} — {{ solicitudes_page.paginator.count }} resultados</span>
             <div class="pagination-links">
                 {% if solicitudes_page.has_previous %}
-                <a class="page-pill" href="?vista=cola&page_sol={{ solicitudes_page.previous_page_number }}">‹ Anterior</a>
+                <a class="page-pill" href="?{{ querystring_cola }}&page_sol={{ solicitudes_page.previous_page_number }}">‹ Anterior</a>
                 {% endif %}
                 {% if solicitudes_page.has_next %}
-                <a class="page-pill" href="?vista=cola&page_sol={{ solicitudes_page.next_page_number }}">Siguiente ›</a>
+                <a class="page-pill" href="?{{ querystring_cola }}&page_sol={{ solicitudes_page.next_page_number }}">Siguiente ›</a>
                 {% endif %}
             </div>
         </div>
@@ -365,13 +405,23 @@
                 </a>
                 {% endfor %}
             </div>
-            {% if page_obj.paginator.num_pages > 1 %}
+            {% if page_obj.paginator.count > 0 %}
             <div class="pagination-bar" style="margin:0;">
+                <div class="per-page-bar">
+                    <label for="perPageMis">Filas:</label>
+                    <select id="perPageMis" data-per-page-param="per_page">
+                        <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="0" {% if per_page == 0 %}selected{% endif %}>Todas</option>
+                    </select>
+                </div>
+                <span class="pagination-info">Página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
                 <div class="pagination-links">
                     {% if page_obj.has_previous %}
                     <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
                     {% endif %}
-                    <span class="pagination-info">Página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
                     {% if page_obj.has_next %}
                     <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Siguiente ›</a>
                     {% endif %}
@@ -470,6 +520,60 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+(function () {
+    var NS = 'http://www.w3.org/2000/svg';
+    function donut(el) {
+        var data = [];
+        try { data = JSON.parse(el.getAttribute('data-donut')); } catch (e) {}
+        if (!data.length) return;
+        var total = data.reduce(function (s, d) { return s + d.v; }, 0);
+        if (!total) return;
+        var svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('viewBox', '0 0 42 42');
+        var track = document.createElementNS(NS, 'circle');
+        track.setAttribute('cx', 21); track.setAttribute('cy', 21); track.setAttribute('r', 15.9155);
+        track.setAttribute('fill', 'none'); track.setAttribute('stroke', '#EDE9DD'); track.setAttribute('stroke-width', 12);
+        svg.appendChild(track);
+        var used = 0;
+        data.forEach(function (d) {
+            var pct = d.v / total * 100;
+            var seg = document.createElementNS(NS, 'circle');
+            seg.setAttribute('cx', 21); seg.setAttribute('cy', 21); seg.setAttribute('r', 15.9155);
+            seg.setAttribute('fill', 'none'); seg.setAttribute('stroke', d.c); seg.setAttribute('stroke-width', 12);
+            seg.setAttribute('stroke-dasharray', pct + ' ' + (100 - pct));
+            seg.setAttribute('stroke-dashoffset', 25 - used);
+            used += pct;
+            svg.appendChild(seg);
+        });
+        el.appendChild(svg);
+    }
+    function gauge(el) {
+        var val = parseFloat(el.getAttribute('data-gauge'));
+        if (isNaN(val)) return;
+        val = Math.max(0, Math.min(100, val));
+        var svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('viewBox', '0 0 120 60');
+        var d = 'M 15 50 A 45 45 0 0 1 105 50';
+        var len = Math.PI * 45;
+        var track = document.createElementNS(NS, 'path');
+        track.setAttribute('d', d); track.setAttribute('fill', 'none');
+        track.setAttribute('stroke', '#EDE9DD'); track.setAttribute('stroke-width', 11); track.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(track);
+        var fg = document.createElementNS(NS, 'path');
+        fg.setAttribute('d', d); fg.setAttribute('fill', 'none');
+        fg.setAttribute('stroke-width', 11); fg.setAttribute('stroke-linecap', 'round');
+        fg.setAttribute('stroke', val > 66 ? '#2F7D4F' : (val > 33 ? '#B7791F' : '#D62B1F'));
+        fg.setAttribute('stroke-dasharray', (val / 100 * len) + ' ' + len);
+        svg.appendChild(fg);
+        el.appendChild(svg);
+    }
+    var dEl = document.querySelector('[data-donut]');
+    if (dEl) donut(dEl);
+    var gEl = document.querySelector('[data-gauge]');
+    if (gEl) gauge(gEl);
+})();
+</script>
 <script>
 (function () {
     var BODY = document.getElementById('tecChatBody');

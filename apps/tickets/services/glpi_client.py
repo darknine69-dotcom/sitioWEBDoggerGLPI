@@ -185,6 +185,53 @@ class GlpiClient:
                 logger.warning("No se pudo asignar el correo al usuario GLPI #%s", glpi_id)
         return glpi_id
 
+    def create_itil_category(self, name: str) -> int:
+        """Crea una categoría ItilCategory en GLPI. Retorna el id creado."""
+        if not name:
+            raise GlpiError("Nombre vacío para crear categoría GLPI.")
+        r = requests.post(
+            f"{self.base_url}/ITILCategory",
+            headers=self._headers(),
+            json={"input": {"name": name[:255]}},
+            timeout=self.timeout,
+        )
+        if r.status_code not in (200, 201):
+            raise GlpiError(
+                f"GLPI rechazó creación de categoría '{name}' ({r.status_code}): {r.text[:200]}"
+            )
+        data = r.json()
+        glpi_id = None
+        if isinstance(data, dict):
+            glpi_id = data.get("id")
+            if glpi_id is None and isinstance(data.get("0"), dict):
+                glpi_id = data["0"].get("id")
+        try:
+            return int(glpi_id)
+        except (TypeError, ValueError):
+            raise GlpiError("GLPI no devolvió un id de categoría válido.")
+
+    def list_itil_categories(self) -> list[dict[str, Any]]:
+        """Retorna todas las ItilCategory de GLPI como [{id, name}, ...]."""
+        r = requests.get(
+            f"{self.base_url}/ITILCategory",
+            headers=self._headers(),
+            params={"expand_dropdowns": "true"},
+            timeout=self.timeout,
+        )
+        if r.status_code != 200:
+            logger.warning("list ItilCategory GLPI falló (%s): %s", r.status_code, r.text[:200])
+            return []
+        data = r.json()
+        if isinstance(data, dict) and "data" in data:
+            data = data["data"]
+        if isinstance(data, dict):
+            data = list(data.values())
+        resultado = []
+        for item in (data or []):
+            if isinstance(item, dict):
+                resultado.append({"id": int(item.get("id", 0)), "name": str(item.get("name", ""))})
+        return resultado
+
     def list_users(self) -> list[dict[str, Any]]:
         """
         Lista usuarios de GLPI para importarlos como cuentas técnicas.
@@ -435,11 +482,19 @@ class GlpiClient:
         type_: int = 1,
         requesters_id: int | None = None,
         assignees_ids: list[int] | None = None,
+        date_open: str | None = None,
+        date_mod: str | None = None,
+        priority: int | None = None,
+        impact: int | None = None,
+        status: int = 1,
     ) -> dict[str, Any]:
         """
         Crea un Ticket en GLPI.
         urgency: 1=muy baja … 5=muy alta
         type: 1=incidente, 2=solicitud
+        priority: 1-5 (GLPI calcula por defecto urgency×impact, pero se puede sobreescribir)
+        impact: 1-5
+        status: 1=nuevo, 2=en curso, 5=resuelto, 6=cerrado
         """
         payload: dict[str, Any] = {
             "input": {
@@ -448,6 +503,7 @@ class GlpiClient:
                 "urgency": urgency,
                 "type": type_,
                 "entities_id": entities_id,
+                "status": status,
             }
         }
         if itilcategories_id:
@@ -456,6 +512,14 @@ class GlpiClient:
             payload["input"]["_users_id_requester"] = requesters_id
         if assignees_ids:
             payload["input"]["_users_id_assign"] = list(assignees_ids)
+        if date_open:
+            payload["input"]["date"] = date_open
+        if date_mod:
+            payload["input"]["date_mod"] = date_mod
+        if priority is not None:
+            payload["input"]["priority"] = priority
+        if impact is not None:
+            payload["input"]["impact"] = impact
 
         r = requests.post(
             f"{self.base_url}/Ticket",
@@ -753,6 +817,22 @@ PRIORITY_TO_URGENCY = {
     "urgente": 5,
 }
 
+# Mapeo prioridad Dogger → priority GLPI (directo, para que se muestre correctamente)
+PRIORITY_TO_GLPI = {
+    "baja": 2,
+    "media": 3,
+    "alta": 4,
+    "urgente": 5,
+}
+
+# Mapeo prioridad Dogger → impact GLPI (impacto estimado para la tabla)
+PRIORITY_TO_IMPACT = {
+    "baja": 1,
+    "media": 2,
+    "alta": 3,
+    "urgente": 4,
+}
+
 # Mapeo estado Dogger → status GLPI
 STATE_TO_GLPI_STATUS = {
     "abierto": 1,
@@ -791,15 +871,49 @@ def _glpi_ids_asignados(ticket) -> list[int]:
 
 
 def _contenido_ticket(ticket) -> str:
+    """Genera el contenido HTML completo del ticket para GLPI,
+    incluyendo toda la información relevante del Dogger ticket."""
     from django.utils.html import escape
+    from django.utils import timezone
 
     descripcion = "<br>".join(escape(ticket.descripcion or "").splitlines())
+
+    # Fechas formateadas
+    fecha_apertura = ticket.fecha_creacion.strftime("%d/%m/%Y %H:%M") if ticket.fecha_creacion else "—"
+    fecha_actual = ticket.fecha_actualizacion.strftime("%d/%m/%Y %H:%M") if ticket.fecha_actualizacion else "—"
+    fecha_cierre = ticket.fecha_cierre.strftime("%d/%m/%Y %H:%M") if ticket.fecha_cierre else "Sin cerrar"
+
+    # Nombre de la categoría
+    categoria_nombre = "Sin categoría"
+    if ticket.categoria_id:
+        categoria_nombre = getattr(ticket.categoria, "nombre", "Sin categoría")
+
+    # Nombre del técnico asignado
+    tecnico_nombre = "Sin asignar"
+    if ticket.tecnico_asignado_id:
+        tecnico_nombre = getattr(ticket.tecnico_asignado, "nombre", "Sin asignar")
+
+    # Prioridad display
+    prioridad_display = ticket.get_prioridad_display()
+    estado_display = ticket.get_estado_display()
+
     return (
+        f"<p><b>Código Dogger:</b> {ticket.codigo}</p>"
+        f"<p><b>Fecha de apertura:</b> {fecha_apertura}</p>"
+        f"<p><b>Última actualización:</b> {fecha_actual}</p>"
+        f"<p><b>Fecha de cierre:</b> {escape(fecha_cierre)}</p>"
+        f"<hr>"
         f"<p><b>Solicitante:</b> {escape(ticket.solicitante_nombre)}</p>"
         f"<p><b>Correo:</b> {escape(ticket.solicitante_email or '—')}</p>"
-        f"<p><b>Punto:</b> {escape(ticket.solicitante_punto or '—')}</p>"
-        f"<p><b>Código Dogger:</b> {ticket.codigo}</p>"
-        f"<hr>{descripcion}"
+        f"<p><b>Punto / Sede / Equipo:</b> {escape(ticket.solicitante_punto or '—')}</p>"
+        f"<p><b>Categoría:</b> {escape(categoria_nombre)}</p>"
+        f"<p><b>Prioridad:</b> {escape(prioridad_display)}</p>"
+        f"<p><b>Estado:</b> {escape(estado_display)}</p>"
+        f"<p><b>Técnico asignado:</b> {escape(tecnico_nombre)}</p>"
+        f"<p><b>Asignación automática:</b> {'Sí' if ticket.asignacion_automatica else 'No'}</p>"
+        f"<hr>"
+        f"<p><b>Descripción:</b></p>"
+        f"<p>{descripcion}</p>"
     )
 
 
@@ -823,17 +937,29 @@ def sync_ticket_to_glpi(ticket) -> int | None:
         if ticket.solicitante_email:
             requester_id = client.find_user_by_email(ticket.solicitante_email)
         urgency = PRIORITY_TO_URGENCY.get(ticket.prioridad, 3)
+        priority = PRIORITY_TO_GLPI.get(ticket.prioridad, 3)
+        impact = PRIORITY_TO_IMPACT.get(ticket.prioridad, 2)
         cat_glpi = None
         if ticket.categoria_id and getattr(ticket.categoria, "glpi_category_id", None):
             cat_glpi = ticket.categoria.glpi_category_id
+
+        # Fechas en formato ISO para GLPI
+        date_open = ticket.fecha_creacion.strftime("%Y-%m-%d %H:%M:%S") if ticket.fecha_creacion else None
+        date_mod = ticket.fecha_actualizacion.strftime("%Y-%m-%d %H:%M:%S") if ticket.fecha_actualizacion else None
+        status = STATE_TO_GLPI_STATUS.get(ticket.estado, 1)
 
         result = client.create_ticket(
             name=ticket.titulo,
             content=_contenido_ticket(ticket),
             urgency=urgency,
+            priority=priority,
+            impact=impact,
+            status=status,
             itilcategories_id=cat_glpi,
             requesters_id=requester_id,
             assignees_ids=_glpi_ids_asignados(ticket),
+            date_open=date_open,
+            date_mod=date_mod,
         )
         # GLPI suele devolver {"id": N, "message": "..."}
         glpi_id = None
@@ -918,15 +1044,53 @@ def sync_asignacion_to_glpi(ticket) -> bool:
 
 
 def sync_edicion_to_glpi(ticket) -> bool:
-    """Actualiza en GLPI título y descripción tras una edición local."""
+    """Actualiza título, descripción y campos principales de un ticket en GLPI tras edición local."""
     client = GlpiClient()
     if not client.available or not getattr(ticket, "glpi_id", None):
         return False
     try:
         client.init_session()
-        client.update_ticket_content(
-            ticket.glpi_id, ticket.titulo, _contenido_ticket(ticket)
+        glpi_id = ticket.glpi_id
+
+        # Payload completo con todo lo que puede cambiar tras edición
+        payload = {
+            "input": {
+                "id": glpi_id,
+                "name": ticket.titulo[:255],
+                "content": _contenido_ticket(ticket),
+                "urgency": PRIORITY_TO_URGENCY.get(ticket.prioridad, 3),
+                "priority": PRIORITY_TO_GLPI.get(ticket.prioridad, 3),
+                "impact": PRIORITY_TO_IMPACT.get(ticket.prioridad, 2),
+                "status": STATE_TO_GLPI_STATUS.get(ticket.estado, 1),
+            }
+        }
+
+        # Categoría GLPI
+        if ticket.categoria_id and getattr(ticket.categoria, "glpi_category_id", None):
+            payload["input"]["itilcategories_id"] = ticket.categoria.glpi_category_id
+
+        # Solicitante GLPI
+        requester_id = None
+        if ticket.solicitante_email:
+            requester_id = client.find_user_by_email(ticket.solicitante_email)
+        if requester_id:
+            payload["input"]["_users_id_requester"] = requester_id
+
+        # Técnico asignado GLPI
+        assignees = _glpi_ids_asignados(ticket)
+        if assignees:
+            payload["input"]["_users_id_assign"] = assignees
+
+        r = requests.put(
+            f"{client.base_url}/Ticket/{glpi_id}",
+            headers=client._headers(),
+            json=payload,
+            timeout=client.timeout,
         )
+        if r.status_code not in (200, 201):
+            raise GlpiError(
+                f"Edición ticket GLPI falló ({r.status_code}): {r.text[:400]}"
+            )
         return True
     except requests.RequestException as exc:
         logger.exception("Error de conexión con GLPI (edición %s)", ticket.codigo)

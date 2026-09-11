@@ -7,7 +7,9 @@
 {% block header_title %}{% endblock %}
 
 {% block extra_css %}
-<style>.lista-page .brand-titles { display: none; }</style>
+<style>
+.lista-page .brand-titles { display: none; }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -135,8 +137,18 @@
             </table>
         </div>
 
-        {% if page_obj.paginator.num_pages > 1 %}
+        {% if page_obj.paginator.count > 0 %}
         <div class="pagination-bar">
+            <div class="per-page-bar">
+                <label for="perPageLista">Filas:</label>
+                <select id="perPageLista" data-per-page-param="per_page">
+                    <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="0" {% if per_page == 0 %}selected{% endif %}>Todas</option>
+                </select>
+            </div>
             <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} resultados</span>
             <div class="pagination-links">
                 {% if page_obj.has_previous %}

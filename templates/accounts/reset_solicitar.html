@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dogger · Recuperar contraseña</title>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260910">
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260913">
 </head>
 <body>
 <div class="login-screen">
@@ -17,6 +17,14 @@
         <p class="eyebrow">Dogger · Premium Quality</p>
         <h2>¿Olvidaste tu contraseña?</h2>
         <p class="login-hint">Ingresa tu correo corporativo y te enviaremos un código para restablecerla.</p>
+
+        {% if messages %}
+        <div class="login-flash">
+            {% for message in messages %}
+            <p class="login-alert login-alert-{{ message.tags|default:'info' }}">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         <form method="post" novalidate>
             {% csrf_token %}

@@ -205,13 +205,25 @@ if not DEBUG:
 # ---------------------------------------------------------------------------
 # Email (SMTP — Servidor Dogger directo)
 # ---------------------------------------------------------------------------
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.office365.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("1", "true", "yes")
-EMAIL_HOST_USER = os.getenv("EMAIL_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.getenv("EMAIL_FROM", EMAIL_HOST_USER)
+# Se aceptan ambas convenciones de nombre de variable: EMAIL_* y DJANGO_EMAIL_*
+EMAIL_BACKEND = os.getenv(
+    "DJANGO_EMAIL_BACKEND",
+    os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"),
+)
+EMAIL_HOST = os.getenv("DJANGO_EMAIL_HOST", os.getenv("EMAIL_HOST", "smtp.office365.com"))
+EMAIL_PORT = int(os.getenv("DJANGO_EMAIL_PORT", os.getenv("EMAIL_PORT", "587")))
+EMAIL_USE_TLS = os.getenv(
+    "DJANGO_EMAIL_USE_TLS", os.getenv("EMAIL_USE_TLS", "True")
+).lower() in ("1", "true", "yes")
+EMAIL_HOST_USER = os.getenv("DJANGO_EMAIL_HOST_USER", os.getenv("EMAIL_USER", ""))
+EMAIL_HOST_PASSWORD = os.getenv("DJANGO_EMAIL_HOST_PASSWORD", os.getenv("EMAIL_PASSWORD", ""))
+DEFAULT_FROM_EMAIL = os.getenv("DJANGO_DEFAULT_FROM_EMAIL", os.getenv("EMAIL_FROM", EMAIL_HOST_USER))
+
+# Sin credenciales SMTP configuradas (o en el entorno de pruebas), el envío
+# se hace por consola para que la recuperación de contraseña nunca falle en silencio.
+if (os.getenv("SMOKE_TEST_SQLITE", "False").lower() in ("1", "true", "yes")
+        or not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD):
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # ---------------------------------------------------------------------------
 # Configuración Dogger
@@ -276,10 +288,7 @@ DOGGER = {
 # ---------------------------------------------------------------------------
 # En la nube, GLPI queda desactivado por defecto (solo accesible en LAN).
 GLPI = {
-    "enabled": (
-        os.getenv("GLPI_ENABLED", "False").lower() in ("1", "true", "yes")
-        and bool(DATABASE_URL) is False
-    ),
+    "enabled": os.getenv("GLPI_ENABLED", "False").lower() in ("1", "true", "yes"),
     "base_url": os.getenv("GLPI_BASE_URL", "http://glpi.dogger.local/apirest.php"),
     "app_token": os.getenv("GLPI_APP_TOKEN", ""),
     "user_token": os.getenv("GLPI_USER_TOKEN", ""),

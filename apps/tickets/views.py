@@ -46,6 +46,19 @@ from .sugerencia_categoria import claves_para_json
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
+COLORES_ESTADO = {
+    "abierto": "#D62B1F",
+    "en-progreso": "#F2A900",
+    "resuelto": "#2F7D4F",
+    "cerrado": "#6B6259",
+}
+COLORES_PRIORIDAD = {
+    "urgente": "#D62B1F",
+    "alta": "#F26522",
+    "media": "#F2A900",
+    "baja": "#6B9E78",
+}
+
 
 def _auto_asignar_tecnico(ticket) -> bool:
     """
@@ -103,6 +116,7 @@ def _build_chart_context(tickets):
             "count": pri_counts.get(k, 0),
             "pct": round(pri_counts.get(k, 0) / total * 100),
             "fill_pct": 0 if max_priority_count == 0 else round((pri_counts.get(k, 0) / max_priority_count) * 100),
+            "color": COLORES_PRIORIDAD.get(k, "#F2A900"),
         }
         for k in priority_labels
     ]
@@ -132,8 +146,14 @@ def _build_chart_context(tickets):
             "count": estado_counts.get(k, 0),
             "pct": round(estado_counts.get(k, 0) / total_estados * 100),
             "fill_pct": 0 if max_estado_count == 0 else round((estado_counts.get(k, 0) / max_estado_count) * 100),
+            "color": COLORES_ESTADO.get(k, "#6B6259"),
         }
         for k in estado_labels
+    ]
+    donut_segments = [
+        {"v": estado_counts.get(k, 0), "c": COLORES_ESTADO.get(k, "#6B6259")}
+        for k in estado_labels
+        if estado_counts.get(k, 0) > 0
     ]
 
     tecnico_counts = Counter(
@@ -172,6 +192,7 @@ def _build_chart_context(tickets):
         "vencidos": ans_vencidos,
         "por_vencer": ans_por_vencer,
         "ok": ans_ok,
+        "pct_ok": round(ans_ok / ans_total * 100),
         "bar_vencidos": round(ans_vencidos / ans_total * 100),
         "bar_por_vencer": round(ans_por_vencer / ans_total * 100),
         "bar_ok": round(ans_ok / ans_total * 100),
@@ -184,28 +205,35 @@ def _build_chart_context(tickets):
         "tecnico_bars": tecnico_bars,
         "user_bars": user_bars,
         "ans_stats": ans_stats,
+        "donut_segments": json.dumps(donut_segments),
     }
 
 
 def _build_dashboard_context(request, tickets):
     chart_context = _build_chart_context(tickets)
     eventos_qs = GlpiEvento.objects.select_related("ticket").order_by("-fecha")
+    pp_glpi = _resolve_per_page(request, "per_page_glpi", 4)
     page_number = request.GET.get("page_glpi", 1)
-    paginator = Paginator(eventos_qs, 4)
+    paginator = Paginator(eventos_qs, pp_glpi)
     eventos_glpi_page = paginator.get_page(page_number)
     chart_context.update({
         "eventos_glpi": eventos_glpi_page.object_list,
         "eventos_glpi_page": eventos_glpi_page,
+        "per_page_glpi": pp_glpi,
+        "querystring_glpi": _params_sin_page(request, "page_glpi"),
     })
     return chart_context
 
 
-def paginate_recent_tickets(request, queryset, page_param="page_recientes", per_page=5):
+def paginate_recent_tickets(request, queryset, page_param="page_recientes", per_page=5, per_page_param="per_page_recientes"):
+    pp = _resolve_per_page(request, per_page_param, per_page)
+    if pp == 0:
+        pp = queryset.count() or 1
     paginator = Paginator(
         queryset.annotate(
             _prioridad_orden=orden_prioridad_annotation()
         ).order_by("_prioridad_orden", "-fecha_creacion"),
-        per_page,
+        pp,
     )
     page_number = request.GET.get(page_param, 1)
     page_obj = paginator.get_page(page_number)
@@ -444,7 +472,8 @@ def usuarios_lista(request):
                 Q(nombre__icontains=palabra) | Q(email__icontains=palabra)
             )
 
-    page_obj = _paginar(usuarios, request, per_page=5)
+    pp_us = _resolve_per_page(request, "per_page", 5)
+    page_obj = _paginar(usuarios, request, per_page_default=pp_us)
 
     # Búsqueda en vivo del perfil en GLPI (pestaña Técnicos con texto de búsqueda)
     perfiles_encontrados = 0
@@ -547,6 +576,7 @@ def usuarios_lista(request):
             ).count(),
             "glpi_base": glpi_base,
             "glpi_remotos": glpi_remotos,
+            "per_page": pp_us,
         },
     )
 
@@ -1010,11 +1040,13 @@ def mi_panel(request):
             estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO],
         ).count(),
     }
+    pp_mp = _resolve_per_page(request, "per_page", 10)
     page_obj = _paginar(
         tickets_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
             "_prioridad_orden", "-fecha_creacion"
         ),
         request,
+        per_page_default=pp_mp,
     )
     dashboard_context = _build_dashboard_context(request, list(page_obj.object_list))
     return render(
@@ -1031,6 +1063,7 @@ def mi_panel(request):
             "estados": Ticket.Estado.choices,
             "stats": stats,
             "form": form,
+            "per_page": pp_mp,
             "cat_sugerencias_json": json.dumps(claves_para_json(), ensure_ascii=False),
             **dashboard_context,
         },
@@ -1333,7 +1366,8 @@ def dashboard(request):
             _prioridad_orden=orden_prioridad_annotation()
         ).order_by("_prioridad_orden", "-fecha_creacion")[:200]
     )
-    recientes_page = paginate_recent_tickets(request, tickets_qs, per_page=10)
+    pp_recientes = _resolve_per_page(request, "per_page_recientes", 10)
+    recientes_page = paginate_recent_tickets(request, tickets_qs, per_page=pp_recientes)
     dashboard_context = _build_dashboard_context(request, tickets)
     recientes = _adjuntar_solicitantes(recientes_page.object_list)
     return render(
@@ -1343,15 +1377,35 @@ def dashboard(request):
             "stats": stats,
             "recientes": recientes,
             "recientes_page": recientes_page,
+            "per_page_recientes": pp_recientes,
+            "querystring": _params_sin_page(request, "page_recientes"),
             **dashboard_context,
         },
     )
 
 
-def _paginar(qs, request, param="page", per_page=15):
-    paginator = Paginator(qs, per_page)
+def _paginar(qs, request, param="page", per_page_param="per_page", per_page_default=10):
+    allowed = {5, 10, 20, 50, 0}
+    try:
+        pp = int(request.GET.get(per_page_param, per_page_default))
+    except (ValueError, TypeError):
+        pp = per_page_default
+    if pp not in allowed:
+        pp = per_page_default
+    if pp == 0:
+        pp = qs.count() or 1
+    paginator = Paginator(qs, pp)
     numero = request.GET.get(param) or 1
     return paginator.get_page(numero)
+
+
+def _resolve_per_page(request, param="per_page", default=10):
+    allowed = {5, 10, 20, 50, 0}
+    try:
+        pp = int(request.GET.get(param, default))
+    except (ValueError, TypeError):
+        pp = default
+    return pp if pp in allowed else default
 
 
 def _params_sin_page(request, param="page"):
@@ -1410,12 +1464,15 @@ def lista_tickets(request):
             condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
         qs = qs.filter(condicion)
 
+    pp_lista = _resolve_per_page(request, "per_page", 10)
+    if q:
+        pp_lista = 0
     page_obj = _paginar(
         qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
             "_prioridad_orden", "-fecha_creacion"
         ),
         request,
-        per_page=5,
+        per_page_default=pp_lista,
     )
 
     filtros_activos = any([estado, prioridad, categoria, tecnico, q])
@@ -1441,6 +1498,7 @@ def lista_tickets(request):
             ).order_by("nombre"),
             "total_resultados": page_obj.paginator.count,
             "es_admin": es_admin,
+            "per_page": pp_lista,
         },
     )
 
@@ -1837,6 +1895,13 @@ def panel_tecnico(request):
     tecnico = request.user
     estado = request.GET.get("estado", "").strip()
     q = request.GET.get("q", "").strip()
+    q_cola = request.GET.get("q_cola", "").strip()
+    pp_mis = _resolve_per_page(request, "per_page", 10)
+    pp_sol = _resolve_per_page(request, "per_page_sol", 10)
+    if q:
+        pp_mis = 0
+    if q_cola:
+        pp_sol = 0
 
     qs = (
         Ticket.objects.filter(tecnico_asignado=tecnico)
@@ -1872,13 +1937,29 @@ def panel_tecnico(request):
     )
 
     # Cola de solicitudes de usuarios: tickets sin cerrar que el técnico puede tomar
-    solicitudes_page = _paginar(
+    cola_qs = (
         Ticket.objects.select_related("categoria", "tecnico_asignado")
         .exclude(estado=Ticket.Estado.CERRADO)
         .annotate(_prioridad_orden=orden_prioridad_annotation())
-        .order_by("_prioridad_orden", "-fecha_creacion"),
+        .order_by("_prioridad_orden", "-fecha_creacion")
+    )
+    if q_cola:
+        match_cola = re.match(r"^HD-(\d+)$", q_cola.upper())
+        condicion_cola = (
+            Q(codigo__iexact=q_cola.upper())
+            | Q(titulo__icontains=q_cola)
+            | Q(solicitante_nombre__icontains=q_cola)
+            | Q(solicitante_email__icontains=q_cola)
+            | Q(solicitante_punto__icontains=q_cola)
+        )
+        if match_cola:
+            condicion_cola = Q(codigo__iexact=q_cola.upper()) | Q(titulo__icontains=q_cola) | Q(solicitante_nombre__icontains=q_cola)
+        cola_qs = cola_qs.filter(condicion_cola)
+    solicitudes_page = _paginar(
+        cola_qs,
         request,
-        per_page=10,
+        per_page_param="per_page_sol",
+        per_page_default=pp_sol,
         param="page_sol",
     )
 
@@ -1887,7 +1968,7 @@ def panel_tecnico(request):
             "_prioridad_orden", "-fecha_creacion"
         ),
         request,
-        per_page=8,
+        per_page_default=pp_mis,
     )
 
     ticket = None
@@ -1922,14 +2003,18 @@ def panel_tecnico(request):
             "cola_count": solicitudes_page.paginator.count,
             "vista": vista,
             "querystring": _params_sin_page(request),
+            "querystring_cola": _params_sin_page(request, "page_sol"),
             "filtro_estado": estado,
             "q": q,
+            "q_cola": q_cola,
             "estados": Ticket.Estado.choices,
             "total_resultados": page_obj.paginator.count,
             "ticket": ticket,
             "timeline": timeline,
             "eventos_count": eventos_count,
             "stats": stats,
+            "per_page": pp_mis,
+            "per_page_sol": pp_sol,
             **chart_context,
         },
     )

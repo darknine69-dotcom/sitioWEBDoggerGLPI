@@ -84,6 +84,17 @@
         sel.addEventListener("change", function () { sel.form.submit(); });
     });
 
+    /* ---- Selector "Filas por página": recarga con el nuevo tamaño ---- */
+    var PAGE_PARAMS = ["page", "page_sol", "page_recientes", "page_glpi"];
+    document.querySelectorAll("select[data-per-page-param]").forEach(function (sel) {
+        sel.addEventListener("change", function () {
+            var url = new URL(window.location.href);
+            url.searchParams.set(sel.getAttribute("data-per-page-param"), sel.value);
+            PAGE_PARAMS.forEach(function (p) { url.searchParams.delete(p); });
+            window.location.href = url.toString();
+        });
+    });
+
     /* ---- Botón volver ---- */
     document.querySelectorAll(".back-btn[data-back]").forEach(function (btn) {
         btn.addEventListener("click", function (e) {

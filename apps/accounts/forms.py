@@ -2,8 +2,6 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
 
-from .models import ResetPasswordToken
-
 User = get_user_model()
 
 
@@ -162,13 +160,8 @@ class SolicitarResetForm(forms.Form):
         return email
 
 
-class RestablecerPasswordForm(forms.Form):
-    email = forms.EmailField(
-        label="Correo corporativo",
-        widget=forms.EmailInput(
-            attrs={"placeholder": "correo@dogger.com.co", "autocomplete": "username"}
-        ),
-    )
+class CodigoResetForm(forms.Form):
+    """Paso 2 (confirmar): solo se ingresa el código de verificación."""
     codigo = forms.CharField(
         label="Código de verificación",
         max_length=6,
@@ -177,6 +170,14 @@ class RestablecerPasswordForm(forms.Form):
             attrs={"placeholder": "000000", "autocomplete": "one-time-code", "inputmode": "numeric"}
         ),
     )
+
+
+class CambiarPasswordForzadoForm(forms.Form):
+    """Ventana emergente tras validar el código: nueva contraseña sin pedir la actual.
+
+    El formulario es intencionalmente pequeño (modal), con los dos campos
+    de contraseña y su confirmación.
+    """
     password_nueva = forms.CharField(
         label="Nueva contraseña",
         widget=forms.PasswordInput(attrs={"placeholder": "Mínimo 8 caracteres", "autocomplete": "new-password"}),
@@ -189,34 +190,8 @@ class RestablecerPasswordForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        email = cleaned_data.get("email", "").strip().lower()
-        self.usuario = User.objects.filter(email__iexact=email).first()
-
-        if self.usuario is None:
-            self.add_error("codigo", "El código no es válido para este correo.")
-            return cleaned_data
-
-        token = ResetPasswordToken.objects.filter(
-            usuario=self.usuario, codigo=cleaned_data.get("codigo", ""), usado=False
-        ).first()
-        if not token:
-            self.add_error("codigo", "El código es incorrecto.")
-            return cleaned_data
-        if token.expirado:
-            token.delete()
-            self.add_error("codigo", "El código ha expirado. Solicita uno nuevo.")
-            return cleaned_data
-        self.token = token
-
-        password_nueva = cleaned_data.get("password_nueva")
-        password_confirmar = cleaned_data.get("password_confirmar")
-        if password_nueva and password_confirmar and password_nueva != password_confirmar:
+        nueva = cleaned_data.get("password_nueva")
+        confirmar = cleaned_data.get("password_confirmar")
+        if nueva and confirmar and nueva != confirmar:
             self.add_error("password_confirmar", "Las contraseñas no coinciden.")
         return cleaned_data
-
-    def save(self):
-        self.token.usado = True
-        self.token.save(update_fields=["usado"])
-        self.usuario.set_password(self.cleaned_data["password_nueva"])
-        self.usuario.save(update_fields=["password"])
-        return self.usuario

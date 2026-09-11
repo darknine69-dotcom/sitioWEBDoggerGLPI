@@ -10,16 +10,19 @@ from django.views import View
 import logging
 
 from .forms import (
+    CambiarPasswordForzadoForm,
     CambiarPasswordForm,
+    CodigoResetForm,
     LoginForm,
     PerfilForm,
-    RestablecerPasswordForm,
     SolicitarResetForm,
     UserRegisterForm,
 )
-from .models import ResetPasswordToken
+from .models import ResetPasswordToken, Usuario
 
 logger = logging.getLogger(__name__)
+
+User = Usuario
 
 
 def _glpi_available():
@@ -207,6 +210,7 @@ def solicitar_reset(request):
                 return redirect("accounts:login")
             try:
                 token = ResetPasswordToken.generar(usuario)
+                request.session["reset_pwd_email"] = usuario.email
                 send_mail(
                     "Dogger HelpDesk — Código para restablecer contraseña",
                     (
@@ -217,11 +221,20 @@ def solicitar_reset(request):
                     ),
                     settings.DEFAULT_FROM_EMAIL,
                     [usuario.email],
-                    fail_silently=True,
                 )
             except Exception as exc:
                 logger.exception("Error enviando código de reset a %s", usuario.email)
-            messages.success(request, "Te enviamos un código de verificación a tu correo.")
+                messages.error(
+                    request,
+                    "No pudimos enviar el correo con el código. Revisa la configuración SMTP o inténtalo más tarde.",
+                )
+                return render(
+                    request, "accounts/reset_solicitar.html", {"form": SolicitarResetForm()}
+                )
+            messages.success(
+                request,
+                "Te enviamos un código de verificación a tu correo (revisa también el spam).",
+            )
             return redirect(reverse("accounts:restablecer_password"))
         return render(request, "accounts/reset_solicitar.html", {"form": form})
 
@@ -229,16 +242,79 @@ def solicitar_reset(request):
 
 
 def restablecer_password(request):
-    """Paso 2 — ingresa correo + código + nueva contraseña."""
+    """Paso 2 — solo se ingresa el código; al validarlo se inicia sesión
+    y se fuerza el cambio de contraseña con una ventana emergente."""
+    email = request.session.get("reset_pwd_email")
+    if not email:
+        messages.info(request, "Primero solicita un código de verificación.")
+        return redirect("accounts:reset_solicitar")
+
     if request.method == "POST":
-        form = RestablecerPasswordForm(request.POST)
+        form = CodigoResetForm(request.POST)
         if form.is_valid():
-            usuario = form.save()
-            messages.success(
-                request,
-                f"Contraseña actualizada. Ya puedes iniciar sesión, {usuario.nombre}.",
-            )
-            return redirect("accounts:login")
+            codigo = form.cleaned_data["codigo"]
+            usuario = User.objects.filter(email__iexact=email, activo=True).first()
+            if usuario is None:
+                messages.error(request, "El código no es válido para este correo.")
+                request.session.pop("reset_pwd_email", None)
+                return redirect("accounts:reset_solicitar")
+
+            token = ResetPasswordToken.objects.filter(
+                usuario=usuario, codigo=codigo, usado=False
+            ).first()
+            if not token:
+                form.add_error("codigo", "El código es incorrecto.")
+                return render(request, "accounts/reset_confirmar.html", {"form": form})
+            if token.expirado:
+                token.delete()
+                form.add_error("codigo", "El código ha expirado. Solicita uno nuevo.")
+                return render(request, "accounts/reset_confirmar.html", {"form": form})
+
+            # El código es válido: hábilitalo y fuerza un cambio de contraseña
+            token.usado = True
+            token.save(update_fields=["usado"])
+            usuario.set_unusable_password()
+            usuario.save(update_fields=["password"])
+            login(request, usuario)
+            request.session.pop("reset_pwd_email", None)
+            request.session["force_password_change"] = True
+            return redirect(_landing_por_rol(usuario))
+
         return render(request, "accounts/reset_confirmar.html", {"form": form})
 
-    return render(request, "accounts/reset_confirmar.html", {"form": RestablecerPasswordForm()})
+    return render(request, "accounts/reset_confirmar.html", {"form": CodigoResetForm()})
+
+
+def _landing_por_rol(user):
+    rol = getattr(user, "rol", None)
+    if rol == "usuario":
+        return reverse("tickets:mi_panel")
+    if rol == "tecnico":
+        return reverse("tickets:panel_tecnico")
+    return reverse("tickets:dashboard")
+
+
+@login_required
+def cambiar_password_forzado(request):
+    """Vista que procesa el modal 'Debes actualizar tu contraseña'."""
+    if not request.session.get("force_password_change"):
+        return redirect(_landing_por_rol(request.user))
+
+    if request.method == "POST":
+        form = CambiarPasswordForzadoForm(request.POST)
+        if form.is_valid():
+            request.user.set_password(form.cleaned_data["password_nueva"])
+            request.user.save(update_fields=["password"])
+            update_session_auth_hash(request, request.user)
+            request.session.pop("force_password_change", None)
+            request.session.pop("force_password_error", None)
+            messages.success(request, "¡Contraseña actualizada correctamente! Ya puedes usar el sistema.")
+            return redirect(_landing_por_rol(request.user))
+
+        error_msg = next(
+            (msg for msgs in form.errors.values() for msg in msgs),
+            "No se pudo actualizar la contraseña.",
+        )
+        request.session["force_password_error"] = error_msg
+        messages.error(request, "Revisa los errores en la ventana e inténtalo de nuevo.")
+    return redirect(_landing_por_rol(request.user))
