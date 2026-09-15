@@ -9,6 +9,52 @@
 {% block extra_css %}
 <style>
 .lista-page .brand-titles { display: none; }
+.lista-page .cell-actions { white-space: nowrap; }
+.lista-page .actions-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+}
+#actions-flotante {
+    position: fixed;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 200px;
+    padding: 5px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18);
+}
+#actions-flotante .accion-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    padding: 6px 8px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background .12s ease;
+    white-space: nowrap;
+}
+#actions-flotante .accion-btn:hover { background: #fff3e3; }
+#actions-flotante .accion-btn .accion-icon {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    color: var(--ink-muted);
+}
+#actions-flotante .accion-btn.is-danger { color: var(--dogger-red); }
+#actions-flotante .accion-btn.is-danger .accion-icon { color: var(--dogger-red); }
 </style>
 {% endblock %}
 
@@ -110,24 +156,15 @@
                         <td data-label="Acciones" class="cell-actions">
                             <a class="btn btn-sm btn-outline actions-icon" title="Ver ticket" href="{% url 'tickets:detalle' t.pk %}"><svg class="icon icon-sm"><use href="#i-eye"/></svg></a>
                             {% if es_admin %}
-                            <div class="actions-menu" data-estado-url="{% url 'tickets:cambiar_estado' t.pk %}">
-                                <button type="button" class="btn btn-sm btn-outline actions-icon actions-trigger" title="Cambiar estado" aria-expanded="false"><svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
-                                <div class="actions-dropdown" hidden>
-                                    {% if t.estado == 'abierto' %}
-                                    <button type="button" class="actions-item" data-estado="en-progreso">Poner en progreso</button>
-                                    {% elif t.estado == 'en-progreso' %}
-                                    <button type="button" class="actions-item" data-estado="resuelto">Marcar resuelto</button>
-                                    {% endif %}
-                                    {% if t.estado != 'cerrado' %}
-                                    <button type="button" class="actions-item is-danger" data-estado="cerrado" data-confirm="¿Cerrar este ticket?">Cerrar</button>
-                                    {% else %}
-                                    <button type="button" class="actions-item" data-estado="abierto">Reabrir</button>
-                                    {% endif %}
-                                    <button type="button" class="actions-item is-danger" data-accion-eliminar
-                                            data-eliminar-url="{% url 'tickets:eliminar' t.pk %}"
-                                            data-codigo="{{ t.codigo }}">Eliminar</button>
-                                </div>
-                            </div>
+                            <button type="button" class="btn btn-sm btn-outline actions-trigger"
+                                    title="Acciones" aria-label="Acciones"
+                                    aria-haspopup="true" aria-expanded="false"
+                                    data-estado-url="{% url 'tickets:cambiar_estado' t.pk %}"
+                                    data-eliminar-url="{% url 'tickets:eliminar' t.pk %}"
+                                    data-codigo="{{ t.codigo }}"
+                                    data-estado-actual="{{ t.estado }}">
+                                <svg class="icon icon-sm"><use href="#i-ellipsis"/></svg>
+                            </button>
                             {% else %}
                             <a class="btn btn-sm btn-accent actions-icon" title="Abrir chat" href="{% url 'tickets:panel_tecnico' %}?ticket={{ t.pk }}"><svg class="icon icon-sm"><use href="#i-message"/></svg></a>
                             {% endif %}
@@ -182,76 +219,164 @@
     var csrfEl = document.querySelector('input[name="csrfmiddlewaretoken"]');
     var token = csrfEl ? csrfEl.value : '';
     var next = window.location.pathname + window.location.search;
+    var menuEl = null;
+    var triggerEl = null;
 
-    function cerrarTodos() {
-        document.querySelectorAll('.actions-dropdown').forEach(function (d) {
-            d.setAttribute('hidden', '');
-            d.style.position = ''; d.style.left = ''; d.style.top = '';
+    var ESTADO_ITEMS = {
+        'abierto': [
+            {e:'en-progreso', l:'Poner en progreso', icon:'#i-wrench'},
+            {e:'resuelto',    l:'Marcar resuelto', icon:'#i-check-circle'}
+        ],
+        'en-progreso': [
+            {e:'resuelto',    l:'Marcar resuelto', icon:'#i-check-circle'}
+        ],
+        'resuelto': [],
+        'cerrado': []
+    };
+    var CERRAR  = {e:'cerrado', l:'Cerrar ticket', icon:'#i-lock', danger:true, confirm:'¿Cerrar este ticket?'};
+    var REABRIR = {e:'abierto', l:'Reabrir ticket', icon:'#i-refresh', danger:false};
+
+    function build(estado, eliminarUrl, codigo) {
+        var items = [];
+        var tr = ESTADO_ITEMS[estado] || [];
+        for (var i = 0; i < tr.length; i++) items.push(tr[i]);
+        if (estado !== 'cerrado') items.push(CERRAR);
+        else items.push(REABRIR);
+        items.push({
+            elim:true,
+            l:'Eliminar ticket',
+            icon:'#i-trash',
+            danger:true,
+            url:eliminarUrl,
+            cod:codigo
         });
-        document.querySelectorAll('.actions-trigger').forEach(function (t) { t.setAttribute('aria-expanded', 'false'); });
+        return items;
     }
 
-    function abrir(t, dd) {
-        var mw = 190, mh = 190, pad = 8;
-        var r = t.getBoundingClientRect();
+    function render(estado, eliminarUrl, codigo) {
+        var items = build(estado, eliminarUrl, codigo);
+        var html = '';
+        for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            var cls = 'accion-btn';
+            if (it.danger) cls += ' is-danger';
+            if (it.elim) {
+                html += '<button type="button" class="' + cls + '" data-accion-eliminar data-eliminar-url="' + it.url + '" data-codigo="' + it.cod + '">' +
+                        '<svg class="accion-icon"><use href="' + it.icon + '"/></svg>' +
+                        '<span class="accion-text">' + it.l + '</span>' +
+                        '</button>';
+            } else {
+                var conf = it.confirm ? ' data-confirm="' + it.confirm + '"' : '';
+                html += '<button type="button" class="' + cls + '" data-estado="' + it.e + '"' + conf + '>' +
+                        '<svg class="accion-icon"><use href="' + it.icon + '"/></svg>' +
+                        '<span class="accion-text">' + it.l + '</span>' +
+                        '</button>';
+            }
+        }
+        return html;
+    }
+
+    function abrir(trig) {
+        cerrar();
+        triggerEl = trig;
+        menuEl = document.createElement('div');
+        menuEl.id = 'actions-flotante';
+        menuEl.setAttribute('role', 'menu');
+        menuEl.innerHTML = render(
+            trig.dataset.estadoActual || '',
+            trig.dataset.eliminarUrl || '',
+            trig.dataset.codigo || ''
+        );
+        document.body.appendChild(menuEl);
+        posicionar();
+
+        trig.setAttribute('aria-expanded', 'true');
+        var firstBtn = menuEl.querySelector('button');
+        if (firstBtn) firstBtn.focus();
+    }
+
+    function posicionar() {
+        if (!menuEl) return;
+        var r = triggerEl.getBoundingClientRect();
+        var mw = 200, pad = 8;
         var x = Math.max(pad, Math.min(r.right - mw, window.innerWidth - mw - pad));
         var y = r.bottom + 4;
-        if (y + mh > window.innerHeight - pad) y = Math.max(pad, r.top - mh - 4);
-        dd.style.position = 'fixed';
-        dd.style.left = x + 'px';
-        dd.style.top = y + 'px';
-        dd.removeAttribute('hidden');
-        t.setAttribute('aria-expanded', 'true');
+        if (y + menuEl.offsetHeight > window.innerHeight - pad) y = Math.max(pad, r.top - menuEl.offsetHeight - 4);
+        menuEl.style.left = x + 'px';
+        menuEl.style.top = y + 'px';
+    }
+
+    function cerrar() {
+        if (menuEl) {
+            menuEl.remove();
+            menuEl = null;
+        }
+        if (triggerEl) {
+            triggerEl.setAttribute('aria-expanded', 'false');
+            triggerEl.focus();
+            triggerEl = null;
+        }
     }
 
     document.addEventListener('click', function (e) {
         var trigger = e.target.closest('.actions-trigger');
         if (trigger) {
             e.preventDefault();
-            var dd = trigger.closest('.actions-menu').querySelector('.actions-dropdown');
-            var open = !dd.hasAttribute('hidden');
-            cerrarTodos();
-            if (!open) abrir(trigger, dd);
+            if (triggerEl === trigger) { cerrar(); return; }
+            abrir(trigger);
             return;
         }
-        var item = e.target.closest('.actions-item');
-        if (item && item.dataset.accionEliminar !== undefined) {
-            if (!confirm('¿Eliminar definitivamente el ticket ' + (item.dataset.codigo || '') + '? Esta acción no se puede deshacer.')) return;
-            var form = document.createElement('form');
-            form.method = 'post';
-            form.action = item.dataset.eliminarUrl;
-            [['next', next],
-             ['csrfmiddlewaretoken', token]].forEach(function (p) {
-                var i = document.createElement('input');
-                i.type = 'hidden'; i.name = p[0]; i.value = p[1];
-                form.appendChild(i);
-            });
-            document.body.appendChild(form);
-            form.submit();
-            return;
-        }
+        var item = e.target.closest('#actions-flotante .accion-btn');
         if (item) {
+            e.preventDefault();
+            if (item.dataset.accionEliminar !== undefined) {
+                if (!confirm('¿Eliminar definitivamente el ticket ' + (item.dataset.codigo || '') + '? Esta acción no se puede deshacer.')) return;
+                var form = document.createElement('form');
+                form.method = 'post';
+                form.action = item.dataset.eliminarUrl;
+                [['next', next], ['csrfmiddlewaretoken', token]].forEach(function (p) {
+                    var i = document.createElement('input');
+                    i.type = 'hidden'; i.name = p[0]; i.value = p[1];
+                    form.appendChild(i);
+                });
+                document.body.appendChild(form);
+                form.submit();
+                return;
+            }
             var confirmText = item.dataset.confirm;
             if (confirmText && !confirm(confirmText)) return;
-            var menu = item.closest('.actions-menu');
-            var form = document.createElement('form');
-            form.method = 'post';
-            form.action = menu.dataset.estadoUrl;
-            [['estado', item.dataset.estado],
-             ['next', next],
-             ['csrfmiddlewaretoken', token]].forEach(function (p) {
-                var i = document.createElement('input');
-                i.type = 'hidden'; i.name = p[0]; i.value = p[1];
-                form.appendChild(i);
+            var url = triggerEl ? triggerEl.dataset.estadoUrl : '';
+            cerrar();
+            if (!url) return;
+            var f = document.createElement('form');
+            f.method = 'post';
+            f.action = url;
+            [['estado', item.dataset.estado], ['next', next], ['csrfmiddlewaretoken', token]].forEach(function (p) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden'; inp.name = p[0]; inp.value = p[1];
+                f.appendChild(inp);
             });
-            document.body.appendChild(form);
-            form.submit();
+            document.body.appendChild(f);
+            f.submit();
             return;
         }
-        if (!e.target.closest('.actions-menu')) cerrarTodos();
+        if (menuEl && !e.target.closest('.actions-trigger') && !e.target.closest('#actions-flotante')) {
+            cerrar();
+        }
     });
-    ['scroll', 'resize'].forEach(function (ev) {
-        window.addEventListener(ev, cerrarTodos, true);
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && menuEl) {
+            e.preventDefault();
+            cerrar();
+        }
+    });
+
+    window.addEventListener('scroll', function () {
+        if (menuEl) posicionar();
+    }, true);
+    window.addEventListener('resize', function () {
+        if (menuEl) posicionar();
     });
 })();
 </script>
