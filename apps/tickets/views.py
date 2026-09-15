@@ -212,7 +212,7 @@ def _build_chart_context(tickets):
 def _build_dashboard_context(request, tickets):
     chart_context = _build_chart_context(tickets)
     eventos_qs = GlpiEvento.objects.select_related("ticket").order_by("-fecha")
-    pp_glpi = _resolve_per_page(request, "per_page_glpi", 4)
+    pp_glpi = _resolve_per_page(request, "per_page_glpi", 5)
     page_number = request.GET.get("page_glpi", 1)
     paginator = Paginator(eventos_qs, pp_glpi)
     eventos_glpi_page = paginator.get_page(page_number)
@@ -1443,6 +1443,7 @@ def lista_tickets(request):
     categoria = request.GET.get("categoria", "").strip()
     tecnico = request.GET.get("tecnico", "").strip() if es_admin else ""
     q = request.GET.get("q", "").strip()
+    solicitante_email = request.GET.get("solicitante_email", "").strip()
 
     if estado:
         qs = qs.filter(estado=estado)
@@ -1452,6 +1453,8 @@ def lista_tickets(request):
         qs = qs.filter(categoria_id=categoria)
     if tecnico:
         qs = qs.filter(tecnico_asignado_id=tecnico)
+    if solicitante_email:
+        qs = qs.filter(solicitante_email__iexact=solicitante_email)
     if q:
         match_codigo = re.match(r"^HD-(\d+)$", q.upper())
         condicion = (
@@ -1475,7 +1478,7 @@ def lista_tickets(request):
         per_page_default=pp_lista,
     )
 
-    filtros_activos = any([estado, prioridad, categoria, tecnico, q])
+    filtros_activos = any([estado, prioridad, categoria, tecnico, q, solicitante_email])
     tickets = _adjuntar_solicitantes(page_obj.object_list)
     return render(
         request,
@@ -1607,12 +1610,38 @@ def cambiar_estado(request, pk):
 def eliminar_ticket(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     codigo = ticket.codigo
+    glpi_id = ticket.glpi_id
+    borrar_en_glpi = bool(getattr(request.user, "borrar_glpi_al_eliminar", False))
+    aviso_glpi = None
+    if borrar_en_glpi and glpi_id:
+        client = GlpiClient()
+        if client.available:
+            try:
+                client.init_session()
+                client.delete_ticket(glpi_id)
+            except GlpiError as exc:
+                aviso_glpi = str(exc)
+            except Exception as exc:
+                aviso_glpi = f"error inesperado: {exc}"
+            finally:
+                client.kill_session()
     for adj in ticket.adjuntos.all():
         if adj.archivo:
             adj.archivo.delete(save=False)
     ticket.delete()
-    messages.success(request, f"Ticket {codigo} eliminado.")
-    return redirect("tickets:lista")
+    mensaje = f"Ticket {codigo} eliminado."
+    if borrar_en_glpi:
+        if glpi_id:
+            mensaje += " También se eliminó en GLPI." if not aviso_glpi else f" GLPI local (no se sincronizó: {aviso_glpi})."
+        else:
+            mensaje += " No tenía registro en GLPI."
+    else:
+        mensaje += " Se conservó en GLPI (configurado así en Ajustes)." if glpi_id else ""
+    messages.success(request, mensaje)
+    next_url = request.POST.get("next") or "tickets:lista"
+    if next_url.startswith("/"):
+        return redirect(next_url)
+    return redirect(next_url)
 
 
 @staff_required

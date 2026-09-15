@@ -91,6 +91,12 @@
             {% if not ticket.glpi_id %}<span class="corp-hint">Sin registro en GLPI (¿estaba apagado?). También: python manage.py sync_glpi_pendientes</span>{% endif %}
 
             <div class="corp-state-actions">
+                <form method="post" action="{% url 'tickets:eliminar' ticket.pk %}"
+                      onsubmit="return confirm('¿Eliminar definitivamente el ticket {{ ticket.codigo }}? No podrás recuperarlo.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'tickets:lista' %}">
+                    <button type="submit" class="btn btn-danger btn-sm"><svg class="icon icon-xs"><use href="#i-trash"/></svg> Eliminar</button>
+                </form>
                 {% if ticket.estado == 'abierto' %}
                 <form method="post" action="{% url 'tickets:cambiar_estado' ticket.pk %}">
                     {% csrf_token %}<input type="hidden" name="estado" value="en-progreso">

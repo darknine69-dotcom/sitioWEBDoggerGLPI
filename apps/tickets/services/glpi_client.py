@@ -610,6 +610,25 @@ class GlpiClient:
             raise GlpiError(f"Update ticket GLPI falló ({r.status_code}): {r.text[:400]}")
         return r.json()
 
+    def delete_ticket(self, ticket_id: int) -> dict[str, Any]:
+        """Elimina un ticket en GLPI de forma definitiva (force_purge)."""
+        payload = {
+            "input": {
+                "id": ticket_id,
+                "force_purge": 1,
+            }
+        }
+        r = requests.delete(
+            f"{self.base_url}/Ticket/{ticket_id}",
+            headers=self._headers(),
+            params={"force_purge": 1},
+            json=payload,
+            timeout=self.timeout,
+        )
+        if r.status_code not in (200, 202, 204):
+            raise GlpiError(f"Eliminar ticket GLPI falló ({r.status_code}): {r.text[:400]}")
+        return r.json()
+
     def update_ticket_content(self, ticket_id: int, name: str, content: str) -> dict[str, Any]:
         """Actualiza título y descripción de un ticket existente en GLPI."""
         payload = {"input": {"id": ticket_id, "name": name[:255], "content": content}}

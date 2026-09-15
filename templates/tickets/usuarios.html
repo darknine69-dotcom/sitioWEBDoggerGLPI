@@ -108,6 +108,8 @@
                         <td data-label="Tickets asignados">{{ u.n_tickets|default:0 }}</td>
                         <td data-label="Acciones" class="cell-actions">
                             <div class="cat-actions">
+                                <a class="mini-btn" href="{% url 'tickets:lista' %}{% if u.rol == 'usuario' %}?solicitante_email={{ u.email|urlencode }}{% else %}?tecnico={{ u.pk }}{% endif %}"
+                                   title="Ver tickets de este usuario"><svg class="icon icon-sm"><use href="#i-ticket"/></svg></a>
                                 <button type="button" class="mini-btn"
                                         data-open-modal="#modal-usuario"
                                         data-fill-nombre="{{ u.nombre }}" data-fill-email="{{ u.email }}"

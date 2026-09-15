@@ -31,6 +31,13 @@ def _glpi_available():
     return bool(cfg.get("enabled") and cfg.get("base_url"))
 
 
+def _glpi_base_url():
+    from django.conf import settings
+    cfg = getattr(settings, "GLPI", {}) or {}
+    url = cfg.get("base_url") or ""
+    return url.split("/apirest.php")[0].rstrip("/") if url else ""
+
+
 class BaseRoleLoginView(LoginView):
     template_name = "accounts/login.html"
     authentication_form = LoginForm
@@ -107,6 +114,11 @@ def ajustes_cuenta(request):
     glpi_enabled = _glpi_available() and bool(getattr(user, "glpi_user_id", None))
 
     if request.method == "POST":
+        es_staff = bool(getattr(user, "es_staff_helpdesk", False))
+        if es_staff and request.POST.get("borrar_glpi_al_eliminar") in ("1", "on", "true"):
+            user.borrar_glpi_al_eliminar = True
+        elif es_staff:
+            user.borrar_glpi_al_eliminar = False
         form = PerfilForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
@@ -128,6 +140,7 @@ def ajustes_cuenta(request):
     return render(request, "accounts/ajustes.html", {
         "form": form,
         "glpi_enabled": glpi_enabled,
+        "glpi_base_url": _glpi_base_url(),
     })
 
 
