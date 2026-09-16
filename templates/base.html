@@ -171,17 +171,27 @@
     {% endblock %}
 
     {% if messages %}
-    <div class="page flash-stack">
+    <div class="toast-stack" aria-live="polite">
         {% for message in messages %}
-        <div class="flash flash-{{ message.tags|default:'info' }}" role="status">
-            <span class="flash-icon">
+        <div class="toast toast-{{ message.tags|default:'info' }}" role="status">
+            <span class="toast-accent"></span>
+            <span class="toast-icon">
                 {% if message.tags == 'success' %}<svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
                 {% elif message.tags == 'error' %}<svg class="icon icon-sm"><use href="#i-x-circle"/></svg>
                 {% elif message.tags == 'warning' %}<svg class="icon icon-sm"><use href="#i-alert"/></svg>
                 {% else %}<svg class="icon icon-sm"><use href="#i-info"/></svg>{% endif %}
             </span>
-            <span class="flash-text">{{ message }}</span>
-            <button type="button" class="flash-close" aria-label="Cerrar">&times;</button>
+            <span class="toast-body">
+                <strong class="toast-title">
+                    {% if message.tags == 'success' %}Operación exitosa
+                    {% elif message.tags == 'error' %}Se presentó un error
+                    {% elif message.tags == 'warning' %}Aviso
+                    {% else %}Información{% endif %}
+                </strong>
+                <span class="toast-text">{{ message }}</span>
+            </span>
+            <button type="button" class="toast-close" aria-label="Cerrar">&times;</button>
+            <span class="toast-progress"></span>
         </div>
         {% endfor %}
     </div>
@@ -327,6 +337,19 @@
         dd.addEventListener('click', function(e){ e.stopPropagation(); });
     })();
     </script>
+
+    <!-- Modal de confirmación (reemplaza el confirm del navegador) -->
+    <div class="confirm-overlay" id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div class="confirm-box">
+            <span class="confirm-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            <h3 id="confirm-title">¿Confirmar acción?</h3>
+            <p class="confirm-msg" id="confirm-msg"></p>
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-cancel" id="confirm-cancel">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirm-ok">Sí, continuar</button>
+            </div>
+        </div>
+    </div>
 
     {% block extra_js %}{% endblock %}
 </body>

@@ -330,34 +330,42 @@
         if (item) {
             e.preventDefault();
             if (item.dataset.accionEliminar !== undefined) {
-                if (!confirm('¿Eliminar definitivamente el ticket ' + (item.dataset.codigo || '') + '? Esta acción no se puede deshacer.')) return;
-                var form = document.createElement('form');
-                form.method = 'post';
-                form.action = item.dataset.eliminarUrl;
-                [['next', next], ['csrfmiddlewaretoken', token]].forEach(function (p) {
-                    var i = document.createElement('input');
-                    i.type = 'hidden'; i.name = p[0]; i.value = p[1];
-                    form.appendChild(i);
-                });
-                document.body.appendChild(form);
-                form.submit();
+                var mensajeBorrar = '¿Eliminar definitivamente el ticket ' + (item.dataset.codigo || '') + '? Esta acción no se puede deshacer.';
+                window.DoggerConfirma(mensajeBorrar, function () {
+                    var form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = item.dataset.eliminarUrl;
+                    [['next', next], ['csrfmiddlewaretoken', token]].forEach(function (p) {
+                        var i = document.createElement('input');
+                        i.type = 'hidden'; i.name = p[0]; i.value = p[1];
+                        form.appendChild(i);
+                    });
+                    document.body.appendChild(form);
+                    form.submit();
+                }, 'Sí, eliminar');
                 return;
             }
             var confirmText = item.dataset.confirm;
-            if (confirmText && !confirm(confirmText)) return;
-            var url = triggerEl ? triggerEl.dataset.estadoUrl : '';
-            cerrar();
-            if (!url) return;
-            var f = document.createElement('form');
-            f.method = 'post';
-            f.action = url;
-            [['estado', item.dataset.estado], ['next', next], ['csrfmiddlewaretoken', token]].forEach(function (p) {
-                var inp = document.createElement('input');
-                inp.type = 'hidden'; inp.name = p[0]; inp.value = p[1];
-                f.appendChild(inp);
-            });
-            document.body.appendChild(f);
-            f.submit();
+            var realizarAccion = function () {
+                var url = triggerEl ? triggerEl.dataset.estadoUrl : '';
+                cerrar();
+                if (!url) return;
+                var f = document.createElement('form');
+                f.method = 'post';
+                f.action = url;
+                [['estado', item.dataset.estado], ['next', next], ['csrfmiddlewaretoken', token]].forEach(function (p) {
+                    var inp = document.createElement('input');
+                    inp.type = 'hidden'; inp.name = p[0]; inp.value = p[1];
+                    f.appendChild(inp);
+                });
+                document.body.appendChild(f);
+                f.submit();
+            };
+            if (confirmText) {
+                window.DoggerConfirma(confirmText, realizarAccion);
+            } else {
+                realizarAccion();
+            }
             return;
         }
         if (menuEl && !e.target.closest('.actions-trigger') && !e.target.closest('#actions-flotante')) {
