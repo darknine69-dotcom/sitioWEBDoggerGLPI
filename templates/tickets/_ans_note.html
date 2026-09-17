@@ -1,13 +1,44 @@
 <div class="ans-note">
     <div class="ans-note-head">
         <svg class="icon icon-sm"><use href="#i-clock"/></svg>
-        <strong class="ans-note-title">Prioridad automática y tiempos de resolución (ANS)</strong>
+        <strong class="ans-note-title">Tiempos de atención comprometidos (ANS)</strong>
+        <span class="ans-note-badge">Acuerdo de Nivel de Servicio</span>
     </div>
-    <p>La prioridad del ticket se asigna automáticamente según la categoría elegida, y con ella el tiempo máximo de resolución comprometido.</p>
-    <ul class="ans-scale">
-        <li class="ans-scale-item ans-scale-urgente"><span>Urgente</span><span>hasta 4 horas</span></li>
-        <li class="ans-scale-item ans-scale-alta"><span>Alta</span><span>hasta 8 horas</span></li>
-        <li class="ans-scale-item ans-scale-media"><span>Media</span><span>hasta 24 horas</span></li>
-        <li class="ans-scale-item ans-scale-baja"><span>Baja</span><span>hasta 48 horas</span></li>
+    <p class="ans-note-text">
+        Según la categoría del problema se asigna automáticamente una prioridad y su tiempo máximo de resolución.
+        Las fallas que detengan la operación del punto de venta se atienden con la mayor urgencia.
+    </p>
+    <ul class="ans-scale" id="ans-scale">
+        <li class="ans-scale-item ans-scale-urgente" data-prioridad="urgente">
+            <span class="ans-scale-kicker">Urgente</span>
+            <span class="ans-scale-horas">hasta 2 horas</span>
+            <span class="ans-scale-desc">Detiene la venta o facturación</span>
+        </li>
+        <li class="ans-scale-item ans-scale-alta" data-prioridad="alta">
+            <span class="ans-scale-kicker">Alta</span>
+            <span class="ans-scale-horas">hasta 8 horas</span>
+            <span class="ans-scale-desc">Opera con limitaciones</span>
+        </li>
+        <li class="ans-scale-item ans-scale-media" data-prioridad="media">
+            <span class="ans-scale-kicker">Media</span>
+            <span class="ans-scale-horas">hasta 12 horas</span>
+            <span class="ans-scale-desc">Afectación parcial o secundaria</span>
+        </li>
+        <li class="ans-scale-item ans-scale-baja" data-prioridad="baja">
+            <span class="ans-scale-kicker">Baja</span>
+            <span class="ans-scale-horas">hasta 48 horas</span>
+            <span class="ans-scale-desc">Sin impacto directo en ventas</span>
+        </li>
     </ul>
+    <div id="ans-por-categoria" class="ans-active" hidden>
+        <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+        <span>
+            Tu categoría tiene prioridad <strong id="ans-active-prioridad"></strong> y tiempo máximo de
+            resolución de <strong id="ans-active-horas"></strong>.
+        </span>
+    </div>
 </div>
+
+{% if ans_categorias_json %}
+<script type="application/json" id="dogger-ans-cats">{{ ans_categorias_json|safe }}</script>
+{% endif %}

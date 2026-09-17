@@ -9,9 +9,9 @@ from django.db.models import Case, IntegerField, Value, When
 
 # Horas ANS por prioridad (usado como fallback por categoría).
 ANS_POR_PRIORIDAD = {
-    "urgente": 4,
+    "urgente": 2,
     "alta": 8,
-    "media": 24,
+    "media": 12,
     "baja": 48,
 }
 

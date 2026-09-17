@@ -2,23 +2,95 @@
 (function () {
     "use strict";
 
-    /* ---- Mensajes flash: cerrar y auto-ocultar ---- */
-    document.querySelectorAll(".flash").forEach(function (el) {
-        var close = el.querySelector(".flash-close");
-        if (close) {
-            close.addEventListener("click", function () {
-                el.style.opacity = "0";
-                setTimeout(function () { el.remove(); }, 180);
-            });
-        }
-        var delay = el.classList.contains("flash-error") ? 12000 : 6500;
-        setTimeout(function () {
+    /* ---- Toast de notificación: auto-cierre con pausa al hover ---- */
+    document.querySelectorAll(".toast-stack .toast").forEach(function (el) {
+        var close = el.querySelector(".toast-close");
+        var delay = el.classList.contains("toast-error") ? 12000 : 6500;
+        el.style.setProperty("--toast-delay", delay + "ms");
+        var timer = null;
+        function dismiss() {
             if (!el.isConnected) return;
-            el.style.transition = "opacity .4s ease";
-            el.style.opacity = "0";
-            setTimeout(function () { el.remove(); }, 420);
-        }, delay);
+            el.classList.add("toast-out");
+            setTimeout(function () { el.remove(); }, 340);
+        }
+        if (close) close.addEventListener("click", dismiss);
+        /* El CSS pausa la barra de progreso en hover; aquí retomamos el cierre
+           contando el tiempo transcurrido para no disparar inmediatamente. */
+        var started = Date.now();
+        var remaining = delay;
+        function schedule() {
+            if (timer) { clearTimeout(timer); timer = null; }
+            timer = setTimeout(function () {
+                el.classList.add("toast-out");
+                setTimeout(function () { el.remove(); }, 340);
+            }, remaining);
+        }
+        el.addEventListener("mouseenter", function () {
+            remaining -= Date.now() - started;
+            if (timer) { clearTimeout(timer); timer = null; }
+        });
+        el.addEventListener("mouseleave", function () {
+            if (remaining <= 0) return;
+            started = Date.now();
+            schedule();
+        });
+        schedule();
     });
+
+    /* ---- Modal de confirmación personalizado (reemplaza confirm nativo) ---- */
+    var confirmOverlay = document.getElementById("confirm-overlay");
+    var confirmMsgEl = document.getElementById("confirm-msg");
+    var confirmOkBtn = document.getElementById("confirm-ok");
+    var confirmCancelBtn = document.getElementById("confirm-cancel");
+    var confirmCallback = null;
+
+    function cerrarConfirm() {
+        if (!confirmOverlay) return;
+        confirmOverlay.classList.remove("open");
+        confirmCallback = null;
+    }
+    function confirmarAction(mensaje, onOk, textoOk) {
+        if (!confirmOverlay || !confirmMsgEl) { if (onOk) onOk(); return; }
+        confirmMsgEl.textContent = mensaje;
+        confirmCallback = onOk;
+        if (confirmOkBtn) {
+            var peligro = /eliminar|borra|quedar/iu.test(mensaje || "");
+            var textoBtn = textoOk ||
+                (peligro ? "Sí, eliminar" : "Sí, continuar");
+            confirmOkBtn.textContent = textoBtn;
+            confirmOkBtn.classList.toggle("btn-danger", peligro);
+        }
+        confirmOverlay.classList.add("open");
+        if (confirmOkBtn) confirmOkBtn.focus();
+    }
+    if (confirmOkBtn) confirmOkBtn.addEventListener("click", function () {
+        var cb = confirmCallback;
+        cerrarConfirm();
+        if (cb) cb();
+    });
+    if (confirmCancelBtn) confirmCancelBtn.addEventListener("click", cerrarConfirm);
+    if (confirmOverlay) confirmOverlay.addEventListener("click", function (e) {
+        if (e.target === confirmOverlay) cerrarConfirm();
+    });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && confirmOverlay && confirmOverlay.classList.contains("open")) cerrarConfirm();
+    });
+    window.DoggerConfirma = confirmarAction;
+
+    /* Intercepta <form onsubmit="return confirm('...')"> (fase captura) */
+    document.addEventListener("submit", function (e) {
+        var f = e.target;
+        if (!f || f.tagName !== "FORM") return;
+        var os = f.getAttribute("onsubmit") || "";
+        var mm = os.match(/confirm\(\s*'([^']*)'\s*\)|confirm\(\s*"([^"]*)"\s*\)/);
+        if (!mm) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        confirmarAction(mm[1] || mm[2], function () {
+            f.removeAttribute("onsubmit");
+            try { f.submit(); } catch (err) { location.reload(); }
+        });
+    }, true);
 
     /* ---- Modales ---- */
     function openModal(sel) {
@@ -385,5 +457,40 @@
             catSelEl.classList.remove("suggest-applied");
             hideAll();
         });
+
+        /* ---- Resaltado ANS según la categoría seleccionada ---- */
+        var ansCatsEl = document.getElementById("dogger-ans-cats");
+        var ansScaleEl = document.getElementById("ans-scale");
+        var ansActiveEl = document.getElementById("ans-por-categoria");
+        if (ansCatsEl && ansScaleEl) {
+            var ANS_CATS = JSON.parse(ansCatsEl.textContent);
+            var ansItems = Array.prototype.slice.call(ansScaleEl.children);
+            var ansPrioridadEl = document.getElementById("ans-active-prioridad");
+            var ansHorasEl = document.getElementById("ans-active-horas");
+            function prioridadTexto(p) {
+                return { urgente: "Urgente", alta: "Alta", media: "Media", baja: "Baja" }[p] || "";
+            }
+            function marcarAns(pk) {
+                var match = null;
+                for (var i = 0; i < ANS_CATS.length; i++) {
+                    if (String(ANS_CATS[i].id) === String(pk)) { match = ANS_CATS[i]; break; }
+                }
+                for (var j = 0; j < ansItems.length; j++) {
+                    ansItems[j].classList.toggle("is-active", !!(match && ansItems[j].getAttribute("data-prioridad") === match.prioridad));
+                    ansItems[j].classList.toggle("not-active", !!(match && ansItems[j].getAttribute("data-prioridad") !== match.prioridad));
+                }
+                if (!match) {
+                    if (ansActiveEl) ansActiveEl.hidden = true;
+                    return;
+                }
+                if (ansActiveEl && ansPrioridadEl && ansHorasEl) {
+                    ansPrioridadEl.textContent = prioridadTexto(match.prioridad);
+                    ansHorasEl.textContent = (match.ans || "—") + " horas";
+                    ansActiveEl.hidden = false;
+                }
+            }
+            catSelEl.addEventListener("change", function () { marcarAns(catSelEl.value); });
+            if (catSelEl.value) marcarAns(catSelEl.value);
+        }
     }
 })();

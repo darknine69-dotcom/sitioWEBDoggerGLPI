@@ -30,7 +30,7 @@ from .forms import (
 )
 from .models import Categoria, GlpiEvento, Ticket, TicketAdjunto, TicketComentario
 from .notifications import notificar_comentario, notificar_ticket_actualizado, notificar_ticket_creado
-from .sla import orden_prioridad_annotation
+from .sla import horas_por_prioridad, orden_prioridad_annotation
 from .services.glpi_client import (
     GlpiClient,
     GlpiError,
@@ -212,7 +212,7 @@ def _build_chart_context(tickets):
 def _build_dashboard_context(request, tickets):
     chart_context = _build_chart_context(tickets)
     eventos_qs = GlpiEvento.objects.select_related("ticket").order_by("-fecha")
-    pp_glpi = _resolve_per_page(request, "per_page_glpi", 4)
+    pp_glpi = _resolve_per_page(request, "per_page_glpi", 5)
     page_number = request.GET.get("page_glpi", 1)
     paginator = Paginator(eventos_qs, pp_glpi)
     eventos_glpi_page = paginator.get_page(page_number)
@@ -1040,7 +1040,7 @@ def mi_panel(request):
             estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO],
         ).count(),
     }
-    pp_mp = _resolve_per_page(request, "per_page", 10)
+    pp_mp = _resolve_per_page(request, "per_page", 5)
     page_obj = _paginar(
         tickets_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
             "_prioridad_orden", "-fecha_creacion"
@@ -1119,6 +1119,17 @@ def crear_ticket(request):
             "form": form,
             "es_usuario_final": es_usuario_final,
             "cat_sugerencias_json": json.dumps(claves_para_json(), ensure_ascii=False),
+            "ans_categorias_json": json.dumps(
+                [
+                    {
+                        "id": c.pk,
+                        "prioridad": c.prioridad_default,
+                        "ans": c.ans_horas or horas_por_prioridad(c.prioridad_default),
+                    }
+                    for c in Categoria.objects.filter(activo=True)
+                ],
+                ensure_ascii=False,
+            ),
         },
     )
 
@@ -1366,7 +1377,7 @@ def dashboard(request):
             _prioridad_orden=orden_prioridad_annotation()
         ).order_by("_prioridad_orden", "-fecha_creacion")[:200]
     )
-    pp_recientes = _resolve_per_page(request, "per_page_recientes", 10)
+    pp_recientes = _resolve_per_page(request, "per_page_recientes", 5)
     recientes_page = paginate_recent_tickets(request, tickets_qs, per_page=pp_recientes)
     dashboard_context = _build_dashboard_context(request, tickets)
     recientes = _adjuntar_solicitantes(recientes_page.object_list)
@@ -1384,7 +1395,7 @@ def dashboard(request):
     )
 
 
-def _paginar(qs, request, param="page", per_page_param="per_page", per_page_default=10):
+def _paginar(qs, request, param="page", per_page_param="per_page", per_page_default=5):
     allowed = {5, 10, 20, 50, 0}
     try:
         pp = int(request.GET.get(per_page_param, per_page_default))
@@ -1399,7 +1410,7 @@ def _paginar(qs, request, param="page", per_page_param="per_page", per_page_defa
     return paginator.get_page(numero)
 
 
-def _resolve_per_page(request, param="per_page", default=10):
+def _resolve_per_page(request, param="per_page", default=5):
     allowed = {5, 10, 20, 50, 0}
     try:
         pp = int(request.GET.get(param, default))
@@ -1467,7 +1478,7 @@ def lista_tickets(request):
             condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
         qs = qs.filter(condicion)
 
-    pp_lista = _resolve_per_page(request, "per_page", 10)
+    pp_lista = _resolve_per_page(request, "per_page", 5)
     if q:
         pp_lista = 0
     page_obj = _paginar(
@@ -1925,8 +1936,8 @@ def panel_tecnico(request):
     estado = request.GET.get("estado", "").strip()
     q = request.GET.get("q", "").strip()
     q_cola = request.GET.get("q_cola", "").strip()
-    pp_mis = _resolve_per_page(request, "per_page", 10)
-    pp_sol = _resolve_per_page(request, "per_page_sol", 10)
+    pp_mis = _resolve_per_page(request, "per_page", 5)
+    pp_sol = _resolve_per_page(request, "per_page_sol", 5)
     if q:
         pp_mis = 0
     if q_cola:
