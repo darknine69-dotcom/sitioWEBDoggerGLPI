@@ -169,6 +169,135 @@
     .tec-list { max-height: 320px; }
     .tec-chat { min-height: 420px; }
 }
+
+/* ============ Módulo corporativo: Mis solicitudes abiertas ============ */
+.corp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
+.corp-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    font: inherit; font-size: 13px; font-weight: 700;
+    border: 1px solid var(--line); background: var(--dogger-paper);
+    border-radius: 10px; padding: 8px 13px; cursor: pointer;
+    color: var(--ink); text-decoration: none; transition: all .15s ease;
+}
+.corp-btn svg { width: 15px; height: 15px; color: #6B6259; }
+.corp-btn:hover:not(:disabled) { border-color: #B7791F; background: #FFF3E3; color: #1d1b16; }
+.corp-btn:hover:not(:disabled) svg { color: var(--dogger-red); }
+.corp-btn:disabled { opacity: .45; cursor: not-allowed; }
+.corp-btn.corp-primary { background: #212121; color: #FBC02D; border-color: #212121; }
+.corp-btn.corp-primary svg { color: #FBC02D; }
+.corp-btn.corp-primary:hover:not(:disabled) { background: #000; color: #FBC02D; }
+.corp-btn.corp-danger:hover:not(:disabled) { border-color: var(--dogger-red); background: rgba(214,43,31,.08); color: var(--dogger-red); }
+.corp-btn.corp-danger:hover:not(:disabled) svg { color: var(--dogger-red); }
+
+.corp-mias { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-muted); cursor: pointer; white-space: nowrap; }
+.corp-mias input { accent-color: var(--dogger-red); width: 15px; height: 15px; }
+
+.corp-tabla-card { margin-top: 12px; }
+.corp-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.corp-table th.sortable::after { content: "⇅"; margin-left: 5px; font-size: 11px; opacity: .4; }
+.corp-table th.sort-asc::after { content: "↑"; opacity: 1; color: var(--dogger-red); }
+.corp-table th.sort-desc::after { content: "↓"; opacity: 1; color: var(--dogger-red); }
+.corp-table .th-check, .corp-table .td-check { width: 40px; text-align: center; }
+.corp-table .th-check input, .corp-table .td-check input { width: 15px; height: 15px; accent-color: var(--dogger-red); cursor: pointer; }
+.corp-asunto { font-weight: 600; font-size: 13.5px; display: inline; }
+.corp-asunto-wrap { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.corp-combinadas {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid #EBD38A; background: #FFF6D6; color: #8A6A15;
+    font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 9px;
+    cursor: pointer; transition: background .15s ease, border-color .15s ease;
+}
+.corp-combinadas:hover, .corp-combinadas.is-open { background: #FFF0B8; border-color: #D9BA5B; }
+.corp-combinadas .icon { width: 12px; height: 12px; }
+.corp-combinadas-list {
+    position: absolute; top: calc(100% + 4px); left: 8px; z-index: 30;
+    list-style: none; margin: 0; padding: 7px; min-width: 230px; max-width: 340px;
+    background: #fff; border: 1px solid var(--line); border-radius: 11px;
+    box-shadow: var(--shadow-pop);
+}
+.corp-combinadas-list li { padding: 4px 3px; }
+.corp-combinadas-list li + li { border-top: 1px dashed var(--line); }
+.corp-combinadas-list a { font-size: 12.5px; color: var(--ink); text-decoration: none; display: block; }
+.corp-combinadas-list a:hover { color: var(--dogger-red); }
+.corp-combinadas-code { font-family: var(--font-mono); font-weight: 700; color: var(--dogger-red); margin-right: 2px; }
+.corp-card-combinada {
+    display: inline-flex; align-items: center; gap: 5px; width: fit-content;
+    border: 1px solid #EBD38A; background: #FFF6D6; color: #8A6A15;
+    font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 2px 9px;
+}
+.corp-card-combinada .icon { width: 11px; height: 11px; }
+.corp-table tbody tr { cursor: pointer; }
+table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: inset 3px 0 0 rgba(214,43,31,.45); }
+.corp-table tbody tr.corp-row-selected { background: #FFF3E3; box-shadow: inset 3px 0 0 var(--dogger-red); }
+.corp-msg { margin-top: 12px; font-size: 13.5px; font-weight: 600; padding: 10px 14px; border-radius: 10px; background: #FFF3E3; border: 1px solid #EAD9C3; color: var(--ink); display: none; }
+.corp-msg.corp-msg-error { background: rgba(214,43,31,.08); border-color: rgba(214,43,31,.25); color: var(--dogger-red); }
+
+.corp-field { display: block; font-size: 13px; font-weight: 700; color: var(--ink); margin: 12px 0 6px; }
+.corp-field input, .corp-field select, .corp-field textarea {
+    display: block; width: 100%; margin-top: 5px;
+    font: inherit; font-size: 14px; font-weight: 400; color: var(--ink);
+    border: 1.5px solid var(--line); border-radius: var(--radius); padding: 9px 11px;
+    background: var(--dogger-paper);
+}
+.corp-field textarea { resize: vertical; min-height: 76px; }
+.corp-field input:focus, .corp-field select:focus, .corp-field textarea:focus { outline: none; border-color: var(--dogger-red); background: #fff; }
+
+.corp-banner {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: #FFF6D6; border: 1px solid #EBD38A; border-radius: 12px;
+    padding: 12px 14px; margin: 2px 0 14px;
+}
+.corp-banner > .icon { flex: none; width: 18px; height: 18px; color: #B7791F; margin-top: 2px; }
+.corp-banner p { margin: 0; font-size: 13px; line-height: 1.55; color: #5A4A1F; }
+.corp-banner strong { display: block; font-size: 13.5px; color: #4A3C14; margin-bottom: 2px; }
+
+.corp-asunto-sub { display: block; font-size: 12px; font-weight: 400; color: var(--ink-muted); margin-top: 2px; }
+
+.corp-view-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--dogger-paper); }
+.corp-view-btn { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink-muted); background: transparent; border: 0; padding: 7px 12px; cursor: pointer; }
+.corp-view-btn svg { width: 14px; height: 14px; }
+.corp-view-btn.is-active { background: #212121; color: #FBC02D; }
+.corp-view-btn + .corp-view-btn { border-left: 1px solid var(--line); }
+
+.corp-results { display: block; }
+.corp-results[data-view="grid"] .corp-tabla-card { display: none; }
+.corp-results[data-view="grid"] #gridAbiertas { display: grid; }
+.corp-results[data-view="lista"] #gridAbiertas { display: none; }
+
+.corp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 14px; margin-top: 16px; }
+.corp-card {
+    display: flex; flex-direction: column; gap: 8px; padding: 14px 15px;
+    border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+    text-decoration: none; color: var(--ink); box-shadow: var(--shadow-card);
+    transition: all .15s ease;
+}
+.corp-card:hover { border-color: #B7791F; background: #FFFDF7; transform: translateY(-1px); }
+.corp-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.corp-card-title { font-size: 14px; font-weight: 700; line-height: 1.35; color: var(--ink); }
+.corp-card-meta { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-muted); }
+.corp-card-meta .icon { width: 14px; height: 14px; color: var(--ink-muted); }
+.corp-card-foot { margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12.5px; }
+
+.corp-tec-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; max-height: 220px; overflow-y: auto; }
+.corp-tec-item {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 10px; background: var(--dogger-paper);
+    padding: 8px 12px; cursor: pointer; text-align: left; transition: all .15s ease;
+}
+.corp-tec-item:hover { border-color: #B7791F; background: #FFF3E3; }
+.corp-tec-item.corp-tec-selected { border-color: var(--dogger-red); background: #FFF3E3; box-shadow: inset 3px 0 0 var(--dogger-red); }
+.corp-tec-avatar {
+    width: 26px; height: 26px; border-radius: 50%; flex: none;
+    background: #212121; color: #FBC02D; font-size: 12px; font-weight: 800;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.corp-tec-name { margin-right: auto; }
+.corp-tec-dot { width: 10px; height: 10px; border-radius: 50%; background: #D9D2BE; flex: none; }
+.corp-tec-item.corp-tec-asignado .corp-tec-dot, .corp-tec-item.is-asignado .corp-tec-dot { background: #2F7D4F; box-shadow: 0 0 0 3px rgba(47,125,79,.18); }
+.corp-tec-select { display: block; }
+.corp-modal-hint { font-size: 13px; color: var(--ink-muted); margin: 0 0 6px; }
+.corp-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 </style>
 {% endblock %}
 
@@ -472,24 +601,7 @@
 
     {% else %}
 
-    <form method="get" class="table-toolbar" id="filtrosTecnico">
-        <input type="hidden" name="vista" value="mis">
-        <label class="search-field">
-            <svg class="icon icon-sm"><use href="#i-search"/></svg>
-            <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código HD, título, solicitante o punto…" />
-        </label>
-        <select name="estado" data-autosubmit>
-            <option value="">Todos los estados</option>
-            {% for val, label in estados %}
-            <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
-        {% if q or filtro_estado %}
-        <a href="?vista=mis" class="link-clear">✕ Limpiar</a>
-        {% endif %}
-        <span class="toolbar-count">{{ total_resultados }} solicitud{{ total_resultados|pluralize }} asignada{{ total_resultados|pluralize }}s</span>
-    </form>
+    {% if ticket %}
 
     <div class="tec-panel">
         <div class="tec-list-card">
@@ -551,7 +663,6 @@
             {% endif %}
         </div>
 
-        {% if ticket %}
         <div class="tec-chat" id="tecChat">
             <div class="tec-chat-head">
                 <div class="tec-chat-head-top">
@@ -622,15 +733,318 @@
                 </div>
             </form>
         </div>
-        {% else %}
-        <div class="tec-chat">
-            <div class="tec-empty-chat">
-                <svg class="icon" style="width:38px;height:38px;opacity:.4"><use href="#i-message"/></svg>
-                <p>Selecciona una solicitud de la izquierda para ver su chat y responder.</p>
+    </div>
+
+    {% else %}
+
+    {# ===== Módulo corporativo: Mis solicitudes abiertas ===== #}
+    <div class="section-head">
+        <div>
+            <div class="section-title">
+                <span class="section-ic"><svg class="icon"><use href="#i-layers"/></svg></span>
+                <span>{{ sv_label }}</span>
+            </div>
+            <p>Tickets en la mesa de ayuda. Selecciona y usa la barra de acciones.</p>
+        </div>
+        <span class="section-count">{{ abiertas_count }} solicitude{{ abiertas_count|pluralize }}</span>
+    </div>
+
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+    <div class="corp-actions" id="corpActions" data-url-lote="{% url 'tickets:panel_tecnico_lote' %}">
+        <a class="corp-btn corp-primary" href="{% url 'tickets:crear_ticket' %}"><svg class="icon"><use href="#i-plus"/></svg> Nuevo incidente</a>
+        <button type="button" class="corp-btn" data-lote="editar" data-url-editar="{% url 'tickets:detalle' 0 %}"><svg class="icon"><use href="#i-edit"/></svg> Editar</button>
+        <button type="button" class="corp-btn" data-lote="recoger"><svg class="icon"><use href="#i-wrench"/></svg> Recoger</button>
+        <button type="button" class="corp-btn" data-lote="cerrar"><svg class="icon"><use href="#i-check-circle"/></svg> Cerrar</button>
+        <button type="button" class="corp-btn" data-lote="combinar"><svg class="icon"><use href="#i-layers"/></svg> Solicitud combinada</button>
+        <button type="button" class="corp-btn" data-lote="vincular"><svg class="icon"><use href="#i-share"/></svg> Vincular solicitudes</button>
+        <button type="button" class="corp-btn" data-open-modal="#modalAsignar"><svg class="icon"><use href="#i-user"/></svg> Asignar</button>
+        <button type="button" class="corp-btn corp-danger" data-lote="eliminar"><svg class="icon"><use href="#i-trash"/></svg> Eliminar</button>
+    </div>
+
+    <form method="get" class="table-toolbar" id="filtrosAbiertas">
+        <input type="hidden" name="vista" value="mis">
+        <select name="sv" data-autosubmit aria-label="Vista">
+            {% for val, label in presets_mis %}
+            <option value="{{ val }}" {% if sv == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="rango" data-autosubmit aria-label="Rango de fechas">
+            {% for val, label in rangos_mis %}
+            <option value="{{ val }}" {% if rango == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <label class="search-field">
+            <svg class="icon icon-sm"><use href="#i-search"/></svg>
+            <input type="search" name="q" value="{{ q }}" placeholder="Filtrar por asunto, solicitante, código…" />
+        </label>
+        <select name="estado" data-autosubmit>
+            <option value="">Todos los estados</option>
+            {% for val, label in estados %}
+            <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <label class="corp-mias">
+            <input type="checkbox" name="mias" value="1" {% if mias %}checked{% endif %} onchange="this.form.submit()">
+            Solo las mías
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        <div class="corp-view-toggle" role="group" aria-label="Vista de resultados">
+            <button type="button" class="corp-view-btn is-active" data-view="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Lista</button>
+            <button type="button" class="corp-view-btn" data-view="grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Cuadrícula</button>
+        </div>
+        {% if q or filtro_estado or mias %}
+        <a href="?vista=mis&sv={{ sv }}&rango={{ rango }}" class="link-clear">✕ Limpiar</a>
+        {% endif %}
+    </form>
+
+    <div class="corp-results" id="corpResults" data-view="lista">
+    <div class="table-card corp-tabla-card">
+        <div class="table-scroll">
+            <table class="data-table corp-table" id="tablaAbiertas">
+                <thead>
+                    <tr>
+                        <th class="th-check" aria-label="Seleccionar"><input type="checkbox" id="chkAbiertasAll"></th>
+                        <th data-sort="id" class="sortable">Id.</th>
+                        <th data-sort="asunto" class="sortable">Asunto</th>
+                        <th data-sort="solicitante" class="sortable">Solicitante</th>
+                        <th data-sort="tecnico" class="sortable">Técnico</th>
+                        <th data-sort="grupo" class="sortable">Grupo</th>
+                        <th data-sort="estado" class="sortable">Estado</th>
+                        <th data-sort="vencimiento" class="sortable">Vencimiento</th>
+                        <th data-sort="creado" class="sortable">Creado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in abiertas %}
+                    <tr class="tr-{{ t.prioridad }}"
+                        data-pk="{{ t.pk }}"
+                        data-codigo="{{ t.codigo }}"
+                        data-id="{{ t.codigo|lower }}"
+                        data-asunto="{{ t.titulo|lower }}"
+                        data-solicitante="{{ t.solicitante_nombre|lower }}"
+                        data-tecnico="{{ t.tecnico_asignado.nombre|lower|default:'' }}"
+                        data-grupo="{{ t.categoria.grupo|lower|default:'' }}"
+                        data-estado="{{ t.get_estado_display|lower }}"
+                        data-vencimiento="{% if t.fecha_limite_ans %}{{ t.fecha_limite_ans|date:'U' }}{% endif %}"
+                        data-tecnico-pk="{{ t.tecnico_asignado_id|default:'' }}"
+                        data-creado="{{ t.fecha_creacion|date:'U' }}"
+                        data-url-detalle="{% url 'tickets:detalle' t.pk %}">
+                        <td data-label="" class="td-check">
+                            <input type="checkbox" class="chk-abierta" value="{{ t.pk }}" aria-label="Seleccionar {{ t.codigo }}">
+                        </td>
+                        <td data-label="Id.">
+                            <span class="table-code">{{ t.codigo }}</span>
+                            {% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}
+                        </td>
+                        <td data-label="Asunto">
+                            <div class="corp-asunto-wrap">
+                                <span class="corp-asunto">{{ t.titulo }}</span>
+                                {% if t.solicitante_punto %}<span class="corp-asunto-sub">{{ t.solicitante_punto }}</span>{% endif %}
+                                {% with combinadas=t.combinadas %}{% if combinadas %}
+                                <button type="button" class="corp-combinadas" title="Solicitudes combinadas bajo esta solicitud"
+                                        aria-expanded="false">
+                                    <svg class="icon"><use href="#i-layers"/></svg> Combinada · {{ combinadas|length }}
+                                </button>
+                                <ul class="corp-combinadas-list" hidden>
+                                    {% for sec in combinadas %}
+                                    <li>
+                                        <a href="{% url 'tickets:detalle' sec.pk %}">
+                                            <span class="corp-combinadas-code">{{ sec.codigo }}</span> {{ sec.titulo }}
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}{% endwith %}
+                            </div>
+                        </td>
+                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
+                        <td data-label="Técnico">
+                            {% if t.tecnico_asignado_id %}
+                                {% if t.tecnico_asignado == request.user %}
+                                <span class="status-pill status-en-progreso">Tuyo</span>
+                                {% else %}
+                                <span class="row-icon" title="En atención"><svg class="icon icon-sm"><use href="#i-wrench"/></svg></span>{{ t.tecnico_asignado.nombre }}
+                                {% endif %}
+                            {% else %}
+                            <span class="sin-asignar">Sin asignar</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Grupo">
+                            {% if t.categoria %}{{ t.categoria.grupo }}{% else %}<span class="sin-asignar">—</span>{% endif %}
+                        </td>
+                        <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}</td>
+                        <td data-label="Vencimiento">
+                            {% with info=t.info_ans %}
+                            {% if info.0 %}
+                            <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
+                                {% if info.0 == 'vencido' %}
+                                <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                                {% elif info.0 == 'resuelto' %}
+                                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                                {% else %}
+                                <svg class="icon icon-sm"><use href="#i-clock"/></svg>
+                                {% endif %}
+                                {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"M d, Y h:i A" }}{% else %}{{ info.1 }}{% endif %}
+                            </span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td data-label="Creado">{{ t.fecha_creacion|date:"M d, Y h:i A" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr class="table-empty"><td colspan="9">No hay solicitudes para esta vista.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="corp-grid" id="gridAbiertas">
+        {% for t in abiertas %}
+        <a class="corp-card" href="{% url 'tickets:detalle' t.pk %}"
+           data-pk="{{ t.pk }}"
+           data-id="{{ t.codigo|lower }}"
+           data-asunto="{{ t.titulo|lower }}"
+           data-solicitante="{{ t.solicitante_nombre|lower }}"
+           data-grupo="{{ t.categoria.grupo|lower|default:'' }}"
+           data-estado="{{ t.get_estado_display|lower }}"
+           data-vencimiento="{% if t.fecha_limite_ans %}{{ t.fecha_limite_ans|date:'U' }}{% endif %}"
+           data-tecnico-pk="{{ t.tecnico_asignado_id|default:'' }}">
+            <div class="corp-card-head">
+                <span class="table-code">{{ t.codigo }}</span>
+                {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+            </div>
+            <strong class="corp-card-title">{{ t.titulo }}</strong>
+            {% with combinadas=t.combinadas %}{% if combinadas %}
+            <span class="corp-card-combinada" title="Solicitudes combinadas bajo esta solicitud">
+                <svg class="icon"><use href="#i-layers"/></svg> Combinada · {{ combinadas|length }}
+            </span>
+            {% endif %}{% endwith %}
+            <span class="corp-card-meta">
+                <svg class="icon icon-sm"><use href="#i-user"/></svg> {{ t.solicitante_nombre }}
+            </span>
+            <span class="corp-card-meta">
+                <svg class="icon icon-sm"><use href="#i-folder"/></svg> {{ t.categoria.grupo|default:"—" }}
+            </span>
+            <span class="corp-card-meta">
+                <svg class="icon icon-sm"><use href="#i-wrench"/></svg>
+                {% if t.tecnico_asignado_id %}{{ t.tecnico_asignado.nombre }}{% else %}Sin asignar{% endif %}
+            </span>
+            <span class="corp-card-foot">
+                {% with info=t.info_ans %}
+                {% if info.0 == 'vencido' %}<span class="ans-time ans-vencido">Vencida · {{ t.fecha_limite_ans|date:"M d, Y" }}</span>
+                {% elif info.0 == 'resuelto' %}<span class="ans-time ans-resuelto">Resuelta</span>
+                {% else %}<span class="ans-time">Vence {{ t.fecha_limite_ans|date:"M d, Y" }}</span>{% endif %}
+                {% endwith %}
+            </span>
+        </a>
+        {% empty %}
+        <p class="table-empty">No hay solicitudes para esta vista.</p>
+        {% endfor %}
+    </div>
+    </div>
+
+    <div class="corp-msg" id="corpMsg" role="status"></div>
+
+    <div class="modal-overlay" id="modalAsignar" role="dialog" aria-modal="true" aria-labelledby="asignarTitle">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="asignarTitle"><svg class="icon"><use href="#i-user"/></svg> Asignar solicitudes</h3>
+                <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="corp-modal-hint">Se asignarán las <strong id="asignarN"></strong> solicitudes seleccionadas. Completa al menos un campo.</p>
+                <label class="corp-field">Sitio
+                    <input type="text" name="sitio" list="sitiosDatalist" placeholder="Base Site…">
+                </label>
+                <datalist id="sitiosDatalist">
+                    {% for s in sitios %}<option value="{{ s }}">{% endfor %}
+                </datalist>
+                <label class="corp-field">Grupo
+                    <select name="grupo">
+                        <option value="">— Sin cambio —</option>
+                        {% for g in grupos %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="corp-field">Técnico
+                    <select name="tecnico" id="asignarTecnicoSelect" class="corp-tec-select">
+                        <option value="">— Sin asignar —</option>
+                        {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
+                    </select>
+                </label>
+                <div class="corp-tec-list" id="corpTecList" hidden>
+                    {% for u in tecnicos %}
+                    <button type="button" class="corp-tec-item" data-tec-pk="{{ u.pk }}" data-tec-nombre="{{ u.nombre }}">
+                        <span class="corp-tec-avatar">{{ u.nombre|slice:":1"|upper }}</span>
+                        <span class="corp-tec-name">{{ u.nombre }}</span>
+                        <span class="corp-tec-dot" title="Asignado actualmente"></span>
+                    </button>
+                    {% endfor %}
+                </div>
+                <div class="corp-modal-actions">
+                    <button type="button" class="btn btn-outline btn-sm" data-asignar-cancelar>Cancelar</button>
+                    <button type="submit" class="btn btn-accent btn-sm" data-asignar-guardar>
+                        <svg class="icon"><use href="#i-check"/></svg> Guardar
+                    </button>
+                </div>
             </div>
         </div>
-        {% endif %}
     </div>
+
+    <div class="modal-overlay" id="modalCombinar" role="dialog" aria-modal="true" aria-labelledby="combinarTitle">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="combinarTitle"><svg class="icon"><use href="#i-layers"/></svg> Combinar solicitud</h3>
+                <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="corp-banner">
+                    <svg class="icon"><use href="#i-info"/></svg>
+                    <p>Las solicitudes secundarias se combinarán bajo la solicitud principal.
+                       Los registros de trabajo, notas, conversaciones, recordatorios, tareas
+                       y listas de comprobación de solicitudes secundarias se moverán bajo la
+                       solicitud principal.</p>
+                </div>
+                <label class="corp-field">Seleccionar solicitud principal
+                    <select id="combinarPrincipal"></select>
+                </label>
+                <div class="corp-modal-actions">
+                    <button type="button" class="btn btn-outline btn-sm" data-combinar-cancelar>Cancelar</button>
+                    <button type="button" class="btn btn-accent btn-sm" data-combinar-guardar>
+                        <svg class="icon"><use href="#i-check"/></svg> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalVincular" role="dialog" aria-modal="true" aria-labelledby="vincularTitle">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="vincularTitle"><svg class="icon"><use href="#i-share"/></svg> Vincular solicitud</h3>
+                <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="corp-banner">
+                    <svg class="icon"><use href="#i-info"/></svg>
+                    <p>La solicitud más antigua se conservará como solicitud principal.
+                       Las demás solicitudes seleccionadas estarán en una nueva relación.</p>
+                </div>
+                <label class="corp-field">Escriba aquí sus comentarios
+                    <textarea id="vincularComentario" rows="3" placeholder="Comentario para las solicitudes vinculadas…"></textarea>
+                </label>
+                <div class="corp-modal-actions">
+                    <button type="button" class="btn btn-outline btn-sm" data-vincular-descartar>Descartar</button>
+                    <button type="button" class="btn btn-accent btn-sm" data-vincular-guardar>
+                        <svg class="icon"><use href="#i-check"/></svg> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
     {% endif %}
 </main>
 {% endblock %}
@@ -774,4 +1188,7 @@
     }, 10000);
 })();
 </script>
+{% if not ticket %}
+<script src="{% static 'js/panel-lote.js' %}?v=1"></script>
+{% endif %}
 {% endblock %}

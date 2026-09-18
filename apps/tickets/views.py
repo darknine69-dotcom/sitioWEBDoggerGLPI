@@ -29,7 +29,7 @@ from .forms import (
     TicketForm,
     UsuarioPanelForm,
 )
-from .models import Categoria, GlpiEvento, Ticket, TicketAdjunto, TicketComentario
+from .models import Categoria, GlpiEvento, Ticket, TicketAdjunto, TicketComentario, TicketVinculo
 from .notifications import notificar_comentario, notificar_ticket_actualizado, notificar_ticket_creado
 from .sla import horas_por_prioridad, orden_prioridad_annotation
 from .services.glpi_client import (
@@ -1856,6 +1856,16 @@ def detalle_ticket(request, pk):
                 return redirect("tickets:detalle", pk=pk)
 
     timeline_data_ = _timeline_ticket(ticket, include_internos=True)
+    vinculo_principal = (
+        TicketVinculo.objects.filter(ticket_secundario=ticket)
+        .select_related("ticket_principal", "ticket_principal__categoria", "creado_por")
+        .first()
+    )
+    vinculos_secundarios = list(
+        TicketVinculo.objects.filter(ticket_principal=ticket)
+        .select_related("ticket_secundario", "ticket_secundario__categoria", "creado_por")
+        .order_by("fecha")
+    )
     return render(
         request,
         "tickets/detalle.html",
@@ -1865,6 +1875,8 @@ def detalle_ticket(request, pk):
             "eventos_count": sum(1 for i in timeline_data_ if i["tipo"] == "sistema"),
             "comentario_form": comentario_form,
             "asignar_form": asignar_form,
+            "vinculo_principal": vinculo_principal,
+            "vinculos_secundarios": vinculos_secundarios,
             "share_text": f"Ticket {ticket.codigo} — {ticket.titulo} ({ticket.get_estado_display()})",
         },
     )
@@ -2313,6 +2325,141 @@ def panel_tecnico(request):
 
     vista = request.GET.get("vista", "").strip() or ("mis" if ticket_pk else "panel")
 
+    # Módulo corporativo "Mis solicitudes abiertas" (solo cuando no hay chat abierto)
+    abiertas = []
+    combinadas_map = {}
+    sitios = []
+    grupos = []
+    tecnicos = []
+    abiertas_count = 0
+    mias = request.GET.get("mias", "") in ("1", "true", "on")
+    abiertos = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
+    presets_mis = [
+        ("abiertas", "Mis solicitudes abiertas"),
+        ("todas", "Todas las solicitudes"),
+        ("completadas", "Mis solicitudes completadas"),
+        ("espera", "Mis solicitudes en espera"),
+        ("no-asignadas", "Solicitudes no asignadas"),
+        ("vencen-hoy", "Solicitudes que vencen hoy"),
+        ("vencidas", "Solicitudes vencidas"),
+        ("creadas-hoy", "Solicitudes creadas hoy"),
+    ]
+    presets_mis_map = dict(presets_mis)
+    sv = request.GET.get("sv", "abiertas").strip() or "abiertas"
+    if sv not in presets_mis_map:
+        sv = "abiertas"
+    rangos_mis = [
+        ("7", "Últimos 7 días"),
+        ("15", "Últimos 15 días"),
+        ("30", "Los 30 últimos días"),
+        ("60", "Últimos 60 días"),
+        ("90", "Últimos 90 días"),
+        ("180", "Últimos 180 días"),
+        ("365", "Últimos 365 días"),
+        ("", "Todo el tiempo"),
+    ]
+    rango = request.GET.get("rango", "30")
+    if rango not in dict(rangos_mis):
+        rango = "30"
+    if vista == "mis" and not ticket_pk:
+        secundarias_comb = set()
+        combinadas_map = {}
+        for v in TicketVinculo.objects.filter(
+            tipo=TicketVinculo.Tipo.COMBINAR
+        ).select_related("ticket_secundario"):
+            secundarias_comb.add(v.ticket_secundario_id)
+            combinadas_map.setdefault(v.ticket_principal_id, []).append(v.ticket_secundario)
+        abiertas_qs = Ticket.objects.select_related("categoria", "tecnico_asignado")
+        if secundarias_comb:
+            abiertas_qs = abiertas_qs.exclude(pk__in=secundarias_comb)
+        if sv == "completadas":
+            abiertas_qs = abiertas_qs.filter(
+                estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO]
+            )
+        elif sv == "espera":
+            abiertas_qs = abiertas_qs.filter(estado=Ticket.Estado.ABIERTO)
+        elif sv == "no-asignadas":
+            abiertas_qs = abiertas_qs.filter(
+                estado__in=abiertos, tecnico_asignado__isnull=True
+            )
+        elif sv == "vencen-hoy":
+            abiertas_qs = abiertas_qs.filter(estado__in=abiertos)
+        elif sv == "vencidas":
+            abiertas_qs = abiertas_qs.filter(estado__in=abiertos)
+        elif sv == "creadas-hoy":
+            inicio_hoy = timezone.localtime(timezone.now()).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            abiertas_qs = abiertas_qs.filter(fecha_creacion__gte=inicio_hoy)
+        elif sv == "todas":
+            pass
+        else:
+            abiertas_qs = abiertas_qs.filter(estado__in=abiertos)
+        if rango:
+            try:
+                abiertas_qs = abiertas_qs.filter(
+                    fecha_creacion__gte=timezone.now() - timedelta(days=int(rango))
+                )
+            except (TypeError, ValueError):
+                pass
+        if estado:
+            abiertas_qs = abiertas_qs.filter(estado=estado)
+        if q:
+            match_codigo = re.match(r"^HD-(\d+)$", q.upper())
+            condicion = (
+                Q(codigo__iexact=q.upper())
+                | Q(titulo__icontains=q)
+                | Q(solicitante_nombre__icontains=q)
+                | Q(solicitante_email__icontains=q)
+                | Q(solicitante_punto__icontains=q)
+            )
+            if match_codigo:
+                condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
+            abiertas_qs = abiertas_qs.filter(condicion)
+        if mias:
+            abiertas_qs = abiertas_qs.filter(tecnico_asignado=tecnico)
+        abiertas = list(
+            abiertas_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
+                "_prioridad_orden", "-fecha_creacion"
+            )
+        )
+        abiertas = _adjuntar_solicitantes(abiertas)
+        for t in abiertas:
+            t.combinadas = combinadas_map.get(t.pk, [])
+        if sv == "vencen-hoy":
+            ahora = timezone.now()
+            inicio_hoy = timezone.localtime(ahora).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            fin_hoy = inicio_hoy + timedelta(days=1)
+            abiertas = [
+                t
+                for t in abiertas
+                if t.estado in abiertos
+                and t.fecha_limite_ans
+                and inicio_hoy <= t.fecha_limite_ans < fin_hoy
+            ]
+        elif sv == "vencidas":
+            abiertas = [
+                t
+                for t in abiertas
+                if t.estado in abiertos
+                and t.fecha_limite_ans
+                and t.fecha_limite_ans < timezone.now()
+            ]
+        abiertas_count = len(abiertas)
+        sitios = sorted(
+            {t.solicitante_punto for t in abiertas if t.solicitante_punto},
+            key=str.lower,
+        )
+        grupos = sorted(
+            {t.categoria.grupo for t in abiertas if t.categoria_id and t.categoria.grupo},
+            key=str.lower,
+        )
+        tecnicos = list(
+            User.objects.filter(activo=True, rol__in=["admin", "tecnico"]).order_by("nombre")
+        )
+
     dash_json = _build_tecnico_dashboard() if vista == "panel" else "{}"
 
     tickets = _adjuntar_solicitantes(page_obj.object_list)
@@ -2342,6 +2489,17 @@ def panel_tecnico(request):
             "per_page": pp_mis,
             "per_page_sol": pp_sol,
             "dash_json": dash_json,
+            "abiertas": abiertas,
+            "abiertas_count": abiertas_count,
+            "sitios": sitios,
+            "grupos": grupos,
+            "tecnicos": tecnicos,
+            "mias": mias,
+            "sv": sv,
+            "sv_label": presets_mis_map.get(sv, "Mis solicitudes abiertas"),
+            "presets_mis": presets_mis,
+            "rango": rango,
+            "rangos_mis": rangos_mis,
             **chart_context,
         },
     )
@@ -2381,6 +2539,220 @@ def panel_tecnico_tomar(request, pk):
             f"Ticket {ticket.codigo} tomado. Configura tu 'ID usuario GLPI' en Admin para reflejarlo allá.",
         )
     return redirect("tickets:panel_tecnico")
+
+
+@staff_required
+@require_POST
+def panel_tecnico_lote(request):
+    """Acciones en lote del módulo 'Mis solicitudes abiertas' (selección múltiple)."""
+    accion = request.POST.get("accion", "").strip()
+    try:
+        ids = [int(x) for x in request.POST.get("ids", "").split(",") if x.strip().isdigit()]
+    except (TypeError, ValueError):
+        ids = []
+    if not ids:
+        return JsonResponse({"ok": False, "error": "Selecciona al menos una solicitud."}, status=400)
+
+    tickets = list(
+        Ticket.objects.select_related("categoria", "tecnico_asignado").filter(pk__in=ids)
+    )
+    if not tickets:
+        return JsonResponse({"ok": False, "error": "No se encontraron las solicitudes."}, status=404)
+
+    if accion == "recoger":
+        tomados, ya_asignados = 0, 0
+        for t in tickets:
+            if t.tecnico_asignado_id:
+                ya_asignados += 1
+                continue
+            t.tecnico_asignado = request.user
+            t.asignacion_automatica = False
+            t.save(update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"])
+            tomados += 1
+            if request.user.glpi_user_id:
+                try:
+                    sync_asignacion_to_glpi(t)
+                except GlpiError:
+                    pass
+        msg = f"{tomados} solicitud(es) recogida(s)."
+        if ya_asignados:
+            msg += f" {ya_asignados} ya estaban asignadas y se omitieron."
+        return JsonResponse({"ok": True, "mensaje": msg, "recogidas": tomados})
+
+    if accion == "cerrar":
+        cerrados = 0
+        for t in tickets:
+            if t.estado == Ticket.Estado.CERRADO:
+                continue
+            t.estado = Ticket.Estado.CERRADO
+            t.save(update_fields=["estado", "fecha_cierre", "fecha_actualizacion"])
+            notificar_ticket_actualizado(t, "cambiado a Cerrado")
+            try:
+                sync_estado_to_glpi(t)
+            except GlpiError:
+                pass
+            cerrados += 1
+        return JsonResponse({"ok": True, "mensaje": f"{cerrados} solicitud(es) cerrada(s).", "cerrados": cerrados})
+
+    if accion == "eliminar":
+        if not request.user.rol == "admin":
+            return JsonResponse({"ok": False, "error": "Solo el administrador puede eliminar solicitudes en lote."}, status=403)
+        borrar_en_glpi = bool(getattr(request.user, "borrar_glpi_al_eliminar", False))
+        eliminados = 0
+        for t in tickets:
+            glpi_id = t.glpi_id
+            if borrar_en_glpi and glpi_id:
+                try:
+                    client = GlpiClient()
+                    if client.available:
+                        client.init_session()
+                        client.delete_ticket(glpi_id)
+                        client.kill_session()
+                except Exception:
+                    pass
+            for adj in t.adjuntos.all():
+                if adj.archivo:
+                    adj.archivo.delete(save=False)
+            t.delete()
+            eliminados += 1
+        return JsonResponse({"ok": True, "mensaje": f"{eliminados} solicitud(es) eliminada(s).", "eliminados": eliminados})
+
+    if accion == "asignar":
+        sitio = request.POST.get("sitio", "").strip()
+        grupo = request.POST.get("grupo", "").strip()
+        tecnico_id = request.POST.get("tecnico", "").strip()
+        if not any([sitio, grupo, tecnico_id]):
+            return JsonResponse({"ok": False, "error": "Completa al menos un campo de asignación."}, status=400)
+
+        tecnico = None
+        if tecnico_id.isdigit():
+            tecnico = User.objects.filter(pk=int(tecnico_id), activo=True,
+                                          rol__in=["admin", "tecnico"]).first()
+            if tecnico_id and not tecnico:
+                return JsonResponse({"ok": False, "error": "El técnico seleccionado no existe."}, status=400)
+        categoria = None
+        if grupo:
+            categoria = Categoria.objects.filter(activo=True, grupo=grupo).order_by("nombre").first()
+            if not categoria:
+                return JsonResponse({"ok": False, "error": f"No hay categorías activas en el grupo '{grupo}'."}, status=400)
+
+        asignados = 0
+        for t in tickets:
+            if sitio and t.solicitante_punto != sitio:
+                t.solicitante_punto = sitio
+            if categoria and t.categoria_id != categoria.pk:
+                t.categoria = categoria
+            if tecnico_id:
+                t.tecnico_asignado = tecnico
+                t.asignacion_automatica = False
+            t.save(update_fields=["solicitante_punto", "categoria", "tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"])
+            if tecnico and tecnico.glpi_user_id:
+                try:
+                    sync_asignacion_to_glpi(t)
+                except GlpiError:
+                    pass
+            asignados += 1
+        return JsonResponse({"ok": True, "mensaje": f"{asignados} solicitud(es) actualizada(s).", "asignados": asignados})
+
+    if accion == "combinar":
+        principal_id = request.POST.get("principal", "").strip()
+        principal = next(
+            (t for t in tickets if str(t.pk) == principal_id), None
+        )
+        if not principal:
+            return JsonResponse(
+                {"ok": False, "error": "Selecciona la solicitud principal para combinar."},
+                status=400,
+            )
+        secundarios = [t for t in tickets if t.pk != principal.pk]
+        if not secundarios:
+            return JsonResponse(
+                {"ok": False, "error": "Selecciona al menos dos solicitudes para combinar."},
+                status=400,
+            )
+        ref_sec = ", ".join(t.codigo for t in secundarios)
+        combinados = 0
+        for sec in secundarios:
+            _, creado = TicketVinculo.objects.get_or_create(
+                ticket_principal=principal,
+                ticket_secundario=sec,
+                tipo=TicketVinculo.Tipo.COMBINAR,
+                defaults={"comentario": "", "creado_por": request.user},
+            )
+            TicketComentario.objects.create(
+                ticket=sec,
+                usuario=request.user,
+                autor_nombre=request.user.nombre,
+                comentario=(
+                    f"Solicitud combinada: este ticket se combinó con la solicitud "
+                    f"principal {principal.codigo}. Ref. {ref_sec}."
+                ),
+                es_interno=True,
+            )
+            combinados += 1
+        TicketComentario.objects.create(
+            ticket=principal,
+            usuario=request.user,
+            autor_nombre=request.user.nombre,
+            comentario=f"Solicitud combinada: incluye {ref_sec}.",
+            es_interno=True,
+        )
+        return JsonResponse(
+            {
+                "ok": True,
+                "mensaje": f"{combinados} solicitud(es) combinada(s) bajo {principal.codigo}.",
+                "combinados": combinados,
+            }
+        )
+
+    if accion == "vincular":
+        comentario = request.POST.get("comentario", "").strip()
+        principal = min(tickets, key=lambda t: t.fecha_creacion or timezone.now())
+        secundarios = [t for t in tickets if t.pk != principal.pk]
+        if not secundarios:
+            return JsonResponse(
+                {"ok": False, "error": "Selecciona al menos dos solicitudes para vincular."},
+                status=400,
+            )
+        ref = ", ".join(t.codigo for t in tickets)
+        vinculados = 0
+        for sec in secundarios:
+            _, creado = TicketVinculo.objects.get_or_create(
+                ticket_principal=principal,
+                ticket_secundario=sec,
+                tipo=TicketVinculo.Tipo.VINCULAR,
+                defaults={"comentario": comentario, "creado_por": request.user},
+            )
+            TicketComentario.objects.create(
+                ticket=sec,
+                usuario=request.user,
+                autor_nombre=request.user.nombre,
+                comentario=(
+                    f"Solicitudes vinculadas: {ref}."
+                    + (f" {comentario}" if comentario else "")
+                ),
+                es_interno=True,
+            )
+            vinculados += 1
+        TicketComentario.objects.create(
+            ticket=principal,
+            usuario=request.user,
+            autor_nombre=request.user.nombre,
+            comentario=(
+                f"Solicitudes vinculadas: {ref}."
+                + (f" {comentario}" if comentario else "")
+            ),
+            es_interno=True,
+        )
+        return JsonResponse(
+            {
+                "ok": True,
+                "mensaje": f"{vinculados} solicitud(es) vinculada(s) bajo {principal.codigo}.",
+                "vinculados": vinculados,
+            }
+        )
+
+    return JsonResponse({"ok": False, "error": "Acción no válida."}, status=400)
 
 
 @staff_required

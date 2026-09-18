@@ -377,3 +377,61 @@ class GlpiEvento(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_display()} · {self.descripcion}"
+
+
+class TicketVinculo(models.Model):
+    """
+    Relación entre solicitudes de la mesa de ayuda.
+    - 'combinar': las solicitudes secundarias pasan a gestionarse bajo la principal.
+    - 'vincular': las segundarias quedan en una nueva relación visible bajo la principal.
+    """
+
+    class Tipo(models.TextChoices):
+        COMBINAR = "combinar", "Combinar"
+        VINCULAR = "vincular", "Vincular"
+
+    ticket_principal = models.ForeignKey(
+        Ticket,
+        on_delete=models.CASCADE,
+        related_name="vinculos_principales",
+        db_column="TicketPrincipalId",
+        verbose_name="Solicitud principal",
+    )
+    ticket_secundario = models.ForeignKey(
+        Ticket,
+        on_delete=models.CASCADE,
+        related_name="vinculos_secundarios",
+        db_column="TicketSecundarioId",
+        verbose_name="Solicitud secundaria",
+    )
+    tipo = models.CharField(
+        "Tipo de relación",
+        max_length=20,
+        choices=Tipo.choices,
+        default=Tipo.VINCULAR,
+    )
+    comentario = models.TextField("Comentario", blank=True, default="")
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="vinculos_creados",
+        db_column="CreadoPorId",
+        verbose_name="Creado por",
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "TicketVinculos"
+        verbose_name = "Vínculo de solicitud"
+        verbose_name_plural = "Vínculos de solicitudes"
+        ordering = ["fecha"]
+        unique_together = [("ticket_principal", "ticket_secundario", "tipo")]
+        indexes = [
+            models.Index(fields=["ticket_secundario"], name="IX_TicketVinculos_Sec"),
+            models.Index(fields=["ticket_principal"], name="IX_TicketVinculos_Prin"),
+        ]
+
+    def __str__(self):
+        return f"{self.ticket_secundario.codigo} bajo {self.ticket_principal.codigo} ({self.get_tipo_display()})"

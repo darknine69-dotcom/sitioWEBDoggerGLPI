@@ -22,6 +22,44 @@
 .ticket-main-col, .ticket-side-col { display: flex; flex-direction: column; gap: 20px; }
 .ticket-side-col { position: sticky; top: 22px; max-height: calc(100vh - 44px); overflow-y: auto; }
 .ficha-list { display: flex; flex-direction: column; gap: 9px; }
+
+/* ---- Solicitudes vinculadas ---- */
+.corp-vinculos { display: flex; flex-direction: column; gap: 10px; }
+.corp-banner {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: #FFF6D6; border: 1px solid #EBD38A; border-radius: 12px;
+    padding: 13px 15px; margin: 0;
+}
+.corp-banner > .icon { flex: none; width: 18px; height: 18px; color: #B7791F; margin-top: 2px; }
+.corp-banner strong { display: block; font-size: 13.5px; color: #4A3C14; margin-bottom: 3px; }
+.corp-banner p { margin: 0 0 6px; font-size: 13px; line-height: 1.55; color: #5A4A1F; }
+.corp-banner p:last-child { margin-bottom: 0; }
+.corp-vinculo-meta { font-size: 11.5px; color: #8A7A4E; }
+.fiche-vinculos-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fiche-vinculo-row {
+    display: flex; align-items: flex-start; gap: 11px;
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 11px 13px; background: #fff; transition: all .15s ease;
+}
+.fiche-vinculo-row:hover { border-color: #EAD9C3; background: #FFFBF4; }
+.fiche-vinculo-icon {
+    flex: none; width: 30px; height: 30px; border-radius: 9px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--dogger-cream); color: var(--dogger-red);
+}
+.fiche-vinculo-icon .icon { width: 15px; height: 15px; }
+.fiche-vinculo-body { min-width: 0; flex: 1; }
+.fiche-vinculo-link { color: var(--ink); font-weight: 600; font-size: 13.5px; text-decoration: none; }
+.fiche-vinculo-link:hover { color: var(--dogger-red); text-decoration: underline; }
+.fiche-vinculo-meta-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.fiche-vinculo-tag {
+    font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+    border-radius: 999px; padding: 2px 8px;
+}
+.fiche-vinculo-tag.is-combinar { background: rgba(214,43,31,.1); color: var(--dogger-red); }
+.fiche-vinculo-tag.is-vincular { background: var(--dogger-cream); color: #A15C07; }
+.fiche-vinculo-com { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; }
+.corp-vinculo-vacio { margin: 0; font-size: 13px; color: var(--ink-muted); }
 .ficha-row {
     display: flex; align-items: center; gap: 10px;
     font-size: 13.5px; padding: 10px 12px;
@@ -33,6 +71,10 @@
 .ficha-row .ficha-v { font-weight: 600; text-align: right; line-height: 1.3; }
 .ficha-row .ficha-v small { display: block; font-weight: 400; color: var(--ink-muted); font-size: 12px; }
 .ficha-row.ficha-destacada { background: #fffdf7; border-color: #e8dcb8; }
+.corp-detail-back { margin: 2px 0 14px; }
+.corp-detail-back .back-btn { display: inline-flex; align-items: center; gap: 7px; justify-content: flex-start; width: auto; height: auto; min-width: 0; color: var(--ink-muted); font-size: 13px; font-weight: 700; text-decoration: none; padding: 6px 10px; border-radius: 8px; transition: all .15s ease; }
+.corp-detail-back .back-btn:hover { color: var(--dogger-red); background: rgba(214,43,31,.06); }
+.corp-detail-back .back-btn .icon { width: 15px; height: 15px; }
 @media (max-width: 920px) {
     .ticket-detail-grid { grid-template-columns: 1fr; }
     .ticket-side-col { position: static; max-height: none; overflow: visible; }
@@ -42,16 +84,21 @@
 
 {% block header_actions %}
 {% if request.user.rol == 'admin' %}
-<a href="{% url 'tickets:lista' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Tickets</a>
 <a href="{% url 'tickets:dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
 {% else %}
-<a href="{% url 'tickets:panel_tecnico' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Panel técnico</a>
 <a href="{% url 'tickets:lista' %}" class="btn btn-outline-light btn-sm">Mis tickets</a>
 {% endif %}
 {% endblock %}
 
 {% block content %}
 <main class="page page-corporate ticket-detail-page">
+    <div class="corp-detail-back">
+        {% if request.user.rol == 'admin' %}
+        <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg> Volver a Tickets</a>
+        {% else %}
+        <a class="back-btn" data-back href="{% url 'tickets:panel_tecnico' %}?vista=mis" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg> Volver al panel técnico</a>
+        {% endif %}
+    </div>
     <section class="ticket-detail-hero">
         <div class="corp-detail-head">
             <div class="corp-title-wrap">
@@ -197,6 +244,61 @@
                 </div>
                 <div class="corp-notif-body" id="corp-notif-body" hidden>
                     {% include "tickets/_chat_thread.html" %}
+                </div>
+            </section>
+
+            <section class="corp-subsection">
+                <div class="corp-subsection-head">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-layers"/></svg></span>
+                    <h3>Solicitudes vinculadas</h3>
+                </div>
+                <div class="corp-vinculos">
+                    {% if vinculo_principal %}
+                    {% with v=vinculo_principal %}
+                    <div class="corp-banner">
+                        <svg class="icon"><use href="#i-info"/></svg>
+                        <div>
+                            {% if v.tipo == 'combinar' %}
+                            <strong>Solicitud combinada</strong>
+                            <p>Esta solicitud se combinó bajo la solicitud principal
+                               <a href="{% url 'tickets:detalle' v.ticket_principal.pk %}" class="fiche-vinculo-link">
+                                   {{ v.ticket_principal.codigo }} · {{ v.ticket_principal.titulo }}
+                               </a>.</p>
+                            {% else %}
+                            <strong>Solicitud vinculada</strong>
+                            <p>Esta solicitud está vinculada con la solicitud principal
+                               <a href="{% url 'tickets:detalle' v.ticket_principal.pk %}" class="fiche-vinculo-link">
+                                   {{ v.ticket_principal.codigo }} · {{ v.ticket_principal.titulo }}
+                               </a>.</p>
+                            {% endif %}
+                            {% if v.comentario %}<p>{{ v.comentario }}</p>{% endif %}
+                            <small class="corp-vinculo-meta">{{ v.fecha|date:"d/m/Y H:i" }} · {% if v.creado_por %}por {{ v.creado_por.nombre }}{% else %}Staff{% endif %}</small>
+                        </div>
+                    </div>
+                    {% endwith %}
+                    {% elif vinculos_secundarios %}
+                    <ul class="fiche-vinculos-list">
+                        {% for v in vinculos_secundarios %}
+                        <li class="fiche-vinculo-row">
+                            <span class="fiche-vinculo-icon">
+                                <svg class="icon"><use href="{% if v.tipo == 'combinar' %}#i-layers{% else %}#i-share{% endif %}"/></svg>
+                            </span>
+                            <div class="fiche-vinculo-body">
+                                <a href="{% url 'tickets:detalle' v.ticket_secundario.pk %}" class="fiche-vinculo-link">
+                                    {{ v.ticket_secundario.codigo }} · {{ v.ticket_secundario.titulo }}
+                                </a>
+                                <div class="fiche-vinculo-meta-row">
+                                    <span class="fiche-vinculo-tag {% if v.tipo == 'combinar' %}is-combinar{% else %}is-vincular{% endif %}">{{ v.get_tipo_display }}</span>
+                                    <small class="corp-vinculo-meta">{{ v.fecha|date:"d/m/Y H:i" }} · {{ v.ticket_secundario.get_estado_display }}</small>
+                                </div>
+                                {% if v.comentario %}<p class="fiche-vinculo-com">{{ v.comentario }}</p>{% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="corp-vinculo-vacio">Esta solicitud no tiene vínculos con otras solicitudes.</p>
+                    {% endif %}
                 </div>
             </section>
 

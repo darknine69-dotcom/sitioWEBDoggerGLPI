@@ -30,6 +30,7 @@ urlpatterns = [
     path("panel/tecnico/", views.panel_tecnico, name="panel_tecnico"),
     path("panel/tecnico/mis-tickets/", views.mis_tickets_tecnico, name="mis_tickets"),
     path("panel/tecnico/tomar/<int:pk>/", views.panel_tecnico_tomar, name="panel_tecnico_tomar"),
+    path("panel/tecnico/lote/", views.panel_tecnico_lote, name="panel_tecnico_lote"),
     path("panel/tecnico/api/chat/<int:pk>/mensajes/", views.panel_tecnico_msgs_ajax, name="panel_tecnico_msgs"),
     path("panel/tecnico/api/chat/<int:pk>/enviar/", views.panel_tecnico_chat_ajax, name="panel_tecnico_chat"),
     path("panel/api/tickets/<int:pk>/estado/", views.ticket_estado_ajax, name="staff_api_estado"),
