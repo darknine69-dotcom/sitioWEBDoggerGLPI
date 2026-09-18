@@ -2,6 +2,7 @@ import json
 import secrets
 import string
 from collections import Counter
+from datetime import date, timedelta
 import logging
 import re
 
@@ -207,6 +208,289 @@ def _build_chart_context(tickets):
         "ans_stats": ans_stats,
         "donut_segments": json.dumps(donut_segments),
     }
+
+
+# ---------------------------------------------------------------------------
+# Dashboard global del Panel Técnico (6 widgets)
+# ---------------------------------------------------------------------------
+
+COLORES_MODO = {
+    "web": "#2A6FDB",
+    "email": "#2F7D4F",
+    "telefono": "#B7791F",
+    "no-asignado": "#8A8A86",
+}
+
+COLORES_SERIE = {
+    "entrante": "#2563EB",
+    "completado": "#2F7D4F",
+    "vencido": "#D62B1F",
+    "riesgo": "#F2A900",
+}
+
+_LABEL_MODO = {
+    "web": "Web Form",
+    "email": "E-Mail",
+    "telefono": "Phone Call",
+}
+
+
+_DIAS_SEMANA = ("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
+
+
+def _serie_dias(inicio, fin, con_dia=False):
+    """Lista de etiquetas por día entre dos fechas (día de semana + día o d/m)."""
+    dias = []
+    for i in range((fin - inicio).days + 1):
+        d = inicio + timedelta(days=i)
+        if con_dia:
+            dias.append(f"{d.day}/{d.month:02d}")
+        else:
+            dias.append(f"{_DIAS_SEMANA[d.weekday()]} {d.day}")
+    return dias
+
+
+def _agrupar_vencidos(tickets, dimension):
+    """Cuenta tickets abiertos por dimensión según estado ANS (vencido / por vencer)."""
+    agg = {}
+    for t in tickets:
+        clave, label = dimension(t)
+        if t.estado not in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+            continue
+        estado_ans = t.info_ans[0]
+        if estado_ans not in ("vencido", "por-vencer"):
+            continue
+        if clave not in agg:
+            agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0}
+        agg[clave][("por-vencer" if estado_ans == "por-vencer" else "vencidos")] += 1
+    return [v for v in agg.values()]
+
+
+def _build_tecnico_dashboard():
+    """
+    Datos JSON para el rediseño del Panel Técnico (dashboard global).
+
+    Incluye: tabla dinámica pivote, gráficos modales (modo/prioridad, con
+    cambio de tipo), serie de solicitudes por rango, SLA por dimensión y
+    comparativos de los últimos 20 días.
+    """
+    tickets = list(
+        Ticket.objects.select_related("categoria", "tecnico_asignado").order_by("fecha_creacion")
+    )
+    abiertos = [
+        t
+        for t in tickets
+        if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
+    ]
+    hoy = timezone.now().date()
+
+    # --- Tabla dinámica pivote -------------------------------------------
+    def _pivot(dimension, sort_key=None):
+        rows = {}
+        for t in tickets:
+            clave, label = dimension(t)
+            fila = rows.setdefault(
+                clave, {"label": label, "abrir": 0, "espera": 0, "vencido": 0, "total": 0}
+            )
+            fila["total"] += 1
+            if t.estado == Ticket.Estado.ABIERTO:
+                fila["abrir"] += 1
+            elif t.estado == Ticket.Estado.EN_PROGRESO:
+                fila["espera"] += 1
+            if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO) and t.info_ans[0] == "vencido":
+                fila["vencido"] += 1
+        lista = list(rows.values())
+        if sort_key:
+            lista.sort(key=sort_key)
+        return lista
+
+    def dim_tecnico(t):
+        if t.tecnico_asignado_id:
+            return (t.tecnico_asignado_id, t.tecnico_asignado.nombre)
+        return ("__sin", "No asignado")
+
+    def dim_prioridad(t):
+        return (t.prioridad, t.get_prioridad_display())
+
+    def dim_modo(t):
+        modo = "no-asignado"
+        if t.modo in _LABEL_MODO:
+            modo = t.modo
+        return (modo, _LABEL_MODO.get(modo, "No asignado"))
+
+    def dim_grupo(t):
+        if t.categoria_id:
+            return (t.categoria.grupo, t.categoria.grupo)
+        return ("__sin", "Sin categoría")
+
+    def dim_categoria(t):
+        if t.categoria_id:
+            grupo = t.categoria.grupo or ""
+            nombre = t.categoria.nombre or ""
+            return (t.categoria_id, f"{grupo} › {nombre}".strip(" ›"))
+        return ("__sin", "Sin categoría")
+
+    pivot = {
+        "dimensiones": {
+            "tecnico": {
+                "label": "Técnico",
+                "rows": sorted(_pivot(dim_tecnico), key=lambda r: r["label"].lower()),
+            },
+            "prioridad": {
+                "label": "Prioridad",
+                "rows": sorted(
+                    _pivot(dim_prioridad),
+                    key=lambda r: ("urgente", "alta", "media", "baja").index(r["label"].lower())
+                    if r["label"].lower() in ("urgente", "alta", "media", "baja")
+                    else 99,
+                ),
+            },
+            "modo": {
+                "label": "Modo de ingreso",
+                "rows": sorted(
+                    _pivot(dim_modo),
+                    key=lambda r: ("web form", "e-mail", "phone call", "no asignado").index(r["label"].lower())
+                    if r["label"].lower() in ("web form", "e-mail", "phone call", "no asignado")
+                    else 99,
+                ),
+            },
+            "grupo": {
+                "label": "Grupo",
+                "rows": _pivot(dim_grupo, sort_key=lambda r: r["label"].lower()),
+            },
+            "categoria": {
+                "label": "Categoría",
+                "rows": _pivot(dim_categoria, sort_key=lambda r: r["label"].lower()),
+            },
+        },
+        "columnas": ["abrir", "espera", "vencido", "total"],
+    }
+
+    # --- Pie: modo / prioridad (solo abiertos) ---------------------------
+    def _pie(acc, colores, etiquetas):
+        return [
+            {"label": etiquetas.get(k, k), "value": v, "color": colores.get(k, "#8A8A86")}
+            for k, v in acc.items()
+            if v > 0
+        ]
+
+    etiquetas_modo = dict(_LABEL_MODO, **{"no-asignado": "No asignado"})
+    modo_counts = Counter(dim_modo(t)[0] for t in abiertos)
+    pie_modo = _pie(  # orden fijo: web, email, telefono, no asignado
+        {k: modo_counts.get(k, 0) for k in ("web", "email", "telefono", "no-asignado")},
+        COLORES_MODO,
+        etiquetas_modo,
+    )
+    etiquetas_prioridad = dict(Ticket.Prioridad.choices)
+    pri_counts = Counter(t.prioridad for t in abiertos)
+    pie_prioridad = _pie(
+        {k: pri_counts.get(k, 0) for k in ("urgente", "alta", "media", "baja")},
+        COLORES_PRIORIDAD,
+        etiquetas_prioridad,
+    )
+
+    # --- Serie de solicitudes por rango ----------------------------------
+    def _rango(rango):
+        if rango == "ultima_semana":
+            inicio, fin = hoy - timedelta(days=6), hoy
+        elif rango == "esta_semana":
+            inicio, fin = hoy - timedelta(days=hoy.weekday()), hoy
+        elif rango == "este_mes":
+            inicio, fin = hoy.replace(day=1), hoy
+        else:  # ultimo_mes
+            fin = hoy.replace(day=1) - timedelta(days=1)
+            inicio = fin.replace(day=1)
+
+        con_dia = rango in ("este_mes", "ultimo_mes")
+        etiquetas = _serie_dias(inicio, fin, con_dia=con_dia)
+
+        dias = {}
+        d = inicio
+        while d <= fin:
+            dias[d] = {"entrante": 0, "completado": 0, "vencido": 0}
+            d += timedelta(days=1)
+
+        for t in tickets:
+            d = _key_fecha(t.fecha_creacion)
+            if d in dias:
+                dias[d]["entrante"] += 1
+            if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) and t.fecha_cierre:
+                dc = _key_fecha(t.fecha_cierre)
+                if dc in dias:
+                    dias[dc]["completado"] += 1
+            if d in dias and t.info_ans[0] == "vencido":
+                dias[d]["vencido"] += 1
+
+        ordenadas = sorted(dias)
+        return {
+            "labels": etiquetas,
+            "entrante": [dias[k]["entrante"] for k in ordenadas],
+            "completado": [dias[k]["completado"] for k in ordenadas],
+            "vencido": [dias[k]["vencido"] for k in ordenadas],
+        }
+
+    linea = {
+        k: _rango(k)
+        for k in ("ultima_semana", "esta_semana", "este_mes", "ultimo_mes")
+    }
+
+    # --- SLA por dimensión ------------------------------------------------
+    sla = {
+        "por_tecnico": _agrupar_vencidos(tickets, dim_tecnico),
+        "por_prioridad": _agrupar_vencidos(tickets, dim_prioridad),
+        "por_categoria": _agrupar_vencidos(tickets, dim_categoria),
+        "por_grupo": _agrupar_vencidos(tickets, dim_grupo),
+    }
+
+    # --- Comparativos últimos 20 días -------------------------------------
+    def _comparativo(fecha_t):  # recibe lista (t, flag brecha)
+        inicio = hoy - timedelta(days=19)
+        etiquetas = []
+        ok, brecha = [], []
+        for i in range(20):
+            d = inicio + timedelta(days=i)
+            etiquetas.append(DateFormat(d).format("d/m"))
+            ok.append(0)
+            brecha.append(0)
+        for d, es_brecha in fecha_t:
+            if inicio <= d <= hoy:
+                i = (d - inicio).days
+                (brecha if es_brecha else ok)[i] += 1
+        return {"labels": etiquetas, "ok": ok, "brecha": brecha}
+
+    recibidas = []
+    for t in tickets:
+        if t.fecha_creacion:
+            recibidas.append((_key_fecha(t.fecha_creacion), t.info_ans[0] == "vencido"))
+
+    completadas = []
+    for t in tickets:
+        if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) and t.fecha_cierre:
+            duracion = t.fecha_cierre - t.fecha_creacion
+            es_brecha = duracion > timedelta(hours=t.ans_horas)
+            completadas.append((_key_fecha(t.fecha_cierre), es_brecha))
+
+    comparativo = {
+        "recibidas": _comparativo(recibidas),
+        "completadas": _comparativo(completadas),
+    }
+
+    return json.dumps(
+        {
+            "pivot": pivot,
+            "pie_modo": pie_modo,
+            "pie_prioridad": pie_prioridad,
+            "linea": linea,
+            "colores_serie": COLORES_SERIE,
+            "sla": sla,
+            "comparativo": comparativo,
+        },
+        ensure_ascii=False,
+    )
+
+
+def _key_fecha(fecha):
+    return fecha.date() if hasattr(fecha, "date") else fecha
 
 
 def _build_dashboard_context(request, tickets):
@@ -2029,6 +2313,8 @@ def panel_tecnico(request):
 
     vista = request.GET.get("vista", "").strip() or ("mis" if ticket_pk else "panel")
 
+    dash_json = _build_tecnico_dashboard() if vista == "panel" else "{}"
+
     tickets = _adjuntar_solicitantes(page_obj.object_list)
     solicitudes = _adjuntar_solicitantes(solicitudes_page.object_list)
 
@@ -2055,6 +2341,7 @@ def panel_tecnico(request):
             "stats": stats,
             "per_page": pp_mis,
             "per_page_sol": pp_sol,
+            "dash_json": dash_json,
             **chart_context,
         },
     )

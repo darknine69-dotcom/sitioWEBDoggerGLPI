@@ -89,6 +89,12 @@ class Ticket(models.Model):
         RESUELTO = "resuelto", "Resuelto"
         CERRADO = "cerrado", "Cerrado"
 
+    class Modo(models.TextChoices):
+        WEB = "web", "Web Form"
+        EMAIL = "email", "E-Mail"
+        TELEFONO = "telefono", "Phone Call"
+        IMPORTADO = "importado", "Importado GLPI"
+
     codigo = models.CharField("Codigo", max_length=12, unique=True, editable=False)
     titulo = models.CharField("Titulo", max_length=150)
     descripcion = models.TextField("Descripcion")
@@ -118,6 +124,13 @@ class Ticket(models.Model):
         blank=True,
         null=True,
         help_text="Ej: Caja 3 Envigado, PC-P1 PC5, Server Principal",
+    )
+    modo = models.CharField(
+        "Modo de ingreso",
+        max_length=20,
+        choices=Modo.choices,
+        default=Modo.WEB,
+        help_text="Canal por el que ingresó la solicitud (portal, correo o llamada).",
     )
     tecnico_asignado = models.ForeignKey(
         settings.AUTH_USER_MODEL,
