@@ -1509,8 +1509,8 @@ a { color: inherit; text-decoration: none; }
     text-align: center;
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: 24px;
-    margin: 0 0 26px;
+    font-size: 20px;
+    margin: 0 0 22px;
 }
 
 .login-card .btn { width: 100%; justify-content: center; margin-top: 8px; }
@@ -4767,20 +4767,14 @@ a.score-chip { color: inherit; }
     width: 18px;
     height: 18px;
 }
-@media (max-width: 420px) {
-    .register-grid { grid-template-columns: 1fr; }
-    .register-grid .form-group:nth-child(odd) { padding-right: 0; }
-}
 .login-card-wide {
     max-width: 520px;
 }
 .register-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0 14px;
-    align-items: start;
+    grid-template-columns: 1fr;
+    gap: 0;
 }
-.register-grid .form-group:nth-child(odd) { padding-right: 4px; }
 .register-form .login-input-icon {
     width: 15px;
     height: 15px;
