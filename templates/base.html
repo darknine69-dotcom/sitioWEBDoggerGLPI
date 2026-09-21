@@ -352,6 +352,37 @@
         </div>
     </div>
 
+    <!-- Ventana emergente: contraseña cambiada con éxito -->
+    {% if request.session.pwd_cambiada_ok %}
+    <div class="confirm-overlay pwd-ok-overlay" id="pwd-ok-overlay" role="dialog" aria-modal="true" aria-labelledby="pwdOkTitle">
+        <div class="confirm-box">
+            <span class="confirm-icon pwd-ok-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            <h3 id="pwdOkTitle">¡Contraseña cambiada!</h3>
+            <p class="confirm-msg">Tu contraseña se actualizó con éxito. Ya puedes usar el sistema.</p>
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-primary" id="pwd-ok-btn">Continuar</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function () {
+        var ov = document.getElementById('pwd-ok-overlay');
+        if (!ov) return;
+        ov.classList.add('open');
+        document.getElementById('pwd-ok-btn').addEventListener('click', function () {
+            ov.classList.remove('open');
+            try {
+                fetch("{% url 'accounts:descartar_aviso' %}", {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '' },
+                    credentials: 'same-origin'
+                }).catch(function () {});
+            } catch (e) {}
+        });
+    })();
+    </script>
+    {% endif %}
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

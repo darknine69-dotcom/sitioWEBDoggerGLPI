@@ -4,9 +4,11 @@ from django.contrib.auth.views import LoginView
 from django.conf import settings
 from django.contrib import messages
 from django.core.mail import send_mail
+from django.http import JsonResponse
 from django.shortcuts import redirect, render, reverse
 from django.urls import reverse_lazy
 from django.views import View
+from django.views.decorators.http import require_POST
 import logging
 
 from .forms import (
@@ -200,7 +202,7 @@ def cambiar_password(request):
         if form.is_valid():
             form.save()
             update_session_auth_hash(request, request.user)
-            messages.success(request, "Contraseña cambiada correctamente.")
+            request.session["pwd_cambiada_ok"] = True
         else:
             for err in form.non_field_errors():
                 messages.error(request, err)
@@ -392,7 +394,7 @@ def cambiar_password_forzado(request):
             update_session_auth_hash(request, request.user)
             request.session.pop("force_password_change", None)
             request.session.pop("force_password_error", None)
-            messages.success(request, "¡Contraseña actualizada correctamente! Ya puedes usar el sistema.")
+            request.session["pwd_cambiada_ok"] = True
             return redirect(_landing_por_rol(request.user))
 
         error_msg = next(
@@ -402,3 +404,10 @@ def cambiar_password_forzado(request):
         request.session["force_password_error"] = error_msg
         messages.error(request, "Revisa los errores en la ventana e inténtalo de nuevo.")
     return redirect(_landing_por_rol(request.user))
+
+
+@require_POST
+def descartar_aviso(request):
+    """Cierra el aviso emergente 'contraseña cambiada' para no volver a mostrarlo."""
+    request.session.pop("pwd_cambiada_ok", None)
+    return JsonResponse({"ok": True})

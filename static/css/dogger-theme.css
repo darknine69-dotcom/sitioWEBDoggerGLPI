@@ -2911,6 +2911,7 @@ select:focus-visible, textarea:focus-visible {
     justify-content: center;
 }
 .confirm-actions .btn { min-width: 110px; }
+.pwd-ok-icon { background: #E8F4EC; color: #2F7D4F; border-color: #BFE0C9; box-shadow: 0 4px 14px rgba(47, 125, 79, .18); }
 
 /* ---- Botón volver + encabezado de página ---- */
 .page-head {
