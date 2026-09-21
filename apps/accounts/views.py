@@ -214,16 +214,20 @@ def cambiar_password(request):
 def solicitar_reset(request):
     """Paso 1 — el usuario recibe un código de 6 dígitos.
 
-    El correo se precarga (bloqueado) cuando el usuario ya está identificado:
-    el que viene autenticado, el que escribió en el login (?email=...) o el que
-    quedó en sesión por un intento anterior. Así solo debe ingresar el código.
+    Cuando el correo ya se conoce (el del login con ?email=, el del usuario
+    autenticado o el de un intento previo), la pantalla NO pide el correo:
+    solo muestra "Enviar código". Si viene con ?manual= se vuelve a pedir.
     """
-    pre = (
-        (request.GET.get("email") or "").strip()
-        or (request.user.email if request.user.is_authenticated else "")
-        or request.session.get("reset_pwd_email", "")
-    )
+    if request.GET.get("manual"):
+        pre = ""
+    else:
+        pre = (
+            (request.GET.get("email") or "").strip()
+            or (request.user.email if request.user.is_authenticated else "")
+            or request.session.get("reset_pwd_email", "")
+        )
     correo_fijado = bool(pre)
+    correo_fijado_mostrado = _enmascarar_correo(pre) if correo_fijado else ""
 
     if request.method == "POST":
         form = SolicitarResetForm(request.POST)
@@ -258,7 +262,11 @@ def solicitar_reset(request):
                 return render(
                     request,
                     "accounts/reset_solicitar.html",
-                    {"form": form, "correo_fijado": correo_fijado},
+                    {
+                        "form": form,
+                        "correo_fijado": correo_fijado,
+                        "correo_fijado_mostrado": correo_fijado_mostrado,
+                    },
                 )
             messages.success(
                 request,
@@ -266,7 +274,13 @@ def solicitar_reset(request):
             )
             return redirect(reverse("accounts:restablecer_password"))
         return render(
-            request, "accounts/reset_solicitar.html", {"form": form, "correo_fijado": correo_fijado}
+            request,
+            "accounts/reset_solicitar.html",
+            {
+                "form": form,
+                "correo_fijado": correo_fijado,
+                "correo_fijado_mostrado": correo_fijado_mostrado,
+            },
         )
 
     form = SolicitarResetForm(initial={"email": pre})
@@ -275,7 +289,11 @@ def solicitar_reset(request):
     return render(
         request,
         "accounts/reset_solicitar.html",
-        {"form": form, "correo_fijado": correo_fijado},
+        {
+            "form": form,
+            "correo_fijado": correo_fijado,
+            "correo_fijado_mostrado": correo_fijado_mostrado,
+        },
     )
 
 

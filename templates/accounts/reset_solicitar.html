@@ -38,17 +38,33 @@
             </div>
             {% endif %}
 
+            {% if correo_fijado %}
+            <input type="hidden" name="email" value="{{ form.email.value|default:'' }}">
+            <div class="correo-fijo-box">
+                <svg class="correo-fijo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                <p>Enviaremos el código a<br><strong class="correo-fijo-mail">{{ correo_fijado_mostrado }}</strong></p>
+            </div>
+            {% for error in form.email.errors %}
+            <div class="login-error">{{ error }}</div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Enviar código a este correo</button>
+            <p class="login-register-link">
+                <a href="{% url 'accounts:reset_solicitar' %}?manual=1">Usar otro correo</a>
+            </p>
+            {% else %}
             <div class="form-group">
                 <label for="{{ form.email.id_for_label }}">Correo corporativo</label>
-                {{ form.email }}
-                {% if correo_fijado %}
-                <p class="login-hint-sm">Correo fijado de tu cuenta. Solo escribe el código que te llegue.</p>
-                {% endif %}
+                <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}"
+                       value="{{ form.email.value|default:'' }}" required
+                       pattern="[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}"
+                       title="Ingresa un correo válido, por ejemplo: nombre@dogger.com.co"
+                       placeholder="usuario@dogger.com.co">
                 {% for error in form.email.errors %}
                 <div class="login-error">{{ error }}</div>
                 {% endfor %}
             </div>
-            <button type="submit" class="btn btn-primary">{{ correo_fijado|yesno:'Enviar código a mi correo,Enviar código' }}</button>
+            <button type="submit" class="btn btn-primary">Enviar código</button>
+            {% endif %}
         </form>
 
         <p class="login-register-link">
