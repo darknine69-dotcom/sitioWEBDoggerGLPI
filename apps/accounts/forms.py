@@ -1,8 +1,12 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
+import re
 
 User = get_user_model()
+
+EMAIL_STRICT = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$")
+EMAIL_STRICT_MSG = "Ingresa un correo válido, por ejemplo: nombre@dogger.com.co"
 
 
 class LoginForm(AuthenticationForm):
@@ -43,7 +47,14 @@ class UserRegisterForm(forms.Form):
     )
     email = forms.EmailField(
         label="Correo electrónico",
-        widget=forms.EmailInput(attrs={"placeholder": "usuario@correo.com"}),
+        widget=forms.EmailInput(
+            attrs={
+                "placeholder": "usuario@correo.com",
+                "pattern": r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}",
+                "title": EMAIL_STRICT_MSG,
+                "autocomplete": "email",
+            }
+        ),
     )
     password1 = forms.CharField(
         label="Contraseña",
@@ -56,6 +67,8 @@ class UserRegisterForm(forms.Form):
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
+        if not EMAIL_STRICT.match(email):
+            raise forms.ValidationError(EMAIL_STRICT_MSG)
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("Este correo ya está registrado. Intenta iniciar sesión.")
         return email

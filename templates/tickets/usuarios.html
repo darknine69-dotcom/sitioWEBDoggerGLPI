@@ -213,7 +213,9 @@
                 </div>
                 <div class="form-group">
                     <label for="u-email">Correo <span class="req">*</span></label>
-                    <input type="email" name="email" id="u-email" required>
+                    <input type="email" name="email" id="u-email" required
+                           pattern="[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}"
+                           title="Ingresa un correo válido, por ejemplo: nombre@dogger.com.co">
                 </div>
                 <div class="form-group">
                     <label for="u-rol">Rol <span class="req">*</span></label>

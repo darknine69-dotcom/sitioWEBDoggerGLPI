@@ -1,11 +1,15 @@
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
+import re
 
 from .models import Categoria, Ticket, TicketComentario
 from .sugerencia_categoria import sugerir_categoria
 
 User = get_user_model()
+
+EMAIL_STRICT = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$")
+EMAIL_STRICT_MSG = "Ingresa un correo válido, por ejemplo: nombre@dogger.com.co"
 
 ALLOWED_CONTENT_TYPES = {
     "image/png",
@@ -210,7 +214,10 @@ class UsuarioPanelForm(forms.Form):
     )
 
     def clean_email(self):
-        return self.cleaned_data["email"].strip().lower()
+        email = self.cleaned_data["email"].strip().lower()
+        if not EMAIL_STRICT.match(email):
+            raise forms.ValidationError(EMAIL_STRICT_MSG)
+        return email
 
 
 class ConsultaTicketForm(forms.Form):
