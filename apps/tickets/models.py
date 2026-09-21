@@ -123,7 +123,6 @@ class Ticket(models.Model):
         max_length=80,
         blank=True,
         null=True,
-        help_text="Ej: Caja 3 Envigado, PC-P1 PC5, Server Principal",
     )
     modo = models.CharField(
         "Modo de ingreso",
