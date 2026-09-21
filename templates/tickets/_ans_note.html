@@ -2,44 +2,40 @@
     <div class="ans-note-head">
         <svg class="icon icon-sm"><use href="#i-clock"/></svg>
         <strong class="ans-note-title">Tiempos de atención comprometidos (ANS)</strong>
-        <span class="ans-note-badge">Acuerdo de Nivel de Servicio</span>
+        <button type="button" class="ans-note-help" tabindex="0"
+            data-tip="Al elegir una categoría se asigna la prioridad y el tiempo máximo de resolución. Las fallas que detengan el punto de venta se atienden con la mayor urgencia."
+            aria-label="Qué significa el ANS">
+            <svg class="icon icon-sm"><use href="#i-help"/></svg>
+        </button>
     </div>
-    <p class="ans-note-text">
-        Según la categoría del problema se asigna automáticamente una prioridad y su tiempo máximo de resolución.
-        Las fallas que detengan la operación del punto de venta se atienden con la mayor urgencia.
-    </p>
     <ul class="ans-scale" id="ans-scale">
-        <li class="ans-scale-item ans-scale-urgente" data-prioridad="urgente">
+        <li class="ans-scale-item ans-scale-urgente" data-prioridad="urgente" data-tip="Detiene la venta o facturación">
             <span class="ans-scale-chip">
                 <span class="ans-scale-chip-hours">2<span>h</span></span>
                 <svg class="ans-scale-chip-clock"><use href="#i-clock"/></svg>
             </span>
             <span class="ans-scale-name">Urgente</span>
-            <span class="ans-scale-desc">Detiene la venta o facturación</span>
         </li>
-        <li class="ans-scale-item ans-scale-alta" data-prioridad="alta">
+        <li class="ans-scale-item ans-scale-alta" data-prioridad="alta" data-tip="Opera con limitaciones">
             <span class="ans-scale-chip">
                 <span class="ans-scale-chip-hours">8<span>h</span></span>
                 <svg class="ans-scale-chip-clock"><use href="#i-clock"/></svg>
             </span>
             <span class="ans-scale-name">Alta</span>
-            <span class="ans-scale-desc">Opera con limitaciones</span>
         </li>
-        <li class="ans-scale-item ans-scale-media" data-prioridad="media">
+        <li class="ans-scale-item ans-scale-media" data-prioridad="media" data-tip="Afectación parcial o secundaria">
             <span class="ans-scale-chip">
                 <span class="ans-scale-chip-hours">12<span>h</span></span>
                 <svg class="ans-scale-chip-clock"><use href="#i-clock"/></svg>
             </span>
             <span class="ans-scale-name">Media</span>
-            <span class="ans-scale-desc">Afectación parcial o secundaria</span>
         </li>
-        <li class="ans-scale-item ans-scale-baja" data-prioridad="baja">
+        <li class="ans-scale-item ans-scale-baja" data-prioridad="baja" data-tip="Sin impacto directo en ventas">
             <span class="ans-scale-chip">
                 <span class="ans-scale-chip-hours">48<span>h</span></span>
                 <svg class="ans-scale-chip-clock"><use href="#i-clock"/></svg>
             </span>
             <span class="ans-scale-name">Baja</span>
-            <span class="ans-scale-desc">Sin impacto directo en ventas</span>
         </li>
     </ul>
     <div id="ans-por-categoria" class="ans-active" hidden>

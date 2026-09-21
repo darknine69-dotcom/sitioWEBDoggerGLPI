@@ -4946,13 +4946,77 @@ a.score-chip { color: inherit; }
 .chart-card.chart-wide { grid-column: 1 / -1; }
 
 /* ---- Apartado ANS en crear ticket ---- */
-.ans-note { background: linear-gradient(180deg, #FFFDF5, #FFF7E0); border: 1px solid #EEDFB8; border-radius: 12px; padding: 14px 15px 12px; }
-.ans-note-title { display: block; color: #6B4E10; margin-bottom: 2px; }
-.ans-note-badge { margin-left: auto; font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #8B5E00; background: rgba(183,121,31,.12); border-radius: 20px; padding: 3px 9px; }
-.ans-note p { margin: 0; font-size: 12.5px; color: var(--ink-muted); }
-.ans-note-text { margin-top: 2px !important; }
-.ans-note-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
-.ans-note-head svg { color: #B7791F; flex-shrink: 0; }
+.ans-note { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 10px; }
+.ans-note-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ans-note-head svg { color: var(--dogger-red); flex-shrink: 0; }
+.ans-note-title { color: var(--ink); font-size: 13px; font-weight: 800; letter-spacing: .02em; text-transform: none; margin: 0; }
+.ans-note-help {
+    margin-left: auto;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--line);
+    border-radius: 50%;
+    background: #fff;
+    color: var(--ink-muted);
+    cursor: help;
+    padding: 0;
+}
+.ans-note-help:hover { border-color: var(--dogger-red); color: var(--dogger-red); }
+.ans-note-help .icon { width: 12px; height: 12px; }
+
+/* ---- Tooltip oscuro informativo (hover) ---- */
+[data-tip] { position: relative; }
+[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 9px);
+    transform: translateX(-50%) translateY(6px);
+    width: max-content;
+    max-width: 250px;
+    background: var(--dogger-black);
+    color: #F2EEE7;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: center;
+    padding: 9px 11px;
+    border-radius: 9px;
+    box-shadow: 0 10px 24px rgba(0,0,0,.22);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 60;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s;
+}
+[data-tip]::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 2px);
+    transform: translateX(-50%) translateY(6px);
+    border: 6px solid transparent;
+    border-top-color: var(--dogger-black);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 60;
+    transition: opacity .15s ease, transform .15s ease, visibility .15s;
+}
+[data-tip]:hover::after,
+[data-tip]:hover::before,
+[data-tip]:focus::after,
+[data-tip]:focus::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+.ans-note[data-tip]::after,
+.ans-note[data-tip]::before { display: none; }
 .ans-scale { list-style: none; margin: 12px 0 4px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .ans-scale-item {
     display: flex;
@@ -4991,7 +5055,6 @@ a.score-chip { color: inherit; }
 .ans-scale-baja .ans-scale-chip-hours { font-size: 16px; }
 .ans-scale-chip-hours span { font-size: .55em; margin-left: 1px; }
 .ans-scale-name { font-size: 13px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ansc, currentColor); }
-.ans-scale-desc { font-size: 12px; line-height: 1.35; color: var(--ink-muted); }
 .ans-scale-urgente { --ansc: #B01810; }
 .ans-scale-alta { --ansc: #B34D12; }
 .ans-scale-media { --ansc: #967000; }
@@ -5001,11 +5064,7 @@ a.score-chip { color: inherit; }
 .ans-active svg { color: #2F7D4F; flex-shrink: 0; margin-top: 1px; }
 .ans-active strong { color: #1F5E31; }
 
-/* ---- Página de reportar incidencia: ANS más grande ---- */
-.ticket-public-panel .ans-note { padding: 16px 18px 14px; }
-.ticket-public-panel .ans-note-title { font-size: 14.5px; }
-.ticket-public-panel .ans-note-badge { font-size: 11px; padding: 4px 10px; }
-.ticket-public-panel .ans-note p { font-size: 13.5px; line-height: 1.55; }
+/* ---- Página de reportar incidencia: ANS ---- */
 .ticket-public-panel .ans-active { font-size: 13.5px; padding: 9px 12px; }
 
 /* ---- Tiempos ANS en tablas y stubs ---- */
