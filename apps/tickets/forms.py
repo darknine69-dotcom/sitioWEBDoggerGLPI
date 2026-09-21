@@ -85,10 +85,11 @@ class TicketForm(forms.ModelForm):
         fields = [
             "titulo",
             "categoria",
+            "solicitante_punto",
             "descripcion",
             "solicitante_nombre",
             "solicitante_email",
-            "solicitante_punto",
+            "adjuntos",
         ]
         widgets = {
             "titulo": forms.TextInput(

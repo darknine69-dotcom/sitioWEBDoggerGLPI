@@ -586,6 +586,81 @@ a { color: inherit; text-decoration: none; }
     margin-top: 8px;
 }
 
+/* ---- Formulario "Reportar una incidencia": secciones + tipografía legible ---- */
+.user-ticket-form .form-section-title {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 14px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--line);
+    font-size: 15.5px;
+    font-weight: 800;
+    letter-spacing: .01em;
+    color: var(--ink);
+}
+
+.user-ticket-form .form-section-title:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+    margin-top: 2px;
+}
+
+.user-ticket-form .form-section-num {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--dogger-red), #e0523b);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 0 4px 10px rgba(214, 43, 31, .3);
+}
+
+.user-ticket-form .form-group label {
+    font-size: 14px;
+    text-transform: none;
+    letter-spacing: .01em;
+    color: var(--ink);
+}
+
+.user-ticket-form .form-group input,
+.user-ticket-form .form-group select,
+.user-ticket-form .form-group textarea {
+    font-size: 15.5px;
+    padding: 13px 15px;
+}
+
+.user-ticket-form ::placeholder {
+    font-size: 14.5px;
+    color: #98A2AE;
+    opacity: 1;
+}
+
+.user-ticket-form .field-help {
+    font-size: 13px;
+    color: #667085;
+}
+
+.user-ticket-form .cat-note,
+.user-ticket-form .cat-auto-hint,
+.user-ticket-form .cat-suggest {
+    grid-column: 1 / -1;
+    font-size: 13.5px;
+    padding: 12px 14px;
+    margin: -2px 0 10px;
+}
+
+.user-ticket-form .cat-suggest-actions .btn,
+.user-ticket-form .cat-auto-hint .btn {
+    font-size: 13px;
+}
+
 .ticket-create-panel {
     background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,247,234,0.96));
 }
@@ -4893,6 +4968,17 @@ a.score-chip { color: inherit; }
 .ans-active[hidden] { display: none; }
 .ans-active svg { color: #2F7D4F; flex-shrink: 0; margin-top: 1px; }
 .ans-active strong { color: #1F5E31; }
+
+/* ---- Página de reportar incidencia: ANS más grande ---- */
+.ticket-public-panel .ans-note { padding: 16px 18px 14px; }
+.ticket-public-panel .ans-note-title { font-size: 14.5px; }
+.ticket-public-panel .ans-note-badge { font-size: 11px; padding: 4px 10px; }
+.ticket-public-panel .ans-note p { font-size: 13.5px; line-height: 1.55; }
+.ticket-public-panel .ans-scale-item { font-size: 13px; padding: 11px 12px; }
+.ticket-public-panel .ans-scale-kicker { font-size: 12px; }
+.ticket-public-panel .ans-scale-horas { font-size: 14.5px; }
+.ticket-public-panel .ans-scale-desc { font-size: 12.5px; }
+.ticket-public-panel .ans-active { font-size: 13.5px; padding: 9px 12px; }
 
 /* ---- Tiempos ANS en tablas y stubs ---- */
 .ans-time { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; white-space: nowrap; }
