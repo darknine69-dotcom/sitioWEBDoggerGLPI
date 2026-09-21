@@ -23,7 +23,7 @@ def panel_programador(request):
         return render(request, "forbidden.html", status=403)
 
     tecnicos = request.user.__class__.objects.filter(
-        Q(rol="admin") | Q(rol="tecnico"), is_active=True
+        Q(rol="admin") | Q(rol="tecnico")
     ).order_by("nombre")
     sitios = sorted(
         set(
@@ -128,6 +128,13 @@ def programador_datos(request):
 
     festivos = {f.fecha.isoformat(): f.nombre for f in Festivo.objects.filter(fecha__range=(inicio, fin))}
 
+    tecnicos = [
+        {"id": u.pk, "nombre": u.nombre, "activo": u.is_active}
+        for u in request.user.__class__.objects.filter(
+            Q(rol="admin") | Q(rol="tecnico")
+        ).order_by("nombre")
+    ]
+
     return JsonResponse(
         {
             "ok": True,
@@ -136,6 +143,7 @@ def programador_datos(request):
             "eventos": eventos,
             "disponibilidad": disp,
             "festivos": festivos,
+            "tecnicos": tecnicos,
         }
     )
 

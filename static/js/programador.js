@@ -113,7 +113,7 @@
                 if (!res.ok) { toast(res.error || "Error al cargar", false); return; }
                 data = res;
                 renderCalendario();
-                renderChart();
+                renderMatrix();
                 renderListas();
             })
             .catch(function () { toast("Error al cargar los datos", false); });
@@ -235,69 +235,82 @@
         }
     }
 
-    /* ---------- gráfico de disponibilidad ---------- */
-    function renderChart() {
-        var box = $("chartDisponibilidad");
-        var tecSel = $("filtroTecnico");
-        var sel = tecSel.value;
+    /* ---------- matriz mensual de disponibilidad ---------- */
+    var LETRAS = ["D", "L", "M", "X", "J", "V", "S"];
+    var ESTADO_TITULO = {
+        festivo: "Día festivo de la empresa",
+        fin: "Fin de semana",
+        online: "Técnico en línea",
+        offline: "Técnico sin conexión",
+        ausencia: "Abandono / ausencia",
+        noausencia: "No ausencia",
+        falta: "Falta de disponibilidad"
+    };
 
-        var tecnicos = [];
-        if (sel) {
-            tecnicos.push({ id: sel, nombre: tecSel.options[tecSel.selectedIndex].text });
-        } else {
-            for (var i = 0; i < tecSel.options.length; i++) {
-                if (tecSel.options[i].value) tecnicos.push({ id: tecSel.options[i].value, nombre: tecSel.options[i].text });
-            }
+    function estadoCelda(tec, d) {
+        var is = iso(d);
+        if (data.festivos[is]) return "festivo";
+        var dow = d.getDay();
+        if (dow === 0 || dow === 6) return "fin";
+        var disp = data.disponibilidad[tec.id + "|" + is];
+        if (disp) {
+            if (disp.tipo === "ausencia") return "ausencia";
+            if (disp.tipo === "falta") return "falta";
+            if (disp.tipo === "no_ausencia") return "noausencia";
         }
+        if (!tec.activo) return "offline";
+        return "online";
+    }
 
-        var diasMes = new Date(state.anio, state.mes, 0).getDate();
-        var filasHtml = [];
+    function renderMatrix() {
+        var tbody = $("matrixTecnicos").querySelector("tbody");
+        var theadTr = $("matrixTecnicos").querySelector("thead tr");
+        var dias = new Date(state.anio, state.mes, 0).getDate();
+        var sel = $("filtroTecnico").value;
+        var tecs = data.tecnicos || [];
+        if (sel) tecs = tecs.filter(function (t) { return String(t.id) === sel; });
 
-        tecnicos.forEach(function (tec) {
-            var c = { disponible: 0, ausencia: 0, falta: 0, noausencia: 0, festivo: 0, findesemana: 0 };
-            for (var dia = 1; dia <= diasMes; dia++) {
-                var d = new Date(state.anio, state.mes - 1, dia);
-                var is = iso(d);
-                var dow = d.getDay();
-                if (data.festivos[is]) c.festivo++;
-                else if (dow === 0 || dow === 6) c.findesemana++;
-                else {
-                    var disp = data.disponibilidad[tec.id + "|" + is];
-                    var tipo = disp ? disp.tipo : "";
-                    if (tipo === "ausencia") c.ausencia++;
-                    else if (tipo === "falta") c.falta++;
-                    else if (tipo === "no_ausencia") c.noausencia++;
-                    else c.disponible++;
-                }
+        $("chartResumen").textContent = tecs.length + " técnico(s) · " + MESES[state.mes - 1] + " " + state.anio;
+
+        // encabezado con letras de día y numeración
+        var headerHtml = '<th class="mx-tec">Técnico</th>';
+        for (var h = 1; h <= dias; h++) {
+            var hd = new Date(state.anio, state.mes - 1, h);
+            var hl = LETRAS[hd.getDay()];
+            headerHtml += '<th class="mx-dia-hd' + (hl === "S" || hl === "D" ? " is-fin" : "") + '" title="' + NOMBRES_DIA[hd.getDay()] + ' ' + h + '">' +
+                '<span class="mx-letra">' + hl + "</span><span class='mx-numero'>" + h + "</span></th>";
+        }
+        theadTr.innerHTML = headerHtml;
+
+        // filas: un técnico por fila
+        if (!tecs.length) {
+            tbody.innerHTML = '<tr><td class="mx-empty" colspan="' + (dias + 1) + '">No hay técnicos que mostrar.</td></tr>';
+            return;
+        }
+        var rows = "";
+        tecs.forEach(function (tec) {
+            rows += '<tr class="mx-row' + (tec.activo ? "" : " is-offline") + '">' +
+                '<td class="mx-tec"' + (tec.activo ? "" : ' title="Sin conexión"') + ">" +
+                '<span class="mx-avatar">' + esc(tec.nombre.slice(0, 2).toUpperCase()) + "</span>" +
+                esc(tec.nombre) +
+                (tec.activo ? "" : ' <span class="mx-offline-tag">sin conexión</span>') +
+                "</td>";
+            for (var d = 1; d <= dias; d++) {
+                var dd = new Date(state.anio, state.mes - 1, d);
+                var est = estadoCelda(tec, dd);
+                rows += '<td class="mx-cel td-' + est + '" data-tec="' + tec.id + '" data-fecha="' + iso(dd) + '" title="' +
+                    esc(NOMBRES_DIA[dd.getDay()]) + " " + d + " · " + esc(tec.nombre) + " — " + ESTADO_TITULO[est] + '"></td>';
             }
-            function pct(n) { return (n / diasMes * 100).toFixed(1) + "%"; }
-            var bar =
-                '<div class="prog-chart-row">' +
-                '<div class="prog-chart-row-head"><strong>' + esc(tec.nombre) + "</strong>" +
-                '<span class="tec-count">' + esc(plural(diasMes, "día", "días")) + "</span></div>" +
-                '<div class="prog-chart-bars">' +
-                (c.ausencia ? '<span class="bar-ausencia" style="flex-basis:' + pct(c.ausencia) + '" title="' + c.ausencia + ' ausencia"></span>' : "") +
-                (c.falta ? '<span class="bar-falta" style="flex-basis:' + pct(c.falta) + '" title="' + c.falta + ' falta disponibilidad"></span>' : "") +
-                (c.noausencia ? '<span class="bar-noausencia" style="flex-basis:' + pct(c.noausencia) + '" title="' + c.noausencia + ' no ausencia"></span>' : "") +
-                (c.festivo ? '<span class="bar-festivo" style="flex-basis:' + pct(c.festivo) + '" title="' + c.festivo + ' festivo"></span>' : "") +
-                (c.findesemana ? '<span class="bar-findesemana" style="flex-basis:' + pct(c.findesemana) + '" title="' + c.findesemana + ' fin de semana"></span>' : "") +
-                (c.disponible ? '<span class="bar-disponible" style="flex-basis:' + pct(c.disponible) + '" title="' + c.disponible + ' disponible"></span>' : "") +
-                "</div>" +
-                '<div class="prog-chart-counts">' +
-                "<span><b>" + c.disponible + "</b> disponibles</span>" +
-                "<span><b>" + c.ausencia + "</b> ausencias</span>" +
-                "<span><b>" + c.falta + "</b> falta disp.</span>" +
-                "<span><b>" + c.noausencia + "</b> no ausencias</span>" +
-                "<span><b>" + c.festivo + "</b> festivos</span>" +
-                "<span><b>" + c.findesemana + "</b> fin de semana</span>" +
-                "</div></div>";
-            filasHtml.push(bar);
+            rows += "</tr>";
         });
+        tbody.innerHTML = rows;
 
-        box.innerHTML = filasHtml.length
-            ? filasHtml.join("")
-            : '<div class="prog-event-empty">No hay técnicos registrados para mostrar.</div>';
-        $("chartResumen").textContent = filasHtml.length + " técnico(s) · " + MESES[state.mes - 1] + " " + state.anio;
+        // clic en celda → marcar disponibilidad para ese técnico/fecha
+        tbody.querySelectorAll(".mx-cel").forEach(function (cel) {
+            cel.addEventListener("click", function () {
+                abrirModalDisp(this.dataset.fecha, null, this.dataset.tec);
+            });
+        });
     }
 
     /* ---------- listas ---------- */
@@ -403,10 +416,10 @@
             b.classList.toggle("is-selected", b.dataset.tipo === tipo);
         });
     }
-    function abrirModalDisp(fecha, tipo) {
+    function abrirModalDisp(fecha, tipo, tecId) {
         $("dispFecha").value = fecha;
         $("dispFechaShow").textContent = formatFecha(fecha);
-        var tec = $("filtroTecnico").value;
+        var tec = tecId || $("filtroTecnico").value;
         $("dispTecnico").value = tec || ($("dispTecnico").options.length > 1 ? $("dispTecnico").options[1].value : "");
         cargarDispLabel();
         if (tipo) marcarDisp(tipo);

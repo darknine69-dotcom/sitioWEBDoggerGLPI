@@ -93,14 +93,33 @@
         </div>
     </section>
 
-    {# ---- Panel: gráfico de disponibilidad ---- #}
+    {# ---- Panel: disponibilidad mensual de técnicos ---- #}
     <section class="prog-panel" id="panel-disponibilidad" data-tabpanel="disponibilidad">
         <div class="prog-chart-head">
             <h3 class="prog-section-title">Disponibilidad de técnicos</h3>
             <span class="tec-count" id="chartResumen"></span>
         </div>
-        <div class="prog-chart-card" id="chartDisponibilidad"></div>
-        <p class="prog-chart-note">Vista del mes seleccionado: ausencia (rojo), falta de disponibilidad (naranja), no ausencia (amarillo), festivo (azul) y fin de semana (gris). El resto corresponde a días disponibles.</p>
+        <div class="tec-matrix-scroll">
+            <table class="tec-matrix" id="matrixTecnicos" aria-label="Calendario de disponibilidad mensual por técnico">
+                <thead>
+                    <tr>
+                        <th class="mx-tec">Técnico</th>
+                        <th class="mx-dias" colspan="31">—</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <p class="prog-chart-note">Haz clic en una celda para marcar la disponibilidad del técnico en ese día.</p>
+        <div class="tec-matrix-legend" id="matrixLegend">
+            <span><span class="m-dot dm-festivo"></span>Día festivo de la empresa</span>
+            <span><span class="m-dot dm-fin"></span>Fin de semana</span>
+            <span><span class="m-dot dm-online"></span>Técnico en línea</span>
+            <span><span class="m-dot dm-offline"></span>Técnico sin conexión</span>
+            <span><span class="m-dot dm-ausencia"></span>Abandono</span>
+            <span><span class="m-dot dm-noausencia"></span>No ausencia</span>
+            <span><span class="m-dot dm-falta"></span>Falta de disponibilidad</span>
+        </div>
     </section>
 
     {# ---- Paneles: Tareas / Recordatorios / Anuncios ---- #}

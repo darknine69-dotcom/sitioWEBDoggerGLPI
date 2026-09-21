@@ -164,6 +164,65 @@
 .prog-chart-counts b { color: var(--ink); font-family: var(--font-mono); }
 .prog-chart-note { color: var(--ink-muted); font-size: 12.5px; margin-top: 12px; }
 
+/* ---- Matriz mensual de disponibilidad (técnicos × días) ---- */
+.tec-matrix-scroll { overflow-x: auto; margin-bottom: 10px; border-radius: 14px; box-shadow: var(--shadow-card); }
+.tec-matrix { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 880px; background: var(--dogger-paper); border: 1px solid var(--line); }
+.tec-matrix thead th {
+    background: linear-gradient(120deg, #E5F4EB 0%, #D6ECDF 100%); color: #24563A;
+    font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: .03em;
+    padding: 7px 4px; border-right: 1px solid #C4DDCE; border-bottom: 1px solid #C4DDCE; white-space: nowrap; text-align: center;
+}
+.tec-matrix thead .mx-tec { text-align: left; padding-left: 12px; }
+.mx-letra { display: block; line-height: 1.1; }
+.mx-numero { font-family: var(--font-mono); font-weight: 700; font-size: 12px; }
+.tec-matrix thead th.is-fin .mx-numero { color: #1F7A45; }
+.tec-matrix tbody td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.tec-matrix tbody tr:last-child td { border-bottom: none; }
+.tec-matrix th:last-child, .tec-matrix tbody td:last-child { border-right: none; }
+.tec-matrix .mx-tec {
+    position: sticky; left: 0; z-index: 2; background: #fff;
+    text-align: left; font-weight: 700; font-size: 12.5px; padding: 7px 10px; min-width: 200px;
+    border-right: 1px solid var(--line); box-shadow: 1px 0 0 var(--line);
+}
+.tec-matrix .mx-row.is-offline .mx-tec { color: var(--ink-muted); }
+.mx-avatar {
+    width: 24px; height: 24px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+    margin-right: 8px; background: linear-gradient(135deg, var(--dogger-red), var(--dogger-orange)); color: #fff;
+    font-size: 10px; font-weight: 800; vertical-align: middle;
+}
+.mx-row.is-offline .mx-avatar { background: #CBD5E1; }
+.mx-offline-tag {
+    display: inline-block; margin-left: 7px; font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+    color: #64748B; background: #EEF2F6; border-radius: 999px; padding: 2px 7px; vertical-align: middle;
+}
+.mx-cel { min-width: 27px; height: 27px; padding: 0; cursor: pointer; transition: filter .12s ease; }
+.mx-cel:hover { filter: brightness(.9); box-shadow: inset 0 0 0 2px var(--dogger-red); }
+.mx-empty { text-align: center; color: var(--ink-muted); padding: 40px 10px; font-size: 13px; }
+
+.td-festivo    { background: #DBEAFE !important; }
+.td-fin        { background: #E2E8F0 !important; }
+.td-online     { background: #DCFCE7 !important; }
+.td-offline    { background: #F3F4F6 !important; }
+.td-ausencia   { background: #FEE2E2 !important; }
+.td-noausencia { background: #FEF9C3 !important; }
+.td-falta      { background: #FFEDD5 !important; }
+
+/* ---- Leyenda al pie ---- */
+.tec-matrix-legend {
+    display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 13px 16px;
+    background: var(--dogger-paper); border: 1px solid var(--line); border-radius: 14px; margin-top: 10px;
+    font-size: 12.5px; color: var(--ink-muted); box-shadow: var(--shadow-card);
+}
+.tec-matrix-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.tec-matrix-legend .m-dot { width: 15px; height: 15px; border-radius: 5px; flex: none; }
+.dm-festivo    { background: #DBEAFE; }
+.dm-fin        { background: #E2E8F0; }
+.dm-online     { background: #DCFCE7; }
+.dm-offline    { background: #F3F4F6; }
+.dm-ausencia   { background: #FEE2E2; }
+.dm-noausencia { background: #FEF9C3; }
+.dm-falta      { background: #FFEDD5; }
+
 /* ---- Listas de eventos (tareas / recordatorios / anuncios) ---- */
 .prog-event-list { display: flex; flex-direction: column; gap: 8px; }
 .prog-ev-item {
