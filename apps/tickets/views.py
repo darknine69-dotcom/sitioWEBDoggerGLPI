@@ -2427,9 +2427,16 @@ def panel_tecnico(request):
     grupos = []
     tecnicos = []
     abiertas_count = 0
-    mias = request.GET.get("mias", "") in ("1", "true", "on")
+    if request.user.rol == "admin":
+        mias = request.GET.get("mias", "") in ("1", "true", "on")
+    else:
+        mias = True  # el técnico solo ve sus solicitudes asignadas
     abiertos = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
     presets_mis = list(PRESETS_MIS)
+    if request.user.rol != "admin":
+        presets_mis = [
+            p for p in presets_mis if p[0] not in ("no-asignadas", "todas")
+        ]
     presets_mis_map = dict(presets_mis)
     sv = request.GET.get("sv", "abiertas").strip() or "abiertas"
     if sv not in presets_mis_map:

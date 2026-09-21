@@ -191,6 +191,12 @@
 
 .corp-mias { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-muted); cursor: pointer; white-space: nowrap; }
 .corp-mias input { accent-color: var(--dogger-red); width: 15px; height: 15px; }
+.corp-mias-badge {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; white-space: nowrap;
+    color: var(--ink); background: var(--dogger-cream); border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 12px; align-self: center;
+}
+.corp-mias-badge svg { width: 13px; height: 13px; color: var(--dogger-red); }
 
 .corp-tabla-card { margin-top: 12px; }
 .corp-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
@@ -784,16 +790,22 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
             <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
+        {% if request.user.rol == 'admin' %}
         <label class="corp-mias">
             <input type="checkbox" name="mias" value="1" {% if mias %}checked{% endif %} onchange="this.form.submit()">
             Solo las mías
         </label>
+        {% else %}
+        <span class="corp-mias-badge"><svg class="icon icon-sm"><use href="#i-user"/></svg> Solo tus solicitudes asignadas</span>
+        {% endif %}
         <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
         <div class="corp-view-toggle" role="group" aria-label="Vista de resultados">
             <button type="button" class="corp-view-btn is-active" data-view="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Lista</button>
             <button type="button" class="corp-view-btn" data-view="grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Cuadrícula</button>
         </div>
-        {% if q or filtro_estado or mias %}
+        {% if q or filtro_estado %}
+        <a href="?vista=mis&sv={{ sv }}&rango={{ rango }}" class="link-clear">✕ Limpiar</a>
+        {% elif mias and request.user.rol == 'admin' %}
         <a href="?vista=mis&sv={{ sv }}&rango={{ rango }}" class="link-clear">✕ Limpiar</a>
         {% endif %}
     </form>
