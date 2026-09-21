@@ -199,13 +199,13 @@
 .mx-cel:hover { filter: brightness(.9); box-shadow: inset 0 0 0 2px var(--dogger-red); }
 .mx-empty { text-align: center; color: var(--ink-muted); padding: 40px 10px; font-size: 13px; }
 
-.td-festivo    { background: #DBEAFE !important; }
-.td-fin        { background: #E2E8F0 !important; }
-.td-online     { background: #DCFCE7 !important; }
-.td-offline    { background: #F3F4F6 !important; }
-.td-ausencia   { background: #FEE2E2 !important; }
-.td-noausencia { background: #FEF9C3 !important; }
-.td-falta      { background: #FFEDD5 !important; }
+.td-festivo    { background: #5B9AF6 !important; } /* azul */
+.td-fin        { background: #AAB4BE !important; } /* gris */
+.td-online     { background: #4CC47B !important; } /* verde */
+.td-offline    { background: #F4A020 !important; } /* naranjado: técnico sin conexión */
+.td-ausencia   { background: #EF5350 !important; } /* rojo: abandono */
+.td-noausencia { background: #F7C30B !important; } /* amarillo */
+.td-falta      { background: #26262B !important; } /* negro */
 
 /* ---- Leyenda al pie ---- */
 .tec-matrix-legend {
@@ -216,16 +216,16 @@
 .tec-matrix-legend span { display: inline-flex; align-items: center; gap: 8px; }
 .tec-matrix-legend .m-dot {
     width: 20px; height: 20px; border-radius: 6px; flex: none;
-    border: 1.5px solid rgba(23,20,18,.22); filter: saturate(1.18) brightness(.99);
-    box-shadow: 0 1px 2px rgba(0,0,0,.1);
+    border: 1.5px solid rgba(23,20,18,.28);
+    box-shadow: 0 1px 2px rgba(0,0,0,.12);
 }
-.dm-festivo    { background: #DBEAFE; }
-.dm-fin        { background: #E2E8F0; }
-.dm-online     { background: #DCFCE7; }
-.dm-offline    { background: #F3F4F6; }
-.dm-ausencia   { background: #FEE2E2; }
-.dm-noausencia { background: #FEF9C3; }
-.dm-falta      { background: #FFEDD5; }
+.dm-festivo    { background: #5B9AF6; } /* azul */
+.dm-fin        { background: #AAB4BE; } /* gris */
+.dm-online     { background: #4CC47B; } /* verde */
+.dm-offline    { background: #F4A020; } /* naranjado: técnico sin conexión */
+.dm-ausencia   { background: #EF5350; } /* rojo: abandono */
+.dm-noausencia { background: #F7C30B; } /* amarillo */
+.dm-falta      { background: #26262B; } /* negro */
 
 /* ---- Listas de eventos (tareas / recordatorios / anuncios) ---- */
 .prog-event-list { display: flex; flex-direction: column; gap: 8px; }
