@@ -4616,6 +4616,9 @@ a.score-chip { color: inherit; }
 
 /* ---- Mensajes en pantallas de login/recuperación ---- */
 .login-flash { margin: 0 0 16px; display: flex; flex-direction: column; gap: 8px; }
+.login-hint, .login-hint-sm { text-align: center; font-size: 12.5px; color: var(--ink-muted); margin: -8px 0 18px; line-height: 1.5; }
+.login-hint-sm { margin: 6px 0 0; font-size: 11.5px; text-align: left; }
+.email-mascara { font-family: var(--font-mono); color: var(--ink); font-weight: 700; }
 .login-alert {
     padding: 11px 14px;
     border-radius: var(--radius-sm);

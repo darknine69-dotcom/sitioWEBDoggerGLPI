@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dogger · Restablecer contraseña</title>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260917">
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260921">
 </head>
 <body>
 <div class="login-screen">
@@ -16,7 +16,10 @@
         <img class="logo-badge" src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" />
         <p class="eyebrow">Dogger · Premium Quality</p>
         <h2>Restablecer contraseña</h2>
-        <p class="login-hint">Ingresa el código que recibiste por correo para continuar.</p>
+        <p class="login-hint">
+            Ingresa el código que enviamos a
+            <strong class="email-mascara">{{ correo_mascara|default:"" }}</strong>.
+        </p>
 
         {% if messages %}
         <div class="login-flash">

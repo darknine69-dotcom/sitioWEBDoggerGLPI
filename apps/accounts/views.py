@@ -212,9 +212,23 @@ def cambiar_password(request):
 
 
 def solicitar_reset(request):
-    """Paso 1 — el usuario escribe su correo y recibe un código de 6 dígitos."""
+    """Paso 1 — el usuario recibe un código de 6 dígitos.
+
+    El correo se precarga (bloqueado) cuando el usuario ya está identificado:
+    el que viene autenticado, el que escribió en el login (?email=...) o el que
+    quedó en sesión por un intento anterior. Así solo debe ingresar el código.
+    """
+    pre = (
+        (request.GET.get("email") or "").strip()
+        or (request.user.email if request.user.is_authenticated else "")
+        or request.session.get("reset_pwd_email", "")
+    )
+    correo_fijado = bool(pre)
+
     if request.method == "POST":
         form = SolicitarResetForm(request.POST)
+        if correo_fijado:
+            form.fields["email"].widget.attrs["readonly"] = True
         if form.is_valid():
             usuario = form.usuario
             if usuario is None:
@@ -242,16 +256,27 @@ def solicitar_reset(request):
                     "No pudimos enviar el correo con el código. Revisa la configuración SMTP o inténtalo más tarde.",
                 )
                 return render(
-                    request, "accounts/reset_solicitar.html", {"form": SolicitarResetForm()}
+                    request,
+                    "accounts/reset_solicitar.html",
+                    {"form": form, "correo_fijado": correo_fijado},
                 )
             messages.success(
                 request,
                 "Te enviamos un código de verificación a tu correo (revisa también el spam).",
             )
             return redirect(reverse("accounts:restablecer_password"))
-        return render(request, "accounts/reset_solicitar.html", {"form": form})
+        return render(
+            request, "accounts/reset_solicitar.html", {"form": form, "correo_fijado": correo_fijado}
+        )
 
-    return render(request, "accounts/reset_solicitar.html", {"form": SolicitarResetForm()})
+    form = SolicitarResetForm(initial={"email": pre})
+    if correo_fijado:
+        form.fields["email"].widget.attrs["readonly"] = True
+    return render(
+        request,
+        "accounts/reset_solicitar.html",
+        {"form": form, "correo_fijado": correo_fijado},
+    )
 
 
 def restablecer_password(request):
@@ -261,6 +286,8 @@ def restablecer_password(request):
     if not email:
         messages.info(request, "Primero solicita un código de verificación.")
         return redirect("accounts:reset_solicitar")
+
+    correo_mascara = _enmascarar_correo(email)
 
     if request.method == "POST":
         form = CodigoResetForm(request.POST)
@@ -277,11 +304,19 @@ def restablecer_password(request):
             ).first()
             if not token:
                 form.add_error("codigo", "El código es incorrecto.")
-                return render(request, "accounts/reset_confirmar.html", {"form": form})
+                return render(
+                    request,
+                    "accounts/reset_confirmar.html",
+                    {"form": form, "correo_mascara": correo_mascara},
+                )
             if token.expirado:
                 token.delete()
                 form.add_error("codigo", "El código ha expirado. Solicita uno nuevo.")
-                return render(request, "accounts/reset_confirmar.html", {"form": form})
+                return render(
+                    request,
+                    "accounts/reset_confirmar.html",
+                    {"form": form, "correo_mascara": correo_mascara},
+                )
 
             # El código es válido: hábilitalo y fuerza un cambio de contraseña
             token.usado = True
@@ -293,9 +328,27 @@ def restablecer_password(request):
             request.session["force_password_change"] = True
             return redirect(_landing_por_rol(usuario))
 
-        return render(request, "accounts/reset_confirmar.html", {"form": form})
+        return render(
+            request,
+            "accounts/reset_confirmar.html",
+            {"form": form, "correo_mascara": correo_mascara},
+        )
 
-    return render(request, "accounts/reset_confirmar.html", {"form": CodigoResetForm()})
+    return render(
+        request,
+        "accounts/reset_confirmar.html",
+        {"form": CodigoResetForm(), "correo_mascara": correo_mascara},
+    )
+
+
+def _enmascarar_correo(email):
+    """Muestra el correo casi completo (solo el dominio), suficiente para que
+    el usuario confirme a qué cuenta se envió el código sin que se edite."""
+    local, sep, dominio = email.partition("@")
+    if not sep:
+        return email
+    oculto = f"{local[:2]}…" if len(local) > 2 else local
+    return f"{oculto}@{dominio}"
 
 
 def _landing_por_rol(user):
