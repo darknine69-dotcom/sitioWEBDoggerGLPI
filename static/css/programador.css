@@ -223,8 +223,8 @@
 
 .prog-modal .modal-box {
     background: var(--dogger-paper);
-    border-radius: 18px;
-    max-width: 620px;
+    border-radius: 16px;
+    max-width: 460px;
     width: 100%;
     padding: 0;
     overflow: hidden;
@@ -241,7 +241,7 @@
 .prog-modal .modal-head {
     display: flex; align-items: center; gap: 13px;
     background: linear-gradient(120deg, #262019 0%, #1B1714 62%, #120F0D 100%);
-    padding: 18px 22px;
+    padding: 16px 20px;
     border-bottom: 3px solid var(--dogger-red);
     position: relative;
 }
@@ -275,7 +275,7 @@
 .prog-modal .modal-close:hover { background: var(--dogger-red); color: #fff; transform: rotate(90deg); }
 
 /* ---- Cuerpo ---- */
-.prog-modal .modal-body { padding: 22px 24px 26px; }
+.prog-modal .modal-body { padding: 18px 20px 22px; }
 
 /* ---- Campos de formulario ---- */
 .prog-modal .corp-field {
