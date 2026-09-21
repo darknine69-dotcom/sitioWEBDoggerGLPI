@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     # Apps del proyecto
     "apps.accounts",
     "apps.tickets",
+    "apps.programador",
 ]
 
 MIDDLEWARE = [

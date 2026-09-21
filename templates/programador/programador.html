@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dogger · Programador{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block nav_programador %}is-active{% endblock %}
+{% block header_eyebrow %}Dogger · Programación y disponibilidad{% endblock %}
+{% block header_title %}Programador{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/programador.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="page" id="programadorApp"
+      data-anio="{{ hoy|date:'Y' }}"
+      data-mes="{{ hoy|date:'n' }}"
+      data-tec-def="{{ tecnico_def }}"
+      data-tec-nombre="{{ tecnico_nombre }}"
+      data-url-datos="{% url 'programador:datos' %}"
+      data-url-agregar="{% url 'programador:agregar' %}"
+      data-url-eliminar="{% url 'programador:eliminar' %}"
+      data-url-completado="{% url 'programador:completado' %}"
+      data-url-disp="{% url 'programador:disponibilidad' %}"
+      data-url-festivo="{% url 'programador:festivo' %}"
+      data-url-detalle="{% url 'tickets:detalle' 0 %}">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% if request.user.rol == 'admin' %}{% url 'tickets:dashboard' %}{% else %}{% url 'tickets:panel_tecnico' %}{% endif %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
+        <div class="page-head-titles">
+            <h2>Programador</h2>
+            <p>Programa tareas, solicitudes, recordatorios y proyectos; gestiona la disponibilidad de los técnicos.</p>
+        </div>
+        <div hidden>{% csrf_token %}</div>
+    </div>
+
+    {# ---- Filtros superiores ---- #}
+    <div class="prog-filters">
+        <label class="prog-field prog-select">
+            <span class="prog-field-label"><svg class="icon"><use href="#i-map-pin"/></svg> Sitio</span>
+            <select id="filtroSitio" aria-label="Sitio">
+                <option value="">Todos los sitios</option>
+                {% for s in sitios %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="prog-field prog-select">
+            <span class="prog-field-label"><svg class="icon"><use href="#i-folder"/></svg> Grupo</span>
+            <select id="filtroGrupo" aria-label="Grupo">
+                <option value="">Todos los grupos</option>
+                {% for g in grupos %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="prog-field prog-select">
+            <span class="prog-field-label"><svg class="icon"><use href="#i-users"/></svg> Técnico</span>
+            <select id="filtroTecnico" aria-label="Técnico">
+                <option value="">Todos los técnicos</option>
+                {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
+            </select>
+        </label>
+    </div>
+
+    {# ---- Leyenda de colores ---- #}
+    <div class="prog-legend">
+        <span class="prog-legend-item"><span class="legend-dot lg-festivo"></span>Día festivo</span>
+        <span class="prog-legend-item"><span class="legend-dot lg-findesemana"></span>Fin de semana</span>
+        <span class="prog-legend-item"><span class="legend-dot lg-falta"></span>Falta de disponibilidad</span>
+        <span class="prog-legend-item"><span class="legend-dot lg-noausencia"></span>No ausencia</span>
+        <span class="prog-legend-item"><span class="legend-dot lg-ausencia"></span>Ausencia</span>
+    </div>
+    <p class="prog-legend-note">Los colores de disponibilidad (naranja, amarillo, rojo) se aplican al calendario al elegir un técnico específico.</p>
+
+    {# ---- Pestañas ---- #}
+    <div class="prog-tabs" role="tablist">
+        <button type="button" class="prog-tab is-active" data-tab="programador" role="tab"><svg class="icon"><use href="#i-layers"/></svg> Programador</button>
+        <button type="button" class="prog-tab" data-tab="disponibilidad" role="tab"><svg class="icon"><use href="#i-chart"/></svg> Disponibilidad</button>
+        <button type="button" class="prog-tab" data-tab="tareas" role="tab"><svg class="icon"><use href="#i-wrench"/></svg> Tareas</button>
+        <button type="button" class="prog-tab" data-tab="recordatorios" role="tab"><svg class="icon"><use href="#i-bell"/></svg> Recordatorios</button>
+        <button type="button" class="prog-tab" data-tab="anuncios" role="tab"><svg class="icon"><use href="#i-message"/></svg> Anuncios</button>
+    </div>
+
+    {# ---- Panel: Programador (calendario) ---- #}
+    <section class="prog-panel is-active" id="panel-programador" data-tabpanel="programador">
+        <div class="prog-cal-head">
+            <button type="button" class="prog-nav-btn" id="mesPrev" title="Mes anterior"><svg class="icon"><use href="#i-arrow-left"/></svg></button>
+            <h3 class="prog-cal-title" id="mesTitulo">—</h3>
+            <button type="button" class="btn btn-outline btn-sm" id="mesHoy">Hoy</button>
+            <button type="button" class="prog-nav-btn" id="mesNext" title="Mes siguiente"><svg class="icon"><use href="#i-arrow-right"/></svg></button>
+        </div>
+        <div class="prog-cal">
+            <div class="prog-cal-weekdays">
+                <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+            </div>
+            <div class="prog-cal-grid" id="calGrid" aria-live="polite"></div>
+        </div>
+    </section>
+
+    {# ---- Panel: gráfico de disponibilidad ---- #}
+    <section class="prog-panel" id="panel-disponibilidad" data-tabpanel="disponibilidad">
+        <div class="prog-chart-head">
+            <h3 class="prog-section-title">Disponibilidad de técnicos</h3>
+            <span class="tec-count" id="chartResumen"></span>
+        </div>
+        <div class="prog-chart-card" id="chartDisponibilidad"></div>
+        <p class="prog-chart-note">Vista del mes seleccionado: ausencia (rojo), falta de disponibilidad (naranja), no ausencia (amarillo), festivo (azul) y fin de semana (gris). El resto corresponde a días disponibles.</p>
+    </section>
+
+    {# ---- Paneles: Tareas / Recordatorios / Anuncios ---- #}
+    <section class="prog-panel" id="panel-tareas" data-tabpanel="tareas">
+        <div class="prog-list-head"><h3 class="prog-section-title">Tareas del mes</h3><span class="tec-count" id="tareasCount"></span></div>
+        <div class="prog-event-list" id="listaTareas"></div>
+    </section>
+    <section class="prog-panel" id="panel-recordatorios" data-tabpanel="recordatorios">
+        <div class="prog-list-head"><h3 class="prog-section-title">Recordatorios del mes</h3><span class="tec-count" id="recordatoriosCount"></span></div>
+        <div class="prog-event-list" id="listaRecordatorios"></div>
+    </section>
+    <section class="prog-panel" id="panel-anuncios" data-tabpanel="anuncios">
+        <div class="prog-list-head"><h3 class="prog-section-title">Anuncios del mes</h3><span class="tec-count" id="anunciosCount"></span></div>
+        <div class="prog-event-list" id="listaAnuncios"></div>
+    </section>
+
+    {# ---- Mini toasts (feedback) ---- #}
+    <div class="toast-stack" id="progToasts" aria-live="polite"></div>
+</main>
+
+{# ================= MODALES ================= #}
+
+{# Modal: nuevo evento #}
+<div class="modal-overlay" id="modalEvento" role="dialog" aria-modal="true" aria-labelledby="eventoTitulo">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="eventoTitulo"><svg class="icon"><use href="#i-plus"/></svg> Nuevo evento</h3>
+            <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="formEvento">
+                <input type="hidden" name="fecha" id="evFecha">
+                <div class="corp-form-grid">
+                    <label class="corp-field">Tipo
+                        <select name="tipo" id="evTipo">
+                            <option value="tarea">Tarea</option>
+                            <option value="solicitud">Solicitud</option>
+                            <option value="recordatorio">Recordatorio</option>
+                            <option value="proyecto">Proyecto</option>
+                            <option value="anuncio">Anuncio</option>
+                        </select>
+                    </label>
+                    <label class="corp-field">Fecha
+                        <input type="date" name="fecha_show" id="evFechaShow" required>
+                    </label>
+                </div>
+                <div class="corp-form-grid" id="evSolicitudWrap" hidden>
+                    <label class="corp-field corp-field-full">Vincular solicitud
+                        <select name="ticket_id" id="evTicket">
+                            <option value="">— Sin vincular —</option>
+                            {% for t in tickets_abiertos %}<option value="{{ t.pk }}">{{ t.codigo }} · {{ t.titulo|truncatechars:52 }}</option>{% endfor %}
+                        </select>
+                    </label>
+                </div>
+                <label class="corp-field corp-field-full">Título
+                    <input type="text" name="titulo" id="evTitulo" placeholder="Ej: Configuración de Caja 3" maxlength="150" required>
+                </label>
+                <div class="corp-form-grid">
+                    <label class="corp-field">Hora
+                        <input type="time" name="hora" id="evHora">
+                    </label>
+                    <label class="corp-field">Técnico
+                        <select name="tecnico_id" id="evTecnico">
+                            <option value="">— General —</option>
+                            {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
+                        </select>
+                    </label>
+                </div>
+                <div class="corp-form-grid">
+                    <label class="corp-field">Sitio
+                        <input type="text" name="sitio" id="evSitio" list="evSitios" placeholder="Base Site…">
+                    </label>
+                    <label class="corp-field">Grupo
+                        <select name="grupo" id="evGrupo">
+                            <option value="">— Grupo —</option>
+                            {% for g in grupos %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+                        </select>
+                    </label>
+                </div>
+                <datalist id="evSitios">
+                    {% for s in sitios %}<option value="{{ s }}">{% endfor %}
+                </datalist>
+                <label class="corp-field corp-field-full">Descripción
+                    <textarea name="descripcion" rows="3" placeholder="Detalle del evento…"></textarea>
+                </label>
+                <div class="corp-modal-actions prog-modal-actions">
+                    <button type="button" class="btn btn-outline btn-sm" id="evDispBtn"><svg class="icon"><use href="#i-clock"/></svg> Disponibilidad…</button>
+                    {% if request.user.rol == 'admin' %}<button type="button" class="btn btn-outline btn-sm" id="evFestivoBtn"><svg class="icon"><use href="#i-home"/></svg> Festivo…</button>{% endif %}
+                    <button type="button" class="btn btn-outline btn-sm modal-close-cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-accent btn-sm"><svg class="icon"><use href="#i-check"/></svg> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Modal: disponibilidad #}
+<div class="modal-overlay" id="modalDisp" role="dialog" aria-modal="true" aria-labelledby="dispTitulo2">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="dispTitulo2"><svg class="icon"><use href="#i-clock"/></svg> Disponibilidad</h3>
+            <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="formDisp">
+                <input type="hidden" name="fecha" id="dispFecha">
+                <label class="corp-field">Técnico
+                    <select name="tecnico_id" id="dispTecnico" required>
+                        <option value="">— Selecciona —</option>
+                        {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="corp-field">Fecha <strong id="dispFechaShow"></strong></label>
+                <div class="prog-disp-tipos">
+                    <button type="button" class="prog-disp-tipo lg-ausencia" data-tipo="ausencia"><span class="legend-dot lg-ausencia"></span> Ausencia</button>
+                    <button type="button" class="prog-disp-tipo lg-falta" data-tipo="falta"><span class="legend-dot lg-falta"></span> Falta de disponibilidad</button>
+                    <button type="button" class="prog-disp-tipo lg-noausencia" data-tipo="no_ausencia"><span class="legend-dot lg-noausencia"></span> No ausencia</button>
+                </div>
+                <input type="hidden" name="tipo" id="dispTipo" value="">
+                <label class="corp-field corp-field-full">Nota
+                    <input type="text" name="nota" id="dispNota" placeholder="Motivo (opcional)">
+                </label>
+                <div class="corp-modal-actions">
+                    <button type="button" class="btn btn-outline btn-sm" id="dispQuitar">Quitar marca</button>
+                    <button type="button" class="btn btn-outline btn-sm modal-close-cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-accent btn-sm" id="dispGuardarBtn" disabled><svg class="icon"><use href="#i-check"/></svg> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Modal: festivo #}
+{% if request.user.rol == 'admin' %}
+<div class="modal-overlay" id="modalFestivo" role="dialog" aria-modal="true" aria-labelledby="festivoTitulo">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="festivoTitulo"><svg class="icon"><use href="#i-check"/></svg> Día festivo</h3>
+            <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="formFestivo">
+                <input type="hidden" name="fecha" id="festivoFecha">
+                <label class="corp-field">Fecha <strong id="festivoFechaShow"></strong></label>
+                <label class="corp-field corp-field-full">Nombre
+                    <input type="text" name="nombre" id="festivoNombre" placeholder="Ej: Festivo de independencia" maxlength="100">
+                </label>
+                <div class="corp-modal-actions">
+                    <button type="button" class="btn btn-outline btn-sm" id="festivoQuitar">Quitar festivo</button>
+                    <button type="button" class="btn btn-outline btn-sm modal-close-cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-accent btn-sm"><svg class="icon"><use href="#i-check"/></svg> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/programador.js' %}"></script>
+{% endblock %}
