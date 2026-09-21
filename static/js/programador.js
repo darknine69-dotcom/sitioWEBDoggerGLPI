@@ -179,17 +179,30 @@
                 numEl.className = "prog-day-num";
                 numEl.textContent = num;
                 head.appendChild(numEl);
-                var add = document.createElement("button");
-                add.type = "button";
-                add.className = "prog-day-btn";
-                add.title = "Agregar evento";
-                add.innerHTML = '<svg class="icon"><use href="#i-plus"/></svg>';
-                add.addEventListener("click", function (e) {
-                    e.stopPropagation();
-                    abrirModalEvento(this.parentElement.parentElement.dataset.fecha);
-                });
-                head.appendChild(add);
                 cell.appendChild(head);
+
+                // Burbuja de accesos rápidos (falta de disponibilidad, recordatorio, tarea)
+                var quick = document.createElement("div");
+                quick.className = "prog-day-quick";
+                var qAcciones = [
+                    { accion: "falta", cls: "q-falta", icon: "i-clock", title: "Marcar falta de disponibilidad" },
+                    { accion: "recordatorio", cls: "q-recordatorio", icon: "i-bell", title: "Agregar recordatorio" },
+                    { accion: "tarea", cls: "q-tarea", icon: "i-wrench", title: "Agregar tarea" }
+                ];
+                qAcciones.forEach(function (q) {
+                    var btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = q.cls;
+                    btn.title = q.title;
+                    btn.innerHTML = '<svg class="icon"><use href="#' + q.icon + '"/></svg>';
+                    btn.addEventListener("click", function (e) {
+                        e.stopPropagation();
+                        if (q.accion === "falta") abrirModalDisp(fecha, "falta");
+                        else abrirModalEvento(fecha, q.accion);
+                    });
+                    quick.appendChild(btn);
+                });
+                cell.appendChild(quick);
 
                 var chips = document.createElement("div");
                 chips.className = "prog-day-chips";
@@ -356,7 +369,7 @@
         document.querySelectorAll(".modal-overlay.open").forEach(function (m) { m.classList.remove("open"); });
     }
 
-    function abrirModalEvento(fecha) {
+    function abrirModalEvento(fecha, tipo) {
         $("evFecha").value = fecha;
         $("evFechaShow").value = fecha;
         $("evTitulo").value = "";
@@ -366,10 +379,10 @@
         $("evTicket").value = "";
         $("evTecnico").value = $("filtroTecnico").value || "";
         $("formEvento").querySelector("textarea[name=descripcion]").value = "";
-        var tipo = $("evTipo").value;
-        $("evSolicitudWrap").hidden = tipo !== "solicitud";
-        if (tipo === "solicitud") {
-            $("evTitulo").value = "";
+        if (tipo) $("evTipo").value = tipo;
+        var tipoSel = $("evTipo").value;
+        $("evSolicitudWrap").hidden = tipoSel !== "solicitud";
+        if (tipoSel === "solicitud") {
             $("evTicket").focus();
         } else {
             $("evTitulo").focus();
@@ -390,12 +403,13 @@
             b.classList.toggle("is-selected", b.dataset.tipo === tipo);
         });
     }
-    function abrirModalDisp(fecha) {
+    function abrirModalDisp(fecha, tipo) {
         $("dispFecha").value = fecha;
         $("dispFechaShow").textContent = formatFecha(fecha);
         var tec = $("filtroTecnico").value;
         $("dispTecnico").value = tec || ($("dispTecnico").options.length > 1 ? $("dispTecnico").options[1].value : "");
         cargarDispLabel();
+        if (tipo) marcarDisp(tipo);
         abrirModal("modalDisp");
     }
     function abrirModalFestivo(fecha) {
