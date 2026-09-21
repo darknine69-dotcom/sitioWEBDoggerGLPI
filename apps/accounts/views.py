@@ -244,17 +244,7 @@ def solicitar_reset(request):
             try:
                 token = ResetPasswordToken.generar(usuario)
                 request.session["reset_pwd_email"] = usuario.email
-                send_mail(
-                    "Dogger HelpDesk — Código para restablecer contraseña",
-                    (
-                        f"Hola {usuario.nombre}:\n\n"
-                        f"Tu código para restablecer la contraseña es: {token.codigo}\n\n"
-                        "Este código es válido por 30 minutos.\n"
-                        "Si no solicitaste este cambio, ignora este mensaje."
-                    ),
-                    settings.DEFAULT_FROM_EMAIL,
-                    [usuario.email],
-                )
+                _enviar_codigo_reset(request, usuario, token.codigo)
             except Exception as exc:
                 logger.exception("Error enviando código de reset a %s", usuario.email)
                 messages.error(
@@ -369,6 +359,34 @@ def _enmascarar_correo(email):
         return email
     oculto = f"{local[:2]}…" if len(local) > 2 else local
     return f"{oculto}@{dominio}"
+
+
+def _enviar_codigo_reset(request, usuario, codigo):
+    """Envía el correo del código con la plantilla HTML corporativa de Dogger."""
+    from django.template.loader import render_to_string
+    from django.templatetags.static import static
+
+    texto_plano = (
+        f"Hola {usuario.nombre}:\n\n"
+        f"Tu código para restablecer la contraseña en Dogger HelpDesk es: {codigo}\n\n"
+        "Este código es válido por 30 minutos.\n"
+        "Si no solicitaste este cambio, ignora este mensaje."
+    )
+    html = render_to_string(
+        "accounts/email_codigo_reset.html",
+        {
+            "usuario": usuario,
+            "codigo": codigo,
+            "logo_url": request.build_absolute_uri(static("images/dogger-logo.png")),
+        },
+    )
+    send_mail(
+        "Dogger HelpDesk — Restablece tu contraseña",
+        texto_plano,
+        settings.DEFAULT_FROM_EMAIL,
+        [usuario.email],
+        html_message=html,
+    )
 
 
 def _landing_por_rol(user):
