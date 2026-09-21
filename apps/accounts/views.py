@@ -378,6 +378,7 @@ def _enviar_codigo_reset(request, usuario, codigo):
             "usuario": usuario,
             "codigo": codigo,
             "logo_url": request.build_absolute_uri(static("images/dogger-logo.png")),
+            "login_url": request.build_absolute_uri(reverse("accounts:login")),
         },
     )
     send_mail(
