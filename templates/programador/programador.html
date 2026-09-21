@@ -124,10 +124,14 @@
 {# ================= MODALES ================= #}
 
 {# Modal: nuevo evento #}
-<div class="modal-overlay" id="modalEvento" role="dialog" aria-modal="true" aria-labelledby="eventoTitulo">
+<div class="modal-overlay prog-modal" id="modalEvento" role="dialog" aria-modal="true" aria-labelledby="eventoTitulo">
     <div class="modal-box">
         <div class="modal-head">
-            <h3 id="eventoTitulo"><svg class="icon"><use href="#i-plus"/></svg> Nuevo evento</h3>
+            <div class="modal-head-ic"><svg class="icon"><use href="#i-plus"/></svg></div>
+            <div class="modal-head-txt">
+                <h3 id="eventoTitulo">Nuevo evento</h3>
+                <span class="modal-head-sub">Agenda el trabajo de tu equipo</span>
+            </div>
             <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
         </div>
         <div class="modal-body">
@@ -198,10 +202,14 @@
 </div>
 
 {# Modal: disponibilidad #}
-<div class="modal-overlay" id="modalDisp" role="dialog" aria-modal="true" aria-labelledby="dispTitulo2">
+<div class="modal-overlay prog-modal" id="modalDisp" role="dialog" aria-modal="true" aria-labelledby="dispTitulo2">
     <div class="modal-box">
         <div class="modal-head">
-            <h3 id="dispTitulo2"><svg class="icon"><use href="#i-clock"/></svg> Disponibilidad</h3>
+            <div class="modal-head-ic"><svg class="icon"><use href="#i-clock"/></svg></div>
+            <div class="modal-head-txt">
+                <h3 id="dispTitulo2">Disponibilidad</h3>
+                <span class="modal-head-sub">Ausencia, falta de disponibilidad o no ausencia</span>
+            </div>
             <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
         </div>
         <div class="modal-body">
@@ -213,11 +221,14 @@
                         {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
                     </select>
                 </label>
-                <label class="corp-field">Fecha <strong id="dispFechaShow"></strong></label>
+                <label class="corp-field">Fecha
+                    <span class="fecha-chip" id="dispFechaShow"></span>
+                </label>
+                <div class="corp-field" style="margin-top:16px">Disponibilidad <small>· selecciona el estado del día</small></div>
                 <div class="prog-disp-tipos">
-                    <button type="button" class="prog-disp-tipo lg-ausencia" data-tipo="ausencia"><span class="legend-dot lg-ausencia"></span> Ausencia</button>
-                    <button type="button" class="prog-disp-tipo lg-falta" data-tipo="falta"><span class="legend-dot lg-falta"></span> Falta de disponibilidad</button>
-                    <button type="button" class="prog-disp-tipo lg-noausencia" data-tipo="no_ausencia"><span class="legend-dot lg-noausencia"></span> No ausencia</button>
+                    <button type="button" class="prog-disp-tipo" data-tipo="ausencia"><span class="legend-dot lg-ausencia"></span> Ausencia <small>El técnico no estará disponible</small></button>
+                    <button type="button" class="prog-disp-tipo" data-tipo="falta"><span class="legend-dot lg-falta"></span> Falta de disponibilidad <small>Solo cubre parte del día</small></button>
+                    <button type="button" class="prog-disp-tipo" data-tipo="no_ausencia"><span class="legend-dot lg-noausencia"></span> No ausencia <small>Confirma que estará disponible</small></button>
                 </div>
                 <input type="hidden" name="tipo" id="dispTipo" value="">
                 <label class="corp-field corp-field-full">Nota
@@ -235,16 +246,22 @@
 
 {# Modal: festivo #}
 {% if request.user.rol == 'admin' %}
-<div class="modal-overlay" id="modalFestivo" role="dialog" aria-modal="true" aria-labelledby="festivoTitulo">
+<div class="modal-overlay prog-modal" id="modalFestivo" role="dialog" aria-modal="true" aria-labelledby="festivoTitulo">
     <div class="modal-box">
         <div class="modal-head">
-            <h3 id="festivoTitulo"><svg class="icon"><use href="#i-check"/></svg> Día festivo</h3>
+            <div class="modal-head-ic"><svg class="icon"><use href="#i-home"/></svg></div>
+            <div class="modal-head-txt">
+                <h3 id="festivoTitulo">Día festivo</h3>
+                <span class="modal-head-sub">Marca un día azul en el calendario</span>
+            </div>
             <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
         </div>
         <div class="modal-body">
             <form id="formFestivo">
                 <input type="hidden" name="fecha" id="festivoFecha">
-                <label class="corp-field">Fecha <strong id="festivoFechaShow"></strong></label>
+                <label class="corp-field">Fecha
+                    <span class="fecha-chip" id="festivoFechaShow"></span>
+                </label>
                 <label class="corp-field corp-field-full">Nombre
                     <input type="text" name="nombre" id="festivoNombre" placeholder="Ej: Festivo de independencia" maxlength="100">
                 </label>
