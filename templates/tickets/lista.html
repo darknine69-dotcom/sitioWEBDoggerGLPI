@@ -10,6 +10,22 @@
 <style>
 .lista-page .brand-titles { display: none; }
 .lista-page .cell-actions { white-space: nowrap; }
+.lista-page .mias-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    white-space: nowrap;
+    cursor: pointer;
+}
+.lista-page .mias-check input {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--dogger-red);
+    cursor: pointer;
+}
 .lista-page .actions-trigger {
     display: inline-flex;
     align-items: center;
@@ -73,6 +89,16 @@
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
             <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código HD o título…" />
         </label>
+        <select name="sv" data-autosubmit aria-label="Vista">
+            {% for val, label in presets_mis %}
+            <option value="{{ val }}" {% if sv == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="rango" data-autosubmit aria-label="Rango de fechas">
+            {% for val, label in rangos_mis %}
+            <option value="{{ val }}" {% if rango == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
         <select name="estado" data-autosubmit>
             <option value="">Todos los estados</option>
             {% for val, label in estados %}
@@ -99,8 +125,12 @@
             {% endfor %}
         </select>
         {% endif %}
+        <label class="mias-check">
+            <input type="checkbox" name="mias" value="1" {% if mias %}checked{% endif %} onchange="this.form.submit()">
+            Solo las mías
+        </label>
         <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
-        {% if q or filtro_estado or filtro_prioridad or filtro_categoria or filtro_tecnico %}
+        {% if q or filtro_estado or filtro_prioridad or filtro_categoria or filtro_tecnico or sv != "todas" or rango or mias %}
         <a href="{% url 'tickets:lista' %}" class="link-clear">✕ Limpiar</a>
         {% endif %}
         {% if es_admin %}

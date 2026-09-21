@@ -18,6 +18,27 @@ from django.utils import timezone
 from django.utils.dateformat import DateFormat
 from django.views.decorators.http import require_POST
 
+PRESETS_MIS = [
+    ("abiertas", "Mis solicitudes abiertas"),
+    ("todas", "Todas las solicitudes"),
+    ("completadas", "Mis solicitudes completadas"),
+    ("espera", "Mis solicitudes en espera"),
+    ("no-asignadas", "Solicitudes no asignadas"),
+    ("vencen-hoy", "Solicitudes que vencen hoy"),
+    ("vencidas", "Solicitudes vencidas"),
+    ("creadas-hoy", "Solicitudes creadas hoy"),
+]
+RANGOS_MIS = [
+    ("7", "Últimos 7 días"),
+    ("15", "Últimos 15 días"),
+    ("30", "Los 30 últimos días"),
+    ("60", "Últimos 60 días"),
+    ("90", "Últimos 90 días"),
+    ("180", "Últimos 180 días"),
+    ("365", "Últimos 365 días"),
+    ("", "Todo el tiempo"),
+]
+
 from .decorators import admin_required, staff_required, user_required
 from .exports import generar_excel_tickets
 from .forms import (
@@ -1739,6 +1760,43 @@ def lista_tickets(request):
     tecnico = request.GET.get("tecnico", "").strip() if es_admin else ""
     q = request.GET.get("q", "").strip()
     solicitante_email = request.GET.get("solicitante_email", "").strip()
+    presets_mis = list(PRESETS_MIS)
+    presets_mis_map = dict(presets_mis)
+    sv = request.GET.get("sv", "todas").strip()
+    if sv not in presets_mis_map:
+        sv = "todas"
+    rangos_mis = list(RANGOS_MIS)
+    rango = request.GET.get("rango", "").strip()
+    if rango not in dict(rangos_mis):
+        rango = ""
+    mias = request.GET.get("mias", "") in ("1", "true", "on")
+
+    abiertos = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
+    if sv == "completadas":
+        qs = qs.filter(estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO])
+    elif sv == "espera":
+        qs = qs.filter(estado=Ticket.Estado.ABIERTO)
+    elif sv == "no-asignadas":
+        qs = qs.filter(estado__in=abiertos, tecnico_asignado__isnull=True)
+    elif sv == "creadas-hoy":
+        inicio_hoy = timezone.localtime(timezone.now()).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        qs = qs.filter(fecha_creacion__gte=inicio_hoy)
+    elif sv in ("vencen-hoy", "vencidas"):
+        qs = qs.filter(estado__in=abiertos)
+    elif sv == "abiertas":
+        qs = qs.filter(estado__in=abiertos)
+
+    if rango:
+        try:
+            qs = qs.filter(
+                fecha_creacion__gte=timezone.now() - timedelta(days=int(rango))
+            )
+        except (TypeError, ValueError):
+            pass
+    if mias:
+        qs = qs.filter(tecnico_asignado=request.user)
 
     if estado:
         qs = qs.filter(estado=estado)
@@ -1763,7 +1821,7 @@ def lista_tickets(request):
         qs = qs.filter(condicion)
 
     pp_lista = _resolve_per_page(request, "per_page", 5)
-    if q:
+    if q or sv in ("vencen-hoy", "vencidas"):
         pp_lista = 0
     page_obj = _paginar(
         qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
@@ -1773,8 +1831,29 @@ def lista_tickets(request):
         per_page_default=pp_lista,
     )
 
-    filtros_activos = any([estado, prioridad, categoria, tecnico, q, solicitante_email])
+    filtros_activos = any([estado, prioridad, categoria, tecnico, q, solicitante_email, sv != "todas", rango, mias])
     tickets = _adjuntar_solicitantes(page_obj.object_list)
+    if sv == "vencen-hoy":
+        ahora = timezone.now()
+        inicio_hoy = timezone.localtime(ahora).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        fin_hoy = inicio_hoy + timedelta(days=1)
+        tickets = [
+            t
+            for t in tickets
+            if t.estado in abiertos
+            and t.fecha_limite_ans
+            and inicio_hoy <= t.fecha_limite_ans < fin_hoy
+        ]
+    elif sv == "vencidas":
+        tickets = [
+            t
+            for t in tickets
+            if t.estado in abiertos
+            and t.fecha_limite_ans
+            and t.fecha_limite_ans < timezone.now()
+        ]
     return render(
         request,
         "tickets/lista.html",
@@ -1794,7 +1873,14 @@ def lista_tickets(request):
             "tecnicos": User.objects.filter(
                 activo=True, rol__in=["admin", "tecnico"]
             ).order_by("nombre"),
-            "total_resultados": page_obj.paginator.count,
+            "presets_mis": presets_mis,
+            "sv": sv,
+            "rangos_mis": rangos_mis,
+            "rango": rango,
+            "mias": mias,
+            "total_resultados": (
+                len(tickets) if sv in ("vencen-hoy", "vencidas") else page_obj.paginator.count
+            ),
             "es_admin": es_admin,
             "per_page": pp_lista,
         },
@@ -2334,30 +2420,12 @@ def panel_tecnico(request):
     abiertas_count = 0
     mias = request.GET.get("mias", "") in ("1", "true", "on")
     abiertos = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
-    presets_mis = [
-        ("abiertas", "Mis solicitudes abiertas"),
-        ("todas", "Todas las solicitudes"),
-        ("completadas", "Mis solicitudes completadas"),
-        ("espera", "Mis solicitudes en espera"),
-        ("no-asignadas", "Solicitudes no asignadas"),
-        ("vencen-hoy", "Solicitudes que vencen hoy"),
-        ("vencidas", "Solicitudes vencidas"),
-        ("creadas-hoy", "Solicitudes creadas hoy"),
-    ]
+    presets_mis = list(PRESETS_MIS)
     presets_mis_map = dict(presets_mis)
     sv = request.GET.get("sv", "abiertas").strip() or "abiertas"
     if sv not in presets_mis_map:
         sv = "abiertas"
-    rangos_mis = [
-        ("7", "Últimos 7 días"),
-        ("15", "Últimos 15 días"),
-        ("30", "Los 30 últimos días"),
-        ("60", "Últimos 60 días"),
-        ("90", "Últimos 90 días"),
-        ("180", "Últimos 180 días"),
-        ("365", "Últimos 365 días"),
-        ("", "Todo el tiempo"),
-    ]
+    rangos_mis = list(RANGOS_MIS)
     rango = request.GET.get("rango", "30")
     if rango not in dict(rangos_mis):
         rango = "30"
