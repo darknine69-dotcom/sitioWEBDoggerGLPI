@@ -1754,6 +1754,14 @@ def lista_tickets(request):
     if not es_admin:
         qs = qs.filter(tecnico_asignado=request.user)
 
+    scope_qs = Ticket.objects.all() if es_admin else qs
+    stats = scope_qs.aggregate(
+        abiertas=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
+        progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
+        resueltas=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
+        cerradas=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
+    )
+
     estado = request.GET.get("estado", "").strip()
     prioridad = request.GET.get("prioridad", "").strip()
     categoria = request.GET.get("categoria", "").strip()
@@ -1878,6 +1886,7 @@ def lista_tickets(request):
             "rangos_mis": rangos_mis,
             "rango": rango,
             "mias": mias,
+            "stats": stats,
             "total_resultados": (
                 len(tickets) if sv in ("vencen-hoy", "vencidas") else page_obj.paginator.count
             ),

@@ -9,29 +9,86 @@
 {% block extra_css %}
 <style>
 .lista-page .brand-titles { display: none; }
-.lista-page .cell-actions { white-space: nowrap; }
-.lista-page .mias-check {
-    display: inline-flex;
+
+/* ---- Conmutador Lista / Cuadrícula ---- */
+.corp-view-toggle { display: inline-flex; padding: 3px; gap: 2px; background: #F4EFE6; border: 1px solid var(--line); border-radius: 10px; }
+.corp-view-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 0; background: transparent; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--ink-muted); cursor: pointer; transition: all .15s ease; }
+.corp-view-btn svg { width: 14px; height: 14px; }
+.corp-view-btn:hover { color: var(--ink); }
+.corp-view-btn.is-active { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(23,20,18,.12); }
+
+/* ---- Indicadores (estadísticas) ---- */
+.tickets-stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 2px; }
+.stat-chip {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 9px 15px; border: 1px solid var(--line); border-radius: 13px;
+    background: #fff; text-decoration: none; color: var(--ink);
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.stat-chip:hover { border-color: var(--dogger-red); box-shadow: 0 2px 8px rgba(214,43,31,.08); transform: translateY(-1px); }
+.stat-chip .stat-n { font-size: 18px; font-weight: 800; line-height: 1; }
+.stat-chip .stat-l { font-size: 11.5px; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
+.stat-chip.is-abiertas .stat-n { color: var(--dogger-red); }
+.stat-chip.is-progreso .stat-n { color: #C2410C; }
+.stat-chip.is-resueltas .stat-n { color: #16A34A; }
+.stat-chip.is-cerradas .stat-n { color: #6B6259; }
+.stat-chip .stat-ico { width: 22px; height: 22px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.stat-chip .stat-ico .icon { width: 13px; height: 13px; }
+.stat-chip.is-abiertas .stat-ico { background: rgba(214,43,31,.12); color: #C6281E; }
+.stat-chip.is-progreso .stat-ico { background: rgba(249,115,22,.15); color: #C2410C; }
+.stat-chip.is-resueltas .stat-ico { background: rgba(22,163,74,.14); color: #15803D; }
+.stat-chip.is-cerradas .stat-ico { background: #F1EDE6; color: #6B6259; }
+
+/* ---- Tarjetas ---- */
+.ty-results { margin-top: 16px; }
+.ty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(295px, 1fr)); gap: 14px; }
+.ty-card {
+    display: flex; flex-direction: column; gap: 10px;
+    background: #fff; border: 1px solid var(--line); border-radius: 16px;
+    padding: 14px 15px; box-shadow: 0 1px 2px rgba(23,20,18,.04);
+    transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+}
+.ty-card:hover { border-color: #EAD9C3; box-shadow: var(--shadow-pop); transform: translateY(-1px); }
+.ty-card-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ty-code { font-family: var(--font-mono); font-weight: 800; font-size: 13px; color: var(--dogger-red); text-decoration: none; }
+.ty-code:hover { text-decoration: underline; }
+.ty-card-head-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.ty-prio { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.ty-prio-urgente { background: rgba(214,43,31,.12); color: #C6281E; }
+.ty-prio-alta { background: rgba(249,115,22,.15); color: #C2410C; }
+.ty-prio-media { background: rgba(242,169,0,.18); color: #925A06; }
+.ty-prio-baja { background: #F1EDE6; color: #6B6259; }
+.ty-body { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.ty-title { font-size: 14px; font-weight: 700; color: var(--ink); text-decoration: none; line-height: 1.35; }
+.ty-title:hover { color: var(--dogger-red); }
+.ty-meta { display: flex; flex-direction: column; gap: 7px; }
+.ty-meta-line { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-muted); min-width: 0; }
+.ty-meta-line .icon { width: 14px; height: 14px; flex: none; }
+.ty-meta-line .cell-user { padding: 0; background: transparent; border: 0; }
+.ty-card-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--line); flex-wrap: wrap; }
+.ty-card-foot .ans-time { font-size: 11.5px; }
+.ty-date { font-size: 11px; color: var(--ink-muted); }
+.ty-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.ty-empty { grid-column: 1 / -1; }
+
+/* ---- Vista "Lista" compacta (no es una tabla) ---- */
+.ty-results[data-view="lista"] .ty-grid { grid-template-columns: 1fr; gap: 10px; }
+.ty-results[data-view="lista"] .ty-card {
+    display: grid;
+    grid-template-columns: auto minmax(0,1fr) auto;
+    grid-template-areas: "head body foot";
     align-items: center;
-    gap: 6px;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--ink-muted);
-    white-space: nowrap;
-    cursor: pointer;
+    gap: 14px 20px;
+    padding: 11px 15px;
 }
-.lista-page .mias-check input {
-    width: 15px;
-    height: 15px;
-    accent-color: var(--dogger-red);
-    cursor: pointer;
-}
-.lista-page .actions-trigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-weight: 600;
-}
+.ty-results[data-view="lista"] .ty-card-head { grid-area: head; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 118px; }
+.ty-results[data-view="lista"] .ty-card-head .ty-card-head-right { margin-left: 0; }
+.ty-results[data-view="lista"] .ty-body { grid-area: body; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
+.ty-results[data-view="lista"] .ty-meta { flex-direction: row; flex-wrap: wrap; gap: 6px 16px; }
+.ty-results[data-view="lista"] .ty-card-foot { grid-area: foot; border-top: 0; padding-top: 0; margin-top: 0; justify-content: flex-end; }
+
+/* ---- Menú de acciones flotante ---- */
+.actions-trigger { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
 #actions-flotante {
     position: fixed;
     z-index: 9999;
@@ -63,12 +120,7 @@
     white-space: nowrap;
 }
 #actions-flotante .accion-btn:hover { background: #fff3e3; }
-#actions-flotante .accion-btn .accion-icon {
-    width: 14px;
-    height: 14px;
-    flex: none;
-    color: var(--ink-muted);
-}
+#actions-flotante .accion-btn .accion-icon { width: 14px; height: 14px; flex: none; color: var(--ink-muted); }
 #actions-flotante .accion-btn.is-danger { color: var(--dogger-red); }
 #actions-flotante .accion-btn.is-danger .accion-icon { color: var(--dogger-red); }
 </style>
@@ -84,7 +136,26 @@
         </div>
     </div>
 
-    <form method="get" class="table-toolbar" id="filtrosTickets">
+    <div class="tickets-stats">
+        <a class="stat-chip is-abiertas" href="?sv=abiertas" title="Mis solicitudes abiertas">
+            <span class="stat-ico"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <span class="stat-n">{{ stats.abiertas }}</span><span class="stat-l">Abiertas</span>
+        </a>
+        <a class="stat-chip is-progreso" href="?sv=todas" title="Solicitudes en progreso">
+            <span class="stat-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
+            <span class="stat-n">{{ stats.progreso }}</span><span class="stat-l">En progreso</span>
+        </a>
+        <a class="stat-chip is-resueltas" href="?sv=completadas" title="Solicitudes completadas">
+            <span class="stat-ico"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            <span class="stat-n">{{ stats.resueltas }}</span><span class="stat-l">Resueltas</span>
+        </a>
+        <a class="stat-chip is-cerradas" href="?sv=completadas" title="Solicitudes cerradas">
+            <span class="stat-ico"><svg class="icon"><use href="#i-lock"/></svg></span>
+            <span class="stat-n">{{ stats.cerradas }}</span><span class="stat-l">Cerradas</span>
+        </a>
+    </div>
+
+    <form method="get" class="table-toolbar filterbar" id="filtrosTickets">
         <label class="search-field">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
             <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código HD o título…" />
@@ -133,115 +204,113 @@
         {% if q or filtro_estado or filtro_prioridad or filtro_categoria or filtro_tecnico or sv != "todas" or rango or mias %}
         <a href="{% url 'tickets:lista' %}" class="link-clear">✕ Limpiar</a>
         {% endif %}
+        <div class="corp-view-toggle" role="group" aria-label="Vista de resultados">
+            <button type="button" class="corp-view-btn is-active" data-view="grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Tarjetas</button>
+            <button type="button" class="corp-view-btn" data-view="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Lista</button>
+        </div>
         {% if es_admin %}
         <a class="btn btn-outline-light btn-sm btn-danger-outline" href="{% url 'tickets:exportar_admin' %}?{{ querystring }}"><svg class="icon"><use href="#i-download"/></svg> Excel</a>
         {% endif %}
         <span class="toolbar-count">{{ total_resultados }} ticket{{ total_resultados|pluralize }} · página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
     </form>
 
-    <div class="table-card">
-        <div class="table-scroll">
-            <table class="data-table cards-mobile" id="tablaTickets">
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Solicitante</th>
-                        <th>Prioridad</th>
-                        <th>Vencimiento</th>
-                        <th>Categoría</th>
-                        {% if es_admin %}<th>Técnico</th>{% endif %}
-                        <th>Estado</th>
-                        <th>Fecha</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in tickets %}
-                    <tr class="tr-{{ t.prioridad }}">
-                        <td data-label="Código"><a class="table-code" href="{% url 'tickets:detalle' t.pk %}" title="Ver ticket">{{ t.codigo }}</a>{% if t.adjuntos_count %}<span class="row-icon" title="Adjuntos"><svg class="icon icon-sm"><use href="#i-paperclip"/></svg>{{ t.adjuntos_count }}</span>{% endif %}{% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}</td>
-                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
-                        <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
-                        <td data-label="Vencimiento">
-                            {% with info=t.info_ans %}
-                            {% if info.0 %}
-                            <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
-                                {% if info.0 == 'vencido' %}
-                                <svg class="icon icon-sm"><use href="#i-alert"/></svg>
-                                {% elif info.0 == 'resuelto' %}
-                                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-                                {% else %}
-                                <svg class="icon icon-sm"><use href="#i-clock"/></svg>
-                                {% endif %}
-                                {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
-                            </span>
-                            {% endif %}
-                            {% endwith %}
-                        </td>
-                        <td data-label="Categoría">{{ t.categoria.nombre|default:"—" }}</td>
-                        {% if es_admin %}<td data-label="Técnico">{{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</td>{% endif %}
-                        <td data-label="Estado">
-                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
-                        </td>
-                        <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                        <td data-label="Acciones" class="cell-actions">
-                            <a class="btn btn-sm btn-outline actions-icon" title="Ver ticket" href="{% url 'tickets:detalle' t.pk %}"><svg class="icon icon-sm"><use href="#i-eye"/></svg></a>
-                            {% if es_admin %}
-                            <button type="button" class="btn btn-sm btn-outline actions-trigger"
-                                    title="Acciones" aria-label="Acciones"
-                                    aria-haspopup="true" aria-expanded="false"
-                                    data-estado-url="{% url 'tickets:cambiar_estado' t.pk %}"
-                                    data-eliminar-url="{% url 'tickets:eliminar' t.pk %}"
-                                    data-codigo="{{ t.codigo }}"
-                                    data-estado-actual="{{ t.estado }}">
-                                <svg class="icon icon-sm"><use href="#i-ellipsis"/></svg>
-                            </button>
-                            {% else %}
-                            <a class="btn btn-sm btn-accent actions-icon" title="Abrir chat" href="{% url 'tickets:panel_tecnico' %}?ticket={{ t.pk }}"><svg class="icon icon-sm"><use href="#i-message"/></svg></a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr class="table-empty"><td colspan="{% if es_admin %}9{% else %}8{% endif %}">No hay tickets que coincidan con los filtros.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {% if page_obj.paginator.count > 0 %}
-        <div class="pagination-bar">
-            <div class="per-page-bar">
-                <label for="perPageLista">Filas:</label>
-                <select id="perPageLista" data-per-page-param="per_page">
-                    <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
-                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
-                    <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
-                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
-                    <option value="0" {% if per_page == 0 %}selected{% endif %}>Todas</option>
-                </select>
-            </div>
-            <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} resultados</span>
-            <div class="pagination-links">
-                {% if page_obj.has_previous %}
-                <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
-                {% else %}
-                <span class="page-pill disabled">‹ Anterior</span>
-                {% endif %}
-                {% for num in page_obj.paginator.page_range %}
-                    {% if num == page_obj.number %}
-                    <span class="page-pill current">{{ num }}</span>
-                    {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
-                    <a class="page-pill" href="?{{ querystring }}&page={{ num }}">{{ num }}</a>
+    <div class="ty-results" id="tyResults" data-view="grid">
+        <div class="ty-grid">
+            {% for t in tickets %}
+            <article class="ty-card">
+                <div class="ty-card-head">
+                    <a class="ty-code" href="{% url 'tickets:detalle' t.pk %}" title="Ver ticket">{{ t.codigo }}</a>
+                    <div class="ty-card-head-right">
+                        {% if t.adjuntos_count %}<span class="row-icon" title="Adjuntos"><svg class="icon icon-sm"><use href="#i-paperclip"/></svg>{{ t.adjuntos_count }}</span>{% endif %}
+                        {% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}
+                        <span class="ty-prio ty-prio-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span>
+                    </div>
+                </div>
+                <div class="ty-body">
+                    <a class="ty-title" href="{% url 'tickets:detalle' t.pk %}">{{ t.titulo }}</a>
+                    <div class="ty-meta">
+                        {% include "tickets/_solicitante_cell.html" with t=t %}
+                        <span class="ty-meta-line">
+                            <svg class="icon"><use href="#i-folder"/></svg>
+                            {{ t.categoria.grupo|default:"—" }} › {{ t.categoria.nombre|default:"Sin categoría" }}
+                        </span>
+                        <span class="ty-meta-line">
+                            <svg class="icon"><use href="#i-wrench"/></svg>
+                            {{ t.tecnico_asignado.nombre|default:"Sin asignar" }}
+                        </span>
+                    </div>
+                </div>
+                <div class="ty-card-foot">
+                    {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+                    {% with info=t.info_ans %}
+                    {% if info.0 %}
+                    <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
+                        {% if info.0 == 'vencido' %}<svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                        {% elif info.0 == 'resuelto' %}<svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                        {% else %}<svg class="icon icon-sm"><use href="#i-clock"/></svg>{% endif %}
+                        {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
+                    </span>
                     {% endif %}
-                {% endfor %}
-                {% if page_obj.has_next %}
-                <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Siguiente ›</a>
-                {% else %}
-                <span class="page-pill disabled">Siguiente ›</span>
-                {% endif %}
-            </div>
+                    {% endwith %}
+                    <span class="ty-date">{{ t.fecha_creacion|date:"d/m/Y" }}</span>
+                    <div class="ty-actions">
+                        <a class="btn btn-sm btn-outline actions-icon" title="Ver ticket" href="{% url 'tickets:detalle' t.pk %}"><svg class="icon icon-sm"><use href="#i-eye"/></svg></a>
+                        {% if es_admin %}
+                        <button type="button" class="btn btn-sm btn-outline actions-trigger"
+                                title="Acciones" aria-label="Acciones"
+                                aria-haspopup="true" aria-expanded="false"
+                                data-estado-url="{% url 'tickets:cambiar_estado' t.pk %}"
+                                data-eliminar-url="{% url 'tickets:eliminar' t.pk %}"
+                                data-codigo="{{ t.codigo }}"
+                                data-estado-actual="{{ t.estado }}">
+                            <svg class="icon icon-sm"><use href="#i-ellipsis"/></svg>
+                        </button>
+                        {% else %}
+                        <a class="btn btn-sm btn-accent actions-icon" title="Abrir chat" href="{% url 'tickets:panel_tecnico' %}?ticket={{ t.pk }}"><svg class="icon icon-sm"><use href="#i-message"/></svg></a>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+            {% empty %}
+            <p class="table-empty ty-empty">No hay tickets que coincidan con los filtros.</p>
+            {% endfor %}
         </div>
-        {% endif %}
     </div>
+
+    {% if page_obj.paginator.count > 0 %}
+    <div class="pagination-bar">
+        <div class="per-page-bar">
+            <label for="perPageLista">Filas:</label>
+            <select id="perPageLista" data-per-page-param="per_page">
+                <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                <option value="0" {% if per_page == 0 %}selected{% endif %}>Todas</option>
+            </select>
+        </div>
+        <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} resultados</span>
+        <div class="pagination-links">
+            {% if page_obj.has_previous %}
+            <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
+            {% else %}
+            <span class="page-pill disabled">‹ Anterior</span>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <span class="page-pill current">{{ num }}</span>
+                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                <a class="page-pill" href="?{{ querystring }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Siguiente ›</a>
+            {% else %}
+            <span class="page-pill disabled">Siguiente ›</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </main>
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 <script>
@@ -347,6 +416,17 @@
             triggerEl = null;
         }
     }
+
+    /* ---- Conmutador Tarjetas / Lista ---- */
+    var tyResults = document.getElementById("tyResults");
+    var tyBtns = document.querySelectorAll(".corp-view-btn[data-view]");
+    tyBtns.forEach(function (b) {
+        b.addEventListener("click", function () {
+            var v = b.getAttribute("data-view");
+            tyBtns.forEach(function (x) { x.classList.toggle("is-active", x === b); });
+            if (tyResults) tyResults.setAttribute("data-view", v);
+        });
+    });
 
     document.addEventListener('click', function (e) {
         var trigger = e.target.closest('.actions-trigger');
