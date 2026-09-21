@@ -64,9 +64,7 @@
         return {
             anio: state.anio,
             mes: state.mes,
-            tecnico_id: $("filtroTecnico").value,
-            sitio: $("filtroSitio").value,
-            grupo: $("filtroGrupo").value
+            tecnico_id: $("filtroTecnico").value
         };
     }
     function query(params) {
@@ -446,9 +444,7 @@
             });
         });
 
-        ["filtroSitio", "filtroGrupo", "filtroTecnico"].forEach(function (id) {
-            $(id).addEventListener("change", load);
-        });
+        $("filtroTecnico").addEventListener("change", load);
 
         $("mesPrev").addEventListener("click", function () { movMes(-1); });
         $("mesNext").addEventListener("click", function () { movMes(1); });

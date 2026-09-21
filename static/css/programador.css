@@ -2,14 +2,13 @@
    DOGGER HELPDesk — PROGRAMADOR (calendario, disponibilidad y agenda)
    ===================================================================== */
 
-/* ---- Filtros superiores ---- */
+/* ---- Filtro superior por técnico ---- */
 .prog-filters {
-    display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
-    margin: 20px 0 4px;
+    display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;
+    margin: 20px 0 4px; padding: 14px 16px; background: var(--dogger-paper);
+    border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow-card);
 }
-.prog-field { display: flex; flex-direction: column; gap: 5px; min-width: 200px; flex: 1 1 220px; max-width: 320px; }
+.prog-field { display: flex; flex-direction: column; gap: 5px; min-width: 220px; flex: 0 1 340px; }
 .prog-field-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
 .prog-field-label .icon { width: 14px; height: 14px; }
 .prog-select select {
@@ -18,20 +17,17 @@
     box-shadow: var(--shadow-card);
 }
 .prog-select select:focus { outline: none; border-color: var(--dogger-red); }
+.prog-filters-hint { margin: 0 0 8px; font-size: 12px; color: var(--ink-muted); max-width: 360px; line-height: 1.45; }
 
-/* ---- Leyenda ---- */
-.prog-legend {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px;
-    padding: 12px 4px 2px; font-size: 12.5px; color: var(--ink-muted);
-}
-.prog-legend-item { display: inline-flex; align-items: center; gap: 7px; }
-.prog-legend-note { font-size: 12px; color: var(--ink-muted); margin: 2px 4px 0; }
+/* ---- Leyenda (en el panel de disponibilidad) ---- */
 .legend-dot { width: 13px; height: 13px; border-radius: 4px; display: inline-block; flex: none; }
-.lg-festivo      { background: #DBEAFE; border: 1px solid #3B82F6; }
-.lg-findesemana  { background: #E2E8F0; border: 1px solid #94A3B8; }
-.lg-falta        { background: #FFEDD5; border: 1px solid #F97316; }
-.lg-noausencia   { background: #FEF9C3; border: 1px solid #EAB308; }
-.lg-ausencia     { background: #FEE2E2; border: 1px solid #EF4444; }
+.lg-festivo      { background: #5B9AF6; border: 1px solid #2563EB; }
+.lg-findesemana  { background: #AAB4BE; border: 1px solid #64748B; }
+.lg-falta        { background: #26262B; border: 1px solid #111014; }
+.lg-noausencia   { background: #F7C30B; border: 1px solid #CA8A04; }
+.lg-ausencia     { background: #EF5350; border: 1px solid #B0231E; }
+.lg-online       { background: #4CC47B; border: 1px solid #15803D; }
+.lg-offline      { background: #F4A020; border: 1px solid #B45309; }
 .lg-disp-ok      { background: #DCFCE7; border: 1px solid #22C55E; }
 
 /* ---- Pestañas ---- */
@@ -94,11 +90,13 @@
 .prog-day.out { background: #FAF7F2; color: #B7AEA1; }
 .prog-day.out.empty { cursor: default; box-shadow: none; }
 
-.prog-day.is-festivo     { background: #DBEAFE; }
-.prog-day.is-findesemana { background: #EEF2F6; }
-.prog-day.is-ausencia    { background: #FEE2E2; }
-.prog-day.is-falta       { background: #FFEDD5; }
-.prog-day.is-noausencia  { background: #FEF9C3; }
+.prog-day.is-festivo     { background: #5B9AF6; }
+.prog-day.is-findesemana { background: #AAB4BE; }
+.prog-day.is-ausencia    { background: #EF5350; }
+.prog-day.is-falta       { background: #26262B; color: #fff; }
+.prog-day.is-noausencia  { background: #F7C30B; }
+.prog-day.is-falta .prog-day-num,
+.prog-day.is-falta .prog-day-note { color: #fff; }
 
 .prog-day.is-today { box-shadow: inset 0 0 0 2px var(--dogger-red); }
 .prog-day-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }

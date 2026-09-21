@@ -36,37 +36,14 @@
     {# ---- Filtros superiores ---- #}
     <div class="prog-filters">
         <label class="prog-field prog-select">
-            <span class="prog-field-label"><svg class="icon"><use href="#i-map-pin"/></svg> Sitio</span>
-            <select id="filtroSitio" aria-label="Sitio">
-                <option value="">Todos los sitios</option>
-                {% for s in sitios %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
-            </select>
-        </label>
-        <label class="prog-field prog-select">
-            <span class="prog-field-label"><svg class="icon"><use href="#i-folder"/></svg> Grupo</span>
-            <select id="filtroGrupo" aria-label="Grupo">
-                <option value="">Todos los grupos</option>
-                {% for g in grupos %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
-            </select>
-        </label>
-        <label class="prog-field prog-select">
             <span class="prog-field-label"><svg class="icon"><use href="#i-users"/></svg> Técnico</span>
             <select id="filtroTecnico" aria-label="Técnico">
                 <option value="">Todos los técnicos</option>
                 {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
             </select>
         </label>
+        <p class="prog-filters-hint">El filtro de técnico aplica al calendario, a la matriz de disponibilidad y a los nuevos eventos.</p>
     </div>
-
-    {# ---- Leyenda de colores ---- #}
-    <div class="prog-legend">
-        <span class="prog-legend-item"><span class="legend-dot lg-festivo"></span>Día festivo</span>
-        <span class="prog-legend-item"><span class="legend-dot lg-findesemana"></span>Fin de semana</span>
-        <span class="prog-legend-item"><span class="legend-dot lg-falta"></span>Falta de disponibilidad</span>
-        <span class="prog-legend-item"><span class="legend-dot lg-noausencia"></span>No ausencia</span>
-        <span class="prog-legend-item"><span class="legend-dot lg-ausencia"></span>Ausencia</span>
-    </div>
-    <p class="prog-legend-note">Los colores de disponibilidad (naranja, amarillo, rojo) se aplican al calendario al elegir un técnico específico.</p>
 
     {# ---- Pestañas ---- #}
     <div class="prog-tabs" role="tablist">
