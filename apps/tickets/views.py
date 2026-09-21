@@ -287,17 +287,20 @@ def _agrupar_vencidos(tickets, dimension):
     return [v for v in agg.values()]
 
 
-def _build_tecnico_dashboard():
+def _build_tecnico_dashboard(tecnico_id=None):
     """
-    Datos JSON para el rediseño del Panel Técnico (dashboard global).
+    Datos JSON para el rediseño del Panel Técnico.
 
     Incluye: tabla dinámica pivote, gráficos modales (modo/prioridad, con
     cambio de tipo), serie de solicitudes por rango, SLA por dimensión y
     comparativos de los últimos 20 días.
+
+    Si se indica un técnico, el dashboard se limita a SUS solicitudes.
     """
-    tickets = list(
-        Ticket.objects.select_related("categoria", "tecnico_asignado").order_by("fecha_creacion")
-    )
+    qs = Ticket.objects.select_related("categoria", "tecnico_asignado")
+    if tecnico_id:
+        qs = qs.filter(tecnico_asignado_id=tecnico_id)
+    tickets = list(qs.order_by("fecha_creacion"))
     abiertos = [
         t
         for t in tickets
@@ -2544,7 +2547,11 @@ def panel_tecnico(request):
             User.objects.filter(activo=True, rol__in=["admin", "tecnico"]).order_by("nombre")
         )
 
-    dash_json = _build_tecnico_dashboard() if vista == "panel" else "{}"
+    dash_json = (
+        _build_tecnico_dashboard(None)
+        if request.user.rol == "admin"
+        else _build_tecnico_dashboard(tecnico.id)
+    ) if vista == "panel" else "{}"
 
     tickets = _adjuntar_solicitantes(page_obj.object_list)
     solicitudes = _adjuntar_solicitantes(solicitudes_page.object_list)
