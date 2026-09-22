@@ -647,6 +647,12 @@ a { color: inherit; text-decoration: none; }
     color: #667085;
 }
 
+.req-star {
+    color: var(--dogger-red);
+    font-weight: 800;
+    margin-left: 3px;
+}
+
 .user-ticket-form .cat-note,
 .user-ticket-form .cat-auto-hint,
 .user-ticket-form .cat-suggest {
@@ -2987,6 +2993,40 @@ select:focus-visible, textarea:focus-visible {
 }
 .confirm-actions .btn { min-width: 110px; }
 .pwd-ok-icon { background: #E8F4EC; color: #2F7D4F; border-color: #BFE0C9; box-shadow: 0 4px 14px rgba(47, 125, 79, .18); }
+
+/* ---- Ventana emergente: ticket creado ---- */
+.ticket-ok-overlay .confirm-box { width: 460px; text-align: left; }
+.ticket-ok-icon { background: #E8F4EC; color: #2F7D4F; border-color: #BFE0C9; box-shadow: 0 4px 14px rgba(47, 125, 79, .18); }
+.ticket-ok-box h3 { text-align: center; }
+.ticket-ok-box .confirm-msg { text-align: center; }
+.ticket-ok-list {
+    margin: 4px 0 14px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    background: #FAF7F1;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+.ticket-ok-list > div { display: flex; align-items: center; gap: 10px; }
+.ticket-ok-codigo dd { color: var(--dogger-red); font-weight: 800; letter-spacing: .03em; }
+.ticket-ok-list dt {
+    flex-shrink: 0;
+    min-width: 128px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ink-muted);
+}
+.ticket-ok-list dd { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+.ticket-ok-tec { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.ticket-ok-tec .user-avatar { width: 24px; height: 24px; font-size: 11px; }
+.ticket-ok-pendiente { color: #B7791F; font-weight: 700; }
+.ticket-ok-note { margin: 0 0 16px; font-size: 12px; line-height: 1.5; color: #667085; text-align: center; }
+.ticket-ok-overlay .confirm-actions .btn { min-width: 130px; }
 
 /* ---- Botón volver + encabezado de página ---- */
 .page-head {

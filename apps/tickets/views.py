@@ -82,21 +82,68 @@ COLORES_PRIORIDAD = {
 }
 
 
+def _cargas_activas(usuarios_ids):
+    """Carga de trabajo por técnico: tickets abiertos o en progreso asignados."""
+    filas = (
+        Ticket.objects.filter(
+            tecnico_asignado_id__in=list(usuarios_ids),
+            estado__in=(Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO),
+        )
+        .values("tecnico_asignado_id")
+        .annotate(carga=Count("id"))
+    )
+    return {r["tecnico_asignado_id"]: r["carga"] for r in filas}
+
+
 def _auto_asignar_tecnico(ticket) -> bool:
     """
-    Regla de asignación automática: si el ticket no tiene técnico y su
-    categoría tiene un técnico por defecto configurado, se lo asigna.
+    Asignación automática por categoría, prioridad y disponibilidad:
+      - Candidatos: técnicos/administradores activos del sistema.
+      - Urgente/Alta: se elige al técnico con MENOR carga activa (disponibilidad);
+        en caso de empate, gana el técnico por defecto de la categoría.
+      - Media/Baja: se respeta primero el técnico por defecto de la categoría
+        y, si no existe, se elige al de menor carga activa.
     """
     if ticket.tecnico_asignado_id or not ticket.categoria_id:
         return False
-    categoria = Categoria.objects.filter(
-        pk=ticket.categoria_id, tecnico_default__isnull=False
-    ).select_related("tecnico_default").first()
+    categoria = Categoria.objects.filter(pk=ticket.categoria_id).select_related("tecnico_default").first()
     if not categoria:
         return False
-    ticket.tecnico_asignado = categoria.tecnico_default
+    Usuario = get_user_model()
+    candidatos = list(
+        Usuario.objects.filter(
+            activo=True,
+            is_active=True,
+            rol__in=(Usuario.Rol.TECNICO, Usuario.Rol.ADMIN),
+        ).order_by("pk")
+    )
+    if not candidatos:
+        return False
+    cargas = _cargas_activas([c.pk for c in candidatos])
+    default = categoria.tecnico_default
+
+    def clave(c):
+        carga = cargas.get(c.pk, 0)
+        es_default = bool(default and c.pk == default.pk)
+        if ticket.prioridad in (Ticket.Prioridad.URGENTE, Ticket.Prioridad.ALTA):
+            # Prioridad alta/urgente: importa la disponibilidad.
+            return (carga, not es_default, c.pk)
+        # Media/Baja: primero el técnico por defecto, luego el de menor carga.
+        return (not es_default, carga, c.pk)
+
+    elegido = min(candidatos, key=clave)
+    if not elegido:
+        return False
+    ticket.tecnico_asignado = elegido
     ticket.asignacion_automatica = True
     return True
+
+
+@require_POST
+def descartar_ticket_aviso(request):
+    """El usuario cerró la ventana de 'Ticket creado': limpiar el aviso de sesión."""
+    request.session.pop("ticket_creado_info", None)
+    return JsonResponse({"ok": True})
 
 
 def _sincronizar_ticket_nuevo(request, ticket, files):
@@ -1401,7 +1448,7 @@ def crear_ticket(request):
             messages.info(
                 request,
                 f"Asignado automáticamente a {ticket.tecnico_asignado.nombre} "
-                f"según la categoría del problema.",
+                f"según categoría, prioridad y disponibilidad.",
             )
         files = form.cleaned_data.get("adjuntos") or []
         for f in files:
@@ -1415,10 +1462,23 @@ def crear_ticket(request):
             )
         _sincronizar_ticket_nuevo(request, ticket, files)
         notificar_ticket_creado(ticket)
+        ticket_url = (
+            reverse("tickets:mi_ticket", kwargs={"pk": ticket.pk})
+            if es_usuario_final
+            else reverse("tickets:detalle", kwargs={"pk": ticket.pk})
+        )
+        request.session["ticket_creado_info"] = {
+            "codigo": ticket.codigo,
+            "titulo": ticket.titulo,
+            "categoria": str(ticket.categoria) if ticket.categoria_id else "Sin categoría",
+            "prioridad": ticket.prioridad,
+            "prioridad_label": ticket.get_prioridad_display(),
+            "tecnico_nombre": ticket.tecnico_asignado.nombre if ticket.tecnico_asignado_id else "",
+            "tecnico_iniciales": ticket.tecnico_asignado.initials if ticket.tecnico_asignado_id else "",
+            "url": ticket_url,
+        }
         messages.success(request, f"Ticket creado: {ticket.codigo}")
-        if es_usuario_final:
-            return redirect("tickets:mi_ticket", pk=ticket.pk)
-        return redirect("tickets:detalle", pk=ticket.pk)
+        return redirect(ticket_url)
 
     return render(
         request,

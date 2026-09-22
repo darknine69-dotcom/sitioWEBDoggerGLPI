@@ -1,5 +1,5 @@
 <div class="form-group {% if field.name in span2_fields|default:'' %}span-2{% endif %}">
-    {{ field.label_tag }}
+    <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="req-star" aria-hidden="true">*</span>{% endif %}</label>
     {{ field }}
     {% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
     {% if field.errors %}<div class="field-error">{{ field.errors|join:", " }}</div>{% endif %}

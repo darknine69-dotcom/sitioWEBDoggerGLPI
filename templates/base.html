@@ -383,6 +383,52 @@
     </script>
     {% endif %}
 
+    <!-- Ventana emergente: ticket creado con éxito -->
+    {% if request.session.ticket_creado_info %}
+    {% with ti=request.session.ticket_creado_info %}
+    <div class="confirm-overlay ticket-ok-overlay" id="ticket-ok-overlay" role="dialog" aria-modal="true" aria-labelledby="ticketOkTitle">
+        <div class="confirm-box ticket-ok-box">
+            <span class="confirm-icon ticket-ok-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            <h3 id="ticketOkTitle">¡Solicitud enviada!</h3>
+            <p class="confirm-msg">Tu ticket fue creado con éxito. Este es el resumen:</p>
+            <dl class="ticket-ok-list">
+                <div class="ticket-ok-codigo"><dt>Código</dt><dd>#{{ ti.codigo }}</dd></div>
+                <div><dt>Título</dt><dd>{{ ti.titulo }}</dd></div>
+                <div><dt>Categoría</dt><dd>{{ ti.categoria }}</dd></div>
+                <div><dt>Prioridad</dt><dd><span class="meta-pill meta-prio meta-prio-{{ ti.prioridad }}"><svg class="icon icon-xs"><use href="#i-alert"/></svg> {{ ti.prioridad_label }}</span></dd></div>
+                <div><dt>Técnico asignado</dt><dd>
+                    {% if ti.tecnico_nombre %}<span class="ticket-ok-tec"><span class="user-avatar">{{ ti.tecnico_iniciales }}</span>{{ ti.tecnico_nombre }}</span>
+                    {% else %}<span class="ticket-ok-pendiente">En asignación</span>{% endif %}
+                </dd></div>
+            </dl>
+            <p class="ticket-ok-note">El técnico fue asignado automáticamente según la categoría, la prioridad y su disponibilidad.</p>
+            <div class="confirm-actions">
+                <a href="{{ ti.url }}" class="btn btn-primary">Ver mi ticket</a>
+                <button type="button" class="btn btn-cancel" id="ticket-ok-btn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function () {
+        var ov = document.getElementById('ticket-ok-overlay');
+        if (!ov) return;
+        ov.classList.add('open');
+        function cerrar() {
+            ov.classList.remove('open');
+            try {
+                fetch("{% url 'tickets:descartar_ticket_aviso' %}", {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '' },
+                    credentials: 'same-origin'
+                }).catch(function () {});
+            } catch (e) {}
+        }
+        document.getElementById('ticket-ok-btn').addEventListener('click', cerrar);
+    })();
+    </script>
+    {% endwith %}
+    {% endif %}
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

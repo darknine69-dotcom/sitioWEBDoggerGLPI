@@ -93,12 +93,19 @@ class TicketForm(forms.ModelForm):
         ]
         widgets = {
             "titulo": forms.TextInput(
-                attrs={"placeholder": "Ej: POS-FE no imprime / SIESA Access lento", "maxlength": 150}
+                attrs={
+                    "placeholder": "Ej: POS-FE no imprime / SIESA Access lento",
+                    "maxlength": 150,
+                    "required": "required",
+                    "title": "Es obligatorio escribir un título.",
+                }
             ),
             "descripcion": forms.Textarea(
                 attrs={
                     "rows": 4,
                     "placeholder": "Describe el problema. Incluye punto de venta, PC (ej. PC-P1 PC5) o modulo SIESA si aplica...",
+                    "required": "required",
+                    "title": "Es obligatorio describir el problema.",
                 }
             ),
             "solicitante_nombre": forms.TextInput(attrs={"placeholder": "Tu nombre completo"}),

@@ -17,7 +17,7 @@
 
     <div class="panel ticket-public-panel">
         {% include "tickets/_ans_note.html" %}
-        <form method="post" enctype="multipart/form-data" novalidate class="user-ticket-form form-grid">
+        <form method="post" enctype="multipart/form-data" class="user-ticket-form form-grid">
             {% csrf_token %}
             <h3 class="form-section-title"><span class="form-section-num">1</span> Información del problema</h3>
             {% for field in form %}
