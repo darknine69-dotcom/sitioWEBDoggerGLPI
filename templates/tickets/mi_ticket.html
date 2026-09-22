@@ -27,7 +27,7 @@
                             <h2>{{ ticket.titulo }}</h2>
                         </div>
                     </div>
-                    {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}
+                    {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display id="corp-estado-pill" %}
                 </div>
 
                 <div class="corp-detail-badges ticket-meta-row">
@@ -42,7 +42,7 @@
                         {% if ticket.tecnico_asignado.avatar %}
                         <span class="meta-pill-avatar"><img src="{{ ticket.tecnico_asignado.avatar.url }}" alt=""></span>
                         {% endif %}
-                        {{ ticket.tecnico_asignado.nombre }}{% if ticket.asignacion_automatica %} (auto){% endif %}
+                        {{ ticket.tecnico_asignado.nombre }}
                     </span>
                     {% endif %}
                 </div>
@@ -134,12 +134,8 @@
                 </header>
                 <dl class="dash-props">
                     <div class="dash-prop">
-                        <dt><svg class="icon icon-xs"><use href="#i-ticket"/></svg> ID de la solicitud</dt>
-                        <dd>#{{ ticket.codigo }}{% if ticket.glpi_id %}<span class="dash-tag meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}</dd>
-                    </div>
-                    <div class="dash-prop">
-                        <dt><svg class="icon icon-xs"><use href="#i-alert"/></svg> Estado</dt>
-                        <dd><span class="status-pill status-{{ ticket.estado }}" id="dash-estado-prop">{{ ticket.get_estado_display }}</span></dd>
+                        <dt><svg class="icon icon-xs"><use href="#i-user"/></svg> Solicitante</dt>
+                        <dd>{{ ticket.solicitante_nombre }}{% if ticket.solicitante_email %}<span class="dash-muted"> · {{ ticket.solicitante_email }}</span>{% endif %}</dd>
                     </div>
                     <div class="dash-prop">
                         <dt><svg class="icon icon-xs"><use href="#i-clock"/></svg> Ciclo de vida</dt>
@@ -151,49 +147,19 @@
                         </dd>
                     </div>
                     <div class="dash-prop">
-                        <dt><svg class="icon icon-xs"><use href="#i-alert"/></svg> Prioridad</dt>
-                        <dd><span class="prio-value prio-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span></dd>
+                        <dt><svg class="icon icon-xs"><use href="#i-refresh"/></svg> Transición</dt>
+                        <dd>{% if ticket.asignacion_automatica %}Automática{% else %}Manual{% endif %}</dd>
                     </div>
                     <div class="dash-prop">
-                        <dt><svg class="icon icon-xs"><use href="#i-wrench"/></svg> Técnico asignado</dt>
-                        <dd>
-                            {% if ticket.tecnico_asignado %}
-                            <span class="dash-tec">
-                                {% if ticket.tecnico_asignado.avatar %}
-                                <span class="dash-tec-avatar"><img src="{{ ticket.tecnico_asignado.avatar.url }}" alt=""></span>
-                                {% else %}
-                                <span class="dash-tec-avatar bg">{{ ticket.tecnico_asignado.initials }}</span>
-                                {% endif %}
-                                {{ ticket.tecnico_asignado.nombre }}
-                            </span>
-                            {% else %}
-                            <span class="dash-muted">En asignación</span>
-                            {% endif %}
-                        </dd>
+                        <dt><svg class="icon icon-xs"><use href="#i-edit"/></svg> Modo de creación</dt>
+                        <dd>{{ ticket.get_modo_display|default:"Web" }}</dd>
                     </div>
+                    {% if ticket.solicitante_punto %}
                     <div class="dash-prop">
-                        <dt><svg class="icon icon-xs"><use href="#i-folder"/></svg> Grupo y sitio</dt>
-                        <dd>
-                            <span>{{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
-                            {% if ticket.solicitante_punto %}<span class="dash-muted"> · {{ ticket.solicitante_punto }}</span>{% endif %}
-                        </dd>
+                        <dt><svg class="icon icon-xs"><use href="#i-map-pin"/></svg> Sitio / Unidad</dt>
+                        <dd>{{ ticket.solicitante_punto }}</dd>
                     </div>
-                    <div class="dash-prop">
-                        <dt><svg class="icon icon-xs"><use href="#i-check-circle"/></svg> Tareas</dt>
-                        <dd><span class="dash-num">0/3</span> <span class="dash-muted">pendientes</span></dd>
-                    </div>
-                    <div class="dash-prop">
-                        <dt><svg class="icon icon-xs"><use href="#i-check"/></svg> Listas de comprobación</dt>
-                        <dd><span class="dash-num">0/2</span></dd>
-                    </div>
-                    <div class="dash-prop">
-                        <dt><svg class="icon icon-xs"><use href="#i-bell"/></svg> Recordatorios</dt>
-                        <dd><span class="dash-num">0</span></dd>
-                    </div>
-                    <div class="dash-prop">
-                        <dt><svg class="icon icon-xs"><use href="#i-check-circle"/></svg> Estado de aprobación</dt>
-                        <dd><span class="dash-muted">No requerida</span></dd>
-                    </div>
+                    {% endif %}
                     <div class="dash-prop">
                         <dt><svg class="icon icon-xs"><use href="#i-paperclip"/></svg> Archivos adjuntos</dt>
                         <dd>
@@ -260,7 +226,7 @@
     var LABELS = { "abierto": "Abierto", "en-progreso": "En curso", "resuelto": "Resuelto", "cerrado": "Cerrado" };
     var fill = document.getElementById("dash-life-fill");
     var step = document.getElementById("dash-life-step");
-    var pill = document.getElementById("dash-estado-prop");
+    var pill = document.getElementById("corp-estado-pill");
     if (!fill) return;
     function stepOf(estado) {
         if (estado === "resuelto" || estado === "cerrado") return 3;
