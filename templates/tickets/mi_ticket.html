@@ -2,8 +2,8 @@
 
 {% block title %}{{ ticket.codigo }} · Mi ticket{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
-{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
-{% block header_title %}Mis tickets{% endblock %}
+{% block header_eyebrow %}Dogger · Mesa de Ayuda{% endblock %}
+{% block header_title %}Ticket {{ ticket.codigo }}{% endblock %}
 
 {% block extra_css %}
 {% load static %}
@@ -11,109 +11,44 @@
 {% endblock %}
 
 {% block content %}
-<main class="page page-corporate ticket-detail-page">
+<main class="page page-corporate ticket-dashboard">
     <a class="ticket-back" href="{% url 'tickets:mi_panel' %}">
         <svg class="icon"><use href="#i-arrow-left"/></svg> Volver a Mis tickets
     </a>
 
-    <section class="corp-card ticket-summary">
-        <div class="corp-detail-head">
-            <div class="corp-title-wrap">
-                <span class="corp-title-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
-                <div>
-                    <p class="corp-kicker"><span class="corp-dot"></span> Ticket {{ ticket.codigo }}</p>
-                    <h2>{{ ticket.titulo }}</h2>
-                </div>
+    <section class="dash-hero">
+        <div class="dash-hero-top">
+            <span class="dash-ticket-id">#{{ ticket.codigo }}</span>
+            <h1>{{ ticket.titulo }}</h1>
+        </div>
+        <div class="dash-stat-row">
+            <div class="dash-stat">
+                <span class="dash-stat-label">Categoría</span>
+                <span class="dash-stat-value">{{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
             </div>
-            {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}
-        </div>
-
-        <div class="corp-detail-badges ticket-meta-row">
-            <span class="meta-pill meta-prio meta-prio-{{ ticket.prioridad }}">
-                <svg class="icon icon-sm"><use href="#i-alert"/></svg> {{ ticket.get_prioridad_display }}</span>
-            <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-folder"/></svg> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
-            <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-clock"/></svg> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
-            <span class="meta-pill">{% include "tickets/_ans_time.html" with t=ticket %}</span>
-            {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
-            {% if ticket.tecnico_asignado %}
-            <span class="meta-pill">
-                {% if ticket.tecnico_asignado.avatar %}
-                <span class="meta-pill-avatar"><img src="{{ ticket.tecnico_asignado.avatar.url }}" alt=""></span>
-                {% endif %}
-                {{ ticket.tecnico_asignado.nombre }}{% if ticket.asignacion_automatica %} (auto){% endif %}
-            </span>
-            {% endif %}
-        </div>
-
-        <div class="corp-detail-toolbar">
-            {% if ticket.estado == 'abierto' %}
-            <a class="btn btn-outline btn-sm" href="{% url 'tickets:mi_editar' ticket.pk %}"><svg class="icon"><use href="#i-edit"/></svg> Editar ticket</a>
-            {% endif %}
-            {% if not ticket.glpi_id or ticket.adjuntos_pendientes_glpi %}
-            <form method="post" action="{% url 'tickets:mi_reenviar_glpi' ticket.pk %}" class="inline-form">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <svg class="icon"><use href="#i-refresh"/></svg> {% if ticket.glpi_id %}Actualizar en GLPI{% else %}Reenviar a GLPI{% endif %}
-                </button>
-            </form>
-            {% if not ticket.glpi_id %}
-            <span class="corp-hint">Este ticket aún no llegó a GLPI (¿GLPI apagado cuando se creó?).</span>
-            {% endif %}
-            {% endif %}
+            <div class="dash-stat">
+                <span class="dash-stat-label">Prioridad</span>
+                <span class="dash-stat-value prio-value prio-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span>
+            </div>
+            <div class="dash-stat">
+                <span class="dash-stat-label">Estado</span>
+                <span class="dash-status status-pill status-{{ ticket.estado }}" id="dash-estado">{{ ticket.get_estado_display }}</span>
+            </div>
+            <div class="dash-stat">
+                <span class="dash-stat-label">Transición</span>
+                <span class="dash-stat-value">{% if ticket.asignacion_automatica %}Automática{% else %}Manual{% endif %}</span>
+            </div>
         </div>
     </section>
 
-    <div class="corp-detail-layout">
-        <div class="corp-detail-main">
-            <section class="corp-subsection">
-                <div class="corp-subsection-head">
-                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
-                    <h3>Descripción</h3>
-                </div>
-                <p class="ticket-description">{{ ticket.descripcion }}</p>
-            </section>
-
-            <section class="corp-subsection">
-                <div class="corp-subsection-head">
-                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-clock"/></svg></span>
-                    <h3>Avance · {{ ticket.codigo }}</h3>
-                </div>
-                <div class="corp-timeline" id="corp-timeline" data-estado="{{ ticket.estado }}" data-pk="{{ ticket.pk }}">
-                    <div class="corp-tl-step is-done" data-step="1">
-                        <span class="corp-tl-marker"><svg class="icon"><use href="#i-check"/></svg></span>
-                        <div class="corp-tl-body">
-                            <strong>Solicitud creada</strong>
-                            <small>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</small>
-                        </div>
-                    </div>
-
-                    <div class="corp-tl-step{% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'abierto' %} is-active{% endif %}" data-step="2">
-                        <span class="corp-tl-marker">
-                            {% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
-                        </span>
-                        <div class="corp-tl-body">
-                            <strong>En revisión por un técnico</strong>
-                            <small>{% if ticket.tecnico_asignado %}{{ ticket.tecnico_asignado.nombre }}{% elif ticket.estado == 'abierto' %}Esperando asignación…{% else %}Revisado{% endif %}</small>
-                        </div>
-                    </div>
-
-                    <div class="corp-tl-step{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'en-progreso' %} is-active{% endif %}" data-step="3">
-                        <span class="corp-tl-marker">
-                            {% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
-                        </span>
-                        <div class="corp-tl-body">
-                            <strong>Entregar solución</strong>
-                            <small>{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}{% if ticket.fecha_cierre %}{{ ticket.fecha_cierre|date:"d/m/Y H:i" }}{% else %}Tarea completada{% endif %}{% else %}Pendiente{% endif %}</small>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="corp-subsection">
-                <div class="corp-subsection-head">
-                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
-                    <h3>Actividad</h3>
-                </div>
+    <div class="dash-layout">
+        <div class="dash-main">
+            <section class="dash-panel dash-conversations">
+                <header class="dash-panel-head">
+                    <span class="dash-panel-icon"><svg class="icon"><use href="#i-message"/></svg></span>
+                    <h2>Conversaciones</h2>
+                    <span class="dash-badge">{% if timeline %}{{ timeline|length }}{% endif %}</span>
+                </header>
                 {% include "tickets/_chat_thread.html" %}
                 <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer chat-composer-compact">
                     {% csrf_token %}
@@ -124,75 +59,96 @@
             </section>
         </div>
 
-            <aside class="corp-detail-aside">
-                <section class="corp-subsection tech-card">
-                    <div class="corp-subsection-head">
-                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-wrench"/></svg></span>
-                        <h3>Técnico asignado</h3>
+        <aside class="dash-aside">
+            <section class="dash-panel dash-properties">
+                <header class="dash-panel-head">
+<span class="dash-panel-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
+            <h2>Propiedades</h2>
+                </header>
+                <dl class="dash-props">
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-ticket"/></svg> ID de la solicitud</dt>
+                        <dd>#{{ ticket.codigo }}{% if ticket.glpi_id %}<span class="dash-tag meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}</dd>
                     </div>
-                    {% if ticket.tecnico_asignado %}
-                    <div class="tech-card-head">
-                        <div class="tech-avatar">
-                            {% if ticket.tecnico_asignado.avatar %}
-                            <img src="{{ ticket.tecnico_asignado.avatar.url }}" alt="{{ ticket.tecnico_asignado.nombre }}">
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-alert"/></svg> Estado</dt>
+                        <dd><span class="status-pill status-{{ ticket.estado }}" id="dash-estado-prop">{{ ticket.get_estado_display }}</span></dd>
+                    </div>
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-clock"/></svg> Ciclo de vida</dt>
+                        <dd>
+                            <div class="dash-life">
+                                <div class="dash-life-fill{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% endif %}" id="dash-life-fill" data-estado="{{ ticket.estado }}" data-pk="{{ ticket.pk }}"></div>
+                            </div>
+                            <small class="dash-life-step" id="dash-life-step">{{ ticket.get_estado_display }}</small>
+                        </dd>
+                    </div>
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-alert"/></svg> Prioridad</dt>
+                        <dd><span class="prio-value prio-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span></dd>
+                    </div>
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-wrench"/></svg> Técnico asignado</dt>
+                        <dd>
+                            {% if ticket.tecnico_asignado %}
+                            <span class="dash-tec">
+                                {% if ticket.tecnico_asignado.avatar %}
+                                <span class="dash-tec-avatar"><img src="{{ ticket.tecnico_asignado.avatar.url }}" alt=""></span>
+                                {% else %}
+                                <span class="dash-tec-avatar bg">{{ ticket.tecnico_asignado.initials }}</span>
+                                {% endif %}
+                                {{ ticket.tecnico_asignado.nombre }}
+                            </span>
                             {% else %}
-                            <span class="tech-avatar-initials">{{ ticket.tecnico_asignado.initials }}</span>
+                            <span class="dash-muted">En asignación</span>
                             {% endif %}
-                        </div>
-                        <div class="tech-card-id">
-                            <strong class="tech-card-name">{{ ticket.tecnico_asignado.nombre }}</strong>
-                            <span class="tech-card-rol">{{ ticket.tecnico_asignado.get_rol_display }}{% if ticket.asignacion_automatica %} · Asignación automática{% endif %}</span>
-                        </div>
+                        </dd>
                     </div>
-                    <p class="tech-card-note">Tu solicitud fue asignada según la categoría, la prioridad y la carga de trabajo del técnico.</p>
-                    {% if ticket.tecnico_asignado.telefono %}
-                    <a class="btn btn-outline btn-sm tech-card-wa" href="https://wa.me/{{ ticket.tecnico_asignado.telefono|cut:' ' }}" target="_blank" rel="noopener">
-                        <svg class="icon"><use href="#i-whatsapp"/></svg> Contactar por WhatsApp
-                    </a>
-                    {% endif %}
-                    {% else %}
-                    <div class="tech-card-pending">
-                        <span class="user-avatar">{{ request.user.initials }}</span>
-                        <div>
-                            <strong>En asignación</strong>
-                            <span>Un técnico tomará tu solicitud en breve.</span>
-                        </div>
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-folder"/></svg> Grupo y sitio</dt>
+                        <dd>
+                            <span>{{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
+                            {% if ticket.solicitante_punto %}<span class="dash-muted"> · {{ ticket.solicitante_punto }}</span>{% endif %}
+                        </dd>
                     </div>
-                    {% endif %}
-                </section>
-
-                <section class="corp-subsection">
-                    <div class="corp-subsection-head">
-                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-paperclip"/></svg></span>
-                        <h3>Fotos y archivos</h3>
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-check-circle"/></svg> Tareas</dt>
+                        <dd><span class="dash-num">0/3</span> <span class="dash-muted">pendientes</span></dd>
                     </div>
-                    {% if ticket.adjuntos.all %}
-                    <div class="ticket-attachments">
-                        {% for adj in ticket.adjuntos.all %}
-                        {% if adj.es_imagen %}
-                        <a class="ticket-attachment image" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
-                            <img src="{{ adj.archivo.url }}" alt="{{ adj.nombre_original }}" />
-                            <span>{{ adj.nombre_original }}</span>
-                        </a>
-                        {% else %}
-                        <a class="ticket-attachment file" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
-                            <svg class="icon attachment-file-icon"><use href="#i-file"/></svg>
-                            <span>{{ adj.nombre_original }}</span>
-                        </a>
-                        {% endif %}
-                        {% endfor %}
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-check"/></svg> Listas de comprobación</dt>
+                        <dd><span class="dash-num">0/2</span></dd>
                     </div>
-                    {% else %}
-                    <div class="tech-card-pending">
-                        <span class="tech-avatar tech-avatar-empty"><svg class="icon"><use href="#i-paperclip"/></svg></span>
-                        <div>
-                            <strong>Sin adjuntos</strong>
-                            <span>No adjuntaste fotos ni archivos a esta solicitud.</span>
-                        </div>
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-bell"/></svg> Recordatorios</dt>
+                        <dd><span class="dash-num">0</span></dd>
                     </div>
-                    {% endif %}
-                </section>
-            </aside>
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-check-circle"/></svg> Estado de aprobación</dt>
+                        <dd><span class="dash-muted">No requerida</span></dd>
+                    </div>
+                    <div class="dash-prop">
+                        <dt><svg class="icon icon-xs"><use href="#i-paperclip"/></svg> Archivos adjuntos</dt>
+                        <dd>
+                            {% if ticket.adjuntos.all %}
+                            <div class="dash-files">
+                                {% for adj in ticket.adjuntos.all|slice:":3" %}
+                                <a class="dash-thumb" href="{{ adj.archivo.url }}" target="_blank" rel="noopener" title="{{ adj.nombre_original }}">
+                                    {% if adj.es_imagen %}<img src="{{ adj.archivo.url }}" alt="{{ adj.nombre_original }}">{% else %}<svg class="icon"><use href="#i-file"/></svg>{% endif %}
+                                </a>
+                                {% endfor %}
+                                {% if ticket.adjuntos.count > 3 %}
+                                <span class="dash-more">+{{ ticket.adjuntos.count|add:"-3" }}</span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="dash-muted">Sin adjuntos</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+        </aside>
     </div>
 </main>
 {% endblock %}
@@ -200,29 +156,30 @@
 {% block extra_js %}
 <script>
 (function () {
-    var tl = document.getElementById("corp-timeline");
-    if (!tl) return;
-    var pk = tl.getAttribute("data-pk");
-    function apply(estado) {
-        var steps = tl.querySelectorAll(".corp-tl-step");
-        steps.forEach(function (s) {
-            var n = s.getAttribute("data-step");
-            s.classList.remove("is-active", "is-done");
-            if (n === "1") { s.classList.add("is-done"); return; }
-            if (n === "2") {
-                if (estado === "en-progreso" || estado === "resuelto" || estado === "cerrado") s.classList.add("is-done");
-                else if (estado === "abierto") s.classList.add("is-active");
-                return;
-            }
-            if (n === "3") {
-                if (estado === "resuelto" || estado === "cerrado") s.classList.add("is-done");
-                else if (estado === "en-progreso") s.classList.add("is-active");
-                return;
-            }
-        });
-        tl.setAttribute("data-estado", estado);
+    var LABELS = { "abierto": "Abierto", "en-progreso": "En curso", "resuelto": "Resuelto", "cerrado": "Cerrado" };
+    var fill = document.getElementById("dash-life-fill");
+    var step = document.getElementById("dash-life-step");
+    var pillA = document.getElementById("dash-estado");
+    var pillB = document.getElementById("dash-estado-prop");
+    if (!fill) return;
+    var pk = fill.getAttribute("data-pk");
+    function stepOf(estado) {
+        if (estado === "resuelto" || estado === "cerrado") return 3;
+        if (estado === "en-progreso") return 2;
+        return 1;
     }
+    function apply(estado) {
+        var l = LABELS[estado] || estado;
+        var n = stepOf(estado);
+        fill.className = "dash-life-fill" + (n === 3 ? " is-done" : "");
+        fill.style.width = (n * 33.4) + "%";
+        if (step) step.textContent = "Paso " + n + " de 3 · " + l;
+        if (pillA) { pillA.className = "dash-status status-pill status-" + estado; pillA.textContent = l; }
+        if (pillB) { pillB.className = "status-pill status-" + estado; pillB.textContent = l; }
+    }
+    apply(fill.getAttribute("data-estado"));
     function poll() {
+        if (!pk) return;
         fetch("/mi-panel/api/tickets/" + pk + "/info/", { headers: { "Accept": "application/json" } })
             .then(function (r) { return r.json(); })
             .then(function (data) {
