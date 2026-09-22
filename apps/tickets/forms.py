@@ -86,6 +86,7 @@ class TicketForm(forms.ModelForm):
             "titulo",
             "categoria",
             "solicitante_punto",
+            "modo",
             "descripcion",
             "solicitante_nombre",
             "solicitante_email",
@@ -115,12 +116,16 @@ class TicketForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, permitir_modo=False, **kwargs):
+        self._modo_fijo = None
         super().__init__(*args, **kwargs)
         self.fields["categoria"] = _campo_categoria(required=False)
         self.fields["categoria"].empty_label = "— Selecciona categoria —"
         self.fields["solicitante_email"].required = False
         self.fields["solicitante_punto"].required = False
+        if not permitir_modo:
+            self.fields.pop("modo")
+            self._modo_fijo = Ticket.Modo.WEB
 
     def clean_adjuntos(self):
         files = self.cleaned_data.get("adjuntos") or []
@@ -152,6 +157,8 @@ class TicketForm(forms.ModelForm):
 
     def save(self, commit=True):
         ticket = super().save(commit=False)
+        if self._modo_fijo:
+            ticket.modo = self._modo_fijo
         # Auto-asignar prioridad según ANS de la categoría
         cat = ticket.categoria
         if cat and hasattr(cat, "prioridad_default"):

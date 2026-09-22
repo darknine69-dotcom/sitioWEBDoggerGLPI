@@ -1436,7 +1436,7 @@ def crear_ticket(request):
         "solicitante_nombre": request.user.nombre,
         "solicitante_email": request.user.email,
     }
-    form = TicketForm(request.POST or None, request.FILES or None, initial=initial)
+    form = TicketForm(request.POST or None, request.FILES or None, initial=initial, permitir_modo=not es_usuario_final)
     if request.method == "POST" and form.is_valid():
         ticket = form.save(commit=False)
         if es_usuario_final:

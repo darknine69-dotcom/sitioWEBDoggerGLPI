@@ -25,10 +25,10 @@ class ComentarioInline(admin.TabularInline):
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
     list_display = (
-        "codigo", "titulo", "prioridad", "estado", "solicitante_nombre",
+        "codigo", "titulo", "prioridad", "estado", "modo", "solicitante_nombre",
         "categoria", "tecnico_asignado", "glpi_id", "fecha_creacion",
     )
-    list_filter = ("estado", "prioridad", "categoria")
+    list_filter = ("estado", "prioridad", "modo", "categoria")
     search_fields = ("codigo", "titulo", "solicitante_nombre")
     readonly_fields = ("codigo", "fecha_creacion", "fecha_actualizacion", "glpi_id")
     inlines = [AdjuntoInline, ComentarioInline]
