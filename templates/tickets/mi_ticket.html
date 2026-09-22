@@ -16,44 +16,47 @@
         <svg class="icon"><use href="#i-arrow-left"/></svg> Volver a Mis tickets
     </a>
 
-    <section class="dash-hero">
-        <div class="dash-hero-kicker">
-            <span class="dash-ticket-id">#{{ ticket.codigo }}</span>
-            {% if ticket.glpi_id %}<span class="dash-tag">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
-            <span class="dash-hero-meta">
-                <svg class="icon icon-xs"><use href="#i-clock"/></svg>
-                Creado el {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}{% if ticket.modo %} · {{ ticket.get_modo_display }}{% endif %}
-            </span>
+    <section class="ticket-folder">
+        <div class="folder-tab">
+            <span class="folder-code">#{{ ticket.codigo }}</span>
+            <span class="prio-value prio-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span>
         </div>
-        <h1>{{ ticket.titulo }}</h1>
-        <div class="dash-stat-row">
-            <div class="dash-stat">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
-                <span class="dash-stat-body">
-                    <span class="dash-stat-label">Categoría</span>
-                    <span class="dash-stat-value">{{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
-                </span>
+        <div class="folder-body">
+            <div class="folder-head">
+                <h1>{{ ticket.titulo }}</h1>
+                <span class="dash-hero-meta"><svg class="icon icon-xs"><use href="#i-clock"/></svg> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}{% if ticket.modo %} · {{ ticket.get_modo_display }}{% endif %}</span>
             </div>
-            <div class="dash-stat">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
-                <span class="dash-stat-body">
-                    <span class="dash-stat-label">Prioridad</span>
-                    <span class="prio-value prio-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span>
-                </span>
+            <div class="folder-chips">
+                <span class="dash-status status-pill status-{{ ticket.estado }}" id="dash-estado">{{ ticket.get_estado_display }}</span>
+                <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-folder"/></svg> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
+                <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-refresh"/></svg> {% if ticket.asignacion_automatica %}Automática{% else %}Manual{% endif %}</span>
+                {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
             </div>
-            <div class="dash-stat">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
-                <span class="dash-stat-body">
-                    <span class="dash-stat-label">Estado</span>
-                    <span class="dash-status status-pill status-{{ ticket.estado }}" id="dash-estado">{{ ticket.get_estado_display }}</span>
-                </span>
-            </div>
-            <div class="dash-stat">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-refresh"/></svg></span>
-                <span class="dash-stat-body">
-                    <span class="dash-stat-label">Transición</span>
-                    <span class="dash-stat-value">{% if ticket.asignacion_automatica %}Automática{% else %}Manual{% endif %}</span>
-                </span>
+            <div class="folder-content">
+                <div class="folder-desc">
+                    <span class="folder-label"><svg class="icon icon-sm"><use href="#i-info"/></svg> Descripción</span>
+                    <p class="ticket-description">{{ ticket.descripcion }}</p>
+                </div>
+                {% if ticket.adjuntos.all %}
+                <div class="folder-images">
+                    <span class="folder-label"><svg class="icon icon-sm"><use href="#i-paperclip"/></svg> Archivos anexados</span>
+                    <div class="ticket-attachments">
+                        {% for adj in ticket.adjuntos.all %}
+                        {% if adj.es_imagen %}
+                        <a class="ticket-attachment image" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
+                            <img src="{{ adj.archivo.url }}" alt="{{ adj.nombre_original }}" />
+                            <span>{{ adj.nombre_original }}</span>
+                        </a>
+                        {% else %}
+                        <a class="ticket-attachment file" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
+                            <svg class="icon attachment-file-icon"><use href="#i-file"/></svg>
+                            <span>{{ adj.nombre_original }}</span>
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </section>
