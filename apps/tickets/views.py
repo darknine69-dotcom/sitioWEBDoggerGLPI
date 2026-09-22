@@ -1462,11 +1462,6 @@ def crear_ticket(request):
             )
         _sincronizar_ticket_nuevo(request, ticket, files)
         notificar_ticket_creado(ticket)
-        ticket_url = (
-            reverse("tickets:mi_ticket", kwargs={"pk": ticket.pk})
-            if es_usuario_final
-            else reverse("tickets:detalle", kwargs={"pk": ticket.pk})
-        )
         request.session["ticket_creado_info"] = {
             "codigo": ticket.codigo,
             "titulo": ticket.titulo,
@@ -1475,10 +1470,9 @@ def crear_ticket(request):
             "prioridad_label": ticket.get_prioridad_display(),
             "tecnico_nombre": ticket.tecnico_asignado.nombre if ticket.tecnico_asignado_id else "",
             "tecnico_iniciales": ticket.tecnico_asignado.initials if ticket.tecnico_asignado_id else "",
-            "url": ticket_url,
         }
         messages.success(request, f"Ticket creado: {ticket.codigo}")
-        return redirect(ticket_url)
+        return redirect("tickets:crear_ticket")
 
     return render(
         request,

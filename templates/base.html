@@ -388,6 +388,7 @@
     {% with ti=request.session.ticket_creado_info %}
     <div class="confirm-overlay ticket-ok-overlay" id="ticket-ok-overlay" role="dialog" aria-modal="true" aria-labelledby="ticketOkTitle">
         <div class="confirm-box ticket-ok-box">
+            <button type="button" class="ticket-ok-close" id="ticket-ok-close" aria-label="Cerrar">&times;</button>
             <span class="confirm-icon ticket-ok-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
             <h3 id="ticketOkTitle">¡Solicitud enviada!</h3>
             <p class="confirm-msg">Tu ticket fue creado con éxito. Este es el resumen:</p>
@@ -402,10 +403,6 @@
                 </dd></div>
             </dl>
             <p class="ticket-ok-note">El técnico fue asignado automáticamente según la categoría, la prioridad y su disponibilidad.</p>
-            <div class="confirm-actions">
-                <a href="{{ ti.url }}" class="btn btn-primary">Ver mi ticket</a>
-                <button type="button" class="btn btn-cancel" id="ticket-ok-btn">Cerrar</button>
-            </div>
         </div>
     </div>
     <script>
@@ -414,7 +411,12 @@
         if (!ov) return;
         ov.classList.add('open');
         function cerrar() {
-            ov.classList.remove('open');
+            if (ov.classList.contains('closing')) return;
+            ov.classList.add('closing');
+            setTimeout(function () {
+                ov.classList.remove('open');
+                if (ov.parentNode) ov.parentNode.removeChild(ov);
+            }, 240);
             try {
                 fetch("{% url 'tickets:descartar_ticket_aviso' %}", {
                     method: 'POST',
@@ -423,7 +425,8 @@
                 }).catch(function () {});
             } catch (e) {}
         }
-        document.getElementById('ticket-ok-btn').addEventListener('click', cerrar);
+        document.getElementById('ticket-ok-close').addEventListener('click', cerrar);
+        ov.addEventListener('click', function (e) { if (e.target === ov) cerrar(); });
     })();
     </script>
     {% endwith %}

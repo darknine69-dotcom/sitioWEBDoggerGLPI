@@ -3131,8 +3131,33 @@ select:focus-visible, textarea:focus-visible {
 .ticket-ok-tec { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
 .ticket-ok-tec .user-avatar { width: 24px; height: 24px; font-size: 11px; }
 .ticket-ok-pendiente { color: #B7791F; font-weight: 700; }
-.ticket-ok-note { margin: 0 0 16px; font-size: 12px; line-height: 1.5; color: #667085; text-align: center; }
-.ticket-ok-overlay .confirm-actions .btn { min-width: 130px; }
+.ticket-ok-box { position: relative; }
+.ticket-ok-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: #F1EDE6;
+    color: #6B6459;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+.ticket-ok-close:hover { background: var(--dogger-red); color: #fff; transform: rotate(90deg); }
+.ticket-ok-note { margin: 0 0 4px; font-size: 12px; line-height: 1.5; color: #667085; text-align: center; }
+.ticket-ok-overlay.closing { transition: none; animation: ticketOkFadeOut .22s ease forwards; }
+.ticket-ok-overlay.closing .confirm-box { transition: none; animation: ticketOkBoxOut .22s ease forwards; }
+@keyframes ticketOkFadeOut { to { opacity: 0; } }
+@keyframes ticketOkBoxOut { to { opacity: 0; transform: translateY(12px) scale(.94); } }
 
 /* ---- Botón volver + encabezado de página ---- */
 .page-head {
