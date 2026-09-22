@@ -3,19 +3,19 @@
 {% block title %}{{ ticket.codigo }} · Mi ticket{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
-{% block header_title %}{{ ticket.codigo }}{% endblock %}
+{% block header_title %}Mis tickets{% endblock %}
 
 {% block extra_css %}
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260914">
-{% endblock %}
-
-{% block header_actions %}
-<a href="{% url 'tickets:mi_panel' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Mi panel</a>
+<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260922">
 {% endblock %}
 
 {% block content %}
 <main class="page page-corporate ticket-detail-page">
+    <a class="ticket-back" href="{% url 'tickets:mi_panel' %}">
+        <svg class="icon"><use href="#i-arrow-left"/></svg> Volver a Mis tickets
+    </a>
+
     <section class="corp-card corp-detail-card">
         <div class="corp-detail-head">
             <div class="corp-title-wrap">
@@ -23,7 +23,6 @@
                 <div>
                     <p class="corp-kicker"><span class="corp-dot"></span> Ticket {{ ticket.codigo }}</p>
                     <h2>{{ ticket.titulo }}</h2>
-                    <p class="corp-sub">Seguimiento de tu solicitud en la mesa de ayuda.</p>
                 </div>
             </div>
             {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}
@@ -60,63 +59,56 @@
 
         <div class="corp-detail-sections">
             <section class="corp-subsection">
-                <button type="button" class="corp-subsection-head corp-desc-toggle" id="corp-desc-toggle" aria-expanded="false">
+                <div class="corp-subsection-head">
                     <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
                     <h3>Descripción</h3>
-                    <svg class="icon corp-chevron"><use href="#i-chevron-down"/></svg>
-                </button>
-                <div class="corp-desc-content" id="corp-desc-content" hidden>
-                    <p class="ticket-description">{{ ticket.descripcion }}</p>
+                </div>
+                <p class="ticket-description">{{ ticket.descripcion }}</p>
+            </section>
+
+            <section class="corp-subsection">
+                <div class="corp-subsection-head">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-clock"/></svg></span>
+                    <h3>Avance · {{ ticket.codigo }}</h3>
+                </div>
+                <div class="corp-timeline" id="corp-timeline" data-estado="{{ ticket.estado }}" data-pk="{{ ticket.pk }}">
+                    <div class="corp-tl-step is-done" data-step="1">
+                        <span class="corp-tl-marker"><svg class="icon"><use href="#i-check"/></svg></span>
+                        <div class="corp-tl-body">
+                            <strong>Solicitud creada</strong>
+                            <small>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                        </div>
+                    </div>
+
+                    <div class="corp-tl-step{% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'abierto' %} is-active{% endif %}" data-step="2">
+                        <span class="corp-tl-marker">
+                            {% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
+                        </span>
+                        <div class="corp-tl-body">
+                            <strong>En revisión por un técnico</strong>
+                            <small>{% if ticket.tecnico_asignado %}{{ ticket.tecnico_asignado.nombre }}{% elif ticket.estado == 'abierto' %}Esperando asignación…{% else %}Revisado{% endif %}</small>
+                        </div>
+                    </div>
+
+                    <div class="corp-tl-step{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'en-progreso' %} is-active{% endif %}" data-step="3">
+                        <span class="corp-tl-marker">
+                            {% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
+                        </span>
+                        <div class="corp-tl-body">
+                            <strong>Entregar solución</strong>
+                            <small>{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}{% if ticket.fecha_cierre %}{{ ticket.fecha_cierre|date:"d/m/Y H:i" }}{% else %}Tarea completada{% endif %}{% else %}Pendiente{% endif %}</small>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            <section class="corp-subsection corp-timeline-wrap">
-                    <div class="corp-subsection-head">
-                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-clock"/></svg></span>
-                        <h3>Seguimiento · {{ ticket.codigo }}</h3>
-                    </div>
-                    <div class="corp-timeline" id="corp-timeline" data-estado="{{ ticket.estado }}" data-pk="{{ ticket.pk }}">
-                        <div class="corp-tl-step is-done" data-step="1">
-                            <span class="corp-tl-marker"><svg class="icon"><use href="#i-check"/></svg></span>
-                            <div class="corp-tl-body">
-                                <strong>Solicitud creada</strong>
-                                <small>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</small>
-                            </div>
-                        </div>
-
-                        <div class="corp-tl-step{% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'abierto' %} is-active{% endif %}" data-step="2">
-                            <span class="corp-tl-marker">
-                                {% if ticket.estado == 'en-progreso' or ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
-                            </span>
-                            <div class="corp-tl-body">
-                                <strong>En revisión por un técnico</strong>
-                                <small>{% if ticket.tecnico_asignado %}{{ ticket.tecnico_asignado.nombre }}{% elif ticket.estado == 'abierto' %}Esperando asignación…{% else %}Revisado{% endif %}</small>
-                            </div>
-                        </div>
-
-                        <div class="corp-tl-step{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% elif ticket.estado == 'en-progreso' %} is-active{% endif %}" data-step="3">
-                            <span class="corp-tl-marker">
-                                {% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}<svg class="icon"><use href="#i-check"/></svg>{% else %}<span class="corp-tl-pulse"></span>{% endif %}
-                            </span>
-                            <div class="corp-tl-body">
-                                <strong>Entregar solución</strong>
-                                <small>{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}{% if ticket.fecha_cierre %}{{ ticket.fecha_cierre|date:"d/m/Y H:i" }}{% else %}Tarea completada{% endif %}{% else %}Pendiente{% endif %}</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="corp-notif-inline-head">
-                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
-                        <strong>Actividad</strong>
-                        <button type="button" class="corp-notif-btn" id="corp-notif-toggle" aria-expanded="false"
-                                title="Ver notificaciones de esta solicitud">
-                            <svg class="icon"><use href="#i-bell"/></svg>
-                        </button>
-                    </div>
-                    <div class="corp-notif-body" id="corp-notif-body" hidden>
-                        {% include "tickets/_chat_thread.html" %}
-                    </div>
-                </section>
+            <section class="corp-subsection">
+                <div class="corp-subsection-head">
+                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
+                    <h3>Actividad</h3>
+                </div>
+                {% include "tickets/_chat_thread.html" %}
+            </section>
 
             {% if ticket.adjuntos.all %}
             <section class="corp-subsection">
@@ -143,32 +135,19 @@
             {% endif %}
         </div>
 
-            <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer chat-composer-compact">
-                {% csrf_token %}
-                <textarea id="comentario" name="comentario" rows="1" aria-label="Escribe tu respuesta para la mesa de ayuda" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
-                <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-send"/></svg> Enviar</button>
-            </form>
+        <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer chat-composer-compact">
+            {% csrf_token %}
+            <textarea id="comentario" name="comentario" rows="1" aria-label="Escribe tu respuesta para la mesa de ayuda" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
+            <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-send"/></svg> Enviar</button>
+        </form>
 
-            {% include "tickets/_share_row.html" %}
-        </div>
+        {% include "tickets/_share_row.html" %}
     </section>
 </main>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-(function () {
-    var btn = document.getElementById("corp-notif-toggle");
-    var body = document.getElementById("corp-notif-body");
-    if (!btn || !body) return;
-    btn.addEventListener("click", function () {
-        var open = body.hidden;
-        body.hidden = !open;
-        btn.setAttribute("aria-expanded", open ? "true" : "false");
-        btn.classList.toggle("is-open", open);
-    });
-})();
-
 (function () {
     var tl = document.getElementById("corp-timeline");
     if (!tl) return;
@@ -201,17 +180,6 @@
             .catch(function () {});
     }
     setInterval(poll, 8000);
-})();
-
-(function () {
-    var tgl = document.getElementById("corp-desc-toggle");
-    var content = document.getElementById("corp-desc-content");
-    if (!tgl || !content) return;
-    tgl.addEventListener("click", function () {
-        var open = content.hidden;
-        content.hidden = !open;
-        tgl.setAttribute("aria-expanded", open ? "true" : "false");
-    });
 })();
 </script>
 {% endblock %}
