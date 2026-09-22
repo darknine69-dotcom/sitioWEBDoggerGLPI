@@ -62,76 +62,8 @@
             {% endif %}
         </div>
 
-        <div class="corp-detail-grid">
-            <section class="corp-subsection tech-card">
-                <div class="corp-subsection-head">
-                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-wrench"/></svg></span>
-                    <h3>Técnico asignado</h3>
-                </div>
-                {% if ticket.tecnico_asignado %}
-                <div class="tech-card-head">
-                    <div class="tech-avatar">
-                        {% if ticket.tecnico_asignado.avatar %}
-                        <img src="{{ ticket.tecnico_asignado.avatar.url }}" alt="{{ ticket.tecnico_asignado.nombre }}">
-                        {% else %}
-                        <span class="tech-avatar-initials">{{ ticket.tecnico_asignado.initials }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="tech-card-id">
-                        <strong class="tech-card-name">{{ ticket.tecnico_asignado.nombre }}</strong>
-                        <span class="tech-card-rol">{{ ticket.tecnico_asignado.get_rol_display }}{% if ticket.asignacion_automatica %} · Asignación automática{% endif %}</span>
-                    </div>
-                </div>
-                <p class="tech-card-note">Tu solicitud fue asignada según la categoría, la prioridad y la carga de trabajo del técnico.</p>
-                {% if ticket.tecnico_asignado.telefono %}
-                <a class="btn btn-outline btn-sm tech-card-wa" href="https://wa.me/{{ ticket.tecnico_asignado.telefono|cut:' ' }}" target="_blank" rel="noopener">
-                    <svg class="icon"><use href="#i-whatsapp"/></svg> Contactar por WhatsApp
-                </a>
-                {% endif %}
-                {% else %}
-                <div class="tech-card-pending">
-                    <span class="user-avatar">{{ request.user.initials }}</span>
-                    <div>
-                        <strong>En asignación</strong>
-                        <span>Un técnico tomará tu solicitud en breve.</span>
-                    </div>
-                </div>
-                {% endif %}
-            </section>
-
-            <section class="corp-subsection">
-                <div class="corp-subsection-head">
-                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-paperclip"/></svg></span>
-                    <h3>Fotos y archivos</h3>
-                </div>
-                {% if ticket.adjuntos.all %}
-                <div class="ticket-attachments">
-                    {% for adj in ticket.adjuntos.all %}
-                    {% if adj.es_imagen %}
-                    <a class="ticket-attachment image" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
-                        <img src="{{ adj.archivo.url }}" alt="{{ adj.nombre_original }}" />
-                        <span>{{ adj.nombre_original }}</span>
-                    </a>
-                    {% else %}
-                    <a class="ticket-attachment file" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
-                        <svg class="icon attachment-file-icon"><use href="#i-file"/></svg>
-                        <span>{{ adj.nombre_original }}</span>
-                    </a>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="tech-card-pending">
-                    <span class="tech-avatar tech-avatar-empty"><svg class="icon"><use href="#i-paperclip"/></svg></span>
-                    <div>
-                        <strong>Sin adjuntos</strong>
-                        <span>No adjuntaste fotos ni archivos a esta solicitud.</span>
-                    </div>
-                </div>
-                {% endif %}
-            </section>
-        </div>
-
+        <div class="corp-detail-layout">
+            <div class="corp-detail-main">
         <div class="corp-detail-sections">
             <section class="corp-subsection">
                 <div class="corp-subsection-head">
@@ -193,6 +125,78 @@
         </form>
 
         {% include "tickets/_share_row.html" %}
+            </div>
+
+            <aside class="corp-detail-aside">
+                <section class="corp-subsection tech-card">
+                    <div class="corp-subsection-head">
+                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                        <h3>Técnico asignado</h3>
+                    </div>
+                    {% if ticket.tecnico_asignado %}
+                    <div class="tech-card-head">
+                        <div class="tech-avatar">
+                            {% if ticket.tecnico_asignado.avatar %}
+                            <img src="{{ ticket.tecnico_asignado.avatar.url }}" alt="{{ ticket.tecnico_asignado.nombre }}">
+                            {% else %}
+                            <span class="tech-avatar-initials">{{ ticket.tecnico_asignado.initials }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="tech-card-id">
+                            <strong class="tech-card-name">{{ ticket.tecnico_asignado.nombre }}</strong>
+                            <span class="tech-card-rol">{{ ticket.tecnico_asignado.get_rol_display }}{% if ticket.asignacion_automatica %} · Asignación automática{% endif %}</span>
+                        </div>
+                    </div>
+                    <p class="tech-card-note">Tu solicitud fue asignada según la categoría, la prioridad y la carga de trabajo del técnico.</p>
+                    {% if ticket.tecnico_asignado.telefono %}
+                    <a class="btn btn-outline btn-sm tech-card-wa" href="https://wa.me/{{ ticket.tecnico_asignado.telefono|cut:' ' }}" target="_blank" rel="noopener">
+                        <svg class="icon"><use href="#i-whatsapp"/></svg> Contactar por WhatsApp
+                    </a>
+                    {% endif %}
+                    {% else %}
+                    <div class="tech-card-pending">
+                        <span class="user-avatar">{{ request.user.initials }}</span>
+                        <div>
+                            <strong>En asignación</strong>
+                            <span>Un técnico tomará tu solicitud en breve.</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </section>
+
+                <section class="corp-subsection">
+                    <div class="corp-subsection-head">
+                        <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-paperclip"/></svg></span>
+                        <h3>Fotos y archivos</h3>
+                    </div>
+                    {% if ticket.adjuntos.all %}
+                    <div class="ticket-attachments">
+                        {% for adj in ticket.adjuntos.all %}
+                        {% if adj.es_imagen %}
+                        <a class="ticket-attachment image" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
+                            <img src="{{ adj.archivo.url }}" alt="{{ adj.nombre_original }}" />
+                            <span>{{ adj.nombre_original }}</span>
+                        </a>
+                        {% else %}
+                        <a class="ticket-attachment file" href="{{ adj.archivo.url }}" target="_blank" rel="noopener">
+                            <svg class="icon attachment-file-icon"><use href="#i-file"/></svg>
+                            <span>{{ adj.nombre_original }}</span>
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="tech-card-pending">
+                        <span class="tech-avatar tech-avatar-empty"><svg class="icon"><use href="#i-paperclip"/></svg></span>
+                        <div>
+                            <strong>Sin adjuntos</strong>
+                            <span>No adjuntaste fotos ni archivos a esta solicitud.</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </section>
+            </aside>
+        </div>
     </section>
 </main>
 {% endblock %}

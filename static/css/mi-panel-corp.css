@@ -507,13 +507,30 @@
 }
 
 /* ---- Técnico asignado (tarjeta con foto) ---- */
-.corp-detail-grid {
+.corp-detail-layout {
     display: grid;
-    grid-template-columns: 340px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 330px;
     gap: 16px;
     align-items: start;
 }
-@media (max-width: 760px) { .corp-detail-grid { grid-template-columns: 1fr; } }
+.corp-detail-main { min-width: 0; }
+.corp-detail-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 96px;
+}
+.corp-detail-aside .corp-subsection {
+    padding: 14px;
+    background: #FAF7F1;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+}
+@media (max-width: 900px) {
+    .corp-detail-layout { grid-template-columns: 1fr; }
+    .corp-detail-aside { position: static; }
+}
 .tech-card-head { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
 .tech-card-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tech-card-name { font-size: 15px; color: #111; }
