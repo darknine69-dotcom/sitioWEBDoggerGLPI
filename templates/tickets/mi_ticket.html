@@ -16,7 +16,7 @@
         <svg class="icon"><use href="#i-arrow-left"/></svg> Volver a Mis tickets
     </a>
 
-    <section class="corp-card corp-detail-card">
+    <section class="corp-card ticket-top-card">
         <div class="corp-detail-head">
             <div class="corp-title-wrap">
                 <span class="corp-title-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
@@ -61,10 +61,10 @@
             {% endif %}
             {% endif %}
         </div>
+    </section>
 
-        <div class="corp-detail-layout">
-            <div class="corp-detail-main">
-        <div class="corp-detail-sections">
+    <div class="corp-detail-layout">
+        <div class="corp-detail-main">
             <section class="corp-subsection">
                 <div class="corp-subsection-head">
                     <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
@@ -115,17 +115,14 @@
                     <h3>Actividad</h3>
                 </div>
                 {% include "tickets/_chat_thread.html" %}
+                <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer chat-composer-compact">
+                    {% csrf_token %}
+                    <textarea id="comentario" name="comentario" rows="1" aria-label="Escribe tu respuesta para la mesa de ayuda" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
+                    <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-send"/></svg> Enviar</button>
+                </form>
+                {% include "tickets/_share_row.html" %}
             </section>
         </div>
-
-        <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer chat-composer-compact">
-            {% csrf_token %}
-            <textarea id="comentario" name="comentario" rows="1" aria-label="Escribe tu respuesta para la mesa de ayuda" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
-            <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-send"/></svg> Enviar</button>
-        </form>
-
-        {% include "tickets/_share_row.html" %}
-            </div>
 
             <aside class="corp-detail-aside">
                 <section class="corp-subsection tech-card">
@@ -196,8 +193,7 @@
                     {% endif %}
                 </section>
             </aside>
-        </div>
-    </section>
+    </div>
 </main>
 {% endblock %}
 
