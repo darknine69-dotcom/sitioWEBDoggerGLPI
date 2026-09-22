@@ -7,48 +7,62 @@
 
 {% block content %}
 <main class="page">
-    <div class="page-head">
+    <div class="page-head ticket-form-head">
         <a class="back-btn" data-back href="{% if es_usuario_final %}{% url 'tickets:mi_panel' %}{% else %}{% url 'tickets:lista' %}{% endif %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
-            <h2>Reportar una incidencia</h2>
-            <p>Describe el problema con claridad para una atención más rápida.</p>
+            <h2>Nueva solicitud de soporte</h2>
+            <p>Describe el problema con claridad y se asignará al técnico más disponible.</p>
         </div>
     </div>
 
-    <div class="panel ticket-public-panel">
-        {% include "tickets/_ans_note.html" %}
-        <form method="post" enctype="multipart/form-data" class="user-ticket-form form-grid">
-            {% csrf_token %}
-            <h3 class="form-section-title"><span class="form-section-num">1</span> Información del problema</h3>
-            {% for field in form %}
-            {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
-            {% if field.name == 'categoria' %}
-            <p class="cat-note span-2">
-                <svg class="icon icon-sm"><use href="#i-help"/></svg>
-                <span>La categoría se selecciona <strong>automáticamente</strong> mientras escribes el título o la descripción. Siempre puedes cambiarla manualmente.</span>
-            </p>
-            <p id="cat-auto-hint" class="cat-auto-hint span-2" hidden>
-                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-                <span>Categoría asignada automáticamente según tu descripción: <strong id="cat-auto-name"></strong>. Si prefieres otra, puedes cambiarla.</span>
-                <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Cambiar categoría</button>
-            </p>
-            <div id="cat-suggest" class="cat-suggest span-2" hidden>
-                <svg class="icon icon-sm"><use href="#i-help"/></svg>
-                <span class="cat-suggest-text">Según tu descripción, probablemente sea la categoría <strong id="cat-suggest-name"></strong></span>
-                <span class="cat-suggest-actions">
-                    <button type="button" class="btn btn-primary btn-sm" data-suggest-apply>Usar esta categoría</button>
-                    <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Descartar</button>
-                </span>
+    <div class="ticket-form-layout">
+        <div class="panel ticket-form-panel">
+            <form method="post" enctype="multipart/form-data" class="user-ticket-form form-grid">
+                {% csrf_token %}
+                <h3 class="form-section-title"><span class="form-section-num">1</span> Información del problema</h3>
+                {% for field in form %}
+                {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
+                {% if field.name == 'categoria' %}
+                <p class="cat-note span-2">
+                    <svg class="icon icon-sm"><use href="#i-help"/></svg>
+                    <span>La categoría se selecciona <strong>automáticamente</strong> mientras escribes el título o la descripción. Siempre puedes cambiarla manualmente.</span>
+                </p>
+                <p id="cat-auto-hint" class="cat-auto-hint span-2" hidden>
+                    <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                    <span>Categoría asignada automáticamente según tu descripción: <strong id="cat-auto-name"></strong>. Si prefieres otra, puedes cambiarla.</span>
+                    <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Cambiar categoría</button>
+                </p>
+                <div id="cat-suggest" class="cat-suggest span-2" hidden>
+                    <svg class="icon icon-sm"><use href="#i-help"/></svg>
+                    <span class="cat-suggest-text">Según tu descripción, probablemente sea la categoría <strong id="cat-suggest-name"></strong></span>
+                    <span class="cat-suggest-actions">
+                        <button type="button" class="btn btn-primary btn-sm" data-suggest-apply>Usar esta categoría</button>
+                        <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Descartar</button>
+                    </span>
+                </div>
+                {% endif %}
+                {% if field.name == 'solicitante_nombre' %}
+                <h3 class="form-section-title"><span class="form-section-num">2</span> Tus datos</h3>
+                {% endif %}
+                {% endfor %}
+                <div class="ticket-form-actions span-2">
+                    <span class="ticket-form-footnote"><svg class="icon icon-sm"><use href="#i-info"/></svg> Al enviar verás el resumen del ticket y el técnico asignado.</span>
+                    <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+                </div>
+            </form>
+        </div>
+
+        <aside class="ticket-form-side">
+            {% include "tickets/_ans_note.html" %}
+            <div class="panel ticket-form-info">
+                <h4 class="ticket-form-info-title"><svg class="icon icon-sm"><use href="#i-wrench"/></svg> Cómo asignamos tu solicitud</h4>
+                <ol class="ticket-form-info-list">
+                    <li><span>Categoría</span>Se sugiere según el título y la descripción que escribas.</li>
+                    <li><span>Prioridad</span>Toma el ANS de la categoría (Urgente, Alta, Media, Baja).</li>
+                    <li><span>Técnico</span>Se asigna al técnico con menor carga de trabajo activa.</li>
+                </ol>
             </div>
-            {% endif %}
-            {% if field.name == 'solicitante_nombre' %}
-            <h3 class="form-section-title"><span class="form-section-num">2</span> Tus datos</h3>
-            {% endif %}
-            {% endfor %}
-            <div class="ticket-form-actions span-2">
-                <button type="submit" class="btn btn-primary">Enviar solicitud</button>
-            </div>
-        </form>
+        </aside>
     </div>
 </main>
 

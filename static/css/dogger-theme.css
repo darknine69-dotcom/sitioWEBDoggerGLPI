@@ -653,6 +653,112 @@ a { color: inherit; text-decoration: none; }
     margin-left: 3px;
 }
 
+/* ---- Layout profesional del formulario de soporte ---- */
+.ticket-form-head { margin-bottom: 0; }
+.ticket-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 20px;
+    align-items: start;
+    margin-top: 18px;
+}
+.ticket-form-panel {
+    padding: 24px 26px 22px;
+    border-top: 4px solid var(--dogger-red);
+}
+.ticket-form-panel .user-ticket-form { gap: 14px 16px; }
+.ticket-form-panel .form-section-title {
+    margin: 16px 0 12px;
+    padding-top: 0;
+    border-top: 0;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+.ticket-form-panel .form-section-title:first-of-type { margin-top: 0; }
+.ticket-form-panel .form-section-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    box-shadow: none;
+}
+.ticket-form-actions { align-items: center; }
+.ticket-form-footnote {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-right: auto;
+}
+.ticket-form-footnote svg { color: var(--dogger-red); flex-shrink: 0; }
+.ticket-form-side {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: 96px;
+}
+.ticket-form-side .ans-note { box-shadow: none; margin: 0; }
+.ticket-form-side .ans-scale { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.ticket-form-side .ans-scale-item { padding: 10px 8px 9px; gap: 6px; border-radius: 11px; }
+.ticket-form-side .ans-scale-chip,
+.ticket-form-side .ans-scale-urgente .ans-scale-chip,
+.ticket-form-side .ans-scale-alta .ans-scale-chip,
+.ticket-form-side .ans-scale-media .ans-scale-chip,
+.ticket-form-side .ans-scale-baja .ans-scale-chip { width: 38px; height: 38px; }
+.ticket-form-side .ans-scale-chip-hours,
+.ticket-form-side .ans-scale-urgente .ans-scale-chip-hours,
+.ticket-form-side .ans-scale-alta .ans-scale-chip-hours,
+.ticket-form-side .ans-scale-media .ans-scale-chip-hours,
+.ticket-form-side .ans-scale-baja .ans-scale-chip-hours { font-size: 15px; }
+.ticket-form-side .ans-scale-chip-clock { width: 16px; height: 16px; padding: 2.5px; right: -7px; top: -7px; }
+.ticket-form-side .ans-scale-name { font-size: 11.5px; }
+.ticket-form-info { padding: 16px 18px; }
+.ticket-form-info-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--ink);
+}
+.ticket-form-info-title svg { color: var(--dogger-red); flex-shrink: 0; }
+.ticket-form-info-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ticket-form-info-list li {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--ink-muted);
+    padding: 8px 10px;
+    background: #FAF7F1;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+}
+.ticket-form-info-list li span {
+    display: block;
+    font-weight: 800;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ink);
+    margin-bottom: 2px;
+}
+@media (max-width: 920px) {
+    .ticket-form-layout { grid-template-columns: 1fr; }
+    .ticket-form-side { position: static; }
+}
+@media (max-width: 520px) {
+    .ticket-form-actions { flex-wrap: wrap; }
+    .ticket-form-footnote { width: 100%; margin-right: 0; }
+    .ticket-form-actions .btn { margin-left: auto; }
+}
+
 .user-ticket-form .cat-note,
 .user-ticket-form .cat-auto-hint,
 .user-ticket-form .cat-suggest {
