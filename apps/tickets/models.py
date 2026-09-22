@@ -3,7 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
-from django.db import models
+from django.db import IntegrityError, models
 from django.db.models import Count, Q
 from django.utils import timezone
 
@@ -170,12 +170,34 @@ class Ticket(models.Model):
             self.fecha_cierre = timezone.now()
         if self.estado in (self.Estado.ABIERTO, self.Estado.EN_PROGRESO):
             self.fecha_cierre = None
-        super().save(*args, **kwargs)
+        try:
+            super().save(*args, **kwargs)
+        except IntegrityError:
+            es_insert = not self.pk or kwargs.get("force_insert")
+            if es_insert and self.codigo and self.codigo.startswith("HD-"):
+                # Colisión de código (p. ej. por concurrencia): regenerar y reintentar.
+                self.codigo = self._generar_codigo()
+                kwargs["force_insert"] = True
+                super().save(*args, **kwargs)
+            else:
+                raise
 
     @staticmethod
     def _generar_codigo():
-        total = Ticket.objects.count() + 1
-        return f"HD-{total:04d}"
+        from django.db.models import Max
+
+        mayor = Ticket.objects.aggregate(m=Max("codigo"))["m"] or ""
+        try:
+            numero = int(mayor.split("-")[-1]) + 1
+        except (ValueError, AttributeError):
+            numero = Ticket.objects.count() + 1
+        numero = max(
+            numero,
+            Ticket.objects.count() + 1,
+        )
+        while Ticket.objects.filter(codigo=f"HD-{numero:04d}").exists():
+            numero += 1
+        return f"HD-{numero:04d}"
 
     @property
     def adjuntos_pendientes_glpi(self) -> bool:
