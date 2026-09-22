@@ -17,26 +17,43 @@
     </a>
 
     <section class="dash-hero">
-        <div class="dash-hero-top">
+        <div class="dash-hero-kicker">
             <span class="dash-ticket-id">#{{ ticket.codigo }}</span>
-            <h1>{{ ticket.titulo }}</h1>
+            {% if ticket.glpi_id %}<span class="dash-tag">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
+            <span class="dash-hero-meta">
+                <svg class="icon icon-xs"><use href="#i-clock"/></svg>
+                Creado el {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}{% if ticket.modo %} · {{ ticket.get_modo_display }}{% endif %}
+            </span>
         </div>
+        <h1>{{ ticket.titulo }}</h1>
         <div class="dash-stat-row">
             <div class="dash-stat">
-                <span class="dash-stat-label">Categoría</span>
-                <span class="dash-stat-value">{{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Categoría</span>
+                    <span class="dash-stat-value">{{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
+                </span>
             </div>
             <div class="dash-stat">
-                <span class="dash-stat-label">Prioridad</span>
-                <span class="dash-stat-value prio-value prio-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span>
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Prioridad</span>
+                    <span class="prio-value prio-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span>
+                </span>
             </div>
             <div class="dash-stat">
-                <span class="dash-stat-label">Estado</span>
-                <span class="dash-status status-pill status-{{ ticket.estado }}" id="dash-estado">{{ ticket.get_estado_display }}</span>
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Estado</span>
+                    <span class="dash-status status-pill status-{{ ticket.estado }}" id="dash-estado">{{ ticket.get_estado_display }}</span>
+                </span>
             </div>
             <div class="dash-stat">
-                <span class="dash-stat-label">Transición</span>
-                <span class="dash-stat-value">{% if ticket.asignacion_automatica %}Automática{% else %}Manual{% endif %}</span>
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-refresh"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Transición</span>
+                    <span class="dash-stat-value">{% if ticket.asignacion_automatica %}Automática{% else %}Manual{% endif %}</span>
+                </span>
             </div>
         </div>
     </section>
