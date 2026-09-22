@@ -459,19 +459,43 @@
 
 .corp-detail-card .ticket-attachments {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
 }
 .corp-detail-card .ticket-attachment {
     width: auto;
     border-radius: 12px;
 }
+.corp-detail-card .ticket-attachment.image {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    padding: 0;
+    border: 1px solid var(--line);
+}
 .corp-detail-card .ticket-attachment.image img {
     width: 100%;
-    height: 130px;
+    height: 100%;
     object-fit: cover;
     display: block;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 0;
+    transition: transform .25s ease;
+}
+.corp-detail-card .ticket-attachment.image:hover img { transform: scale(1.07); }
+.corp-detail-card .ticket-attachment.image > span {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 14px 8px 6px;
+    font-size: 11px;
+    line-height: 1.3;
+    text-align: left;
+    color: #fff;
+    background: linear-gradient(transparent, rgba(0,0,0,.75));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .corp-detail-card .ticket-attachment .attachment-file-icon { font-size: 1.7rem; }
 .corp-detail-card .ticket-attachment > span {
@@ -481,6 +505,67 @@
     text-align: center;
     word-break: break-word;
 }
+
+/* ---- Técnico asignado (tarjeta con foto) ---- */
+.corp-detail-grid {
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+@media (max-width: 760px) { .corp-detail-grid { grid-template-columns: 1fr; } }
+.tech-card-head { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+.tech-card-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tech-card-name { font-size: 15px; color: #111; }
+.tech-card-rol {
+    font-size: 11px;
+    color: #6B6459;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 700;
+}
+.tech-avatar {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--dogger-red), var(--dogger-orange));
+    border: 3px solid #fff;
+    box-shadow: 0 6px 16px rgba(214, 43, 31, .22);
+}
+.tech-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tech-avatar-initials { color: #fff; font-weight: 800; font-size: 20px; }
+.tech-avatar-empty { width: 40px; height: 40px; box-shadow: none; border: 0; }
+.tech-avatar-empty .icon { width: 18px; height: 18px; color: #fff; }
+.tech-card-note { margin: 12px 0 10px; font-size: 12.5px; line-height: 1.5; color: #667085; }
+.tech-card-wa { color: #128C4E; border-color: rgba(18, 140, 78, .4); }
+.tech-card-wa:hover { background: #128C4E; border-color: #128C4E; color: #fff; }
+.tech-card-pending {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+    padding: 10px 12px;
+    background: #FAF7F1;
+    border: 1px dashed #D8CFBE;
+    border-radius: 12px;
+}
+.tech-card-pending strong { display: block; font-size: 13.5px; color: #111; }
+.tech-card-pending span { font-size: 12px; color: #667085; }
+.meta-pill-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.meta-pill-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .corp-desc-content,
 .corp-seg-content { max-width: 720px; }
 .corp-desc-content .ticket-description,
