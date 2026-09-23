@@ -100,7 +100,7 @@
 .dl-ok::before { background: #2F7D4F; }
 .dl-brecha::before { background: #D62B1F; }
 @media (max-width: 900px) {
-    .pie-flex { grid-template-columns: 1fr; }
+    .pie-flex { grid-template-columns: minmax(0, 1fr) 160px; gap: 12px; }
     .chart-stage, .chart-stage.canvas-sm { height: 230px; }
     .dash-head-tools { justify-content: flex-start; }
     .dash-select-solo { margin-left: 0; }
@@ -124,7 +124,7 @@
 .dash-compact .dash-select select { padding: 5px 8px; font-size: 12px; }
 .dash-compact .chart-switch-btn { padding: 4px 9px; font-size: 11px; }
 @media (max-width: 900px) {
-    .dash-compact .pie-flex { grid-template-columns: 1fr; }
+    .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr) 140px; gap: 10px; }
 }
 </style>
 {% endblock %}
