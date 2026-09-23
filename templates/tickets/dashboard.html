@@ -1,182 +1,253 @@
 {% extends "base.html" %}
 
-{% block title %}Dogger · Panel Administrador{% endblock %}
+{% block title %}Dogger · Panel de Cocina{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_dashboard %}is-active{% endblock %}
 {% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
 {% block header_title %}Panel Administrador{% endblock %}
 
+{% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260923">
+{% endblock %}
+
 {% block content %}
-<main class="page">
-    <div class="page-head">
-        <div class="page-head-titles">
-            <h2>Resumen general</h2>
-            <p>Estado del helpdesk en tiempo real · solo administradores.</p>
+<main class="page page-corporate">
+    <section class="dash-hero">
+        <div class="dash-hero-kicker">
+            <span class="dash-ticket-id">Panel de Cocina</span>
+            <span class="dash-hero-meta">
+                <svg class="icon icon-xs"><use href="#i-clock"/></svg>
+                {% now "l d/m/Y" %} · en vivo
+                <a href="#" class="dash-refresh" onclick="event.preventDefault(); window.location.reload();" title="Actualizar">
+                    <svg class="icon icon-sm"><use href="#i-refresh"/></svg>
+                </a>
+            </span>
         </div>
-        <div class="page-head-actions">
-            <a href="{% url 'tickets:lista' %}" class="btn btn-outline btn-sm"><svg class="icon"><use href="#i-ticket"/></svg> Ver todos los tickets</a>
-            <a href="{% url 'tickets:reportes' %}" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-chart"/></svg> Reportes</a>
+        <h1>Resumen del helpdesk</h1>
+
+        <div class="dash-stat-row">
+            <a class="dash-stat" href="{% url 'tickets:lista' %}">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Total tickets</span>
+                    <span class="dash-stat-value">{{ stats.total|default:0 }}</span>
+                    <span class="dash-stat-hint">incluye cerrados</span>
+                </span>
+            </a>
+            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=abierto">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Abiertos</span>
+                    <span class="dash-stat-value">{{ stats.abiertos|default:0 }}</span>
+                    <span class="dash-stat-hint">en espera de atención</span>
+                </span>
+            </a>
+            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=en-progreso">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">En progreso</span>
+                    <span class="dash-stat-value">{{ stats.en_progreso|default:0 }}</span>
+                    <span class="dash-stat-hint">siendo atendidos</span>
+                </span>
+            </a>
+            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=resuelto">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Resueltos</span>
+                    <span class="dash-stat-value">{{ stats.resueltos|default:0 }}</span>
+                    <span class="dash-stat-hint">{{ stats.cerrados|default:0 }} cerrados</span>
+                </span>
+            </a>
         </div>
-    </div>
+    </section>
 
-    <div class="scoreboard">
-        <a class="score-chip sc-warning" href="{% url 'tickets:lista' %}">
-            <span class="score-num">{{ stats.total|default:0 }}</span>
-            <span class="score-label">Total tickets</span>
-        </a>
-        <a class="score-chip sc-abierto" href="{% url 'tickets:lista' %}?estado=abierto">
-            <span class="score-num">{{ stats.abiertos|default:0 }}</span>
-            <span class="score-label">Abiertos</span>
-        </a>
-        <a class="score-chip sc-progreso" href="{% url 'tickets:lista' %}?estado=en-progreso">
-            <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
-            <span class="score-label">En progreso</span>
-        </a>
-        <a class="score-chip sc-resuelto" href="{% url 'tickets:lista' %}?estado=resuelto">
-            <span class="score-num">{{ stats.resueltos|default:0 }}</span>
-            <span class="score-label">Resueltos</span>
-        </a>
-    </div>
-
-    <div class="charts-grid">
-        <div class="chart-card">
-            <h3>Tickets por estado</h3>
-            {% if estado_bars %}
-            <div class="vbars">
-                {% for bar in estado_bars %}
-                <div class="vbar-col">
-                    <span class="vbar-value">{{ bar.count }}</span>
-                    <div class="vbar-track"><div class="vbar-fill" style="height: {{ bar.fill_pct|default:5 }}%;"></div></div>
-                    <span class="vbar-label">{{ bar.label }}</span>
-                </div>
-                {% endfor %}
+    {% if ans_stats.vencidos or ans_stats.por_vencer or ans_stats.ok %}
+    {% with ok=ans_stats.pct_ok %}
+    <section class="ans-strip">
+        <div class="ans-ring" style="background: conic-gradient({% if ok >= 70 %}#2F7D4F{% elif ok >= 40 %}#F2A900{% else %}#D62B1F{% endif %} {{ ok }}%, #F1EDE6 0);">
+            <div class="ans-ring-core">
+                <strong>{{ ok }}%</strong>
+                <span>cumple ANS</span>
             </div>
-            {% else %}
-            <p class="chart-empty">Sin datos todavía.</p>
-            {% endif %}
         </div>
-        <div class="chart-card">
-            <h3>Top categorías</h3>
-            {% if category_bars %}
-            <ul class="report-simple-list">
-                {% for bar in category_bars %}
-                <li class="mr-abierto">
-                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
-                    <span class="metric-label">{{ bar.label }}</span>
-                    <span class="metric-value">{{ bar.count }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="chart-empty">Sin datos todavía.</p>
-            {% endif %}
+        <div class="ans-info">
+            <h3><svg class="icon icon-sm"><use href="#i-clock"/></svg> Cumplimiento ANS</h3>
+            <p>Tickets abiertos y en progreso frente a su tiempo límite de respuesta. Revisa los <a href="{% url 'tickets:lista' %}?sv=vencidas">vencidos</a> para priorizar.</p>
         </div>
-        <div class="chart-card">
-            <h3>Cumplimiento ANS (abiertos)</h3>
-            {% if ans_stats.vencidos or ans_stats.por_vencer or ans_stats.ok %}
-            <ul class="report-simple-list">
-                <li class="mr-danger">
-                    <span class="metric-fill" style="width: {{ ans_stats.bar_vencidos|default:0 }}%;"></span>
-                    <span class="metric-label">Vencidos</span>
-                    <span class="metric-value">{{ ans_stats.vencidos }}</span>
-                </li>
-                <li class="mr-warning">
-                    <span class="metric-fill" style="width: {{ ans_stats.bar_por_vencer|default:0 }}%;"></span>
-                    <span class="metric-label">Por vencer</span>
-                    <span class="metric-value">{{ ans_stats.por_vencer }}</span>
-                </li>
-                <li class="mr-ok">
-                    <span class="metric-fill" style="width: {{ ans_stats.bar_ok|default:0 }}%;"></span>
-                    <span class="metric-label">Cumpliendo</span>
-                    <span class="metric-value">{{ ans_stats.ok }}</span>
-                </li>
-            </ul>
-            {% else %}
-            <p class="chart-empty">Sin tickets abiertos todavía.</p>
-            {% endif %}
+        <div class="ans-seg">
+            <div class="ans-seg-bar">
+                <span class="ans-seg-vencidos" style="width: {{ ans_stats.bar_vencidos|default:0 }}%;"></span>
+                <span class="ans-seg-por" style="width: {{ ans_stats.bar_por_vencer|default:0 }}%;"></span>
+                <span class="ans-seg-ok" style="width: {{ ans_stats.bar_ok|default:0 }}%;"></span>
+            </div>
+            <div class="ans-seg-items">
+                <div class="ans-seg-item ans-seg-vencidos"><span>Vencidos</span><strong>{{ ans_stats.vencidos }}</strong></div>
+                <div class="ans-seg-item ans-seg-por"><span>Por vencer</span><strong>{{ ans_stats.por_vencer }}</strong></div>
+                <div class="ans-seg-item ans-seg-ok"><span>Cumpliendo</span><strong>{{ ans_stats.ok }}</strong></div>
+            </div>
         </div>
-    </div>
-
-    {% if user_bars %}
-    <div class="charts-grid mt-16">
-        <div class="chart-card chart-wide">
-            <h3>Tickets por usuario</h3>
-            <ul class="report-simple-list">
-                {% for bar in user_bars %}
-                <li class="mr-blue">
-                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
-                    <span class="metric-label">{{ bar.label }}</span>
-                    <span class="metric-value">{{ bar.count }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
+    </section>
+    {% endwith %}
     {% endif %}
 
-    <h2 class="section-title">Últimos pedidos registrados</h2>
-    <div class="table-card">
-        <div class="table-scroll">
-            <table class="data-table cards-mobile">
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Título</th>
-                        <th>Solicitante</th>
-                        <th>Prioridad</th>
-                        <th>ANS</th>
-                        <th>Estado</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in recientes %}
-                    <tr class="tr-{{ t.prioridad }}">
-                        <td data-label="Código"><span class="table-code"><a href="{% url 'tickets:detalle' t.pk %}">{{ t.codigo }}</a></span></td>
-                        <td data-label="Título">{{ t.titulo|truncatechars:48 }}</td>
-                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
-                        <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
-                        <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
-                        <td data-label="Estado">
-                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
-                        </td>
-                        <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr class="table-empty"><td colspan="7">Sin tickets registrados.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="dashboard-grid">
+        <article class="dashboard-card">
+            <div class="dashboard-card-head">
+                <svg class="icon icon-sm"><use href="#i-folder"/></svg>
+                <h3>Tickets por estado</h3>
+            </div>
+            {% if estado_bars %}
+            {% for bar in estado_bars %}
+            <div class="dhbar">
+                <span class="dhbar-label">{{ bar.label }}</span>
+                <span class="dhbar-track"><span class="dhbar-fill" style="width: {{ bar.fill_pct|default:0 }}%; background: {{ bar.color }};"></span></span>
+                <span class="dhbar-count">{{ bar.count }}<small>{{ bar.pct }}%</small></span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="dashboard-empty">Sin datos todavía.</p>
+            {% endif %}
+        </article>
+
+        <article class="dashboard-card">
+            <div class="dashboard-card-head">
+                <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                <h3>Por prioridad</h3>
+            </div>
+            {% if priority_bars %}
+            {% for bar in priority_bars %}
+            <div class="dhbar">
+                <span class="dhbar-label">{{ bar.label|capfirst }}</span>
+                <span class="dhbar-track"><span class="dhbar-fill" style="width: {{ bar.fill_pct|default:0 }}%; background: {{ bar.color }};"></span></span>
+                <span class="dhbar-count">{{ bar.count }}<small>{{ bar.pct }}%</small></span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="dashboard-empty">Sin datos todavía.</p>
+            {% endif %}
+        </article>
+
+        <article class="dashboard-card">
+            <div class="dashboard-card-head">
+                <svg class="icon icon-sm"><use href="#i-layers"/></svg>
+                <h3>Top categorías</h3>
+                <span class="dash-card-total">{{ category_bars|length }}</span>
+            </div>
+            {% if category_bars %}
+            {% for bar in category_bars %}
+            <div class="dhbar">
+                <span class="dhbar-label" title="{{ bar.label }}">{{ bar.label }}</span>
+                <span class="dhbar-track"><span class="dhbar-fill" style="width: {{ bar.fill_pct|default:0 }}%; background: #D62B1F;"></span></span>
+                <span class="dhbar-count">{{ bar.count }}<small>{{ bar.pct }}%</small></span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="dashboard-empty">Sin datos todavía.</p>
+            {% endif %}
+        </article>
+
+        <article class="dashboard-card">
+            <div class="dashboard-card-head">
+                <svg class="icon icon-sm"><use href="#i-users"/></svg>
+                <h3>Por técnico</h3>
+                <span class="dash-card-total">{{ tecnico_bars|length }}</span>
+            </div>
+            {% if tecnico_bars %}
+            {% for bar in tecnico_bars %}
+            <div class="dhbar">
+                <span class="dhbar-label" title="{{ bar.label }}">{{ bar.label }}</span>
+                <span class="dhbar-track"><span class="dhbar-fill" style="width: {{ bar.fill_pct|default:8 }}%; background: #3D6B99;"></span></span>
+                <span class="dhbar-count">{{ bar.count }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="dashboard-empty">Sin tickets asignados todavía.</p>
+            {% endif %}
+        </article>
+    </div>
+
+    <div class="dashboard-bottom">
+        <div class="dashboard-bottom-main">
+            <div class="dashboard-panel-title">
+                <svg class="icon icon-sm"><use href="#i-ticket"/></svg>
+                <h2>Últimos pedidos registrados</h2>
+                <a href="{% url 'tickets:lista' %}" class="btn btn-outline btn-sm">Ver todos</a>
+            </div>
+            <div class="table-card">
+                <div class="table-scroll">
+                    <table class="data-table cards-mobile">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Título</th>
+                                <th>Solicitante</th>
+                                <th>Prioridad</th>
+                                <th>ANS</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in recientes %}
+                            <tr class="tr-{{ t.prioridad }}">
+                                <td data-label="Código"><span class="table-code"><a href="{% url 'tickets:detalle' t.pk %}">{{ t.codigo }}</a></span></td>
+                                <td data-label="Título">{{ t.titulo|truncatechars:48 }}</td>
+                                <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
+                                <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
+                                <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
+                                <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}</td>
+                                <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr class="table-empty"><td colspan="7">Sin tickets registrados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if recientes_page.paginator.count > 0 %}
+                <div class="pagination-bar">
+                    <div class="per-page-bar">
+                        <label for="perPageRecientes">Filas:</label>
+                        <select id="perPageRecientes" data-per-page-param="per_page_recientes">
+                            <option value="5" {% if per_page_recientes == 5 %}selected{% endif %}>5</option>
+                            <option value="10" {% if per_page_recientes == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if per_page_recientes == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if per_page_recientes == 50 %}selected{% endif %}>50</option>
+                            <option value="0" {% if per_page_recientes == 0 %}selected{% endif %}>Todas</option>
+                        </select>
+                    </div>
+                    <span class="pagination-info">Página {{ recientes_page.number }} de {{ recientes_page.paginator.num_pages }}</span>
+                    <div class="pagination-links">
+                        {% if recientes_page.has_previous %}
+                        <a class="page-pill" href="?{{ querystring }}&page_recientes={{ recientes_page.previous_page_number }}">‹ Anterior</a>
+                        {% else %}
+                        <span class="page-pill disabled">‹ Anterior</span>
+                        {% endif %}
+                        <span class="page-pill current">{{ recientes_page.number }}</span>
+                        {% if recientes_page.has_next %}
+                        <a class="page-pill" href="?{{ querystring }}&page_recientes={{ recientes_page.next_page_number }}">Siguiente ›</a>
+                        {% else %}
+                        <span class="page-pill disabled">Siguiente ›</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
 
-        {% if recientes_page.paginator.count > 0 %}
-        <div class="pagination-bar">
-            <div class="per-page-bar">
-                <label for="perPageRecientes">Filas:</label>
-                <select id="perPageRecientes" data-per-page-param="per_page_recientes">
-                    <option value="5" {% if per_page_recientes == 5 %}selected{% endif %}>5</option>
-                    <option value="10" {% if per_page_recientes == 10 %}selected{% endif %}>10</option>
-                    <option value="20" {% if per_page_recientes == 20 %}selected{% endif %}>20</option>
-                    <option value="50" {% if per_page_recientes == 50 %}selected{% endif %}>50</option>
-                    <option value="0" {% if per_page_recientes == 0 %}selected{% endif %}>Todas</option>
-                </select>
-            </div>
-            <span class="pagination-info">Página {{ recientes_page.number }} de {{ recientes_page.paginator.num_pages }}</span>
-            <div class="pagination-links">
-                {% if recientes_page.has_previous %}
-                <a class="page-pill" href="?{{ querystring }}&page_recientes={{ recientes_page.previous_page_number }}">‹ Anterior</a>
-                {% else %}
-                <span class="page-pill disabled">‹ Anterior</span>
-                {% endif %}
-                <span class="page-pill current">{{ recientes_page.number }}</span>
-                {% if recientes_page.has_next %}
-                <a class="page-pill" href="?{{ querystring }}&page_recientes={{ recientes_page.next_page_number }}">Siguiente ›</a>
-                {% else %}
-                <span class="page-pill disabled">Siguiente ›</span>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
+        <aside class="dashboard-bottom-side">
+            <article class="dashboard-card">
+                <div class="glpi-head">
+                    <h3><svg class="icon icon-sm"><use href="#i-refresh"/></svg> Actividad GLPI</h3>
+                    <a href="{% url 'tickets:reportes' %}">Ver reportes</a>
+                </div>
+                {% include "tickets/_glpi_activity.html" with eventos_glpi=eventos_glpi use_descripcion=True ticket_url="tickets:detalle" empty_text="Sin eventos recientes de GLPI todavía." %}
+            </article>
+        </aside>
     </div>
 </main>
 {% endblock %}
+
+{% block footer %}{% endblock %}

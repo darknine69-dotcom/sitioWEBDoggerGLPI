@@ -228,8 +228,14 @@ def _build_chart_context(tickets):
     tecnico_counts = Counter(
         (t.tecnico_asignado.nombre if t.tecnico_asignado else "Sin asignar") for t in tickets
     )
+    max_tecnico_count = max(tecnico_counts.values(), default=0)
     tecnico_bars = [
-        {"label": k, "count": v} for k, v in tecnico_counts.most_common(8)
+        {
+            "label": k,
+            "count": v,
+            "fill_pct": 0 if max_tecnico_count == 0 else round(v / max_tecnico_count * 100),
+        }
+        for k, v in tecnico_counts.most_common(8)
     ]
 
     # Tickets por solicitante (para gráfico de usuarios)
