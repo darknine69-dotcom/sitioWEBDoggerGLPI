@@ -517,8 +517,8 @@
             var total = prs.reduce(function (s, p) { return s + p.value; }, 0);
             leg.innerHTML = prs.map(function (p) {
                 var pct = total ? Math.round(p.value / total * 100) : 0;
-                return '<li><span class="pl-dot" style="background:' + p.color + '"></span>' +
-                    esc(p.label) +
+                return '<li title="' + esc(p.label) + '"><span class="pl-dot" style="background:' + p.color + '"></span>' +
+                    '<span class="pl-name">' + esc(p.label) + '</span>' +
                     '<span class="pl-val">' + p.value + '</span>' +
                     '<span class="pl-pct">' + pct + '%</span></li>';
             }).join('');
