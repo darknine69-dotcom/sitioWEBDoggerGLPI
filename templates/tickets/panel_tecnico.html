@@ -74,6 +74,7 @@
 .tec-item-title { font-weight: 600; font-size: 14px; margin: 4px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .tec-item-sub { font-size: 12px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 10px; }
 .tec-item-ans { font-size: 12px; margin-top: 6px; font-weight: 600; }
+.ans-countdown { display: block; font-size: 11px; font-weight: 700; margin-top: 2px; white-space: nowrap; }
 .tec-ans-ok { color: var(--state-resuelto); }
 .tec-ans-por-vencer { color: #B7791F; }
 .tec-ans-vencido { color: var(--dogger-red); }
@@ -438,6 +439,9 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                                 {% endif %}
                                 {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
                             </span>
+                            {% if t.fecha_limite_ans and info.0 != 'resuelto' %}
+                            <em class="ans-countdown ans-{{ info.0 }}" data-ans-count data-limit="{{ t.fecha_limite_ans|date:'U' }}" data-estado="{{ info.0 }}"></em>
+                            {% endif %}
                             {% endif %}
                             {% endwith %}
                         </td>
@@ -525,9 +529,9 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         {% if t.solicitante_punto %}<span>· {{ t.solicitante_punto }}</span>{% endif %}
                         <span>· {{ t.get_prioridad_display }}</span>
                     </div>
-                    {% with ans=t.info_ans %}
-                    {% if ans.2 %}<div class="tec-item-ans tec-ans-{{ ans.0 }}">{{ ans.1 }}</div>{% endif %}
-                    {% endwith %}
+{% with ans=t.info_ans %}
+{% if ans.2 %}<div class="tec-item-ans tec-ans-{{ ans.0 }}"{% if t.fecha_limite_ans and ans.0 != 'resuelto' %} data-ans-count data-limit="{{ t.fecha_limite_ans|date:'U' }}" data-estado="{{ ans.0 }}"{% endif %}>{{ ans.1 }}</div>{% endif %}
+{% endwith %}
                 </a>
                 {% endfor %}
             </div>
@@ -791,6 +795,9 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                                 {% endif %}
                                 {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"M d, Y h:i A" }}{% else %}{{ info.1 }}{% endif %}
                             </span>
+                            {% if t.fecha_limite_ans and info.0 != 'resuelto' %}
+                            <em class="ans-countdown ans-{{ info.0 }}" data-ans-count data-limit="{{ t.fecha_limite_ans|date:'U' }}" data-estado="{{ info.0 }}"></em>
+                            {% endif %}
                             {% endif %}
                             {% endwith %}
                         </td>
@@ -954,6 +961,37 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 {% endblock %}
 
 {% block extra_js %}
+<script>
+(function () {
+    /* Contador en vivo del ANS: actualiza el texto cada segundo. */
+    var ELS = Array.prototype.slice.call(document.querySelectorAll('[data-ans-count]'));
+    if (!ELS.length) return;
+    function partes(secs) {
+        var abs = Math.abs(secs);
+        var d = Math.floor(abs / 86400);
+        var h = Math.floor((abs % 86400) / 3600);
+        var m = Math.floor((abs % 3600) / 60);
+        var s = Math.floor(abs % 60);
+        if (d > 0) return d + 'd ' + h + 'h';
+        if (h > 0) return h + 'h ' + m + 'm';
+        if (m > 0) return m + 'm ' + s + 's';
+        return s + 's';
+    }
+    function tick() {
+        var now = Date.now();
+        ELS.forEach(function (el) {
+            var lim = parseInt(el.dataset.limit, 10) * 1000;
+            if (!lim) return;
+            var dif = Math.round((lim - now) / 1000);
+            el.classList.remove('ans-ok', 'ans-por-vencer', 'ans-vencido');
+            el.classList.add(dif <= 0 ? 'ans-vencido' : ('ans-' + (el.dataset.estado || 'ok')));
+            el.textContent = (dif <= 0 ? 'Vencido hace ' : 'Faltan ') + partes(dif);
+        });
+    }
+    tick();
+    setInterval(tick, 1000);
+})();
+</script>
 <script>
 (function () {
     var NS = 'http://www.w3.org/2000/svg';

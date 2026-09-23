@@ -43,7 +43,7 @@
         bar: 'Barras', line: 'Línea', area: 'Área', pie: 'Circular',
         donut: 'Dona', funnel: 'Embudo', pyramid: 'Pirámide', count: 'Recuento'
     };
-    var DEFAULT_TIPO = { modo: 'pie', categoria: 'pie', prioridad: 'pie', linea: 'line', sla: 'bar', recibidas: 'bar', completadas: 'bar' };
+    var DEFAULT_TIPO = { modo: 'pie', categoria: 'pie', prioridad: 'pie', linea: 'line', sla: 'bar', comp20: 'bar' };
     var estado = {};
 
     var charts = {};
@@ -74,6 +74,17 @@
                 datasets: [
                     { key: 'vencidos', label: 'Sanción', data: data.map(function (r) { return r.vencidos; }), color: SERIE.vencido },
                     { key: 'riesgo', label: 'Advertencia', data: data.map(function (r) { return r.riesgo; }), color: SERIE.riesgo }
+                ]
+            };
+        }
+        if (w === 'comp20') {
+            var sel20 = document.getElementById('wComp20');
+            var c20 = D.comparativo[(sel20 && sel20.value) || 'recibidas'] || D.comparativo.recibidas;
+            return {
+                labels: c20.labels,
+                datasets: [
+                    { key: 'ok', label: 'Sin infracción', data: c20.ok, color: '#2F7D4F' },
+                    { key: 'brecha', label: 'Con infracción', data: c20.brecha, color: SERIE.vencido }
                 ]
             };
         }
@@ -112,6 +123,12 @@
         if (widget === 'prioridad') return 'solicitudes abiertas por prioridad';
         if (widget === 'linea') return 'entrantes en el período';
         if (widget === 'sla') return 'sanciones por vencimiento de ANS';
+        if (widget === 'comp20') {
+            var sel20 = document.getElementById('wComp20');
+            return (sel20 && sel20.value === 'completadas')
+                ? 'completadas en los últimos 20 días'
+                : 'recibidas en los últimos 20 días';
+        }
         return 'solicitudes en los últimos 20 días';
     }
     // ------------------------------------------------------------------
@@ -213,11 +230,11 @@
         var data, opts;
         var scalesX = { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } };
         var scalesY = { beginAtZero: true, ticks: { precision: 0 } };
-        var hasMulti = widget === 'linea' || widget === 'sla' || widget === 'recibidas' || widget === 'completadas';
+        var hasMulti = widget === 'linea' || widget === 'sla' || widget === 'comp20' || widget === 'recibidas' || widget === 'completadas';
 
         if (tipo === 'bar' || tipo === 'line' || tipo === 'area') {
             var stacked = false;
-            if ((widget === 'recibidas' || widget === 'completadas') && tipo === 'bar') stacked = true;
+            if ((widget === 'comp20' || widget === 'recibidas' || widget === 'completadas') && tipo === 'bar') stacked = true;
             if (hasMulti) {
                 data = multiDatasets(stacked);
             } else {
@@ -461,6 +478,13 @@
             var card = document.querySelector('[data-widget="sla"]');
             if (card) render(card, 'sla');
             updateSlaPts();
+        });
+        var comp20 = document.getElementById('wComp20');
+        if (comp20) comp20.addEventListener('change', function () {
+            var lb = document.getElementById('comp20Label');
+            if (lb) lb.textContent = comp20.options[comp20.selectedIndex].textContent;
+            var card = document.querySelector('[data-widget="comp20"]');
+            if (card) render(card, 'comp20');
         });
         updateSlaPts();
     }

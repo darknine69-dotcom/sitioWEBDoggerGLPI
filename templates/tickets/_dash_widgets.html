@@ -86,7 +86,28 @@
 </div>
 
 <div class="charts-grid">
-    <div class="chart-card chart-wide chart-modal" data-widget="sla">
+    <div class="chart-card chart-modal" data-widget="comp20">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            <h3><em id="comp20Label">Recibidas</em> · 20 días</h3>
+            <div class="dash-head-tools">
+                <label class="dash-select">
+                    <span>Analizar</span>
+                    <select id="wComp20">
+                        <option value="recibidas" selected>Recibidas</option>
+                        <option value="completadas">Completadas</option>
+                    </select>
+                </label>
+                <div class="chart-switch" data-switch></div>
+            </div>
+        </div>
+        <div class="dash-legend" data-legend="ok-brecha">
+            <span class="dl-item dl-ok">Sin infracción</span>
+            <span class="dl-item dl-brecha">Con infracción</span>
+        </div>
+        <div class="chart-stage" data-stage></div>
+    </div>
+    <div class="chart-card chart-modal" data-widget="sla">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
             <h3>Sanciones por vencimiento de ANS</h3>
@@ -114,33 +135,6 @@
     </div>
 </div>
 
-<div class="charts-grid">
-    <div class="chart-card chart-modal" data-widget="recibidas">
-        <div class="chart-card-head">
-            <span class="chart-head-icon"><svg class="icon"><use href="#i-arrow-right"/></svg></span>
-            <h3>Recibidas · 20 días</h3>
-            <div class="chart-switch" data-switch></div>
-        </div>
-        <div class="dash-legend" data-legend="ok-brecha">
-            <span class="dl-item dl-ok">Sin infracción</span>
-            <span class="dl-item dl-brecha">Con infracción</span>
-        </div>
-        <div class="chart-stage" data-stage></div>
-    </div>
-    <div class="chart-card chart-modal" data-widget="completadas">
-        <div class="chart-card-head">
-            <span class="chart-head-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
-            <h3>Completadas · 20 días</h3>
-            <div class="chart-switch" data-switch></div>
-        </div>
-        <div class="dash-legend" data-legend="ok-brecha">
-            <span class="dl-item dl-ok">Sin infracción</span>
-            <span class="dl-item dl-brecha">Con infracción</span>
-        </div>
-        <div class="chart-stage" data-stage></div>
-    </div>
-</div>
-
 <script type="application/json" id="dashData">{{ dash_json|safe }}</script>
 <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
-<script src="{% static 'js/panel-dash.js' %}?v=20260924"></script>
+<script src="{% static 'js/panel-dash.js' %}?v=20260925"></script>
