@@ -94,9 +94,9 @@
 <main class="page page-corporate ticket-detail-page">
     <div class="corp-detail-back">
         {% if request.user.rol == 'admin' %}
-        <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg> Volver a Tickets</a>
+        <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver a Tickets"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         {% else %}
-        <a class="back-btn" data-back href="{% url 'tickets:panel_tecnico' %}?vista=mis" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg> Volver al panel técnico</a>
+        <a class="back-btn" data-back href="{% url 'tickets:panel_tecnico' %}?vista=mis" title="Volver al panel técnico"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         {% endif %}
     </div>
     <section class="ticket-detail-hero">

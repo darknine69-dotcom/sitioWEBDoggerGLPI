@@ -348,17 +348,19 @@
 .ticket-back {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink-muted);
     margin-bottom: 16px;
-    font-size: 13px;
-    font-weight: 700;
-    color: #212121;
     text-decoration: none;
-    transition: color .15s ease, transform .15s ease;
+    transition: all .15s ease;
 }
-.ticket-back .icon { transition: transform .15s ease; }
-.ticket-back:hover { color: var(--dogger-red); }
-.ticket-back:hover .icon { transform: translateX(-3px); }
+.ticket-back .icon { width: 17px; height: 17px; }
+.ticket-back:hover { color: var(--dogger-red); border-color: var(--dogger-red); transform: translateX(-3px); }
 .corp-detail-card { padding: 26px 30px 24px; overflow: hidden; }
 .corp-detail-head {
     display: flex;
