@@ -325,8 +325,17 @@ def _serie_dias(inicio, fin, con_dia=False):
 
 
 def _agrupar_vencidos(tickets, dimension):
-    """Cuenta tickets abiertos por dimensión según estado ANS (vencido / por vencer)."""
+    """Cuenta tickets abiertos por dimensión según estado ANS (vencido / por vencer).
+
+    El vencimiento se trata como una SANCIÓN: además del conteo, acumula
+    "puntos" ponderados por la prioridad del ticket (urgente=3, alta=2,
+    media=1, baja=1) para puntear incumplimientos como penalización.
+    """
     agg = {}
+
+    def _peso(t):
+        return {"urgente": 3, "alta": 2, "media": 1, "baja": 1}.get(t.prioridad, 1)
+
     for t in tickets:
         clave, label = dimension(t)
         if t.estado not in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
@@ -335,9 +344,13 @@ def _agrupar_vencidos(tickets, dimension):
         if estado_ans not in ("vencido", "por-vencer"):
             continue
         if clave not in agg:
-            agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0}
-        agg[clave][("por-vencer" if estado_ans == "por-vencer" else "vencidos")] += 1
-    return [v for v in agg.values()]
+            agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0, "puntos": 0}
+        if estado_ans == "por-vencer":
+            agg[clave]["riesgo"] += 1
+        else:
+            agg[clave]["vencidos"] += 1
+            agg[clave]["puntos"] += _peso(t)
+    return list(agg.values())
 
 
 def _build_tecnico_dashboard(tecnico_id=None):
@@ -466,6 +479,19 @@ def _build_tecnico_dashboard(tecnico_id=None):
         etiquetas_prioridad,
     )
 
+    # --- Pie: abiertas por categoría -------------------------------------
+    _PAL_CAT = ["#2563EB", "#2F7D4F", "#F2A900", "#B7791F", "#8A8A86", "#6B6259", "#D62B1F", "#7C4DFF"]
+    cat_abiertas = {}
+    for t in abiertos:
+        cid, clabel = dim_categoria(t)
+        fila = cat_abiertas.setdefault(cid, {"label": clabel, "n": 0})
+        fila["n"] += 1
+    cat_items = sorted(cat_abiertas.values(), key=lambda r: (-r["n"], r["label"].lower()))
+    pie_categoria = [
+        {"label": it["label"], "value": it["n"], "color": _PAL_CAT[i % len(_PAL_CAT)]}
+        for i, it in enumerate(cat_items)
+    ]
+
     # --- Serie de solicitudes por rango ----------------------------------
     def _rango(rango):
         if rango == "ultima_semana":
@@ -557,6 +583,7 @@ def _build_tecnico_dashboard(tecnico_id=None):
             "pivot": pivot,
             "pie_modo": pie_modo,
             "pie_prioridad": pie_prioridad,
+            "pie_categoria": pie_categoria,
             "linea": linea,
             "colores_serie": COLORES_SERIE,
             "sla": sla,

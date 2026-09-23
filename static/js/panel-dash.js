@@ -43,7 +43,7 @@
         bar: 'Barras', line: 'Línea', area: 'Área', pie: 'Circular',
         donut: 'Dona', funnel: 'Embudo', pyramid: 'Pirámide', count: 'Recuento'
     };
-    var DEFAULT_TIPO = { modo: 'pie', prioridad: 'pie', linea: 'line', sla: 'bar', recibidas: 'bar', completadas: 'bar' };
+    var DEFAULT_TIPO = { modo: 'pie', categoria: 'pie', prioridad: 'pie', linea: 'line', sla: 'bar', recibidas: 'bar', completadas: 'bar' };
     var estado = {};
 
     var charts = {};
@@ -52,6 +52,7 @@
     // ------------------------------------------------------------------
     function serieWidget(w) {
         if (w === 'modo') return { pairs: D.pie_modo || [] };
+        if (w === 'categoria') return { pairs: D.pie_categoria || [] };
         if (w === 'prioridad') return { pairs: D.pie_prioridad || [] };
         if (w === 'linea') {
             var rango = document.getElementById('wLineaRange');
@@ -71,8 +72,8 @@
             return {
                 labels: data.map(function (r) { return r.label; }),
                 datasets: [
-                    { key: 'vencidos', label: 'Vencido', data: data.map(function (r) { return r.vencidos; }), color: SERIE.vencido },
-                    { key: 'riesgo', label: 'En riesgo', data: data.map(function (r) { return r.riesgo; }), color: SERIE.riesgo }
+                    { key: 'vencidos', label: 'Sanción', data: data.map(function (r) { return r.vencidos; }), color: SERIE.vencido },
+                    { key: 'riesgo', label: 'Advertencia', data: data.map(function (r) { return r.riesgo; }), color: SERIE.riesgo }
                 ]
             };
         }
@@ -88,7 +89,7 @@
 
     function pairs(widget) {
         var s = serieWidget(widget);
-        if (widget === 'modo' || widget === 'prioridad') return s.pairs;
+        if (widget === 'modo' || widget === 'categoria' || widget === 'prioridad') return s.pairs;
         return s.labels.map(function (l, i) {
             var v, color;
             if (widget === 'linea') {
@@ -107,9 +108,10 @@
 
     function countTitle(widget) {
         if (widget === 'modo') return 'solicitudes abiertas por modo';
+        if (widget === 'categoria') return 'solicitudes abiertas por categoría';
         if (widget === 'prioridad') return 'solicitudes abiertas por prioridad';
         if (widget === 'linea') return 'entrantes en el período';
-        if (widget === 'sla') return 'solicitudes con SLA vencido o en riesgo';
+        if (widget === 'sla') return 'sanciones por vencimiento de ANS';
         return 'solicitudes en los últimos 20 días';
     }
     // ------------------------------------------------------------------
@@ -415,7 +417,7 @@
     // Leyenda de pies (según datos)
     // ------------------------------------------------------------------
     function buildPieLegends() {
-        ['modo', 'prioridad'].forEach(function (widget) {
+        ['modo', 'categoria', 'prioridad'].forEach(function (widget) {
             var card = document.querySelector('.chart-modal[data-widget="' + widget + '"]');
             if (!card) return;
             var leg = card.querySelector('[data-pie-legend]');
@@ -458,7 +460,18 @@
         if (dim) dim.addEventListener('change', function () {
             var card = document.querySelector('[data-widget="sla"]');
             if (card) render(card, 'sla');
+            updateSlaPts();
         });
+        updateSlaPts();
+    }
+
+    function updateSlaPts() {
+        var el = document.getElementById('slaPts');
+        if (!el) return;
+        var dim = document.getElementById('wSlaDim');
+        var rows = D.sla[(dim && dim.value) || 'por_tecnico'] || [];
+        var pts = rows.reduce(function (s, r) { return s + (r.puntos || 0); }, 0);
+        el.textContent = pts;
     }
 
     if (document.readyState === 'loading') {

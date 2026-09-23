@@ -34,10 +34,10 @@
             </table>
         </div>
     </div>
-    <div class="chart-card chart-modal" data-widget="modo">
+    <div class="chart-card chart-modal" data-widget="categoria">
         <div class="chart-card-head">
-            <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
-            <h3>Abiertas por modo</h3>
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
+            <h3>Abiertas por categoría</h3>
             <div class="chart-switch" data-switch></div>
         </div>
         <div class="pie-flex">
@@ -89,7 +89,7 @@
     <div class="chart-card chart-wide chart-modal" data-widget="sla">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
-            <h3>Infracción de SLA</h3>
+            <h3>Sanciones por vencimiento de ANS</h3>
             <div class="dash-head-tools">
                 <label class="dash-select">
                     <span>Agrupar por</span>
@@ -104,8 +104,11 @@
             </div>
         </div>
         <div class="dash-legend" data-legend="sla">
-            <span class="dl-item dl-vencido">Vencido</span>
-            <span class="dl-item dl-riesgo">En riesgo</span>
+            <span class="dl-item dl-vencido">Sanción (vencido)</span>
+            <span class="dl-item dl-riesgo">Advertencia (en riesgo)</span>
+            <span class="dl-item dl-pts">Puntos:
+                <em id="slaPts">0</em>
+            </span>
         </div>
         <div class="chart-stage" data-stage></div>
     </div>
@@ -140,4 +143,4 @@
 
 <script type="application/json" id="dashData">{{ dash_json|safe }}</script>
 <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
-<script src="{% static 'js/panel-dash.js' %}?v=20260918"></script>
+<script src="{% static 'js/panel-dash.js' %}?v=20260924"></script>
