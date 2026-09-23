@@ -1758,6 +1758,7 @@ def dashboard(request):
             "recientes_page": recientes_page,
             "per_page_recientes": pp_recientes,
             "querystring": _params_sin_page(request, "page_recientes"),
+            "dash_json": _build_tecnico_dashboard(None),
             **dashboard_context,
         },
     )

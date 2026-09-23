@@ -9,6 +9,81 @@
 {% block extra_css %}
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260923">
+<style>
+.chart-empty { color: var(--ink-muted); font-size: 13px; }
+.dash-select { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-muted); }
+.dash-select select { font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 10px; background: var(--dogger-paper); color: var(--ink); cursor: pointer; }
+.dash-select select:focus { outline: none; border-color: var(--dogger-red); }
+.dash-select-solo { margin-left: auto; }
+.dash-head-tools { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+.pivot-table .num { text-align: right; font-family: var(--font-mono); }
+.pivot-table th.num { font-family: var(--font-mono); }
+.pivot-table td.col-vencido, .pivot-table th.col-vencido { color: var(--dogger-red); }
+.pivot-table tbody tr { transition: background .12s ease; }
+.pivot-table tbody tr:hover { background: var(--dogger-cream); }
+.pivot-table .pivot-lead { font-weight: 600; }
+.pivot-table .badge-vencido { display: inline-block; min-width: 22px; text-align: center; background: rgba(214,43,31,.12); border-radius: 999px; padding: 1px 7px; font-weight: 800; color: var(--dogger-red); }
+.pivot-table .pivot-total-row td { border-top: 2px solid var(--line); background: #FFF6E8; }
+.pivot-table .pivot-total-row td:first-child { font-weight: 800; font-family: var(--font-display); }
+.chart-switch { position: relative; }
+.chart-switch-btn { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12px; font-weight: 700; color: var(--dogger-red-dark); background: rgba(214,43,31,.07); border: 1px solid rgba(214,43,31,.2); border-radius: 999px; padding: 5px 11px; cursor: pointer; transition: background .15s ease; }
+.chart-switch-btn:hover { background: rgba(214,43,31,.14); }
+.chart-switch[data-open] .chart-switch-btn { background: rgba(214,43,31,.14); }
+.chart-switch-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; background: var(--dogger-paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(29,27,22,.16); padding: 8px; min-width: 176px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.chart-switch-menu button { display: flex; align-items: center; gap: 7px; font: inherit; font-size: 12px; color: var(--ink); background: transparent; border: 0; border-radius: 8px; padding: 6px 8px; cursor: pointer; text-align: left; }
+.chart-switch-menu button:hover { background: var(--dogger-cream); }
+.chart-switch-menu button.is-active { background: rgba(214,43,31,.1); color: var(--dogger-red-dark); font-weight: 800; }
+.chart-switch-menu .csm-prev { width: 20px; height: 14px; flex: none; opacity: .85; }
+.chart-stage { height: 270px; position: relative; }
+.chart-stage.canvas-sm { height: 250px; }
+.chart-stage .chart-count { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.chart-stage .chart-count strong { font-size: 52px; font-weight: 800; font-family: var(--font-mono); color: #1d1b16; line-height: 1; }
+.chart-stage .chart-count small { color: var(--ink-muted); font-size: 13px; }
+.pie-flex { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 16px; align-items: center; }
+.pie-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pie-legend li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink); border-radius: 8px; padding: 5px 8px; cursor: default; transition: background .12s ease; }
+.pie-legend li:hover, .pie-legend li.is-hi { background: var(--dogger-cream); text-decoration: underline; text-decoration-color: rgba(29,27,22,.35); text-underline-offset: 3px; }
+.pie-legend .pl-dot { width: 11px; height: 11px; border-radius: 3px; flex: none; transition: transform .12s ease; }
+.pie-legend li:hover .pl-dot, .pie-legend li.is-hi .pl-dot { transform: scale(1.25); }
+.pie-legend .pl-pct { margin-left: auto; font-weight: 800; font-family: var(--font-mono); color: #1d1b16; }
+.pie-legend .pl-val { font-family: var(--font-mono); font-weight: 700; color: var(--ink-muted); }
+.dash-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: -2px 0 10px; }
+.dl-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-muted); }
+.dl-item::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+.dl-entrante::before { background: #2563EB; }
+.dl-completado::before { background: #2F7D4F; }
+.dl-vencido::before { background: #D62B1F; }
+.dl-riesgo::before { background: #F2A900; }
+.dl-ok::before { background: #2F7D4F; }
+.dl-brecha::before { background: #D62B1F; }
+@media (max-width: 900px) {
+    .pie-flex { grid-template-columns: 1fr; }
+    .chart-stage, .chart-stage.canvas-sm { height: 230px; }
+    .dash-head-tools { justify-content: flex-start; }
+    .dash-select-solo { margin-left: 0; }
+}
+.dash-compact .charts-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
+.dash-compact .chart-card { padding: 14px 16px; border-radius: 14px; }
+.dash-compact .chart-card-head { margin-bottom: 10px; }
+.dash-compact .chart-card-head h3 { font-size: 13.5px; }
+.dash-compact .chart-head-icon { width: 26px; height: 26px; }
+.dash-compact .chart-head-icon svg { width: 14px; height: 14px; }
+.dash-compact .chart-stage { height: 190px; }
+.dash-compact .chart-stage.canvas-sm { height: 185px; }
+.dash-compact .chart-stage .chart-count strong { font-size: 40px; }
+.dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; }
+.dash-compact .pie-legend li { font-size: 12px; gap: 7px; padding: 4px 6px; }
+.dash-compact .dash-legend { gap: 10px; margin: -2px 0 8px; }
+.dash-compact .dl-item { font-size: 11px; }
+.dash-compact .pivot-table { font-size: 12px; }
+.dash-compact .pivot-table thead th { padding: 6px 8px; }
+.dash-compact .pivot-table tbody td { padding: 5px 8px; }
+.dash-compact .dash-select select { padding: 5px 8px; font-size: 12px; }
+.dash-compact .chart-switch-btn { padding: 4px 9px; font-size: 11px; }
+@media (max-width: 900px) {
+    .dash-compact .pie-flex { grid-template-columns: 1fr; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -91,80 +166,8 @@
     {% endwith %}
     {% endif %}
 
-    <div class="dashboard-grid">
-        <article class="dashboard-card">
-            <div class="dashboard-card-head">
-                <svg class="icon icon-sm"><use href="#i-folder"/></svg>
-                <h3>Tickets por estado</h3>
-            </div>
-            {% if estado_bars %}
-            {% for bar in estado_bars %}
-            <div class="dhbar">
-                <span class="dhbar-label">{{ bar.label }}</span>
-                <span class="dhbar-track"><span class="dhbar-fill" style="width: {{ bar.fill_pct|default:0 }}%; background: {{ bar.color }};"></span></span>
-                <span class="dhbar-count">{{ bar.count }}<small>{{ bar.pct }}%</small></span>
-            </div>
-            {% endfor %}
-            {% else %}
-            <p class="dashboard-empty">Sin datos todavía.</p>
-            {% endif %}
-        </article>
-
-        <article class="dashboard-card">
-            <div class="dashboard-card-head">
-                <svg class="icon icon-sm"><use href="#i-alert"/></svg>
-                <h3>Por prioridad</h3>
-            </div>
-            {% if priority_bars %}
-            {% for bar in priority_bars %}
-            <div class="dhbar">
-                <span class="dhbar-label">{{ bar.label|capfirst }}</span>
-                <span class="dhbar-track"><span class="dhbar-fill" style="width: {{ bar.fill_pct|default:0 }}%; background: {{ bar.color }};"></span></span>
-                <span class="dhbar-count">{{ bar.count }}<small>{{ bar.pct }}%</small></span>
-            </div>
-            {% endfor %}
-            {% else %}
-            <p class="dashboard-empty">Sin datos todavía.</p>
-            {% endif %}
-        </article>
-
-        <article class="dashboard-card">
-            <div class="dashboard-card-head">
-                <svg class="icon icon-sm"><use href="#i-layers"/></svg>
-                <h3>Top categorías</h3>
-                <span class="dash-card-total">{{ category_bars|length }}</span>
-            </div>
-            {% if category_bars %}
-            {% for bar in category_bars %}
-            <div class="dhbar">
-                <span class="dhbar-label" title="{{ bar.label }}">{{ bar.label }}</span>
-                <span class="dhbar-track"><span class="dhbar-fill" style="width: {{ bar.fill_pct|default:0 }}%; background: #D62B1F;"></span></span>
-                <span class="dhbar-count">{{ bar.count }}<small>{{ bar.pct }}%</small></span>
-            </div>
-            {% endfor %}
-            {% else %}
-            <p class="dashboard-empty">Sin datos todavía.</p>
-            {% endif %}
-        </article>
-
-        <article class="dashboard-card">
-            <div class="dashboard-card-head">
-                <svg class="icon icon-sm"><use href="#i-users"/></svg>
-                <h3>Por técnico</h3>
-                <span class="dash-card-total">{{ tecnico_bars|length }}</span>
-            </div>
-            {% if tecnico_bars %}
-            {% for bar in tecnico_bars %}
-            <div class="dhbar">
-                <span class="dhbar-label" title="{{ bar.label }}">{{ bar.label }}</span>
-                <span class="dhbar-track"><span class="dhbar-fill" style="width: {{ bar.fill_pct|default:8 }}%; background: #3D6B99;"></span></span>
-                <span class="dhbar-count">{{ bar.count }}</span>
-            </div>
-            {% endfor %}
-            {% else %}
-            <p class="dashboard-empty">Sin tickets asignados todavía.</p>
-            {% endif %}
-        </article>
+    <div class="dash-compact">
+        {% include "tickets/_dash_widgets.html" %}
     </div>
 
     <div class="dashboard-bottom">

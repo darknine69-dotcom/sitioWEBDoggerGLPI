@@ -1,0 +1,143 @@
+{% load static %}
+{# ---- Widgets gráficos del Panel Técnico / Administrador ---- #}
+{# Depende de: dash_json en el contexto, chart.umd.min.js y panel-dash.js #}
+<div class="charts-grid">
+    <div class="chart-card">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
+            <h3>Solicitudes por <em id="pivotDimLabel">técnico</em></h3>
+            <label class="dash-select dash-select-solo">
+                <span>Ver por</span>
+                <select id="pivotDim">
+                    <option value="tecnico" selected>Técnico</option>
+                    <option value="prioridad">Prioridad</option>
+                    <option value="modo">Modo de ingreso</option>
+                    <option value="grupo">Grupo</option>
+                    <option value="categoria">Categoría</option>
+                </select>
+            </label>
+        </div>
+        <div class="table-scroll">
+            <table class="data-table pivot-table" id="pivotTable">
+                <thead>
+                    <tr>
+                        <th id="pivotCol1">Técnico</th>
+                        <th class="num">Abrir</th>
+                        <th class="num">En Espera</th>
+                        <th class="num col-vencido">Vencido</th>
+                        <th class="num">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="pivotBody">
+                    <tr class="table-empty"><td colspan="5">Sin datos todavía.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="chart-card chart-modal" data-widget="modo">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            <h3>Abiertas por modo</h3>
+            <div class="chart-switch" data-switch></div>
+        </div>
+        <div class="pie-flex">
+            <div class="chart-stage canvas-sm" data-stage></div>
+            <ul class="pie-legend" data-pie-legend></ul>
+        </div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card chart-modal" data-widget="prioridad">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <h3>Abiertas por prioridad</h3>
+            <div class="chart-switch" data-switch></div>
+        </div>
+        <div class="pie-flex">
+            <div class="chart-stage canvas-sm" data-stage></div>
+            <ul class="pie-legend" data-pie-legend></ul>
+        </div>
+    </div>
+    <div class="chart-card chart-modal" data-widget="linea">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-chart"/></svg></span>
+            <h3>Solicitudes por período</h3>
+            <div class="dash-head-tools">
+                <label class="dash-select">
+                    <span>Período</span>
+                    <select id="wLineaRange">
+                        <option value="ultima_semana" selected>Última semana</option>
+                        <option value="esta_semana">Esta semana</option>
+                        <option value="este_mes">Este mes</option>
+                        <option value="ultimo_mes">Último mes</option>
+                    </select>
+                </label>
+                <div class="chart-switch" data-switch></div>
+            </div>
+        </div>
+        <div class="dash-legend" data-legend="linea">
+            <span class="dl-item dl-entrante">Entrante</span>
+            <span class="dl-item dl-completado">Completado</span>
+            <span class="dl-item dl-vencido">Vencido</span>
+        </div>
+        <div class="chart-stage" data-stage></div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card chart-wide chart-modal" data-widget="sla">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
+            <h3>Infracción de SLA</h3>
+            <div class="dash-head-tools">
+                <label class="dash-select">
+                    <span>Agrupar por</span>
+                    <select id="wSlaDim">
+                        <option value="por_tecnico" selected>Técnico</option>
+                        <option value="por_prioridad">Prioridad</option>
+                        <option value="por_categoria">Categoría</option>
+                        <option value="por_grupo">Grupo</option>
+                    </select>
+                </label>
+                <div class="chart-switch" data-switch></div>
+            </div>
+        </div>
+        <div class="dash-legend" data-legend="sla">
+            <span class="dl-item dl-vencido">Vencido</span>
+            <span class="dl-item dl-riesgo">En riesgo</span>
+        </div>
+        <div class="chart-stage" data-stage></div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card chart-modal" data-widget="recibidas">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-arrow-right"/></svg></span>
+            <h3>Recibidas · 20 días</h3>
+            <div class="chart-switch" data-switch></div>
+        </div>
+        <div class="dash-legend" data-legend="ok-brecha">
+            <span class="dl-item dl-ok">Sin infracción</span>
+            <span class="dl-item dl-brecha">Con infracción</span>
+        </div>
+        <div class="chart-stage" data-stage></div>
+    </div>
+    <div class="chart-card chart-modal" data-widget="completadas">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            <h3>Completadas · 20 días</h3>
+            <div class="chart-switch" data-switch></div>
+        </div>
+        <div class="dash-legend" data-legend="ok-brecha">
+            <span class="dl-item dl-ok">Sin infracción</span>
+            <span class="dl-item dl-brecha">Con infracción</span>
+        </div>
+        <div class="chart-stage" data-stage></div>
+    </div>
+</div>
+
+<script type="application/json" id="dashData">{{ dash_json|safe }}</script>
+<script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
+<script src="{% static 'js/panel-dash.js' %}?v=20260918"></script>
