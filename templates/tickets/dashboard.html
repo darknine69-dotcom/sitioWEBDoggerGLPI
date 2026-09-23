@@ -31,6 +31,8 @@
 .chart-card[data-pivot-card] { position: relative; }
 .pivot-pop {
     position: absolute; z-index: 70; width: 212px;
+    max-height: calc(100% - 14px);
+    display: flex; flex-direction: column;
     background: #fff; border: 1px solid var(--line); border-radius: 12px;
     box-shadow: 0 12px 30px rgba(29,27,22,.18); padding: 10px 12px;
     opacity: 0; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease;
@@ -48,7 +50,7 @@
 .pivot-pop-bar span { display: block; height: 100%; min-width: 2px; }
 .pivot-pop-foot { margin-top: 7px; font-size: 11px; color: var(--ink-muted); text-align: right; }
 .pivot-pop { width: 284px; }
-.pivot-pop-list { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+.pivot-pop-list { flex: 1 1 auto; min-height: 0; margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
 .pivot-pop-ticket { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink); text-decoration: none; padding: 4px 6px; border-radius: 7px; }
 .pivot-pop-ticket:hover { background: var(--dogger-cream); }
 .pivot-pop-code { font-family: var(--font-mono); font-weight: 700; color: var(--dogger-red); flex: none; }
@@ -81,7 +83,7 @@
 .chart-stage .chart-count strong { font-size: 52px; font-weight: 800; font-family: var(--font-mono); color: #1d1b16; line-height: 1; }
 .chart-stage .chart-count small { color: var(--ink-muted); font-size: 13px; }
 .pie-flex { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 16px; align-items: center; }
-.pie-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pie-legend { list-style: none; margin: 0; padding: 0 4px 0 0; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; }
 .pie-legend li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink); border-radius: 8px; padding: 5px 8px; cursor: default; transition: background .12s ease; }
 .pie-legend li:hover, .pie-legend li.is-hi { background: var(--dogger-cream); text-decoration: underline; text-decoration-color: rgba(29,27,22,.35); text-underline-offset: 3px; }
 .pie-legend .pl-dot { width: 11px; height: 11px; border-radius: 3px; flex: none; transition: transform .12s ease; }

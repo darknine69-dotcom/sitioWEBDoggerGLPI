@@ -477,9 +477,9 @@
         var w = pop.offsetWidth;
         var h = pop.offsetHeight;
         var x = acr.left - cardRect.left + 8;
-        var y = acr.top - cardRect.top + acr.height + 6;
+        var y = acr.top - cardRect.top - 2;
         x = Math.max(6, Math.min(x, cardRect.width - w - 6));
-        if (acr.top - cardRect.top < 90) y = Math.min(y, cardRect.height - h - 6);
+        y = Math.max(6, Math.min(y, Math.max(6, cardRect.height - h - 6)));
         pop.style.left = x + 'px';
         pop.style.top = y + 'px';
         pop.style.visibility = '';
