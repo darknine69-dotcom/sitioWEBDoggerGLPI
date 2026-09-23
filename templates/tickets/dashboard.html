@@ -25,6 +25,32 @@
 .pivot-table .badge-vencido { display: inline-block; min-width: 22px; text-align: center; background: rgba(214,43,31,.12); border-radius: 999px; padding: 1px 7px; font-weight: 800; color: var(--dogger-red); }
 .pivot-table .pivot-total-row td { border-top: 2px solid var(--line); background: #FFF6E8; }
 .pivot-table .pivot-total-row td:first-child { font-weight: 800; font-family: var(--font-display); }
+
+.pivot-lead { cursor: pointer; position: relative; }
+.pivot-lead::after { content: "⤴"; margin-left: 6px; font-size: 11px; opacity: .45; }
+.chart-card[data-pivot-card] { position: relative; }
+.pivot-pop {
+    position: absolute; z-index: 70; width: 212px;
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(29,27,22,.18); padding: 10px 12px;
+    opacity: 0; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease;
+}
+.pivot-pop.is-in { opacity: 1; transform: none; }
+.pivot-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pivot-pop-head strong { font-size: 13px; }
+.pivot-pop-close { border: 0; background: transparent; font-size: 17px; line-height: 1; color: var(--ink-muted); cursor: pointer; padding: 2px 4px; }
+.pivot-pop-close:hover { color: var(--dogger-red); }
+.pivot-pop-stats { display: flex; flex-direction: column; gap: 5px; margin: 8px 0; }
+.pivot-pop-stat { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-muted); }
+.pivot-pop-stat strong { margin-left: auto; font-family: var(--font-mono); color: #1d1b16; }
+.pivot-pop-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.pivot-pop-bar { display: flex; height: 6px; border-radius: 3px 3px 3px 3px; overflow: hidden; background: #F1EDE6; }
+.pivot-pop-bar span { display: block; height: 100%; min-width: 2px; }
+.pivot-pop-foot { margin-top: 7px; font-size: 11px; color: var(--ink-muted); text-align: right; }
+@media (max-width: 480px) {
+    .pivot-pop { width: 188px; }
+}
+
 .chart-switch { position: relative; }
 .chart-switch-btn { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12px; font-weight: 700; color: var(--dogger-red-dark); background: rgba(214,43,31,.07); border: 1px solid rgba(214,43,31,.2); border-radius: 999px; padding: 5px 11px; cursor: pointer; transition: background .15s ease; }
 .chart-switch-btn:hover { background: rgba(214,43,31,.14); }

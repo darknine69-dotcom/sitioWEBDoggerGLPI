@@ -403,6 +403,8 @@
         document.getElementById('pivotCol1').textContent = meta.label;
         document.getElementById('pivotDimLabel').textContent = meta.label.toLowerCase();
         var rows = meta.rows.filter(function (r) { return r.total > 0 || r.vencido > 0; });
+        var pop0 = document.getElementById('pivotPop');
+        if (pop0) pop0.remove();
         if (!rows.length) {
             body.innerHTML = '<tr class="table-empty"><td colspan="5">Sin datos todavía.</td></tr>';
             return;
@@ -422,6 +424,62 @@
         }).join('');
         html += '<tr class="pivot-total-row"><td>' + esc(tot.label) + '</td><td class="num">' + tot.abrir + '</td><td class="num">' + tot.espera + '</td><td class="num col-vencido">' + (tot.vencido ? '<span class="badge-vencido">' + tot.vencido + '</span>' : '—') + '</td><td class="num"><strong>' + tot.total + '</strong></td></tr>';
         body.innerHTML = html;
+        Array.prototype.forEach.call(body.querySelectorAll('.pivot-lead'), function (cell, i) {
+            cell.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (!rows[i]) return;
+                showPivotPop(rows[i], cell);
+            });
+        });
+    }
+
+    function showPivotPop(r, anchor) {
+        var card = document.querySelector('[data-pivot-card]');
+        if (!card) return;
+        var vieja = document.getElementById('pivotPop');
+        if (vieja) vieja.remove();
+        var pop = domEl('<div class="pivot-pop" id="pivotPop"></div>');
+        var pct = r.total ? Math.round(r.vencido / r.total * 100) : 0;
+        pop.innerHTML =
+            '<div class="pivot-pop-head"><strong>' + esc(r.label) + '</strong><button type="button" class="pivot-pop-close" title="Cerrar">&times;</button></div>' +
+            '<div class="pivot-pop-stats">' +
+            statPiv('Abierto', r.abrir, '#2563EB') +
+            statPiv('En espera', r.espera, '#B7791F') +
+            statPiv('Vencido', r.vencido, '#D62B1F') +
+            statPiv('Total', r.total, '#212121') +
+            '</div>' +
+            '<div class="pivot-pop-bar">' +
+            segPiv(r.abrir, r.total, '#2563EB') +
+            segPiv(r.espera, r.total, '#B7791F') +
+            segPiv(r.vencido, r.total, '#D62B1F') +
+            '</div>' +
+            '<div class="pivot-pop-foot">' + pct + '% de sus solicitudes vencidas</div>';
+        card.appendChild(pop);
+        var cardRect = card.getBoundingClientRect();
+        var acr = anchor.getBoundingClientRect();
+        pop.style.visibility = 'hidden';
+        var w = pop.offsetWidth;
+        var h = pop.offsetHeight;
+        var x = acr.left - cardRect.left + 8;
+        var y = acr.top - cardRect.top + acr.height + 6;
+        x = Math.max(6, Math.min(x, cardRect.width - w - 6));
+        if (y + h > cardRect.height - 6 && y - h - 10 > 0) y = acr.top - cardRect.top - h - 6;
+        pop.style.left = x + 'px';
+        pop.style.top = y + 'px';
+        pop.style.visibility = '';
+        requestAnimationFrame(function () { pop.classList.add('is-in'); });
+        pop.querySelector('.pivot-pop-close').addEventListener('click', function (e) {
+            e.stopPropagation();
+            pop.remove();
+        });
+    }
+
+    function statPiv(n, v, c) {
+        return '<div class="pivot-pop-stat"><span class="pivot-pop-dot" style="background:' + c + '"></span>' + n + '<strong>' + v + '</strong></div>';
+    }
+    function segPiv(v, total, c) {
+        if (!v || !total) return '';
+        return '<span style="width:' + (v / total * 100) + '%;background:' + c + '"></span>';
     }
 
     function esc(s) {
@@ -484,6 +542,10 @@
             if (lb) lb.textContent = comp20.options[comp20.selectedIndex].textContent;
             var card = document.querySelector('[data-widget="comp20"]');
             if (card) render(card, 'comp20');
+        });
+        document.addEventListener('click', function () {
+            var p = document.getElementById('pivotPop');
+            if (p) p.remove();
         });
     }
 

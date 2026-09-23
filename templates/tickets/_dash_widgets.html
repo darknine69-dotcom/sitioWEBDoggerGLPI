@@ -2,7 +2,7 @@
 {# ---- Widgets gráficos del Panel Técnico / Administrador ---- #}
 {# Depende de: dash_json en el contexto, chart.umd.min.js y panel-dash.js #}
 <div class="charts-grid">
-    <div class="chart-card">
+    <div class="chart-card" data-pivot-card>
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
             <h3>Solicitudes por <em id="pivotDimLabel">técnico</em></h3>
@@ -134,4 +134,4 @@
 
 <script type="application/json" id="dashData">{{ dash_json|safe }}</script>
 <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
-<script src="{% static 'js/panel-dash.js' %}?v=20260926"></script>
+<script src="{% static 'js/panel-dash.js' %}?v=20260927"></script>
