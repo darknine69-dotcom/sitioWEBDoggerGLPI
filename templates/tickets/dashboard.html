@@ -47,9 +47,24 @@
 .pivot-pop-bar { display: flex; height: 6px; border-radius: 3px 3px 3px 3px; overflow: hidden; background: #F1EDE6; }
 .pivot-pop-bar span { display: block; height: 100%; min-width: 2px; }
 .pivot-pop-foot { margin-top: 7px; font-size: 11px; color: var(--ink-muted); text-align: right; }
+.pivot-pop { width: 284px; }
+.pivot-pop-list { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+.pivot-pop-ticket { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink); text-decoration: none; padding: 4px 6px; border-radius: 7px; }
+.pivot-pop-ticket:hover { background: var(--dogger-cream); }
+.pivot-pop-code { font-family: var(--font-mono); font-weight: 700; color: var(--dogger-red); flex: none; }
+.pivot-pop-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); }
+.pivot-pop-pill { flex: none; font-size: 10px; font-weight: 800; border-radius: 999px; padding: 1px 7px; }
+.pivot-pop-pill.gr-v { background: rgba(214,43,31,.14); color: #D62B1F; }
+.pivot-pop-pill.gr-abierto { background: rgba(37,99,235,.12); color: #2563EB; }
+.pivot-pop-pill.gr-en-progreso { background: rgba(47,125,79,.14); color: #2F7D4F; }
+.pivot-pop-pill.gr-resuelto { background: rgba(47,125,79,.14); color: #2F7D4F; }
+.pivot-pop-pill.gr-cerrado { background: #EEE9DB; color: #6B6259; }
+.pivot-pop-mas { text-align: center; font-size: 11px; color: var(--ink-muted); padding: 4px 0; }
+.pivot-pop-vacio { font-size: 12px; color: var(--ink-muted); text-align: center; padding: 8px 0; }
 @media (max-width: 480px) {
-    .pivot-pop { width: 188px; }
+    .pivot-pop { width: 250px; }
 }
+
 
 .chart-switch { position: relative; }
 .chart-switch-btn { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12px; font-weight: 700; color: var(--dogger-red-dark); background: rgba(214,43,31,.07); border: 1px solid rgba(214,43,31,.2); border-radius: 999px; padding: 5px 11px; cursor: pointer; transition: background .15s ease; }

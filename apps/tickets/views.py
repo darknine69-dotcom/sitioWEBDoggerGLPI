@@ -366,21 +366,34 @@ def _build_tecnico_dashboard(tecnico_id=None):
     hoy = timezone.now().date()
 
     # --- Tabla dinámica pivote -------------------------------------------
-    def _pivot(dimension, sort_key=None):
+    def _pivot(dimension, sort_key=None, limite=40):
         rows = {}
         for t in tickets:
             clave, label = dimension(t)
             fila = rows.setdefault(
-                clave, {"label": label, "abrir": 0, "espera": 0, "vencido": 0, "total": 0}
+                clave, {"label": label, "abrir": 0, "espera": 0, "vencido": 0, "total": 0, "tickets": []}
             )
             fila["total"] += 1
             if t.estado == Ticket.Estado.ABIERTO:
                 fila["abrir"] += 1
             elif t.estado == Ticket.Estado.EN_PROGRESO:
                 fila["espera"] += 1
-            if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO) and t.info_ans[0] == "vencido":
+            vencido = t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO) and t.info_ans[0] == "vencido"
+            if vencido:
                 fila["vencido"] += 1
+            if len(fila["tickets"]) < limite:
+                fila["tickets"].append(
+                    {
+                        "id": t.pk,
+                        "codigo": t.codigo,
+                        "titulo": t.titulo,
+                        "estado": t.estado,
+                        "vencido": vencido,
+                    }
+                )
         lista = list(rows.values())
+        for r in lista:
+            r["tickets"] = sorted(r["tickets"], key=lambda x: -x["id"])
         if sort_key:
             lista.sort(key=sort_key)
         return lista

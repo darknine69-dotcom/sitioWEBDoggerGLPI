@@ -14,6 +14,7 @@
     };
     var PAL = ['#2563EB', '#2F7D4F', '#F2A900', '#B7791F', '#8A8A86', '#6B6259', '#D62B1F'];
     var COLS = { abrir: 'Abrir', espera: 'En Espera', vencido: 'Vencido', total: 'Total' };
+    var ESTADOS = { abierto: 'Abierto', 'en-progreso': 'En progreso', resuelto: 'Resuelto', cerrado: 'Cerrado' };
 
     Chart.register({
         id: 'valorBarras',
@@ -440,6 +441,20 @@
         if (vieja) vieja.remove();
         var pop = domEl('<div class="pivot-pop" id="pivotPop"></div>');
         var pct = r.total ? Math.round(r.vencido / r.total * 100) : 0;
+        var base = card.getAttribute('data-detalle-url') || '';
+        var lista = (r.tickets || []).map(function (t) {
+            var et = ESTADOS[t.estado] || t.estado;
+            var pill = t.vencido
+                ? '<span class="pivot-pop-pill gr-v">Vencido</span>'
+                : '<span class="pivot-pop-pill gr-' + t.estado + '">' + et + '</span>';
+            return '<a class="pivot-pop-ticket" href="' + base.replace('0', t.id) + '">' +
+                '<span class="pivot-pop-code">' + esc(t.codigo) + '</span>' +
+                '<span class="pivot-pop-title">' + esc(t.titulo) + '</span>' +
+                pill +
+                '</a>';
+        }).join('');
+        if (lista && r.total > r.tickets.length) lista += '<div class="pivot-pop-mas">y ' + (r.total - r.tickets.length) + ' más…</div>';
+        if (!lista) lista = '<div class="pivot-pop-vacio">Sin tickets en esta vista.</div>';
         pop.innerHTML =
             '<div class="pivot-pop-head"><strong>' + esc(r.label) + '</strong><button type="button" class="pivot-pop-close" title="Cerrar">&times;</button></div>' +
             '<div class="pivot-pop-stats">' +
@@ -453,7 +468,8 @@
             segPiv(r.espera, r.total, '#B7791F') +
             segPiv(r.vencido, r.total, '#D62B1F') +
             '</div>' +
-            '<div class="pivot-pop-foot">' + pct + '% de sus solicitudes vencidas</div>';
+            '<div class="pivot-pop-foot">' + pct + '% de sus solicitudes vencidas</div>' +
+            '<div class="pivot-pop-list">' + lista + '</div>';
         card.appendChild(pop);
         var cardRect = card.getBoundingClientRect();
         var acr = anchor.getBoundingClientRect();
@@ -463,7 +479,7 @@
         var x = acr.left - cardRect.left + 8;
         var y = acr.top - cardRect.top + acr.height + 6;
         x = Math.max(6, Math.min(x, cardRect.width - w - 6));
-        if (y + h > cardRect.height - 6 && y - h - 10 > 0) y = acr.top - cardRect.top - h - 6;
+        if (acr.top - cardRect.top < 90) y = Math.min(y, cardRect.height - h - 6);
         pop.style.left = x + 'px';
         pop.style.top = y + 'px';
         pop.style.visibility = '';
