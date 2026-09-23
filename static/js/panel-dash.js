@@ -477,7 +477,6 @@
         if (dim) dim.addEventListener('change', function () {
             var card = document.querySelector('[data-widget="sla"]');
             if (card) render(card, 'sla');
-            updateSlaPts();
         });
         var comp20 = document.getElementById('wComp20');
         if (comp20) comp20.addEventListener('change', function () {
@@ -486,16 +485,6 @@
             var card = document.querySelector('[data-widget="comp20"]');
             if (card) render(card, 'comp20');
         });
-        updateSlaPts();
-    }
-
-    function updateSlaPts() {
-        var el = document.getElementById('slaPts');
-        if (!el) return;
-        var dim = document.getElementById('wSlaDim');
-        var rows = D.sla[(dim && dim.value) || 'por_tecnico'] || [];
-        var pts = rows.reduce(function (s, r) { return s + (r.puntos || 0); }, 0);
-        el.textContent = pts;
     }
 
     if (document.readyState === 'loading') {

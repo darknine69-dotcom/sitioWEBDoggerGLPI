@@ -327,15 +327,10 @@ def _serie_dias(inicio, fin, con_dia=False):
 def _agrupar_vencidos(tickets, dimension):
     """Cuenta tickets abiertos por dimensión según estado ANS (vencido / por vencer).
 
-    El vencimiento se trata como una SANCIÓN: además del conteo, acumula
-    "puntos" ponderados por la prioridad del ticket (urgente=3, alta=2,
-    media=1, baja=1) para puntear incumplimientos como penalización.
+    Cada vencimiento se trata como una SANCIÓN: vencidos es el número de
+    infracciones y riesgo las advertencias por vencerse pronto.
     """
     agg = {}
-
-    def _peso(t):
-        return {"urgente": 3, "alta": 2, "media": 1, "baja": 1}.get(t.prioridad, 1)
-
     for t in tickets:
         clave, label = dimension(t)
         if t.estado not in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
@@ -344,13 +339,9 @@ def _agrupar_vencidos(tickets, dimension):
         if estado_ans not in ("vencido", "por-vencer"):
             continue
         if clave not in agg:
-            agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0, "puntos": 0}
-        if estado_ans == "por-vencer":
-            agg[clave]["riesgo"] += 1
-        else:
-            agg[clave]["vencidos"] += 1
-            agg[clave]["puntos"] += _peso(t)
-    return list(agg.values())
+            agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0}
+        agg[clave][("por-vencer" if estado_ans == "por-vencer" else "vencidos")] += 1
+    return [v for v in agg.values()]
 
 
 def _build_tecnico_dashboard(tecnico_id=None):
