@@ -143,6 +143,8 @@ a { color: inherit; text-decoration: none; }
     margin: 0 0 2px;
 }
 
+.brand-id .eyebrow:empty { display: none; }
+
 .brand-id h1 {
     font-family: var(--font-display);
     font-weight: 700;

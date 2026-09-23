@@ -3,7 +3,7 @@
 {% block title %}Dogger · Panel de Cocina{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_dashboard %}is-active{% endblock %}
-{% block header_eyebrow %}Dogger · Panel de Cocina{% endblock %}
+{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Panel Administrador{% endblock %}
 
 {% block extra_css %}
@@ -90,7 +90,6 @@
 <main class="page page-corporate">
     <section class="dash-hero">
         <div class="dash-hero-kicker">
-            <span class="dash-ticket-id">Panel de Cocina</span>
             <span class="dash-hero-meta">
                 <svg class="icon icon-xs"><use href="#i-clock"/></svg>
                 {% now "l d/m/Y" %} · en vivo
@@ -136,35 +135,6 @@
             </a>
         </div>
     </section>
-
-    {% if ans_stats.vencidos or ans_stats.por_vencer or ans_stats.ok %}
-    {% with ok=ans_stats.pct_ok %}
-    <section class="ans-strip">
-        <div class="ans-ring" style="background: conic-gradient({% if ok >= 70 %}#2F7D4F{% elif ok >= 40 %}#F2A900{% else %}#D62B1F{% endif %} {{ ok }}%, #F1EDE6 0);">
-            <div class="ans-ring-core">
-                <strong>{{ ok }}%</strong>
-                <span>cumple ANS</span>
-            </div>
-        </div>
-        <div class="ans-info">
-            <h3><svg class="icon icon-sm"><use href="#i-clock"/></svg> Cumplimiento ANS</h3>
-            <p>Tickets abiertos y en progreso frente a su tiempo límite de respuesta. Revisa los <a href="{% url 'tickets:lista' %}?sv=vencidas">vencidos</a> para priorizar.</p>
-        </div>
-        <div class="ans-seg">
-            <div class="ans-seg-bar">
-                <span class="ans-seg-vencidos" style="width: {{ ans_stats.bar_vencidos|default:0 }}%;"></span>
-                <span class="ans-seg-por" style="width: {{ ans_stats.bar_por_vencer|default:0 }}%;"></span>
-                <span class="ans-seg-ok" style="width: {{ ans_stats.bar_ok|default:0 }}%;"></span>
-            </div>
-            <div class="ans-seg-items">
-                <div class="ans-seg-item ans-seg-vencidos"><span>Vencidos</span><strong>{{ ans_stats.vencidos }}</strong></div>
-                <div class="ans-seg-item ans-seg-por"><span>Por vencer</span><strong>{{ ans_stats.por_vencer }}</strong></div>
-                <div class="ans-seg-item ans-seg-ok"><span>Cumpliendo</span><strong>{{ ans_stats.ok }}</strong></div>
-            </div>
-        </div>
-    </section>
-    {% endwith %}
-    {% endif %}
 
     <div class="dash-compact">
         {% include "tickets/_dash_widgets.html" %}
