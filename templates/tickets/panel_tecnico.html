@@ -169,13 +169,21 @@
 .pivot-pop-head strong { font-size: 13px; }
 .pivot-pop-close { border: 0; background: transparent; font-size: 17px; line-height: 1; color: var(--ink-muted); cursor: pointer; padding: 2px 4px; }
 .pivot-pop-close:hover { color: var(--dogger-red); }
-.pivot-pop-stats { display: flex; flex-direction: column; gap: 5px; margin: 8px 0; }
-.pivot-pop-stat { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-muted); }
-.pivot-pop-stat strong { margin-left: auto; font-family: var(--font-mono); color: #1d1b16; }
-.pivot-pop-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.pivot-pop-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 10px; margin: 8px 0; }
+    .pivot-pop-stat { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-muted); min-width: 0; }
+    .pivot-pop-stat strong { margin-left: auto; font-family: var(--font-mono); color: #1d1b16; }
+    .pivot-pop-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+    .pivot-pop-cats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .pivot-pop-cat { font-size: 10px; font-weight: 700; color: #6B6259; background: #FBFAF7; border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
+    .pivot-pop-foot { margin-top: 7px; font-size: 11px; color: var(--ink-muted); text-align: right; }
+    .pivot-pop-foot .ph-v { color: #D62B1F; }
+    .pivot-pop-foot .ph-r { color: #B7791F; }
+
+
+
 .pivot-pop-bar { display: flex; height: 6px; border-radius: 3px 3px 3px 3px; overflow: hidden; background: #F1EDE6; }
 .pivot-pop-bar span { display: block; height: 100%; min-width: 2px; }
-.pivot-pop-foot { margin-top: 7px; font-size: 11px; color: var(--ink-muted); text-align: right; }
+
 .pivot-pop { width: 284px; }
 .pivot-pop-list { flex: 1 1 auto; min-height: 0; margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
 .pivot-pop-ticket { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink); text-decoration: none; padding: 4px 6px; border-radius: 7px; }
