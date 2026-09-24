@@ -33,6 +33,7 @@
 .row-menu-btn:hover, .row-menu-btn.is-open { color: var(--ink); border-color: #D8C8AC; background: #FBF7EF; }
 .row-menu-btn .icon { width: 16px; height: 16px; }
 .row-menu-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 215px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(60,40,10,.16); padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+.row-menu-panel[hidden] { display: none; }
 .row-menu-panel .row-menu-sep { height: 1px; background: #EFE8DA; margin: 4px 2px; }
 .row-menu-item { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; padding: 8px 10px; border: 0; background: transparent; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; white-space: nowrap; }
 .row-menu-item:hover { background: #FBF7EF; }
