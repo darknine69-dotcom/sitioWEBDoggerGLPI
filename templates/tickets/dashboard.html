@@ -154,6 +154,33 @@
 .mesa-tec-table .badge-riesgo { display: inline-block; min-width: 22px; text-align: center; background: rgba(242,169,0,.16); border-radius: 999px; padding: 1px 7px; font-weight: 800; color: #B7791F; }
 .cell-link a { font-size: 12px; font-weight: 700; color: var(--dogger-red); text-decoration: none; white-space: nowrap; }
 .cell-link a:hover { text-decoration: underline; }
+.tec-open { display: flex; flex-direction: column; gap: 1px; text-align: left; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; font: inherit; color: inherit; }
+.tec-open:hover .tec-name-txt { color: var(--dogger-red); }
+.tec-name-txt { font-weight: 700; color: #1d1b16; transition: color .12s ease; }
+.tec-name-email { font-size: 11px; color: var(--ink-muted); white-space: nowrap; }
+.tec-name-hint { font-size: 10px; color: var(--dogger-red); opacity: 0; transition: opacity .12s ease; }
+.tec-open:hover .tec-name-hint { opacity: .9; }
+.tec-modal-count { font-weight: 800; color: var(--dogger-red); }
+.tec-list { list-style: none; margin: 0; padding: 0; }
+.tec-ticket { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px dashed var(--line); }
+.tec-ticket:last-child { border-bottom: 0; }
+.tec-ticket-main { flex: 1; min-width: 0; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 2px; }
+.tec-ticket-main:hover .tec-ticket-title { color: var(--dogger-red); }
+.tec-ticket-code { font-family: var(--font-mono); font-weight: 700; color: var(--dogger-red); font-size: 12px; }
+.tec-ticket-title { font-size: 13px; color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color .12s ease; }
+.tec-ticket-meta { flex: none; display: flex; flex-wrap: wrap; gap: 4px; max-width: 220px; justify-content: flex-end; }
+.tec-pill { font-size: 10px; font-weight: 800; border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+.tec-pill.tp-abierto { background: rgba(37,99,235,.12); color: #2563EB; }
+.tec-pill.tp-en-progreso { background: rgba(242,169,0,.18); color: #B7791F; }
+.tec-pill.tp-resuelto { background: rgba(47,125,79,.14); color: #2F7D4F; }
+.tec-pill.tp-cerrado { background: #EEE9DB; color: #6B6259; }
+.tec-pill.tp-vencido { background: rgba(214,43,31,.14); color: #D62B1F; }
+.tec-pill.tp-muted { background: #F1EDE6; color: #6B6259; }
+.tec-ticket-cat { font-size: 10px; color: var(--ink-muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+.tec-modal-empty { text-align: center; color: var(--ink-muted); padding: 22px 0; }
+@media (max-width: 560px) {
+    .tec-ticket-meta { max-width: 140px; }
+}
 </style>
 {% endblock %}
 
@@ -251,10 +278,11 @@
                     {% for t in tecnicos_stats %}
                     <tr>
                         <td>
-                            <div class="tec-name">
+                            <button type="button" class="tec-open" data-pk="{{ t.id }}" data-nombre="{{ t.nombre }}" data-total="{{ t.abrir|add:t.espera }}">
                                 <span class="tec-name-txt">{{ t.nombre }}</span>
                                 <span class="tec-name-email">{{ t.email }}</span>
-                            </div>
+                                <span class="tec-name-hint">Ver sus tickets asignados</span>
+                            </button>
                         </td>
                         <td class="num"><strong>{{ t.abrir|add:t.espera }}</strong></td>
                         <td class="num col-vencido">{% if t.vencido %}<span class="badge-vencido">{{ t.vencido }}</span>{% else %}—{% endif %}</td>
@@ -267,7 +295,7 @@
                                 {% if not t.categorias %}—{% endif %}
                             </div>
                         </td>
-                        <td class="cell-link"><a href="{% url 'tickets:lista' %}?tecnico={{ t.id }}" title="Ver historial de tickets">Ver tickets</a></td>
+                        <td class="cell-link"><a href="{% url 'tickets:lista' %}?tecnico={{ t.id }}" title="Historial completo de tickets">Historial</a></td>
                     </tr>
                     {% empty %}
                     <tr class="table-empty"><td colspan="8">Sin técnicos registrados.</td></tr>
@@ -358,6 +386,19 @@
         </aside>
     </div>
 </main>
+
+<div class="modal-overlay" id="modalTecTickets">
+    <div class="modal-box modal-box-wide">
+        <div class="modal-head">
+            <h3 id="tecModalTitle">Técnico</h3>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-note" id="tecModalMeta"></p>
+            <ul class="tec-list" id="tecModalList"></ul>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block footer %}{% endblock %}

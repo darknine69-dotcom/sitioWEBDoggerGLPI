@@ -1916,6 +1916,48 @@ def _tecnicos_resumen():
     return resumen
 
 
+def _cat_label(t):
+    if t.categoria_id:
+        return f"{t.categoria.grupo or ''} › {t.categoria.nombre or ''}".strip(" ›") or "Sin categoría"
+    return "Sin categoría"
+
+
+@admin_required
+def tec_tickets_api(request, pk):
+    """Tickets asignados a un técnico, para la tarjeta 'Técnicos' del panel admin."""
+    tec = get_object_or_404(User, pk=pk)
+    qs = (
+        Ticket.objects.filter(tecnico_asignado=tec)
+        .select_related("categoria")
+        .order_by("-fecha_creacion")
+    )
+    tickets = []
+    for t in qs:
+        ans = t.info_ans[0]
+        tickets.append(
+            {
+                "id": t.pk,
+                "codigo": t.codigo,
+                "titulo": t.titulo,
+                "prioridad": t.get_prioridad_display(),
+                "estado": t.estado,
+                "estado_label": t.get_estado_display(),
+                "categoria": _cat_label(t),
+                "ans": ans,
+                "solicitante": (t.solicitante_nombre or t.solicitante_email or "Sin datos"),
+                "detalle_url": reverse("tickets:detalle", args=[t.pk]),
+            }
+        )
+    return JsonResponse(
+        {
+            "nombre": tec.nombre or tec.email,
+            "email": tec.email,
+            "total": qs.count(),
+            "tickets": tickets,
+        }
+    )
+
+
 @staff_required
 def lista_tickets(request):
     """Lista unificada de tickets: el admin ve todos, el técnico solo los suyos."""

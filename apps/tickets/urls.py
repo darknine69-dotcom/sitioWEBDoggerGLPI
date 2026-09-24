@@ -35,6 +35,7 @@ urlpatterns = [
     path("panel/tecnico/api/chat/<int:pk>/mensajes/", views.panel_tecnico_msgs_ajax, name="panel_tecnico_msgs"),
     path("panel/tecnico/api/chat/<int:pk>/enviar/", views.panel_tecnico_chat_ajax, name="panel_tecnico_chat"),
     path("panel/api/tickets/<int:pk>/estado/", views.ticket_estado_ajax, name="staff_api_estado"),
+    path("panel/api/tecnico/<int:pk>/tickets/", views.tec_tickets_api, name="tec_tickets_api"),
     path("panel/tickets/<int:pk>/estado/", views.cambiar_estado, name="cambiar_estado"),
     path("panel/tickets/<int:pk>/eliminar/", views.eliminar_ticket, name="eliminar"),
     path("panel/adjunto/<int:pk>/", views.ver_adjunto, name="adjunto"),

@@ -572,6 +572,57 @@
             var p = document.getElementById('pivotPop');
             if (p) p.remove();
         });
+        initTecModal();
+    }
+
+    function tecRow(t) {
+        var pill = '<span class="tec-pill tp-' + t.estado + '">' + esc(t.estado_label || ESTADOS[t.estado] || t.estado) + '</span>';
+        if (t.ans === 'vencido') pill += '<span class="tec-pill tp-vencido">Vencido</span>';
+        return '<li class="tec-ticket">' +
+            '<a class="tec-ticket-main" href="' + t.detalle_url + '">' +
+            '<span class="tec-ticket-code">' + esc(t.codigo) + '</span>' +
+            '<span class="tec-ticket-title">' + esc(t.titulo) + '</span>' +
+            '<span class="tec-ticket-cat">' + esc(t.categoria) + '</span>' +
+            '</a>' +
+            '<div class="tec-ticket-meta">' +
+            pill +
+            '<span class="tec-pill tp-muted">' + esc(t.prioridad) + '</span>' +
+            '<span class="tec-pill tp-muted">' + esc(t.solicitante) + '</span>' +
+            '</div>' +
+            '</li>';
+    }
+
+    function initTecModal() {
+        var card = document.querySelector('.mesa-tec-card');
+        if (!card) return;
+        var modal = document.getElementById('modalTecTickets');
+        if (!modal) return;
+        var title = document.getElementById('tecModalTitle');
+        var meta = document.getElementById('tecModalMeta');
+        var list = document.getElementById('tecModalList');
+        Array.prototype.forEach.call(card.querySelectorAll('.tec-open'), function (btn) {
+            btn.addEventListener('click', function () {
+                var pk = btn.dataset.pk;
+                title.textContent = btn.dataset.nombre || 'Técnico';
+                meta.textContent = 'Tiene ' + (btn.dataset.total || 0) + ' tickets a cargo.';
+                list.innerHTML = '<li class="tec-modal-empty">Cargando tickets…</li>';
+                modal.classList.add('open');
+                document.body.style.overflow = 'hidden';
+                fetch('/panel/api/tecnico/' + pk + '/tickets/')
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        meta.textContent = 'Técnico ' + d.nombre + ' · ' + d.total + ' ticket' + (d.total === 1 ? '' : 's') + ' asignado' + (d.total === 1 ? '' : 's');
+                        if (!d.tickets.length) {
+                            list.innerHTML = '<li class="tec-modal-empty">Este técnico no tiene tickets asignados.</li>';
+                            return;
+                        }
+                        list.innerHTML = d.tickets.map(tecRow).join('');
+                    })
+                    .catch(function () {
+                        list.innerHTML = '<li class="tec-modal-empty">No se pudieron cargar los tickets.</li>';
+                    });
+            });
+        });
     }
 
     if (document.readyState === 'loading') {
