@@ -42,13 +42,21 @@
 .pivot-pop-head strong { font-size: 13px; }
 .pivot-pop-close { border: 0; background: transparent; font-size: 17px; line-height: 1; color: var(--ink-muted); cursor: pointer; padding: 2px 4px; }
 .pivot-pop-close:hover { color: var(--dogger-red); }
-.pivot-pop-stats { display: flex; flex-direction: column; gap: 5px; margin: 8px 0; }
-.pivot-pop-stat { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-muted); }
-.pivot-pop-stat strong { margin-left: auto; font-family: var(--font-mono); color: #1d1b16; }
-.pivot-pop-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.pivot-pop-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 10px; margin: 8px 0; }
+    .pivot-pop-stat { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-muted); min-width: 0; }
+    .pivot-pop-stat strong { margin-left: auto; font-family: var(--font-mono); color: #1d1b16; }
+    .pivot-pop-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+    .pivot-pop-cats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .pivot-pop-cat { font-size: 10px; font-weight: 700; color: #6B6259; background: #FBFAF7; border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
+    .pivot-pop-foot { margin-top: 7px; font-size: 11px; color: var(--ink-muted); text-align: right; }
+    .pivot-pop-foot .ph-v { color: #D62B1F; }
+    .pivot-pop-foot .ph-r { color: #B7791F; }
+
+
+
 .pivot-pop-bar { display: flex; height: 6px; border-radius: 3px 3px 3px 3px; overflow: hidden; background: #F1EDE6; }
 .pivot-pop-bar span { display: block; height: 100%; min-width: 2px; }
-.pivot-pop-foot { margin-top: 7px; font-size: 11px; color: var(--ink-muted); text-align: right; }
+
 .pivot-pop { width: 284px; }
 .pivot-pop-list { flex: 1 1 auto; min-height: 0; margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
 .pivot-pop-ticket { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink); text-decoration: none; padding: 4px 6px; border-radius: 7px; }
@@ -131,6 +139,21 @@
 @media (max-width: 900px) {
     .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr) 140px; gap: 10px; }
 }
+.admin-shell .dash-stat-row--mesas { grid-template-columns: repeat(6, 1fr); }
+@media (max-width: 1180px) { .admin-shell .dash-stat-row--mesas { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 960px) { .admin-shell .dash-stat-row--mesas { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .admin-shell .dash-stat-row--mesas { grid-template-columns: 1fr; } }
+.mesa-tec-card { margin-bottom: 18px; }
+.mesa-tec-table td, .mesa-tec-table th { vertical-align: middle; }
+.tec-name { display: flex; flex-direction: column; gap: 1px; }
+.tec-name-txt { font-weight: 700; color: #1d1b16; }
+.tec-name-email { font-size: 11px; color: var(--ink-muted); white-space: nowrap; }
+.tec-cats { display: flex; flex-wrap: wrap; gap: 4px; max-width: 340px; }
+.tec-cat { font-size: 10.5px; font-weight: 700; color: #6B6259; background: #FBFAF7; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.mesa-tec-table .badge-vencido { display: inline-block; min-width: 22px; text-align: center; background: rgba(214,43,31,.12); border-radius: 999px; padding: 1px 7px; font-weight: 800; color: var(--dogger-red); }
+.mesa-tec-table .badge-riesgo { display: inline-block; min-width: 22px; text-align: center; background: rgba(242,169,0,.16); border-radius: 999px; padding: 1px 7px; font-weight: 800; color: #B7791F; }
+.cell-link a { font-size: 12px; font-weight: 700; color: var(--dogger-red); text-decoration: none; white-space: nowrap; }
+.cell-link a:hover { text-decoration: underline; }
 </style>
 {% endblock %}
 
@@ -148,7 +171,7 @@
         </div>
         <h1>Resumen del helpdesk</h1>
 
-        <div class="dash-stat-row">
+        <div class="dash-stat-row dash-stat-row--mesas">
             <a class="dash-stat" href="{% url 'tickets:lista' %}">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 <span class="dash-stat-body">
@@ -181,11 +204,77 @@
                     <span class="dash-stat-hint">{{ stats.cerrados|default:0 }} cerrados</span>
                 </span>
             </a>
+            <a class="dash-stat" href="{% url 'tickets:usuarios' %}">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Técnicos</span>
+                    <span class="dash-stat-value">{{ n_tecnicos|default:0 }}</span>
+                    <span class="dash-stat-hint">medir su carga</span>
+                </span>
+            </a>
+            <a class="dash-stat" href="{% url 'tickets:usuarios' %}">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-user"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Usuarios</span>
+                    <span class="dash-stat-value">{{ n_usuarios|default:0 }}</span>
+                    <span class="dash-stat-hint">solicitantes del portal</span>
+                </span>
+            </a>
         </div>
     </section>
 
     <div class="dash-compact">
         {% include "tickets/_dash_widgets.html" %}
+    </div>
+
+    <div class="chart-card mesa-tec-card">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+            <h3>Técnicos · carga, ANS y categorías</h3>
+            <a href="{% url 'tickets:usuarios' %}" class="btn btn-outline btn-sm">Gestionar</a>
+        </div>
+        <div class="table-scroll">
+            <table class="data-table mesa-tec-table">
+                <thead>
+                    <tr>
+                        <th>Técnico</th>
+                        <th class="num">A cargo</th>
+                        <th class="num col-vencido">Vencidos</th>
+                        <th class="num">Por vencer</th>
+                        <th class="num">Resueltos</th>
+                        <th class="num">Cerrados</th>
+                        <th>Categorías</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tecnicos_stats %}
+                    <tr>
+                        <td>
+                            <div class="tec-name">
+                                <span class="tec-name-txt">{{ t.nombre }}</span>
+                                <span class="tec-name-email">{{ t.email }}</span>
+                            </div>
+                        </td>
+                        <td class="num"><strong>{{ t.abrir|add:t.espera }}</strong></td>
+                        <td class="num col-vencido">{% if t.vencido %}<span class="badge-vencido">{{ t.vencido }}</span>{% else %}—{% endif %}</td>
+                        <td class="num">{% if t.riesgo %}<span class="badge-riesgo">{{ t.riesgo }}</span>{% else %}—{% endif %}</td>
+                        <td class="num">{{ t.resueltos }}</td>
+                        <td class="num">{{ t.cerrado }}</td>
+                        <td>
+                            <div class="tec-cats">
+                                {% for c in t.categorias %}<span class="tec-cat">{{ c }}</span>{% endfor %}
+                                {% if not t.categorias %}—{% endif %}
+                            </div>
+                        </td>
+                        <td class="cell-link"><a href="{% url 'tickets:lista' %}?tecnico={{ t.id }}" title="Ver historial de tickets">Ver tickets</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr class="table-empty"><td colspan="8">Sin técnicos registrados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="dashboard-bottom">

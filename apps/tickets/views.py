@@ -371,18 +371,28 @@ def _build_tecnico_dashboard(tecnico_id=None):
         for t in tickets:
             clave, label = dimension(t)
             fila = rows.setdefault(
-                clave, {"label": label, "abrir": 0, "espera": 0, "vencido": 0, "resueltos": 0, "total": 0, "tickets": []}
+                clave, {"label": label, "abrir": 0, "espera": 0, "vencido": 0, "riesgo": 0, "cerrado": 0, "resueltos": 0, "total": 0, "categorias": [], "_cats": set(), "tickets": []}
             )
             fila["total"] += 1
             if t.estado == Ticket.Estado.ABIERTO:
                 fila["abrir"] += 1
             elif t.estado == Ticket.Estado.EN_PROGRESO:
                 fila["espera"] += 1
-            elif t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
+            elif t.estado == Ticket.Estado.RESUELTO:
                 fila["resueltos"] += 1
-            vencido = t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO) and t.info_ans[0] == "vencido"
-            if vencido:
-                fila["vencido"] += 1
+            elif t.estado == Ticket.Estado.CERRADO:
+                fila["cerrado"] += 1
+            ans = t.info_ans[0]
+            if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+                if ans == "vencido":
+                    fila["vencido"] += 1
+                elif ans == "por-vencer":
+                    fila["riesgo"] += 1
+                cat = "Sin categoría"
+                if t.categoria_id:
+                    cat = f"{t.categoria.grupo or ''} › {t.categoria.nombre or ''}".strip(" ›") or "Sin categoría"
+                if cat not in fila["_cats"] and len(fila["_cats"]) < 8:
+                    fila["_cats"].add(cat)
             if len(fila["tickets"]) < limite:
                 fila["tickets"].append(
                     {
@@ -390,11 +400,13 @@ def _build_tecnico_dashboard(tecnico_id=None):
                         "codigo": t.codigo,
                         "titulo": t.titulo,
                         "estado": t.estado,
-                        "vencido": vencido,
+                        "vencido": ans == "vencido"
+                        and t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO),
                     }
                 )
         lista = list(rows.values())
         for r in lista:
+            r["categorias"] = sorted(r.pop("_cats"))
             r["tickets"] = sorted(r["tickets"], key=lambda x: -x["id"])
         if sort_key:
             lista.sort(key=sort_key)
@@ -459,7 +471,7 @@ def _build_tecnico_dashboard(tecnico_id=None):
                 "rows": _pivot(dim_categoria, sort_key=lambda r: r["label"].lower()),
             },
         },
-        "columnas": ["abrir", "espera", "vencido", "resueltos"],
+        "columnas": ["abrir", "espera", "vencido", "cerrado", "resueltos"],
     }
 
     # --- Pie: modo / prioridad (solo abiertos) ---------------------------
@@ -1782,6 +1794,8 @@ def dashboard(request):
     recientes_page = paginate_recent_tickets(request, tickets_qs, per_page=pp_recientes)
     dashboard_context = _build_dashboard_context(request, tickets)
     recientes = _adjuntar_solicitantes(recientes_page.object_list)
+    n_tecnicos = User.objects.filter(activo=True, rol__in=[User.Rol.TECNICO, User.Rol.ADMIN]).count()
+    n_usuarios = User.objects.filter(activo=True, rol=User.Rol.USUARIO).count()
     return render(
         request,
         "tickets/dashboard.html",
@@ -1792,6 +1806,9 @@ def dashboard(request):
             "per_page_recientes": pp_recientes,
             "querystring": _params_sin_page(request, "page_recientes"),
             "dash_json": _build_tecnico_dashboard(None),
+            "tecnicos_stats": _tecnicos_resumen(),
+            "n_tecnicos": n_tecnicos,
+            "n_usuarios": n_usuarios,
             **dashboard_context,
         },
     )
@@ -1839,6 +1856,64 @@ def _adjuntar_solicitantes(tickets):
     for t in tickets:
         t.solicitante_usuario = usuarios.get((t.solicitante_email or "").lower())
     return tickets
+
+
+def _tecnicos_resumen():
+    """Resumen por técnico/admin activo: carga, ANS (vencidos/por vencer) y categorías.
+
+    Permite al dashboard del administrador seguir el historial de cada técnico:
+    cuántos tickets tiene a cargo, si están vencidos o por vencer, los resueltos/
+    cerrados y qué categorías maneja.
+    """
+    tecnicos = {
+        u.id: u
+        for u in User.objects.filter(activo=True, rol__in=["tecnico", "admin"]).order_by("nombre")
+    }
+    agg = {
+        uid: {
+            "id": uid,
+            "nombre": u.nombre or u.email,
+            "email": u.email,
+            "abrir": 0,
+            "espera": 0,
+            "vencido": 0,
+            "riesgo": 0,
+            "resueltos": 0,
+            "cerrado": 0,
+            "categorias": set(),
+        }
+        for uid, u in tecnicos.items()
+    }
+    for t in Ticket.objects.select_related("categoria", "tecnico_asignado").iterator(chunk_size=500):
+        tid = t.tecnico_asignado_id
+        if not tid or tid not in agg:
+            continue
+        r = agg[tid]
+        if t.estado == Ticket.Estado.ABIERTO:
+            r["abrir"] += 1
+        elif t.estado == Ticket.Estado.EN_PROGRESO:
+            r["espera"] += 1
+        elif t.estado == Ticket.Estado.RESUELTO:
+            r["resueltos"] += 1
+        elif t.estado == Ticket.Estado.CERRADO:
+            r["cerrado"] += 1
+        if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+            ans = t.info_ans[0]
+            if ans == "vencido":
+                r["vencido"] += 1
+            elif ans == "por-vencer":
+                r["riesgo"] += 1
+            if t.categoria_id:
+                r["categorias"].add(
+                    f"{t.categoria.grupo or ''} › {t.categoria.nombre or ''}".strip(" ›") or "Sin categoría"
+                )
+            else:
+                r["categorias"].add("Sin categoría")
+    resumen = []
+    for r in agg.values():
+        r["categorias"] = sorted(r["categorias"])
+        resumen.append(r)
+    return resumen
 
 
 @staff_required
