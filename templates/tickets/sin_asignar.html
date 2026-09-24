@@ -2,7 +2,6 @@
 
 {% block title %}Dogger · Sin asignar{% endblock %}
 {% block body_class %}admin-shell sinAsignar-page{% endblock %}
-{% block nav_sin_asignar %}is-active{% endblock %}
 {% block header_eyebrow %}{% endblock %}
 {% block header_title %}{% endblock %}
 
@@ -11,15 +10,37 @@
 .sinAsignar-page .brand-titles { display: none; }
 .sa-head-l h2 { margin: 0; font-size: 20px; }
 .sa-head-l p { margin: 2px 0 0; color: var(--ink-muted); font-size: 13px; }
-.sa-pill { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; padding: 6px 14px; border-radius: 999px; background: rgba(214,43,31,.07); border: 1px solid rgba(214,43,31,.18); color: var(--dogger-red-dark); font-size: 12px; font-weight: 800; }
+.sa-pill { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; padding: 6px 14px; border-radius: 999px; background: rgba(217,164,54,.10); border: 1px solid rgba(217,164,54,.35); color: #B7791F; font-size: 12px; font-weight: 800; }
 .sa-pill .icon { width: 13px; height: 13px; }
-.ty-grid.sa-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-.sa-assign { display: flex; gap: 7px; align-items: center; margin-top: 4px; }
-.sa-assign select { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); }
+.table-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.table-scroll { overflow-x: auto; }
+.sa-tabla { min-width: 760px; }
+.sa-tabla td .ty-prio { display: inline-block; }
+.sa-assign { display: flex; gap: 6px; align-items: center; }
+.sa-assign select { font: inherit; font-size: 12.5px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); max-width: 150px; }
 .sa-assign select:focus { outline: none; border-color: var(--dogger-red); }
-.sa-assign .btn { white-space: nowrap; }
-.sa-tomar { width: 100%; }
-.ans-time .icon { width: 12px; height: 12px; }
+.sa-tomar { white-space: nowrap; }
+.sa-titulo-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sa-titulo { font-weight: 600; font-size: 13.5px; }
+.sa-titulo-sub { display: block; font-size: 12px; font-weight: 400; color: var(--ink-muted); margin-top: 2px; }
+.td-acciones { display: flex; gap: 7px; align-items: center; justify-content: flex-end; }
+
+/* ---- Menú de acciones flotante (ciclo de vida) ---- */
+.actions-trigger { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
+#actions-flotante {
+    position: fixed; z-index: 9999; display: flex; flex-direction: column; gap: 2px; width: 200px;
+    padding: 5px; background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18);
+}
+#actions-flotante .accion-btn {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 8px;
+    border-radius: 7px; font-size: 12.5px; font-weight: 600; border: 0; background: transparent;
+    color: var(--ink); cursor: pointer; transition: background .12s ease; white-space: nowrap;
+}
+#actions-flotante .accion-btn:hover { background: #fff3e3; }
+#actions-flotante .accion-btn .accion-icon { width: 14px; height: 14px; flex: none; color: var(--ink-muted); }
+#actions-flotante .accion-btn.is-danger { color: var(--dogger-red); }
+#actions-flotante .accion-btn.is-danger .accion-icon { color: var(--dogger-red); }
 </style>
 {% endblock %}
 
@@ -29,75 +50,97 @@
         <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles sa-head-l">
             <h2>Solicitudes sin asignar</h2>
-            <p>{% if es_admin %}Asigna cada solicitud al técnico que la atenderá.{% else %}Toma las solicitudes que no tienen técnico.{% endif %}</p>
-            <span class="sa-pill"><svg class="icon"><use href="#i-alert"/></svg> {{ pendientes }} pendiente{{ pendientes|pluralize }}</span>
+            <p>{% if es_admin %}Asigna cada solicitud al técnico que la atenderá y gestiona su ciclo de vida.{% else %}Toma las solicitudes que no tienen técnico y gestiona su ciclo de vida.{% endif %}</p>
+            <span class="sa-pill"><svg class="icon"><use href="#i-inbox"/></svg> {{ pendientes }} pendiente{{ pendientes|pluralize }}</span>
         </div>
     </div>
 
-    <div class="ty-results">
-        <div class="ty-grid sa-grid">
-            {% for t in tickets %}
-            <article class="ty-card">
-                <div class="ty-card-head">
-                    <a class="ty-code" href="{% url 'tickets:detalle' t.pk %}" title="Ver ticket">{{ t.codigo }}</a>
-                    <div class="ty-card-head-right">
-                        {% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}
-                        <span class="ty-prio ty-prio-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span>
-                    </div>
-                </div>
-                <div class="ty-body">
-                    <a class="ty-title" href="{% url 'tickets:detalle' t.pk %}">{{ t.titulo }}</a>
-                    <div class="ty-meta">
-                        {% include "tickets/_solicitante_cell.html" with t=t %}
-                        <span class="ty-meta-line">
-                            <svg class="icon"><use href="#i-folder"/></svg>
-                            {{ t.categoria.grupo|default:"—" }} › {{ t.categoria.nombre|default:"Sin categoría" }}
-                        </span>
-                        <span class="ty-meta-line">
-                            <svg class="icon"><use href="#i-wrench"/></svg>
-                            <span class="sa-sin-tec">Sin técnico asignado</span>
-                        </span>
-                    </div>
-                </div>
-                <div class="ty-card-foot">
-                    {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
-                    {% with info=t.info_ans %}
-                    {% if info.0 %}
-                    <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
-                        {% if info.0 == 'vencido' %}<svg class="icon icon-sm"><use href="#i-alert"/></svg>
-                        {% elif info.0 == 'resuelto' %}<svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-                        {% else %}<svg class="icon icon-sm"><use href="#i-clock"/></svg>{% endif %}
-                        {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
-                    </span>
-                    {% endif %}
-                    {% endwith %}
-                    <span class="ty-date">{{ t.fecha_creacion|date:"d/m/Y" }}</span>
-                    {% if es_admin %}
-                    <form method="post" action="{% url 'tickets:sin_asignar' %}" class="sa-assign">
-                        {% csrf_token %}
-                        <input type="hidden" name="ticket_id" value="{{ t.pk }}">
-                        <input type="hidden" name="action" value="asignar">
-                        <select name="tecnico" aria-label="Asignar a">
-                            <option value="">— Sin asignar —</option>
-                            {% for tec in tecnicos %}
-                            <option value="{{ tec.pk }}">{{ tec.nombre }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-primary btn-sm">Asignar</button>
-                    </form>
-                    {% else %}
-                    <form method="post" action="{% url 'tickets:sin_asignar' %}" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}?');">
-                        {% csrf_token %}
-                        <input type="hidden" name="ticket_id" value="{{ t.pk }}">
-                        <input type="hidden" name="action" value="tomar">
-                        <button type="submit" class="btn btn-accent btn-sm sa-tomar">Tomar este ticket</button>
-                    </form>
-                    {% endif %}
-                </div>
-            </article>
-            {% empty %}
-            <p class="table-empty ty-empty">No hay solicitudes sin técnico. ¡Todo asignado!</p>
-            {% endfor %}
+    <div class="table-card">
+        <div class="table-scroll">
+            <table class="data-table sa-tabla">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Solicitante</th>
+                        <th>Prioridad</th>
+                        <th>ANS</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th class="th-acciones">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tickets %}
+                    <tr>
+                        <td>
+                            <a class="table-code" href="{% url 'tickets:detalle' t.pk %}" title="Ver ticket">{{ t.codigo }}</a>
+                            {% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}
+                        </td>
+                        <td>
+                            <div class="sa-titulo-wrap">
+                                <a class="sa-titulo" href="{% url 'tickets:detalle' t.pk %}">{{ t.titulo }}</a>
+                                {% if t.solicitante_punto %}<span class="sa-titulo-sub">{{ t.solicitante_punto }}</span>{% endif %}
+                            </div>
+                        </td>
+                        <td>{% include "tickets/_solicitante_cell.html" with t=t %}</td>
+                        <td><span class="ty-prio ty-prio-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span></td>
+                        <td>
+                            {% with info=t.info_ans %}
+                            {% if info.0 %}
+                            <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
+                                {% if info.0 == 'vencido' %}<svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                                {% elif info.0 == 'resuelto' %}<svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                                {% else %}<svg class="icon icon-sm"><use href="#i-clock"/></svg>{% endif %}
+                                {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
+                            </span>
+                            {% else %}<span class="sin-asignar">—</span>{% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}</td>
+                        <td><span class="ty-date">{{ t.fecha_creacion|date:"d/m/Y" }}</span></td>
+                        <td>
+                            <div class="td-acciones">
+                                {% if es_admin %}
+                                <form method="post" action="{% url 'tickets:sin_asignar' %}" class="sa-assign">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="ticket_id" value="{{ t.pk }}">
+                                    <input type="hidden" name="action" value="asignar">
+                                    <select name="tecnico" aria-label="Asignar a">
+                                        <option value="">— Sin asignar —</option>
+                                        {% for tec in tecnicos %}
+                                        <option value="{{ tec.pk }}">{{ tec.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-primary btn-sm">Asignar</button>
+                                </form>
+                                {% else %}
+                                <form method="post" action="{% url 'tickets:sin_asignar' %}" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="ticket_id" value="{{ t.pk }}">
+                                    <input type="hidden" name="action" value="tomar">
+                                    <button type="submit" class="btn btn-accent btn-sm sa-tomar">Tomar</button>
+                                </form>
+                                {% endif %}
+                                <button type="button" class="btn btn-sm btn-outline actions-trigger"
+                                        title="Ciclo de vida" aria-label="Ciclo de vida"
+                                        aria-haspopup="true" aria-expanded="false"
+                                        data-estado-url="{% url 'tickets:cambiar_estado' t.pk %}"
+                                        {% if es_admin %}data-eliminar-url="{% url 'tickets:eliminar' t.pk %}"{% endif %}
+                                        data-codigo="{{ t.codigo }}"
+                                        data-estado-actual="{{ t.estado }}">
+                                    <svg class="icon icon-sm"><use href="#i-ellipsis"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="table-empty">No hay solicitudes sin técnico. ¡Todo asignado!</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -129,4 +172,158 @@
     </div>
     {% endif %}
 </main>
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+<script>
+(function () {
+    var csrfEl = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    var token = csrfEl ? csrfEl.value : '';
+    var next = window.location.pathname + window.location.search;
+    var menuEl = null;
+    var triggerEl = null;
+
+    var ESTADO_ITEMS = {
+        'abierto': [
+            {e:'en-progreso', l:'Poner en progreso', icon:'#i-wrench'},
+            {e:'resuelto',    l:'Marcar resuelto', icon:'#i-check-circle'}
+        ],
+        'en-progreso': [
+            {e:'resuelto',    l:'Marcar resuelto', icon:'#i-check-circle'}
+        ],
+        'resuelto': [],
+        'cerrado': []
+    };
+    var CERRAR  = {e:'cerrado', l:'Cerrar ticket', icon:'#i-lock', danger:true, confirm:'¿Cerrar este ticket?'};
+    var REABRIR = {e:'abierto', l:'Reabrir ticket', icon:'#i-refresh', danger:false};
+
+    function build(estado, eliminarUrl, codigo) {
+        var items = [];
+        var tr = ESTADO_ITEMS[estado] || [];
+        for (var i = 0; i < tr.length; i++) items.push(tr[i]);
+        if (estado !== 'cerrado') items.push(CERRAR);
+        else items.push(REABRIR);
+        if (eliminarUrl) {
+            items.push({elim:true, l:'Eliminar ticket', icon:'#i-trash', danger:true, url:eliminarUrl, cod:codigo});
+        }
+        return items;
+    }
+
+    function render(estado, eliminarUrl, codigo) {
+        var items = build(estado, eliminarUrl, codigo);
+        var html = '';
+        for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            var cls = 'accion-btn';
+            if (it.danger) cls += ' is-danger';
+            if (it.elim) {
+                html += '<button type="button" class="' + cls + '" data-accion-eliminar data-eliminar-url="' + it.url + '" data-codigo="' + it.cod + '">' +
+                        '<svg class="accion-icon"><use href="' + it.icon + '"/></svg>' +
+                        '<span class="accion-text">' + it.l + '</span>' +
+                        '</button>';
+            } else {
+                var conf = it.confirm ? ' data-confirm="' + it.confirm + '"' : '';
+                html += '<button type="button" class="' + cls + '" data-estado="' + it.e + '"' + conf + '>' +
+                        '<svg class="accion-icon"><use href="' + it.icon + '"/></svg>' +
+                        '<span class="accion-text">' + it.l + '</span>' +
+                        '</button>';
+            }
+        }
+        return html;
+    }
+
+    function abrir(trig) {
+        cerrar();
+        triggerEl = trig;
+        menuEl = document.createElement('div');
+        menuEl.id = 'actions-flotante';
+        menuEl.setAttribute('role', 'menu');
+        menuEl.innerHTML = render(
+            trig.dataset.estadoActual || '',
+            trig.dataset.eliminarUrl || '',
+            trig.dataset.codigo || ''
+        );
+        document.body.appendChild(menuEl);
+        posicionar();
+        trig.setAttribute('aria-expanded', 'true');
+        var firstBtn = menuEl.querySelector('button');
+        if (firstBtn) firstBtn.focus();
+    }
+
+    function posicionar() {
+        if (!menuEl) return;
+        var r = triggerEl.getBoundingClientRect();
+        var mw = 200, pad = 8;
+        var x = Math.max(pad, Math.min(r.right - mw, window.innerWidth - mw - pad));
+        var y = r.bottom + 4;
+        if (y + menuEl.offsetHeight > window.innerHeight - pad) y = Math.max(pad, r.top - menuEl.offsetHeight - 4);
+        menuEl.style.left = x + 'px';
+        menuEl.style.top = y + 'px';
+    }
+
+    function cerrar() {
+        if (menuEl) { menuEl.remove(); menuEl = null; }
+        if (triggerEl) {
+            triggerEl.setAttribute('aria-expanded', 'false');
+            triggerEl.focus();
+            triggerEl = null;
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('.actions-trigger');
+        if (trigger) {
+            e.preventDefault();
+            if (triggerEl === trigger) { cerrar(); return; }
+            abrir(trigger);
+            return;
+        }
+        var item = e.target.closest('#actions-flotante .accion-btn');
+        if (item) {
+            e.preventDefault();
+            if (item.dataset.accionEliminar !== undefined) {
+                var mensajeBorrar = '¿Eliminar definitivamente el ticket ' + (item.dataset.codigo || '') + '? Esta acción no se puede deshacer.';
+                window.DoggerConfirma(mensajeBorrar, function () {
+                    var form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = item.dataset.eliminarUrl;
+                    [['next', next], ['csrfmiddlewaretoken', token]].forEach(function (p) {
+                        var i = document.createElement('input');
+                        i.type = 'hidden'; i.name = p[0]; i.value = p[1];
+                        form.appendChild(i);
+                    });
+                    document.body.appendChild(form);
+                    form.submit();
+                }, 'Sí, eliminar');
+                return;
+            }
+            var confirmText = item.dataset.confirm;
+            var realizarAccion = function () {
+                var url = triggerEl ? triggerEl.dataset.estadoUrl : '';
+                cerrar();
+                if (!url) return;
+                var f = document.createElement('form');
+                f.method = 'post';
+                f.action = url;
+                [['estado', item.dataset.estado], ['next', next], ['csrfmiddlewaretoken', token]].forEach(function (p) {
+                    var inp = document.createElement('input');
+                    inp.type = 'hidden'; inp.name = p[0]; inp.value = p[1];
+                    f.appendChild(inp);
+                });
+                document.body.appendChild(f);
+                f.submit();
+            };
+            if (confirmText) window.DoggerConfirma(confirmText, realizarAccion);
+            else realizarAccion();
+            return;
+        }
+        if (menuEl && !e.target.closest('.actions-trigger') && !e.target.closest('#actions-flotante')) cerrar();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && menuEl) { e.preventDefault(); cerrar(); }
+    });
+
+    window.addEventListener('scroll', function () { if (menuEl) posicionar(); }, true);
+    window.addEventListener('resize', function () { if (menuEl) posicionar(); });
+})();
+</script>
 {% endblock %}
