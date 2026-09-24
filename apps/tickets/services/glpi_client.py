@@ -82,7 +82,10 @@ class GlpiClient:
             "App-Token": self.app_token,
             "Authorization": f"user_token {self.user_token}",
         }
-        r = requests.get(url, headers=headers, timeout=self.timeout)
+        try:
+            r = requests.get(url, headers=headers, timeout=self.timeout)
+        except RequestException as exc:
+            raise GlpiError(f"GLPI no responde ({url}): {exc}") from exc
         if r.status_code != 200:
             raise GlpiError(f"initSession falló ({r.status_code}): {r.text[:300]}")
         data = r.json()

@@ -990,7 +990,7 @@ def usuarios_lista(request):
             try:
                 client.init_session()
                 remotos = client.list_users()
-            except GlpiError:
+            except Exception:
                 remotos = []
             finally:
                 client.kill_session()
@@ -1041,6 +1041,7 @@ def usuarios_lista(request):
     # en la pestaña Técnicos se muestran siempre (con búsqueda, solo coincidencias)
     # para poder importarlos / verlos junto a los internos.
     glpi_remotos = []
+    glpi_error = ""
     if tab == "tecnico" and glpi_base:
         palabras = [p.lower() for p in q.split()] if q else None
         ids_locales = set(
@@ -1054,8 +1055,9 @@ def usuarios_lista(request):
                 client.init_session()
                 remotos = client.list_users()
                 client.kill_session()
-        except GlpiError:
+        except Exception as exc:
             remotos = []
+            glpi_error = str(exc)[:200] or "GLPI no responde."
         for r in remotos:
             texto = f"{r['login']} {r['nombre_real']} {r['email']}".lower()
             if palabras and not all(p in texto for p in palabras):
@@ -1087,6 +1089,7 @@ def usuarios_lista(request):
             ).count(),
             "glpi_base": glpi_base,
             "glpi_remotos": glpi_remotos,
+            "glpi_error": glpi_error,
             "per_page": pp_us,
             "tipo_label": _tipo_label,
             "hoy": date.today(),
