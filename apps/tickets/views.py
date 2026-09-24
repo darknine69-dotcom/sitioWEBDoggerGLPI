@@ -371,13 +371,15 @@ def _build_tecnico_dashboard(tecnico_id=None):
         for t in tickets:
             clave, label = dimension(t)
             fila = rows.setdefault(
-                clave, {"label": label, "abrir": 0, "espera": 0, "vencido": 0, "total": 0, "tickets": []}
+                clave, {"label": label, "abrir": 0, "espera": 0, "vencido": 0, "resueltos": 0, "total": 0, "tickets": []}
             )
             fila["total"] += 1
             if t.estado == Ticket.Estado.ABIERTO:
                 fila["abrir"] += 1
             elif t.estado == Ticket.Estado.EN_PROGRESO:
                 fila["espera"] += 1
+            elif t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
+                fila["resueltos"] += 1
             vencido = t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO) and t.info_ans[0] == "vencido"
             if vencido:
                 fila["vencido"] += 1
@@ -457,7 +459,7 @@ def _build_tecnico_dashboard(tecnico_id=None):
                 "rows": _pivot(dim_categoria, sort_key=lambda r: r["label"].lower()),
             },
         },
-        "columnas": ["abrir", "espera", "vencido", "total"],
+        "columnas": ["abrir", "espera", "vencido", "resueltos"],
     }
 
     # --- Pie: modo / prioridad (solo abiertos) ---------------------------

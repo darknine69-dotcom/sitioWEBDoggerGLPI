@@ -410,9 +410,9 @@
             body.innerHTML = '<tr class="table-empty"><td colspan="5">Sin datos todavía.</td></tr>';
             return;
         }
-        var tot = { label: 'Total', abrir: 0, espera: 0, vencido: 0, total: 0, totalRow: true };
+        var tot = { label: 'Total', abrir: 0, espera: 0, vencido: 0, resueltos: 0, total: 0, totalRow: true };
         rows.forEach(function (r) {
-            tot.abrir += r.abrir; tot.espera += r.espera; tot.vencido += r.vencido; tot.total += r.total;
+            tot.abrir += r.abrir; tot.espera += r.espera; tot.vencido += r.vencido; tot.resueltos += r.resueltos; tot.total += r.total;
         });
         var html = rows.map(function (r) {
             return '<tr>' +
@@ -420,10 +420,10 @@
                 '<td class="num">' + r.abrir + '</td>' +
                 '<td class="num">' + r.espera + '</td>' +
                 '<td class="num col-vencido">' + (r.vencido ? '<span class="badge-vencido">' + r.vencido + '</span>' : '—') + '</td>' +
-                '<td class="num"><strong>' + r.total + '</strong></td>' +
+                '<td class="num"><strong>' + r.resueltos + '</strong></td>' +
                 '</tr>';
         }).join('');
-        html += '<tr class="pivot-total-row"><td>' + esc(tot.label) + '</td><td class="num">' + tot.abrir + '</td><td class="num">' + tot.espera + '</td><td class="num col-vencido">' + (tot.vencido ? '<span class="badge-vencido">' + tot.vencido + '</span>' : '—') + '</td><td class="num"><strong>' + tot.total + '</strong></td></tr>';
+        html += '<tr class="pivot-total-row"><td>' + esc(tot.label) + '</td><td class="num">' + tot.abrir + '</td><td class="num">' + tot.espera + '</td><td class="num col-vencido">' + (tot.vencido ? '<span class="badge-vencido">' + tot.vencido + '</span>' : '—') + '</td><td class="num"><strong>' + tot.resueltos + '</strong></td></tr>';
         body.innerHTML = html;
         Array.prototype.forEach.call(body.querySelectorAll('.pivot-lead'), function (cell, i) {
             cell.addEventListener('click', function (e) {
@@ -440,7 +440,8 @@
         var vieja = document.getElementById('pivotPop');
         if (vieja) vieja.remove();
         var pop = domEl('<div class="pivot-pop" id="pivotPop"></div>');
-        var pct = r.total ? Math.round(r.vencido / r.total * 100) : 0;
+        var activas = r.abrir + r.espera;
+        var pct = activas ? Math.round(r.vencido / activas * 100) : 0;
         var base = card.getAttribute('data-detalle-url') || '';
         var lista = (r.tickets || []).map(function (t) {
             var et = ESTADOS[t.estado] || t.estado;
@@ -461,14 +462,14 @@
             statPiv('Abierto', r.abrir, '#2563EB') +
             statPiv('En espera', r.espera, '#B7791F') +
             statPiv('Vencido', r.vencido, '#D62B1F') +
-            statPiv('Total', r.total, '#212121') +
+            statPiv('Cerrados/Resueltos', r.resueltos, '#2F7D4F') +
             '</div>' +
             '<div class="pivot-pop-bar">' +
             segPiv(r.abrir, r.total, '#2563EB') +
             segPiv(r.espera, r.total, '#B7791F') +
-            segPiv(r.vencido, r.total, '#D62B1F') +
+            segPiv(r.resueltos, r.total, '#2F7D4F') +
             '</div>' +
-            '<div class="pivot-pop-foot">' + pct + '% de sus solicitudes vencidas</div>' +
+            '<div class="pivot-pop-foot">' + pct + '% de sus solicitudes abiertas vencidas</div>' +
             '<div class="pivot-pop-list">' + lista + '</div>';
         card.appendChild(pop);
         var cardRect = card.getBoundingClientRect();
