@@ -137,19 +137,19 @@
     </div>
 
     <div class="tickets-stats">
-        <a class="stat-chip is-abiertas" href="?sv=abiertas" title="Mis solicitudes abiertas">
+        <a class="stat-chip is-abiertas" href="?estado=abierto" title="Solo solicitudes abiertas (pendientes de atención)">
             <span class="stat-ico"><svg class="icon"><use href="#i-alert"/></svg></span>
             <span class="stat-n">{{ stats.abiertas }}</span><span class="stat-l">Abiertas</span>
         </a>
-        <a class="stat-chip is-progreso" href="?sv=todas" title="Solicitudes en progreso">
+        <a class="stat-chip is-progreso" href="?estado=en-progreso" title="Solo solicitudes en progreso (siendo atendidas)">
             <span class="stat-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
             <span class="stat-n">{{ stats.progreso }}</span><span class="stat-l">En progreso</span>
         </a>
-        <a class="stat-chip is-resueltas" href="?sv=completadas" title="Solicitudes completadas">
+        <a class="stat-chip is-resueltas" href="?estado=resuelto" title="Solo solicitudes resueltas">
             <span class="stat-ico"><svg class="icon"><use href="#i-check-circle"/></svg></span>
             <span class="stat-n">{{ stats.resueltas }}</span><span class="stat-l">Resueltas</span>
         </a>
-        <a class="stat-chip is-cerradas" href="?sv=completadas" title="Solicitudes cerradas">
+        <a class="stat-chip is-cerradas" href="?estado=cerrado" title="Solo solicitudes cerradas">
             <span class="stat-ico"><svg class="icon"><use href="#i-lock"/></svg></span>
             <span class="stat-n">{{ stats.cerradas }}</span><span class="stat-l">Cerradas</span>
         </a>

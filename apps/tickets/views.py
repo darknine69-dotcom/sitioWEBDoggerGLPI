@@ -1996,6 +1996,8 @@ def lista_tickets(request):
     abiertos = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
     if sv == "completadas":
         qs = qs.filter(estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO])
+    elif sv == "abiertas":
+        qs = qs.filter(estado=Ticket.Estado.ABIERTO)
     elif sv == "espera":
         qs = qs.filter(estado=Ticket.Estado.ABIERTO)
     elif sv == "no-asignadas":
