@@ -2065,6 +2065,12 @@ def lista_tickets(request):
         resueltas=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
         cerradas=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
     )
+    stats["sin_asignar"] = (
+        Ticket.objects.filter(
+            estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
+            tecnico_asignado__isnull=True,
+        ).count()
+    )
 
     estado = request.GET.get("estado", "").strip()
     prioridad = request.GET.get("prioridad", "").strip()

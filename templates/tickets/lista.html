@@ -32,12 +32,14 @@
 .stat-chip.is-progreso .stat-n { color: #C2410C; }
 .stat-chip.is-resueltas .stat-n { color: #16A34A; }
 .stat-chip.is-cerradas .stat-n { color: #6B6259; }
+.stat-chip.is-sinasignar .stat-n { color: #B7791F; }
 .stat-chip .stat-ico { width: 22px; height: 22px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .stat-chip .stat-ico .icon { width: 13px; height: 13px; }
 .stat-chip.is-abiertas .stat-ico { background: rgba(214,43,31,.12); color: #C6281E; }
 .stat-chip.is-progreso .stat-ico { background: rgba(249,115,22,.15); color: #C2410C; }
 .stat-chip.is-resueltas .stat-ico { background: rgba(22,163,74,.14); color: #15803D; }
 .stat-chip.is-cerradas .stat-ico { background: #F1EDE6; color: #6B6259; }
+.stat-chip.is-sinasignar .stat-ico { background: rgba(217,164,54,.16); color: #B7791F; }
 
 /* ---- Tarjetas ---- */
 .ty-results { margin-top: 16px; }
@@ -152,6 +154,10 @@
         <a class="stat-chip is-cerradas" href="?estado=cerrado" title="Solo solicitudes cerradas">
             <span class="stat-ico"><svg class="icon"><use href="#i-lock"/></svg></span>
             <span class="stat-n">{{ stats.cerradas }}</span><span class="stat-l">Cerradas</span>
+        </a>
+        <a class="stat-chip is-sinasignar" href="{% url 'tickets:sin_asignar' %}" title="Solicitudes abiertas sin técnico asignado: admin las asigna, el técnico puede tomarlas">
+            <span class="stat-ico"><svg class="icon"><use href="#i-inbox"/></svg></span>
+            <span class="stat-n">{{ stats.sin_asignar }}</span><span class="stat-l">Sin asignar</span>
         </a>
     </div>
 
