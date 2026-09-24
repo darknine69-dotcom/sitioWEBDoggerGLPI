@@ -888,6 +888,20 @@ def usuarios_lista(request):
     def _tipo_label(v):
         return dict(CalendarioEvento.Tipo.choices).get(v, v)
 
+    def _acceso_label(dt, ref):
+        if not dt:
+            return "Nunca"
+        seg = (ref - dt).total_seconds()
+        if seg < 60:
+            return "recientemente"
+        minutos = int(seg // 60)
+        if minutos < 60:
+            return f"hace {minutos} min"
+        horas, m = divmod(minutos, 60)
+        if seg < 86400:
+            return f"hace {horas} h {m} min"
+        return dt.strftime("%d/%m/%Y")
+
     hoy = date.today()
     ahora = timezone.now()
     hace_10min = ahora - timedelta(minutes=10)
@@ -959,6 +973,19 @@ def usuarios_lista(request):
             "disponibilidad": disp_por_tec.get(u.pk, []),
             "eventos": evts_por_tec.get(u.pk, [])[:6],
         }
+        # Indicador junto al nombre: verde = activo con actividad reciente,
+        # gris = activo sin actividad, rojo = inactivo, sin punto = nunca ingresó.
+        ultimo_login = u.last_login
+        if ultimo_login is None:
+            u.ficha["dot"] = ""
+            u.ficha["dot_puede"] = False
+        elif not u.activo:
+            u.ficha["dot"] = "red"
+            u.ficha["dot_puede"] = False
+        else:
+            u.ficha["dot_puede"] = True
+            u.ficha["dot"] = "green" if u.ficha["en_linea"] else "gray"
+        u.ficha["acceso_label"] = _acceso_label(ultimo_login, ahora)
         if u.rol in ("tecnico", "admin"):
             alertas = [
                 {

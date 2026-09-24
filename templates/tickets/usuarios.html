@@ -15,14 +15,32 @@
 .live-head-item.is-new { border-color: rgba(217,164,54,.4); color: #8a6116; background: #FFF7E6; }
 .live-head-item.is-new .live-dot { background: #C99A2E; }
 
-/* Estado de cuenta (en línea / nuevo) */
-.ue-state { display: inline-flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 11.5px; font-weight: 700; color: var(--ink-muted); }
-.ue-state .live-dot { width: 8px; height: 8px; }
+/* Estado de cuenta: punto junto al nombre */
+.ue-dot-w { display: inline-flex; align-items: center; margin-left: 8px; vertical-align: middle; }
+.ue-dot-w.is-hidden { display: none; }
+.ue-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #9AA0A6; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.ue-dot.green { background: #2F7D4F; }
+.ue-dot.red { background: #D62B1F; }
+.ue-name-line { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; }
 .ue-badge { display: inline-flex; align-items: center; gap: 5px; margin: 4px 0 0; padding: 2px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
 .ue-badge.ue-nuevo { color: #8a6116; background: #FFF3DB; border: 1px solid rgba(217,164,54,.35); }
 .ue-ubi { display: block; margin-top: 3px; font-size: 11.5px; color: var(--ink-muted); }
 .ue-acceso { font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
-.ue-acceso strong { color: #2F7D4F; }
+
+/* Menú de acciones por fila */
+.row-menu { position: relative; }
+.row-menu-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--line); background: #fff; color: var(--ink-muted); cursor: pointer; transition: .15s; }
+.row-menu-btn:hover, .row-menu-btn.is-open { color: var(--ink); border-color: #D8C8AC; background: #FBF7EF; }
+.row-menu-btn .icon { width: 16px; height: 16px; }
+.row-menu-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 215px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(60,40,10,.16); padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+.row-menu-panel .row-menu-sep { height: 1px; background: #EFE8DA; margin: 4px 2px; }
+.row-menu-item { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; padding: 8px 10px; border: 0; background: transparent; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; white-space: nowrap; }
+.row-menu-item:hover { background: #FBF7EF; }
+.row-menu-item .icon { width: 15px; height: 15px; flex: none; color: var(--ink-muted); }
+.row-menu-item.danger { color: var(--dogger-red); }
+.row-menu-item.danger .icon { color: var(--dogger-red); }
+.row-menu-item.danger:hover { background: rgba(214,43,31,.08); }
+.row-menu-panel form { margin: 0; }
 
 /* Ficha expandible */
 .ue-ficha > td { background: #FCFAF5; border-bottom: 1px solid #EFE8DA; padding: 16px 18px; }
@@ -140,16 +158,14 @@
                     <tr class="ue-row" data-nombre="{{ u.nombre }}" data-email="{{ u.email }}" data-rol="{{ u.rol }}"
                         data-glpi="{{ u.glpi_user_id|default_if_none:'' }}" data-activo="{{ u.activo|yesno:'1,0' }}">
                         <td data-label="Nombre">
-                            <strong>{{ u.nombre }}</strong>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
-                            <div>
-                                <span class="ue-state" id="ue-state-{{ u.pk }}" data-uid="{{ u.pk }}"
-                                      data-on="{{ u.ficha.en_linea|yesno:'1,0' }}"
-                                      data-new="{{ u.ficha.es_nuevo|yesno:'1,0' }}">
-                                    <span class="live-dot{% if not u.ficha.en_linea %} dot-off{% endif %}"></span>
-                                    <span class="ue-state-txt">{% if u.ficha.en_linea %}<b>En línea</b>{% else %}Sin actividad{% endif %}</span>
+                            <span class="ue-name-line">
+                                <strong>{{ u.nombre }}</strong>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
+                                <span class="ue-dot-w{% if not u.ficha.dot %} is-hidden{% endif %}" id="ue-dot-{{ u.pk }}" data-uid="{{ u.pk }}"
+                                      data-green="{{ u.ficha.dot_puede|yesno:'1,0' }}">
+                                    <span class="ue-dot {{ u.ficha.dot }}"></span>
                                 </span>
-                                {% if u.ficha.es_nuevo %}<span class="ue-badge ue-nuevo">▸ Recién registrado</span>{% endif %}
-                            </div>
+                            </span>
+                            {% if u.ficha.es_nuevo %}<span class="ue-badge ue-nuevo">▸ Recién registrado</span>{% endif %}
                             {% if u.glpi_perfil %}
                             <div class="glpi-live-grid">
                                 <small class="glpi-live"><span class="live-dot"></span> En GLPI: login <b>{{ u.glpi_perfil.login|default:"—" }}</b></small>
@@ -193,8 +209,8 @@
                             {% endif %}
                         </td>
                         <td data-label="Estado">
-                            {% if u.activo %}<span class="dot-on"></span> Activa
-                            {% else %}<span class="dot-off"></span> Inactiva{% endif %}
+                            {% if u.activo %}Activa
+                            {% else %}Inactiva{% endif %}
                         </td>
                         <td data-label="Tickets">
                             {% if u.rol == 'usuario' %}
@@ -205,47 +221,56 @@
                         </td>
                         <td data-label="Último acceso">
                             <span class="ue-acceso" id="ue-access-{{ u.pk }}">
-                                {% if u.last_login %}{{ u.last_login|timesince }} atrás{% else %}<span class="dot-off"></span> Nunca{% endif %}
+                                {% if u.last_login %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}
                             </span>
                         </td>
                         <td data-label="Acciones" class="cell-actions">
-                            <div class="cat-actions">
-                                <button type="button" class="mini-btn ue-expand" data-open-ficha data-user-id="{{ u.pk }}"
-                                        title="Ver ficha del usuario (detalles, estadísticas, eventos)"><svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
-                                <a class="mini-btn" href="{% url 'tickets:lista' %}{% if u.rol == 'usuario' %}?solicitante_email={{ u.email|urlencode }}{% else %}?tecnico={{ u.pk }}{% endif %}"
-                                   title="Ver tickets de este usuario"><svg class="icon icon-sm"><use href="#i-ticket"/></svg></a>
-                                <button type="button" class="mini-btn"
-                                        data-user-id="{{ u.pk }}"
-                                        data-open-modal="#modal-tarea"
-                                        title="Asignar tarea o evento">+ Tarea</button>
-                                <button type="button" class="mini-btn"
-                                        data-open-modal="#modal-usuario"
-                                        data-fill-nombre="{{ u.nombre }}" data-fill-email="{{ u.email }}"
-                                        data-fill-rol="{{ u.rol }}" data-fill-glpi="{{ u.glpi_user_id|default_if_none:'' }}"
-                                        data-fill-activo="{{ u.activo|yesno:'1,0' }}" data-fill-pk="{{ u.pk }}"
-                                        data-fill-telefono="{{ u.telefono|default:'' }}" data-fill-ubicacion="{{ u.ubicacion|default:'' }}"
-                                        title="Editar datos de la cuenta"><svg class="icon icon-sm"><use href="#i-edit"/></svg></button>
-                                {% if u.glpi_user_id %}
-                                <form method="post" action="{% url 'tickets:usuario_sync_glpi' u.pk %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="mini-btn ok"
-                                            title="Traer de GLPI: nombre, correo y estado activo/inactivo actual"><svg class="icon icon-sm"><use href="#i-refresh"/></svg></button>
-                                </form>
-                                {% endif %}
-                                {% if u.pk != request.user.pk %}
-                                <form method="post" action="{% url 'tickets:usuario_toggle' u.pk %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="mini-btn {% if u.activo %}danger{% else %}ok{% endif %}"
-                                            title="{% if u.activo %}Desactivar cuenta (no podrá iniciar sesión){% else %}Activar cuenta{% endif %}">
-                                        <svg class="icon icon-sm"><use href="#i-{% if u.activo %}ban{% else %}check{% endif %}"/></svg>
+                            <div class="row-menu">
+                                <button type="button" class="row-menu-btn" data-menu aria-label="Acciones" title="Acciones"><svg class="icon"><use href="#i-ellipsis"/></svg></button>
+                                <div class="row-menu-panel" hidden>
+                                    <button type="button" class="row-menu-item" data-open-ficha data-user-id="{{ u.pk }}">
+                                        <svg class="icon"><use href="#i-chevron-down"/></svg> Ver ficha
                                     </button>
-                                </form>
-                                <form method="post" action="{% url 'tickets:usuario_eliminar' u.pk %}"
-                                      onsubmit="return confirm('¿Eliminar definitivamente a {{ u.nombre|escapejs }}? Los tickets asignados quedarán sin técnico.');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="mini-btn danger" title="Eliminar cuenta"><svg class="icon icon-sm"><use href="#i-trash"/></svg></button>
-                                </form>
-                                {% endif %}
+                                    <a class="row-menu-item" href="{% url 'tickets:lista' %}{% if u.rol == 'usuario' %}?solicitante_email={{ u.email|urlencode }}{% else %}?tecnico={{ u.pk }}{% endif %}" title="Ver tickets de este usuario">
+                                        <svg class="icon"><use href="#i-ticket"/></svg> Ver tickets
+                                    </a>
+                                    <button type="button" class="row-menu-item" data-user-id="{{ u.pk }}" data-open-modal="#modal-tarea">
+                                        <svg class="icon"><use href="#i-wrench"/></svg> Asignar tarea
+                                    </button>
+                                    <span class="row-menu-sep"></span>
+                                    <button type="button" class="row-menu-item"
+                                            data-open-modal="#modal-usuario"
+                                            data-fill-nombre="{{ u.nombre }}" data-fill-email="{{ u.email }}"
+                                            data-fill-rol="{{ u.rol }}" data-fill-glpi="{{ u.glpi_user_id|default_if_none:'' }}"
+                                            data-fill-activo="{{ u.activo|yesno:'1,0' }}" data-fill-pk="{{ u.pk }}"
+                                            data-fill-telefono="{{ u.telefono|default:'' }}" data-fill-ubicacion="{{ u.ubicacion|default:'' }}">
+                                        <svg class="icon"><use href="#i-edit"/></svg> Editar cuenta
+                                    </button>
+                                    {% if u.glpi_user_id %}
+                                    <form method="post" action="{% url 'tickets:usuario_sync_glpi' u.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="row-menu-item" title="Traer de GLPI: nombre, correo y estado activo/inactivo actual">
+                                            <svg class="icon"><use href="#i-refresh"/></svg> Sincronizar con GLPI
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    {% if u.pk != request.user.pk %}
+                                    <span class="row-menu-sep"></span>
+                                    <form method="post" action="{% url 'tickets:usuario_toggle' u.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="row-menu-item {% if not u.activo %}ok{% else %}danger{% endif %}"
+                                                title="{% if u.activo %}Desactivar cuenta (no podrá iniciar sesión){% else %}Activar cuenta{% endif %}">
+                                            <svg class="icon"><use href="#i-{% if u.activo %}ban{% else %}check{% endif %}"/></svg>
+                                            {% if u.activo %}Desactivar cuenta{% else %}Activar cuenta{% endif %}
+                                        </button>
+                                    </form>
+                                    <form method="post" action="{% url 'tickets:usuario_eliminar' u.pk %}"
+                                          onsubmit="return confirm('¿Eliminar definitivamente a {{ u.nombre|escapejs }}? Los tickets asignados quedarán sin técnico.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="row-menu-item danger"><svg class="icon"><use href="#i-trash"/></svg> Eliminar cuenta</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -260,7 +285,7 @@
                                         <div><b>Ubicación</b><span>{{ u.ubicacion|default:"—" }}</span></div>
                                         {% if u.ficha.punto %}<div><b>Punto usu.</b><span>{{ u.ficha.punto }}</span></div>{% endif %}
                                         <div><b>Registrado</b><span>{{ u.ficha.registrado|date:"d/m/Y H:i" }}</span></div>
-                                        <div><b>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.last_login %}{{ u.last_login|timesince }} atrás{% else %}Nunca{% endif %}</span></div>
+                                        <div><b>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.last_login %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}</span></div>
                                     </div>
                                 </div>
                                 <div class="ue-box">
@@ -543,6 +568,30 @@
         });
     });
 
+    /* ---- Menú de acciones por fila ---- */
+    document.addEventListener('click', function (e) {
+        var menus = document.querySelectorAll('.row-menu');
+        menus.forEach(function (m) {
+            var btn = m.querySelector('.row-menu-btn');
+            var panel = m.querySelector('.row-menu-panel');
+            if (!btn || !panel) return;
+            if (m.contains(e.target)) {
+                if (e.target.closest('.row-menu-btn')) {
+                    var abrir = !panel.hidden;
+                    panel.hidden = false;
+                    btn.classList.add('is-open');
+                    if (abrir) { panel.hidden = true; btn.classList.remove('is-open'); }
+                } else if (!panel.hidden) {
+                    panel.hidden = true;
+                    btn.classList.remove('is-open');
+                }
+            } else if (!panel.hidden) {
+                panel.hidden = true;
+                btn.classList.remove('is-open');
+            }
+        });
+    });
+
     /* ---- Modal de tarea: precargar técnico según el botón pulsado ---- */
     var tTecnico = document.getElementById('t-tecnico');
     var tFecha = document.getElementById('t-fecha');
@@ -551,7 +600,7 @@
         if (!btn) return;
         var uid = btn.getAttribute('data-user-id');
         if (!uid && btn.closest('.ue-row')) {
-            var st = btn.closest('.ue-row').querySelector('.ue-state');
+            var st = btn.closest('.ue-row').querySelector('.ue-dot-w');
             uid = st ? st.dataset.uid : '';
         }
         if (uid && tTecnico) {
@@ -590,6 +639,14 @@
     }
 
     /* ---- Tiempo real: refrescar cada 25 s el estado de las cuentas ---- */
+    function accesoLabel(iso) {
+        var d = new Date(iso);
+        var min = Math.max(0, (Date.now() - d.getTime()) / 60000);
+        if (min < 1) return 'recientemente';
+        if (min < 60) return 'hace ' + Math.floor(min) + ' min';
+        if (min < 1440) return 'hace ' + Math.floor(min / 60) + ' h ' + Math.floor(min % 60) + ' min';
+        return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
+    }
     var uidSet = {};
     document.querySelectorAll('[data-uid]').forEach(function (el) {
         uidSet[el.getAttribute('data-uid')] = true;
@@ -603,28 +660,22 @@
                 var us = j.usuarios || {};
                 Object.keys(us).forEach(function (id) {
                     var st = us[id];
-                    var el = document.getElementById('ue-state-' + id);
-                    if (el) {
-                        var on = st.en_linea;
-                        var dot = el.querySelector('.live-dot');
-                        var txt = el.querySelector('.ue-state-txt');
-                        el.dataset.on = on ? '1' : '0';
-                        if (dot) dot.classList.toggle('dot-off', !on);
-                        if (txt) txt.innerHTML = on ? '<b>En línea</b>' : 'Sin actividad';
+                    var dotW = document.getElementById('ue-dot-' + id);
+                    if (dotW) {
+                        var on = !!st.en_linea;
+                        var green = dotW.dataset.green === '1';
+                        var dot = dotW.querySelector('.ue-dot');
+                        if (green && dot) {
+                            dot.classList.toggle('green', on);
+                            dot.classList.toggle('gray', !on);
+                        }
                     }
-                    var acc = document.getElementById('ue-access-' + id);
-                    if (acc && st.ultimo_acceso) {
-                        var d = new Date(st.ultimo_acceso);
-                        var ago = Math.max(1, Math.round((Date.now() - d.getTime()) / 60000));
-                        acc.innerHTML = ago < 1 ? 'recientemente' :
-                            (ago < 60 ? ago + ' min atrás' : (Math.floor(ago / 60) + ' h ' + (ago % 60) + ' min atrás'));
-                        acc.classList.add('ue-fresh');
-                    }
-                    var accF = document.getElementById('ue-access-f-' + id);
-                    if (accF && st.ultimo_acceso) {
-                        var d2 = new Date(st.ultimo_acceso);
-                        var ago2 = Math.max(1, Math.round((Date.now() - d2.getTime()) / 60000));
-                        accF.textContent = ago2 < 1 ? 'recientemente' : (ago2 < 60 ? ago2 + ' min atrás' : (Math.floor(ago2 / 60) + ' h ' + (ago2 % 60) + ' min atrás'));
+                    if (st.ultimo_acceso) {
+                        var etiqueta = accesoLabel(st.ultimo_acceso);
+                        var acc = document.getElementById('ue-access-' + id);
+                        if (acc) acc.textContent = etiqueta;
+                        var accF = document.getElementById('ue-access-f-' + id);
+                        if (accF) accF.textContent = etiqueta;
                     }
                 });
             }).catch(function () {});
