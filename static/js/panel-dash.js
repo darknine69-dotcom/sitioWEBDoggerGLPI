@@ -417,68 +417,119 @@
         var html = rows.map(function (r) {
             return '<tr>' +
                 '<td class="pivot-lead">' + esc(r.label) + '</td>' +
-                '<td class="num">' + r.abrir + '</td>' +
-                '<td class="num">' + r.espera + '</td>' +
-                '<td class="num col-vencido">' + (r.vencido ? '<span class="badge-vencido">' + r.vencido + '</span>' : '—') + '</td>' +
-                '<td class="num">' + r.cerrado + '</td>' +
-                '<td class="num"><strong>' + r.resueltos + '</strong></td>' +
+                '<td class="num pivot-num" data-f="abierto" title="Ver abiertas">' + r.abrir + '</td>' +
+                '<td class="num pivot-num" data-f="en-progreso" title="Ver en progreso">' + r.espera + '</td>' +
+                '<td class="num col-vencido pivot-num" data-f="vencido" title="Ver vencidas">' + (r.vencido ? '<span class="badge-vencido">' + r.vencido + '</span>' : '—') + '</td>' +
+                '<td class="num pivot-num" data-f="cerrado" title="Ver cerradas">' + r.cerrado + '</td>' +
+                '<td class="num pivot-num" data-f="resuelto" title="Ver resueltas">' + r.resueltos + '</td>' +
                 '</tr>';
         }).join('');
         html += '<tr class="pivot-total-row"><td>' + esc(tot.label) + '</td><td class="num">' + tot.abrir + '</td><td class="num">' + tot.espera + '</td><td class="num col-vencido">' + (tot.vencido ? '<span class="badge-vencido">' + tot.vencido + '</span>' : '—') + '</td><td class="num">' + tot.cerrado + '</td><td class="num"><strong>' + tot.resueltos + '</strong></td></tr>';
         body.innerHTML = html;
-        Array.prototype.forEach.call(body.querySelectorAll('.pivot-lead'), function (cell, i) {
-            cell.addEventListener('click', function (e) {
+        Array.prototype.forEach.call(body.rows, function (tr, i) {
+            if (!rows[i]) return;
+            var lead = tr.querySelector('.pivot-lead');
+            lead.addEventListener('click', function (e) {
                 e.stopPropagation();
-                if (!rows[i]) return;
-                showPivotPop(rows[i], cell);
+                showPivotPop(rows[i], lead);
+            });
+            Array.prototype.forEach.call(tr.querySelectorAll('.pivot-num'), function (cell) {
+                cell.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    showPivotPop(rows[i], cell, cell.dataset.f);
+                });
             });
         });
     }
 
-    function showPivotPop(r, anchor) {
+    var FILTROS = [
+        { key: 'abierto', label: 'Abiertas', color: '#2563EB', cuenta: function (r) { return r.abrir; } },
+        { key: 'en-progreso', label: 'En progreso', color: '#B7791F', cuenta: function (r) { return r.espera; } },
+        { key: 'vencido', label: 'Vencidas', color: '#D62B1F', cuenta: function (r) { return r.vencido; } },
+        { key: 'cerrado', label: 'Cerradas', color: '#8A8A86', cuenta: function (r) { return r.cerrado; } },
+        { key: 'resuelto', label: 'Resueltas', color: '#2F7D4F', cuenta: function (r) { return r.resueltos; } }
+    ];
+    function matchF(t, f) {
+        if (f === 'vencido') return !!t.vencido;
+        return t.estado === f;
+    }
+
+    function showPivotPop(r, anchor, f) {
         var card = document.querySelector('[data-pivot-card]');
         if (!card) return;
         var vieja = document.getElementById('pivotPop');
         if (vieja) vieja.remove();
         var pop = domEl('<div class="pivot-pop" id="pivotPop"></div>');
+        function por(key) {
+            for (var i = 0; i < FILTROS.length; i++) if (FILTROS[i].key === key) return FILTROS[i];
+            return FILTROS[0];
+        }
+        if (!f) {
+            var mejor = FILTROS[0], mejorV = -1;
+            FILTROS.forEach(function (F) { var v = F.cuenta(r); if (v > mejorV) { mejorV = v; mejor = F; } });
+            f = mejor.key;
+        }
+        var activo = f;
         var activas = r.abrir + r.espera;
         var pct = activas ? Math.round(r.vencido / activas * 100) : 0;
-        var base = card.getAttribute('data-detalle-url') || '';
-        var lista = (r.tickets || []).map(function (t) {
-            var et = ESTADOS[t.estado] || t.estado;
-            var pill = t.vencido
-                ? '<span class="pivot-pop-pill gr-v">Vencido</span>'
-                : '<span class="pivot-pop-pill gr-' + t.estado + '">' + et + '</span>';
-            return '<a class="pivot-pop-ticket" href="' + base.replace('0', t.id) + '">' +
-                '<span class="pivot-pop-code">' + esc(t.codigo) + '</span>' +
-                '<span class="pivot-pop-title">' + esc(t.titulo) + '</span>' +
-                pill +
-                '</a>';
-        }).join('');
-        if (lista && r.total > r.tickets.length) lista += '<div class="pivot-pop-mas">y ' + (r.total - r.tickets.length) + ' más…</div>';
-        if (!lista) lista = '<div class="pivot-pop-vacio">Sin tickets en esta vista.</div>';
-        var cats = (r.categorias || []).map(function (c) {
-            return '<span class="pivot-pop-cat">' + esc(c) + '</span>';
-        }).join('');
         var ans = (r.vencido || r.riesgo) ? 'ANS: <strong class="ph-v">' + r.vencido + ' vencid' + (r.vencido === 1 ? 'a' : 'as') + '</strong> · <strong class="ph-r">' + r.riesgo + ' por vencer</strong>' : 'ANS ok';
+        var base = card.getAttribute('data-detalle-url') || '';
         pop.innerHTML =
-            '<div class="pivot-pop-head"><strong>' + esc(r.label) + '</strong><button type="button" class="pivot-pop-close" title="Cerrar">&times;</button></div>' +
-            '<div class="pivot-pop-stats">' +
-            statPiv('Abierto', r.abrir, '#2563EB') +
-            statPiv('En progreso', r.espera, '#B7791F') +
-            statPiv('Vencido', r.vencido, '#D62B1F') +
-            statPiv('Cerrado', r.cerrado, '#8A8A86') +
-            statPiv('Resuelto', r.resueltos, '#2F7D4F') +
+            '<div class="pivot-pop-head">' +
+            '<strong class="pivot-pop-titulo">' + esc(r.label) + '</strong><span class="pivot-pop-sub"></span>' +
+            '<button type="button" class="pivot-pop-close" title="Cerrar">&times;</button>' +
             '</div>' +
-            '<div class="pivot-pop-bar">' +
-            segPiv(r.abrir, r.total, '#2563EB') +
-            segPiv(r.espera, r.total, '#B7791F') +
-            segPiv(r.cerrado, r.total, '#8A8A86') +
-            segPiv(r.resueltos, r.total, '#2F7D4F') +
-            '</div>' +
-            '<div class="pivot-pop-foot">' + ans + ' · ' + pct + '% de abiertas vencidas</div>' +
-            (cats ? '<div class="pivot-pop-cats">' + cats + '</div>' : '') +
-            '<div class="pivot-pop-list">' + lista + '</div>';
+            '<div class="pivot-pop-stats"></div>' +
+            '<div class="pivot-pop-foot"></div>' +
+            '<div class="pivot-pop-cats"></div>' +
+            '<div class="pivot-pop-list"></div>';
+        var elStats = pop.querySelector('.pivot-pop-stats');
+        var elSub = pop.querySelector('.pivot-pop-sub');
+        var elFoot = pop.querySelector('.pivot-pop-foot');
+        var elCats = pop.querySelector('.pivot-pop-cats');
+        var elList = pop.querySelector('.pivot-pop-list');
+
+        function pintar() {
+            var F = por(activo);
+            elSub.textContent = ' · ' + F.label + ' (' + F.cuenta(r) + ')';
+            elStats.innerHTML = FILTROS.map(function (F2) {
+                return '<button type="button" class="pivot-pop-stat st-btn' + (F2.key === activo ? ' is-activo' : '') + '" data-f="' + F2.key + '">' +
+                    '<span class="pivot-pop-dot" style="background:' + F2.color + '"></span>' +
+                    F2.label + '<strong>' + F2.cuenta(r) + '</strong></button>';
+            }).join('');
+            var filtrados = (r.tickets || []).filter(function (t) { return matchF(t, activo); });
+            var lista = filtrados.map(function (t) {
+                var et = ESTADOS[t.estado] || t.estado;
+                var pill = t.vencido
+                    ? '<span class="pivot-pop-pill gr-v">Vencido</span>'
+                    : '<span class="pivot-pop-pill gr-' + t.estado + '">' + et + '</span>';
+                return '<a class="pivot-pop-ticket" href="' + base.replace('0', t.id) + '">' +
+                    '<span class="pivot-pop-code">' + esc(t.codigo) + '</span>' +
+                    '<span class="pivot-pop-title">' + esc(t.titulo) + '</span>' +
+                    pill + '</a>';
+            }).join('');
+            var totalF = F.cuenta(r);
+            if (lista && totalF > filtrados.length) lista += '<div class="pivot-pop-mas">y ' + (totalF - filtrados.length) + ' más…</div>';
+            if (!lista) lista = totalF > 0
+                ? '<div class="pivot-pop-mas">y ' + totalF + ' más…</div>'
+                : '<div class="pivot-pop-vacio">Sin tickets en esta vista.</div>';
+            elList.innerHTML = lista;
+            var esAb = activo === 'abierto' || activo === 'en-progreso' || activo === 'vencido';
+            elFoot.innerHTML = ans + ' · ' + pct + '% de abiertas vencidas';
+            elFoot.style.display = esAb ? '' : 'none';
+            elCats.innerHTML = (r.categorias || []).map(function (c) {
+                return '<span class="pivot-pop-cat">' + esc(c) + '</span>';
+            }).join('');
+            elCats.style.display = (esAb && elCats.innerHTML) ? '' : 'none';
+            Array.prototype.forEach.call(elStats.querySelectorAll('[data-f]'), function (b) {
+                b.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (b.dataset.f !== activo) { activo = b.dataset.f; pintar(); }
+                });
+            });
+        }
+        pintar();
         card.appendChild(pop);
         var cardRect = card.getBoundingClientRect();
         var acr = anchor.getBoundingClientRect();
@@ -497,14 +548,6 @@
             e.stopPropagation();
             pop.remove();
         });
-    }
-
-    function statPiv(n, v, c) {
-        return '<div class="pivot-pop-stat"><span class="pivot-pop-dot" style="background:' + c + '"></span>' + n + '<strong>' + v + '</strong></div>';
-    }
-    function segPiv(v, total, c) {
-        if (!v || !total) return '';
-        return '<span style="width:' + (v / total * 100) + '%;background:' + c + '"></span>';
     }
 
     function esc(s) {

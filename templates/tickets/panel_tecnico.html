@@ -155,6 +155,11 @@
 
 .pivot-lead { cursor: pointer; position: relative; }
 .pivot-lead::after { content: "⤴"; margin-left: 6px; font-size: 11px; opacity: .45; }
+.pivot-num { cursor: pointer; border-radius: 6px; transition: background .12s ease; }
+.pivot-num:hover { background: var(--dogger-cream); }
+.pivot-pop-titulo { white-space: nowrap; }
+.pivot-pop-sub { font-size: 12px; font-weight: 700; color: var(--ink-muted); margin-right: auto; }
+.pivot-pop-head { flex-wrap: wrap; }
 .chart-card[data-pivot-card] { position: relative; }
 .pivot-pop {
     position: absolute; z-index: 70; width: 212px;
@@ -172,6 +177,9 @@
 .pivot-pop-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 10px; margin: 8px 0; }
     .pivot-pop-stat { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-muted); min-width: 0; }
     .pivot-pop-stat strong { margin-left: auto; font-family: var(--font-mono); color: #1d1b16; }
+    .pivot-pop-stat.st-btn { border: 0; background: transparent; cursor: pointer; padding: 3px 6px; border-radius: 8px; width: 100%; text-align: left; font-family: inherit; transition: background .12s ease; }
+    .pivot-pop-stat.st-btn:hover { background: var(--dogger-cream); }
+    .pivot-pop-stat.st-btn.is-activo { background: var(--dogger-cream); box-shadow: inset 0 0 0 2px rgba(214,43,31,.16); }
     .pivot-pop-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
     .pivot-pop-cats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
     .pivot-pop-cat { font-size: 10px; font-weight: 700; color: #6B6259; background: #FBFAF7; border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
