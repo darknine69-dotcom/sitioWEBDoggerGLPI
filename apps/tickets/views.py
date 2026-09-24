@@ -1959,6 +1959,96 @@ def tec_tickets_api(request, pk):
 
 
 @staff_required
+def sin_asignar(request):
+    """Bandeja de solicitudes sin técnico asignado.
+
+    El administrador asigna cada solicitud a un técnico; el técnico puede
+    'tomar' las que queden disponibles (auto-asignación).
+    """
+    es_admin = request.user.rol == "admin"
+    abiertos = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
+    base = (
+        Ticket.objects.select_related("categoria", "tecnico_asignado")
+        .filter(estado__in=abiertos, tecnico_asignado__isnull=True)
+        .order_by("-fecha_creacion")
+    )
+    tecnicos = (
+        get_user_model()
+        .objects.filter(activo=True, is_active=True, rol__in=["admin", "tecnico"])
+        .order_by("nombre", "pk")
+    )
+
+    if request.method == "POST":
+        pk_raw = request.POST.get("ticket_id", "")
+        try:
+            ticket = base.get(pk=int(pk_raw))
+        except (TypeError, ValueError, Ticket.DoesNotExist):
+            messages.error(request, "No se encontró la solicitud indicada.")
+            return redirect("tickets:sin_asignar")
+        accion = request.POST.get("action", "").strip()
+        if accion == "asignar" and es_admin:
+            valor = request.POST.get("tecnico", "").strip()
+            if valor.isdigit():
+                tec = tecnicos.filter(pk=int(valor)).first()
+                if not tec:
+                    messages.error(request, "El técnico seleccionado no es válido.")
+                    return redirect("tickets:sin_asignar")
+            else:
+                tec = None
+            ticket.tecnico_asignado = tec
+            ticket.asignacion_automatica = False
+            ticket.save(
+                update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"]
+            )
+            if tec:
+                try:
+                    if sync_asignacion_to_glpi(ticket):
+                        messages.success(request, f"{ticket.codigo} asignado a {tec.nombre} (también en GLPI).")
+                    else:
+                        messages.success(request, f"{ticket.codigo} asignado a {tec.nombre}.")
+                except GlpiError as exc:
+                    messages.warning(request, f"{ticket.codigo} asignado a {tec.nombre}; no se reflejó en GLPI: {exc}")
+            else:
+                messages.success(request, f"{ticket.codigo} quedó sin técnico (por si otro lo toma).")
+            return redirect("tickets:sin_asignar")
+        if accion == "tomar":
+            ticket.tecnico_asignado = request.user
+            ticket.asignacion_automatica = False
+            ticket.save(
+                update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"]
+            )
+            if request.user.glpi_user_id:
+                try:
+                    if sync_asignacion_to_glpi(ticket):
+                        messages.success(request, f"Ticket {ticket.codigo} tomado (también en GLPI).")
+                    else:
+                        messages.success(request, f"Ticket {ticket.codigo} tomado.")
+                except GlpiError as exc:
+                    messages.warning(request, f"Ticket {ticket.codigo} tomado localmente; no se reflejó en GLPI: {exc}")
+            else:
+                messages.success(request, f"Ticket {ticket.codigo} tomado. Configura tu 'ID usuario GLPI' en Admin para reflejarlo allá.")
+            return redirect("tickets:sin_asignar")
+        messages.error(request, "Acción no permitida.")
+        return redirect("tickets:sin_asignar")
+
+    pp_mp = _resolve_per_page(request, "per_page", 15)
+    page_obj = _paginar(base, request, param="page", per_page_default=pp_mp)
+    return render(
+        request,
+        "tickets/sin_asignar.html",
+        {
+            "es_admin": es_admin,
+            "tickets": page_obj.object_list,
+            "page_obj": page_obj,
+            "tecnicos": tecnicos,
+            "per_page": pp_mp,
+            "querystring": _params_sin_page(request),
+            "pendientes": base.count(),
+        },
+    )
+
+
+@staff_required
 def lista_tickets(request):
     """Lista unificada de tickets: el admin ve todos, el técnico solo los suyos."""
     es_admin = request.user.rol == "admin"

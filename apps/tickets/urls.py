@@ -26,6 +26,7 @@ urlpatterns = [
     path("mi-panel/api/tickets/<int:pk>/responder/", views.mi_responder_ajax, name="mi_api_responder"),
     path("panel/tickets/<int:pk>/reenviar-glpi/", views.reenviar_glpi, name="staff_reenviar_glpi"),
     path("panel/", views.dashboard, name="dashboard"),
+    path("panel/sin-asignar/", views.sin_asignar, name="sin_asignar"),
     path("panel/tickets/", views.lista_tickets, name="lista"),
     path("panel/tickets/<int:pk>/", views.detalle_ticket, name="detalle"),
     path("panel/tecnico/", views.panel_tecnico, name="panel_tecnico"),

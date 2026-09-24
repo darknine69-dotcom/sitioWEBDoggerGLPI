@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Sin asignar{% endblock %}
+{% block body_class %}admin-shell sinAsignar-page{% endblock %}
+{% block nav_sin_asignar %}is-active{% endblock %}
+{% block header_eyebrow %}{% endblock %}
+{% block header_title %}{% endblock %}
+
+{% block extra_css %}
+<style>
+.sinAsignar-page .brand-titles { display: none; }
+.sa-head-l h2 { margin: 0; font-size: 20px; }
+.sa-head-l p { margin: 2px 0 0; color: var(--ink-muted); font-size: 13px; }
+.sa-pill { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; padding: 6px 14px; border-radius: 999px; background: rgba(214,43,31,.07); border: 1px solid rgba(214,43,31,.18); color: var(--dogger-red-dark); font-size: 12px; font-weight: 800; }
+.sa-pill .icon { width: 13px; height: 13px; }
+.ty-grid.sa-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.sa-assign { display: flex; gap: 7px; align-items: center; margin-top: 4px; }
+.sa-assign select { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); }
+.sa-assign select:focus { outline: none; border-color: var(--dogger-red); }
+.sa-assign .btn { white-space: nowrap; }
+.sa-tomar { width: 100%; }
+.ans-time .icon { width: 12px; height: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="page-head">
+        <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
+        <div class="page-head-titles sa-head-l">
+            <h2>Solicitudes sin asignar</h2>
+            <p>{% if es_admin %}Asigna cada solicitud al técnico que la atenderá.{% else %}Toma las solicitudes que no tienen técnico.{% endif %}</p>
+            <span class="sa-pill"><svg class="icon"><use href="#i-alert"/></svg> {{ pendientes }} pendiente{{ pendientes|pluralize }}</span>
+        </div>
+    </div>
+
+    <div class="ty-results">
+        <div class="ty-grid sa-grid">
+            {% for t in tickets %}
+            <article class="ty-card">
+                <div class="ty-card-head">
+                    <a class="ty-code" href="{% url 'tickets:detalle' t.pk %}" title="Ver ticket">{{ t.codigo }}</a>
+                    <div class="ty-card-head-right">
+                        {% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}
+                        <span class="ty-prio ty-prio-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span>
+                    </div>
+                </div>
+                <div class="ty-body">
+                    <a class="ty-title" href="{% url 'tickets:detalle' t.pk %}">{{ t.titulo }}</a>
+                    <div class="ty-meta">
+                        {% include "tickets/_solicitante_cell.html" with t=t %}
+                        <span class="ty-meta-line">
+                            <svg class="icon"><use href="#i-folder"/></svg>
+                            {{ t.categoria.grupo|default:"—" }} › {{ t.categoria.nombre|default:"Sin categoría" }}
+                        </span>
+                        <span class="ty-meta-line">
+                            <svg class="icon"><use href="#i-wrench"/></svg>
+                            <span class="sa-sin-tec">Sin técnico asignado</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="ty-card-foot">
+                    {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+                    {% with info=t.info_ans %}
+                    {% if info.0 %}
+                    <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
+                        {% if info.0 == 'vencido' %}<svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                        {% elif info.0 == 'resuelto' %}<svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                        {% else %}<svg class="icon icon-sm"><use href="#i-clock"/></svg>{% endif %}
+                        {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
+                    </span>
+                    {% endif %}
+                    {% endwith %}
+                    <span class="ty-date">{{ t.fecha_creacion|date:"d/m/Y" }}</span>
+                    {% if es_admin %}
+                    <form method="post" action="{% url 'tickets:sin_asignar' %}" class="sa-assign">
+                        {% csrf_token %}
+                        <input type="hidden" name="ticket_id" value="{{ t.pk }}">
+                        <input type="hidden" name="action" value="asignar">
+                        <select name="tecnico" aria-label="Asignar a">
+                            <option value="">— Sin asignar —</option>
+                            {% for tec in tecnicos %}
+                            <option value="{{ tec.pk }}">{{ tec.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm">Asignar</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'tickets:sin_asignar' %}" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="ticket_id" value="{{ t.pk }}">
+                        <input type="hidden" name="action" value="tomar">
+                        <button type="submit" class="btn btn-accent btn-sm sa-tomar">Tomar este ticket</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </article>
+            {% empty %}
+            <p class="table-empty ty-empty">No hay solicitudes sin técnico. ¡Todo asignado!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if page_obj.paginator.count > 0 %}
+    <div class="pagination-bar">
+        <div class="per-page-bar">
+            <label for="perPageSinAsignar">Filas:</label>
+            <select id="perPageSinAsignar" data-per-page-param="per_page">
+                <option value="15" {% if per_page == 15 %}selected{% endif %}>15</option>
+                <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+                <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                <option value="0" {% if per_page == 0 %}selected{% endif %}>Todas</option>
+            </select>
+        </div>
+        <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        <div class="pagination-links">
+            {% if page_obj.has_previous %}
+            <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
+            {% else %}
+            <span class="page-pill disabled">‹ Anterior</span>
+            {% endif %}
+            <span class="page-pill current">{{ page_obj.number }}</span>
+            {% if page_obj.has_next %}
+            <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Siguiente ›</a>
+            {% else %}
+            <span class="page-pill disabled">Siguiente ›</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</main>
+{% endblock %}
