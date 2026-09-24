@@ -26,6 +26,12 @@
     transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 .stat-chip:hover { border-color: var(--dogger-red); box-shadow: 0 2px 8px rgba(214,43,31,.08); transform: translateY(-1px); }
+.stat-chip.is-active { transform: translateY(-1px); box-shadow: 0 0 0 3px rgba(159,133,98,.12), 0 3px 10px rgba(23,20,18,.10); }
+.stat-chip.is-abiertas.is-active { border-color: var(--dogger-red); }
+.stat-chip.is-progreso.is-active { border-color: #C2410C; }
+.stat-chip.is-resueltas.is-active { border-color: #16A34A; }
+.stat-chip.is-cerradas.is-active { border-color: #6B6259; }
+.stat-chip.is-sinasignar.is-active { border-color: #B7791F; }
 .stat-chip .stat-n { font-size: 18px; font-weight: 800; line-height: 1; }
 .stat-chip .stat-l { font-size: 11.5px; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
 .stat-chip.is-abiertas .stat-n { color: var(--dogger-red); }
@@ -139,23 +145,23 @@
     </div>
 
     <div class="tickets-stats">
-        <a class="stat-chip is-abiertas" href="?estado=abierto" title="Solo solicitudes abiertas (pendientes de atención)">
+        <a class="stat-chip is-abiertas {% if filtro_estado == 'abierto' %}is-active{% endif %}" href="?estado=abierto" title="Solo solicitudes abiertas (pendientes de atención)">
             <span class="stat-ico"><svg class="icon"><use href="#i-alert"/></svg></span>
             <span class="stat-n">{{ stats.abiertas }}</span><span class="stat-l">Abiertas</span>
         </a>
-        <a class="stat-chip is-progreso" href="?estado=en-progreso" title="Solo solicitudes en progreso (siendo atendidas)">
+        <a class="stat-chip is-progreso {% if filtro_estado == 'en-progreso' %}is-active{% endif %}" href="?estado=en-progreso" title="Solo solicitudes en progreso (siendo atendidas)">
             <span class="stat-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
             <span class="stat-n">{{ stats.progreso }}</span><span class="stat-l">En progreso</span>
         </a>
-        <a class="stat-chip is-resueltas" href="?estado=resuelto" title="Solo solicitudes resueltas">
+        <a class="stat-chip is-resueltas {% if filtro_estado == 'resuelto' %}is-active{% endif %}" href="?estado=resuelto" title="Solo solicitudes resueltas">
             <span class="stat-ico"><svg class="icon"><use href="#i-check-circle"/></svg></span>
             <span class="stat-n">{{ stats.resueltas }}</span><span class="stat-l">Resueltas</span>
         </a>
-        <a class="stat-chip is-cerradas" href="?estado=cerrado" title="Solo solicitudes cerradas">
+        <a class="stat-chip is-cerradas {% if filtro_estado == 'cerrado' %}is-active{% endif %}" href="?estado=cerrado" title="Solo solicitudes cerradas">
             <span class="stat-ico"><svg class="icon"><use href="#i-lock"/></svg></span>
             <span class="stat-n">{{ stats.cerradas }}</span><span class="stat-l">Cerradas</span>
         </a>
-        <a class="stat-chip is-sinasignar" href="{% url 'tickets:sin_asignar' %}" title="Solicitudes abiertas sin técnico asignado: admin las asigna, el técnico puede tomarlas">
+        <a class="stat-chip is-sinasignar {% if sv == 'no-asignadas' %}is-active{% endif %}" href="{% url 'tickets:sin_asignar' %}" title="Solicitudes abiertas sin técnico asignado: admin las asigna, el técnico puede tomarlas">
             <span class="stat-ico"><svg class="icon"><use href="#i-inbox"/></svg></span>
             <span class="stat-n">{{ stats.sin_asignar }}</span><span class="stat-l">Sin asignar</span>
         </a>
