@@ -28,9 +28,9 @@ if errorlevel 1 goto :error
 echo.
 echo ============================================================
 echo  LISTO. Proyecto sincronizado con GitHub.
-echo  - SMTP      -> configurado en config/settings.py
-echo  - Notifs    -> apps/tickets/notifications.py
-echo  - Recuperar -> /cuenta/reset/solicitar/
+echo  - SMTP      : configurado en config/settings.py
+echo  - Notifs    : apps/tickets/notifications.py
+echo  - Recuperar : /cuenta/reset/solicitar/
 echo    (enlace "Olvidaste tu contrasena?" en el login)
 echo ============================================================
 pause
