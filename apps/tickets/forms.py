@@ -222,6 +222,8 @@ class UsuarioPanelForm(forms.Form):
     rol = forms.ChoiceField(choices=ROL_CHOICES)
     glpi_user_id = forms.IntegerField(required=False, min_value=1)
     activo = forms.BooleanField(required=False, initial=True)
+    telefono = forms.CharField(required=False, max_length=20)
+    ubicacion = forms.CharField(required=False, max_length=120)
     password1 = forms.CharField(
         required=False,
         widget=forms.PasswordInput,

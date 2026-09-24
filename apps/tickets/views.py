@@ -881,6 +881,107 @@ def usuarios_lista(request):
     pp_us = _resolve_per_page(request, "per_page", 5)
     page_obj = _paginar(usuarios, request, per_page_default=pp_us)
 
+    # ---- Ficha por usuario: estadísticas de tickets, ubicación, actividad,
+    #      y (para técnicos) permisos, disponibilidad, tareas/eventos y alertas ----
+    from apps.programador.models import CalendarioEvento, DisponibilidadTecnico
+
+    def _tipo_label(v):
+        return dict(CalendarioEvento.Tipo.choices).get(v, v)
+
+    hoy = date.today()
+    ahora = timezone.now()
+    hace_10min = ahora - timedelta(minutes=10)
+    hace_7d = ahora - timedelta(days=7)
+    fin_eventos = hoy + timedelta(days=14)
+
+    en_pagina = [u.pk for u in page_obj.object_list]
+    emails = [u.email.lower() for u in page_obj.object_list if u.email]
+    stats_tickets = {}
+    punto_mas_comun = {}
+    if emails:
+        stats_tickets = {
+            r["solicitante_email"]: r
+            for r in Ticket.objects.filter(solicitante_email__in=emails)
+            .values("solicitante_email")
+            .annotate(
+                total=Count("pk"),
+                abiertos=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
+                progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
+                resueltos=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
+                cerrados=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
+            )
+        }
+        _puntos = {}
+        for email, punto in Ticket.objects.filter(
+            solicitante_email__in=emails
+        ).exclude(solicitante_punto__in=[None, ""]).values_list("solicitante_email", "solicitante_punto"):
+            _puntos.setdefault(email, Counter())[punto] += 1
+        punto_mas_comun = {em: c.most_common(1)[0][0] for em, c in _puntos.items()}
+
+    disp_por_tec = {}
+    evts_por_tec = {}
+    vencidos_por_tec = {}
+    if tab == "tecnico" and en_pagina:
+        for d in DisponibilidadTecnico.objects.filter(
+            tecnico_id__in=en_pagina, fecha__gte=hoy
+        ).order_by("fecha", "tecnico_id"):
+            disp_por_tec.setdefault(d.tecnico_id, []).append(d)
+        for e in CalendarioEvento.objects.filter(
+            tecnico_id__in=en_pagina, fecha__gte=hoy, fecha__lte=fin_eventos
+        ).order_by("fecha", "hora").select_related("ticket"):
+            evts_por_tec.setdefault(e.tecnico_id, []).append(e)
+        # Vencidos se calcula en Python porque fecha_limite_ans es propiedad
+        for tk in (
+            Ticket.objects.filter(
+                tecnico_asignado_id__in=en_pagina,
+                estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
+            )
+            .select_related("tecnico_asignado")
+            .order_by("-fecha_creacion")[:300]
+        ):
+            if tk.fecha_limite_ans and tk.fecha_limite_ans < ahora:
+                vencidos_por_tec.setdefault(tk.tecnico_asignado_id, []).append(tk)
+
+    for u in page_obj.object_list:
+        em = (u.email or "").lower()
+        st = stats_tickets.get(em) or {}
+        u.ficha = {
+            "stats": st,
+            "punto": punto_mas_comun.get(em, ""),
+            "es_nuevo": bool(u.fecha_creacion and u.fecha_creacion >= hace_7d),
+            "en_linea": bool(u.last_login and u.last_login >= hace_10min),
+            "ultimo_acceso": u.last_login,
+            "registrado": u.fecha_creacion,
+            "permisos": {
+                "es_staff": u.is_staff,
+                "borrar_glpi": u.borrar_glpi_al_eliminar,
+            },
+            "disponibilidad": disp_por_tec.get(u.pk, []),
+            "eventos": evts_por_tec.get(u.pk, [])[:6],
+        }
+        if u.rol in ("tecnico", "admin"):
+            alertas = [
+                {
+                    "tipo": "vencido",
+                    "texto": f"Ticket {tk.codigo} vencido",
+                    "url": reverse("tickets:detalle", args=[tk.pk]),
+                }
+                for tk in vencidos_por_tec.get(u.pk, [])
+            ]
+            tope_ausencia = hoy + timedelta(days=3)
+            for d in u.ficha["disponibilidad"]:
+                if d.tipo in ("ausencia", "falta") and d.fecha <= tope_ausencia:
+                    alertas.append(
+                        {
+                            "tipo": "ausencia",
+                            "texto": f"{d.get_tipo_display()} el {DateFormat(d.fecha).format('j M')}"
+                            + (f" · {d.nota}" if d.nota else ""),
+                        }
+                    )
+            u.ficha["alertas"] = alertas[:6]
+        else:
+            u.ficha["alertas"] = []
+
     # Búsqueda en vivo del perfil en GLPI (pestaña Técnicos con texto de búsqueda)
     perfiles_encontrados = 0
     if tab == "tecnico" and q and dj_settings.GLPI.get("enabled"):
@@ -936,10 +1037,16 @@ def usuarios_lista(request):
     if dj_settings.GLPI.get("enabled"):
         glpi_base = dj_settings.GLPI["base_url"].split("/apirest.php")[0].rstrip("/")
 
-    # Sin resultados locales pero con búsqueda en Técnicos:
-    # ofrecer coincidencias de GLPI aún no importadas.
+    # Técnicos en GLPI que aún no están en el aplicativo:
+    # en la pestaña Técnicos se muestran siempre (con búsqueda, solo coincidencias)
+    # para poder importarlos / verlos junto a los internos.
     glpi_remotos = []
-    if tab == "tecnico" and q and not page_obj.object_list and glpi_base:
+    if tab == "tecnico" and glpi_base:
+        palabras = [p.lower() for p in q.split()] if q else None
+        ids_locales = set(
+            User.objects.exclude(glpi_user_id=None).values_list("glpi_user_id", flat=True)
+        )
+        correos_locales = set(User.objects.values_list("email", flat=True))
         try:
             client = GlpiClient()
             remotos = []
@@ -949,21 +1056,19 @@ def usuarios_lista(request):
                 client.kill_session()
         except GlpiError:
             remotos = []
-        palabras = [p.lower() for p in q.split()]
-        ids_locales = set(
-            User.objects.exclude(glpi_user_id=None).values_list("glpi_user_id", flat=True)
-        )
-        correos_locales = set(User.objects.values_list("email", flat=True))
         for r in remotos:
             texto = f"{r['login']} {r['nombre_real']} {r['email']}".lower()
-            if all(p in texto for p in palabras):
-                if r["glpi_id"] in ids_locales:
-                    continue
-                correo_real = r["email"].lower() if "@" in r["email"] else ""
-                if correo_real and correo_real in correos_locales:
-                    continue
-                glpi_remotos.append(r)
-        glpi_remotos = glpi_remotos[:8]
+            if palabras and not all(p in texto for p in palabras):
+                continue
+            if r["glpi_id"] in ids_locales:
+                continue
+            correo_real = r["email"].lower() if "@" in r["email"] else ""
+            if correo_real and correo_real in correos_locales:
+                continue
+            glpi_remotos.append(r)
+            if not palabras and len(glpi_remotos) >= 12:
+                break
+        glpi_remotos = glpi_remotos[:12]
 
     return render(
         request,
@@ -983,8 +1088,35 @@ def usuarios_lista(request):
             "glpi_base": glpi_base,
             "glpi_remotos": glpi_remotos,
             "per_page": pp_us,
+            "tipo_label": _tipo_label,
+            "hoy": date.today(),
+            "n_nuevos": User.objects.filter(fecha_creacion__gte=hace_7d).count(),
+            "n_en_linea": User.objects.filter(last_login__gte=hace_10min).count(),
         },
     )
+
+
+@staff_required
+def usuarios_estado_api(request):
+    """Estado 'en tiempo real' de las cuentas visibles: actividad y registro.
+
+    El panel consulta este endpoint cada pocos segundos para refrescar
+    los indicadores de usuarios nuevos y de quienes están usando la web.
+    """
+    ids = [int(x) for x in request.GET.get("ids", "").split(",") if x.strip().isdigit()]
+    ahora = timezone.now()
+    hace_10min = ahora - timedelta(minutes=10)
+    hace_7d = ahora - timedelta(days=7)
+    datos = {}
+    for u in User.objects.filter(pk__in=ids):
+        datos[str(u.pk)] = {
+            "activo": u.activo,
+            "es_staff": u.is_staff,
+            "nuevo": bool(u.fecha_creacion and u.fecha_creacion >= hace_7d),
+            "en_linea": bool(u.last_login and u.last_login >= hace_10min),
+            "ultimo_acceso": u.last_login.isoformat() if u.last_login else None,
+        }
+    return JsonResponse({"ok": True, "usuarios": datos})
 
 
 @admin_required
@@ -1013,7 +1145,7 @@ def usuario_importar_uno(request, glpi_id):
         )
     url = reverse("tickets:usuarios")
     qv = request.POST.get("q", "").strip()
-    return redirect(f"{url}?tab=tecnico" + (f"&q={qv}" if qv else ""))
+    return redirect(f"{url}?rol=tecnico" + (f"&q={qv}" if qv else ""))
 
 
 @admin_required
@@ -1048,6 +1180,8 @@ def _aplicar_usuario_panel(user, form, password):
     user.rol = form.cleaned_data["rol"]
     glpi_id = form.cleaned_data.get("glpi_user_id")
     user.glpi_user_id = glpi_id or None
+    user.telefono = (form.cleaned_data.get("telefono") or "").strip()
+    user.ubicacion = (form.cleaned_data.get("ubicacion") or "").strip()
     user.activo = form.cleaned_data.get("activo", False)
     user.is_active = user.activo
     if user.rol in ("admin", "tecnico"):

@@ -40,6 +40,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     nombre = models.CharField("Nombre", max_length=100)
     email = models.EmailField("Correo", max_length=150, unique=True)
     telefono = models.CharField("Teléfono", max_length=20, blank=True, default="")
+    ubicacion = models.CharField("Ubicación / punto", max_length=120, blank=True, default="")
     avatar = models.ImageField("Foto de perfil", upload_to=avatar_upload_to, blank=True, null=True)
 
     class Genero(models.TextChoices):

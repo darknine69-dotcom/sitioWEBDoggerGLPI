@@ -45,6 +45,7 @@ urlpatterns = [
     path("panel/categorias/<int:pk>/toggle/", views.categoria_toggle, name="categoria_toggle"),
     path("panel/categorias/<int:pk>/eliminar/", views.categoria_eliminar, name="categoria_eliminar"),
     path("panel/usuarios/", views.usuarios_lista, name="usuarios"),
+    path("panel/usuarios/estado.json", views.usuarios_estado_api, name="usuarios_estado"),
     path("panel/usuarios/guardar/", views.usuario_guardar, name="usuario_guardar"),
     path("panel/usuarios/<int:pk>/toggle/", views.usuario_toggle, name="usuario_toggle"),
     path("panel/usuarios/<int:pk>/eliminar/", views.usuario_eliminar, name="usuario_eliminar"),

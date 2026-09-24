@@ -260,6 +260,8 @@
                 ["rol", "value", "data-fill-rol", "usuario"],
                 ["glpi", "value", "data-fill-glpi", ""],
                 ["activo", "checked", "data-fill-activo", null],
+                ["telefono", "value", "data-fill-telefono", ""],
+                ["ubicacion", "value", "data-fill-ubicacion", ""],
                 ["pass", "value", "", ""]
             ].forEach(function (spec) {
                 var el = document.getElementById("u-" + spec[0]);

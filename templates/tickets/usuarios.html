@@ -1,10 +1,71 @@
 {% extends "base.html" %}
 
 {% block title %}Dogger · Usuarios y técnicos{% endblock %}
-{% block body_class %}admin-shell{% endblock %}
+{% block body_class %}admin-shell usuarios-page{% endblock %}
 {% block nav_usuarios %}is-active{% endblock %}
 {% block header_eyebrow %}Dogger · Administración{% endblock %}
 {% block header_title %}Usuarios y técnicos{% endblock %}
+
+{% block extra_css %}
+<style>
+.usuarios-page .brand-titles { display: none; }
+.live-head-badge { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.live-head-item { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 12px; font-weight: 700; color: var(--ink); }
+.live-head-item .dot-on { width: 9px; height: 9px; }
+.live-head-item.is-new { border-color: rgba(217,164,54,.4); color: #8a6116; background: #FFF7E6; }
+.live-head-item.is-new .live-dot { background: #C99A2E; }
+
+/* Estado de cuenta (en línea / nuevo) */
+.ue-state { display: inline-flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 11.5px; font-weight: 700; color: var(--ink-muted); }
+.ue-state .live-dot { width: 8px; height: 8px; }
+.ue-badge { display: inline-flex; align-items: center; gap: 5px; margin: 4px 0 0; padding: 2px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.ue-badge.ue-nuevo { color: #8a6116; background: #FFF3DB; border: 1px solid rgba(217,164,54,.35); }
+.ue-ubi { display: block; margin-top: 3px; font-size: 11.5px; color: var(--ink-muted); }
+.ue-acceso { font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
+.ue-acceso strong { color: #2F7D4F; }
+
+/* Ficha expandible */
+.ue-ficha > td { background: #FCFAF5; border-bottom: 1px solid #EFE8DA; padding: 16px 18px; }
+.ue-ficha-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.ue-box { background: #fff; border: 1px solid #EFE8Db; border-radius: 12px; padding: 12px 14px; }
+.ue-box h4 { margin: 0 0 9px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-muted); display: flex; align-items: center; gap: 6px; }
+.ue-box h4 .icon { width: 13px; height: 13px; }
+.ue-kv { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; }
+.ue-kv div { display: flex; gap: 8px; }
+.ue-kv b { min-width: 86px; color: var(--ink-muted); font-weight: 600; }
+.ue-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.perm-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #EAF6EF; color: #205C3B; border: 1px solid #CBE7D5; }
+.perm-chip.off { background: #F4EFE6; color: #8a8078; border-color: #E5DCCf; }
+
+/* Mini estadísticas de tickets */
+.ue-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.ue-stat { background: #FBF7EF; border: 1px solid #EFE8D8; border-radius: 10px; padding: 8px 10px; text-align: center; }
+.ue-stat b { display: block; font-size: 17px; line-height: 1.1; }
+.ue-stat span { font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .03em; font-weight: 700; }
+.ue-stat.s-ab { color: var(--dogger-red); }
+.ue-stat.s-pr { color: #C2410C; }
+.ue-stat.s-re { color: #16A34A; }
+.ue-stat.s-ce { color: #6B6259; }
+
+/* Disponibilidad, eventos, alertas */
+.ue-disp, .ue-evento, .ue-alerta { display: flex; align-items: baseline; gap: 7px; padding: 4px 0; font-size: 12.5px; border-bottom: 1px dashed #EFE8DA; }
+.ue-disp:last-child, .ue-evento:last-child, .ue-alerta:last-child { border-bottom: 0; }
+.ue-disp .falta, .ue-disp.is-falta { color: var(--dogger-red); font-weight: 600; }
+.ue-disp b { flex: none; color: var(--ink); }
+.ue-evento a { color: var(--ink); }
+.ue-evento-date { flex: none; color: var(--ink-muted); font-size: 11.5px; font-weight: 700; }
+.ue-evento-type { flex: none; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.ue-evento-type.st-tarea { background: rgba(214,43,31,.10); color: #A6281E; }
+.ue-evento-type.st-solicitud { background: rgba(22,163,74,.12); color: #15803D; }
+.ue-evento-type.st-recordatorio { background: rgba(217,164,54,.16); color: #8a6116; }
+.ue-evento-type.st-proyecto { background: rgba(29,78,216,.10); color: #1D4ED8; }
+.ue-alerta { color: #8a2a20; }
+.ue-alerta a { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
+.ue-alerta .icon { width: 12px; height: 12px; flex: none; align-self: center; }
+.ue-box .ue-empty { color: var(--ink-muted); font-size: 12.5px; }
+.ue-box-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+</style>
+{% endblock %}
 
 {% block content %}
 <main class="page">
@@ -12,7 +73,11 @@
         <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
             <h2>Cuentas del sistema</h2>
-            <p>Gestiona usuarios finales y técnicos (importados o creados en GLPI).</p>
+            <p>Usuarios finales y técnicos (importados o creados en GLPI) con actividad en tiempo real.</p>
+            <div class="live-head-badge">
+                <span class="live-head-item is-new"><span class="live-dot"></span> {{ n_nuevos }} nuevo{{ n_nuevos|pluralize }} esta semana</span>
+                <span class="live-head-item"><span class="dot-on"></span> {{ n_en_linea }} en línea ahora</span>
+            </div>
         </div>
     </div>
 
@@ -51,19 +116,30 @@
                     <tr>
                         <th>Nombre</th>
                         <th>Correo</th>
+                        <th>Contacto</th>
                         <th>Rol</th>
                         <th>GLPI</th>
                         <th>Estado</th>
-                        <th>Tickets asignados</th>
+                        <th>Tickets</th>
+                        <th>Último acceso</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for u in usuarios %}
-                    <tr data-nombre="{{ u.nombre }}" data-email="{{ u.email }}" data-rol="{{ u.rol }}"
+                    <tr class="ue-row" data-nombre="{{ u.nombre }}" data-email="{{ u.email }}" data-rol="{{ u.rol }}"
                         data-glpi="{{ u.glpi_user_id|default_if_none:'' }}" data-activo="{{ u.activo|yesno:'1,0' }}">
                         <td data-label="Nombre">
                             <strong>{{ u.nombre }}</strong>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
+                            <div>
+                                <span class="ue-state" id="ue-state-{{ u.pk }}" data-uid="{{ u.pk }}"
+                                      data-on="{{ u.ficha.en_linea|yesno:'1,0' }}"
+                                      data-new="{{ u.ficha.es_nuevo|yesno:'1,0' }}">
+                                    <span class="live-dot{% if not u.ficha.en_linea %} dot-off{% endif %}"></span>
+                                    <span class="ue-state-txt">{% if u.ficha.en_linea %}<b>En línea</b>{% else %}Sin actividad{% endif %}</span>
+                                </span>
+                                {% if u.ficha.es_nuevo %}<span class="ue-badge ue-nuevo">▸ Recién registrado</span>{% endif %}
+                            </div>
                             {% if u.glpi_perfil %}
                             <div class="glpi-live-grid">
                                 <small class="glpi-live"><span class="live-dot"></span> En GLPI: login <b>{{ u.glpi_perfil.login|default:"—" }}</b></small>
@@ -82,6 +158,11 @@
                             {% endif %}
                         </td>
                         <td data-label="Correo">{{ u.email }}</td>
+                        <td data-label="Contacto">
+                            {{ u.telefono|default:"—" }}{% if u.telefono %}<svg class="icon icon-sm" style="width:12px;height:12px;margin-left:5px"><use href="#i-phone"/></svg>{% endif %}
+                            {% if u.ubicacion %}<small class="ue-ubi">Punto: {{ u.ubicacion }}</small>
+                            {% elif u.ficha.punto %}<small class="ue-ubi">Punto habitual: {{ u.ficha.punto }}</small>{% endif %}
+                        </td>
                         <td data-label="Rol"><span class="badge-role {{ u.rol }}">{{ u.get_rol_display }}</span></td>
                         <td data-label="GLPI">
                             {% if u.glpi_user_id %}
@@ -105,16 +186,35 @@
                             {% if u.activo %}<span class="dot-on"></span> Activa
                             {% else %}<span class="dot-off"></span> Inactiva{% endif %}
                         </td>
-                        <td data-label="Tickets asignados">{{ u.n_tickets|default:0 }}</td>
+                        <td data-label="Tickets">
+                            {% if u.rol == 'usuario' %}
+                            <span title="Tickets creados">{{ u.ficha.stats.total|default:0 }}</span>
+                            {% else %}
+                            {{ u.n_tickets|default:0 }}<small class="ue-ubi">asignados</small>
+                            {% endif %}
+                        </td>
+                        <td data-label="Último acceso">
+                            <span class="ue-acceso" id="ue-access-{{ u.pk }}">
+                                {% if u.last_login %}{{ u.last_login|timesince }} atrás{% else %}<span class="dot-off"></span> Nunca{% endif %}
+                            </span>
+                        </td>
                         <td data-label="Acciones" class="cell-actions">
                             <div class="cat-actions">
+                                <button type="button" class="mini-btn ue-expand" data-open-ficha data-user-id="{{ u.pk }}"
+                                        title="Ver ficha del usuario (detalles, estadísticas, eventos)"><svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
                                 <a class="mini-btn" href="{% url 'tickets:lista' %}{% if u.rol == 'usuario' %}?solicitante_email={{ u.email|urlencode }}{% else %}?tecnico={{ u.pk }}{% endif %}"
                                    title="Ver tickets de este usuario"><svg class="icon icon-sm"><use href="#i-ticket"/></svg></a>
+                                <button type="button" class="mini-btn"
+                                        data-user-id="{{ u.pk }}"
+                                        data-open-modal="#modal-tarea"
+                                        title="Asignar tarea o evento">+ Tarea</button>
                                 <button type="button" class="mini-btn"
                                         data-open-modal="#modal-usuario"
                                         data-fill-nombre="{{ u.nombre }}" data-fill-email="{{ u.email }}"
                                         data-fill-rol="{{ u.rol }}" data-fill-glpi="{{ u.glpi_user_id|default_if_none:'' }}"
-                                        data-fill-activo="{{ u.activo|yesno:'1,0' }}" data-fill-pk="{{ u.pk }}" title="Editar datos de la cuenta"><svg class="icon icon-sm"><use href="#i-edit"/></svg></button>
+                                        data-fill-activo="{{ u.activo|yesno:'1,0' }}" data-fill-pk="{{ u.pk }}"
+                                        data-fill-telefono="{{ u.telefono|default:'' }}" data-fill-ubicacion="{{ u.ubicacion|default:'' }}"
+                                        title="Editar datos de la cuenta"><svg class="icon icon-sm"><use href="#i-edit"/></svg></button>
                                 {% if u.glpi_user_id %}
                                 <form method="post" action="{% url 'tickets:usuario_sync_glpi' u.pk %}">
                                     {% csrf_token %}
@@ -139,8 +239,97 @@
                             </div>
                         </td>
                     </tr>
+                    <tr class="ue-ficha" id="ficha-{{ u.pk }}" hidden data-ficha-uid="{{ u.pk }}">
+                        <td colspan="9">
+                            <div class="ue-ficha-grid">
+                                <div class="ue-box">
+                                    <h4><svg class="icon"><use href="#i-user"/></svg> Contacto y ubicación</h4>
+                                    <div class="ue-kv">
+                                        <div><b>Correo</b><span>{{ u.email }}</span></div>
+                                        <div><b>Teléfono</b><span>{{ u.telefono|default:"—" }}</span></div>
+                                        <div><b>Ubicación</b><span>{{ u.ubicacion|default:"—" }}</span></div>
+                                        {% if u.ficha.punto %}<div><b>Punto usu.</b><span>{{ u.ficha.punto }}</span></div>{% endif %}
+                                        <div><b>Registrado</b><span>{{ u.ficha.registrado|date:"d/m/Y H:i" }}</span></div>
+                                        <div><b>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.last_login %}{{ u.last_login|timesince }} atrás{% else %}Nunca{% endif %}</span></div>
+                                    </div>
+                                </div>
+                                <div class="ue-box">
+                                    <h4><svg class="icon"><use href="#i-ticket"/></svg> Estadísticas de tickets</h4>
+                                    <div class="ue-stats">
+                                        <span class="ue-stat"><b class="s-ab">{{ u.ficha.stats.abiertos|default:0 }}</b><span>Abiertos</span></span>
+                                        <span class="ue-stat"><b class="s-pr">{{ u.ficha.stats.progreso|default:0 }}</b><span>Progreso</span></span>
+                                        <span class="ue-stat"><b class="s-re">{{ u.ficha.stats.resueltos|default:0 }}</b><span>Resueltos</span></span>
+                                        <span class="ue-stat"><b class="s-ce">{{ u.ficha.stats.cerrados|default:0 }}</b><span>Cerrados</span></span>
+                                    </div>
+                                    <p class="ue-empty" style="margin:9px 0 0">Total creados: <b>{{ u.ficha.stats.total|default:0 }}</b></p>
+                                    <div class="ue-box-actions">
+                                        <a class="btn btn-outline-light btn-sm" href="{% url 'tickets:lista' %}{% if u.rol == 'usuario' %}?solicitante_email={{ u.email|urlencode }}{% else %}?tecnico={{ u.pk }}{% endif %}">
+                                            <svg class="icon icon-sm"><use href="#i-ticket"/></svg> Ver sus tickets
+                                        </a>
+                                    </div>
+                                </div>
+                                {% if u.rol == 'tecnico' or u.rol == 'admin' %}
+                                <div class="ue-box">
+                                    <h4><svg class="icon"><use href="#i-lock"/></svg> Permisos</h4>
+                                    <div class="ue-chips">
+                                        <span class="perm-chip">{{ u.get_rol_display }}</span>
+                                        <span class="perm-chip {% if not u.ficha.permisos.es_staff %}off{% endif %}">Staff</span>
+                                        <span class="perm-chip {% if not u.ficha.permisos.borrar_glpi %}off{% endif %}">Borrar en GLPI</span>
+                                        <span class="perm-chip {% if not u.activo %}off{% endif %}">Cuenta activa</span>
+                                    </div>
+                                </div>
+                                <div class="ue-box">
+                                    <h4><svg class="icon"><use href="#i-chart"/></svg> Disponibilidad</h4>
+                                    {% for d in u.ficha.disponibilidad|slice:":6" %}
+                                    <span class="ue-disp is-{{ d.tipo }}"><b>{{ d.fecha|date:"d/m" }}</b> {{ d.get_tipo_display }}{% if d.nota %} — {{ d.nota }}{% endif %}</span>
+                                    {% empty %}
+                                    <p class="ue-empty">Sin ausencias registradas · disponible por defecto.</p>
+                                    {% endfor %}
+                                    <div class="ue-box-actions">
+                                        <a class="btn btn-outline-light btn-sm" target="_blank" rel="noopener"
+                                           href="{% url 'programador:panel_programador' %}#disponibilidad">
+                                            <svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel de disponibilidad
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="ue-box">
+                                    <h4><svg class="icon"><use href="#i-wrench"/></svg> Tareas y eventos próximos</h4>
+                                    {% for e in u.ficha.eventos %}
+                                    <span class="ue-evento">
+                                        <span class="ue-evento-date">{{ e.fecha|date:"d/m" }}{% if e.hora %} {{ e.hora|time:"H:i" }}{% endif %}</span>
+                                        <span class="ue-evento-type st-{{ e.tipo }}">{{ e.get_tipo_display }}</span>
+                                        {% if e.ticket %}<a href="{% url 'tickets:detalle' e.ticket.pk %}">{% endif %}
+                                        <span>{{ e.titulo }}</span>
+                                        {% if e.ticket %}</a>{% endif %}
+                                    </span>
+                                    {% empty %}
+                                    <p class="ue-empty">Sin tareas ni eventos asignados en los próximos 14 días.</p>
+                                    {% endfor %}
+                                    <div class="ue-box-actions">
+                                        <button type="button" class="btn btn-primary btn-sm"
+                                                data-user-id="{{ u.pk }}"
+                                                data-open-modal="#modal-tarea">
+                                            <svg class="icon icon-sm"><use href="#i-plus"/></svg> Asignar tarea
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="ue-box">
+                                    <h4><svg class="icon"><use href="#i-bell"/></svg> Alertas</h4>
+                                    {% for a in u.ficha.alertas %}
+                                    <span class="ue-alerta">
+                                        <svg class="icon"><use href="#i-{% if a.tipo == 'ausencia' %}alert{% else %}x-circle{% endif %}"/></svg>
+                                        {% if a.url %}<a href="{{ a.url }}">{{ a.texto }}</a>{% else %}<span>{{ a.texto }}</span>{% endif %}
+                                    </span>
+                                    {% empty %}
+                                    <p class="ue-empty">Sin alertas.</p>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
                     {% empty %}
-                    <tr class="table-empty"><td colspan="7">Sin cuentas que coincidan.</td></tr>
+                    <tr class="table-empty"><td colspan="9">Sin cuentas que coincidan.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -148,7 +337,7 @@
 
         {% if glpi_remotos %}
         <div class="glpi-remote-card">
-            <h4><svg class="icon icon-sm"><use href="#i-search"/></svg> {{ glpi_remotos|length }} coincidencia(s) en GLPI que aún no están en el aplicativo</h4>
+            <h4><svg class="icon icon-sm"><use href="#i-search"/></svg> {{ glpi_remotos|length }} técnico(s) en GLPI que aún no están en el aplicativo</h4>
             {% for r in glpi_remotos %}
             <form method="post" action="{% url 'tickets:usuario_importar_uno' r.glpi_id %}" class="glpi-import-row">
                 {% csrf_token %}
@@ -226,6 +415,14 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="u-telefono">Teléfono</label>
+                    <input type="text" name="telefono" id="u-telefono" maxlength="20" placeholder="Ej: 310 123 4567">
+                </div>
+                <div class="form-group">
+                    <label for="u-ubicacion">Ubicación</label>
+                    <input type="text" name="ubicacion" id="u-ubicacion" maxlength="120" placeholder="Ej: Sede Norte">
+                </div>
+                <div class="form-group">
                     <label for="u-glpi">ID usuario GLPI</label>
                     <input type="number" name="glpi_user_id" id="u-glpi" min="1" placeholder="Ej: 12">
                 </div>
@@ -246,4 +443,183 @@
         </div>
     </div>
 </div>
+
+<div class="modal-overlay" id="modal-tarea">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3><svg class="icon icon-sm"><use href="#i-wrench"/></svg> Asignar tarea o evento</h3>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form class="form-grid" id="form-tarea" data-url="{% url 'programador:agregar' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="t-tecnico">Técnico <span class="req">*</span></label>
+                    <select name="tecnico_id" id="t-tecnico" required>
+                        {% for t in usuarios %}{% if t.rol == 'tecnico' or t.rol == 'admin' %}
+                        <option value="{{ t.pk }}">{{ t.nombre }}</option>
+                        {% endif %}{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="t-tipo">Tipo</label>
+                    <select name="tipo" id="t-tipo">
+                        <option value="tarea">Tarea</option>
+                        <option value="recordatorio">Recordatorio</option>
+                        <option value="proyecto">Proyecto</option>
+                        <option value="anuncio">Anuncio</option>
+                    </select>
+                </div>
+                <div class="form-group span-2">
+                    <label for="t-titulo">Título <span class="req">*</span></label>
+                    <input type="text" name="titulo" id="t-titulo" required maxlength="150" placeholder="¿Qué hay que hacer?">
+                </div>
+                <div class="form-group">
+                    <label for="t-fecha">Fecha <span class="req">*</span></label>
+                    <input type="date" name="fecha" id="t-fecha" required>
+                </div>
+                <div class="form-group">
+                    <label for="t-hora">Hora</label>
+                    <input type="time" name="hora" id="t-hora">
+                </div>
+                <div class="form-group span-2">
+                    <label for="t-desc">Descripción</label>
+                    <textarea name="descripcion" id="t-desc" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="t-sitio">Sitio / punto</label>
+                    <input type="text" name="sitio" id="t-sitio" maxlength="80">
+                </div>
+                <div class="form-group">
+                    <label for="t-grupo">Grupo</label>
+                    <input type="text" name="grupo" id="t-grupo" maxlength="60">
+                </div>
+                <div class="form-group span-2" id="t-msg" role="status"></div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary btn-sm">Guardar tarea</button>
+                    <button type="button" class="btn btn-cancel btn-sm modal-close">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var token = document.querySelector('#form-tarea [name="csrfmiddlewaretoken"]');
+    var tokenTarea = document.querySelector('#form-tarea [name="csrfmiddlewaretoken"]');
+    if (tokenTarea) {
+        document.getElementById('form-tarea').addEventListener('submit', crearTarea);
+    }
+
+    /* ---- Ficha expandible por usuario ---- */
+    function fichaRow(uid) { return document.getElementById('ficha-' + uid); }
+    document.querySelectorAll('[data-open-ficha]').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            var uid = btn.getAttribute('data-user-id');
+            if (!uid) return;
+            var f = fichaRow(uid);
+            if (!f) return;
+            f.hidden = !f.hidden;
+            btn.classList.toggle('is-active', !f.hidden);
+            var ico = btn.querySelector('.icon');
+            if (ico) ico.setAttribute('href', f.hidden ? '#i-chevron-down' : '#i-chevron-up');
+            if (!f.hidden && window.DoggerAbrir) {
+                var tr = f.previousElementSibling;
+                if (tr) window.DoggerAbrir(tr);
+            }
+        });
+    });
+
+    /* ---- Modal de tarea: precargar técnico según el botón pulsado ---- */
+    var tTecnico = document.getElementById('t-tecnico');
+    var tFecha = document.getElementById('t-fecha');
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-open-modal="#modal-tarea"]');
+        if (!btn) return;
+        var uid = btn.getAttribute('data-user-id');
+        if (!uid && btn.closest('.ue-row')) {
+            var st = btn.closest('.ue-row').querySelector('.ue-state');
+            uid = st ? st.dataset.uid : '';
+        }
+        if (uid && tTecnico) {
+            Array.prototype.forEach.call(tTecnico.options, function (op) {
+                op.selected = (op.value === uid);
+            });
+        }
+        if (tFecha) {
+            var h = new Date();
+            tFecha.value = h.getFullYear() + '-' +
+                String(h.getMonth() + 1).padStart(2, '0') + '-' +
+                String(h.getDate()).padStart(2, '0');
+        }
+        var msg = document.getElementById('t-msg');
+        if (msg) { msg.textContent = ''; msg.classList.remove('field-error'); }
+    });
+
+    function crearTarea(e) {
+        e.preventDefault();
+        var formT = e.target;
+        var msg = document.getElementById('t-msg');
+        var data = new FormData(formT);
+        fetch(formT.getAttribute('data-url'), { method: 'POST', body: data, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                if (j && j.ok) {
+                    if (msg) msg.textContent = 'Tarea asignada. Refrescando…';
+                    setTimeout(function () { window.location.reload(); }, 600);
+                } else {
+                    if (msg) { msg.textContent = (j && j.error) ? j.error : 'No se pudo crear la tarea.'; msg.classList.add('field-error'); }
+                }
+            })
+            .catch(function () {
+                if (msg) { msg.textContent = 'Error de conexión al crear la tarea.'; msg.classList.add('field-error'); }
+            });
+    }
+
+    /* ---- Tiempo real: refrescar cada 25 s el estado de las cuentas ---- */
+    var uidSet = {};
+    document.querySelectorAll('[data-uid]').forEach(function (el) {
+        uidSet[el.getAttribute('data-uid')] = true;
+    });
+    var uids = Object.keys(uidSet);
+    if (uids.length) {
+        var url = '{% url "tickets:usuarios_estado" %}?ids=' + uids.join(',');
+        setInterval(function () {
+            fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+                if (!j || !j.ok) return;
+                var us = j.usuarios || {};
+                Object.keys(us).forEach(function (id) {
+                    var st = us[id];
+                    var el = document.getElementById('ue-state-' + id);
+                    if (el) {
+                        var on = st.en_linea;
+                        var dot = el.querySelector('.live-dot');
+                        var txt = el.querySelector('.ue-state-txt');
+                        el.dataset.on = on ? '1' : '0';
+                        if (dot) dot.classList.toggle('dot-off', !on);
+                        if (txt) txt.innerHTML = on ? '<b>En línea</b>' : 'Sin actividad';
+                    }
+                    var acc = document.getElementById('ue-access-' + id);
+                    if (acc && st.ultimo_acceso) {
+                        var d = new Date(st.ultimo_acceso);
+                        var ago = Math.max(1, Math.round((Date.now() - d.getTime()) / 60000));
+                        acc.innerHTML = ago < 1 ? 'recientemente' :
+                            (ago < 60 ? ago + ' min atrás' : (Math.floor(ago / 60) + ' h ' + (ago % 60) + ' min atrás'));
+                        acc.classList.add('ue-fresh');
+                    }
+                    var accF = document.getElementById('ue-access-f-' + id);
+                    if (accF && st.ultimo_acceso) {
+                        var d2 = new Date(st.ultimo_acceso);
+                        var ago2 = Math.max(1, Math.round((Date.now() - d2.getTime()) / 60000));
+                        accF.textContent = ago2 < 1 ? 'recientemente' : (ago2 < 60 ? ago2 + ' min atrás' : (Math.floor(ago2 / 60) + ' h ' + (ago2 % 60) + ' min atrás'));
+                    }
+                });
+            }).catch(function () {});
+        }, 25000);
+    }
+})();
+</script>
 {% endblock %}
