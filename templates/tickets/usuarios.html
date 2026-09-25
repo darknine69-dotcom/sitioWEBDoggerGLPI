@@ -69,24 +69,25 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 .perm-chip.off { background: #F4EFE6; color: #8a8078; border-color: #E5DCCf; }
 
 /* Mini estadísticas de tickets */
-.ue-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
-.ue-stat { background: #FBF7EF; border: 1px solid #EFE8D8; border-radius: 10px; padding: 8px 10px; text-align: center; }
-.ue-stat b { display: block; font-size: 17px; line-height: 1.1; }
-.ue-stat span { font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .03em; font-weight: 700; }
+.ue-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.ue-stat { background: #FBF7EF; border: 1px solid #EFE8D8; border-radius: 8px; padding: 4px 6px; text-align: center; overflow: hidden; }
+.ue-stat b { display: block; font-size: 13px; line-height: 1.1; }
+.ue-stat span { font-size: 9px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .02em; font-weight: 700; }
 .ue-stat.s-ab { color: #D62B1F; background: rgba(214,43,31,.08); border-color: rgba(214,43,31,.25); }
 .ue-stat.s-pr { color: #9A6A00; background: rgba(242,169,0,.13); border-color: rgba(242,169,0,.38); }
 .ue-stat.s-re { color: #205C3B; background: rgba(47,125,79,.10); border-color: rgba(47,125,79,.28); }
 .ue-stat.s-ce { color: #6B6259; background: rgba(107,98,89,.08); border-color: rgba(107,98,89,.20); }
 
 /* Disponibilidad, eventos, alertas */
-.ue-disp, .ue-evento, .ue-alerta { display: flex; align-items: baseline; gap: 7px; padding: 4px 0; font-size: 12.5px; border-bottom: 1px dashed #EFE8DA; }
+.ue-disp, .ue-evento, .ue-alerta { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; font-size: 11.5px; border-bottom: 1px dashed #EFE8DA; }
 .ue-disp:last-child, .ue-evento:last-child, .ue-alerta:last-child { border-bottom: 0; }
 .ue-disp .falta, .ue-disp.is-falta { color: var(--dogger-red); font-weight: 600; }
 .ue-disp b { flex: none; color: var(--ink); }
-.ue-evento a { color: var(--ink); }
-.ue-evento-date { flex: none; color: var(--ink-muted); font-size: 11.5px; font-weight: 700; }
-.ue-evento-hora { flex: none; padding: 1px 6px; border-radius: 6px; background: #FBF3E0; color: #8a6116; font-size: 10.5px; font-weight: 800; }
-.ue-evento-type { flex: none; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.ue-evento a { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ue-evento > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ue-evento-date { flex: none; color: var(--ink-muted); font-size: 10.5px; font-weight: 700; }
+.ue-evento-hora { flex: none; padding: 1px 5px; border-radius: 6px; background: #FBF3E0; color: #8a6116; font-size: 9.5px; font-weight: 800; }
+.ue-evento-type { flex: none; padding: 1px 6px; border-radius: 999px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
 .ue-evento-type.st-tarea { background: rgba(214,43,31,.10); color: #A6281E; }
 .ue-evento-type.st-solicitud { background: rgba(22,163,74,.12); color: #15803D; }
 .ue-evento-type.st-recordatorio { background: rgba(217,164,54,.16); color: #8a6116; }
