@@ -1275,6 +1275,7 @@ def _ficha_usuario(u):
                     {
                         "tipo": "ausencia",
                         "texto": f"{d.get_tipo_display()} el {DateFormat(d.fecha).format('j M')}"
+                        + (f" a las {d.hora.strftime('%H:%M')}" if d.hora else "")
                         + (f" · {d.nota}" if d.nota else ""),
                     }
                 )

@@ -33,6 +33,7 @@ class DisponibilidadTecnico(models.Model):
         db_column="TecnicoId",
     )
     fecha = models.DateField("Fecha")
+    hora = models.TimeField("Hora", null=True, blank=True)
     tipo = models.CharField(
         "Tipo",
         max_length=20,

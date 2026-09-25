@@ -122,7 +122,11 @@ def programador_datos(request):
     ]
 
     disp = {
-        f"{d.tecnico_id}|{d.fecha.isoformat()}": {"tipo": d.tipo, "nota": d.nota}
+        f"{d.tecnico_id}|{d.fecha.isoformat()}": {
+            "tipo": d.tipo,
+            "nota": d.nota,
+            "hora": d.hora.strftime("%H:%M") if d.hora else "",
+        }
         for d in DisponibilidadTecnico.objects.filter(q_disp).select_related("tecnico")
     }
 
@@ -250,12 +254,19 @@ def programador_disponibilidad(request):
     if tipo not in DisponibilidadTecnico.Tipo.values:
         return JsonResponse({"error": "Tipo inválido"}, status=400)
 
+    hora = request.POST.get("hora") or ""
+    try:
+        hora_t = dt.time.fromisoformat(hora) if hora else None
+    except ValueError:
+        return JsonResponse({"error": "Hora inválida"}, status=400)
+
     obj, _ = DisponibilidadTecnico.objects.update_or_create(
         tecnico_id=int(tecnico_id),
         fecha=fecha,
         defaults={
             "tipo": tipo,
             "nota": (request.POST.get("nota") or "").strip(),
+            "hora": hora_t,
             "creado_por": request.user,
         },
     )

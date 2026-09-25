@@ -46,7 +46,7 @@
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-chart"/></svg> Disponibilidad</h4>
         {% for d in u.ficha.disponibilidad|slice:":6" %}
-        <span class="ue-disp is-{{ d.tipo }}"><b>{{ d.fecha|date:"d/m/Y" }}</b> {{ d.get_tipo_display }}{% if d.nota %} — {{ d.nota }}{% endif %}</span>
+        <span class="ue-disp is-{{ d.tipo }}"><b>{{ d.fecha|date:"d/m/Y" }}</b>{% if d.hora %}<span class="ue-evento-hora">{{ d.hora|time:"H:i" }}</span>{% endif %} {{ d.get_tipo_display }}{% if d.nota %} — {{ d.nota }}{% endif %}</span>
         {% empty %}
         <p class="ue-empty">Sin ausencias registradas · disponible por defecto.</p>
         {% endfor %}

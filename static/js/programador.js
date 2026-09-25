@@ -216,11 +216,16 @@
                 cell.appendChild(chips);
 
                 var nota = "";
-                if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
-                else if (key) {
+if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
+                else {
                     var desp = data.disponibilidad[key + "|" + fecha];
                     var tipos = { ausencia: "Ausencia", falta: "Falta de disponibilidad", no_ausencia: "No ausencia" };
-                    if (desp) nota = desp.nota || tipos[desp.tipo] || "";
+                    if (desp) {
+                        var partes = [];
+                        if (desp.hora) partes.push(desp.hora + " h");
+                        partes.push(desp.nota || tipos[desp.tipo] || "");
+                        nota = partes.join(" · ");
+                    }
                 }
                 if (nota) {
                     var note = document.createElement("div");
@@ -406,6 +411,7 @@
         var disp = data.disponibilidad[key];
         marcarDisp(disp ? disp.tipo : "");
         $("dispNota").value = disp ? (disp.nota || "") : "";
+        $("dispHora").value = disp ? (disp.hora || "") : "";
     }
     function marcarDisp(tipo) {
         $("dispTipo").value = tipo || "";
