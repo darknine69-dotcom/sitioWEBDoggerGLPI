@@ -161,7 +161,7 @@
             <span class="stat-ico"><svg class="icon"><use href="#i-lock"/></svg></span>
             <span class="stat-n">{{ stats.cerradas }}</span><span class="stat-l">Cerradas</span>
         </a>
-        <a class="stat-chip is-sinasignar {% if sv == 'no-asignadas' %}is-active{% endif %}" href="{% url 'tickets:sin_asignar' %}" title="Solicitudes abiertas sin técnico asignado: admin las asigna, el técnico puede tomarlas">
+        <a class="stat-chip is-sinasignar {% if sv == 'no-asignadas' %}is-active{% endif %}" href="?sv=no-asignadas" title="Solicitudes abiertas sin técnico asignado: admin las asigna, el técnico puede tomarlas">
             <span class="stat-ico"><svg class="icon"><use href="#i-inbox"/></svg></span>
             <span class="stat-n">{{ stats.sin_asignar }}</span><span class="stat-l">Sin asignar</span>
         </a>
