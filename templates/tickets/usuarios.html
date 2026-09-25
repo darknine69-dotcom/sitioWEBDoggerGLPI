@@ -43,22 +43,32 @@
 .row-menu-item.danger:hover { background: rgba(214,43,31,.08); }
 .row-menu-panel form { margin: 0; }
 
-/* Ficha expandible */
+/* Ficha expandible: flota por encima de las filas siguientes y del paginador */
 .ue-ficha[hidden] { display: none; } /* asegura collapse también si otra regla define display */
-.ue-ficha > td { background: #FCFAF5; border-bottom: 1px solid #EFE8DA; padding: 16px 18px; }
+.ue-ficha { position: relative; height: 0; }
+.ue-ficha > td { position: absolute; left: 0; right: 0; top: 10px; z-index: 40; background: #FCFAF5; border: 1px solid #EFE8DA; border-radius: 14px; box-shadow: 0 18px 44px rgba(60,40,10,.18); padding: 14px 18px 18px; }
 .ue-ficha-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed #E5DCCB; }
 .ue-ficha-head-t { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); }
 .ue-ficha-head-t .icon { width: 15px; height: 15px; color: var(--ink-muted); }
 .ue-ficha-close { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px solid #E5DCCB; border-radius: 8px; background: #fff; color: var(--ink-muted); font-size: 14px; line-height: 1; cursor: pointer; transition: .15s; }
 .ue-ficha-close:hover { color: var(--dogger-red); border-color: #e2bdb7; background: #FFF6F4; }
 .ue-ficha-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-.row-menu-item.is-active { background: #FFF3DB; color: #8a6116; }
-.row-menu-item.is-active .icon { color: #C99A2E; }
+
+/* Fila clicable: sombra al pasar y al tener la ficha abierta (indica en qué fila estás) */
+table.data-table tbody tr.ue-row { cursor: pointer; transition: background .15s ease, box-shadow .15s ease; }
+table.data-table tbody tr.ue-row:hover { background: #FBF7EF; box-shadow: 0 6px 18px rgba(60,40,10,.10); }
+table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10px 28px rgba(60,40,10,.20); position: relative; z-index: 20; }
+
+/* Ficha en móvil: vuelve a fluir normal y no flota */
 @media (max-width: 640px) {
-    table.data-table.cards-mobile tbody tr.ue-ficha { padding: 10px 0; }
-    table.data-table.cards-mobile tbody tr.ue-ficha > td { display: block; }
+    table.data-table.cards-mobile tbody tr.ue-ficha { position: static; height: auto; padding: 10px 0; }
+    table.data-table.cards-mobile tbody tr.ue-ficha > td { position: static; box-shadow: none; border: 0; border-radius: 0; }
     table.data-table.cards-mobile tbody tr.ue-ficha[hidden] { display: none; }
 }
+
+/* La ficha flota por encima del paginador: ningún contenedor debe recortarla */
+.usuarios-page .table-card,
+.usuarios-page .table-scroll { overflow: visible; }
 .ue-box { background: #fff; border: 1px solid #EFE8Db; border-radius: 12px; padding: 12px 14px; }
 .ue-box h4 { margin: 0 0 9px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-muted); display: flex; align-items: center; gap: 6px; }
 .ue-box h4 .icon { width: 13px; height: 13px; }
@@ -170,7 +180,8 @@
                 <tbody>
                     {% for u in usuarios %}
                     <tr class="ue-row" data-nombre="{{ u.nombre }}" data-email="{{ u.email }}" data-rol="{{ u.rol }}"
-                        data-glpi="{{ u.glpi_user_id|default_if_none:'' }}" data-activo="{{ u.activo|yesno:'1,0' }}">
+                        data-glpi="{{ u.glpi_user_id|default_if_none:'' }}" data-activo="{{ u.activo|yesno:'1,0' }}"
+                        data-user-id="{{ u.pk }}" title="Clic en la fila para ver la ficha">
                         <td data-label="Nombre">
                             <span class="ue-name-line">
                                 <strong>{{ u.nombre }}</strong>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
@@ -242,9 +253,6 @@
                             <div class="row-menu">
                                 <button type="button" class="row-menu-btn" data-menu aria-label="Acciones" title="Acciones"><svg class="icon"><use href="#i-ellipsis"/></svg></button>
                                 <div class="row-menu-panel" hidden>
-                                    <button type="button" class="row-menu-item" data-open-ficha data-user-id="{{ u.pk }}">
-                                        <svg class="icon"><use href="#i-chevron-down"/></svg> Ver ficha
-                                    </button>
                                     <a class="row-menu-item" href="{% url 'tickets:lista' %}{% if u.rol == 'usuario' %}?solicitante_email={{ u.email|urlencode }}{% else %}?tecnico={{ u.pk }}{% endif %}" title="Ver tickets de este usuario">
                                         <svg class="icon"><use href="#i-ticket"/></svg> Ver tickets
                                     </a>
@@ -578,15 +586,8 @@
         if (!f) return;
         f.hidden = !abierto;
         var row = f.previousElementSibling;
-        if (row) {
-            var ob = row.querySelector('[data-open-ficha]');
-            if (ob) {
-                ob.classList.toggle('is-active', abierto);
-                var ico = ob.querySelector('.icon');
-                if (ico) ico.setAttribute('href', abierto ? '#i-chevron-up' : '#i-chevron-down');
-            }
-        }
-        /* Asegura que la ficha (o la fila al cerrar) quede visible, no cortada */
+        if (row) row.classList.toggle('is-open', abierto);
+        /* Con la ficha flotante el layout no cambia: asegura solo que quede visible */
         var el = abierto ? f : row;
         if (el && el.getBoundingClientRect) {
             var r = el.getBoundingClientRect();
@@ -598,14 +599,16 @@
             }
         }
     }
-    document.querySelectorAll('[data-open-ficha]').forEach(function (btn) {
-        btn.addEventListener('click', function (e) {
-            var uid = btn.getAttribute('data-user-id');
-            if (!uid) return;
-            var f = fichaRow(uid);
-            if (!f) return;
-            resyncFicha(uid, !!f.hidden);
-        });
+    /* Clic en cualquier parte de la fila (célula del resultado) abre/cierra la ficha */
+    document.addEventListener('click', function (e) {
+        var filita = e.target.closest('tr.ue-row');
+        if (!filita) return;
+        if (e.target.closest('a, button, select, input, textarea, label, .row-menu')) return;
+        var uid = filita.getAttribute('data-user-id');
+        if (!uid) return;
+        var f = fichaRow(uid);
+        if (!f) return;
+        resyncFicha(uid, !!f.hidden);
     });
     document.addEventListener('click', function (e) {
         var cerrador = e.target.closest('[data-close-ficha]');
