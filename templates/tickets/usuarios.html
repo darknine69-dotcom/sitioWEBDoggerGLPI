@@ -44,8 +44,21 @@
 .row-menu-panel form { margin: 0; }
 
 /* Ficha expandible */
+.ue-ficha[hidden] { display: none; } /* asegura collapse también si otra regla define display */
 .ue-ficha > td { background: #FCFAF5; border-bottom: 1px solid #EFE8DA; padding: 16px 18px; }
+.ue-ficha-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed #E5DCCB; }
+.ue-ficha-head-t { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); }
+.ue-ficha-head-t .icon { width: 15px; height: 15px; color: var(--ink-muted); }
+.ue-ficha-close { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px solid #E5DCCB; border-radius: 8px; background: #fff; color: var(--ink-muted); font-size: 14px; line-height: 1; cursor: pointer; transition: .15s; }
+.ue-ficha-close:hover { color: var(--dogger-red); border-color: #e2bdb7; background: #FFF6F4; }
 .ue-ficha-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.row-menu-item.is-active { background: #FFF3DB; color: #8a6116; }
+.row-menu-item.is-active .icon { color: #C99A2E; }
+@media (max-width: 640px) {
+    table.data-table.cards-mobile tbody tr.ue-ficha { padding: 10px 0; }
+    table.data-table.cards-mobile tbody tr.ue-ficha > td { display: block; }
+    table.data-table.cards-mobile tbody tr.ue-ficha[hidden] { display: none; }
+}
 .ue-box { background: #fff; border: 1px solid #EFE8Db; border-radius: 12px; padding: 12px 14px; }
 .ue-box h4 { margin: 0 0 9px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-muted); display: flex; align-items: center; gap: 6px; }
 .ue-box h4 .icon { width: 13px; height: 13px; }
@@ -277,6 +290,14 @@
                     </tr>
                     <tr class="ue-ficha" id="ficha-{{ u.pk }}" hidden data-ficha-uid="{{ u.pk }}">
                         <td colspan="9">
+                            <div class="ue-ficha-head">
+                                <span class="ue-ficha-head-t">
+                                    <svg class="icon"><use href="#i-user"/></svg>
+                                    <span><b>{{ u.nombre }}</b> · ficha de la cuenta</span>
+                                </span>
+                                <button type="button" class="ue-ficha-close" data-close-ficha data-user-id="{{ u.pk }}"
+                                        title="Cerrar ficha y volver a la lista" aria-label="Cerrar ficha">&times;</button>
+                            </div>
                             <div class="ue-ficha-grid">
                                 <div class="ue-box">
                                     <h4><svg class="icon"><use href="#i-user"/></svg> Contacto y ubicación</h4>
@@ -552,21 +573,44 @@
 
     /* ---- Ficha expandible por usuario ---- */
     function fichaRow(uid) { return document.getElementById('ficha-' + uid); }
+    function resyncFicha(uid, abierto) {
+        var f = fichaRow(uid);
+        if (!f) return;
+        f.hidden = !abierto;
+        var row = f.previousElementSibling;
+        if (row) {
+            var ob = row.querySelector('[data-open-ficha]');
+            if (ob) {
+                ob.classList.toggle('is-active', abierto);
+                var ico = ob.querySelector('.icon');
+                if (ico) ico.setAttribute('href', abierto ? '#i-chevron-up' : '#i-chevron-down');
+            }
+        }
+        /* Asegura que la ficha (o la fila al cerrar) quede visible, no cortada */
+        var el = abierto ? f : row;
+        if (el && el.getBoundingClientRect) {
+            var r = el.getBoundingClientRect();
+            var arriba = 80, abajo = window.innerHeight - 48;
+            if (r.bottom > abajo) {
+                window.scrollBy({ top: r.bottom - abajo, behavior: 'smooth' });
+            } else if (r.top < arriba) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }
     document.querySelectorAll('[data-open-ficha]').forEach(function (btn) {
         btn.addEventListener('click', function (e) {
             var uid = btn.getAttribute('data-user-id');
             if (!uid) return;
             var f = fichaRow(uid);
             if (!f) return;
-            f.hidden = !f.hidden;
-            btn.classList.toggle('is-active', !f.hidden);
-            var ico = btn.querySelector('.icon');
-            if (ico) ico.setAttribute('href', f.hidden ? '#i-chevron-down' : '#i-chevron-up');
-            if (!f.hidden && window.DoggerAbrir) {
-                var tr = f.previousElementSibling;
-                if (tr) window.DoggerAbrir(tr);
-            }
+            resyncFicha(uid, !!f.hidden);
         });
+    });
+    document.addEventListener('click', function (e) {
+        var cerrador = e.target.closest('[data-close-ficha]');
+        if (!cerrador) return;
+        resyncFicha(cerrador.getAttribute('data-user-id'), false);
     });
 
     /* ---- Menú de acciones por fila ---- */
