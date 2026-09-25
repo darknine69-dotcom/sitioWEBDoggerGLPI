@@ -61,6 +61,49 @@
 /* Las tarjetas de tablas (técnicos y usuarios) no quedan pegadas */
 .mesa-tec-card { margin-top: 26px; }
 
+/* Buscador unificado de persona (técnico o usuario) */
+.rpt-persona { position: relative; flex: 1 1 250px; max-width: 360px; }
+.rpt-persona-input { position: relative; }
+.rpt-persona-input input { width: 100%; box-sizing: border-box; padding-right: 32px; }
+.rpt-persona-clear {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    border: 0; background: transparent; color: var(--ink-muted); font-size: 16px;
+    line-height: 1; cursor: pointer; display: none; padding: 2px 4px;
+}
+.rpt-persona-clear:hover { color: var(--dogger-red); }
+.rpt-suggest {
+    position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% - 20px);
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(23, 20, 18, .14); max-height: 250px; overflow: auto;
+}
+.rpt-suggest button {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    padding: 9px 12px; border: 0; background: transparent; cursor: pointer;
+    font-size: 13px; color: var(--ink); border-bottom: 1px solid #F6F1E6;
+}
+.rpt-suggest button:last-child { border-bottom: 0; }
+.rpt-suggest button:hover, .rpt-suggest button.is-sel { background: #FBF7EE; }
+.rpt-suggest button .icon { width: 14px; height: 14px; color: var(--ink-muted); flex-shrink: 0; }
+.rpt-suggest button b { font-weight: 700; }
+.rpt-rol {
+    margin-left: auto; font-size: 10.5px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.rpt-rol--tecnico { background: rgba(47, 125, 79, .14); color: #2F7D4F; }
+.rpt-rol--admin { background: rgba(214, 43, 31, .12); color: #D62B1F; }
+.rpt-rol--usuario { background: #F1EDE6; color: var(--ink-muted); }
+.rpt-chip {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 9px;
+    background: #FBF7EE; border: 1px solid var(--line); border-radius: 999px;
+    padding: 5px 12px; font-size: 12.5px; font-weight: 700; color: var(--ink);
+}
+.rpt-chip .icon { width: 13px; height: 13px; color: var(--dogger-red); }
+.rpt-chip b { font-weight: 800; }
+.rpt-chip .rpt-rol { margin-left: 2px; }
+.rpt-chip-x { border: 0; background: transparent; cursor: pointer; color: var(--ink-muted); font-size: 14px; line-height: 1; padding: 0 2px; }
+.rpt-chip-x:hover { color: var(--dogger-red); }
+.rpt-suggest-empty { padding: 10px 12px; font-size: 12.5px; color: var(--ink-muted); }
+
 /* Contenedor de gráficas (mismo alto que el dashboard) */
 .chart-stage { position: relative; height: 280px; }
 @media (max-width: 900px) { .chart-stage { height: 240px; } }
@@ -189,27 +232,16 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="rpt-fld">
-            <label for="fTec">Técnico</label>
-            <select id="fTec" name="tecnico" class="rpt-autosubmit">
-                <option value="">Todos</option>
-                {% for t in filtros_tecnicos %}
-                <option value="{{ t.id }}" {% if f.tecnico == t.id|stringformat:'s' %}selected{% endif %}>{{ t.nombre }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="rpt-fld">
-            <label for="fUsr">Usuario</label>
-            <select id="fUsr" name="usuario" class="rpt-autosubmit">
-                <option value="">Todos los usuarios</option>
-                {% for u in filtros_usuarios %}
-                {% with c_val=u.solicitante_email|default:u.solicitante_nombre|default:'' %}
-                <option value="{{ c_val }}" {% if f.usuario == c_val %}selected{% endif %}>
-                    {{ u.solicitante_nombre|default:u.solicitante_email|default:"—" }}{% if u.solicitante_email %} ({{ u.solicitante_email }}){% endif %}
-                </option>
-                {% endwith %}
-                {% endfor %}
-            </select>
+        <div class="rpt-fld rpt-persona">
+            <label for="fPersona">Técnico / Usuario</label>
+            <div class="rpt-persona-input">
+                <input type="text" id="fPersona" placeholder="Buscar por nombre…" autocomplete="off">
+                <input type="hidden" name="tecnico" id="fTecnico" value="{{ f.tecnico }}">
+                <input type="hidden" name="usuario" id="fUsuario" value="{{ f.usuario }}">
+                <button type="button" class="rpt-persona-clear" id="fPersonaClear" title="Quitar selección">×</button>
+            </div>
+            <div class="rpt-suggest rpt-hidden" id="fPersonaSuggest"></div>
+            <div id="fPersonaChip"></div>
         </div>
         <div class="rpt-actions">
             <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-search"/></svg> Aplicar filtros</button>
@@ -352,6 +384,98 @@
     document.querySelectorAll(".rpt-autosubmit").forEach(function (sel) {
         sel.addEventListener("change", function () { sel.form.submit(); });
     });
+
+    // ---- Buscador unificado de persona (técnico o usuario) ----
+    (function () {
+        var personas = JSON.parse('{{ sugerencias_personas|escapejs }}');
+        var inp = document.getElementById("fPersona");
+        var sug = document.getElementById("fPersonaSuggest");
+        var clearBtn = document.getElementById("fPersonaClear");
+        var chipBox = document.getElementById("fPersonaChip");
+        var hTec = document.getElementById("fTecnico");
+        var hUsu = document.getElementById("fUsuario");
+        var sel = {
+            tipo: "{{ filtro_persona.tipo|escapejs }}",
+            nombre: "{{ filtro_persona.nombre|escapejs }}",
+            rol: "{{ filtro_persona.rol|escapejs }}",
+            valor: "{{ filtro_persona.valor|escapejs }}"
+        };
+
+        function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+        function label(p) {
+            if (p.tipo === "tecnico") return p.rol ? cap(p.rol) : "Técnico";
+            return "Usuario";
+        }
+        function rolCls(p) {
+            if (p.rol === "admin") return "rpt-rol--admin";
+            if (p.rol === "tecnico") return "rpt-rol--tecnico";
+            return "rpt-rol--usuario";
+        }
+        function hideSuggest() { sug.classList.add("rpt-hidden"); sug.innerHTML = ""; }
+        function renderChip() {
+            chipBox.innerHTML = "";
+            if (!sel.tipo) { clearBtn.style.display = "none"; return; }
+            var chip = document.createElement("span");
+            chip.className = "rpt-chip";
+            chip.innerHTML = '<svg class="icon"><use href="#i-user"/></svg>' +
+                '<b></b><span class="rpt-rol ' + rolCls(sel) + '"></span>' +
+                '<button type="button" class="rpt-chip-x" title="Quitar">×</button>';
+            chip.querySelector("b").textContent = sel.nombre;
+            chip.querySelector(".rpt-rol").textContent = label(sel);
+            chip.querySelector(".rpt-chip-x").addEventListener("click", function () {
+                sel = { tipo: "", nombre: "", rol: "", valor: "" };
+                hTec.value = ""; hUsu.value = "";
+                renderChip(); inp.value = "";
+            });
+            chipBox.appendChild(chip);
+            clearBtn.style.display = "block";
+        }
+        function mostrar(lista) {
+            sug.innerHTML = "";
+            lista.forEach(function (p) {
+                var b = document.createElement("button");
+                b.type = "button";
+                b.innerHTML = '<svg class="icon"><use href="#i-user"/></svg><b></b>' +
+                    '<span class="rpt-rol ' + rolCls(p) + '"></span>';
+                b.querySelector("b").textContent = p.nombre;
+                b.querySelector(".rpt-rol").textContent = label(p);
+                b.addEventListener("click", function () {
+                    sel = { tipo: p.tipo, nombre: p.nombre, rol: p.rol || "", valor: p.valor };
+                    hTec.value = p.tipo === "tecnico" ? p.valor : "";
+                    hUsu.value = p.tipo === "usuario" ? p.valor : "";
+                    inp.value = p.nombre;
+                    renderChip(); hideSuggest();
+                });
+                sug.appendChild(b);
+            });
+            sug.classList.remove("rpt-hidden");
+        }
+
+        inp.addEventListener("input", function () {
+            var q = inp.value.trim().toLowerCase();
+            if (!q) { hideSuggest(); return; }
+            var hits = personas.filter(function (p) { return p.nombre.toLowerCase().indexOf(q) !== -1; }).slice(0, 8);
+            if (hits.length) mostrar(hits);
+            else {
+                sug.innerHTML = '<div class="rpt-suggest-empty">Sin coincidencias para «' + inp.value.trim() + "».</div>";
+                sug.classList.remove("rpt-hidden");
+            }
+        });
+        inp.addEventListener("focus", function () { if (inp.value.trim()) inp.dispatchEvent(new Event("input")); });
+        clearBtn.addEventListener("click", function () {
+            sel = { tipo: "", nombre: "", rol: "", valor: "" };
+            hTec.value = ""; hUsu.value = "";
+            inp.value = ""; renderChip(); hideSuggest(); inp.focus();
+        });
+        document.addEventListener("click", function (e) {
+            if (!(e.target && e.target.closest && e.target.closest(".rpt-persona"))) hideSuggest();
+        });
+        inp.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") { hideSuggest(); inp.blur(); }
+        });
+
+        if (sel.tipo) { inp.value = sel.nombre; renderChip(); }
+    })();
 
     // ---- Gráfico de barras: comparativo por técnico ----
     var tec = JSON.parse('{{ tec_chart_json|escapejs }}');

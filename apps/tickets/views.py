@@ -882,16 +882,30 @@ def reportes(request):
         "detalle": tec_detalle,
     }
 
-    filtros_tecnicos = (
-        User.objects.filter(activo=True, rol__in=["admin", "tecnico"])
-        .order_by("nombre")
-        .values("id", "nombre")
-    )
-    usuarios_unicos = (
-        Ticket.objects.values("solicitante_nombre", "solicitante_email")
-        .distinct()
-        .order_by("solicitante_nombre")[:400]
-    )
+    # Personas para el buscador unificado de filtros (técnico o usuario, por nombre)
+    personas = []
+    for u in User.objects.filter(activo=True, rol__in=["admin", "tecnico"]).order_by("nombre").values("id", "nombre", "rol"):
+        personas.append({"nombre": u["nombre"], "rol": u["rol"], "tipo": "tecnico", "valor": str(u["id"])})
+    for item in Ticket.objects.values("solicitante_nombre", "solicitante_email").distinct().order_by("solicitante_nombre")[:400]:
+        nombre = (item["solicitante_nombre"] or item["solicitante_email"] or "").strip()
+        if not nombre:
+            continue
+        personas.append(
+            {"nombre": nombre, "rol": "", "tipo": "usuario", "valor": item["solicitante_email"] or item["solicitante_nombre"]}
+        )
+
+    filtro_persona = {"tipo": "", "nombre": "", "rol": "", "valor": ""}
+    if f["tecnico"].isdigit():
+        meta = User.objects.filter(pk=f["tecnico"]).values("nombre", "rol").first()
+        if meta:
+            filtro_persona = {
+                "tipo": "tecnico",
+                "nombre": meta["nombre"],
+                "rol": meta["rol"] or "",
+                "valor": f["tecnico"],
+            }
+    elif f["usuario"]:
+        filtro_persona = {"tipo": "usuario", "nombre": f["usuario"], "rol": "", "valor": f["usuario"]}
 
     return render(
         request,
@@ -905,8 +919,8 @@ def reportes(request):
             "f": f,
             "filtros_txt": f["filtros_txt"],
             "filtros_categorias": Categoria.objects.filter(activo=True).order_by("grupo", "nombre"),
-            "filtros_tecnicos": filtros_tecnicos,
-            "filtros_usuarios": usuarios_unicos,
+            "sugerencias_personas": json.dumps(personas),
+            "filtro_persona": filtro_persona,
             "prioridad_choices": Ticket.Prioridad.choices,
             "querystring": request.GET.urlencode(),
         },
