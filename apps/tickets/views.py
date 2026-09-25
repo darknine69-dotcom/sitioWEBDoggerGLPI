@@ -856,10 +856,30 @@ def reportes(request):
         "colores": colores_cat[: len(top_cats)],
         "detalle": cat_detalle,
     }
+    # Detalle de tickets por técnico para el tooltip de la gráfica comparativa
+    nombres_tec = {r["nombre"] for r in tecnicos}
+    tec_detalle = {k: [] for k in nombres_tec}
+    for t in tickets:
+        nombre_tec = (t.tecnico_asignado.nombre if t.tecnico_asignado else "Sin asignar")
+        if nombre_tec not in tec_detalle:
+            continue
+        tec_detalle[nombre_tec].append(
+            (
+                t.codigo,
+                t.solicitante_nombre or t.solicitante_email or "—",
+                nombre_tec,
+                t.get_estado_display(),
+            )
+        )
+    for k, det in tec_detalle.items():
+        if len(det) > 10:
+            tec_detalle[k] = det[:10] + [("…", f"y {len(det) - 10} más", "", "")]
+
     tec_chart = {
         "labels": [r["nombre"] for r in tecnicos],
         "asignados": [r["asignados"] for r in tecnicos],
         "resueltos": [r["resueltos"] for r in tecnicos],
+        "detalle": tec_detalle,
     }
 
     filtros_tecnicos = (
