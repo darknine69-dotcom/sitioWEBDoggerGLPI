@@ -1149,6 +1149,136 @@ def usuarios_estado_api(request):
     return JsonResponse({"ok": True, "usuarios": datos})
 
 
+def _ficha_usuario(u):
+    """Construye el dict `ficha` de una cuenta (mismos campos que en usuarios_lista).
+
+    Se usa para servir la ficha dinámica (modal) de una fila concreta.
+    """
+    from apps.programador.models import CalendarioEvento, DisponibilidadTecnico
+
+    ahora = timezone.now()
+    hoy = date.today()
+    hace_10min = ahora - timedelta(minutes=10)
+    hace_7d = ahora - timedelta(days=7)
+    fin_eventos = hoy + timedelta(days=14)
+    email = (u.email or "").lower()
+
+    def _acceso_label(dt, ref):
+        if not dt:
+            return "Nunca"
+        seg = (ref - dt).total_seconds()
+        if seg < 60:
+            return "recientemente"
+        minutos = int(seg // 60)
+        if minutos < 60:
+            return f"hace {minutos} min"
+        horas, m = divmod(minutos, 60)
+        if seg < 86400:
+            return f"hace {horas} h {m} min"
+        return dt.strftime("%d/%m/%Y")
+
+    stats = {}
+    punto = ""
+    if email:
+        tk_qs = Ticket.objects.filter(solicitante_email=email)
+        stats = {
+            r["solicitante_email"]: r
+            for r in tk_qs.values("solicitante_email")
+            .annotate(
+                total=Count("pk"),
+                abiertos=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
+                progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
+                resueltos=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
+                cerrados=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
+            )
+        }.get(email, {})
+        cuentas = Counter(
+            tk_qs.exclude(solicitante_punto__in=[None, ""]).values_list("solicitante_punto", flat=True)
+        )
+        if cuentas:
+            punto = cuentas.most_common(1)[0][0]
+
+    ficha = {
+        "stats": stats,
+        "punto": punto,
+        "es_nuevo": bool(u.fecha_creacion and u.fecha_creacion >= hace_7d),
+        "en_linea": bool(u.last_login and u.last_login >= hace_10min),
+        "ultimo_acceso": u.last_login,
+        "registrado": u.fecha_creacion,
+        "permisos": {
+            "es_staff": u.is_staff,
+            "borrar_glpi": u.borrar_glpi_al_eliminar,
+        },
+        "disponibilidad": [],
+        "eventos": [],
+        "alertas": [],
+    }
+
+    ultimo_login = u.last_login
+    if ultimo_login is None:
+        ficha["dot"] = ""
+        ficha["dot_puede"] = False
+    elif not u.activo:
+        ficha["dot"] = "red"
+        ficha["dot_puede"] = False
+    else:
+        ficha["dot_puede"] = True
+        ficha["dot"] = "green" if ficha["en_linea"] else "gray"
+    ficha["acceso_label"] = _acceso_label(ultimo_login, ahora)
+
+    if u.rol in ("tecnico", "admin"):
+        disp = list(
+            DisponibilidadTecnico.objects.filter(tecnico_id=u.pk, fecha__gte=hoy).order_by("fecha")
+        )
+        evts = list(
+            CalendarioEvento.objects.filter(tecnico_id=u.pk, fecha__gte=hoy, fecha__lte=fin_eventos)
+            .order_by("fecha", "hora")
+            .select_related("ticket")
+        )
+        vencidos = []
+        for tk in (
+            Ticket.objects.filter(
+                tecnico_asignado_id=u.pk,
+                estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
+            )
+            .select_related("tecnico_asignado")
+            .order_by("-fecha_creacion")[:300]
+        ):
+            if tk.fecha_limite_ans and tk.fecha_limite_ans < ahora:
+                vencidos.append(tk)
+        alertas = [
+            {
+                "tipo": "vencido",
+                "texto": f"Ticket {tk.codigo} vencido",
+                "url": reverse("tickets:detalle", args=[tk.pk]),
+            }
+            for tk in vencidos
+        ]
+        tope_ausencia = hoy + timedelta(days=3)
+        for d in disp:
+            if d.tipo in ("ausencia", "falta") and d.fecha <= tope_ausencia:
+                alertas.append(
+                    {
+                        "tipo": "ausencia",
+                        "texto": f"{d.get_tipo_display()} el {DateFormat(d.fecha).format('j M')}"
+                        + (f" · {d.nota}" if d.nota else ""),
+                    }
+                )
+        ficha["disponibilidad"] = disp
+        ficha["eventos"] = evts[:6]
+        ficha["alertas"] = alertas[:6]
+    return ficha
+
+
+@admin_required
+def usuario_ficha_api(request, pk):
+    """Ficha de una cuenta (AJAX): ID GLPI, estado, estadísticas y tareas asignadas."""
+    u = get_object_or_404(User, pk=pk)
+    u.ficha = _ficha_usuario(u)
+    html = render(request, "tickets/_ficha_usuario.html", {"u": u}).content.decode("utf-8")
+    return JsonResponse({"ok": True, "html": html})
+
+
 @admin_required
 @require_POST
 def usuario_importar_uno(request, glpi_id):

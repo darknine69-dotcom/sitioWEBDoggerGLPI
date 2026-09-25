@@ -47,6 +47,7 @@ urlpatterns = [
     path("panel/usuarios/", views.usuarios_lista, name="usuarios"),
     path("panel/usuarios/estado.json", views.usuarios_estado_api, name="usuarios_estado"),
     path("panel/usuarios/guardar/", views.usuario_guardar, name="usuario_guardar"),
+    path("panel/usuarios/<int:pk>/ficha/", views.usuario_ficha_api, name="usuario_ficha"),
     path("panel/usuarios/<int:pk>/toggle/", views.usuario_toggle, name="usuario_toggle"),
     path("panel/usuarios/<int:pk>/eliminar/", views.usuario_eliminar, name="usuario_eliminar"),
         path("panel/usuarios/<int:pk>/crear-glpi/", views.usuario_crear_glpi, name="usuario_crear_glpi"),

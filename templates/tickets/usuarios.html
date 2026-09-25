@@ -43,32 +43,21 @@
 .row-menu-item.danger:hover { background: rgba(214,43,31,.08); }
 .row-menu-panel form { margin: 0; }
 
-/* Ficha expandible: flota por encima de las filas siguientes y del paginador */
-.ue-ficha[hidden] { display: none; } /* asegura collapse también si otra regla define display */
-.ue-ficha { position: relative; height: 0; }
-.ue-ficha > td { position: absolute; left: 0; right: 0; top: 10px; z-index: 40; background: #FCFAF5; border: 1px solid #EFE8DA; border-radius: 14px; box-shadow: 0 18px 44px rgba(60,40,10,.18); padding: 14px 18px 18px; }
-.ue-ficha-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed #E5DCCB; }
-.ue-ficha-head-t { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); }
-.ue-ficha-head-t .icon { width: 15px; height: 15px; color: var(--ink-muted); }
-.ue-ficha-close { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px solid #E5DCCB; border-radius: 8px; background: #fff; color: var(--ink-muted); font-size: 14px; line-height: 1; cursor: pointer; transition: .15s; }
-.ue-ficha-close:hover { color: var(--dogger-red); border-color: #e2bdb7; background: #FFF6F4; }
-.ue-ficha-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-
 /* Fila clicable: sombra al pasar y al tener la ficha abierta (indica en qué fila estás) */
 table.data-table tbody tr.ue-row { cursor: pointer; transition: background .15s ease, box-shadow .15s ease; }
 table.data-table tbody tr.ue-row:hover { background: #FBF7EF; box-shadow: 0 6px 18px rgba(60,40,10,.10); }
 table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10px 28px rgba(60,40,10,.20); position: relative; z-index: 20; }
 
-/* Ficha en móvil: vuelve a fluir normal y no flota */
-@media (max-width: 640px) {
-    table.data-table.cards-mobile tbody tr.ue-ficha { position: static; height: auto; padding: 10px 0; }
-    table.data-table.cards-mobile tbody tr.ue-ficha > td { position: static; box-shadow: none; border: 0; border-radius: 0; }
-    table.data-table.cards-mobile tbody tr.ue-ficha[hidden] { display: none; }
-}
-
-/* La ficha flota por encima del paginador: ningún contenedor debe recortarla */
-.usuarios-page .table-card,
-.usuarios-page .table-scroll { overflow: visible; }
+/* Modal de ficha de cuenta (fuera de la tabla, centrado con position:fixed) */
+.ue-ficha-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+#modal-ficha .modal-box { max-width: 900px; }
+#modal-ficha .ue-ficha-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+#modal-ficha .ue-ficha-meta-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 999px; background: #fff; border: 1px solid #EFE8DA; font-size: 12px; font-weight: 600; color: var(--ink-muted); }
+#modal-ficha .ue-ficha-meta-item b { color: var(--ink); }
+#modal-ficha .ue-ficha-meta-item .meta-off { color: var(--dogger-red); }
+#ficha-loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 34px 0; color: var(--ink-muted); font-size: 13px; }
+#ficha-loading .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #EFE8DA; border-top-color: #C99A2E; animation: ue-spin .8s linear infinite; }
+@keyframes ue-spin { to { transform: rotate(360deg); } }
 .ue-box { background: #fff; border: 1px solid #EFE8Db; border-radius: 12px; padding: 12px 14px; }
 .ue-box h4 { margin: 0 0 9px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-muted); display: flex; align-items: center; gap: 6px; }
 .ue-box h4 .icon { width: 13px; height: 13px; }
@@ -181,7 +170,8 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                     {% for u in usuarios %}
                     <tr class="ue-row" data-nombre="{{ u.nombre }}" data-email="{{ u.email }}" data-rol="{{ u.rol }}"
                         data-glpi="{{ u.glpi_user_id|default_if_none:'' }}" data-activo="{{ u.activo|yesno:'1,0' }}"
-                        data-user-id="{{ u.pk }}" title="Clic en la fila para ver la ficha">
+                        data-user-id="{{ u.pk }}" data-ficha-url="{% url 'tickets:usuario_ficha' u.pk %}"
+                        title="Clic en la fila para ver la ficha">
                         <td data-label="Nombre">
                             <span class="ue-name-line">
                                 <strong>{{ u.nombre }}</strong>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
@@ -293,103 +283,6 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                                     </form>
                                     {% endif %}
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="ue-ficha" id="ficha-{{ u.pk }}" hidden data-ficha-uid="{{ u.pk }}">
-                        <td colspan="9">
-                            <div class="ue-ficha-head">
-                                <span class="ue-ficha-head-t">
-                                    <svg class="icon"><use href="#i-user"/></svg>
-                                    <span><b>{{ u.nombre }}</b> · ficha de la cuenta</span>
-                                </span>
-                                <button type="button" class="ue-ficha-close" data-close-ficha data-user-id="{{ u.pk }}"
-                                        title="Cerrar ficha y volver a la lista" aria-label="Cerrar ficha">&times;</button>
-                            </div>
-                            <div class="ue-ficha-grid">
-                                <div class="ue-box">
-                                    <h4><svg class="icon"><use href="#i-user"/></svg> Contacto y ubicación</h4>
-                                    <div class="ue-kv">
-                                        <div><b>Correo</b><span>{{ u.email }}</span></div>
-                                        <div><b>Teléfono</b><span>{{ u.telefono|default:"—" }}</span></div>
-                                        <div><b>Ubicación</b><span>{{ u.ubicacion|default:"—" }}</span></div>
-                                        {% if u.ficha.punto %}<div><b>Punto usu.</b><span>{{ u.ficha.punto }}</span></div>{% endif %}
-                                        <div><b>Registrado</b><span>{{ u.ficha.registrado|date:"d/m/Y H:i" }}</span></div>
-                                        <div><b>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.last_login %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}</span></div>
-                                    </div>
-                                </div>
-                                <div class="ue-box">
-                                    <h4><svg class="icon"><use href="#i-ticket"/></svg> Estadísticas de tickets</h4>
-                                    <div class="ue-stats">
-                                        <span class="ue-stat"><b class="s-ab">{{ u.ficha.stats.abiertos|default:0 }}</b><span>Abiertos</span></span>
-                                        <span class="ue-stat"><b class="s-pr">{{ u.ficha.stats.progreso|default:0 }}</b><span>Progreso</span></span>
-                                        <span class="ue-stat"><b class="s-re">{{ u.ficha.stats.resueltos|default:0 }}</b><span>Resueltos</span></span>
-                                        <span class="ue-stat"><b class="s-ce">{{ u.ficha.stats.cerrados|default:0 }}</b><span>Cerrados</span></span>
-                                    </div>
-                                    <p class="ue-empty" style="margin:9px 0 0">Total creados: <b>{{ u.ficha.stats.total|default:0 }}</b></p>
-                                    <div class="ue-box-actions">
-                                        <a class="btn btn-outline-light btn-sm" href="{% url 'tickets:lista' %}{% if u.rol == 'usuario' %}?solicitante_email={{ u.email|urlencode }}{% else %}?tecnico={{ u.pk }}{% endif %}">
-                                            <svg class="icon icon-sm"><use href="#i-ticket"/></svg> Ver sus tickets
-                                        </a>
-                                    </div>
-                                </div>
-                                {% if u.rol == 'tecnico' or u.rol == 'admin' %}
-                                <div class="ue-box">
-                                    <h4><svg class="icon"><use href="#i-lock"/></svg> Permisos</h4>
-                                    <div class="ue-chips">
-                                        <span class="perm-chip">{{ u.get_rol_display }}</span>
-                                        <span class="perm-chip {% if not u.ficha.permisos.es_staff %}off{% endif %}">Staff</span>
-                                        <span class="perm-chip {% if not u.ficha.permisos.borrar_glpi %}off{% endif %}">Borrar en GLPI</span>
-                                        <span class="perm-chip {% if not u.activo %}off{% endif %}">Cuenta activa</span>
-                                    </div>
-                                </div>
-                                <div class="ue-box">
-                                    <h4><svg class="icon"><use href="#i-chart"/></svg> Disponibilidad</h4>
-                                    {% for d in u.ficha.disponibilidad|slice:":6" %}
-                                    <span class="ue-disp is-{{ d.tipo }}"><b>{{ d.fecha|date:"d/m" }}</b> {{ d.get_tipo_display }}{% if d.nota %} — {{ d.nota }}{% endif %}</span>
-                                    {% empty %}
-                                    <p class="ue-empty">Sin ausencias registradas · disponible por defecto.</p>
-                                    {% endfor %}
-                                    <div class="ue-box-actions">
-                                        <a class="btn btn-outline-light btn-sm" target="_blank" rel="noopener"
-                                           href="{% url 'programador:panel_programador' %}#disponibilidad">
-                                            <svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel de disponibilidad
-                                        </a>
-                                    </div>
-                                </div>
-                                <div class="ue-box">
-                                    <h4><svg class="icon"><use href="#i-wrench"/></svg> Tareas y eventos próximos</h4>
-                                    {% for e in u.ficha.eventos %}
-                                    <span class="ue-evento">
-                                        <span class="ue-evento-date">{{ e.fecha|date:"d/m" }}{% if e.hora %} {{ e.hora|time:"H:i" }}{% endif %}</span>
-                                        <span class="ue-evento-type st-{{ e.tipo }}">{{ e.get_tipo_display }}</span>
-                                        {% if e.ticket %}<a href="{% url 'tickets:detalle' e.ticket.pk %}">{% endif %}
-                                        <span>{{ e.titulo }}</span>
-                                        {% if e.ticket %}</a>{% endif %}
-                                    </span>
-                                    {% empty %}
-                                    <p class="ue-empty">Sin tareas ni eventos asignados en los próximos 14 días.</p>
-                                    {% endfor %}
-                                    <div class="ue-box-actions">
-                                        <button type="button" class="btn btn-primary btn-sm"
-                                                data-user-id="{{ u.pk }}"
-                                                data-open-modal="#modal-tarea">
-                                            <svg class="icon icon-sm"><use href="#i-plus"/></svg> Asignar tarea
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="ue-box">
-                                    <h4><svg class="icon"><use href="#i-bell"/></svg> Alertas</h4>
-                                    {% for a in u.ficha.alertas %}
-                                    <span class="ue-alerta">
-                                        <svg class="icon"><use href="#i-{% if a.tipo == 'ausencia' %}alert{% else %}x-circle{% endif %}"/></svg>
-                                        {% if a.url %}<a href="{{ a.url }}">{{ a.texto }}</a>{% else %}<span>{{ a.texto }}</span>{% endif %}
-                                    </span>
-                                    {% empty %}
-                                    <p class="ue-empty">Sin alertas.</p>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -568,6 +461,16 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         </div>
     </div>
 </div>
+
+<div class="modal-overlay" id="modal-ficha" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3><svg class="icon icon-sm"><use href="#i-user"/></svg> <span id="fichaTitle">Ficha de la cuenta</span></h3>
+            <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body" id="ficha-body"></div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -579,41 +482,48 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         document.getElementById('form-tarea').addEventListener('submit', crearTarea);
     }
 
-    /* ---- Ficha expandible por usuario ---- */
-    function fichaRow(uid) { return document.getElementById('ficha-' + uid); }
-    function resyncFicha(uid, abierto) {
-        var f = fichaRow(uid);
-        if (!f) return;
-        f.hidden = !abierto;
-        var row = f.previousElementSibling;
-        if (row) row.classList.toggle('is-open', abierto);
-        /* Con la ficha flotante el layout no cambia: asegura solo que quede visible */
-        var el = abierto ? f : row;
-        if (el && el.getBoundingClientRect) {
-            var r = el.getBoundingClientRect();
-            var arriba = 80, abajo = window.innerHeight - 48;
-            if (r.bottom > abajo) {
-                window.scrollBy({ top: r.bottom - abajo, behavior: 'smooth' });
-            } else if (r.top < arriba) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
+    /* ---- Modal de ficha de cuenta: cargado dinámicamente según la fila ---- */
+    var modalFicha = document.getElementById('modal-ficha');
+    var fichaBody = document.getElementById('ficha-body');
+
+    function cerrarFichaModal() {
+        if (!modalFicha) return;
+        modalFicha.classList.remove('open');
+        var filaAbierta = document.querySelector('tr.ue-row.is-open');
+        if (filaAbierta) filaAbierta.classList.remove('is-open');
     }
-    /* Clic en cualquier parte de la fila (célula del resultado) abre/cierra la ficha */
+    function abrirFichaModal(filita) {
+        if (!modalFicha || !fichaBody) return;
+        var titulo = document.getElementById('fichaTitle');
+        if (titulo) titulo.textContent = 'Ficha de ' + (filita.getAttribute('data-nombre') || 'la cuenta');
+        modalFicha.classList.add('open');
+        fichaBody.innerHTML = '<div id="ficha-loading"><span class="spin"></span> Cargando ficha…</div>';
+        fetch(filita.getAttribute('data-ficha-url'), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                if (!j || !j.ok) throw new Error('respuesta inválida');
+                fichaBody.innerHTML = j.html;
+            })
+            .catch(function () {
+                fichaBody.innerHTML = '<p class="ue-empty" style="padding:26px 0;text-align:center">No se pudo cargar la ficha. Intenta de nuevo.</p>';
+            });
+    }
     document.addEventListener('click', function (e) {
+        /* Clic en la fila (célula del resultado) abre el modal con los datos de esa fila */
         var filita = e.target.closest('tr.ue-row');
         if (!filita) return;
         if (e.target.closest('a, button, select, input, textarea, label, .row-menu')) return;
-        var uid = filita.getAttribute('data-user-id');
-        if (!uid) return;
-        var f = fichaRow(uid);
-        if (!f) return;
-        resyncFicha(uid, !!f.hidden);
+        cerrarFichaModal();
+        filita.classList.add('is-open');
+        abrirFichaModal(filita);
     });
     document.addEventListener('click', function (e) {
-        var cerrador = e.target.closest('[data-close-ficha]');
-        if (!cerrador) return;
-        resyncFicha(cerrador.getAttribute('data-user-id'), false);
+        if (!modalFicha) return;
+        if (e.target.closest('#modal-ficha .modal-close')) { cerrarFichaModal(); return; }
+        if (e.target === modalFicha) cerrarFichaModal();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') cerrarFichaModal();
     });
 
     /* ---- Menú de acciones por fila ---- */
@@ -646,6 +556,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('[data-open-modal="#modal-tarea"]');
         if (!btn) return;
+        cerrarFichaModal();
         var uid = btn.getAttribute('data-user-id');
         if (!uid && btn.closest('.ue-row')) {
             var st = btn.closest('.ue-row').querySelector('.ue-dot-w');

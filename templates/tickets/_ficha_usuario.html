@@ -1,0 +1,93 @@
+<div class="ue-ficha-meta">
+    <span class="ue-ficha-meta-item"><b>{{ u.nombre }}</b></span>
+    {% if u.glpi_user_id %}<span class="ue-ficha-meta-item">ID GLPI <b>{{ u.glpi_user_id }}</b></span>{% endif %}
+    <span class="ue-ficha-meta-item">Estado <b class="{% if not u.activo %}meta-off{% endif %}">{% if u.activo %}Activa{% else %}Inactiva{% endif %}</b></span>
+    <span class="ue-ficha-meta-item">Estadísticas <b>{{ u.ficha.stats.total|default:0 }}</b> ticket{{ u.ficha.stats.total|pluralize }}</span>
+</div>
+<div class="ue-ficha-grid">
+    <div class="ue-box">
+        <h4><svg class="icon"><use href="#i-user"/></svg> Contacto y ubicación</h4>
+        <div class="ue-kv">
+            <div><b>ID GLPI</b><span>{{ u.glpi_user_id|default:"—" }}</span></div>
+            <div><b>Estado</b><span>{% if u.activo %}Activa{% else %}Inactiva{% endif %}</span></div>
+            <div><b>Correo</b><span>{{ u.email }}</span></div>
+            <div><b>Teléfono</b><span>{{ u.telefono|default:"—" }}</span></div>
+            <div><b>Ubicación</b><span>{{ u.ubicacion|default:"—" }}</span></div>
+            {% if u.ficha.punto %}<div><b>Punto usu.</b><span>{{ u.ficha.punto }}</span></div>{% endif %}
+            <div><b>Registrado</b><span>{{ u.ficha.registrado|date:"d/m/Y H:i" }}</span></div>
+            <div><b>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.last_login %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}</span></div>
+        </div>
+    </div>
+    <div class="ue-box">
+        <h4><svg class="icon"><use href="#i-ticket"/></svg> Estadísticas de tickets</h4>
+        <div class="ue-stats">
+            <span class="ue-stat"><b class="s-ab">{{ u.ficha.stats.abiertos|default:0 }}</b><span>Abiertos</span></span>
+            <span class="ue-stat"><b class="s-pr">{{ u.ficha.stats.progreso|default:0 }}</b><span>Progreso</span></span>
+            <span class="ue-stat"><b class="s-re">{{ u.ficha.stats.resueltos|default:0 }}</b><span>Resueltos</span></span>
+            <span class="ue-stat"><b class="s-ce">{{ u.ficha.stats.cerrados|default:0 }}</b><span>Cerrados</span></span>
+        </div>
+        <p class="ue-empty" style="margin:9px 0 0">Total creados: <b>{{ u.ficha.stats.total|default:0 }}</b></p>
+        <div class="ue-box-actions">
+            <a class="btn btn-outline-light btn-sm" href="{% url 'tickets:lista' %}{% if u.rol == 'usuario' %}?solicitante_email={{ u.email|urlencode }}{% else %}?tecnico={{ u.pk }}{% endif %}">
+                <svg class="icon icon-sm"><use href="#i-ticket"/></svg> Ver sus tickets
+            </a>
+        </div>
+    </div>
+    {% if u.rol == 'tecnico' or u.rol == 'admin' %}
+    <div class="ue-box">
+        <h4><svg class="icon"><use href="#i-lock"/></svg> Permisos</h4>
+        <div class="ue-chips">
+            <span class="perm-chip">{{ u.get_rol_display }}</span>
+            <span class="perm-chip {% if not u.ficha.permisos.es_staff %}off{% endif %}">Staff</span>
+            <span class="perm-chip {% if not u.ficha.permisos.borrar_glpi %}off{% endif %}">Borrar en GLPI</span>
+            <span class="perm-chip {% if not u.activo %}off{% endif %}">Cuenta activa</span>
+        </div>
+    </div>
+    <div class="ue-box">
+        <h4><svg class="icon"><use href="#i-chart"/></svg> Disponibilidad</h4>
+        {% for d in u.ficha.disponibilidad|slice:":6" %}
+        <span class="ue-disp is-{{ d.tipo }}"><b>{{ d.fecha|date:"d/m" }}</b> {{ d.get_tipo_display }}{% if d.nota %} — {{ d.nota }}{% endif %}</span>
+        {% empty %}
+        <p class="ue-empty">Sin ausencias registradas · disponible por defecto.</p>
+        {% endfor %}
+        <div class="ue-box-actions">
+            <a class="btn btn-outline-light btn-sm" target="_blank" rel="noopener"
+               href="{% url 'programador:panel_programador' %}#disponibilidad">
+                <svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel de disponibilidad
+            </a>
+        </div>
+    </div>
+    <div class="ue-box">
+        <h4><svg class="icon"><use href="#i-wrench"/></svg> Tareas y eventos próximos</h4>
+        {% for e in u.ficha.eventos %}
+        <span class="ue-evento">
+            <span class="ue-evento-date">{{ e.fecha|date:"d/m" }}{% if e.hora %} {{ e.hora|time:"H:i" }}{% endif %}</span>
+            <span class="ue-evento-type st-{{ e.tipo }}">{{ e.get_tipo_display }}</span>
+            {% if e.ticket %}<a href="{% url 'tickets:detalle' e.ticket.pk %}">{% endif %}
+            <span>{{ e.titulo }}</span>
+            {% if e.ticket %}</a>{% endif %}
+        </span>
+        {% empty %}
+        <p class="ue-empty">Sin tareas ni eventos asignados en los próximos 14 días.</p>
+        {% endfor %}
+        <div class="ue-box-actions">
+            <button type="button" class="btn btn-primary btn-sm"
+                    data-user-id="{{ u.pk }}"
+                    data-open-modal="#modal-tarea">
+                <svg class="icon icon-sm"><use href="#i-plus"/></svg> Asignar tarea
+            </button>
+        </div>
+    </div>
+    <div class="ue-box">
+        <h4><svg class="icon"><use href="#i-bell"/></svg> Alertas</h4>
+        {% for a in u.ficha.alertas %}
+        <span class="ue-alerta">
+            <svg class="icon"><use href="#i-{% if a.tipo == 'ausencia' %}alert{% else %}x-circle{% endif %}"/></svg>
+            {% if a.url %}<a href="{{ a.url }}">{{ a.texto }}</a>{% else %}<span>{{ a.texto }}</span>{% endif %}
+        </span>
+        {% empty %}
+        <p class="ue-empty">Sin alertas.</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
