@@ -33,7 +33,6 @@
 .row-menu-btn:hover, .row-menu-btn.is-open { color: var(--ink); border-color: #D8C8AC; background: #FBF7EF; }
 .row-menu-btn .icon { width: 16px; height: 16px; }
 .row-menu-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 215px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(60,40,10,.16); padding: 6px; display: flex; flex-direction: column; gap: 2px; }
-.row-menu-panel.row-menu-up { top: auto; bottom: calc(100% + 6px); }
 .row-menu-panel[hidden] { display: none; }
 .row-menu-panel .row-menu-sep { height: 1px; background: #EFE8DA; margin: 4px 2px; }
 .row-menu-item { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; padding: 8px 10px; border: 0; background: transparent; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; white-space: nowrap; }
@@ -527,38 +526,60 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         if (e.key === 'Escape') cerrarFichaModal();
     });
 
-    /* ---- Menú de acciones por fila ---- */
+    /* ---- Menú de acciones por fila: se dibuja en el body (fuera de la tabla)
+       con position:fixed, para que ningún overflow del contenedor lo recorte ---- */
+    var menuPanel = null, menuBtn = null, menuOrigen = null;
+
+    function cerrarMenuAcciones() {
+        if (menuPanel) {
+            menuPanel.hidden = true;
+            menuPanel.style.position = '';
+            menuPanel.style.top = '';
+            menuPanel.style.bottom = '';
+            menuPanel.style.left = '';
+            menuPanel.style.right = '';
+            menuPanel.style.zIndex = '';
+            if (menuOrigen) menuOrigen.appendChild(menuPanel);
+            menuPanel = null;
+        }
+        if (menuBtn) { menuBtn.classList.remove('is-open'); menuBtn = null; }
+        menuOrigen = null;
+    }
     document.addEventListener('click', function (e) {
-        var menus = document.querySelectorAll('.row-menu');
-        menus.forEach(function (m) {
-            var btn = m.querySelector('.row-menu-btn');
-            var panel = m.querySelector('.row-menu-panel');
-            if (!btn || !panel) return;
-            if (m.contains(e.target)) {
-                if (e.target.closest('.row-menu-btn')) {
-                    var abrir = !panel.hidden;
-                    panel.hidden = false;
-                    if (!abrir) {
-                        var tabla = m.closest('table');
-                        var fila = m.closest('tr');
-                        var panelH = panel.offsetHeight || 280;
-                        var filaBox = fila.getBoundingClientRect();
-                        var caja = tabla ? tabla.getBoundingClientRect() : filaBox;
-                        var debajo = caja.bottom - filaBox.bottom;
-                        var arriba = filaBox.top - caja.top;
-                        panel.classList.toggle('row-menu-up', debajo < (panelH + 14) && arriba >= (panelH + 14));
-                    }
-                    btn.classList.add('is-open');
-                    if (abrir) { panel.hidden = true; btn.classList.remove('is-open'); }
-                } else if (!panel.hidden) {
-                    panel.hidden = true;
-                    btn.classList.remove('is-open');
-                }
-            } else if (!panel.hidden) {
-                panel.hidden = true;
-                btn.classList.remove('is-open');
-            }
-        });
+        var btn = e.target.closest('.row-menu-btn');
+        if (!btn) { cerrarMenuAcciones(); return; }
+        var m = btn.closest('.row-menu');
+        if (!m) return;
+        var panel = m.querySelector('.row-menu-panel');
+        if (!panel) return;
+        if (menuPanel === panel) { cerrarMenuAcciones(); return; }
+        cerrarMenuAcciones();
+        menuOrigen = m;
+        menuPanel = panel;
+        menuBtn = btn;
+        document.body.appendChild(panel);
+        panel.style.zIndex = '9999';
+        panel.style.position = 'fixed';
+        panel.style.top = 'auto';
+        panel.style.bottom = 'auto';
+        panel.style.left = 'auto';
+        panel.style.right = 'auto';
+        panel.hidden = false;
+        var rectBtn = btn.getBoundingClientRect();
+        var pAlt = panel.offsetHeight;
+        var pAn = panel.offsetWidth;
+        if (window.innerHeight - rectBtn.bottom < pAlt + 10) {
+            panel.style.bottom = (window.innerHeight - rectBtn.top + 6) + 'px';
+        } else {
+            panel.style.top = (rectBtn.bottom + 6) + 'px';
+        }
+        var izq = rectBtn.right - pAn;
+        izq = Math.max(8, Math.min(izq, window.innerWidth - pAn - 8));
+        panel.style.left = izq + 'px';
+        btn.classList.add('is-open');
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') cerrarMenuAcciones();
     });
 
     /* ---- Modal de tarea: precargar técnico según el botón pulsado ---- */
