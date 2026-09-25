@@ -48,13 +48,13 @@ table.data-table tbody tr.ue-row { cursor: pointer; transition: background .15s 
 table.data-table tbody tr.ue-row:hover { background: #FBF7EF; box-shadow: 0 6px 18px rgba(60,40,10,.10); }
 table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10px 28px rgba(60,40,10,.20); position: relative; z-index: 20; }
 
-/* Modal de ficha de cuenta (fuera de la tabla, centrado con position:fixed) */
+/* Ficha expandida inline bajo la fila clicada */
 .ue-ficha-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-#modal-ficha .modal-box { max-width: 900px; }
-#modal-ficha .ue-ficha-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
-#modal-ficha .ue-ficha-meta-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 999px; background: #fff; border: 1px solid #EFE8DA; font-size: 12px; font-weight: 600; color: var(--ink-muted); }
-#modal-ficha .ue-ficha-meta-item b { color: var(--ink); }
-#modal-ficha .ue-ficha-meta-item .meta-off { color: var(--dogger-red); }
+.ue-ficha-row > td { background: #FFFDF6; padding: 18px 20px 22px; border-top: 2px solid #E8DCBB; }
+.ue-ficha-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+.ue-ficha-meta-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 999px; background: #fff; border: 1px solid #EFE8DA; font-size: 12px; font-weight: 600; color: var(--ink-muted); }
+.ue-ficha-meta-item b { color: var(--ink); }
+.ue-ficha-meta-item .meta-off { color: var(--dogger-red); }
 #ficha-loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 34px 0; color: var(--ink-muted); font-size: 13px; }
 #ficha-loading .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #EFE8DA; border-top-color: #C99A2E; animation: ue-spin .8s linear infinite; }
 @keyframes ue-spin { to { transform: rotate(360deg); } }
@@ -462,15 +462,6 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     </div>
 </div>
 
-<div class="modal-overlay" id="modal-ficha" role="dialog" aria-modal="true" aria-labelledby="fichaTitle">
-    <div class="modal-box">
-        <div class="modal-head">
-            <h3><svg class="icon icon-sm"><use href="#i-user"/></svg> <span id="fichaTitle">Ficha de la cuenta</span></h3>
-            <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
-        </div>
-        <div class="modal-body" id="ficha-body"></div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -482,48 +473,58 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         document.getElementById('form-tarea').addEventListener('submit', crearTarea);
     }
 
-    /* ---- Modal de ficha de cuenta: cargado dinámicamente según la fila ---- */
-    var modalFicha = document.getElementById('modal-ficha');
-    var fichaBody = document.getElementById('ficha-body');
+    /* ---- Ficha de cuenta inline: al hacer clic en la fila se expande debajo de ella ---- */
+    var tablaUsuarios = document.getElementById('tablaUsuarios');
+    var tableCard = tablaUsuarios ? tablaUsuarios.closest('.table-card') : null;
+    var tableScroll = tablaUsuarios ? tablaUsuarios.closest('.table-scroll') : null;
+    var filaFichaActual = null;
 
-    function cerrarFichaModal() {
-        if (!modalFicha) return;
-        modalFicha.classList.remove('open');
-        var filaAbierta = document.querySelector('tr.ue-row.is-open');
-        if (filaAbierta) filaAbierta.classList.remove('is-open');
+    function soltarOverflowFicha() {
+        if (tableScroll) tableScroll.style.overflow = '';
+        if (tableCard) tableCard.style.overflow = '';
     }
-    function abrirFichaModal(filita) {
-        if (!modalFicha || !fichaBody) return;
-        var titulo = document.getElementById('fichaTitle');
-        if (titulo) titulo.textContent = 'Ficha de ' + (filita.getAttribute('data-nombre') || 'la cuenta');
-        modalFicha.classList.add('open');
-        fichaBody.innerHTML = '<div id="ficha-loading"><span class="spin"></span> Cargando ficha…</div>';
+    function cerrarFichaInline() {
+        if (filaFichaActual) {
+            var filaPadre = filaFichaActual.previousElementSibling;
+            if (filaPadre) filaPadre.classList.remove('is-open');
+            filaFichaActual.remove();
+            filaFichaActual = null;
+        }
+        soltarOverflowFicha();
+    }
+    function abrirFichaInline(filita) {
+        cerrarFichaInline();
+        filita.classList.add('is-open');
+        var filaFicha = document.createElement('tr');
+        filaFicha.className = 'ue-ficha-row';
+        var celda = document.createElement('td');
+        celda.colSpan = filita.children.length;
+        celda.innerHTML = '<div id="ficha-loading"><span class="spin"></span> Cargando ficha…</div>';
+        filaFicha.appendChild(celda);
+        filita.insertAdjacentElement('afterend', filaFicha);
+        filaFichaActual = filaFicha;
+        if (tableCard) tableCard.style.overflow = 'visible';
+        if (tableScroll) tableScroll.style.overflow = 'visible';
         fetch(filita.getAttribute('data-ficha-url'), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json(); })
             .then(function (j) {
-                if (!j || !j.ok) throw new Error('respuesta inválida');
-                fichaBody.innerHTML = j.html;
+                if (!j || !j.ok || !filaFichaActual) throw new Error('respuesta inválida');
+                celda.innerHTML = j.html;
             })
             .catch(function () {
-                fichaBody.innerHTML = '<p class="ue-empty" style="padding:26px 0;text-align:center">No se pudo cargar la ficha. Intenta de nuevo.</p>';
+                if (!filaFichaActual) return;
+                celda.innerHTML = '<p class="ue-empty" style="padding:26px 0;text-align:center">No se pudo cargar la ficha. Intenta de nuevo.</p>';
             });
     }
     document.addEventListener('click', function (e) {
-        /* Clic en la fila (célula del resultado) abre el modal con los datos de esa fila */
         var filita = e.target.closest('tr.ue-row');
         if (!filita) return;
         if (e.target.closest('a, button, select, input, textarea, label, .row-menu')) return;
-        cerrarFichaModal();
-        filita.classList.add('is-open');
-        abrirFichaModal(filita);
-    });
-    document.addEventListener('click', function (e) {
-        if (!modalFicha) return;
-        if (e.target.closest('#modal-ficha .modal-close')) { cerrarFichaModal(); return; }
-        if (e.target === modalFicha) cerrarFichaModal();
+        if (filita.classList.contains('is-open')) { cerrarFichaInline(); return; }
+        abrirFichaInline(filita);
     });
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') cerrarFichaModal();
+        if (e.key === 'Escape') cerrarFichaInline();
     });
 
     /* ---- Menú de acciones por fila: se dibuja en el body (fuera de la tabla)
@@ -588,7 +589,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('[data-open-modal="#modal-tarea"]');
         if (!btn) return;
-        cerrarFichaModal();
+        cerrarFichaInline();
         var uid = btn.getAttribute('data-user-id');
         if (!uid && btn.closest('.ue-row')) {
             var st = btn.closest('.ue-row').querySelector('.ue-dot-w');
