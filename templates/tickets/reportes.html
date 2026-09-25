@@ -45,6 +45,19 @@
 .rpt-table .num { text-align: right; font-family: var(--font-mono); }
 .rpt-table td.muted { color: var(--ink-muted); }
 
+/* Buscador y paginación de la tabla por usuario */
+.rpt-searchbar { display: flex; align-items: center; gap: 10px; margin: 2px 0 12px; }
+.rpt-searchbar .search-field {
+    flex: 1 1 260px; max-width: 420px; display: flex; align-items: center; gap: 8px;
+    background: var(--dogger-cream); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 12px;
+}
+.rpt-searchbar .search-field:focus-within { border-color: var(--dogger-red); }
+.rpt-searchbar .search-field .icon { width: 15px; height: 15px; color: var(--ink-muted); flex-shrink: 0; }
+.rpt-searchbar .search-field input { border: 0; outline: none; background: transparent; width: 100%; font-size: 13.5px; color: var(--ink); }
+.rpt-searchcount { font-size: 12px; color: var(--ink-muted); font-weight: 600; white-space: nowrap; }
+.rpt-pager { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px 2px 0; }
+.rpt-pager span { font-size: 12.5px; font-weight: 700; color: var(--ink-muted); }
+
 /* Contenedor de gráficas (mismo alto que el dashboard) */
 .chart-stage { position: relative; height: 280px; }
 @media (max-width: 900px) { .chart-stage { height: 240px; } }
@@ -258,7 +271,7 @@
                             <span class="rpt-progress"><span style="width:{{ r.pct_resueltos }}%"></span></span>
                             <span class="rpt-pct">{{ r.pct_resueltos }}%</span>
                         </td>
-                        <td class="num">{% if r.prom_h is not None %}{{ r.prom_h }} h{% else %}—{% endif %}</td>
+                        <td class="num">{% if r.prom_h is not None %}{{ r.prom_h|floatformat:-2 }} h{% else %}—{% endif %}</td>
                     </tr>
                     {% empty %}
                     <tr class="table-empty"><td colspan="6">Sin tickets en el rango seleccionado.</td></tr>
@@ -276,6 +289,13 @@
                 <svg class="icon"><use href="#i-download"/></svg> Excel
             </a>
         </div>
+        <div class="rpt-searchbar">
+            <div class="search-field">
+                <svg class="icon"><use href="#i-search"/></svg>
+                <input type="search" id="usuBuscar" placeholder="Buscar usuario por nombre o correo…">
+            </div>
+            <span class="rpt-searchcount" id="usuCount">—</span>
+        </div>
         <div class="table-scroll">
             <table class="data-table mesa-tec-table rpt-table">
                 <thead>
@@ -290,9 +310,9 @@
                         <th class="num">T. prom. resolución</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="usuTbody">
                     {% for u in usuarios %}
-                    <tr>
+                    <tr data-buscar="{{ u.nombre|lower }} {{ u.email|default:''|lower }}">
                         <td><strong>{{ u.nombre }}</strong></td>
                         <td class="muted">{{ u.email|default:"—" }}</td>
                         <td class="num"><strong>{{ u.creados }}</strong></td>
@@ -302,13 +322,18 @@
                         <td>
                             <span class="rpt-badge-estado rpt-badge-{{ u.ultimo_estado|lower|cut:' ' }}">{{ u.ultimo_estado|default:"—" }}</span>
                         </td>
-                        <td class="num">{% if u.prom_h is not None %}{{ u.prom_h }} h{% else %}—{% endif %}</td>
+                        <td class="num">{% if u.prom_h is not None %}{{ u.prom_h|floatformat:-2 }} h{% else %}—{% endif %}</td>
                     </tr>
                     {% empty %}
                     <tr class="table-empty"><td colspan="8">Sin tickets en el rango seleccionado.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+        <div class="rpt-pager rpt-hidden" id="usuPager">
+            <button type="button" class="btn btn-outline btn-sm" id="usuPrev">Anterior</button>
+            <span id="usuPageInfo">1 / 1</span>
+            <button type="button" class="btn btn-outline btn-sm" id="usuNext">Siguiente</button>
         </div>
     </div>
 </main>
@@ -377,6 +402,64 @@
         catBox.classList.add("rpt-hidden");
         catEmpty.classList.remove("rpt-hidden");
     }
+})();
+
+// ---- Buscador + paginación (5 por página) en la tabla por usuario ----
+(function () {
+    var tbody = document.getElementById("usuTbody");
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr[data-buscar]"));
+    var search = document.getElementById("usuBuscar");
+    var count = document.getElementById("usuCount");
+    var pager = document.getElementById("usuPager");
+    var pageInfo = document.getElementById("usuPageInfo");
+    var prevBtn = document.getElementById("usuPrev");
+    var nextBtn = document.getElementById("usuNext");
+    var PER = 5;
+    var page = 1;
+
+    function render() {
+        var q = (search.value || "").trim().toLowerCase();
+        var filtered = rows.filter(function (r) {
+            return !q || (r.getAttribute("data-buscar") || "").indexOf(q) !== -1;
+        });
+        var pages = Math.max(1, Math.ceil(filtered.length / PER));
+        if (page > pages) page = pages;
+        var start = (page - 1) * PER;
+        var slice = filtered.slice(start, start + PER);
+
+        rows.forEach(function (r) { r.classList.add("rpt-hidden"); });
+        slice.forEach(function (r) { r.classList.remove("rpt-hidden"); });
+
+        var noMatch = document.getElementById("usuNoMatch");
+        if (noMatch) noMatch.remove();
+        if (filtered.length === 0 && rows.length) {
+            noMatch = document.createElement("tr");
+            noMatch.id = "usuNoMatch";
+            noMatch.className = "table-empty";
+            noMatch.innerHTML = '<td colspan="8">Sin resultados para «' + search.value.trim() + "».</td>";
+            tbody.appendChild(noMatch);
+        }
+
+        count.textContent = (filtered.length === rows.length)
+            ? rows.length + " usuario(s)"
+            : filtered.length + " de " + rows.length + " usuario(s)";
+
+        if (pages > 1) {
+            pager.classList.remove("rpt-hidden");
+            pageInfo.textContent = page + " / " + pages;
+        } else {
+            pager.classList.add("rpt-hidden");
+            pageInfo.textContent = "";
+        }
+        prevBtn.disabled = page <= 1;
+        nextBtn.disabled = page >= pages;
+    }
+
+    search.addEventListener("input", function () { page = 1; render(); });
+    prevBtn.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    nextBtn.addEventListener("click", function () { if (page < Math.max(1, Math.ceil(rows.length / PER))) { page++; render(); } });
+
+    if (rows.length) render();
 })();
 </script>
 {% endblock %}

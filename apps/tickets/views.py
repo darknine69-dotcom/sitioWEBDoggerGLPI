@@ -769,7 +769,7 @@ def _reportes_metricas_tecnicos(tickets):
                 "asignados": g["asignados"],
                 "resueltos": g["resueltos"],
                 "en_curso": g["en_curso"],
-                "prom_h": round(g["horas"] / g["n_cerrados"], 1) if g["n_cerrados"] else None,
+                "prom_h": round(g["horas"] / g["n_cerrados"], 2) if g["n_cerrados"] else None,
                 "pct_resueltos": round(g["resueltos"] / g["asignados"] * 100) if g["asignados"] else 0,
             }
         )
@@ -813,7 +813,7 @@ def _reportes_metricas_usuarios(tickets):
                 g["n_cerrados"] += 1
     filas = sorted(grupos.values(), key=lambda g: g["creados"], reverse=True)
     for g in filas:
-        g["prom_h"] = round(g["horas"] / g["n_cerrados"], 1) if g["n_cerrados"] else None
+        g["prom_h"] = round(g["horas"] / g["n_cerrados"], 2) if g["n_cerrados"] else None
     return filas
 
 
