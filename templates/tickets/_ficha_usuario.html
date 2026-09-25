@@ -21,10 +21,10 @@
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-ticket"/></svg> Estadísticas de tickets</h4>
         <div class="ue-stats">
-            <span class="ue-stat"><b class="s-ab">{{ u.ficha.stats.abiertos|default:0 }}</b><span>Abiertos</span></span>
-            <span class="ue-stat"><b class="s-pr">{{ u.ficha.stats.progreso|default:0 }}</b><span>Progreso</span></span>
-            <span class="ue-stat"><b class="s-re">{{ u.ficha.stats.resueltos|default:0 }}</b><span>Resueltos</span></span>
-            <span class="ue-stat"><b class="s-ce">{{ u.ficha.stats.cerrados|default:0 }}</b><span>Cerrados</span></span>
+            <span class="ue-stat s-ab"><b>{{ u.ficha.stats.abiertos|default:0 }}</b><span>Abiertos</span></span>
+            <span class="ue-stat s-pr"><b>{{ u.ficha.stats.progreso|default:0 }}</b><span>Progreso</span></span>
+            <span class="ue-stat s-re"><b>{{ u.ficha.stats.resueltos|default:0 }}</b><span>Resueltos</span></span>
+            <span class="ue-stat s-ce"><b>{{ u.ficha.stats.cerrados|default:0 }}</b><span>Cerrados</span></span>
         </div>
         <p class="ue-empty" style="margin:9px 0 0">Total creados: <b>{{ u.ficha.stats.total|default:0 }}</b></p>
         <div class="ue-box-actions">

@@ -1179,7 +1179,21 @@ def _ficha_usuario(u):
 
     stats = {}
     punto = ""
-    if email:
+    if u.rol in ("tecnico", "admin"):
+        # Para técnicos la estadística son los tickets asignados a su carga.
+        tk_qs = Ticket.objects.filter(tecnico_asignado_id=u.pk)
+        stats = {
+            r["tecnico_asignado_id"]: r
+            for r in tk_qs.values("tecnico_asignado_id")
+            .annotate(
+                total=Count("pk"),
+                abiertos=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
+                progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
+                resueltos=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
+                cerrados=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
+            )
+        }.get(u.pk) or {}
+    elif email:
         tk_qs = Ticket.objects.filter(solicitante_email=email)
         stats = {
             r["solicitante_email"]: r
@@ -1191,7 +1205,7 @@ def _ficha_usuario(u):
                 resueltos=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
                 cerrados=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
             )
-        }.get(email, {})
+        }.get(email) or {}
         cuentas = Counter(
             tk_qs.exclude(solicitante_punto__in=[None, ""]).values_list("solicitante_punto", flat=True)
         )
