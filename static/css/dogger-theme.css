@@ -4498,6 +4498,51 @@ a.score-chip { color: inherit; }
 .user-dropdown-item.danger:hover { background: #FCEAE8; }
 
 /* =====================================================================
+   USER CHIP en la NAVBAR (rediseño 2026-09-25)
+   ===================================================================== */
+.main-nav .user-chip {
+    background: #fff;
+    border: 1.5px solid var(--line);
+    color: var(--ink);
+    padding: 3px 12px 3px 3px;
+    box-shadow: 0 1px 2px rgba(23, 20, 18, .05);
+    transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.main-nav .user-chip:hover {
+    background: #FFFFFF;
+    border-color: var(--dogger-red);
+    box-shadow: 0 4px 14px rgba(214, 43, 31, .12);
+}
+.main-nav .user-chip-text { color: var(--ink); }
+.main-nav .user-chip-text small {
+    opacity: 1;
+    color: var(--ink-muted);
+    font-weight: 600;
+    letter-spacing: .02em;
+}
+.main-nav .user-chip .user-chip-chevron { color: var(--ink-muted); }
+.main-nav .user-chip-wrap:has(.user-dropdown.open) .user-chip {
+    background: #FFFFFF;
+    border-color: var(--dogger-red);
+    box-shadow: 0 4px 14px rgba(214, 43, 31, .10);
+}
+/* El dropdown cae desde la navbar sin cortarse */
+.main-nav .user-dropdown { top: calc(100% + 8px); }
+
+/* ---- Chip en la navbar móvil (ocupa el ancho) ---- */
+@media (max-width: 860px) {
+    .nav-side .user-chip-wrap { width: 100%; }
+    .nav-side .user-chip { width: 100%; justify-content: flex-start; border-radius: 999px; }
+    .nav-side .user-chip .user-chip-chevron { margin-left: auto; }
+}
+@media (max-width: 480px) {
+    .main-nav .user-chip { padding: 5px 12px 5px 5px; border-radius: 999px; }
+    .main-nav .user-chip-text { display: inline; }
+    .main-nav .user-chip .user-chip-chevron { display: inline; }
+    .main-nav .user-dropdown { right: 0; min-width: 260px; }
+}
+
+/* =====================================================================
    AJUSTES DE CUENTA (page layout)
    ===================================================================== */
 .settings-grid {
