@@ -829,11 +829,32 @@ def reportes(request):
     cat_counts = Counter(
         (t.categoria.nombre if t.categoria else "Sin categoría") for t in tickets
     )
+    top_cats = [k for k, _ in cat_counts.most_common(8)]
     colores_cat = ["#D62B1F", "#F26522", "#F2A900", "#2F7D4F", "#2A6FDB", "#7B5CD6", "#B7791F", "#3E7B9E"]
+
+    # Detalle de tickets por categoría para el tooltip de la gráfica de torta
+    cat_detalle = {k: [] for k in top_cats}
+    for t in tickets:
+        nombre_cat = (t.categoria.nombre if t.categoria else "Sin categoría")
+        if nombre_cat not in top_cats:
+            continue
+        cat_detalle[nombre_cat].append(
+            (
+                t.codigo,
+                t.solicitante_nombre or t.solicitante_email or "—",
+                (t.tecnico_asignado.nombre if t.tecnico_asignado else "Sin asignar"),
+                t.get_estado_display(),
+            )
+        )
+    for k, det in cat_detalle.items():
+        if len(det) > 10:
+            cat_detalle[k] = det[:10] + [("…", f"y {len(det) - 10} más", "", "")]
+
     categorias_pie = {
-        "labels": [k for k, _ in cat_counts.most_common(8)],
-        "data": [v for _, v in cat_counts.most_common(8)],
-        "colores": colores_cat[: len(cat_counts)],
+        "labels": top_cats,
+        "data": [cat_counts[k] for k in top_cats],
+        "colores": colores_cat[: len(top_cats)],
+        "detalle": cat_detalle,
     }
     tec_chart = {
         "labels": [r["nombre"] for r in tecnicos],
