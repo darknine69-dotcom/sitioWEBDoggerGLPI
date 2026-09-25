@@ -1,49 +1,158 @@
 {% extends "base.html" %}
 
 {% block title %}Dogger · Reportes{% endblock %}
-{% block body_class %}admin-shell{% endblock %}
+{% block body_class %}admin-shell reports-page{% endblock %}
 {% block nav_reportes %}is-active{% endblock %}
 {% block header_eyebrow %}Dogger · Analítica{% endblock %}
 {% block header_title %}Reportes{% endblock %}
 
+{% block extra_css %}
+<style>
+/* ================= Reportes: panel analítico ================= */
+.reports-page .page { max-width: 1180px; }
+
+/* ---- KPI: tarjetas resumidas ---- */
+.rp-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 4px 0 18px; }
+.rp-kpi { position: relative; overflow: hidden; width: 100%; text-align: left; padding: 14px 16px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; box-shadow: var(--shadow-card); cursor: default; font: inherit; transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
+button.rp-kpi { cursor: pointer; }
+button.rp-kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); border-color: #D8C8AC; }
+.rp-kpi::before { content: ""; position: absolute; inset: 0 auto auto 0; width: 100%; height: 4px; background: var(--c, var(--ink-muted)); }
+.rp-kpi-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 800; }
+.rp-kpi-num { display: block; font-size: 30px; line-height: 1.05; font-weight: 800; margin: 6px 0 4px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rp-kpi-num small { font-size: 15px; font-weight: 800; }
+.rp-kpi-sub { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-muted); }
+.rp-kpi-track { flex: 1; height: 5px; border-radius: 999px; background: #EFE8DA; overflow: hidden; }
+.rp-kpi-fill { display: block; height: 100%; border-radius: 999px; background: var(--c, var(--ink-muted)); }
+.rp-kpi-more { margin-left: auto; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--c, var(--ink-muted)); opacity: .8; }
+
+/* ---- Malla de tarjetas ---- */
+.rp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.rp-grid + .rp-grid { margin-top: 16px; }
+.rp-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); padding: 18px; }
+.rp-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.rp-card-head h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.rp-card-head h3 .icon { width: 14px; height: 14px; color: var(--ink-muted); }
+.rp-total { font-size: 12px; color: var(--ink-muted); font-weight: 700; white-space: nowrap; }
+.rp-empty { margin: 0; padding: 22px 0; text-align: center; color: var(--ink-muted); font-size: 13px; }
+
+/* ---- Donut ---- */
+.rp-donut { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.donut-ring[data-donut] { position: relative; width: 168px; height: 168px; border-radius: 50%; background: #EFE8DA; flex: none; }
+.donut-ring[data-donut]::after { content: attr(data-total); position: absolute; inset: 26px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; color: var(--ink); box-shadow: inset 0 0 0 1px #EFE8DA; }
+.donut-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 170px; }
+.donut-legend li { display: flex; align-items: center; gap: 9px; padding: 6px 9px; border: 1px solid transparent; border-radius: 9px; cursor: pointer; transition: background .12s, border-color .12s; }
+.donut-legend li:hover { background: #FBF7EF; border-color: var(--line); }
+.donut-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.donut-legend-label { font-size: 12.5px; color: var(--ink); font-weight: 600; }
+.donut-legend-count { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; font-size: 14px; }
+.donut-legend-pct { width: 40px; text-align: right; font-size: 11px; color: var(--ink-muted); font-weight: 700; }
+
+/* ---- Barras horizontales ---- */
+.rp-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+.rp-bar-head { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; margin-bottom: 4px; }
+.rp-bar-label { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-bar-pct { color: var(--ink-muted); font-size: 11px; font-weight: 700; width: 38px; text-align: right; flex: none; }
+.rp-bar-count { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; flex: none; }
+.rp-bar-track { display: block; height: 7px; border-radius: 999px; background: #EFE8DA; overflow: hidden; }
+.rp-bar-fill { display: block; height: 100%; border-radius: 999px; background: var(--cc, #6B6259); }
+
+/* Paleta cíclica para tarjetas sin color propio */
+.rp-bars.cycle li:nth-child(6n+1) .rp-bar-fill { --cc: #2A6FDB; }
+.rp-bars.cycle li:nth-child(6n+2) .rp-bar-fill { --cc: #2F7D4F; }
+.rp-bars.cycle li:nth-child(6n+3) .rp-bar-fill { --cc: #B7791F; }
+.rp-bars.cycle li:nth-child(6n+4) .rp-bar-fill { --cc: #7B5CD6; }
+.rp-bars.cycle li:nth-child(6n+5) .rp-bar-fill { --cc: #C2410C; }
+.rp-bars.cycle li:nth-child(6n+6) .rp-bar-fill { --cc: #3E7B9E; }
+
+/* ---- ANS ---- */
+.rp-ans-big { margin: 0 0 10px; font-size: 44px; line-height: 1; font-weight: 800; color: var(--state-resuelto); font-variant-numeric: tabular-nums; }
+.rp-ans-big small { font-size: 16px; font-weight: 800; color: var(--ink-muted); }
+.rp-ans-segs { display: flex; gap: 1px; height: 9px; border-radius: 999px; overflow: hidden; background: #EFE8DA; margin: 4px 0 10px; }
+.rp-ans-segs span { display: block; height: 100%; }
+.rp-ans-ley { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--ink-muted); }
+.rp-ans-ley i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+
+/* ---- Actividad GLPI ---- */
+.rp-card-full { padding: 18px 18px 0; }
+.rp-glpi-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.rp-glpi-head h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 800; display: flex; align-items: center; gap: 7px; }
+.rp-glpi-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--state-resuelto); box-shadow: 0 0 0 3px rgba(47,125,79,.14); }
+.rp-glpi-badge { padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #205C3B; background: #EAF6EF; border: 1px solid #CBE7D5; }
+.rp-activity-box { margin: 0 -18px; padding: 4px 18px; border-top: 1px solid var(--line); }
+.rp-activity-box:first-of-type { border-top: 0; }
+.rp-activity-box .pagination-bar { margin: 0 -18px; border-radius: 0 0 var(--radius) var(--radius); }
+
+/* ---- Modales de estado ---- */
+.rp-modal .modal-box { max-width: 480px; }
+.rp-modal .modal-tickets-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rp-modal .modal-user-row { display: flex; align-items: center; gap: 11px; padding: 9px 2px; border-bottom: 1px dashed var(--line); }
+.rp-modal .modal-user-row:last-child { border-bottom: 0; }
+.rp-modal .modal-user-avatar { width: 34px; height: 34px; flex: none; border-radius: 10px; background: #FBEBDD; color: var(--dogger-red); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; }
+.rp-modal .modal-user-info { min-width: 0; }
+.rp-modal .modal-user-name { font-weight: 700; font-size: 13.5px; }
+.rp-modal .modal-user-detail { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-modal .modal-user-count { margin-left: auto; text-align: right; font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; flex: none; }
+.rp-modal .modal-user-count small { display: block; font-size: 10px; color: var(--ink-muted); font-weight: 700; }
+.rp-modal .modal-empty { color: var(--ink-muted); font-size: 13px; text-align: center; padding: 22px 0; }
+.rp-modal .mt-14 { margin-top: 14px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<main class="page reports-page">
+<main class="page">
     <div class="page-head">
         <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
             <h2>Reportes del helpdesk</h2>
-            <p>Haz click en una tarjeta de estado o en el gráfico para ver el detalle.</p>
+            <p>Estado del servicio y actividad de los tickets. Haz clic en una tarjeta de estado o en la leyenda para ver el detalle.</p>
         </div>
         <div class="page-head-actions">
             <a href="{% url 'tickets:exportar_admin' %}?{{ request.GET.urlencode }}" class="btn btn-outline btn-sm"><svg class="icon"><use href="#i-download"/></svg> Exportar Excel</a>
         </div>
     </div>
 
-    <div class="scoreboard">
-        {% for val, label in estados %}
-        <button type="button" class="score-chip sc-{{ val }}" data-open-modal="#modal-estado-{{ val }}"
-                title="Ver usuarios con tickets {{ label|lower }}">
-            <span class="score-num">{% if val == 'abierto' %}{{ stats.abiertos|default:0 }}{% elif val == 'en-progreso' %}{{ stats.en_progreso|default:0 }}{% elif val == 'resuelto' %}{{ stats.resueltos|default:0 }}{% else %}{{ stats.cerrados|default:0 }}{% endif %}</span>
-            <span class="score-label">{{ label }}</span>
+    <div class="rp-kpis">
+        {% for bar in estado_bars %}
+        <button type="button" class="rp-kpi" style="--c: {{ bar.color }}" data-open-modal="#modal-estado-{{ bar.slug }}"
+                title="Ver usuarios con tickets {{ bar.label|lower }}">
+            <span class="rp-kpi-label">{{ bar.label }}</span>
+            <span class="rp-kpi-num">{{ bar.count }}</span>
+            <span class="rp-kpi-sub">
+                <span class="rp-kpi-track"><span class="rp-kpi-fill" style="width: {{ bar.pct }}%; background: {{ bar.color }}"></span></span>
+                <span class="rp-kpi-more">{{ bar.pct }}% ›</span>
+            </span>
         </button>
         {% endfor %}
-        <div class="score-chip sc-warning">
-            <span class="score-num">{% if tiempo_promedio %}{{ tiempo_promedio }}{% else %}—{% endif %}</span>
-            <span class="score-label">Prom. resolución</span>
+
+        <div class="rp-kpi" style="--c: #6B6259">
+            <span class="rp-kpi-label">Prom. resolución</span>
+            <span class="rp-kpi-num">{{ tiempo_promedio|default:"—" }}</span>
+            <span class="rp-kpi-sub"><span>Tiempo entre apertura y cierre</span></span>
+        </div>
+
+        <div class="rp-kpi" style="--c: var(--state-resuelto)">
+            <span class="rp-kpi-label">ANS en plazo</span>
+            <span class="rp-kpi-num">{{ ans_stats.pct_ok }}<small>%</small></span>
+            <span class="rp-kpi-sub">
+                <span class="rp-kpi-track"><span class="rp-kpi-fill" style="width: {{ ans_stats.bar_ok }}%; background: var(--state-resuelto)"></span></span>
+                <span class="rp-kpi-more">{{ ans_stats.ok }} ok</span>
+            </span>
         </div>
     </div>
 
-    <div class="charts-grid">
-        <div class="chart-card">
-            <h3>Tickets por estado</h3>
-            {% with total_open=stats.total|default:1 %}
+    <div class="rp-grid">
+        <section class="rp-card">
+            <div class="rp-card-head">
+                <h3><svg class="icon"><use href="#i-pie"/></svg> Tickets por estado</h3>
+                <span class="rp-total">{{ stats.total|default:0 }} total</span>
+            </div>
             {% if estado_bars %}
-            <div class="donut-chart-wrap">
+            <div class="donut-chart-wrap rp-donut">
                 <div class="donut-ring" id="donut-estado" data-donut data-total="{{ stats.total|default:0 }}"></div>
                 <ul class="donut-legend">
                     {% for bar in estado_bars %}
-                    <li>
-                        <span class="donut-dot dd-{{ bar.slug }}"></span>
+                    <li data-open-modal="#modal-estado-{{ bar.slug }}" title="Ver detalle de {{ bar.label|lower }}">
+                        <span class="donut-dot" style="background: {{ bar.color }}"></span>
                         <span class="donut-legend-label">{{ bar.label }}</span>
                         <span class="donut-legend-count">{{ bar.count }}</span>
                         <span class="donut-legend-pct">{{ bar.pct }}%</span>
@@ -51,97 +160,150 @@
                     {% endfor %}
                 </ul>
             </div>
-            {% else %}<p class="chart-empty">Sin datos todavía.</p>{% endif %}
-            {% endwith %}
-        </div>
+            {% else %}<p class="rp-empty">Sin datos todavía.</p>{% endif %}
+        </section>
 
-        <div class="chart-card">
-            <h3>Tickets por técnico asignado</h3>
-            {% if tecnico_bars %}
-            <ul class="report-simple-list">
-                {% for bar in tecnico_bars %}
-                <li class="mr-blue">
-                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
-                    <span class="metric-label">{{ bar.label }}</span>
-                    <span class="metric-value">{{ bar.count }}</span>
+        <section class="rp-card">
+            <div class="rp-card-head">
+                <h3><svg class="icon"><use href="#i-flag"/></svg> Por prioridad</h3>
+                <span class="rp-total">{{ stats.total|default:0 }} tickets</span>
+            </div>
+            {% if priority_bars %}
+            <ul class="rp-bars">
+                {% for bar in priority_bars %}
+                <li>
+                    <div class="rp-bar-head">
+                        <span class="rp-bar-label">{{ bar.label }}</span>
+                        <span class="rp-bar-pct">{{ bar.pct }}%</span>
+                        <span class="rp-bar-count">{{ bar.count }}</span>
+                    </div>
+                    <span class="rp-bar-track"><span class="rp-bar-fill" style="width: {{ bar.fill_pct }}%; --cc: {{ bar.color }}"></span></span>
                 </li>
                 {% endfor %}
             </ul>
-            {% else %}<p class="chart-empty">Aún no hay tickets asignados.</p>{% endif %}
-        </div>
+            {% else %}<p class="rp-empty">Sin datos todavía.</p>{% endif %}
+        </section>
+
+        <section class="rp-card">
+            <div class="rp-card-head">
+                <h3><svg class="icon"><use href="#i-clock"/></svg> Cumplimiento ANS</h3>
+                <span class="rp-total">{{ ans_stats.vencidos|add:ans_stats.por_vencer|add:ans_stats.ok }} abiertos</span>
+            </div>
+            <p class="rp-ans-big">{{ ans_stats.pct_ok }}<small>% en plazo</small></p>
+            <div class="rp-ans-segs">
+                <span style="width: {{ ans_stats.bar_vencidos }}%; background: var(--state-abierto)" title="Vencidos {{ ans_stats.vencidos }}"></span>
+                <span style="width: {{ ans_stats.bar_por_vencer }}%; background: var(--state-progreso)" title="Por vencer {{ ans_stats.por_vencer }}"></span>
+                <span style="width: {{ ans_stats.bar_ok }}%; background: var(--state-resuelto)" title="En plazo {{ ans_stats.ok }}"></span>
+            </div>
+            <div class="rp-ans-ley">
+                <span><i style="background: var(--state-abierto)"></i>{{ ans_stats.vencidos }} vencidos</span>
+                <span><i style="background: var(--state-progreso)"></i>{{ ans_stats.por_vencer }} por vencer</span>
+                <span><i style="background: var(--state-resuelto)"></i>{{ ans_stats.ok }} en plazo</span>
+            </div>
+        </section>
     </div>
 
-    <div class="charts-grid">
-        <section class="chart-card">
-            <h3>Por prioridad</h3>
-            <ul class="report-simple-list">
-                {% for bar in priority_bars %}
-                <li class="mr-{{ bar.label }}">
-                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
-                    <span class="metric-label">{{ bar.label }}</span>
-                    <span class="metric-value">{{ bar.count }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        </section>
-
-        <section class="chart-card">
-            <h3>Por categoría</h3>
+    <div class="rp-grid">
+        <section class="rp-card">
+            <div class="rp-card-head">
+                <h3><svg class="icon"><use href="#i-folder"/></svg> Por categoría</h3>
+            </div>
             {% if category_bars %}
-            <ul class="report-simple-list">
+            <ul class="rp-bars cycle">
                 {% for bar in category_bars %}
-                <li class="mr-blue">
-                    <span class="metric-fill" style="width: {{ bar.fill_pct|default:0 }}%;"></span>
-                    <span class="metric-label">{{ bar.label }}</span>
-                    <span class="metric-value">{{ bar.count }}</span>
+                <li>
+                    <div class="rp-bar-head">
+                        <span class="rp-bar-label">{{ bar.label }}</span>
+                        <span class="rp-bar-pct">{{ bar.pct }}%</span>
+                        <span class="rp-bar-count">{{ bar.count }}</span>
+                    </div>
+                    <span class="rp-bar-track"><span class="rp-bar-fill" style="width: {{ bar.fill_pct }}%"></span></span>
                 </li>
                 {% endfor %}
             </ul>
-            {% else %}<p class="chart-empty">Sin datos todavía.</p>{% endif %}
+            {% else %}<p class="rp-empty">Sin datos todavía.</p>{% endif %}
         </section>
 
-        <aside class="glpi-report-panel">
-            <div class="glpi-report-head">
-                <div class="glpi-title-wrap">
-                    <span class="glpi-dot"></span>
-                    <h3>Actividad reciente</h3>
-                </div>
-                <span class="glpi-badge">Sincronizado con GLPI</span>
+        <section class="rp-card">
+            <div class="rp-card-head">
+                <h3><svg class="icon"><use href="#i-wrench"/></svg> Por técnico asignado</h3>
             </div>
+            {% if tecnico_bars %}
+            <ul class="rp-bars cycle">
+                {% for bar in tecnico_bars %}
+                <li>
+                    <div class="rp-bar-head">
+                        <span class="rp-bar-label">{{ bar.label }}</span>
+                        <span class="rp-bar-count">{{ bar.count }}</span>
+                    </div>
+                    <span class="rp-bar-track"><span class="rp-bar-fill" style="width: {{ bar.fill_pct }}%"></span></span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}<p class="rp-empty">Aún no hay tickets asignados.</p>{% endif %}
+        </section>
 
-            {% include "tickets/_glpi_activity.html" with eventos_glpi=eventos_glpi use_descripcion=True ticket_url="tickets:detalle" empty_text="Sin eventos recientes de GLPI todavía." %}
+        <section class="rp-card">
+            <div class="rp-card-head">
+                <h3><svg class="icon"><use href="#i-users"/></svg> Usuarios con más tickets</h3>
+            </div>
+            {% if user_bars %}
+            <ul class="rp-bars cycle">
+                {% for bar in user_bars %}
+                <li>
+                    <div class="rp-bar-head">
+                        <span class="rp-bar-label">{{ bar.label }}</span>
+                        <span class="rp-bar-count">{{ bar.count }}</span>
+                    </div>
+                    <span class="rp-bar-track"><span class="rp-bar-fill" style="width: {{ bar.fill_pct }}%"></span></span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}<p class="rp-empty">Aún no hay usuarios con tickets.</p>{% endif %}
+        </section>
+    </div>
 
-            {% if eventos_glpi_page.paginator.count > 0 %}
-            <div class="pagination-bar radius-0">
-                <div class="per-page-bar per-page-bar--compact">
-                    <label for="perPageGlpi">Filas:</label>
-                    <select id="perPageGlpi" data-per-page-param="per_page_glpi">
-                        <option value="5" {% if per_page_glpi == 5 %}selected{% endif %}>5</option>
-                        <option value="10" {% if per_page_glpi == 10 %}selected{% endif %}>10</option>
-                        <option value="20" {% if per_page_glpi == 20 %}selected{% endif %}>20</option>
-                        <option value="50" {% if per_page_glpi == 50 %}selected{% endif %}>50</option>
-                        <option value="0" {% if per_page_glpi == 0 %}selected{% endif %}>Todas</option>
-                    </select>
+    <div class="rp-grid">
+        <section class="rp-card rp-card-full">
+            <div class="rp-glpi-head">
+                <h3><span class="rp-glpi-dot"></span> Actividad reciente de GLPI</h3>
+                <span class="rp-glpi-badge">Sincronizado</span>
+            </div>
+            <div class="rp-activity-box">
+                {% include "tickets/_glpi_activity.html" with eventos_glpi=eventos_glpi use_descripcion=True ticket_url="tickets:detalle" empty_text="Sin eventos recientes de GLPI todavía." %}
+
+                {% if eventos_glpi_page.paginator.count > 0 %}
+                <div class="pagination-bar radius-0">
+                    <div class="per-page-bar per-page-bar--compact">
+                        <label for="perPageGlpi">Filas:</label>
+                        <select id="perPageGlpi" data-per-page-param="per_page_glpi">
+                            <option value="5" {% if per_page_glpi == 5 %}selected{% endif %}>5</option>
+                            <option value="10" {% if per_page_glpi == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if per_page_glpi == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if per_page_glpi == 50 %}selected{% endif %}>50</option>
+                            <option value="0" {% if per_page_glpi == 0 %}selected{% endif %}>Todas</option>
+                        </select>
+                    </div>
+                    {% if eventos_glpi_page.has_previous %}
+                    <a href="?{{ querystring_glpi }}&page_glpi={{ eventos_glpi_page.previous_page_number }}" class="page-pill">‹</a>
+                    {% else %}
+                    <span class="page-pill disabled">‹</span>
+                    {% endif %}
+                    <span class="pagination-info">{{ eventos_glpi_page.number }} / {{ eventos_glpi_page.paginator.num_pages }}</span>
+                    {% if eventos_glpi_page.has_next %}
+                    <a href="?{{ querystring_glpi }}&page_glpi={{ eventos_glpi_page.next_page_number }}" class="page-pill">›</a>
+                    {% else %}
+                    <span class="page-pill disabled">›</span>
+                    {% endif %}
                 </div>
-                {% if eventos_glpi_page.has_previous %}
-                <a href="?{{ querystring_glpi }}&page_glpi={{ eventos_glpi_page.previous_page_number }}" class="page-pill">‹</a>
-                {% else %}
-                <span class="page-pill disabled">‹</span>
-                {% endif %}
-                <span class="pagination-info">{{ eventos_glpi_page.number }} / {{ eventos_glpi_page.paginator.num_pages }}</span>
-                {% if eventos_glpi_page.has_next %}
-                <a href="?{{ querystring_glpi }}&page_glpi={{ eventos_glpi_page.next_page_number }}" class="page-pill">›</a>
-                {% else %}
-                <span class="page-pill disabled">›</span>
                 {% endif %}
             </div>
-            {% endif %}
-        </aside>
+        </section>
     </div>
 </main>
 
 {% for em in estados_modal %}
-<div class="modal-overlay" id="modal-estado-{{ em.codigo }}">
+<div class="modal-overlay rp-modal" id="modal-estado-{{ em.codigo }}">
     <div class="modal-box">
         <div class="modal-head">
             <h3>
