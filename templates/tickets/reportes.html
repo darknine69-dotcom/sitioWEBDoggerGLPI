@@ -1,346 +1,445 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Dogger · Reportes{% endblock %}
+{% block title %}Dogger · Reportes corporativos{% endblock %}
 {% block body_class %}admin-shell reports-page{% endblock %}
 {% block nav_reportes %}is-active{% endblock %}
-{% block header_eyebrow %}Dogger · Analítica{% endblock %}
+{% block header_eyebrow %}Dogger · Analítica corporativa{% endblock %}
 {% block header_title %}Reportes{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'vendor/bootstrap@5.3.3/bootstrap.min.css' %}">
 <style>
-/* ================= Reportes: panel analítico ================= */
-.reports-page .page { max-width: 1180px; }
+/* ============ Reportes corporativos · tema Dogger ============ */
+:root {
+    --bs-body-font-family: var(--font-body);
+    --bs-body-color: var(--ink);
+    --bs-body-bg: #F5F1E8;
+}
+body { font-family: var(--font-body) !important; color: var(--ink) !important; background: #F5F1E8; }
+a { color: inherit; text-decoration: none; }
+h1, h2, h3, h4 { font-weight: 700; }
+.nav-list, .nav-side, .nav-side ul, .user-dropdown, .footer-info, .footer-socials { list-style: none; margin-bottom: 0; }
+.reports-page .page { max-width: 1240px; }
 
-/* ---- KPI: tarjetas resumidas ---- */
-.rp-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 4px 0 18px; }
-.rp-kpi { position: relative; overflow: hidden; width: 100%; text-align: left; padding: 14px 16px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; box-shadow: var(--shadow-card); cursor: default; font: inherit; transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
-button.rp-kpi { cursor: pointer; }
-button.rp-kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); border-color: #D8C8AC; }
-.rp-kpi::before { content: ""; position: absolute; inset: 0 auto auto 0; width: 100%; height: 4px; background: var(--c, var(--ink-muted)); }
-.rp-kpi-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 800; }
-.rp-kpi-num { display: block; font-size: 30px; line-height: 1.05; font-weight: 800; margin: 6px 0 4px; color: var(--ink); font-variant-numeric: tabular-nums; }
-.rp-kpi-num small { font-size: 15px; font-weight: 800; }
-.rp-kpi-sub { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-muted); }
-.rp-kpi-track { flex: 1; height: 5px; border-radius: 999px; background: #EFE8DA; overflow: hidden; }
-.rp-kpi-fill { display: block; height: 100%; border-radius: 999px; background: var(--c, var(--ink-muted)); }
-.rp-kpi-more { margin-left: auto; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--c, var(--ink-muted)); opacity: .8; }
+/* ---- Tarjeta base ---- */
+.card.rpt-card { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); background: #fff; }
+.rpt-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding: 14px 18px; }
+.rpt-card-title { margin: 0; font-size: 15px; font-weight: 800; color: var(--ink); text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; gap: 8px; }
+.rpt-card-title .icon { width: 16px; height: 16px; color: var(--dogger-red); }
+.rpt-card-sub { font-size: 12px; color: var(--ink-muted); }
 
-/* ---- Malla de tarjetas ---- */
-.rp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
-.rp-grid + .rp-grid { margin-top: 16px; }
-.rp-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); padding: 18px; }
-.rp-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-.rp-card-head h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 800; display: flex; align-items: center; gap: 6px; }
-.rp-card-head h3 .icon { width: 14px; height: 14px; color: var(--ink-muted); }
-.rp-total { font-size: 12px; color: var(--ink-muted); font-weight: 700; white-space: nowrap; }
-.rp-empty { margin: 0; padding: 22px 0; text-align: center; color: var(--ink-muted); font-size: 13px; }
+/* ---- Barra de filtros ---- */
+.rpt-filter-card { margin-bottom: 16px; padding: 14px 16px; }
+.rpt-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); font-weight: 800; margin-bottom: 3px; }
+.rpt-filter-card .form-select, .rpt-filter-card .form-control { border-color: var(--line); border-radius: var(--radius-sm); font-size: 13px; color: var(--ink); background-color: #fff; height: 38px; }
+.rpt-filter-card .form-select:focus, .rpt-filter-card .form-control:focus { border-color: var(--dogger-red); box-shadow: 0 0 0 .2rem rgba(214,43,31,.12); }
+.btn.rpt-btn-red { background: var(--dogger-red); border-color: var(--dogger-red); color: #fff; font-weight: 700; border-radius: var(--radius-sm); }
+.btn.rpt-btn-red:hover { background: var(--dogger-red-dark); color: #fff; }
+.btn.rpt-btn-ghost { border-color: var(--line); color: var(--ink-muted); border-radius: var(--radius-sm); font-weight: 600; }
+.btn.rpt-btn-dark { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 700; border-radius: var(--radius-sm); }
+.btn.rpt-btn-dark:hover { background: var(--dogger-black-soft); color: #fff; }
+.btn.rpt-btn-outline { border: 1px solid var(--dogger-red); color: var(--dogger-red); background: transparent; font-weight: 700; border-radius: var(--radius-sm); }
+.btn.rpt-btn-outline:hover { background: rgba(214,43,31,.08); color: var(--dogger-red-dark); }
+.btn .icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
 
-/* ---- Donut ---- */
-.rp-donut { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
-.donut-ring[data-donut] { position: relative; width: 168px; height: 168px; border-radius: 50%; background: #EFE8DA; flex: none; }
-.donut-ring[data-donut]::after { content: attr(data-total); position: absolute; inset: 26px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; color: var(--ink); box-shadow: inset 0 0 0 1px #EFE8DA; }
-.donut-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 170px; }
-.donut-legend li { display: flex; align-items: center; gap: 9px; padding: 6px 9px; border: 1px solid transparent; border-radius: 9px; cursor: pointer; transition: background .12s, border-color .12s; }
-.donut-legend li:hover { background: #FBF7EF; border-color: var(--line); }
-.donut-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-.donut-legend-label { font-size: 12.5px; color: var(--ink); font-weight: 600; }
-.donut-legend-count { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; font-size: 14px; }
-.donut-legend-pct { width: 40px; text-align: right; font-size: 11px; color: var(--ink-muted); font-weight: 700; }
+/* ---- KPIs ---- */
+.rpt-kpi { position: relative; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-card); padding: 14px 16px 12px; height: 100%; }
+.rpt-kpi::before { content: ""; position: absolute; inset: 0 auto auto 0; width: 100%; height: 4px; }
+.rpt-kpi-rojo::before { background: var(--state-abierto); }
+.rpt-kpi-amarillo::before { background: var(--state-progreso); }
+.rpt-kpi-verde::before { background: var(--state-resuelto); }
+.rpt-kpi-gris::before { background: var(--state-cerrado); }
+.rpt-kpi-negro::before { background: var(--ink); }
+.rpt-kpi-naranja::before { background: #F26522; }
+.rpt-kpi-ico { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; margin-bottom: 8px; }
+.rpt-kpi-ico .icon { width: 15px; height: 15px; }
+.rpt-kpi-rojo .rpt-kpi-ico { background: rgba(214,43,31,.1); color: var(--dogger-red); }
+.rpt-kpi-amarillo .rpt-kpi-ico { background: rgba(242,169,0,.14); color: #B7790F; }
+.rpt-kpi-verde .rpt-kpi-ico { background: rgba(47,125,79,.12); color: #2F7D4F; }
+.rpt-kpi-gris .rpt-kpi-ico { background: rgba(107,98,89,.1); color: #6B6259; }
+.rpt-kpi-negro .rpt-kpi-ico { background: rgba(36,31,28,.08); color: var(--ink); }
+.rpt-kpi-naranja .rpt-kpi-ico { background: rgba(242,101,34,.12); color: #C2410C; }
+.rpt-kpi-num { font-size: 30px; line-height: 1; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rpt-kpi-label2 { display: block; margin-top: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 800; }
+.rpt-kpi-small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--ink-muted); }
 
-/* ---- Barras horizontales ---- */
-.rp-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
-.rp-bar-head { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; margin-bottom: 4px; }
-.rp-bar-label { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rp-bar-pct { color: var(--ink-muted); font-size: 11px; font-weight: 700; width: 38px; text-align: right; flex: none; }
-.rp-bar-count { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; flex: none; }
-.rp-bar-track { display: block; height: 7px; border-radius: 999px; background: #EFE8DA; overflow: hidden; }
-.rp-bar-fill { display: block; height: 100%; border-radius: 999px; background: var(--cc, #6B6259); }
+/* ---- Gráficas ---- */
+.rpt-chart-box { position: relative; height: 300px; padding: 14px 14px 6px; }
+.rpt-empty { text-align: center; color: var(--ink-muted); font-size: 13px; padding: 34px 10px; }
 
-/* Paleta cíclica para tarjetas sin color propio */
-.rp-bars.cycle li:nth-child(6n+1) .rp-bar-fill { --cc: #2A6FDB; }
-.rp-bars.cycle li:nth-child(6n+2) .rp-bar-fill { --cc: #2F7D4F; }
-.rp-bars.cycle li:nth-child(6n+3) .rp-bar-fill { --cc: #B7791F; }
-.rp-bars.cycle li:nth-child(6n+4) .rp-bar-fill { --cc: #7B5CD6; }
-.rp-bars.cycle li:nth-child(6n+5) .rp-bar-fill { --cc: #C2410C; }
-.rp-bars.cycle li:nth-child(6n+6) .rp-bar-fill { --cc: #3E7B9E; }
+/* ---- Tablas ---- */
+.rpt-table { font-size: 13px; }
+.rpt-table thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); font-weight: 800; background: #FBF7EF; border-bottom: 2px solid var(--line); white-space: nowrap; padding: 10px 12px; }
+.rpt-table tbody td { border-color: var(--line); padding: 9px 12px; vertical-align: middle; }
+.rpt-table tbody tr:hover { background: #FDFBF6; }
+.rpt-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; margin-right: 8px; }
+.rpt-top { display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 800; letter-spacing: .04em; color: #8a6d1c; background: #FBF3D9; border: 1px solid #EADCA8; padding: 2px 7px; border-radius: 999px; }
+.rpt-end { text-align: right; }
+.rpt-prom { font-variant-numeric: tabular-nums; }
+.rpt-progress { width: 90px; height: 6px; border-radius: 999px; background: #EFE8DA; overflow: hidden; display: inline-block; vertical-align: middle; }
+.rpt-progress > span { display: block; height: 100%; background: var(--dogger-red); border-radius: 999px; }
+.rpt-badge-estado { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.rpt-badge-abierto { color: #A11B12; background: #FBE2DE; }
+.rpt-badge-en-progreso { color: #8A6D1C; background: #FBF3D9; }
+.rpt-badge-resuelto { color: #205C3B; background: #EAF6EF; }
+.rpt-badge-cerrado { color: #4A443C; background: #EFEAE2; }
 
-/* ---- ANS ---- */
-.rp-ans-big { margin: 0 0 10px; font-size: 44px; line-height: 1; font-weight: 800; color: var(--state-resuelto); font-variant-numeric: tabular-nums; }
-.rp-ans-big small { font-size: 16px; font-weight: 800; color: var(--ink-muted); }
-.rp-ans-segs { display: flex; gap: 1px; height: 9px; border-radius: 999px; overflow: hidden; background: #EFE8DA; margin: 4px 0 10px; }
-.rp-ans-segs span { display: block; height: 100%; }
-.rp-ans-ley { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--ink-muted); }
-.rp-ans-ley i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+/* ---- Secciones ---- */
+.rpt-section { padding: 0 0 4px; }
+.rpt-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 18px; }
+.rpt-section-title { margin: 0; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; gap: 8px; }
+.rpt-section-title .icon { width: 16px; height: 16px; color: var(--dogger-red); }
+.rpt-hint { font-size: 12.5px; color: var(--ink-muted); }
 
-/* ---- Actividad GLPI ---- */
-.rp-card-full { padding: 18px 18px 0; }
-.rp-glpi-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-.rp-glpi-head h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 800; display: flex; align-items: center; gap: 7px; }
-.rp-glpi-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--state-resuelto); box-shadow: 0 0 0 3px rgba(47,125,79,.14); }
-.rp-glpi-badge { padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #205C3B; background: #EAF6EF; border: 1px solid #CBE7D5; }
-.rp-activity-box { margin: 0 -18px; padding: 4px 18px; border-top: 1px solid var(--line); }
-.rp-activity-box:first-of-type { border-top: 0; }
-.rp-activity-box .pagination-bar { margin: 0 -18px; border-radius: 0 0 var(--radius) var(--radius); }
-
-/* ---- Modales de estado ---- */
-.rp-modal .modal-box { max-width: 480px; }
-.rp-modal .modal-tickets-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.rp-modal .modal-user-row { display: flex; align-items: center; gap: 11px; padding: 9px 2px; border-bottom: 1px dashed var(--line); }
-.rp-modal .modal-user-row:last-child { border-bottom: 0; }
-.rp-modal .modal-user-avatar { width: 34px; height: 34px; flex: none; border-radius: 10px; background: #FBEBDD; color: var(--dogger-red); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; }
-.rp-modal .modal-user-info { min-width: 0; }
-.rp-modal .modal-user-name { font-weight: 700; font-size: 13.5px; }
-.rp-modal .modal-user-detail { font-size: 12px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rp-modal .modal-user-count { margin-left: auto; text-align: right; font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; flex: none; }
-.rp-modal .modal-user-count small { display: block; font-size: 10px; color: var(--ink-muted); font-weight: 700; }
-.rp-modal .modal-empty { color: var(--ink-muted); font-size: 13px; text-align: center; padding: 22px 0; }
-.rp-modal .mt-14 { margin-top: 14px; }
+/* Móvil: KPIs más compactos y cabeceras sin desbordes */
+@media (max-width: 575px) {
+    .rpt-kpi-num { font-size: 24px; }
+    .rpt-card-head { padding: 12px 14px; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<main class="page">
+<main class="page rpt-main">
     <div class="page-head">
         <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
-            <h2>Reportes del helpdesk</h2>
-            <p>Estado del servicio y actividad de los tickets. Haz clic en una tarjeta de estado o en la leyenda para ver el detalle.</p>
+            <h2>Reportes corporativos</h2>
+            <p>Desempeño por técnico y por usuario. Aplica filtros y descarga el reporte en Excel.</p>
         </div>
         <div class="page-head-actions">
-            <a href="{% url 'tickets:exportar_admin' %}?{{ request.GET.urlencode }}" class="btn btn-outline btn-sm"><svg class="icon"><use href="#i-download"/></svg> Exportar Excel</a>
-        </div>
-    </div>
-
-    <div class="rp-kpis">
-        {% for bar in estado_bars %}
-        <button type="button" class="rp-kpi" style="--c: {{ bar.color }}" data-open-modal="#modal-estado-{{ bar.slug }}"
-                title="Ver usuarios con tickets {{ bar.label|lower }}">
-            <span class="rp-kpi-label">{{ bar.label }}</span>
-            <span class="rp-kpi-num">{{ bar.count }}</span>
-            <span class="rp-kpi-sub">
-                <span class="rp-kpi-track"><span class="rp-kpi-fill" style="width: {{ bar.pct }}%; background: {{ bar.color }}"></span></span>
-                <span class="rp-kpi-more">{{ bar.pct }}% ›</span>
-            </span>
-        </button>
-        {% endfor %}
-
-        <div class="rp-kpi" style="--c: #6B6259">
-            <span class="rp-kpi-label">Prom. resolución</span>
-            <span class="rp-kpi-num">{{ tiempo_promedio|default:"—" }}</span>
-            <span class="rp-kpi-sub"><span>Tiempo entre apertura y cierre</span></span>
-        </div>
-
-        <div class="rp-kpi" style="--c: var(--state-resuelto)">
-            <span class="rp-kpi-label">ANS en plazo</span>
-            <span class="rp-kpi-num">{{ ans_stats.pct_ok }}<small>%</small></span>
-            <span class="rp-kpi-sub">
-                <span class="rp-kpi-track"><span class="rp-kpi-fill" style="width: {{ ans_stats.bar_ok }}%; background: var(--state-resuelto)"></span></span>
-                <span class="rp-kpi-more">{{ ans_stats.ok }} ok</span>
-            </span>
-        </div>
-    </div>
-
-    <div class="rp-grid">
-        <section class="rp-card">
-            <div class="rp-card-head">
-                <h3><svg class="icon"><use href="#i-pie"/></svg> Tickets por estado</h3>
-                <span class="rp-total">{{ stats.total|default:0 }} total</span>
-            </div>
-            {% if estado_bars %}
-            <div class="donut-chart-wrap rp-donut">
-                <div class="donut-ring" id="donut-estado" data-donut data-total="{{ stats.total|default:0 }}"></div>
-                <ul class="donut-legend">
-                    {% for bar in estado_bars %}
-                    <li data-open-modal="#modal-estado-{{ bar.slug }}" title="Ver detalle de {{ bar.label|lower }}">
-                        <span class="donut-dot" style="background: {{ bar.color }}"></span>
-                        <span class="donut-legend-label">{{ bar.label }}</span>
-                        <span class="donut-legend-count">{{ bar.count }}</span>
-                        <span class="donut-legend-pct">{{ bar.pct }}%</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% else %}<p class="rp-empty">Sin datos todavía.</p>{% endif %}
-        </section>
-
-        <section class="rp-card">
-            <div class="rp-card-head">
-                <h3><svg class="icon"><use href="#i-flag"/></svg> Por prioridad</h3>
-                <span class="rp-total">{{ stats.total|default:0 }} tickets</span>
-            </div>
-            {% if priority_bars %}
-            <ul class="rp-bars">
-                {% for bar in priority_bars %}
-                <li>
-                    <div class="rp-bar-head">
-                        <span class="rp-bar-label">{{ bar.label }}</span>
-                        <span class="rp-bar-pct">{{ bar.pct }}%</span>
-                        <span class="rp-bar-count">{{ bar.count }}</span>
-                    </div>
-                    <span class="rp-bar-track"><span class="rp-bar-fill" style="width: {{ bar.fill_pct }}%; --cc: {{ bar.color }}"></span></span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}<p class="rp-empty">Sin datos todavía.</p>{% endif %}
-        </section>
-
-        <section class="rp-card">
-            <div class="rp-card-head">
-                <h3><svg class="icon"><use href="#i-clock"/></svg> Cumplimiento ANS</h3>
-                <span class="rp-total">{{ ans_stats.vencidos|add:ans_stats.por_vencer|add:ans_stats.ok }} abiertos</span>
-            </div>
-            <p class="rp-ans-big">{{ ans_stats.pct_ok }}<small>% en plazo</small></p>
-            <div class="rp-ans-segs">
-                <span style="width: {{ ans_stats.bar_vencidos }}%; background: var(--state-abierto)" title="Vencidos {{ ans_stats.vencidos }}"></span>
-                <span style="width: {{ ans_stats.bar_por_vencer }}%; background: var(--state-progreso)" title="Por vencer {{ ans_stats.por_vencer }}"></span>
-                <span style="width: {{ ans_stats.bar_ok }}%; background: var(--state-resuelto)" title="En plazo {{ ans_stats.ok }}"></span>
-            </div>
-            <div class="rp-ans-ley">
-                <span><i style="background: var(--state-abierto)"></i>{{ ans_stats.vencidos }} vencidos</span>
-                <span><i style="background: var(--state-progreso)"></i>{{ ans_stats.por_vencer }} por vencer</span>
-                <span><i style="background: var(--state-resuelto)"></i>{{ ans_stats.ok }} en plazo</span>
-            </div>
-        </section>
-    </div>
-
-    <div class="rp-grid">
-        <section class="rp-card">
-            <div class="rp-card-head">
-                <h3><svg class="icon"><use href="#i-folder"/></svg> Por categoría</h3>
-            </div>
-            {% if category_bars %}
-            <ul class="rp-bars cycle">
-                {% for bar in category_bars %}
-                <li>
-                    <div class="rp-bar-head">
-                        <span class="rp-bar-label">{{ bar.label }}</span>
-                        <span class="rp-bar-pct">{{ bar.pct }}%</span>
-                        <span class="rp-bar-count">{{ bar.count }}</span>
-                    </div>
-                    <span class="rp-bar-track"><span class="rp-bar-fill" style="width: {{ bar.fill_pct }}%"></span></span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}<p class="rp-empty">Sin datos todavía.</p>{% endif %}
-        </section>
-
-        <section class="rp-card">
-            <div class="rp-card-head">
-                <h3><svg class="icon"><use href="#i-wrench"/></svg> Por técnico asignado</h3>
-            </div>
-            {% if tecnico_bars %}
-            <ul class="rp-bars cycle">
-                {% for bar in tecnico_bars %}
-                <li>
-                    <div class="rp-bar-head">
-                        <span class="rp-bar-label">{{ bar.label }}</span>
-                        <span class="rp-bar-count">{{ bar.count }}</span>
-                    </div>
-                    <span class="rp-bar-track"><span class="rp-bar-fill" style="width: {{ bar.fill_pct }}%"></span></span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}<p class="rp-empty">Aún no hay tickets asignados.</p>{% endif %}
-        </section>
-
-        <section class="rp-card">
-            <div class="rp-card-head">
-                <h3><svg class="icon"><use href="#i-users"/></svg> Usuarios con más tickets</h3>
-            </div>
-            {% if user_bars %}
-            <ul class="rp-bars cycle">
-                {% for bar in user_bars %}
-                <li>
-                    <div class="rp-bar-head">
-                        <span class="rp-bar-label">{{ bar.label }}</span>
-                        <span class="rp-bar-count">{{ bar.count }}</span>
-                    </div>
-                    <span class="rp-bar-track"><span class="rp-bar-fill" style="width: {{ bar.fill_pct }}%"></span></span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}<p class="rp-empty">Aún no hay usuarios con tickets.</p>{% endif %}
-        </section>
-    </div>
-
-    <div class="rp-grid">
-        <section class="rp-card rp-card-full">
-            <div class="rp-glpi-head">
-                <h3><span class="rp-glpi-dot"></span> Actividad reciente de GLPI</h3>
-                <span class="rp-glpi-badge">Sincronizado</span>
-            </div>
-            <div class="rp-activity-box">
-                {% include "tickets/_glpi_activity.html" with eventos_glpi=eventos_glpi use_descripcion=True ticket_url="tickets:detalle" empty_text="Sin eventos recientes de GLPI todavía." %}
-
-                {% if eventos_glpi_page.paginator.count > 0 %}
-                <div class="pagination-bar radius-0">
-                    <div class="per-page-bar per-page-bar--compact">
-                        <label for="perPageGlpi">Filas:</label>
-                        <select id="perPageGlpi" data-per-page-param="per_page_glpi">
-                            <option value="5" {% if per_page_glpi == 5 %}selected{% endif %}>5</option>
-                            <option value="10" {% if per_page_glpi == 10 %}selected{% endif %}>10</option>
-                            <option value="20" {% if per_page_glpi == 20 %}selected{% endif %}>20</option>
-                            <option value="50" {% if per_page_glpi == 50 %}selected{% endif %}>50</option>
-                            <option value="0" {% if per_page_glpi == 0 %}selected{% endif %}>Todas</option>
-                        </select>
-                    </div>
-                    {% if eventos_glpi_page.has_previous %}
-                    <a href="?{{ querystring_glpi }}&page_glpi={{ eventos_glpi_page.previous_page_number }}" class="page-pill">‹</a>
-                    {% else %}
-                    <span class="page-pill disabled">‹</span>
-                    {% endif %}
-                    <span class="pagination-info">{{ eventos_glpi_page.number }} / {{ eventos_glpi_page.paginator.num_pages }}</span>
-                    {% if eventos_glpi_page.has_next %}
-                    <a href="?{{ querystring_glpi }}&page_glpi={{ eventos_glpi_page.next_page_number }}" class="page-pill">›</a>
-                    {% else %}
-                    <span class="page-pill disabled">›</span>
-                    {% endif %}
-                </div>
-                {% endif %}
-            </div>
-        </section>
-    </div>
-</main>
-
-{% for em in estados_modal %}
-<div class="modal-overlay rp-modal" id="modal-estado-{{ em.codigo }}">
-    <div class="modal-box">
-        <div class="modal-head">
-            <h3>
-                {% include "tickets/_estado_pill.html" with estado=em.codigo label=em.label %}
-                <span class="modal-head-muted">{{ em.total }} ticket{{ em.total|pluralize:"s" }}</span>
-            </h3>
-            <button type="button" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            {% if em.usuarios %}
-            <ul class="modal-tickets-list">
-                {% for u in em.usuarios %}
-                <li class="modal-user-row">
-                    <div class="modal-user-avatar">{{ u.iniciales }}</div>
-                    <div class="modal-user-info">
-                        <div class="modal-user-name">{{ u.nombre }}</div>
-                        <div class="modal-user-detail">
-                            {% if u.email %}{{ u.email }}{% endif %}
-                            {% if u.punto %} · {{ u.punto }}{% endif %}
-                        </div>
-                    </div>
-                    <div class="modal-user-count">
-                        {{ u.tickets_count }}
-                        <small>ticket{{ u.tickets_count|pluralize:"s" }}</small>
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="modal-empty">No hay usuarios con tickets en estado «{{ em.label }}».</p>
-            {% endif %}
-            <a class="btn btn-outline btn-sm mt-14" href="{% url 'tickets:lista' %}?estado={{ em.codigo }}">
-                Ver todos los tickets →
+            <a class="btn rpt-btn-dark btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Descarga el reporte actual con los filtros aplicados">
+                <svg class="icon"><use href="#i-download"/></svg> Descargar en Excel
             </a>
         </div>
     </div>
-</div>
-{% endfor %}
+
+    <div class="card rpt-filter-card">
+        <form method="get" id="rptFiltros">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-md-3 col-xl-2">
+                    <label class="rpt-label" for="fDesde">Desde</label>
+                    <input type="date" class="form-control form-control-sm" id="fDesde" name="desde" value="{{ f.desde|date:'Y-m-d'|default:'' }}">
+                </div>
+                <div class="col-6 col-md-3 col-xl-2">
+                    <label class="rpt-label" for="fHasta">Hasta</label>
+                    <input type="date" class="form-control form-control-sm" id="fHasta" name="hasta" value="{{ f.hasta|date:'Y-m-d'|default:'' }}">
+                </div>
+                <div class="col-6 col-md-3 col-xl-2">
+                    <label class="rpt-label" for="fCat">Categoría</label>
+                    <select class="form-select form-select-sm rpt-autosubmit" id="fCat" name="categoria">
+                        <option value="">Todas</option>
+                        {% regroup filtros_categorias by grupo as grouped %}
+                        {% for grupo in grouped %}
+                        <optgroup label="{{ grupo.grouper }}">
+                            {% for cat in grupo.list %}
+                            <option value="{{ cat.id }}" {% if f.categoria == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.nombre }}</option>
+                            {% endfor %}
+                        </optgroup>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3 col-xl-2">
+                    <label class="rpt-label" for="fPrio">Prioridad</label>
+                    <select class="form-select form-select-sm rpt-autosubmit" id="fPrio" name="prioridad">
+                        <option value="">Todas</option>
+                        {% for val, label in prioridad_choices %}
+                        <option value="{{ val }}" {% if f.prioridad == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3 col-xl-3">
+                    <label class="rpt-label" for="fTec">Técnico</label>
+                    <select class="form-select form-select-sm rpt-autosubmit" id="fTec" name="tecnico">
+                        <option value="">Todos</option>
+                        {% for t in filtros_tecnicos %}
+                        <option value="{{ t.id }}" {% if f.tecnico == t.id|stringformat:'s' %}selected{% endif %}>{{ t.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3 col-xl-3">
+                    <label class="rpt-label" for="fUsr">Usuario</label>
+                    <select class="form-select form-select-sm rpt-autosubmit" id="fUsr" name="usuario">
+                        <option value="">Todos los usuarios</option>
+                        {% for u in filtros_usuarios %}
+                        {% with c_val=u.solicitante_email|default:u.solicitante_nombre|default:'' %}
+                        <option value="{{ c_val }}" {% if f.usuario == c_val %}selected{% endif %}>
+                            {{ u.solicitante_nombre|default:u.solicitante_email|default:"—" }}{% if u.solicitante_email %} ({{ u.solicitante_email }}){% endif %}
+                        </option>
+                        {% endwith %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn rpt-btn-red btn-sm"><svg class="icon"><use href="#i-search"/></svg> Aplicar filtros</button>
+                    <a class="btn rpt-btn-ghost btn-sm" href="{% url 'tickets:reportes' %}">Limpiar</a>
+                    <span class="rpt-hint align-self-center">Los cambios en los listados se aplican automáticamente.</span>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="mb-2">
+        <span class="rpt-hint"><strong>Filtros aplicados:</strong> {{ filtros_txt }}</span>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3">
+            <div class="rpt-kpi rpt-kpi-negro" data-bs-toggle="tooltip" data-bs-title="Tickets incluidos según los filtros aplicados">
+                <span class="rpt-kpi-ico"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <span class="rpt-kpi-num">{{ kpis.total }}</span>
+                <span class="rpt-kpi-label2">Tickets</span>
+                <span class="rpt-kpi-small">{{ filtros_txt }}</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="rpt-kpi rpt-kpi-rojo" data-bs-toggle="tooltip" data-bs-title="Solicitudes recién creadas, pendientes de atención">
+                <span class="rpt-kpi-ico"><svg class="icon"><use href="#i-alert"/></svg></span>
+                <span class="rpt-kpi-num">{{ kpis.abiertos }}</span>
+                <span class="rpt-kpi-label2">Abiertos</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="rpt-kpi rpt-kpi-amarillo" data-bs-toggle="tooltip" data-bs-title="Solicitudes que ya están siendo atendidas">
+                <span class="rpt-kpi-ico"><svg class="icon"><use href="#i-refresh"/></svg></span>
+                <span class="rpt-kpi-num">{{ kpis.en_progreso }}</span>
+                <span class="rpt-kpi-label2">En progreso</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="rpt-kpi rpt-kpi-verde" data-bs-toggle="tooltip" data-bs-title="Solicitudes resueltas o cerradas">
+                <span class="rpt-kpi-ico"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                <span class="rpt-kpi-num">{{ kpis.resueltos }} <small class="rpt-kpi-small" style="color:#2F7D4F">resueltos</small></span>
+                <span class="rpt-kpi-label2">Resueltos</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="rpt-kpi rpt-kpi-gris" data-bs-toggle="tooltip" data-bs-title="Solicitudes cerradas definitivamente">
+                <span class="rpt-kpi-ico"><svg class="icon"><use href="#i-lock"/></svg></span>
+                <span class="rpt-kpi-num">{{ kpis.cerrados }}</span>
+                <span class="rpt-kpi-label2">Cerrados</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="rpt-kpi rpt-kpi-naranja" data-bs-toggle="tooltip" data-bs-title="Abiertos/en progreso cuyo ANS (límite de atención) ya venció">
+                <span class="rpt-kpi-ico"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+                <span class="rpt-kpi-num">{{ kpis.vencidos }}</span>
+                <span class="rpt-kpi-label2">Vencidos (ANS)</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="rpt-kpi rpt-kpi-verde" data-bs-toggle="tooltip" data-bs-title="Tickets en curso dentro del tiempo límite de atención">
+                <span class="rpt-kpi-ico"><svg class="icon"><use href="#i-check"/></svg></span>
+                <span class="rpt-kpi-num">{{ kpis.sla_ok }} <small class="rpt-kpi-small" style="color:#2F7D4F">{{ kpis.pct_sla }}%</small></span>
+                <span class="rpt-kpi-label2">SLA cumplidos</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="rpt-kpi rpt-kpi-amarillo" data-bs-toggle="tooltip" data-bs-title="Tickets en curso por fuera del tiempo límite de atención">
+                <span class="rpt-kpi-ico"><svg class="icon"><use href="#i-alert"/></svg></span>
+                <span class="rpt-kpi-num">{{ kpis.sla_no }}</span>
+                <span class="rpt-kpi-label2">SLA incumplidos</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-7">
+            <div class="card rpt-card h-100">
+                <div class="rpt-card-head">
+                    <div>
+                        <h3 class="rpt-card-title"><svg class="icon"><use href="#i-wrench"/></svg> Comparativo por técnico</h3>
+                        <span class="rpt-card-sub">Tickets asignados vs. resueltos en el periodo filtrado.</span>
+                    </div>
+                    <span class="rpt-hint" data-bs-toggle="tooltip" data-bs-title="Gráfico de barras comparativo entre técnicos">Asignados · Resueltos</span>
+                </div>
+                <div class="rpt-chart-box" id="tecChartBox"><canvas id="tecChart"></canvas></div>
+                <div class="rpt-empty d-none" id="tecEmpty">No hay tickets en el rango seleccionado.</div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card rpt-card h-100">
+                <div class="rpt-card-head">
+                    <div>
+                        <h3 class="rpt-card-title"><svg class="icon"><use href="#i-folder"/></svg> Distribución por categoría</h3>
+                        <span class="rpt-card-sub">Proporción de tickets por categoría.</span>
+                    </div>
+                </div>
+                <div class="rpt-chart-box" id="catChartBox"><canvas id="catChart"></canvas></div>
+                <div class="rpt-empty d-none" id="catEmpty">No hay categorías en el rango seleccionado.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="card rpt-card">
+                <div class="rpt-card-head">
+                    <div>
+                        <h3 class="rpt-card-title"><svg class="icon"><use href="#i-users"/></svg> Reporte por técnico</h3>
+                        <span class="rpt-card-sub">{{ tecnicos|length }} técnico(s) con asignaciones en el periodo.</span>
+                    </div>
+                    <a class="btn rpt-btn-outline btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Exportar el reporte actual a Excel">
+                        <svg class="icon"><use href="#i-download"/></svg> Excel
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table rpt-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Técnico</th>
+                                <th class="rpt-end">Asignados</th>
+                                <th class="rpt-end">Resueltos/Cerrados</th>
+                                <th class="rpt-end">En curso</th>
+                                <th>% Resueltos</th>
+                                <th class="rpt-end">T. prom. resolución</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in tecnicos %}
+                            <tr>
+                                <td>
+                                    <span class="rpt-dot" style="background:{% cycle '#D62B1F' '#F26522' '#F2A900' '#2A6FDB' '#2F7D4F' '#7B5CD6' %}"></span>
+                                    {{ r.nombre }}{% if forloop.first and r.nombre != 'Sin asignar' %}<span class="rpt-top">Top</span>{% endif %}
+                                </td>
+                                <td class="rpt-end fw-bold">{{ r.asignados }}</td>
+                                <td class="rpt-end"><span class="fw-semibold" style="color:#2F7D4F">{{ r.resueltos }}</span></td>
+                                <td class="rpt-end">{{ r.en_curso }}</td>
+                                <td>
+                                    <span class="rpt-progress"><span style="width:{{ r.pct_resueltos }}%"></span></span>
+                                    <span class="rpt-hint">{{ r.pct_resueltos }}%</span>
+                                </td>
+                                <td class="rpt-end rpt-prom">{% if r.prom_h is not None %}{{ r.prom_h }} h{% else %}—{% endif %}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="rpt-empty">Sin tickets en el rango seleccionado.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="card rpt-card">
+                <div class="rpt-card-head">
+                    <div>
+                        <h3 class="rpt-card-title"><svg class="icon"><use href="#i-user"/></svg> Reporte por usuario</h3>
+                        <span class="rpt-card-sub">{{ usuarios|length }} usuario(s) con tickets creados en el periodo.</span>
+                    </div>
+                    <a class="btn rpt-btn-outline btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Exportar los reportes individuales a Excel">
+                        <svg class="icon"><use href="#i-download"/></svg> Excel
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table rpt-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Correo</th>
+                                <th class="rpt-end">Creados</th>
+                                <th class="rpt-end">Abiertos</th>
+                                <th class="rpt-end">Resueltos</th>
+                                <th class="rpt-end">Cerrados</th>
+                                <th>Último estado</th>
+                                <th class="rpt-end">T. prom. resolución</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios %}
+                            <tr>
+                                <td class="fw-semibold">{{ u.nombre }}</td>
+                                <td class="rpt-hint">{{ u.email|default:"—" }}</td>
+                                <td class="rpt-end fw-bold">{{ u.creados }}</td>
+                                <td class="rpt-end" style="color:#C2410C">{{ u.abiertos }}</td>
+                                <td class="rpt-end" style="color:#2F7D4F">{{ u.resueltos }}</td>
+                                <td class="rpt-end">{{ u.cerrados }}</td>
+                                <td>
+                                    <span class="rpt-badge-estado rpt-badge-{{ u.ultimo_estado|lower|cut:' ' }}">{{ u.ultimo_estado|default:"—" }}</span>
+                                </td>
+                                <td class="rpt-end rpt-prom">{% if u.prom_h is not None %}{{ u.prom_h }} h{% else %}—{% endif %}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="8" class="rpt-empty">Sin tickets en el rango seleccionado.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
 {% endblock %}
+
 {% block footer %}{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
+<script src="{% static 'vendor/bootstrap@5.3.3/bootstrap.bundle.min.js' %}"></script>
+<script>
+(function () {
+    // Tooltips de Bootstrap
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
+
+    // Autosubmit de los filtros por selección
+    document.querySelectorAll(".rpt-autosubmit").forEach(function (sel) {
+        sel.addEventListener("change", function () { sel.form.submit(); });
+    });
+
+    // ---- Gráfico de barras: comparativo por técnico ----
+    var tec = JSON.parse('{{ tec_chart_json|escapejs }}');
+    var tecBox = document.getElementById("tecChartBox");
+    var tecEmpty = document.getElementById("tecEmpty");
+    if (tec && tec.labels && tec.labels.length) {
+        new Chart(document.getElementById("tecChart"), {
+            type: "bar",
+            data: {
+                labels: tec.labels,
+                datasets: [
+                    { label: "Asignados", data: tec.asignados, backgroundColor: "rgba(214,43,31,.85)", borderRadius: 4, barPercentage: .7 },
+                    { label: "Resueltos", data: tec.resueltos, backgroundColor: "rgba(47,125,79,.85)", borderRadius: 4, barPercentage: .7 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: tec.labels.length > 6 ? "y" : "x",
+                plugins: { legend: { position: "top", labels: { boxWidth: 10, font: { size: 11 } } } },
+                scales: {
+                    x: { grid: { color: "#efe8da" } },
+                    y: { grid: { color: "#efe8da" }, beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    } else {
+        tecBox.classList.add("d-none");
+        tecEmpty.classList.remove("d-none");
+    }
+
+    // ---- Gráfico circular: distribución por categoría ----
+    var cat = JSON.parse('{{ categorias_pie_json|escapejs }}');
+    var catBox = document.getElementById("catChartBox");
+    var catEmpty = document.getElementById("catEmpty");
+    if (cat && cat.labels && cat.labels.length) {
+        new Chart(document.getElementById("catChart"), {
+            type: "doughnut",
+            data: { labels: cat.labels, datasets: [{ data: cat.data, backgroundColor: cat.colores, borderColor: "#fff", borderWidth: 2 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "62%",
+                plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 }, padding: 12 } } }
+            }
+        });
+    } else {
+        catBox.classList.add("d-none");
+        catEmpty.classList.remove("d-none");
+    }
+})();
+</script>
+{% endblock %}

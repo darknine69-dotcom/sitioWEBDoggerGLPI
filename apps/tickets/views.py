@@ -2,7 +2,7 @@ import json
 import secrets
 import string
 from collections import Counter
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import logging
 import re
 
@@ -40,7 +40,7 @@ RANGOS_MIS = [
 ]
 
 from .decorators import admin_required, staff_required, user_required
-from .exports import generar_excel_tickets
+from .exports import generar_excel_reportes, generar_excel_tickets
 from .forms import (
     AsignarTecnicoForm,
     CategoriaForm,
@@ -646,69 +646,275 @@ def paginate_recent_tickets(request, queryset, page_param="page_recientes", per_
     return page_obj
 
 
-@admin_required
-def reportes(request):
-    stats = Ticket.estadisticas()
-    tickets_qs = Ticket.objects.select_related("categoria", "tecnico_asignado")
-    tickets = list(tickets_qs.order_by("-fecha_creacion")[:200])
-    dashboard_context = _build_dashboard_context(request, tickets)
-    tiempo_promedio = Ticket.tiempo_promedio_resolucion_horas(tickets_qs)
+def _parse_fecha_reporte(valor):
+    if not valor:
+        return None
+    try:
+        return date.fromisoformat(valor)
+    except (ValueError, TypeError):
+        return None
 
-    colores_estado = {
-        "abierto": "#D62B1F",
-        "en-progreso": "#F2A900",
-        "resuelto": "#2F7D4F",
-        "cerrado": "#6B6259",
+
+def _reportes_filtros(request):
+    """Aplica los filtros del panel corporativo y retorna (f, qs)."""
+    qs = Ticket.objects.select_related("categoria", "tecnico_asignado")
+    desde = _parse_fecha_reporte(request.GET.get("desde"))
+    hasta = _parse_fecha_reporte(request.GET.get("hasta"))
+    categoria = request.GET.get("categoria", "").strip()
+    prioridad = request.GET.get("prioridad", "").strip()
+    tecnico = request.GET.get("tecnico", "").strip()
+    usuario = request.GET.get("usuario", "").strip()
+
+    if desde:
+        qs = qs.filter(fecha_creacion__date__gte=desde)
+    if hasta:
+        qs = qs.filter(fecha_creacion__date__lte=hasta)
+    if categoria.isdigit():
+        qs = qs.filter(categoria_id=categoria)
+    if prioridad in dict(Ticket.Prioridad.choices):
+        qs = qs.filter(prioridad=prioridad)
+    if tecnico.isdigit():
+        qs = qs.filter(tecnico_asignado_id=tecnico)
+    if usuario:
+        qs = qs.filter(
+            Q(solicitante_email__icontains=usuario) | Q(solicitante_nombre__icontains=usuario)
+        )
+
+    trozos = []
+    if desde:
+        trozos.append(f"desde {desde:%d/%m/%Y}")
+    if hasta:
+        trozos.append(f"hasta {hasta:%d/%m/%Y}")
+    if categoria.isdigit():
+        cat = Categoria.objects.filter(pk=categoria).values_list("nombre", flat=True).first()
+        if cat:
+            trozos.append(f"categoría {cat}")
+    if prioridad in dict(Ticket.Prioridad.choices):
+        trozos.append(f"prioridad {prioridad}")
+    if tecnico.isdigit():
+        nombre_tec = User.objects.filter(pk=tecnico).values_list("nombre", flat=True).first()
+        if nombre_tec:
+            trozos.append(f"técnico {nombre_tec}")
+    if usuario:
+        trozos.append(f"usuario «{usuario}»")
+
+    return {
+        "desde": desde,
+        "hasta": hasta,
+        "categoria": categoria,
+        "prioridad": prioridad,
+        "tecnico": tecnico,
+        "usuario": usuario,
+        "filtros_txt": ", ".join(trozos) or "Sin filtros",
+    }, qs
+
+
+def _reportes_metricas_kpis(tickets):
+    abiertos = en_progreso = resueltos = cerrados = 0
+    vencidos = sla_ok = sla_no = 0
+    for t in tickets:
+        if t.estado == Ticket.Estado.ABIERTO:
+            abiertos += 1
+        elif t.estado == Ticket.Estado.EN_PROGRESO:
+            en_progreso += 1
+        elif t.estado == Ticket.Estado.RESUELTO:
+            resueltos += 1
+        elif t.estado == Ticket.Estado.CERRADO:
+            cerrados += 1
+        estado_ans = t.info_ans[0] if t.info_ans else None
+        if estado_ans == "vencido":
+            vencidos += 1
+            sla_no += 1
+        elif estado_ans == "ok":
+            sla_ok += 1
+    total = abiertos + en_progreso + resueltos + cerrados
+    base_sla = sla_ok + sla_no
+    return {
+        "total": total,
+        "abiertos": abiertos,
+        "en_progreso": en_progreso,
+        "resueltos": resueltos,
+        "cerrados": cerrados,
+        "vencidos": vencidos,
+        "sla_ok": sla_ok,
+        "sla_no": sla_no,
+        "pct_sla": round(sla_ok / base_sla * 100) if base_sla else 0,
     }
-    estados_modal = []
-    for codigo, etiqueta in Ticket.Estado.choices:
-        qs_estado = tickets_qs.filter(estado=codigo)
-        total_estado = qs_estado.count()
-        # Agrupar por solicitante
-        from collections import defaultdict
-        user_groups = defaultdict(lambda: {"tickets": 0, "emails": set(), "punto": ""})
-        for t in qs_estado.order_by("-fecha_creacion"):
-            nombre = t.solicitante_nombre or t.solicitante_email or "Anónimo"
-            user_groups[nombre]["tickets"] += 1
-            if t.solicitante_email:
-                user_groups[nombre]["emails"].add(t.solicitante_email)
-            if t.solicitante_punto and not user_groups[nombre]["punto"]:
-                user_groups[nombre]["punto"] = t.solicitante_punto
-        # Ordenar por cantidad de tickets descendente
-        usuarios_sorted = sorted(
-            user_groups.items(),
-            key=lambda x: x[1]["tickets"],
-            reverse=True,
-        )[:10]
-        usuarios_modal = [
+
+
+def _reportes_metricas_tecnicos(tickets):
+    abiertos_estados = (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
+    grupos = {}
+    for t in tickets:
+        nombre = t.tecnico_asignado.nombre if t.tecnico_asignado else "Sin asignar"
+        g = grupos.setdefault(
+            nombre,
+            {"asignados": 0, "resueltos": 0, "en_curso": 0, "horas": 0.0, "n_cerrados": 0},
+        )
+        g["asignados"] += 1
+        if t.estado in abiertos_estados:
+            g["en_curso"] += 1
+        if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
+            g["resueltos"] += 1
+        if t.fecha_cierre and t.fecha_creacion:
+            horas = (t.fecha_cierre - t.fecha_creacion).total_seconds() / 3600.0
+            if horas >= 0:
+                g["horas"] += horas
+                g["n_cerrados"] += 1
+    filas = []
+    for nombre, g in grupos.items():
+        filas.append(
             {
                 "nombre": nombre,
-                "tickets_count": info["tickets"],
-                "email": next(iter(info["emails"]), ""),
-                "punto": info["punto"],
-                "iniciales": "".join(w[0] for w in nombre.split()[:2]).upper(),
+                "asignados": g["asignados"],
+                "resueltos": g["resueltos"],
+                "en_curso": g["en_curso"],
+                "prom_h": round(g["horas"] / g["n_cerrados"], 1) if g["n_cerrados"] else None,
+                "pct_resueltos": round(g["resueltos"] / g["asignados"] * 100) if g["asignados"] else 0,
             }
-            for nombre, info in usuarios_sorted
-        ]
-        estados_modal.append({
-            "codigo": codigo,
-            "label": etiqueta,
-            "color": colores_estado.get(codigo, "#6B6259"),
-            "total": total_estado,
-            "usuarios": usuarios_modal,
-        })
+        )
+    filas.sort(key=lambda r: r["asignados"], reverse=True)
+    return filas
+
+
+def _reportes_metricas_usuarios(tickets):
+    grupos = {}
+    for t in tickets:
+        nombre = t.solicitante_nombre or t.solicitante_email or "Anónimo"
+        g = grupos.setdefault(
+            nombre,
+            {
+                "nombre": nombre,
+                "email": t.solicitante_email or "",
+                "creados": 0,
+                "abiertos": 0,
+                "resueltos": 0,
+                "cerrados": 0,
+                "horas": 0.0,
+                "n_cerrados": 0,
+                "ultimo_estado": "",
+                "ultimo_fecha": None,
+            },
+        )
+        g["creados"] += 1
+        if t.estado == Ticket.Estado.ABIERTO:
+            g["abiertos"] += 1
+        elif t.estado == Ticket.Estado.RESUELTO:
+            g["resueltos"] += 1
+        elif t.estado == Ticket.Estado.CERRADO:
+            g["cerrados"] += 1
+        if not g["ultimo_fecha"] or (t.fecha_creacion and t.fecha_creacion > g["ultimo_fecha"]):
+            g["ultimo_fecha"] = t.fecha_creacion
+            g["ultimo_estado"] = t.get_estado_display()
+        if t.fecha_cierre and t.fecha_creacion:
+            horas = (t.fecha_cierre - t.fecha_creacion).total_seconds() / 3600.0
+            if horas >= 0:
+                g["horas"] += horas
+                g["n_cerrados"] += 1
+    filas = sorted(grupos.values(), key=lambda g: g["creados"], reverse=True)
+    for g in filas:
+        g["prom_h"] = round(g["horas"] / g["n_cerrados"], 1) if g["n_cerrados"] else None
+    return filas
+
+
+@admin_required
+def reportes(request):
+    f, qs = _reportes_filtros(request)
+    tickets = list(qs.order_by("-fecha_creacion")[:2000])
+
+    kpis = _reportes_metricas_kpis(tickets)
+    tecnicos = _reportes_metricas_tecnicos(tickets)
+    usuarios = _reportes_metricas_usuarios(tickets)
+
+    cat_counts = Counter(
+        (t.categoria.nombre if t.categoria else "Sin categoría") for t in tickets
+    )
+    colores_cat = ["#D62B1F", "#F26522", "#F2A900", "#2F7D4F", "#2A6FDB", "#7B5CD6", "#B7791F", "#3E7B9E"]
+    categorias_pie = {
+        "labels": [k for k, _ in cat_counts.most_common(8)],
+        "data": [v for _, v in cat_counts.most_common(8)],
+        "colores": colores_cat[: len(cat_counts)],
+    }
+    tec_chart = {
+        "labels": [r["nombre"] for r in tecnicos],
+        "asignados": [r["asignados"] for r in tecnicos],
+        "resueltos": [r["resueltos"] for r in tecnicos],
+    }
+
+    filtros_tecnicos = (
+        User.objects.filter(activo=True, rol__in=["admin", "tecnico"])
+        .order_by("nombre")
+        .values("id", "nombre")
+    )
+    usuarios_unicos = (
+        Ticket.objects.values("solicitante_nombre", "solicitante_email")
+        .distinct()
+        .order_by("solicitante_nombre")[:400]
+    )
 
     return render(
         request,
         "tickets/reportes.html",
         {
-            "stats": stats,
-            "tiempo_promedio": tiempo_promedio,
-            "estados_modal": estados_modal,
-            "estados": Ticket.Estado.choices,
-            **dashboard_context,
+            "kpis": kpis,
+            "tecnicos": tecnicos,
+            "usuarios": usuarios,
+            "tec_chart_json": json.dumps(tec_chart),
+            "categorias_pie_json": json.dumps(categorias_pie),
+            "f": f,
+            "filtros_txt": f["filtros_txt"],
+            "filtros_categorias": Categoria.objects.filter(activo=True).order_by("grupo", "nombre"),
+            "filtros_tecnicos": filtros_tecnicos,
+            "filtros_usuarios": usuarios_unicos,
+            "prioridad_choices": Ticket.Prioridad.choices,
+            "querystring": request.GET.urlencode(),
         },
     )
+
+
+@admin_required
+def exportar_reportes(request):
+    f, qs = _reportes_filtros(request)
+    tickets = list(qs.order_by("fecha_creacion")[:5000])
+    kpis = _reportes_metricas_kpis(tickets)
+    tecnicos = _reportes_metricas_tecnicos(tickets)
+    usuarios = _reportes_metricas_usuarios(tickets)
+
+    kpi_rows = [
+        ("Tickets en el reporte", kpis["total"]),
+        ("Abiertos", kpis["abiertos"]),
+        ("En progreso", kpis["en_progreso"]),
+        ("Resueltos", kpis["resueltos"]),
+        ("Cerrados", kpis["cerrados"]),
+        ("Vencidos (ANS)", kpis["vencidos"]),
+        ("SLA cumplidos", kpis["sla_ok"]),
+        ("SLA incumplidos", kpis["sla_no"]),
+    ]
+    tec_rows = [
+        (
+            r["nombre"],
+            r["asignados"],
+            r["resueltos"],
+            r["en_curso"],
+            r["prom_h"] if r["prom_h"] is not None else "",
+            f"{r['pct_resueltos']}%",
+        )
+        for r in tecnicos
+    ]
+    usu_rows = [
+        (
+            r["nombre"],
+            r["email"],
+            r["creados"],
+            r["abiertos"],
+            r["resueltos"],
+            r["cerrados"],
+            r["ultimo_estado"],
+            r["prom_h"] if r["prom_h"] is not None else "",
+        )
+        for r in usuarios
+    ]
+    return generar_excel_reportes(kpi_rows, tec_rows, usu_rows, tickets, f["filtros_txt"])
 
 
 @staff_required

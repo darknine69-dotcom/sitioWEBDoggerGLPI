@@ -7,6 +7,7 @@ urlpatterns = [
     path("", views.portal, name="portal"),
     path("reportes/", views.reportes, name="reportes"),
     path("reportes/exportar/", views.exportar_tickets_admin, name="exportar_admin"),
+    path("reportes/exportar-reporte/", views.exportar_reportes, name="exportar_reportes"),
     path("categorias/", views.categorias_arbol, name="categorias_arbol"),
     path("consultar/", views.consultar_ticket, name="consultar"),
     path("faq/", views.faq, name="faq"),
