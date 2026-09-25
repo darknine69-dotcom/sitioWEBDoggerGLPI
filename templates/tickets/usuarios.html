@@ -549,11 +549,11 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('.row-menu-btn');
         if (!btn) { cerrarMenuAcciones(); return; }
+        if (menuBtn === btn) { cerrarMenuAcciones(); return; }
         var m = btn.closest('.row-menu');
         if (!m) return;
         var panel = m.querySelector('.row-menu-panel');
         if (!panel) return;
-        if (menuPanel === panel) { cerrarMenuAcciones(); return; }
         cerrarMenuAcciones();
         menuOrigen = m;
         menuPanel = panel;
