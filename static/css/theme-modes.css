@@ -311,6 +311,54 @@ html[data-theme="dark"] { color-scheme: dark; }
 [data-theme="dark"] .page-socials .footer-social-row a { background: #241D17; border-color: #453B31; color: #CFC7BC; }
 [data-theme="dark"] .page-socials .footer-social-row a:hover { color: var(--dogger-red); border-color: var(--dogger-red); background: #2E2620; }
 
+/* ---- Modo oscuro: detalle de ticket, paneles corporativos y chat ---- */
+[data-theme="dark"] .ticket-detail-hero {
+    background: linear-gradient(165deg, #221C17 0%, #1D1713 55%, #181310 100%);
+    border-color: var(--line);
+    box-shadow: var(--shadow-card);
+}
+[data-theme="dark"] .corp-detail-head h2 { color: var(--ink); }
+
+[data-theme="dark"] .corp-subsection,
+[data-theme="dark"] .ficha-row,
+[data-theme="dark"] .fiche-vinculo-row,
+[data-theme="dark"] .dash-panel {
+    background: var(--dogger-paper);
+    border-color: var(--line);
+    color: var(--ink);
+    box-shadow: none;
+}
+[data-theme="dark"] .ficha-row.ficha-destacada { background: #2A2219; border-color: #4A3F2A; }
+[data-theme="dark"] .fiche-vinculo-row:hover { background: #241D17; border-color: #453B31; }
+[data-theme="dark"] .dash-panel-head h2 { color: var(--ink); }
+[data-theme="dark"] .dash-props dd { color: var(--ink); }
+[data-theme="dark"] .dash-muted { color: var(--ink-muted); }
+
+/* Banner de solicitudes vinculadas */
+[data-theme="dark"] .corp-banner { background: #2A2418; border-color: #6B5A2E; }
+[data-theme="dark"] .corp-banner strong { color: #F0D37E; }
+[data-theme="dark"] .corp-banner p { color: #D8C8A4; }
+[data-theme="dark"] .corp-banner > .icon { color: #E6B84B; }
+[data-theme="dark"] .corp-vinculo-meta { color: #9A8B63; }
+
+/* Línea de tiempo (seguimiento) y asignación */
+[data-theme="dark"] .corp-tl-step:not(:last-child)::before { background: #3A332B; }
+[data-theme="dark"] .corp-tl-marker { background: #2E2620; border-color: #453B31; color: var(--ink); }
+[data-theme="dark"] .corp-tl-body strong,
+[data-theme="dark"] .corp-notif-inline-head strong { color: var(--ink); }
+[data-theme="dark"] .corp-tl-assign-form select,
+[data-theme="dark"] .corp-tl-assign-cancel { background: #241D17; border-color: #453B31; color: var(--ink); }
+
+/* Chat (actividad) en el detalle y mini chat */
+[data-theme="dark"] .chat-bubble { background: #2A221B; border-color: #453B31; color: var(--ink); }
+[data-theme="dark"] .chat-msg-soporte,
+[data-theme="dark"] .chat-msg-sistema { background: rgba(214,43,31,.16); border-color: rgba(214,43,31,.35); }
+[data-theme="dark"] .mini-chat { background: var(--dogger-paper); border-color: var(--line); }
+[data-theme="dark"] .mini-chat-body { background: #1A1512; }
+
+/* Seguimientos legacy (ticket-followup) */
+[data-theme="dark"] .ticket-followup { background: rgba(214,43,31,.07); border-left-color: var(--dogger-red); }
+
 /* ---- Modo oscuro: página de perfil ---- */
 [data-theme="dark"] .profile-card {
     background: var(--dogger-paper);
