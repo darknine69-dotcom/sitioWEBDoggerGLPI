@@ -1,0 +1,32 @@
+{% if DOGGER.pagina_mostrar_redes %}
+<section class="page-socials" aria-label="Redes sociales Dogger">
+    <p class="footer-kicker">Redes</p>
+    <div class="footer-social-row">
+        {% if DOGGER.correo_activo and DOGGER.correo_soporte %}
+        <a href="mailto:{{ DOGGER.correo_soporte }}" title="Correo: {{ DOGGER.correo_soporte }}">
+            <svg class="icon"><use href="#i-mail"/></svg>
+        </a>
+        {% endif %}
+        {% if DOGGER.whatsapp_activo and DOGGER.whatsapp_soporte %}
+        <a href="https://wa.me/57{{ DOGGER.whatsapp_soporte }}" target="_blank" rel="noopener" title="WhatsApp">
+            <svg class="icon"><use href="#i-whatsapp"/></svg>
+        </a>
+        {% endif %}
+        {% if DOGGER.tiktok_activo and DOGGER.tiktok %}
+        <a href="{{ DOGGER.tiktok }}" target="_blank" rel="noopener" title="TikTok">
+            <svg class="icon"><use href="#i-tiktok"/></svg>
+        </a>
+        {% endif %}
+        {% if DOGGER.instagram_activo and DOGGER.instagram %}
+        <a href="{{ DOGGER.instagram }}" target="_blank" rel="noopener" title="Instagram">
+            <svg class="icon"><use href="#i-instagram"/></svg>
+        </a>
+        {% endif %}
+        {% if DOGGER.facebook_activo and DOGGER.facebook %}
+        <a href="{{ DOGGER.facebook }}" target="_blank" rel="noopener" title="Facebook">
+            <svg class="icon"><use href="#i-facebook"/></svg>
+        </a>
+        {% endif %}
+    </div>
+</section>
+{% endif %}

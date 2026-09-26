@@ -219,7 +219,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Abiertos</span>
-                    <span class="dash-stat-value">{{ stats.abiertos|default:0 }}</span>
+                    <span class="dash-stat-value st-abiertos">{{ stats.abiertos|default:0 }}</span>
                     <span class="dash-stat-hint">en espera de atención</span>
                 </span>
             </a>
@@ -227,7 +227,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">En progreso</span>
-                    <span class="dash-stat-value">{{ stats.en_progreso|default:0 }}</span>
+                    <span class="dash-stat-value st-progreso">{{ stats.en_progreso|default:0 }}</span>
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
@@ -235,7 +235,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltos</span>
-                    <span class="dash-stat-value">{{ stats.resueltos|default:0 }}</span>
+                    <span class="dash-stat-value st-resueltos">{{ stats.resueltos|default:0 }}</span>
                     <span class="dash-stat-hint">{{ stats.cerrados|default:0 }} cerrados</span>
                 </span>
             </a>
@@ -409,4 +409,4 @@
 </div>
 {% endblock %}
 
-{% block footer %}{% endblock %}
+{% block footer %}{% include "tickets/_redes.html" %}{% endblock %}

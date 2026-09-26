@@ -145,7 +145,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Abiertos</span>
-                    <span class="dash-stat-value">{{ kpis.abiertos }}</span>
+                    <span class="dash-stat-value st-abiertos">{{ kpis.abiertos }}</span>
                     <span class="dash-stat-hint">en espera de atención</span>
                 </span>
             </a>
@@ -153,7 +153,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">En progreso</span>
-                    <span class="dash-stat-value">{{ kpis.en_progreso }}</span>
+                    <span class="dash-stat-value st-progreso">{{ kpis.en_progreso }}</span>
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
@@ -161,7 +161,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltos</span>
-                    <span class="dash-stat-value">{{ kpis.resueltos }}</span>
+                    <span class="dash-stat-value st-resueltos">{{ kpis.resueltos }}</span>
                     <span class="dash-stat-hint">{{ kpis.cerrados }} cerrados</span>
                 </span>
             </a>
@@ -169,7 +169,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-lock"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Cerrados</span>
-                    <span class="dash-stat-value">{{ kpis.cerrados }}</span>
+                    <span class="dash-stat-value st-cerrados">{{ kpis.cerrados }}</span>
                     <span class="dash-stat-hint">finalizados</span>
                 </span>
             </a>
@@ -177,7 +177,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Vencidos (ANS)</span>
-                    <span class="dash-stat-value">{{ kpis.vencidos }}</span>
+                    <span class="dash-stat-value st-vencidos">{{ kpis.vencidos }}</span>
                     <span class="dash-stat-hint">fuera de tiempo límite</span>
                 </span>
             </a>
@@ -185,7 +185,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-check"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">SLA cumplidos</span>
-                    <span class="dash-stat-value">{{ kpis.sla_ok }}</span>
+                    <span class="dash-stat-value st-sla-ok">{{ kpis.sla_ok }}</span>
                     <span class="dash-stat-hint">{{ kpis.pct_sla }}% en plazo</span>
                 </span>
             </a>
@@ -193,7 +193,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">SLA incumplidos</span>
-                    <span class="dash-stat-value">{{ kpis.sla_no }}</span>
+                    <span class="dash-stat-value st-sla-no">{{ kpis.sla_no }}</span>
                     <span class="dash-stat-hint">por fuera del plazo</span>
                 </span>
             </a>
@@ -374,7 +374,7 @@
 </main>
 {% endblock %}
 
-{% block footer %}{% endblock %}
+{% block footer %}{% include "tickets/_redes.html" %}{% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
