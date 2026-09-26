@@ -30,6 +30,9 @@
                 <h3>{{ request.user.nombre }}</h3>
                 <p>{{ request.user.email }}</p>
                 <span class="badge-role {{ request.user.rol }}">{{ request.user.get_rol_display }}</span>
+                <a href="{% url 'accounts:perfil' %}" class="settings-profile-link">
+                    <svg class="icon icon-sm"><use href="#i-user"/></svg> Ver mi perfil
+                </a>
             </div>
 
             <nav class="settings-nav">
