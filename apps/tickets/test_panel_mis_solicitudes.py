@@ -52,20 +52,50 @@ class MisSolicitudesPanelTest(TestCase):
         self.assertEqual(ctx["abiertas_count"], 2)
         self.assertEqual(ctx["sv_label"], "Resuelto")
 
-    def test_pestana_no_miente_con_antiguos(self):
+    def test_pestana_muestra_todo_lo_asignado(self):
         self._ticket(Ticket.Estado.ABIERTO, 1, "Reciente")
-        viejo = self._ticket(Ticket.Estado.ABIERTO, 90, "Viejo 90d")
-        # por defecto: abiertas + 30 dias -> solo el reciente
+        self._ticket(Ticket.Estado.ABIERTO, 90, "Viejo 90d")
+        self._ticket(Ticket.Estado.RESUELTO, 200, "Resuelto 200d")
+        self._ticket(Ticket.Estado.CERRADO, 400, "Cerrado 400d")
+        # la pestana entra sin recortes: todo lo asignado, sin importar estado
+        # ni antiguedad (si no, el tecnico veia una lista vacia)
+        resp = self.client.get(self.url, {"vista": "mis"})
+        ctx = resp.context
+        self.assertEqual(ctx["sv"], "todas")
+        self.assertEqual(ctx["rango"], "")
+        self.assertEqual(ctx["mis_count"], 4)
+        self.assertEqual(ctx["abiertas_count"], 4)
+        for titulo in ("Reciente", "Viejo 90d", "Resuelto 200d", "Cerrado 400d"):
+            self.assertContains(resp, titulo)
+        # la insignia de la pestana cuenta lo mismo que "Total asignados"
+        self.assertContains(resp, "Mis solicitudes <span>4</span>", html=False)
+
+    def test_rango_30_dias_sigue_disponible(self):
+        self._ticket(Ticket.Estado.ABIERTO, 1, "Reciente")
+        self._ticket(Ticket.Estado.ABIERTO, 90, "Viejo 90d")
+        resp = self.client.get(self.url, {"vista": "mis", "rango": "30"})
+        self.assertEqual(resp.context["mis_count"], 1)
+        self.assertContains(resp, "Reciente")
+        self.assertNotContains(resp, "Viejo 90d")
+
+    def test_solo_las_suyas(self):
+        self._ticket(Ticket.Estado.ABIERTO, 1, "Mio")
+        otro = Usuario.objects.create_user(
+            email="otro@x.com", password="x", nombre="Otro", rol=Usuario.Rol.TECNICO
+        )
+        t = Ticket.objects.create(
+            titulo="De otro",
+            descripcion="d",
+            prioridad=Ticket.Prioridad.MEDIA,
+            estado=Ticket.Estado.ABIERTO,
+            solicitante_nombre="User",
+        )
+        t.tecnico_asignado = otro
+        t.save()
         resp = self.client.get(self.url, {"vista": "mis"})
         self.assertEqual(resp.context["mis_count"], 1)
-        self.assertEqual(resp.context["abiertas_count"], 1)
-        self.assertNotContains(resp, "Viejo 90d")
-        # al ampliar el rango aparece y el contador tambien
-        resp = self.client.get(self.url, {"vista": "mis", "rango": ""})
-        self.assertEqual(resp.context["mis_count"], 2)
-        self.assertContains(resp, "Viejo 90d")
-        # y la insignia de la pestana usa mis_count
-        self.assertContains(resp, "Mis solicitudes <span>2</span>", html=False)
+        self.assertContains(resp, "Mio")
+        self.assertNotContains(resp, "De otro")
 
     def test_estado_vacio_ofrece_salida(self):
         self._ticket(Ticket.Estado.RESUELTO, 5, "Resuelto viejo")

@@ -3327,13 +3327,17 @@ def panel_tecnico(request):
     if request.user.rol != "admin":
         presets_mis = [p for p in presets_mis if p[0] != "no-asignadas"]
     presets_mis_map = dict(presets_mis)
-    sv = request.GET.get("sv", "abiertas").strip() or "abiertas"
+    # La pestana entra sin recorte: sv=todas y sin limite de fecha. Antes se
+    # llegaba con sv=abiertas + rango=30, asi que los tickets resueltos,
+    # cerrados o con mas de 30 dias no aparecian nunca y el tecnico concluyo
+    # "no tengo solicitudes" teniendolas asignadas.
+    sv = request.GET.get("sv", "todas").strip() or "todas"
     if sv not in presets_mis_map:
-        sv = "abiertas"
+        sv = "todas"
     rangos_mis = list(RANGOS_MIS)
-    rango = request.GET.get("rango", "30")
+    rango = request.GET.get("rango", "")
     if rango not in dict(rangos_mis):
-        rango = "30"
+        rango = ""
     if estado and sv != "todas":
         # Un estado explicito manda sobre la vista: con "abiertas" (abierto/en
         # progreso) + "resueltos" la interseccion siempre salia vacia.
