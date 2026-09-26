@@ -123,6 +123,94 @@ html[data-contrast="high"] select:focus-visible {
     outline-offset: 2px;
 }
 
+/* ---- Modo oscuro: modales y confirmaciones completas ---- */
+html[data-theme="dark"] { color-scheme: dark; }
+
+[data-theme="dark"] .modal-box,
+[data-theme="dark"] .confirm-box {
+    background: var(--dogger-paper);
+    color: var(--ink);
+}
+[data-theme="dark"] .modal-head {
+    background: linear-gradient(180deg, rgba(214, 43, 31, .14), rgba(255, 255, 255, 0));
+    border-bottom-color: var(--line);
+}
+[data-theme="dark"] .modal-head h3,
+[data-theme="dark"] .modal-box h3 { color: var(--ink); }
+[data-theme="dark"] .modal-head-sub { color: var(--ink-muted); }
+[data-theme="dark"] .modal-body,
+[data-theme="dark"] .modal-note { color: var(--ink); }
+[data-theme="dark"] .modal-close { background: #2E2620; color: var(--ink-muted); }
+[data-theme="dark"] .modal-close:hover { color: var(--dogger-red); }
+[data-theme="dark"] .prog-modal .modal-head {
+    background: linear-gradient(120deg, #241D17 0%, #1F1913 100%);
+    border-bottom-color: var(--line);
+}
+
+/* Confirmaciones */
+[data-theme="dark"] .confirm-box h3 { color: var(--ink); }
+[data-theme="dark"] .confirm-msg { color: #CBBFAF; }
+[data-theme="dark"] .ticket-ok-list { background: #241D17; border-color: var(--line); }
+[data-theme="dark"] .ticket-ok-list dd { color: var(--ink); }
+
+/* Formularios dentro de modales y generales */
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea {
+    background: #241D17;
+    color: var(--ink);
+    border-color: #453B31;
+}
+[data-theme="dark"] .form-group input:focus,
+[data-theme="dark"] .form-group select:focus,
+[data-theme="dark"] .form-group textarea:focus { border-color: var(--dogger-red); }
+[data-theme="dark"] select option { background: #241D17; color: var(--ink); }
+
+/* Botones grises secundarios (Cancelar) */
+[data-theme="dark"] .btn-cancel {
+    background: #2E2620;
+    color: var(--ink);
+    border-color: #453B31;
+}
+[data-theme="dark"] .btn-cancel:hover { border-color: var(--dogger-red); color: var(--dogger-red); }
+
+/* Marcadores y subdetalles de modal */
+[data-theme="dark"] .modal-mini-list li { border-bottom-color: #322A22; }
+[data-theme="dark"] .modal-mini-code { color: #FF6B5E; }
+
+/* Placeholders legibles en oscuro */
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: #8A7F6E; }
+
+/* ---- Modo oscuro: página de perfil ---- */
+[data-theme="dark"] .profile-card {
+    background: var(--dogger-paper);
+    border-color: var(--line);
+}
+[data-theme="dark"] .profile-title,
+[data-theme="dark"] .profile-ident h3,
+[data-theme="dark"] .profile-panel-head h3 { color: var(--ink); }
+[data-theme="dark"] .profile-facts > div,
+[data-theme="dark"] .prof-row { border-top-color: #322A22; }
+[data-theme="dark"] .profile-facts dd { color: var(--ink); }
+[data-theme="dark"] .prof-radio .prof-radio-box {
+    background: #241D17;
+    color: var(--ink);
+    border-color: var(--line);
+}
+[data-theme="dark"] .prof-radio .prof-radio-box svg { color: var(--ink-muted); }
+[data-theme="dark"] .prof-radio input:checked + .prof-radio-box {
+    background: #2E1D1A;
+    border-color: var(--dogger-red);
+}
+[data-theme="dark"] .prof-row select {
+    background: #241D17;
+    color: var(--ink);
+    border-color: var(--line);
+}
+[data-theme="dark"] .profile-avatar { box-shadow: 0 0 0 1px var(--line), 0 8px 20px rgba(0, 0, 0, .5); }
+[data-theme="dark"] .switch .slider { background: #453B31; }
+
 /* ---- Navegación compacta (organización de pestañas) ---- */
 html[data-navcompact="1"] .nav-link { padding: 14px 12px; font-size: 13px; }
 html[data-navcompact="1"] .nav-icon { width: 15px; height: 15px; }
