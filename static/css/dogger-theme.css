@@ -4714,6 +4714,43 @@ a.score-chip { color: inherit; }
 .toggle-switch input:checked + .toggle-slider { background: var(--dogger-red); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
 
+/* Configuración de la página (redes sociales) */
+.settings-form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0 16px 44px;
+}
+.settings-form-row label {
+    flex-shrink: 0;
+    min-width: 130px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ink-muted);
+}
+.settings-form-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--dogger-cream);
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+.settings-form-row input:focus {
+    outline: none;
+    border-color: var(--dogger-red);
+    box-shadow: 0 0 0 3px rgba(214, 43, 31, .14);
+}
+@media (max-width: 560px) {
+    .settings-form-row { flex-direction: column; align-items: stretch; padding-left: 0; }
+    .settings-form-row label { min-width: 0; }
+}
+
 /* GLPI status */
 .glpi-status-card {
     background: var(--dogger-cream);

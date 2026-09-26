@@ -210,6 +210,7 @@ html[data-theme="dark"] { color-scheme: dark; }
 }
 [data-theme="dark"] .profile-avatar { box-shadow: 0 0 0 1px var(--line), 0 8px 20px rgba(0, 0, 0, .5); }
 [data-theme="dark"] .switch .slider { background: #453B31; }
+[data-theme="dark"] .toggle-slider { background: #453B31; }
 
 /* ---- Navegación compacta (organización de pestañas) ---- */
 html[data-navcompact="1"] .nav-link { padding: 14px 12px; font-size: 13px; }

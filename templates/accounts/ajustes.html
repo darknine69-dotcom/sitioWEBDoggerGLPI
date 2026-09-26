@@ -54,6 +54,12 @@
                     GLPI
                 </a>
                 {% endif %}
+                {% if request.user.rol == 'admin' %}
+                <a href="#pagina" class="settings-nav-link" data-settings-tab="pagina">
+                    <svg class="icon icon-sm"><use href="#i-store"/></svg>
+                    Página
+                </a>
+                {% endif %}
             </nav>
         </aside>
 
@@ -266,6 +272,124 @@
                         </div>
                     </form>
                 </div>
+            </section>
+            {% endif %}
+
+            <!-- CONFIGURACIÓN DE LA PÁGINA (solo administradores) -->
+            {% if request.user.rol == 'admin' %}
+            <section id="pagina" class="settings-panel" data-settings-panel="pagina">
+                <div class="settings-panel-header">
+                    <h3>Configuración de la página</h3>
+                    <p>Controla qué botones de redes sociales se muestran en las vistas de los usuarios y edita sus enlaces.</p>
+                </div>
+                <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form">
+                    {% csrf_token %}
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>Mostrar sección de redes</strong>
+                            <small>Si está apagada, los iconos de redes sociales no se muestran en el pie de las páginas.</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="pagina_mostrar_redes" value="1" onchange="this.form.submit()"
+                                   {% if config_sitio.pagina_mostrar_redes %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-panel-header">
+                        <h3>Botones de contacto</h3>
+                        <p>WhatsApp y correo se muestran como botones de contacto directo.</p>
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>WhatsApp</strong>
+                            <small>Muestra el botón de WhatsApp en el pie.</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="whatsapp_activo" value="1"
+                                   {% if config_sitio.whatsapp_activo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-form-row">
+                        <label for="id_whatsapp_numero">Número de WhatsApp</label>
+                        <input type="text" name="whatsapp_numero" id="id_whatsapp_numero"
+                               value="{{ config_sitio.whatsapp_numero }}" maxlength="20" placeholder="Ej: 3103716129">
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>Correo de soporte</strong>
+                            <small>Muestra el botón de correo en el pie.</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="correo_activo" value="1"
+                                   {% if config_sitio.correo_activo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-form-row">
+                        <label for="id_correo_soporte">Correo de soporte</label>
+                        <input type="email" name="correo_soporte" id="id_correo_soporte"
+                               value="{{ config_sitio.correo_soporte }}" maxlength="254" placeholder="sistemasbogota@dogger.com.co">
+                    </div>
+
+                    <div class="settings-panel-header">
+                        <h3>Redes sociales</h3>
+                        <p>Activa cada red y define su enlace. Si la URL está vacía, el botón no se muestra.</p>
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>Facebook</strong>
+                            <small>Muestra el botón de Facebook en el pie.</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="facebook_activo" value="1"
+                                   {% if config_sitio.facebook_activo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-form-row">
+                        <label for="id_facebook_url">URL de Facebook</label>
+                        <input type="url" name="facebook_url" id="id_facebook_url"
+                               value="{{ config_sitio.facebook_url }}" maxlength="250" placeholder="https://facebook.com/…">
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>Instagram</strong>
+                            <small>Muestra el botón de Instagram en el pie.</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="instagram_activo" value="1"
+                                   {% if config_sitio.instagram_activo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-form-row">
+                        <label for="id_instagram_url">URL de Instagram</label>
+                        <input type="url" name="instagram_url" id="id_instagram_url"
+                               value="{{ config_sitio.instagram_url }}" maxlength="250" placeholder="https://instagram.com/…">
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>TikTok</strong>
+                            <small>Muestra el botón de TikTok en el pie.</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="tiktok_activo" value="1"
+                                   {% if config_sitio.tiktok_activo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-form-row">
+                        <label for="id_tiktok_url">URL de TikTok</label>
+                        <input type="url" name="tiktok_url" id="id_tiktok_url"
+                               value="{{ config_sitio.tiktok_url }}" maxlength="250" placeholder="https://tiktok.com/…">
+                    </div>
+
+                    <div class="settings-actions">
+                        <button type="submit" class="btn btn-primary">Guardar configuración</button>
+                    </div>
+                </form>
             </section>
             {% endif %}
         </div>

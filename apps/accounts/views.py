@@ -4,7 +4,7 @@ from django.contrib.auth.views import LoginView
 from django.conf import settings
 from django.contrib import messages
 from django.core.mail import send_mail
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render, reverse
 from django.urls import reverse_lazy
 from django.views import View
@@ -139,11 +139,16 @@ def ajustes_cuenta(request):
     else:
         form = PerfilForm(instance=user)
 
-    return render(request, "accounts/ajustes.html", {
+    ctx = {
         "form": form,
         "glpi_enabled": glpi_enabled,
         "glpi_base_url": _glpi_base_url(),
-    })
+    }
+    if user.rol == "admin":
+        from apps.tickets.models import ConfigSitio
+
+        ctx["config_sitio"] = ConfigSitio.cargar()
+    return render(request, "accounts/ajustes.html", ctx)
 
 
 @login_required
@@ -444,3 +449,41 @@ def perfil_usuario(request):
         "nav_perfil": "is-active",
     }
     return render(request, "accounts/perfil.html", ctx)
+
+
+@require_POST
+@login_required
+def configuracion_pagina(request):
+    """Guarda la configuración de la página (redes sociales) desde Ajustes.
+
+    Solo administradores: controla qué botones de redes sociales se muestran
+    en las vistas públicas y de usuario, y edita sus enlaces.
+    """
+    if request.user.rol != "admin":
+        raise Http404("Solo los administradores pueden editar la configuración de la página.")
+
+    from apps.tickets.models import ConfigSitio
+
+    cfg = ConfigSitio.cargar()
+
+    def _bool(name, default=False):
+        return request.POST.get(name) in ("1", "on", "true", "True")
+
+    cfg.pagina_mostrar_redes = _bool("pagina_mostrar_redes", True)
+    cfg.correo_activo = _bool("correo_activo", True)
+    cfg.correo_soporte = request.POST.get("correo_soporte", "").strip()
+    cfg.whatsapp_activo = _bool("whatsapp_activo", True)
+    cfg.whatsapp_numero = request.POST.get("whatsapp_numero", "").strip()
+    cfg.tiktok_activo = _bool("tiktok_activo", True)
+    cfg.tiktok_url = request.POST.get("tiktok_url", "").strip()
+    cfg.instagram_activo = _bool("instagram_activo", True)
+    cfg.instagram_url = request.POST.get("instagram_url", "").strip()
+    cfg.facebook_activo = _bool("facebook_activo", True)
+    cfg.facebook_url = request.POST.get("facebook_url", "").strip()
+    try:
+        cfg.full_clean(validate_unique=False)
+    except Exception:
+        pass
+    cfg.save()
+    messages.success(request, "Configuración de la página actualizada.")
+    return redirect(reverse("accounts:ajustes") + "#pagina")

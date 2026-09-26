@@ -456,3 +456,54 @@ class TicketVinculo(models.Model):
 
     def __str__(self):
         return f"{self.ticket_secundario.codigo} bajo {self.ticket_principal.codigo} ({self.get_tipo_display()})"
+
+
+class ConfigSitio(models.Model):
+    """Configuración de la página editable desde el panel (pestaña "Página",
+    solo administradores). Fila única (pk=1). Controla qué botones de redes
+    sociales se muestran en las vistas de usuario y sus enlaces; los valores
+    iniciales se toman de settings.DOGGER.
+    """
+
+    pagina_mostrar_redes = models.BooleanField(
+        "Mostrar sección de redes sociales", default=True
+    )
+    correo_activo = models.BooleanField("Mostrar botón de correo", default=True)
+    correo_soporte = models.EmailField(
+        "Correo de soporte", max_length=254, blank=True, default=""
+    )
+    whatsapp_activo = models.BooleanField("Mostrar botón de WhatsApp", default=True)
+    whatsapp_numero = models.CharField(
+        "Número de WhatsApp", max_length=20, blank=True, default="3103716129"
+    )
+    tiktok_activo = models.BooleanField("Mostrar botón de TikTok", default=True)
+    tiktok_url = models.CharField("URL de TikTok", max_length=250, blank=True, default="")
+    instagram_activo = models.BooleanField("Mostrar botón de Instagram", default=True)
+    instagram_url = models.CharField(
+        "URL de Instagram", max_length=250, blank=True, default=""
+    )
+    facebook_activo = models.BooleanField("Mostrar botón de Facebook", default=True)
+    facebook_url = models.CharField(
+        "URL de Facebook", max_length=250, blank=True, default=""
+    )
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "ConfigSitio"
+        verbose_name = "Configuración de la página"
+        verbose_name_plural = "Configuración de la página"
+
+    @classmethod
+    def cargar(cls):
+        from django.conf import settings as dj_settings
+        D = dj_settings.DOGGER
+        return cls.objects.get_or_create(pk=1, defaults={
+            "correo_soporte": D.get("correo_soporte", ""),
+            "whatsapp_numero": D.get("whatsapp_soporte", "3103716129"),
+            "tiktok_url": D.get("tiktok", ""),
+            "instagram_url": D.get("instagram", ""),
+            "facebook_url": D.get("facebook", ""),
+        })[0]
+
+    def __str__(self):
+        return "Configuración de la página"
