@@ -264,7 +264,14 @@ html[data-theme="dark"] { color-scheme: dark; }
 [data-theme="dark"] .stat-chip.is-cerradas .stat-ico { background: rgba(107, 98, 89, .16); color: #A79A8C; }
 [data-theme="dark"] .ty-card { background: var(--dogger-paper); box-shadow: none; }
 [data-theme="dark"] .ty-card:hover { border-color: var(--dogger-red); }
-[data-theme="dark"] .corp-view-btn.is-active { background: #241D17; color: var(--ink); border-color: #453B31; }
+[data-theme="dark"] .corp-view-btn.is-active { background: #3A332B; color: var(--ink); border-color: #3A332B; box-shadow: none; }
+
+/* Botón devolverse, paginación y conmutador Lista/Cuadrícula */
+[data-theme="dark"] .back-btn { background: #241D17; border-color: #453B31; color: var(--ink-muted); }
+[data-theme="dark"] .back-btn:hover { border-color: var(--dogger-red); color: var(--dogger-red); }
+[data-theme="dark"] .page-pill { background: #241D17; border-color: #453B31; color: var(--ink-muted); }
+[data-theme="dark"] a.page-pill:hover { border-color: var(--dogger-red); color: var(--dogger-red); }
+[data-theme="dark"] .corp-view-toggle { background: #1E1914; border-color: #453B31; }
 
 /* Página de categorías */
 [data-theme="dark"] .cat-group-head {

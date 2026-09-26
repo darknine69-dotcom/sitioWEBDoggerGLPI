@@ -39,6 +39,7 @@ RANGOS_MIS = [
     ("", "Todo el tiempo"),
 ]
 
+from apps.accounts.models import Usuario
 from .decorators import admin_required, staff_required, user_required
 from .exports import generar_excel_reportes, generar_excel_tickets
 from .forms import (
@@ -1899,6 +1900,14 @@ def politica_privacidad(request):
 
 
 def portal(request):
+    if request.user.is_authenticated:
+        rol = getattr(request.user, "rol", "")
+        if rol == Usuario.Rol.TECNICO:
+            return redirect("tickets:panel_tecnico")
+        if rol == Usuario.Rol.USUARIO:
+            return redirect("tickets:mi_panel")
+        return redirect("tickets:dashboard")
+
     if request.method == "POST":
         form = TicketForm(request.POST, request.FILES)
         if form.is_valid():
