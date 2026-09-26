@@ -183,8 +183,19 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = "DENY"
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    # Secure por defecto en produccion (obligatorio con HTTPS), pero
+    # overridable: sin TLS el navegador no guarda el cookie de sesion y
+    # nadie puede iniciar sesion (util al publicar por tunel/HTTP interno).
+    SESSION_COOKIE_SECURE = os.getenv("DJANGO_SESSION_COOKIE_SECURE", "True").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    CSRF_COOKIE_SECURE = os.getenv("DJANGO_CSRF_COOKIE_SECURE", "True").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
 
     # HTTPS general: se habilita por defecto en producción, pero se puede
     # apagar (SECURE_SSL_REDIRECT=false) si un proxy/balancer ya fuerza HTTPS.

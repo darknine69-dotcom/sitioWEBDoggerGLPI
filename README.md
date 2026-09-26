@@ -89,8 +89,36 @@ docker compose up -d --build
 
 Esto levanta: **Django+Gunicorn**, **PostgreSQL** y **Nginx** (sirve estáticos/media y hace proxy). 
 
-- Para **HTTPS**: descomenta el bloque `server 443` en `nginx.conf` y coloca tus certificados en `./certs/`, o usa **Caddy** (obtiene certificados Let's Encrypt automáticamente).
 - Los volúmenes `pgdata` y `media` persisten los datos entre redespliegues.
+- `nginx.conf` sirve por **HTTP** y es lo que funciona en local o detrás de un terminador TLS externo (Cloudflare, Caddy, proxy del hosting).
+
+#### HTTPS en el mismo Nginx (p. ej. mi.com.co)
+
+El orden importa: el bloque 443 no arranca sin certificados, así que pídelos primero (el `nginx.conf` por defecto ya sirve `/.well-known/acme-challenge/` desde `./certs`).
+
+1. Con el stack en HTTP, pide el certificado a Let's Encrypt:
+
+   ```bash
+   docker run --rm -p 80:80 -v "$PWD/certs:/etc/letsencrypt" \
+     certbot/certbot certonly --webroot -w /var/www/certbot \
+     -d mi.com.co -d www.mi.com.co --agree-tos -m correo@dogger.com.co
+   ```
+
+2. Activa el TLS: `cp nginx.https.conf nginx.conf && docker compose up -d`
+   (si tu dominio no es `mi.com.co`, cambia las 2 rutas `ssl_certificate` del bloque 443).
+
+3. En `.env` del servidor:
+
+   ```env
+   DJANGO_ALLOWED_HOSTS=mi.com.co,www.mi.com.co
+   DJANGO_CSRF_TRUSTED_ORIGINS=https://mi.com.co,https://www.mi.com.co
+   DJANGO_SECURE_SSL_REDIRECT=True
+   DJANGO_ENABLE_HSTS=True
+   ```
+
+4. Renueva antes de 90 días (crontab): el mismo `docker run ... certbot renew --webroot -w /var/www/certbot` y luego `docker compose restart nginx`.
+
+`./certs/` está en `.gitignore` y `.dockerignore`: las llaves privadas nunca se versionan ni se copian dentro de la imagen.
 
 ### Opción C — Bare metal / servidor directo
 

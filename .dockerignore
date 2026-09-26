@@ -10,6 +10,7 @@ db.sqlite3
 smoketest.sqlite3
 staticfiles/
 media/
+certs/
 .git/
 .gitignore
 .gitattributes
