@@ -514,10 +514,11 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     /* Rueda del ratón sobre la tabla: baja/ sube la lista incluso si la página no llega al borde */
     if (tableScroll) {
         tableScroll.addEventListener('wheel', function (e) {
-            if (e.deltaY !== 0 && this.scrollHeight > this.clientHeight + 4) {
-                e.preventDefault();
-                this.scrollTop += e.deltaY;
-            }
+            var box = this;
+            if (e.deltaY === 0 || box.scrollHeight <= box.clientHeight + 1) return;
+            e.preventDefault();
+            var step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * box.clientHeight : e.deltaY;
+            box.scrollTop += step;
         }, { passive: false });
     }
 
@@ -545,8 +546,8 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         filaFicha.appendChild(celda);
         filita.insertAdjacentElement('afterend', filaFicha);
         filaFichaActual = filaFicha;
-        if (tableCard) tableCard.style.overflow = 'visible';
-        if (tableScroll) tableScroll.style.overflow = 'visible';
+        filaFicha.scrollIntoView({ block: 'nearest' });
+        soltarOverflowFicha();
         fetch(filita.getAttribute('data-ficha-url'), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json(); })
             .then(function (j) {
