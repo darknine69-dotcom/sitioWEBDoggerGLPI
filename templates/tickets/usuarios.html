@@ -511,14 +511,35 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     var tableScroll = tablaUsuarios ? tablaUsuarios.closest('.table-scroll') : null;
     var filaFichaActual = null;
 
-    /* Rueda del ratón sobre la tabla: baja/ sube la lista incluso si la página no llega al borde */
+    /* Rueda sobre la tabla: desplaza las filas y, al llegar al borde, avanza/retrocede en el paginador */
     if (tableScroll) {
+        function irPagina(adelante) {
+            if (!tableCard) return false;
+            var pag = tableCard.querySelector('.pagination-links');
+            if (!pag) return false;
+            var links = pag.querySelectorAll('a.page-pill');
+            var target = null;
+            links.forEach(function (a) {
+                var t = a.textContent || '';
+                if (adelante && t.indexOf('Siguiente') !== -1) target = a;
+                if (!adelante && t.indexOf('Anterior') !== -1) target = a;
+            });
+            if (target) { target.click(); return true; }
+            return false;
+        }
         tableScroll.addEventListener('wheel', function (e) {
+            if (e.deltaY === 0) return;
             var box = this;
-            if (e.deltaY === 0 || box.scrollHeight <= box.clientHeight + 1) return;
-            e.preventDefault();
-            var step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * box.clientHeight : e.deltaY;
-            box.scrollTop += step;
+            var conScroll = box.scrollHeight > box.clientHeight + 1;
+            if (conScroll) {
+                var step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * box.clientHeight : e.deltaY;
+                var alFondo = box.scrollTop + box.clientHeight >= box.scrollHeight - 1;
+                var alInicio = box.scrollTop <= 1;
+                if (step > 0 && !alFondo) { e.preventDefault(); box.scrollTop += step; return; }
+                if (step < 0 && !alInicio) { e.preventDefault(); box.scrollTop += step; return; }
+            }
+            if (e.deltaY > 0) { if (irPagina(true)) e.preventDefault(); }
+            else { if (irPagina(false)) e.preventDefault(); }
         }, { passive: false });
     }
 
