@@ -1,0 +1,131 @@
+/* =====================================================================
+   Dogger · Temas y preferencias (modo claro/oscuro, acceso y navegación)
+   Se aplican desde atributos data-* en <html>, gestionados por
+   preferencias guardadas en localStorage desde la vista de perfil.
+   ===================================================================== */
+
+/* ---- Escala de fuente (accesibilidad) ---- */
+html[data-fontsize="sm"] { zoom: .92; }
+html[data-fontsize="lg"] { zoom: 1.1; }
+
+/* ---- Modo oscuro: variables base ---- */
+[data-theme="dark"] {
+    --dogger-cream: #171310;
+    --dogger-paper: #211B16;
+    --ink: #F2ECE1;
+    --ink-muted: #A89D8E;
+    --line: #3A332B;
+    --dogger-black: #0E0B09;
+    --shadow-card: 0 2px 4px rgba(0, 0, 0, .45), 0 10px 28px rgba(0, 0, 0, .5);
+}
+
+/* ---- Modo oscuro: superficies con colores fijos ---- */
+[data-theme="dark"] .main-nav,
+[data-theme="dark"] .nav-list,
+[data-theme="dark"] .nav-link,
+[data-theme="dark"] .main-nav .user-chip,
+[data-theme="dark"] .btn-outline,
+[data-theme="dark"] .table-card,
+[data-theme="dark"] .table-toolbar,
+[data-theme="dark"] .chart-card,
+[data-theme="dark"] .cat-group-card,
+[data-theme="dark"] .cat-inactivos,
+[data-theme="dark"] .cat-new-form,
+[data-theme="dark"] .side-card,
+[data-theme="dark"] .inline-edit,
+[data-theme="dark"] .ans-note,
+[data-theme="dark"] .dash-hero,
+[data-theme="dark"] .dash-stat,
+[data-theme="dark"] .modal-box,
+[data-theme="dark"] .actions-dropdown,
+[data-theme="dark"] .rpt-suggest,
+[data-theme="dark"] .pagination-bar,
+[data-theme="dark"] .rpt-filter-card {
+    background: var(--dogger-paper);
+    color: var(--ink);
+    border-color: var(--line);
+}
+
+/* Navegación */
+[data-theme="dark"] .main-nav { background: #1A1512; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+[data-theme="dark"] .nav-link { color: var(--ink-muted); }
+[data-theme="dark"] .nav-link:hover { color: var(--dogger-red); background: transparent; }
+[data-theme="dark"] .nav-link.is-active { color: var(--dogger-red); }
+[data-theme="dark"] .nav-list.nav-open,
+[data-theme="dark"] .nav-link { background: transparent; }
+[data-theme="dark"] .nav-list { background: #1A1512; }
+[data-theme="dark"] .main-nav .user-chip { background: #241D17; color: var(--ink); box-shadow: none; }
+
+/* Campos y controles */
+[data-theme="dark"] .search-field,
+[data-theme="dark"] .table-toolbar .search-field,
+[data-theme="dark"] .rpt-fld select,
+[data-theme="dark"] .rpt-fld input[type="date"],
+[data-theme="dark"] .table-toolbar select,
+[data-theme="dark"] .table-toolbar button[type="submit"],
+[data-theme="dark"] .rpt-persona-input input,
+[data-theme="dark"] input:not([type="submit"]):not([type="button"]),
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: #241D17;
+    color: var(--ink);
+    border-color: var(--line);
+}
+[data-theme="dark"] select option { background: #241D17; color: var(--ink); }
+
+/* Tablas y filas */
+[data-theme="dark"] .data-table tbody td { border-bottom-color: #2E2620; }
+[data-theme="dark"] .data-table tbody tr:hover,
+[data-theme="dark"] table.data-table.cards-mobile tbody tr,
+[data-theme="dark"] table.data-table.cards-mobile tbody tr:hover { background: #241D17; }
+[data-theme="dark"] .data-table thead th { color: var(--ink-muted); }
+
+/* Dropdown de usuario y tarjetas auxiliares */
+[data-theme="dark"] .user-dropdown,
+[data-theme="dark"] .user-dropdown-header,
+[data-theme="dark"] .user-dropdown-item:hover { background: var(--dogger-paper); color: var(--ink); }
+[data-theme="dark"] .user-dropdown-item { color: var(--ink); }
+[data-theme="dark"] .user-dropdown-header strong { color: var(--ink); }
+[data-theme="dark"] .user-dropdown-header small { color: var(--ink-muted); }
+[data-theme="dark"] .user-dropdown-item svg { stroke: var(--ink-muted); }
+
+/* Barritas y estados auxiliares */
+[data-theme="dark"] .rpt-progress { background: #3A332B; }
+[data-theme="dark"] .rpt-badge-cerrado { background: #302820; color: #D8CDBC; }
+[data-theme="dark"] .rpt-chip,
+[data-theme="dark"] .rpt-suggest button:hover { background: #241D17; }
+[data-theme="dark"] .rpt-chip { border-color: var(--line); }
+
+/* Detalles en texto */
+[data-theme="dark"] .chart-card h3,
+[data-theme="dark"] .page-head-titles h2,
+[data-theme="dark"] .dash-hero h1,
+[data-theme="dark"] .cat-group-head h3 { color: var(--ink); }
+
+/* Contraste alto: reforzar tinta y bordes */
+html[data-contrast="high"][data-theme="light"] {
+    --ink: #0C0906;
+    --ink-muted: #43392F;
+    --line: #B3A792;
+}
+html[data-contrast="high"][data-theme="dark"] {
+    --ink: #FFF8EE;
+    --ink-muted: #E9DFCE;
+    --line: #948A79;
+}
+
+/* Contraste alto: marcar el foco y los bordes */
+html[data-contrast="high"] a:focus-visible,
+html[data-contrast="high"] button:focus-visible,
+html[data-contrast="high"] input:focus-visible,
+html[data-contrast="high"] select:focus-visible {
+    outline: 3px solid var(--dogger-red);
+    outline-offset: 2px;
+}
+
+/* ---- Navegación compacta (organización de pestañas) ---- */
+html[data-navcompact="1"] .nav-link { padding: 14px 12px; font-size: 13px; }
+html[data-navcompact="1"] .nav-icon { width: 15px; height: 15px; }
+html[data-navcompact="1"] .main-nav-inner { min-height: 50px; }
+html[data-navicons="0"] .nav-icon { display: none; }
+html[data-navicons="0"] .nav-link { gap: 0; }

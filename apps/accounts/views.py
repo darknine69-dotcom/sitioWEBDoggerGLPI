@@ -430,3 +430,17 @@ def descartar_aviso(request):
     """Cierra el aviso emergente 'contraseña cambiada' para no volver a mostrarlo."""
     request.session.pop("pwd_cambiada_ok", None)
     return JsonResponse({"ok": True})
+
+
+@login_required
+def perfil_usuario(request):
+    """Vista corporativa de perfil: información del usuario y preferencias.
+
+    Las preferencias de visualización (modo, accesibilidad, navegación) se
+    guardan en localStorage desde el cliente; aquí solo se exponen los datos
+    del usuario para la tarjeta de perfil.
+    """
+    ctx = {
+        "nav_perfil": "is-active",
+    }
+    return render(request, "accounts/perfil.html", ctx)

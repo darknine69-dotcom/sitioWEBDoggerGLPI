@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dogger · Mi perfil{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
+{% block header_title %}Mi perfil{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ============ Perfil corporativo Dogger ============ */
+.profile-page { max-width: 1080px; }
+.profile-top {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+    margin-bottom: 22px; flex-wrap: wrap;
+}
+.profile-title { margin: 0; font-size: 22px; color: #111; letter-spacing: -.02em; }
+.profile-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-muted); }
+.profile-logout { display: inline-flex; align-items: center; gap: 7px; }
+.profile-logout .icon { width: 15px; height: 15px; }
+
+.profile-grid {
+    display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start;
+}
+.profile-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow-card); padding: 22px 22px;
+}
+
+/* ---- Columna de identidad ---- */
+.profile-ident { text-align: center; position: sticky; top: 78px; }
+.profile-avatar {
+    width: 88px; height: 88px; margin: 4px auto 14px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--dogger-yellow); color: var(--dogger-black);
+    font-family: var(--font-display); font-weight: 800; font-size: 30px; letter-spacing: .02em;
+    overflow: hidden; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--line), 0 8px 20px rgba(23,20,18,.12);
+}
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profile-ident h3 { margin: 10px 0 2px; font-size: 19px; color: #111; letter-spacing: -.02em; }
+.profile-email { margin: 0; font-size: 13px; color: var(--ink-muted); overflow-wrap: anywhere; }
+.badge-role-perfil { margin-top: 12px; }
+
+.profile-facts { margin: 18px 0 0; padding: 0; list-style: none; text-align: left; }
+.profile-facts > div {
+    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+    padding: 9px 0; border-top: 1px solid #F3EDE1; font-size: 13px;
+}
+.profile-facts dt { color: var(--ink-muted); font-weight: 600; flex-shrink: 0; }
+.profile-facts dd { margin: 0; font-weight: 700; color: var(--ink); text-align: right; }
+
+.profile-ident-actions { display: flex; gap: 8px; margin-top: 18px; }
+.profile-ident-actions .btn { flex: 1; justify-content: center; }
+.profile-ident-actions .icon { width: 15px; height: 15px; }
+
+/* ---- Pestañas ---- */
+.profile-tabs {
+    display: flex; gap: 2px; margin-bottom: 14px; border-bottom: 1px solid var(--line);
+}
+.profile-tabs button {
+    display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px;
+    background: transparent; border: 0; border-bottom: 3px solid transparent;
+    font-size: 13px; font-weight: 700; color: var(--ink-muted); cursor: pointer;
+    transition: color .15s, border-color .15s; font-family: var(--font-body);
+}
+.profile-tabs button svg { width: 15px; height: 15px; }
+.profile-tabs button:hover { color: var(--dogger-red); }
+.profile-tabs button.is-active { color: var(--dogger-red); border-bottom-color: var(--dogger-red); }
+
+/* ---- Paneles ---- */
+.profile-panel { display: none; }
+.profile-panel.active { display: block; }
+.profile-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.profile-panel-head h3 { margin: 0; font-size: 16px; color: #111; }
+.profile-panel-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-muted); }
+.profile-save-hint { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #2F7D4F; font-weight: 700; white-space: nowrap; }
+.profile-save-hint .icon { width: 13px; height: 13px; }
+
+/* ---- Selector de modo (tarjetas radio) ---- */
+.prof-mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.prof-radio {
+    position: relative; cursor: pointer;
+}
+.prof-radio input { position: absolute; opacity: 0; pointer-events: none; }
+.prof-radio .prof-radio-box {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 16px 12px; border: 1.5px solid var(--line); border-radius: 14px;
+    background: #FBFAF7; color: var(--ink); transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.prof-radio .prof-radio-box svg { width: 22px; height: 22px; color: var(--ink-muted); }
+.prof-radio .prof-radio-box b { font-size: 13px; font-weight: 700; }
+.prof-radio input:checked + .prof-radio-box {
+    border-color: var(--dogger-red); background: #FFF6F4; box-shadow: 0 4px 14px rgba(214,43,31,.10);
+}
+.prof-radio input:checked + .prof-radio-box svg { color: var(--dogger-red); }
+.prof-radio input:focus-visible + .prof-radio-box { outline: 2px solid var(--dogger-red); outline-offset: 2px; }
+
+/* ---- Filas de preferencias ---- */
+.prof-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 13px 0; border-top: 1px solid #F3EDE1;
+}
+.prof-row:first-of-type { border-top: 0; }
+.prof-row-label { min-width: 0; }
+.prof-row-label b { display: block; font-size: 13.5px; color: var(--ink); }
+.prof-row-label small { display: block; font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+.prof-row select {
+    padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--line);
+    background: #fff; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer;
+}
+.prof-row select:focus { outline: none; border-color: var(--dogger-red); }
+
+/* ---- Chips de opciones (fuente / contraste) ---- */
+.prof-chip-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.prof-chip-group .prof-radio .prof-radio-box { flex-direction: row; padding: 9px 14px; gap: 7px; }
+.prof-chip-group .prof-radio .prof-radio-box svg { width: 15px; height: 15px; }
+
+/* ---- Switch ---- */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+    position: absolute; inset: 0; background: #D8CFC0; border-radius: 999px;
+    cursor: pointer; transition: background .18s;
+}
+.switch .slider::before {
+    content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: transform .18s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.switch input:checked + .slider { background: var(--dogger-red); }
+.switch input:checked + .slider::before { transform: translateX(20px); }
+.switch input:focus-visible + .slider { outline: 2px solid var(--dogger-red); outline-offset: 2px; }
+
+/* ---- Aviso guardado ---- */
+.profile-toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    background: #241F1C; color: #fff; font-size: 13px; font-weight: 600;
+    padding: 10px 18px; border-radius: 999px; opacity: 0; pointer-events: none;
+    transition: opacity .25s, transform .25s; z-index: 1200; box-shadow: 0 10px 24px rgba(0,0,0,.25);
+}
+.profile-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 900px) {
+    .profile-grid { grid-template-columns: 1fr; }
+    .profile-ident { position: static; }
+    .profile-tabs { overflow-x: auto; }
+    .profile-tabs button { white-space: nowrap; }
+}
+@media (max-width: 520px) {
+    .prof-mode-grid { grid-template-columns: 1fr; }
+    .profile-top { align-items: flex-start; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="page page-corporate profile-page">
+    <div class="profile-top">
+        <div>
+            <h2 class="profile-title">Mi perfil</h2>
+            <p class="profile-sub">Gestiona tu cuenta, personaliza la visualización y accede a la configuración clave.</p>
+        </div>
+        <form method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline btn-sm profile-logout" title="Cerrar sesión">
+                <svg class="icon"><use href="#i-logout"/></svg> Cerrar sesión
+            </button>
+        </form>
+    </div>
+
+    <div class="profile-grid">
+        <!-- ==== Identidad ==== -->
+        <aside class="profile-card profile-ident">
+            <div class="profile-avatar">
+                {% if request.user.avatar %}
+                <img src="{{ request.user.avatar.url }}" alt="{{ request.user.nombre }}">
+                {% else %}
+                {{ request.user.initials }}
+                {% endif %}
+            </div>
+            <span class="badge-role badge-role-perfil {{ request.user.rol }}">{{ request.user.get_rol_display }}</span>
+            <h3>{{ request.user.nombre }}</h3>
+            <p class="profile-email">{{ request.user.email }}</p>
+
+            <dl class="profile-facts">
+                <div><dt>Ubicación</dt><dd>{{ request.user.ubicacion|default:"—" }}</dd></div>
+                <div><dt>Teléfono</dt><dd>{{ request.user.telefono|default:"—" }}</dd></div>
+                <div><dt>Miembro</dt><dd>{{ request.user.fecha_creacion|date:"d/m/Y" }}</dd></div>
+            </dl>
+
+            <div class="profile-ident-actions">
+                <a class="btn btn-primary btn-sm" href="{% url 'accounts:ajustes' %}">
+                    <svg class="icon"><use href="#i-settings"/></svg> Mi cuenta
+                </a>
+                <button type="button" class="btn btn-outline btn-sm" id="btnPersonalizar">
+                    <svg class="icon"><use href="#i-edit"/></svg> Personalizar
+                </button>
+            </div>
+        </aside>
+
+        <!-- ==== Ajustes ==== -->
+        <div class="profile-main">
+            <nav class="profile-tabs" id="profileTabs">
+                <button type="button" data-tab="visualizacion" class="is-active"><svg class="icon-sm"><use href="#i-eye"/></svg> Visualización</button>
+                <button type="button" data-tab="general"><svg class="icon-sm"><use href="#i-settings"/></svg> General</button>
+                <button type="button" data-tab="accesibilidad"><svg class="icon-sm"><use href="#i-help"/></svg> Accesibilidad</button>
+                <button type="button" data-tab="navegacion"><svg class="icon-sm"><use href="#i-layers"/></svg> Navegación</button>
+            </nav>
+
+            <!-- Visualización -->
+            <section class="profile-card profile-panel active" data-panel="visualizacion">
+                <div class="profile-panel-head">
+                    <div><h3>Apariencia</h3><p>Elige el modo de visualización de la plataforma.</p></div>
+                    <span class="profile-save-hint"><svg class="icon"><use href="#i-check"/></svg> Guardado automático</span>
+                </div>
+                <div class="prof-mode-grid">
+                    <label class="prof-radio">
+                        <input type="radio" name="prefTema" value="light">
+                        <span class="prof-radio-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                            <b>Claro</b>
+                        </span>
+                    </label>
+                    <label class="prof-radio">
+                        <input type="radio" name="prefTema" value="dark">
+                        <span class="prof-radio-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                            <b>Oscuro</b>
+                        </span>
+                    </label>
+                    <label class="prof-radio">
+                        <input type="radio" name="prefTema" value="system">
+                        <span class="prof-radio-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            <b>Sistema</b>
+                        </span>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Preferencias generales -->
+            <section class="profile-card profile-panel" data-panel="general">
+                <div class="profile-panel-head">
+                    <div><h3>Preferencias generales</h3><p>Idioma y notificaciones de la cuenta.</p></div>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label"><b>Idioma</b><small>Idioma de la interfaz.</small></div>
+                    <select id="prefIdioma">
+                        <option value="es">Español</option>
+                        <option value="en">English</option>
+                        <option value="pt">Português</option>
+                    </select>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label"><b>Notificaciones por correo</b><small>Recibir avisos sobre el estado de mis tickets.</small></div>
+                    <label class="switch"><input type="checkbox" id="prefNotifMail" checked><span class="slider"></span></label>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label"><b>Aviso de vencimientos ANS</b><small>Alertas cuando un ticket de mi área está por vencer.</small></div>
+                    <label class="switch"><input type="checkbox" id="prefNotifAns" checked><span class="slider"></span></label>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label"><b>Resumen semanal</b><small>Un correo con el resumen de mi actividad semanal.</small></div>
+                    <label class="switch"><input type="checkbox" id="prefNotifResumen"><span class="slider"></span></label>
+                </div>
+            </section>
+
+            <!-- Accesibilidad -->
+            <section class="profile-card profile-panel" data-panel="accesibilidad">
+                <div class="profile-panel-head">
+                    <div><h3>Accesibilidad</h3><p>Ajusta el tamaño del texto y el contraste de la interfaz.</p></div>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label"><b>Tamaño de fuente</b><small>Escala general del contenido.</small></div>
+                    <div class="prof-chip-group">
+                        <label class="prof-radio"><input type="radio" name="prefFuente" value="sm"><span class="prof-radio-box"><b>Chica</b></span></label>
+                        <label class="prof-radio"><input type="radio" name="prefFuente" value="md"><span class="prof-radio-box"><b>Normal</b></span></label>
+                        <label class="prof-radio"><input type="radio" name="prefFuente" value="lg"><span class="prof-radio-box"><b>Grande</b></span></label>
+                    </div>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label"><b>Contraste</b><small>Refuerza el contraste de textos y bordes.</small></div>
+                    <div class="prof-chip-group">
+                        <label class="prof-radio"><input type="radio" name="prefContraste" value="normal"><span class="prof-radio-box"><b>Estándar</b></span></label>
+                        <label class="prof-radio"><input type="radio" name="prefContraste" value="high"><span class="prof-radio-box"><b>Alto</b></span></label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Navegación -->
+            <section class="profile-card profile-panel" data-panel="navegacion">
+                <div class="profile-panel-head">
+                    <div><h3>Pestañas de navegación</h3><p>Organiza cómo se muestran las pestañas de la barra de menú.</p></div>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label"><b>Menú compacto</b><small>Reduce el alto de las pestañas de navegación.</small></div>
+                    <label class="switch"><input type="checkbox" id="prefNavCompact"><span class="slider"></span></label>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label"><b>Mostrar iconos</b><small>Muestra los iconos junto a cada pestaña.</small></div>
+                    <label class="switch"><input type="checkbox" id="prefNavIcons" checked><span class="slider"></span></label>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<div class="profile-toast" id="profileToast">
+    <svg class="icon" style="width:13px;height:13px;color:#7BD88F;vertical-align:-2px"><use href="#i-check"/></svg>
+    &nbsp;Preferencia guardada
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var root = document.documentElement;
+    function g(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function s(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+    var toast = document.getElementById("profileToast");
+    var toastTimer;
+    function saved() {
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 1600);
+    }
+
+    function setAttr(name, val) { root.setAttribute(name, val); }
+    function resolveTheme(pref) {
+        var sys = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        return pref === "dark" || pref === "light" ? pref : sys;
+    }
+
+    // Tema
+    var tema = g("dogger:pv:theme") || "system";
+    var rTema = document.querySelector('input[name="prefTema"][value="' + tema + '"]');
+    if (rTema) rTema.checked = true;
+    document.querySelectorAll('input[name="prefTema"]').forEach(function (r) {
+        r.addEventListener("change", function () {
+            if (!r.checked) return;
+            s("dogger:pv:theme", r.value);
+            setAttr("data-theme", resolveTheme(r.value));
+            saved();
+        });
+    });
+    if (tema === "system" && window.matchMedia) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
+            if ((g("dogger:pv:theme") || "system") === "system") {
+                root.setAttribute("data-theme", e.matches ? "dark" : "light");
+            }
+        });
+    }
+
+    // Fuente
+    var fuente = g("dogger:pv:fontsize") || "md";
+    var rFuente = document.querySelector('input[name="prefFuente"][value="' + fuente + '"]');
+    if (rFuente) rFuente.checked = true;
+    document.querySelectorAll('input[name="prefFuente"]').forEach(function (r) {
+        r.addEventListener("change", function () {
+            if (!r.checked) return;
+            s("dogger:pv:fontsize", r.value);
+            setAttr("data-fontsize", r.value);
+            saved();
+        });
+    });
+
+    // Contraste
+    var contraste = g("dogger:pv:contrast") || "normal";
+    var rContraste = document.querySelector('input[name="prefContraste"][value="' + contraste + '"]');
+    if (rContraste) rContraste.checked = true;
+    document.querySelectorAll('input[name="prefContraste"]').forEach(function (r) {
+        r.addEventListener("change", function () {
+            if (!r.checked) return;
+            s("dogger:pv:contrast", r.value);
+            setAttr("data-contrast", r.value);
+            saved();
+        });
+    });
+
+    // Idioma
+    var idioma = g("dogger:pv:lang") || "es";
+    var selIdioma = document.getElementById("prefIdioma");
+    selIdioma.value = idioma;
+    selIdioma.addEventListener("change", function () {
+        s("dogger:pv:lang", selIdioma.value);
+        document.documentElement.lang = selIdioma.value;
+        saved();
+    });
+
+    // Notificaciones (preferencias guardadas localmente)
+    function bindSwitch(id, key, def) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.checked = (g(key) || def) !== "0" && (g(key) !== null ? g(key) === "1" : def);
+        el.checked = g(key) === null ? def : g(key) === "1";
+        el.addEventListener("change", function () {
+            s(key, el.checked ? "1" : "0");
+            saved();
+        });
+    }
+    bindSwitch("prefNotifMail", "dogger:pv:notif:mail", true);
+    bindSwitch("prefNotifAns", "dogger:pv:notif:ans", true);
+    bindSwitch("prefNotifResumen", "dogger:pv:notif:resumen", false);
+
+    // Navegación compacta e iconos
+    var navCompact = document.getElementById("prefNavCompact");
+    navCompact.checked = (g("dogger:pv:navcompact") || "0") === "1";
+    navCompact.addEventListener("change", function () {
+        s("dogger:pv:navcompact", navCompact.checked ? "1" : "0");
+        setAttr("data-navcompact", navCompact.checked ? "1" : "0");
+        saved();
+    });
+    var navIcons = document.getElementById("prefNavIcons");
+    navIcons.checked = (g("dogger:pv:navicons") === "0") ? false : true;
+    navIcons.addEventListener("change", function () {
+        s("dogger:pv:navicons", navIcons.checked ? "1" : "0");
+        setAttr("data-navicons", navIcons.checked ? "1" : "0");
+        saved();
+    });
+
+    // Pestañas
+    var tabs = Array.prototype.slice.call(document.querySelectorAll("#profileTabs button"));
+    var panels = Array.prototype.slice.call(document.querySelectorAll(".profile-panel"));
+    function mostrar(tab) {
+        tabs.forEach(function (t) { t.classList.toggle("is-active", t.getAttribute("data-tab") === tab); });
+        panels.forEach(function (p) { p.classList.toggle("active", p.getAttribute("data-panel") === tab); });
+    }
+    tabs.forEach(function (t) {
+        t.addEventListener("click", function () { mostrar(t.getAttribute("data-tab")); });
+    });
+    document.getElementById("btnPersonalizar").addEventListener("click", function () {
+        mostrar("visualizacion");
+        document.querySelector('[data-tab="visualizacion"]').scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+})();
+</script>
+{% endblock %}
