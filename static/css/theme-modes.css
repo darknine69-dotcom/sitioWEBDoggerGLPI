@@ -19,6 +19,12 @@ html[data-fontsize="lg"] { zoom: 1.1; }
     --shadow-card: 0 2px 4px rgba(0, 0, 0, .45), 0 10px 28px rgba(0, 0, 0, .5);
 }
 
+/* ---- Tabla pivote "Solicitudes por técnico": indicadores como el dashboard ---- */
+.pivot-table td[data-f="abierto"] { color: #C6281E; font-weight: 700; }
+.pivot-table td[data-f="en-progreso"] { color: #C2410C; font-weight: 700; }
+.pivot-table td[data-f="resuelto"] { color: #16A34A; font-weight: 700; }
+.pivot-table td[data-f="cerrado"] { color: #6B6259; font-weight: 700; }
+
 /* ---- Modo oscuro: superficies con colores fijos ---- */
 [data-theme="dark"] .main-nav,
 [data-theme="dark"] .nav-list,
@@ -358,6 +364,47 @@ html[data-theme="dark"] { color-scheme: dark; }
 
 /* Seguimientos legacy (ticket-followup) */
 [data-theme="dark"] .ticket-followup { background: rgba(214,43,31,.07); border-left-color: var(--dogger-red); }
+
+/* ---- Modo oscuro: dashboard y panel (pivote "Solicitudes por técnico") ---- */
+[data-theme="dark"] .pivot-table td[data-f="abierto"] { color: #FF6B5E; }
+[data-theme="dark"] .pivot-table td[data-f="en-progreso"] { color: #F2A900; }
+[data-theme="dark"] .pivot-table td[data-f="resuelto"] { color: #52C97E; }
+[data-theme="dark"] .pivot-table td[data-f="cerrado"] { color: #A79A8C; }
+[data-theme="dark"] table.data-table.pivot-table tbody td { color: var(--ink); }
+[data-theme="dark"] .pivot-table .pivot-total-row td {
+    background: linear-gradient(90deg, #2E2418 0%, #241D17 100%);
+    border-top-color: #453B31;
+    color: var(--ink);
+}
+
+/* Popup del pivote */
+[data-theme="dark"] .pivot-pop { background: #1F1913; border-color: #453B31; box-shadow: 0 12px 30px rgba(0, 0, 0, .5); }
+[data-theme="dark"] .pivot-pop-head strong { color: var(--ink); }
+[data-theme="dark"] .pivot-pop-sub { color: var(--ink-muted); }
+[data-theme="dark"] .pivot-pop-close { color: var(--ink-muted); }
+[data-theme="dark"] .pivot-pop-close:hover { color: var(--dogger-red); }
+[data-theme="dark"] .pivot-pop-stat { color: var(--ink-muted); }
+[data-theme="dark"] .pivot-pop-stat strong { color: var(--ink); }
+[data-theme="dark"] .pivot-pop-cat { background: #241D17; border-color: #453B31; color: #C9BEAF; }
+[data-theme="dark"] .pivot-pop-bar { background: #3A332B; }
+[data-theme="dark"] .pivot-pop-pill.gr-cerrado { background: #302820; color: #D8CDBC; }
+[data-theme="dark"] .pivot-pop-ticket:hover { background: #2E2620; }
+[data-theme="dark"] .pivot-pop-title { color: var(--ink); }
+[data-theme="dark"] .pivot-pop-mas,
+[data-theme="dark"] .pivot-pop-vacio { color: var(--ink-muted); }
+[data-theme="dark"] .pivot-pop-list { border-top-color: #3A332B; }
+
+/* Indicadores de los gráficos (donut, gauge, conteo, leyendas) */
+[data-theme="dark"] .chart-stage .chart-count strong { color: var(--ink); }
+[data-theme="dark"] .chart-stage .chart-count small { color: var(--ink-muted); }
+[data-theme="dark"] .pie-legend .pl-pct { color: var(--ink); }
+[data-theme="dark"] .pie-legend .pl-val { color: var(--ink-muted); }
+[data-theme="dark"] .pie-legend li:hover,
+[data-theme="dark"] .pie-legend li.is-hi { background: #2E2620; }
+[data-theme="dark"] .donut-center strong,
+[data-theme="dark"] .gauge-center strong { color: var(--ink); }
+[data-theme="dark"] .donut-legend .donut-count,
+[data-theme="dark"] .gauge-legend .donut-count { color: var(--ink); }
 
 /* ---- Modo oscuro: página de perfil ---- */
 [data-theme="dark"] .profile-card {
