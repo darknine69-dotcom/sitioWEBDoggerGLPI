@@ -182,6 +182,65 @@ html[data-theme="dark"] { color-scheme: dark; }
 [data-theme="dark"] input::placeholder,
 [data-theme="dark"] textarea::placeholder { color: #8A7F6E; }
 
+/* ---- Modo oscuro: tablas, píldoras e iconos ---- */
+[data-theme="dark"] .data-table thead th {
+    background: #241D17;
+    color: var(--ink-muted);
+    border-bottom-color: var(--line);
+}
+[data-theme="dark"] table.data-table th { color: #C9BEAF; }
+[data-theme="dark"] .tickets-table thead th {
+    background: #241D17;
+    color: var(--ink-muted);
+    border-bottom-color: var(--line);
+}
+[data-theme="dark"] .tec-matrix thead th {
+    background: linear-gradient(120deg, #2B3127 0%, #262E25 100%);
+    color: #9ED3AF;
+    border-right-color: #3A4A3A;
+    border-bottom-color: #3A4A3A;
+}
+[data-theme="dark"] .tec-matrix thead th.is-fin .mx-numero { color: #52C97E; }
+
+[data-theme="dark"] .mini-btn {
+    background: #241D17;
+    border-color: #453B31;
+    color: var(--ink-muted);
+}
+[data-theme="dark"] .mini-btn:hover { border-color: var(--dogger-red); color: var(--dogger-red); }
+[data-theme="dark"] .mini-btn.ok { color: #7BD88F; }
+[data-theme="dark"] .mini-btn.danger:hover { background: rgba(214,43,31,.16); }
+
+[data-theme="dark"] .dash-stat-icon,
+[data-theme="dark"] .chart-head-icon { background: #2E2620; }
+
+[data-theme="dark"] .row-menu-btn {
+    background: #241D17;
+    border-color: #453B31;
+    color: var(--ink-muted);
+}
+[data-theme="dark"] .row-menu-btn:hover,
+[data-theme="dark"] .row-menu-btn.is-open {
+    background: #2E2620;
+    border-color: #5A4B3E;
+    color: var(--ink);
+}
+[data-theme="dark"] .row-menu-panel { background: #211B16; border-color: #3A332B; }
+[data-theme="dark"] .row-menu-panel .row-menu-sep { background: #322A22; }
+[data-theme="dark"] .row-menu-item { color: var(--ink); }
+[data-theme="dark"] .row-menu-item:hover { background: #2E2620; }
+[data-theme="dark"] .row-menu-item .icon { color: var(--ink-muted); }
+
+/* Iconos de superficies que permanecen oscuras: tono suave, no blanco */
+[data-theme="dark"] .footer-info a .icon { color: #CFC7BC; }
+
+/* Textos/iconos que usaban --dogger-cream sobre fondos que siguen oscuros */
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .btn-ghost,
+[data-theme="dark"] .btn-outline:hover,
+[data-theme="dark"] .score-chip,
+[data-theme="dark"] .brand-header { color: #FFF7EA; }
+
 /* ---- Modo oscuro: página de perfil ---- */
 [data-theme="dark"] .profile-card {
     background: var(--dogger-paper);
