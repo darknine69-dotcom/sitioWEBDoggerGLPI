@@ -271,6 +271,8 @@ html[data-theme="dark"] { color-scheme: dark; }
     background: linear-gradient(90deg, rgba(214, 43, 31, .18), rgba(255, 255, 255, 0));
     border-bottom-color: var(--line);
 }
+[data-theme="dark"] .cat-toggle { background: #241D17; border-color: #453B31; color: var(--ink-muted); }
+[data-theme="dark"] .cat-toggle:hover { background: #2E2620; border-color: var(--dogger-red); color: var(--dogger-red); }
 [data-theme="dark"] .cat-count-badge { background: #241D17; color: #C9BEAF; border-color: #453B31; }
 [data-theme="dark"] .cat-chip-inactivo { background: #241D17; border-color: #453B31; color: var(--ink); }
 [data-theme="dark"] .meta-pill { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .08); color: var(--ink); }

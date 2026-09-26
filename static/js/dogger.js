@@ -118,10 +118,14 @@
         }
     });
 
-    /* ---- Grupos de categorías: colapsar/expandir ---- */
+    /* ---- Grupos de categorías: colapsar/expandir (cerrados por defecto) ---- */
     document.querySelectorAll(".cat-group-head").forEach(function (head) {
         head.addEventListener("click", function () {
-            head.closest(".cat-group-card").classList.toggle("collapsed");
+            var card = head.closest(".cat-group-card");
+            var isCollapsed = card.classList.toggle("collapsed");
+            head.querySelectorAll(".cat-toggle").forEach(function (b) {
+                b.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+            });
         });
     });
 

@@ -61,11 +61,13 @@
         </form>
 
         {% for grupo in arbol %}
-        <div class="cat-group-card">
+        <div class="cat-group-card collapsed">
             <div class="cat-group-head" title="Click para plegar/desplegar">
-                <span class="cat-caret">▼</span>
                 <span class="cat-group-title">{{ grupo.grupo }}</span>
                 <span class="cat-count-badge">{{ grupo.subcategorias|length }} subcat. · {{ grupo.total }} ticket{{ grupo.total|pluralize }}</span>
+                <button type="button" class="cat-toggle" aria-expanded="false" aria-label="Desplegar {{ grupo.grupo }}" title="Desplegar/plegar grupo">
+                    <svg class="icon"><use href="#i-chevron-down"/></svg>
+                </button>
             </div>
             <table class="cat-sub-table">
                 <tbody>
