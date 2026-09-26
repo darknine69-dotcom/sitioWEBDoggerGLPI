@@ -416,25 +416,25 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
     <div class="tabs-bar">
         <a class="tab-pill {% if vista == 'panel' %}active{% endif %}" href="?vista=panel"><svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel</a>
         <a class="tab-pill {% if vista == 'cola' %}active{% endif %}" href="?vista=cola"><svg class="icon icon-sm"><use href="#i-layers"/></svg> Cola de solicitudes <span>{{ cola_count }}</span></a>
-        <a class="tab-pill {% if vista == 'mis' %}active{% endif %}" href="?vista=mis"><svg class="icon icon-sm"><use href="#i-message"/></svg> Mis solicitudes <span>{{ stats.total }}</span></a>
+        <a class="tab-pill {% if vista == 'mis' %}active{% endif %}" href="?vista=mis"><svg class="icon icon-sm"><use href="#i-message"/></svg> Mis solicitudes <span>{{ mis_count|default:0 }}</span></a>
     </div>
 
     {% if vista == 'panel' %}
     <div class="dash-compact">
         <div class="scoreboard">
-            <a class="score-chip sc-warning" href="?vista=mis">
+            <a class="score-chip sc-warning" href="?vista=mis&amp;sv=todas&amp;rango=">
                 <span class="score-num">{{ stats.total|default:0 }}</span>
                 <span class="score-label">Total asignados</span>
             </a>
-            <a class="score-chip sc-abierto" href="?vista=mis&estado=abierto">
+            <a class="score-chip sc-abierto" href="?vista=mis&amp;estado=abierto&amp;rango=">
                 <span class="score-num">{{ stats.abiertos|default:0 }}</span>
                 <span class="score-label">Abiertos</span>
             </a>
-            <a class="score-chip sc-progreso" href="?vista=mis&estado=en-progreso">
+            <a class="score-chip sc-progreso" href="?vista=mis&amp;estado=en-progreso&amp;rango=">
                 <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
                 <span class="score-label">En progreso</span>
             </a>
-            <a class="score-chip sc-resuelto" href="?vista=mis&estado=resuelto">
+            <a class="score-chip sc-resuelto" href="?vista=mis&amp;estado=resuelto&amp;rango=">
                 <span class="score-num">{{ stats.resueltos|default:0 }}</span>
                 <span class="score-label">Resueltos</span>
             </a>
@@ -761,10 +761,8 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
             <button type="button" class="corp-view-btn is-active" data-view="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Lista</button>
             <button type="button" class="corp-view-btn" data-view="grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Cuadrícula</button>
         </div>
-        {% if q or filtro_estado %}
-        <a href="?vista=mis&sv={{ sv }}&rango={{ rango }}" class="link-clear">✕ Limpiar</a>
-        {% elif mias and request.user.rol == 'admin' %}
-        <a href="?vista=mis&sv={{ sv }}&rango={{ rango }}" class="link-clear">✕ Limpiar</a>
+        {% if q or filtro_estado or sv != 'abiertas' or rango != '30' or mias and request.user.rol == 'admin' %}
+        <a href="?vista=mis" class="link-clear">✕ Limpiar</a>
         {% endif %}
     </form>
 
@@ -866,7 +864,14 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         <td data-label="Creado">{{ t.fecha_creacion|date:"M d, Y h:i A" }}</td>
                     </tr>
                     {% empty %}
-                    <tr class="table-empty"><td colspan="9">No hay solicitudes para esta vista.</td></tr>
+                    <tr class="table-empty">
+                        <td colspan="9">
+                            No hay solicitudes con estos filtros.
+                            {% if sv != 'todas' or rango or filtro_estado %}
+                            <a href="?vista=mis&amp;sv=todas&amp;rango=">Ver todas mis solicitudes</a>
+                            {% endif %}
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -913,7 +918,12 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
             </span>
         </a>
         {% empty %}
-        <p class="table-empty">No hay solicitudes para esta vista.</p>
+        <div class="table-empty">
+            <p>No hay solicitudes con estos filtros.</p>
+            {% if sv != 'todas' or rango or filtro_estado %}
+            <a class="btn btn-secondary btn-sm" href="?vista=mis&amp;sv=todas&amp;rango=">Ver todas mis solicitudes</a>
+            {% endif %}
+        </div>
         {% endfor %}
     </div>
     </div>

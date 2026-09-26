@@ -3325,9 +3325,7 @@ def panel_tecnico(request):
     abiertos = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
     presets_mis = list(PRESETS_MIS)
     if request.user.rol != "admin":
-        presets_mis = [
-            p for p in presets_mis if p[0] not in ("no-asignadas", "todas")
-        ]
+        presets_mis = [p for p in presets_mis if p[0] != "no-asignadas"]
     presets_mis_map = dict(presets_mis)
     sv = request.GET.get("sv", "abiertas").strip() or "abiertas"
     if sv not in presets_mis_map:
@@ -3336,49 +3334,64 @@ def panel_tecnico(request):
     rango = request.GET.get("rango", "30")
     if rango not in dict(rangos_mis):
         rango = "30"
+    if estado and sv != "todas":
+        # Un estado explicito manda sobre la vista: con "abiertas" (abierto/en
+        # progreso) + "resueltos" la interseccion siempre salia vacia.
+        sv = "todas"
+    # El contador de la pestana y la lista comparten queryset, asi el numero
+    # siempre coincide con lo que se ve (el texto de busqueda no lo altera).
+    secundarias_comb = set(
+        TicketVinculo.objects.filter(tipo=TicketVinculo.Tipo.COMBINAR).values_list(
+            "ticket_secundario_id", flat=True
+        )
+    )
+    mis_qs = Ticket.objects.select_related("categoria", "tecnico_asignado")
+    if secundarias_comb:
+        mis_qs = mis_qs.exclude(pk__in=secundarias_comb)
+    inicio_hoy = timezone.localtime(timezone.now()).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    if sv == "completadas":
+        mis_qs = mis_qs.filter(
+            estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO]
+        )
+    elif sv == "espera":
+        mis_qs = mis_qs.filter(estado=Ticket.Estado.ABIERTO)
+    elif sv == "no-asignadas":
+        mis_qs = mis_qs.filter(estado__in=abiertos, tecnico_asignado__isnull=True)
+    elif sv == "vencen-hoy":
+        mis_qs = mis_qs.filter(
+            estado__in=abiertos,
+            fecha_limite_ans__gte=inicio_hoy,
+            fecha_limite_ans__lt=inicio_hoy + timedelta(days=1),
+        )
+    elif sv == "vencidas":
+        mis_qs = mis_qs.filter(estado__in=abiertos, fecha_limite_ans__lt=timezone.now())
+    elif sv == "creadas-hoy":
+        mis_qs = mis_qs.filter(fecha_creacion__gte=inicio_hoy)
+    elif sv != "todas":
+        mis_qs = mis_qs.filter(estado__in=abiertos)
+    if rango:
+        try:
+            mis_qs = mis_qs.filter(
+                fecha_creacion__gte=timezone.now() - timedelta(days=int(rango))
+            )
+        except (TypeError, ValueError):
+            pass
+    if estado:
+        mis_qs = mis_qs.filter(estado=estado)
+    if mias:
+        mis_qs = mis_qs.filter(tecnico_asignado=tecnico)
+    mis_qs = mis_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
+        "_prioridad_orden", "-fecha_creacion"
+    )
+    mis_count = mis_qs.count()
     if vista == "mis" and not ticket_pk:
-        secundarias_comb = set()
         combinadas_map = {}
         for v in TicketVinculo.objects.filter(
             tipo=TicketVinculo.Tipo.COMBINAR
         ).select_related("ticket_secundario"):
-            secundarias_comb.add(v.ticket_secundario_id)
             combinadas_map.setdefault(v.ticket_principal_id, []).append(v.ticket_secundario)
-        abiertas_qs = Ticket.objects.select_related("categoria", "tecnico_asignado")
-        if secundarias_comb:
-            abiertas_qs = abiertas_qs.exclude(pk__in=secundarias_comb)
-        if sv == "completadas":
-            abiertas_qs = abiertas_qs.filter(
-                estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO]
-            )
-        elif sv == "espera":
-            abiertas_qs = abiertas_qs.filter(estado=Ticket.Estado.ABIERTO)
-        elif sv == "no-asignadas":
-            abiertas_qs = abiertas_qs.filter(
-                estado__in=abiertos, tecnico_asignado__isnull=True
-            )
-        elif sv == "vencen-hoy":
-            abiertas_qs = abiertas_qs.filter(estado__in=abiertos)
-        elif sv == "vencidas":
-            abiertas_qs = abiertas_qs.filter(estado__in=abiertos)
-        elif sv == "creadas-hoy":
-            inicio_hoy = timezone.localtime(timezone.now()).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            abiertas_qs = abiertas_qs.filter(fecha_creacion__gte=inicio_hoy)
-        elif sv == "todas":
-            pass
-        else:
-            abiertas_qs = abiertas_qs.filter(estado__in=abiertos)
-        if rango:
-            try:
-                abiertas_qs = abiertas_qs.filter(
-                    fecha_creacion__gte=timezone.now() - timedelta(days=int(rango))
-                )
-            except (TypeError, ValueError):
-                pass
-        if estado:
-            abiertas_qs = abiertas_qs.filter(estado=estado)
         if q:
             match_codigo = re.match(r"^HD-(\d+)$", q.upper())
             condicion = (
@@ -3390,38 +3403,11 @@ def panel_tecnico(request):
             )
             if match_codigo:
                 condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
-            abiertas_qs = abiertas_qs.filter(condicion)
-        if mias:
-            abiertas_qs = abiertas_qs.filter(tecnico_asignado=tecnico)
-        abiertas = list(
-            abiertas_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
-                "_prioridad_orden", "-fecha_creacion"
-            )
-        )
+            mis_qs = mis_qs.filter(condicion)
+        abiertas = list(mis_qs)
         abiertas = _adjuntar_solicitantes(abiertas)
         for t in abiertas:
             t.combinadas = combinadas_map.get(t.pk, [])
-        if sv == "vencen-hoy":
-            ahora = timezone.now()
-            inicio_hoy = timezone.localtime(ahora).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            fin_hoy = inicio_hoy + timedelta(days=1)
-            abiertas = [
-                t
-                for t in abiertas
-                if t.estado in abiertos
-                and t.fecha_limite_ans
-                and inicio_hoy <= t.fecha_limite_ans < fin_hoy
-            ]
-        elif sv == "vencidas":
-            abiertas = [
-                t
-                for t in abiertas
-                if t.estado in abiertos
-                and t.fecha_limite_ans
-                and t.fecha_limite_ans < timezone.now()
-            ]
         abiertas_count = len(abiertas)
         sitios = sorted(
             {t.solicitante_punto for t in abiertas if t.solicitante_punto},
@@ -3470,12 +3456,19 @@ def panel_tecnico(request):
             "dash_json": dash_json,
             "abiertas": abiertas,
             "abiertas_count": abiertas_count,
+            "mis_count": mis_count,
             "sitios": sitios,
             "grupos": grupos,
             "tecnicos": tecnicos,
             "mias": mias,
             "sv": sv,
-            "sv_label": presets_mis_map.get(sv, "Mis solicitudes abiertas"),
+            "sv_label": (
+                dict(Ticket.Estado.choices).get(
+                    estado, presets_mis_map.get(sv, "Mis solicitudes abiertas")
+                )
+                if estado
+                else presets_mis_map.get(sv, "Mis solicitudes abiertas")
+            ),
             "presets_mis": presets_mis,
             "rango": rango,
             "rangos_mis": rangos_mis,
