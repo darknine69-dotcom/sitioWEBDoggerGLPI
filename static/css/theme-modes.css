@@ -436,6 +436,237 @@ html[data-theme="dark"] { color-scheme: dark; }
 [data-theme="dark"] .switch .slider { background: #453B31; }
 [data-theme="dark"] .toggle-slider { background: #453B31; }
 
+/* =====================================================================
+   Modo oscuro: resto de superficies
+   Los bloques siguientes usan html[data-theme="dark"] cuando la regla clara
+   vive en el CSS de la página (mi-panel-corp.css, programador.css) o en un
+   <style> del template: al cargarse después, hace falta un punto más de
+   especificidad para que gane la variante oscura.
+   ===================================================================== */
+
+/* ---- Avisos flotantes (toast) ---- */
+[data-theme="dark"] .toast {
+    --toast-bg: #1F1913;
+    border-color: var(--line);
+    color: var(--ink);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .55);
+}
+[data-theme="dark"] .toast-text { color: var(--ink-muted); }
+[data-theme="dark"] .toast-icon {
+    background: color-mix(in srgb, var(--toast-c) 20%, #171310);
+    border-color: color-mix(in srgb, var(--toast-c) 38%, #171310);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .05);
+}
+[data-theme="dark"] .toast-close:hover { background: #2E2620; color: var(--ink); }
+
+/* ---- Gráficos: centro del donut ---- */
+[data-theme="dark"] .donut-ring::after { background: var(--dogger-paper); }
+
+/* ---- Modales de confirmación ---- */
+[data-theme="dark"] .confirm-icon {
+    background: rgba(214, 43, 31, .16);
+    color: #FF6B5E;
+    border-color: rgba(214, 43, 31, .38);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .45);
+}
+[data-theme="dark"] .pwd-ok-icon,
+[data-theme="dark"] .ticket-ok-icon {
+    background: rgba(47, 125, 79, .2);
+    color: #7BD88F;
+    border-color: rgba(47, 125, 79, .42);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .45);
+}
+[data-theme="dark"] .ticket-ok-close { background: #2E2620; color: var(--ink-muted); }
+[data-theme="dark"] .ticket-ok-note { color: var(--ink-muted); }
+html[data-theme="dark"] .form-error-line {
+    background: rgba(214, 43, 31, .16);
+    color: #FF8A80;
+    border-color: rgba(214, 43, 31, .4);
+}
+html[data-theme="dark"] .disabled-val {
+    background: #1E1914;
+    color: var(--ink-muted);
+    border-color: var(--line);
+}
+html[data-theme="dark"] .resp-body { background: #241D17; border-color: var(--line); }
+html[data-theme="dark"] .resp-bubble-soporte .resp-body,
+html[data-theme="dark"] .resp-bubble-sistema .resp-body {
+    background: rgba(214, 43, 31, .12);
+    border-color: rgba(214, 43, 31, .3);
+}
+html[data-theme="dark"] .rol-sistema { background: #2E2620; color: var(--ink-muted); }
+
+/* ---- Insignias de rol ---- */
+[data-theme="dark"] .badge-role.admin { background: rgba(214, 43, 31, .18); color: #FF8A80; }
+[data-theme="dark"] .badge-role.tecnico { background: rgba(29, 78, 216, .24); color: #9DBBFB; }
+[data-theme="dark"] .badge-role.usuario { background: rgba(47, 125, 79, .2); color: #7BD88F; }
+
+/* ---- Portal: tarjetas de acceso rápido ---- */
+[data-theme="dark"] .fcard { background: var(--dogger-paper); box-shadow: none; }
+[data-theme="dark"] .fcard:hover { border-color: rgba(214, 43, 31, .5); }
+[data-theme="dark"] .fcard-icon { background: rgba(214, 43, 31, .14); }
+
+/* ---- Usuarios: coincidencias GLPI y avisos ---- */
+[data-theme="dark"] .glpi-remote-card { background: #221C14; border-color: #4A3F2A; }
+[data-theme="dark"] .glpi-remote-card h4 { color: #E0C070; }
+[data-theme="dark"] .glpi-import-row { background: #241D17; border-color: var(--line); }
+html[data-theme="dark"] .notice-box { background: #2A2418; border-color: rgba(217, 164, 54, .4); color: #D8C8A4; }
+html[data-theme="dark"] .notice-box code { background: rgba(217, 164, 54, .16); color: #E6C77A; }
+
+/* ---- Recuperación de contraseña ---- */
+[data-theme="dark"] .correo-fijo-box { background: #2A2418; border-color: #6B5A2E; }
+
+/* ---- Navbar: chip de usuario y elementos de riesgo ---- */
+[data-theme="dark"] .main-nav .user-chip:hover,
+[data-theme="dark"] .main-nav .user-chip-wrap:has(.user-dropdown.open) .user-chip {
+    background: #241D17;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .45);
+}
+[data-theme="dark"] .user-dropdown-item.danger:hover { background: rgba(214, 43, 31, .18); }
+
+/* ---- Anotaciones: escala de prioridad y ayuda ---- */
+[data-theme="dark"] .ans-scale-item { background: #241D17; box-shadow: none; }
+[data-theme="dark"] .ans-scale-item.is-active { box-shadow: 0 10px 20px rgba(0, 0, 0, .45); }
+[data-theme="dark"] .ans-note-help { background: #241D17; }
+[data-theme="dark"] .ans-scale-chip-clock { background: #241D17; }
+
+/* ---- Crear ticket: ayudas de categoría ---- */
+[data-theme="dark"] .cat-suggest { background: rgba(29, 78, 216, .16); border-color: rgba(29, 78, 216, .35); }
+[data-theme="dark"] .cat-suggest svg { color: #9DBBFB; }
+[data-theme="dark"] .cat-auto-hint { background: rgba(47, 125, 79, .16); border-color: rgba(47, 125, 79, .35); }
+[data-theme="dark"] .cat-auto-hint svg { color: #7BD88F; }
+[data-theme="dark"] .ticket-form-info-list li { background: #241D17; border-color: var(--line); }
+[data-theme="dark"] .ticket-form-info-list li span { color: var(--ink); }
+
+/* ---- Programador: pestañas, calendario, matriz y eventos ---- */
+html[data-theme="dark"] .prog-tab.is-active {
+    background: rgba(47, 125, 79, .2);
+    color: #7BD88F;
+    box-shadow: inset 0 0 0 1px rgba(47, 125, 79, .4);
+}
+html[data-theme="dark"] .prog-tab:hover { background: #241D17; }
+html[data-theme="dark"] .prog-cal-weekdays {
+    background: linear-gradient(120deg, #2B3127 0%, #262E25 100%);
+    color: #9ED3AF;
+    border-bottom-color: #3A4A3A;
+}
+html[data-theme="dark"] .prog-cal-weekdays span:first-child,
+html[data-theme="dark"] .prog-cal-weekdays span:last-child { color: #52C97E; }
+html[data-theme="dark"] .tec-matrix thead th {
+    background: linear-gradient(120deg, #2B3127 0%, #262E25 100%);
+    color: #9ED3AF;
+    border-right-color: #3A4A3A;
+    border-bottom-color: #3A4A3A;
+}
+html[data-theme="dark"] .tec-matrix thead th.is-fin .mx-numero { color: #52C97E; }
+html[data-theme="dark"] .tec-matrix .mx-tec { background: #241D17; }
+html[data-theme="dark"] .mx-row.is-offline .mx-avatar { background: #3A332B; color: var(--ink-muted); }
+html[data-theme="dark"] .mx-offline-tag { background: #2E2620; color: var(--ink-muted); }
+html[data-theme="dark"] .prog-day.out { background: #1E1914; color: #7A7167; }
+html[data-theme="dark"] .prog-day-quick .q-falta { background: rgba(249, 115, 22, .2); color: #FDBA74; }
+html[data-theme="dark"] .prog-day-quick .q-recordatorio { background: rgba(234, 179, 8, .2); color: #FCD34D; }
+html[data-theme="dark"] .prog-day-quick .q-tarea { background: rgba(34, 197, 94, .2); color: #86EFAC; }
+html[data-theme="dark"] .prog-chip.ct-tarea { background: rgba(34, 197, 94, .18); color: #86EFAC; }
+html[data-theme="dark"] .prog-chip.ct-solicitud { background: rgba(99, 102, 241, .22); color: #A5B4FC; }
+html[data-theme="dark"] .prog-chip.ct-recordatorio { background: rgba(245, 158, 11, .18); color: #FCD34D; }
+html[data-theme="dark"] .prog-chip.ct-proyecto { background: rgba(6, 182, 212, .18); color: #67E8F9; }
+html[data-theme="dark"] .prog-chip.ct-anuncio { background: rgba(168, 85, 247, .22); color: #C4B5FD; }
+html[data-theme="dark"] .prog-ev-ic.t-tarea { background: rgba(34, 197, 94, .18); color: #86EFAC; }
+html[data-theme="dark"] .prog-ev-ic.t-solicitud { background: rgba(99, 102, 241, .22); color: #A5B4FC; }
+html[data-theme="dark"] .prog-ev-ic.t-recordatorio { background: rgba(245, 158, 11, .18); color: #FCD34D; }
+html[data-theme="dark"] .prog-ev-ic.t-proyecto { background: rgba(6, 182, 212, .18); color: #67E8F9; }
+html[data-theme="dark"] .prog-ev-ic.t-anuncio { background: rgba(168, 85, 247, .22); color: #C4B5FD; }
+html[data-theme="dark"] .prog-ev-del:hover { background: rgba(214, 43, 31, .18); }
+html[data-theme="dark"] .prog-chart-bars { background: #241D17; }
+html[data-theme="dark"] .prog-modal .corp-field input,
+html[data-theme="dark"] .prog-modal .corp-field select,
+html[data-theme="dark"] .prog-modal .corp-field textarea {
+    background: #241D17;
+    border-color: var(--line);
+}
+html[data-theme="dark"] .prog-modal .corp-field input:focus,
+html[data-theme="dark"] .prog-modal .corp-field select:focus,
+html[data-theme="dark"] .prog-modal .corp-field textarea:focus { background: #2E2620; }
+html[data-theme="dark"] .prog-modal .fecha-chip { background: #241D17; border-color: var(--line); color: var(--ink); }
+
+/* ---- Panel de usuario / mi panel ---- */
+html[data-theme="dark"] .cat-chip { background: #241D17; color: var(--ink); border-color: #453B31; }
+html[data-theme="dark"] .icon-btn { background: #241D17; }
+html[data-theme="dark"] .icon-btn:hover,
+html[data-theme="dark"] .icon-btn[data-action="editar"]:hover {
+    border-color: var(--dogger-red);
+    color: var(--dogger-red);
+    background: #2E2620;
+}
+html[data-theme="dark"] .mini-chat-composer { background: var(--dogger-paper); }
+html[data-theme="dark"] .mini-chat-composer textarea { background: #241D17; border-color: var(--line); color: var(--ink); }
+html[data-theme="dark"] .ticket-back { background: #241D17; }
+html[data-theme="dark"] .ticket-summary .corp-title-icon { background: #241D17; }
+html[data-theme="dark"] .corp-detail-aside .corp-subsection { background: var(--dogger-paper); box-shadow: none; }
+html[data-theme="dark"] .dash-life { background: #2E2620; }
+html[data-theme="dark"] .dash-thumb { background: #241D17; color: var(--ink-muted); }
+html[data-theme="dark"] .dash-refresh { background: #241D17; }
+html[data-theme="dark"] .dashboard-card { background: var(--dogger-paper); box-shadow: none; }
+
+/* ---- Detalle de ticket: notificaciones ---- */
+html[data-theme="dark"] .corp-notif-btn { background: #241D17; color: var(--ink); }
+html[data-theme="dark"] .corp-notif-btn:hover { border-color: var(--dogger-red); color: var(--dogger-red); background: #2E2620; }
+html[data-theme="dark"] .corp-notif-btn.is-open {
+    border-color: rgba(47, 125, 79, .55);
+    background: rgba(47, 125, 79, .2);
+    color: #7BD88F;
+}
+html[data-theme="dark"] .corp-seg-content .corp-notif-body { background: #241D17; border-color: var(--line); }
+
+/* ---- Panel técnico: listas, tarjetas y píldoras ---- */
+html[data-theme="dark"] .tec-item.tec-active { background: #2A2418; }
+html[data-theme="dark"] .corp-btn:hover:not(:disabled) { border-color: #B7791F; background: #2E2620; color: var(--ink); }
+html[data-theme="dark"] .corp-combinadas { background: #2A2418; border-color: #6B5A2E; color: #E0C070; }
+html[data-theme="dark"] .corp-combinadas:hover,
+html[data-theme="dark"] .corp-combinadas.is-open { background: #322A1C; border-color: #8A7038; }
+html[data-theme="dark"] .corp-combinadas-list { background: #1F1913; border-color: var(--line); }
+html[data-theme="dark"] .corp-card-combinada { background: #2A2418; border-color: #6B5A2E; color: #E0C070; }
+html[data-theme="dark"] table.data-table.corp-table tbody tr:hover { background: #2A2418; }
+html[data-theme="dark"] .corp-table tbody tr.corp-row-selected { background: #2E2418; }
+html[data-theme="dark"] .corp-msg { background: #2A2418; border-color: #4A3F2A; }
+html[data-theme="dark"] .corp-msg.corp-msg-error { background: rgba(214, 43, 31, .12); border-color: rgba(214, 43, 31, .3); color: #FF6B5E; }
+html[data-theme="dark"] .corp-field input:focus,
+html[data-theme="dark"] .corp-field select:focus,
+html[data-theme="dark"] .corp-field textarea:focus { background: #2E2620; }
+html[data-theme="dark"] .corp-card { background: var(--dogger-paper); box-shadow: none; }
+html[data-theme="dark"] .corp-card:hover { border-color: #B7791F; background: #241D17; }
+html[data-theme="dark"] .corp-tec-item:hover { border-color: #B7791F; background: #241D17; }
+html[data-theme="dark"] .corp-tec-item.corp-tec-selected { background: #2E2418; }
+html[data-theme="dark"] .corp-tec-dot { background: #3A332B; }
+
+/* ---- Listas de tickets y sin asignar: menú flotante ---- */
+html[data-theme="dark"] #actions-flotante {
+    background: #1F1913;
+    border-color: var(--line);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .55);
+}
+html[data-theme="dark"] #actions-flotante .accion-btn:hover { background: #2E2620; }
+html[data-theme="dark"] .sa-assign select { background: #241D17; border-color: var(--line); }
+html[data-theme="dark"] .ty-prio-baja { background: #2E2620; color: var(--ink-muted); }
+
+/* ---- Dashboard y reportes: píldoras y sugerencias ---- */
+html[data-theme="dark"] .tec-cat { background: #241D17; color: var(--ink-muted); border-color: var(--line); }
+html[data-theme="dark"] .tec-pill.tp-resuelto { color: #7BD88F; }
+html[data-theme="dark"] .tec-pill.tp-vencido { color: #FF6B5E; }
+html[data-theme="dark"] .tec-pill.tp-cerrado { background: #302820; color: #D8CDBC; }
+html[data-theme="dark"] .tec-pill.tp-muted { background: #2E2620; color: var(--ink-muted); }
+html[data-theme="dark"] .pivot-pop-cat { background: #241D17; color: var(--ink-muted); border-color: var(--line); }
+html[data-theme="dark"] .pivot-pop-stat.st-btn.is-activo { background: #2E2620; }
+html[data-theme="dark"] .pivot-pop-pill.gr-v { color: #FF6B5E; }
+html[data-theme="dark"] .pivot-pop-pill.gr-abierto { color: #9DBBFB; }
+html[data-theme="dark"] .pivot-pop-pill.gr-en-progreso,
+html[data-theme="dark"] .pivot-pop-pill.gr-resuelto { color: #7BD88F; }
+html[data-theme="dark"] .pivot-pop-foot .ph-v { color: #FF6B5E; }
+html[data-theme="dark"] .pivot-pop-foot .ph-r { color: #E0B060; }
+html[data-theme="dark"] .rpt-top { background: #2A2418; color: #E0C070; border-color: #6B5A2E; }
+html[data-theme="dark"] .rpt-suggest button.is-sel { background: #2E2620; }
+html[data-theme="dark"] .rpt-rol--usuario { background: #2E2620; color: var(--ink-muted); }
+
 /* ---- Navegación compacta (organización de pestañas) ---- */
 html[data-navcompact="1"] .nav-link { padding: 14px 12px; font-size: 13px; }
 html[data-navcompact="1"] .nav-icon { width: 15px; height: 15px; }
