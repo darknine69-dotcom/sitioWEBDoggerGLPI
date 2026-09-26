@@ -9,6 +9,33 @@
 {% block extra_css %}
 <style>
 .usuarios-page .brand-titles { display: none; }
+/* Scroll vertical fino al lado de la tabla (oculto hasta usarlo) */
+.usuarios-page .table-card .table-scroll {
+    max-height: 580px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120, 104, 84, .4) transparent;
+}
+.usuarios-page .table-card .table-scroll::-webkit-scrollbar { width: 8px; }
+.usuarios-page .table-card .table-scroll::-webkit-scrollbar-track { background: transparent; }
+.usuarios-page .table-card .table-scroll::-webkit-scrollbar-thumb {
+    background: rgba(120, 104, 84, .35);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+.usuarios-page .table-card .table-scroll::-webkit-scrollbar-thumb:hover { background: rgba(160, 40, 32, .6); background-clip: content-box; }
+.usuarios-page .table-card .table-scroll::-webkit-scrollbar-thumb:active { background: rgba(120, 104, 84, .7); background-clip: content-box; }
+html[data-theme="dark"] .usuarios-page .table-card .table-scroll {
+    scrollbar-color: rgba(255, 255, 255, .18) transparent;
+}
+html[data-theme="dark"] .usuarios-page .table-card .table-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .16);
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+html[data-theme="dark"] .usuarios-page .table-card .table-scroll::-webkit-scrollbar-thumb:hover { background: rgba(214, 43, 31, .5); background-clip: content-box; }
 .live-head-badge { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .live-head-item { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 12px; font-weight: 700; color: var(--ink); }
 .live-head-item .dot-on { width: 9px; height: 9px; }

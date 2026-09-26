@@ -299,6 +299,13 @@ html[data-theme="dark"] { color-scheme: dark; }
 [data-theme="dark"] .perm-chip.off { background: rgba(255, 255, 255, .05); color: #A89D8E; border-color: #453B31; }
 [data-theme="dark"] .ue-evento-hora { background: rgba(217, 164, 54, .16); color: #D8A93E; }
 
+/* Pestañas de filtro (Todos / Usuarios finales / Técnicos) */
+[data-theme="dark"] .tab-pill { background: #241D17; border-color: #453B31; color: var(--ink-muted); }
+[data-theme="dark"] .tab-pill:hover { border-color: var(--dogger-red); color: var(--dogger-red); }
+[data-theme="dark"] .tab-pill span { background: #3A332B; color: #C9BEAF; }
+[data-theme="dark"] .tab-pill.active { background: var(--dogger-red); border-color: var(--dogger-red); color: #fff; box-shadow: none; }
+[data-theme="dark"] .tab-pill.active span { background: rgba(255, 255, 255, .22); color: #fff; }
+
 /* Franja de redes dentro del sistema */
 [data-theme="dark"] .page-socials { background: var(--dogger-paper); border-color: var(--line); }
 [data-theme="dark"] .page-socials .footer-social-row a { background: #241D17; border-color: #453B31; color: #CFC7BC; }
