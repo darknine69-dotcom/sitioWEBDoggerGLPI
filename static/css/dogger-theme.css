@@ -3496,7 +3496,6 @@ button.score-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-
     justify-content: center;
     width: 28px;
     height: 28px;
-    margin-left: auto;
     flex: none;
     border-radius: 8px;
     border: 1px solid var(--line);
