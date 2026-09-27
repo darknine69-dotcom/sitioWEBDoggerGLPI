@@ -173,7 +173,7 @@
         correr("cerrar", null, "¿Cerrar las solicitudes seleccionadas?");
     });
     document.querySelector('#corpActions [data-lote="eliminar"]').addEventListener("click", function () {
-        correr("eliminar", null, "¿Eliminar definitivamente las solicitudes seleccionadas? Esta acción no se puede deshacer.");
+        correr("eliminar", null, "¿Mover las solicitudes seleccionadas a la papelera? Podrás restaurarlas desde la papelera.");
     });
     document.querySelector('#corpActions [data-lote="editar"]').addEventListener("click", function () {
         var sel = seleccionadas();

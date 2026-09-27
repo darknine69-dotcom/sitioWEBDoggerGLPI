@@ -76,6 +76,22 @@ class Categoria(models.Model):
         ]
 
 
+class TicketActivosManager(models.Manager):
+    """Por defecto NO se ven los tickets enviados a la papelera.
+
+    Todas las vistas, el dashboard, los reportes y la sincronización con GLPI
+    usan `Ticket.objects`, así que un ticket eliminado no se cuela en ningún
+    listado ni en los KPI. Para la papelera está `Ticket.con_eliminados`.
+    """
+
+    def get_queryset(self):
+        return super().get_queryset().filter(eliminado_en__isnull=True)
+
+
+class TicketConEliminadosManager(models.Manager):
+    """Acceso sin filtrar, para la papelera y las gráficas "eliminadas"."""
+
+
 class Ticket(models.Model):
     class Prioridad(models.TextChoices):
         BAJA = "baja", "Baja"
@@ -148,6 +164,22 @@ class Ticket(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     fecha_cierre = models.DateTimeField(null=True, blank=True)
+    # --- Papelera: el borrado es lógico, se puede restaurar ---
+    eliminado_en = models.DateTimeField(
+        "Eliminado", null=True, blank=True, db_index=True
+    )
+    eliminado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tickets_eliminados",
+        db_column="EliminadoPorId",
+        verbose_name="Eliminado por",
+    )
+
+    objects = TicketActivosManager()
+    con_eliminados = TicketConEliminadosManager()
 
     class Meta:
         db_table = "Tickets"
@@ -159,6 +191,26 @@ class Ticket(models.Model):
             models.Index(fields=["prioridad"], name="IX_Tickets_Prioridad"),
             models.Index(fields=["fecha_creacion"], name="IX_Tickets_Fecha"),
         ]
+
+    @classmethod
+    def en_papelera(cls):
+        """Tickets enviados a la papelera (excluidos de `objects`)."""
+        return cls.con_eliminados.filter(eliminado_en__isnull=False)
+
+    @property
+    def en_la_papelera(self):
+        return self.eliminado_en is not None
+
+    def mandar_a_la_papelera(self, usuario=None):
+        """Borrado lógico: no toca adjuntos ni GLPI, se puede restaurar."""
+        self.eliminado_en = timezone.now()
+        self.eliminado_por = usuario if getattr(usuario, "pk", None) else None
+        self.save(update_fields=["eliminado_en", "eliminado_por", "fecha_actualizacion"])
+
+    def restaurar(self):
+        self.eliminado_en = None
+        self.eliminado_por = None
+        self.save(update_fields=["eliminado_en", "eliminado_por", "fecha_actualizacion"])
 
     def __str__(self):
         return f"{self.codigo} — {self.titulo}"

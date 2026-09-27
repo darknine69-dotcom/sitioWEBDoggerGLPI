@@ -312,6 +312,27 @@ _LABEL_MODO = {
 
 _DIAS_SEMANA = ("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
 
+# --- Ámbitos de los desplegables de las tarjetas --------------------------
+# Son la fuente única: los usan el JSON del dashboard, el HTML y el JS.
+# Las etiquetas van en femenino porque lo que se cuenta son "solicitudes".
+# (clave, etiqueta, estados que agrupa; "todas" y "eliminados" se tratan
+#  aparte porque no son simplemente un estado).
+_ALCANCES_TORTAS = (
+    ("abiertas", "Abiertas", (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)),
+    ("en_progreso", "En progreso", (Ticket.Estado.EN_PROGRESO,)),
+    ("resueltos", "Resueltas", (Ticket.Estado.RESUELTO,)),
+    ("cerrados", "Cerradas", (Ticket.Estado.CERRADO,)),
+    ("eliminados", "Eliminadas", ()),
+    ("todas", "Todas", ()),
+)
+
+# El comparativo de 20 días añade "recibidas"/"completadas" a los mismos
+# ámbitos.
+_ALCANCES_20_DIAS = (
+    ("recibidas", "Recibidas"),
+    ("completadas", "Completadas"),
+) + tuple((k, e) for k, e, _ in _ALCANCES_TORTAS)
+
 
 def _serie_dias(inicio, fin, con_dia=False):
     """Lista de etiquetas por día entre dos fechas (día de semana + día o d/m)."""
@@ -326,22 +347,39 @@ def _serie_dias(inicio, fin, con_dia=False):
 
 
 def _agrupar_vencidos(tickets, dimension):
-    """Cuenta tickets abiertos por dimensión según estado ANS (vencido / por vencer).
+    """Cuenta tickets por dimensión según estado ANS (vencido / por vencer).
 
     Cada vencimiento se trata como una SANCIÓN: vencidos es el número de
     infracciones y riesgo las advertencias por vencerse pronto.
+
+    Los tickets ya resueltos/cerrados también cuentan como sanción si se
+    tardaron más de `ans_horas` en resolverse. Antes solo se miraban los
+    abiertos, así que un técnico que ya resolvió todo tenía la gráfica
+    vacía aunque hubiera incumplido el ANS (y en contra de lo que sí cuenta
+    el comparativo de 20 días, que mira `fecha_cierre`).
     """
     agg = {}
     for t in tickets:
         clave, label = dimension(t)
-        if t.estado not in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
-            continue
-        estado_ans = t.info_ans[0]
-        if estado_ans not in ("vencido", "por-vencer"):
-            continue
-        if clave not in agg:
-            agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0}
-        agg[clave][("por-vencer" if estado_ans == "por-vencer" else "vencidos")] += 1
+        if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+            estado_ans = t.info_ans[0]
+            if estado_ans not in ("vencido", "por-vencer"):
+                continue
+            if clave not in agg:
+                agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0}
+            # "por-vencer" es advertencia (riesgo), "vencido" es infracción.
+            # Antes se escribía en las claves equivocadas ("por-vencer" y
+            # "riesgo"), así que el JS leía `vencidos` como undefined y la
+            # gráfica salía en blanco.
+            agg[clave]["riesgo" if estado_ans == "por-vencer" else "vencidos"] += 1
+        elif t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
+            if not (t.fecha_cierre and t.fecha_creacion and t.ans_horas):
+                continue
+            if (t.fecha_cierre - t.fecha_creacion) <= timedelta(hours=t.ans_horas):
+                continue  # resolvió dentro del ANS
+            if clave not in agg:
+                agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0}
+            agg[clave]["vencidos"] += 1
     return [v for v in agg.values()]
 
 
@@ -359,12 +397,30 @@ def _build_tecnico_dashboard(tecnico_id=None):
     if tecnico_id:
         qs = qs.filter(tecnico_asignado_id=tecnico_id)
     tickets = list(qs.order_by("fecha_creacion"))
+    # Los tickets de la papelera se cargan aparte: siguen fuera de todos los
+    # KPI (pivote, línea, SLA, contadores) y solo aparecen si el usuario pide
+    # expresamente el ámbito "Eliminados" o "Todas".
+    qs_pap = Ticket.con_eliminados.filter(eliminado_en__isnull=False)
+    if tecnico_id:
+        qs_pap = qs_pap.filter(tecnico_asignado_id=tecnico_id)
+    papelera = list(qs_pap.order_by("fecha_creacion"))
+    tickets_abiertas = tickets + papelera
     abiertos = [
         t
         for t in tickets
         if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
     ]
     hoy = timezone.now().date()
+
+    def _por_alcance(alcance, base=None, con_papelera=True):
+        """Tickets del ámbito pedido (abiertas, en progreso, ..., eliminados, todas)."""
+        base = tickets if base is None else base
+        if alcance == "eliminados":
+            return list(papelera)
+        if alcance == "todas":
+            return base + list(papelera) if con_papelera else base
+        estados = dict((k, e) for k, _, e in _ALCANCES_TORTAS)[alcance]
+        return [t for t in base if t.estado in estados]
 
     # --- Tabla dinámica pivote -------------------------------------------
     def _pivot(dimension, sort_key=None, limite=40):
@@ -491,25 +547,39 @@ def _build_tecnico_dashboard(tecnico_id=None):
         etiquetas_modo,
     )
     etiquetas_prioridad = dict(Ticket.Prioridad.choices)
-    pri_counts = Counter(t.prioridad for t in abiertos)
-    pie_prioridad = _pie(
-        {k: pri_counts.get(k, 0) for k in ("urgente", "alta", "media", "baja")},
-        COLORES_PRIORIDAD,
-        etiquetas_prioridad,
-    )
 
-    # --- Pie: abiertas por categoría -------------------------------------
+    # --- Pie: categoría y prioridad, una serie por cada ámbito ------------
     _PAL_CAT = ["#2563EB", "#2F7D4F", "#F2A900", "#B7791F", "#8A8A86", "#6B6259", "#D62B1F", "#7C4DFF"]
-    cat_abiertas = {}
-    for t in abiertos:
-        cid, clabel = dim_categoria(t)
-        fila = cat_abiertas.setdefault(cid, {"label": clabel, "n": 0})
-        fila["n"] += 1
-    cat_items = sorted(cat_abiertas.values(), key=lambda r: (-r["n"], r["label"].lower()))
-    pie_categoria = [
-        {"label": it["label"], "value": it["n"], "color": _PAL_CAT[i % len(_PAL_CAT)]}
-        for i, it in enumerate(cat_items)
-    ]
+
+    def _pie_categoria(lista):
+        acc = {}
+        for t in lista:
+            cid, clabel = dim_categoria(t)
+            fila = acc.setdefault(cid, {"label": clabel, "n": 0})
+            fila["n"] += 1
+        items = sorted(acc.values(), key=lambda r: (-r["n"], r["label"].lower()))
+        return [
+            {"label": it["label"], "value": it["n"], "color": _PAL_CAT[i % len(_PAL_CAT)]}
+            for i, it in enumerate(items)
+        ]
+
+    def _pie_prioridad(lista):
+        prio = Counter(t.prioridad for t in lista)
+        return _pie(  # orden fijo: urgente, alta, media, baja
+            {k: prio.get(k, 0) for k in ("urgente", "alta", "media", "baja")},
+            COLORES_PRIORIDAD,
+            etiquetas_prioridad,
+        )
+
+    # Un diccionario por ámbito: {abiertas: [...], en_progreso: [...], ...}.
+    # Así el desplegable del HTML no hace falta ir a pedir nada: el JS solo
+    # cambia de clave, y un técnico con todo resuelto ve datos igual.
+    pie_prioridad_por_alcance = {
+        clave: _pie_prioridad(_por_alcance(clave)) for clave, _, _ in _ALCANCES_TORTAS
+    }
+    pie_categoria_por_alcance = {
+        clave: _pie_categoria(_por_alcance(clave)) for clave, _, _ in _ALCANCES_TORTAS
+    }
 
     # --- Serie de solicitudes por rango ----------------------------------
     def _rango(rango):
@@ -580,6 +650,16 @@ def _build_tecnico_dashboard(tecnico_id=None):
                 (brecha if es_brecha else ok)[i] += 1
         return {"labels": etiquetas, "ok": ok, "brecha": brecha}
 
+    def _brecha_abierta(t):
+        """Un ticket abierto cuenta como brecha si ya venció su ANS."""
+        return t.info_ans[0] == "vencido"
+
+    def _brecha_cerrada(t):
+        """Resuelto/cerrado: breach si tardó más de `ans_horas`."""
+        if not (t.fecha_cierre and t.fecha_creacion and t.ans_horas):
+            return False
+        return (t.fecha_cierre - t.fecha_creacion) > timedelta(hours=t.ans_horas)
+
     recibidas = []
     for t in tickets:
         if t.fecha_creacion:
@@ -588,25 +668,62 @@ def _build_tecnico_dashboard(tecnico_id=None):
     completadas = []
     for t in tickets:
         if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) and t.fecha_cierre:
-            duracion = t.fecha_cierre - t.fecha_creacion
-            es_brecha = duracion > timedelta(hours=t.ans_horas)
-            completadas.append((_key_fecha(t.fecha_cierre), es_brecha))
+            completadas.append((_key_fecha(t.fecha_cierre), _brecha_cerrada(t)))
+
+    # Un ámbito por estado. La fecha que manda es "cuándo pasó a ese estado":
+    #   - abiertas / en progreso  -> día de creación (siguen sin cerrar)
+    #   - resueltos / cerrados    -> día de cierre
+    #   - eliminados              -> día en que se mandaron a la papelera
+    # En "todas" cada ticket cuenta UNA sola vez, en su propio momento, para
+    # que la suma de la tarjeta cuadre con el total.
+    def _pares_del_ambito(clave):
+        pares = []
+        if clave == "eliminados":
+            for t in papelera:
+                if t.eliminado_en:
+                    pares.append(
+                        (_key_fecha(t.eliminado_en), _brecha_cerrada(t) or _brecha_abierta(t))
+                    )
+            return pares
+        if clave == "todas":
+            for t in tickets_abiertas:
+                if t.en_la_papelera:
+                    if t.eliminado_en:
+                        pares.append(
+                            (_key_fecha(t.eliminado_en), _brecha_cerrada(t) or _brecha_abierta(t))
+                        )
+                elif t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) and t.fecha_cierre:
+                    pares.append((_key_fecha(t.fecha_cierre), _brecha_cerrada(t)))
+                elif t.fecha_creacion:
+                    pares.append((_key_fecha(t.fecha_creacion), _brecha_abierta(t)))
+            return pares
+        for t in _por_alcance(clave, con_papelera=False):
+            if clave in ("abiertas", "en_progreso"):
+                if t.fecha_creacion:
+                    pares.append((_key_fecha(t.fecha_creacion), _brecha_abierta(t)))
+            elif t.fecha_cierre:
+                pares.append((_key_fecha(t.fecha_cierre), _brecha_cerrada(t)))
+        return pares
 
     comparativo = {
         "recibidas": _comparativo(recibidas),
         "completadas": _comparativo(completadas),
     }
+    for clave, etiqueta, _ in _ALCANCES_TORTAS:
+        comparativo[clave] = _comparativo(_pares_del_ambito(clave))
 
     return json.dumps(
         {
             "pivot": pivot,
             "pie_modo": pie_modo,
-            "pie_prioridad": pie_prioridad,
-            "pie_categoria": pie_categoria,
+            "pie_prioridad": pie_prioridad_por_alcance,
+            "pie_categoria": pie_categoria_por_alcance,
             "linea": linea,
             "colores_serie": COLORES_SERIE,
             "sla": sla,
             "comparativo": comparativo,
+            "etiquetas_20dias": {k: e for k, e in _ALCANCES_20_DIAS},
+            "papelera_total": len(papelera),
         },
         ensure_ascii=False,
     )
@@ -2385,6 +2502,8 @@ def dashboard(request):
             "per_page_recientes": pp_recientes,
             "querystring": _params_sin_page(request, "page_recientes"),
             "dash_json": _build_tecnico_dashboard(None),
+            "alcances_tortas": _ALCANCES_TORTAS,
+            "alcances_20dias": _ALCANCES_20_DIAS,
             "tecnicos_stats": _tecnicos_resumen(),
             "n_tecnicos": n_tecnicos,
             "n_usuarios": n_usuarios,
@@ -2901,7 +3020,79 @@ def cambiar_estado(request, pk):
 @staff_required
 @require_POST
 def eliminar_ticket(request, pk):
+    """Borrado lógico: el ticket va a la papelera y se puede restaurar.
+
+    Ya no se borra en duro ni se tocan los adjuntos: la purga definitiva
+    vive en la papelera (`purgar_ticket`), que sí elimina en GLPI si está
+    configurado. Así "eliminar" deja de ser irreversible.
+    """
     ticket = get_object_or_404(Ticket, pk=pk)
+    codigo = ticket.codigo
+    had_glpi = bool(ticket.glpi_id)
+    ticket.mandar_a_la_papelera(request.user)
+    mensaje = f"Ticket {codigo} enviado a la papelera."
+    if had_glpi:
+        mensaje += " Se conserva en GLPI hasta que se purge definitivamente."
+    messages.success(request, mensaje)
+    next_url = request.POST.get("next") or "tickets:lista"
+    if not next_url.startswith("/"):
+        next_url = "tickets:lista"
+    return redirect(next_url)
+
+
+@admin_required
+def papelera(request):
+    """Papelera de reciclaje: tickets eliminados que aún se pueden restaurar."""
+    q = request.GET.get("q", "").strip()
+    base = (
+        Ticket.en_papelera()
+        .select_related("tecnico_asignado", "categoria", "eliminado_por")
+        .order_by("-eliminado_en")
+    )
+    if q:
+        # Búsqueda por palabras separadas: cada término debe coincidir
+        for palabra in q.split():
+            base = base.filter(
+                Q(codigo__icontains=palabra)
+                | Q(titulo__icontains=palabra)
+                | Q(solicitante_email__icontains=palabra)
+                | Q(solicitante_nombre__icontains=palabra)
+            )
+    total = base.count()
+    page_obj = _paginar(base, request, per_page_default=10)
+    return render(
+        request,
+        "tickets/papelera.html",
+        {
+            "page_obj": page_obj,
+            "tickets": page_obj.object_list,
+            "total": total,
+            "papelera_total": total,  # el context processor lo omite en esta vista
+            "q": q,
+            "nav_papelera": True,
+        },
+    )
+
+
+@admin_required
+@require_POST
+def restaurar_ticket(request, pk):
+    """Saca el ticket de la papelera y lo devuelve a la operación."""
+    ticket = get_object_or_404(Ticket.en_papelera(), pk=pk)
+    codigo = ticket.codigo
+    ticket.restaurar()
+    messages.success(request, f"Ticket {codigo} restaurado.")
+    next_url = request.POST.get("next") or "tickets:papelera"
+    if not next_url.startswith("/"):
+        next_url = "tickets:papelera"
+    return redirect(next_url)
+
+
+@admin_required
+@require_POST
+def purgar_ticket(request, pk):
+    """Elimina DEFINITIVAMENTE el ticket. Irreversible: por eso vive en la papelera."""
+    ticket = get_object_or_404(Ticket.en_papelera(), pk=pk)
     codigo = ticket.codigo
     glpi_id = ticket.glpi_id
     borrar_en_glpi = bool(getattr(request.user, "borrar_glpi_al_eliminar", False))
@@ -2922,18 +3113,16 @@ def eliminar_ticket(request, pk):
         if adj.archivo:
             adj.archivo.delete(save=False)
     ticket.delete()
-    mensaje = f"Ticket {codigo} eliminado."
+    mensaje = f"Ticket {codigo} eliminado definitivamente."
     if borrar_en_glpi:
         if glpi_id:
             mensaje += " También se eliminó en GLPI." if not aviso_glpi else f" GLPI local (no se sincronizó: {aviso_glpi})."
         else:
             mensaje += " No tenía registro en GLPI."
-    else:
-        mensaje += " Se conservó en GLPI (configurado así en Ajustes)." if glpi_id else ""
     messages.success(request, mensaje)
-    next_url = request.POST.get("next") or "tickets:lista"
-    if next_url.startswith("/"):
-        return redirect(next_url)
+    next_url = request.POST.get("next") or "tickets:papelera"
+    if not next_url.startswith("/"):
+        next_url = "tickets:papelera"
     return redirect(next_url)
 
 
@@ -3146,7 +3335,11 @@ def mi_ticket_cerrar_ajax(request, pk):
 @user_required
 @require_POST
 def mi_ticket_eliminar_ajax(request, pk):
-    """Eliminar el propio ticket del usuario (solo mientras esté abierto)."""
+    """Renunciar/cancelar el propio ticket del usuario (solo mientras esté abierto).
+
+    También es borrado lógico: si el usuario se equivoca, el admin lo restaura
+    desde la papelera. Antes `ticket.delete()` lo borraba sin vuelta atrás.
+    """
     ticket = _mi_ticket_del_usuario(request, pk)
     if ticket.estado != ticket.Estado.ABIERTO:
         return JsonResponse(
@@ -3154,11 +3347,8 @@ def mi_ticket_eliminar_ajax(request, pk):
             status=400,
         )
     codigo = ticket.codigo
-    for adj in ticket.adjuntos.all():
-        if adj.archivo:
-            adj.archivo.delete(save=False)
-    ticket.delete()
-    return JsonResponse({"ok": True, "codigo": codigo})
+    ticket.mandar_a_la_papelera(request.user)
+    return JsonResponse({"ok": True, "codigo": codigo, "papelera": True})
 
 
 @user_required
@@ -3458,6 +3648,8 @@ def panel_tecnico(request):
             "per_page": pp_mis,
             "per_page_sol": pp_sol,
             "dash_json": dash_json,
+            "alcances_tortas": _ALCANCES_TORTAS,
+            "alcances_20dias": _ALCANCES_20_DIAS,
             "abiertas": abiertas,
             "abiertas_count": abiertas_count,
             "mis_count": mis_count,
@@ -3573,25 +3765,20 @@ def panel_tecnico_lote(request):
     if accion == "eliminar":
         if not request.user.rol == "admin":
             return JsonResponse({"ok": False, "error": "Solo el administrador puede eliminar solicitudes en lote."}, status=403)
-        borrar_en_glpi = bool(getattr(request.user, "borrar_glpi_al_eliminar", False))
+        # Borrado lógico: van a la papelera, sin tocar adjuntos ni GLPI.
         eliminados = 0
         for t in tickets:
-            glpi_id = t.glpi_id
-            if borrar_en_glpi and glpi_id:
-                try:
-                    client = GlpiClient()
-                    if client.available:
-                        client.init_session()
-                        client.delete_ticket(glpi_id)
-                        client.kill_session()
-                except Exception:
-                    pass
-            for adj in t.adjuntos.all():
-                if adj.archivo:
-                    adj.archivo.delete(save=False)
-            t.delete()
+            t.mandar_a_la_papelera(request.user)
             eliminados += 1
-        return JsonResponse({"ok": True, "mensaje": f"{eliminados} solicitud(es) eliminada(s).", "eliminados": eliminados})
+        return JsonResponse({
+            "ok": True,
+            "mensaje": (
+                f"{eliminados} solicitud(es) enviada(s) a la papelera."
+                if eliminados
+                else "No había nada por eliminar."
+            ),
+            "eliminados": eliminados,
+        })
 
     if accion == "asignar":
         sitio = request.POST.get("sitio", "").strip()

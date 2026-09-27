@@ -51,10 +51,34 @@
     // ------------------------------------------------------------------
     // Datos por widget
     // ------------------------------------------------------------------
+    // Cada torta (categoria/prioridad) trae una serie POR ÁMBITO en el JSON
+    // (abiertas, en progreso, resueltos, cerrados, eliminados, todas), así
+    // que el desplegable solo cambia de clave: no hace falta ir a pedir nada.
+    var SCOPE_ID = { categoria: 'wCatScope', prioridad: 'wPrioScope' };
+    var SCOPE_LABEL = { categoria: 'wCatLabel', prioridad: 'wPrioLabel' };
+    var SCOPE_DEFAULT = 'abiertas';
+    var AMBITO20_DEFAULT = 'recibidas';
+
+    function scopeWidget(w) {
+        var el = document.getElementById(SCOPE_ID[w]);
+        return (el && el.value) || SCOPE_DEFAULT;
+    }
+
+    function ambito20() {
+        var el = document.getElementById('wComp20');
+        return (el && el.value) || AMBITO20_DEFAULT;
+    }
+
     function serieWidget(w) {
         if (w === 'modo') return { pairs: D.pie_modo || [] };
-        if (w === 'categoria') return { pairs: D.pie_categoria || [] };
-        if (w === 'prioridad') return { pairs: D.pie_prioridad || [] };
+        if (w === 'categoria') {
+            var porCat = D.pie_categoria || {};
+            return { pairs: porCat[scopeWidget(w)] || porCat[SCOPE_DEFAULT] || [] };
+        }
+        if (w === 'prioridad') {
+            var porPri = D.pie_prioridad || {};
+            return { pairs: porPri[scopeWidget(w)] || porPri[SCOPE_DEFAULT] || [] };
+        }
         if (w === 'linea') {
             var rango = document.getElementById('wLineaRange');
             var d = D.linea[(rango && rango.value) || 'ultima_semana'];
@@ -79,8 +103,7 @@
             };
         }
         if (w === 'comp20') {
-            var sel20 = document.getElementById('wComp20');
-            var c20 = D.comparativo[(sel20 && sel20.value) || 'recibidas'] || D.comparativo.recibidas;
+            var c20 = D.comparativo[ambito20()] || D.comparativo[AMBITO20_DEFAULT];
             return {
                 labels: c20.labels,
                 datasets: [
@@ -89,7 +112,7 @@
                 ]
             };
         }
-        var c = D.comparativo[w === 'recibidas' ? 'recibidas' : 'completadas'];
+        var c = D.comparativo[ambito20()] || D.comparativo[AMBITO20_DEFAULT];
         return {
             labels: c.labels,
             datasets: [
@@ -120,15 +143,17 @@
 
     function countTitle(widget) {
         if (widget === 'modo') return 'solicitudes abiertas por modo';
-        if (widget === 'categoria') return 'solicitudes abiertas por categoría';
-        if (widget === 'prioridad') return 'solicitudes abiertas por prioridad';
+        if (widget === 'categoria' || widget === 'prioridad') {
+            var dim = widget === 'categoria' ? 'categoría' : 'prioridad';
+            var sc = scopeWidget(widget);
+            if (sc === 'todas') return 'solicitudes por ' + dim;
+            if (sc === 'eliminados') return 'solicitudes eliminadas por ' + dim;
+            return 'solicitudes ' + sc.replace('_', ' ') + ' por ' + dim;
+        }
         if (widget === 'linea') return 'entrantes en el período';
         if (widget === 'sla') return 'sanciones por vencimiento de ANS';
         if (widget === 'comp20') {
-            var sel20 = document.getElementById('wComp20');
-            return (sel20 && sel20.value === 'completadas')
-                ? 'completadas en los últimos 20 días'
-                : 'recibidas en los últimos 20 días';
+            return (D.etiquetas_20dias || {})[ambito20()] || 'solicitudes en los últimos 20 días';
         }
         return 'solicitudes en los últimos 20 días';
     }
@@ -296,6 +321,34 @@
         return t.content.firstChild;
     }
 
+    // Un canvas sin valores es un recuadro en blanco sin explicación: se
+    // sustituye por un mensaje que dice qué falta.
+    function sinDatosMsg(widget) {
+        if (widget === 'sla') return 'Sin sanciones ni advertencias de ANS.';
+        if (widget === 'linea') return 'Sin movimientos en el período.';
+        if (widget === 'comp20') {
+            return 'Sin tickets de "' + ((D.etiquetas_20dias || {})[ambito20()] || 'este ámbito') +
+                '" en los últimos 20 días.';
+        }
+        if (widget === 'categoria' || widget === 'prioridad') {
+            return 'Sin solicitudes ' + (scopeWidget(widget) === 'todas' ? '' : scopeWidget(widget).replace('_', ' ') + ' ') + 'en esta vista.';
+        }
+        return 'Sin datos.';
+    }
+
+    function tieneValores(cfg) {
+        var ds = (cfg && cfg.data && cfg.data.datasets) || [];
+        for (var i = 0; i < ds.length; i++) {
+            var arr = ds[i].data || [];
+            for (var j = 0; j < arr.length; j++) {
+                var v = arr[j];
+                if (v && typeof v === 'object') v = (v.y !== undefined) ? v.y : (v.v || 0);
+                if (typeof v === 'number' && v > 0) return true;
+            }
+        }
+        return false;
+    }
+
     function render(card, widget) {
         var stage = card.querySelector('[data-stage]');
         function onPie(on) {
@@ -311,8 +364,15 @@
         if (tipo === 'pyramid') { drawFunnelLike(stage, widget, true); onPie(false); return; }
 
         var canvas = document.createElement('canvas');
-        stage.appendChild(canvas);
         var cfg = configFor(widget, tipo);
+        // Sin importarle si hay etiquetas: un canvas en blanco no le dice nada
+        // al usuario. Si no hay ni un solo valor, se explica qué falta.
+        if (!tieneValores(cfg)) {
+            stage.appendChild(domEl('<p class="chart-empty">' + sinDatosMsg(widget) + '</p>'));
+            onPie(false);
+            return;
+        }
+        stage.appendChild(canvas);
         var chart = new Chart(canvas.getContext('2d'), cfg);
         var ct = cfg.type || tipo;
 
@@ -559,8 +619,9 @@
     // ------------------------------------------------------------------
     // Leyenda de pies (según datos)
     // ------------------------------------------------------------------
-    function buildPieLegends() {
-        ['modo', 'categoria', 'prioridad'].forEach(function (widget) {
+    function buildPieLegends(solo) {
+        var widgets = solo || ['modo', 'categoria', 'prioridad'];
+        widgets.forEach(function (widget) {
             var card = document.querySelector('.chart-modal[data-widget="' + widget + '"]');
             if (!card) return;
             var leg = card.querySelector('[data-pie-legend]');
@@ -593,6 +654,25 @@
             estado[widget] = DEFAULT_TIPO[widget] || 'bar';
             buildMenu(card, widget);
             render(card, widget);
+        });
+        // Selector de ámbito de las dos tortas (abiertas, en progreso, ...).
+        // El título usa la etiqueta del <option> elegido para no duplicar
+        // el diccionario de nombres en el JS.
+        ['categoria', 'prioridad'].forEach(function (widget) {
+            var sel = document.getElementById(SCOPE_ID[widget]);
+            if (!sel) return;
+            function etiquetar() {
+                var opcion = sel.options[sel.selectedIndex];
+                var lb = document.getElementById(SCOPE_LABEL[widget]);
+                if (lb && opcion) lb.textContent = opcion.textContent.trim();
+            }
+            sel.addEventListener('change', function () {
+                etiquetar();
+                var card = document.querySelector('.chart-modal[data-widget="' + widget + '"]');
+                if (card) render(card, widget);
+                buildPieLegends([widget]);
+            });
+            etiquetar();
         });
         var range = document.getElementById('wLineaRange');
         if (range) range.addEventListener('change', function () {

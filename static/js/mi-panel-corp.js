@@ -269,18 +269,18 @@
     /* Cerrar / Eliminar (confirmación en panel) */
     function showConfirmar(kind, pk, codigo) {
         var esCerrar = (kind === "cerrar");
-        setAccion(esCerrar ? "#i-ban" : "#i-trash", esCerrar ? "Cerrar solicitud" : "Eliminar solicitud");
+        setAccion(esCerrar ? "#i-ban" : "#i-trash", esCerrar ? "Cerrar solicitud" : "Cancelar solicitud");
         accionPanel.innerHTML =
             '<div class="confirm-box">' +
             '<p>' + (esCerrar
                 ? '¿Confirmas que deseas cerrar la solicitud <strong>' + esc(codigo) + '</strong>?'
-                : '¿Seguro que deseas <strong>eliminar</strong> la solicitud <strong>' + esc(codigo) + '</strong>?') + '</p>' +
+                : '¿Seguro que deseas <strong>cancelar</strong> la solicitud <strong>' + esc(codigo) + '</strong>?') + '</p>' +
             '<p class="modal-note">' + (esCerrar
                 ? "Al cerrarla no podrás editarla; el historial se conserva."
-                : "Esta acción es permanente y no se puede deshacer. Solo se puede eliminar mientras la solicitud está abierta.") + '</p>' +
+                : "Se mueve a la papelera y deja de contar en el dashboard. Si te equivocaste, un administrador puede restaurarla. Solo se puede cancelar mientras la solicitud está abierta.") + '</p>' +
             '<p id="confirm-error" class="form-error-line" hidden></p>' +
             '<div class="modal-actions">' +
-            '<button type="button" class="btn btn-cancel btn-sm" id="btn-confirm-yes">' + (esCerrar ? "Sí, cerrar" : "Sí, eliminar") + '</button>' +
+            '<button type="button" class="btn btn-cancel btn-sm" id="btn-confirm-yes">' + (esCerrar ? "Sí, cerrar" : "Sí, cancelar") + '</button>' +
             '<button type="button" class="btn btn-outline btn-sm" id="btn-confirm-no">No, cancelar</button>' +
             '</div></div>';
         var yesBtn = document.getElementById("btn-confirm-yes");

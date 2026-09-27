@@ -38,8 +38,18 @@
     <div class="chart-card chart-modal" data-widget="categoria">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
-            <h3>Abiertas por categoría</h3>
-            <div class="chart-switch" data-switch></div>
+            <h3><em id="wCatLabel">Abiertas</em> por categoría</h3>
+            <div class="dash-head-tools">
+                <label class="dash-select">
+                    <span>Ver</span>
+                    <select id="wCatScope">
+                        {% for clave, etiqueta, estados in alcances_tortas %}
+                        <option value="{{ clave }}"{% if forloop.first %} selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <div class="chart-switch" data-switch></div>
+            </div>
         </div>
         <div class="pie-flex">
             <div class="chart-stage canvas-sm" data-stage></div>
@@ -52,8 +62,18 @@
     <div class="chart-card chart-modal" data-widget="prioridad">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
-            <h3>Abiertas por prioridad</h3>
-            <div class="chart-switch" data-switch></div>
+            <h3><em id="wPrioLabel">Abiertas</em> por prioridad</h3>
+            <div class="dash-head-tools">
+                <label class="dash-select">
+                    <span>Ver</span>
+                    <select id="wPrioScope">
+                        {% for clave, etiqueta, estados in alcances_tortas %}
+                        <option value="{{ clave }}"{% if forloop.first %} selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <div class="chart-switch" data-switch></div>
+            </div>
         </div>
         <div class="pie-flex">
             <div class="chart-stage canvas-sm" data-stage></div>
@@ -95,8 +115,9 @@
                 <label class="dash-select">
                     <span>Analizar</span>
                     <select id="wComp20">
-                        <option value="recibidas" selected>Recibidas</option>
-                        <option value="completadas">Completadas</option>
+                        {% for clave, etiqueta in alcances_20dias %}
+                        <option value="{{ clave }}"{% if forloop.first %} selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
                     </select>
                 </label>
                 <div class="chart-switch" data-switch></div>
@@ -135,4 +156,4 @@
 
 <script type="application/json" id="dashData">{{ dash_json|safe }}</script>
 <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
-<script src="{% static 'js/panel-dash.js' %}?v=20261004"></script>
+<script src="{% static 'js/panel-dash.js' %}?v=20260927"></script>

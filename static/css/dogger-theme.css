@@ -2876,6 +2876,23 @@ select:focus-visible, textarea:focus-visible {
     border-bottom-color: var(--dogger-red);
 }
 .nav-link.is-active::after { transform: scaleX(1); }
+/* Contador de la papelera */
+.nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--dogger-red);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 1;
+}
+.nav-link-trash .nav-label { font-size: 12.5px; }
+.nav-link-trash.is-active .nav-badge { background: var(--dogger-red); }
 .nav-icon {
     width: 16px;
     height: 16px;
@@ -4110,7 +4127,7 @@ a.score-chip { color: inherit; }
     }
     .nav-link:hover::after { transform: scaleY(1); }
     .nav-link:hover { background: #FFFFFF; }
-    .nav-link.is-active {
+.nav-link.is-active {
         border-left-color: var(--dogger-red);
         border-bottom-color: #F2ECE1;
         background: #FEF3F2;
