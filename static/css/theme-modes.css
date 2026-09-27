@@ -244,7 +244,6 @@ html[data-theme="dark"] { color-scheme: dark; }
 [data-theme="dark"] .btn-primary,
 [data-theme="dark"] .btn-ghost,
 [data-theme="dark"] .btn-outline:hover,
-[data-theme="dark"] .score-chip,
 [data-theme="dark"] .brand-header { color: #FFF7EA; }
 
 /* ---- Modo oscuro: indicadores (KPIs), tarjetas de tickets, categorías y usuarios ---- */
@@ -299,7 +298,13 @@ html[data-theme="dark"] { color-scheme: dark; }
 [data-theme="dark"] .ue-ficha-row > td { background: #221C17; border-top-color: #3A332B; }
 [data-theme="dark"] .ue-ficha-meta-item { background: #241D17; border-color: #453B31; }
 [data-theme="dark"] .ue-box { background: #241D17; border-color: #453B31; }
-[data-theme="dark"] .ue-stat { background: rgba(255, 255, 255, .04); border-color: #453B31; }
+[data-theme="dark"] .ue-stat { background: #221C17; border-color: #453B31; }
+[data-theme="dark"] .ue-stat span { color: #A79A8C; }
+[data-theme="dark"] .ue-stat b { color: #FFE9D6; }
+[data-theme="dark"] .ue-stat.s-ab b { color: #F26D62; }
+[data-theme="dark"] .ue-stat.s-pr b { color: #F2A900; }
+[data-theme="dark"] .ue-stat.s-re b { color: #4CAF6E; }
+[data-theme="dark"] .ue-stat.s-ce b { color: #A79A8C; }
 [data-theme="dark"] .ue-badge.ue-nuevo { background: rgba(217, 164, 54, .16); color: #D8A93E; }
 [data-theme="dark"] .perm-chip { background: rgba(47, 125, 79, .16); color: #7BD88F; border-color: rgba(47, 125, 79, .35); }
 [data-theme="dark"] .perm-chip.off { background: rgba(255, 255, 255, .05); color: #A89D8E; border-color: #453B31; }

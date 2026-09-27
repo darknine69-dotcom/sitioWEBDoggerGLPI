@@ -230,11 +230,11 @@
 }
 
 /* ---- Dashboard compacto (2x2) ---- */
-.dash-compact .scoreboard { grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
-.dash-compact .score-chip { padding: 12px 14px 12px 18px; border-radius: 12px; }
-.dash-compact .score-chip::before { width: 4px; }
-.dash-compact .score-chip .score-num { font-size: 26px; letter-spacing: -.04em; margin-bottom: 2px; }
-.dash-compact .score-chip .score-label { font-size: 10px; letter-spacing: .08em; }
+.dash-compact .dash-stat-row--tec { grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.dash-compact .dash-stat { padding: 10px 12px; gap: 10px; }
+.dash-compact .dash-stat-icon { width: 34px; height: 34px; border-radius: 9px; }
+.dash-compact .dash-stat-icon .icon { width: 17px; height: 17px; }
+.dash-compact .dash-stat-value { font-size: 18px; }
 .dash-compact .charts-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
 .dash-compact .chart-card { padding: 14px 16px; border-radius: 14px; }
 .dash-compact .chart-card-head { margin-bottom: 10px; }
@@ -256,7 +256,7 @@
 .dash-compact h2.chart-section-sub { }
 .tecnico-dash-sub { font-size: 13px; color: var(--ink-muted); margin: -4px 0 8px; }
 @media (max-width: 900px) {
-    .dash-compact .scoreboard { grid-template-columns: repeat(2, 1fr); }
+    .dash-compact .dash-stat-row--tec { grid-template-columns: repeat(2, 1fr); }
     .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr) 140px; gap: 10px; }
 }
 
@@ -421,22 +421,39 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 
     {% if vista == 'panel' %}
     <div class="dash-compact">
-        <div class="scoreboard">
-            <a class="score-chip sc-warning" href="?vista=mis&amp;sv=todas&amp;rango=">
-                <span class="score-num">{{ stats.total|default:0 }}</span>
-                <span class="score-label">Total asignados</span>
+        {% comment %}Mismo diseño que los indicadores del administrador (dashboard.html).{% endcomment %}
+        <div class="dash-stat-row dash-stat-row--tec">
+            <a class="dash-stat" href="?vista=mis&amp;sv=todas&amp;rango=" title="Todos tus tickets asignados, de cualquier estado">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Total asignados</span>
+                    <span class="dash-stat-value">{{ stats.total|default:0 }}</span>
+                    <span class="dash-stat-hint">de cualquier estado</span>
+                </span>
             </a>
-            <a class="score-chip sc-abierto" href="?vista=mis&amp;estado=abierto&amp;rango=">
-                <span class="score-num">{{ stats.abiertos|default:0 }}</span>
-                <span class="score-label">Abiertos</span>
+            <a class="dash-stat" href="?vista=mis&amp;estado=abierto&amp;rango=" title="Tus solicitudes recién creadas, pendientes de atención">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Abiertos</span>
+                    <span class="dash-stat-value st-abiertos">{{ stats.abiertos|default:0 }}</span>
+                    <span class="dash-stat-hint">en espera de atención</span>
+                </span>
             </a>
-            <a class="score-chip sc-progreso" href="?vista=mis&amp;estado=en-progreso&amp;rango=">
-                <span class="score-num">{{ stats.en_progreso|default:0 }}</span>
-                <span class="score-label">En progreso</span>
+            <a class="dash-stat" href="?vista=mis&amp;estado=en-progreso&amp;rango=" title="Tus solicitudes que ya estás atendiendo">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">En progreso</span>
+                    <span class="dash-stat-value st-progreso">{{ stats.en_progreso|default:0 }}</span>
+                    <span class="dash-stat-hint">siendo atendidos</span>
+                </span>
             </a>
-            <a class="score-chip sc-resuelto" href="?vista=mis&amp;estado=resuelto&amp;rango=">
-                <span class="score-num">{{ stats.resueltos|default:0 }}</span>
-                <span class="score-label">Resueltos</span>
+            <a class="dash-stat" href="?vista=mis&amp;estado=resuelto&amp;rango=" title="Tus solicitudes ya resueltas">
+                <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Resueltos</span>
+                    <span class="dash-stat-value st-resueltos">{{ stats.resueltos|default:0 }}</span>
+                    <span class="dash-stat-hint">{{ stats.cerrados|default:0 }} cerrados</span>
+                </span>
             </a>
         </div>
 

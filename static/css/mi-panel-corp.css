@@ -1146,53 +1146,7 @@
     white-space: nowrap;
 }
 .dash-hero-meta .icon { color: var(--dogger-red); }
-.dash-stat-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-}
-a.dash-stat { text-decoration: none; }
-.dash-stat {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #FBFAF7;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 12px 14px;
-    min-width: 0;
-    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
-}
-a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(23, 20, 18, .08); }
-.dash-stat-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: #F1EDE6;
-    color: var(--dogger-red);
-}
-.dash-stat-icon .icon { width: 19px; height: 19px; }
-.dash-stat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.dash-stat-label {
-    font-size: 10.5px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-    color: var(--ink-muted);
-}
-.dash-stat-value { font-size: 20px; font-weight: 800; color: #111; line-height: 1.1; }
-.dash-stat .dash-stat-value.st-abiertos { color: #C6281E; }
-.dash-stat .dash-stat-value.st-progreso { color: #C2410C; }
-.dash-stat .dash-stat-value.st-resueltos { color: #16A34A; }
-.dash-stat .dash-stat-value.st-cerrados { color: #6B6259; }
-.dash-stat .dash-stat-value.st-vencidos { color: #C6281E; }
-.dash-stat .dash-stat-value.st-sla-ok { color: #16A34A; }
-.dash-stat .dash-stat-value.st-sla-no { color: #C6281E; }
-.dash-stat-hint { font-size: 11.5px; color: #8A8478; font-weight: 600; overflow-wrap: anywhere; }
+
 
 .dash-refresh {
     display: inline-flex;
@@ -1299,10 +1253,8 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
     .dashboard-grid { grid-template-columns: 1fr; }
     .dashboard-bottom { grid-template-columns: 1fr; }
     .dashboard-bottom-side { position: static; }
-    .dash-stat-row { grid-template-columns: repeat(2, 1fr); }
     .ans-strip { gap: 16px; }
 }
 @media (max-width: 520px) {
-    .dash-stat-row { grid-template-columns: 1fr; }
     .ans-seg { flex-basis: 100%; }
 }

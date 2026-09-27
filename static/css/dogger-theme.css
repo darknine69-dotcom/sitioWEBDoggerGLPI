@@ -341,70 +341,6 @@ a { color: inherit; text-decoration: none; }
     line-height: 1.5;
 }
 
-.scoreboard {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    margin-bottom: 34px;
-}
-
-.score-chip {
-    background: var(--dogger-black);
-    color: var(--dogger-cream);
-    border-radius: var(--radius);
-    padding: 18px 20px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: var(--shadow-card);
-}
-
-.score-chip::before {
-    content: "";
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 6px;
-    background: var(--accent, var(--dogger-red));
-}
-
-.score-chip .score-num {
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 40px;
-    line-height: 1;
-    letter-spacing: -0.06em;
-    color: var(--accent, var(--dogger-yellow));
-    display: block;
-    margin-bottom: 4px;
-}
-
-.score-chip .score-label {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: rgba(255,247,234,.72);
-}
-
-/* Scoreboard compacto (reportes) */
-.reports-page .scoreboard {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-}
-.reports-page .score-chip {
-    padding: 12px 14px;
-    padding-left: 18px;
-    border-radius: 10px;
-}
-.reports-page .score-chip::before { width: 4px; }
-.reports-page .score-chip .score-num {
-    font-size: 26px;
-    letter-spacing: -0.04em;
-    margin-bottom: 2px;
-}
-.reports-page .score-chip .score-label {
-    font-size: 10px;
-    letter-spacing: .08em;
-}
 
 /* Donut chart (reportes - tickets por estado) */
 .donut-chart-wrap {
@@ -2154,7 +2090,6 @@ table.data-table tbody tr td:first-child {
 /* Responsive */
 @media (max-width: 860px) {
     .split { grid-template-columns: 1fr; }
-    .scoreboard { grid-template-columns: repeat(2, 1fr); }
     .reports-grid { grid-template-columns: 1fr; }
     .report-layout { grid-template-columns: 1fr; }
 }
@@ -3474,9 +3409,62 @@ a.page-pill:hover { border-color: var(--dogger-red); color: var(--dogger-red); }
     flex-shrink: 0;
 }
 
-/* KPI clickeables (dashboard / reportes) */
-button.score-chip { cursor: pointer; text-align: left; transition: transform .12s ease, box-shadow .12s ease; font: inherit; }
-button.score-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+
+/* ---- Indicadores del dashboard (tarjetas KPI) ---- */
+.dash-stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+a.dash-stat { text-decoration: none; }
+.dash-stat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #FBFAF7;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    min-width: 0;
+    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(23, 20, 18, .08); }
+.dash-stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #F1EDE6;
+    color: var(--dogger-red);
+}
+.dash-stat-icon .icon { width: 19px; height: 19px; }
+.dash-stat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dash-stat-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--ink-muted);
+}
+.dash-stat-value { font-size: 20px; font-weight: 800; color: #111; line-height: 1.1; }
+.dash-stat .dash-stat-value.st-abiertos { color: #C6281E; }
+.dash-stat .dash-stat-value.st-progreso { color: #C2410C; }
+.dash-stat .dash-stat-value.st-resueltos { color: #16A34A; }
+.dash-stat .dash-stat-value.st-cerrados { color: #6B6259; }
+.dash-stat .dash-stat-value.st-vencidos { color: #C6281E; }
+.dash-stat .dash-stat-value.st-sla-ok { color: #16A34A; }
+.dash-stat .dash-stat-value.st-sla-no { color: #C6281E; }
+.dash-stat-hint { font-size: 11.5px; color: #8A8478; font-weight: 600; overflow-wrap: anywhere; }
+
+@media (max-width: 960px) {
+    .dash-stat-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+    .dash-stat-row { grid-template-columns: 1fr; }
+}
 
 /* ---- Gráficas CSS (sin dependencias externas) ---- */
 .chart-card { background:#fff; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-card); padding:18px 20px; }
@@ -3605,7 +3593,6 @@ button.score-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-
     background:var(--dogger-cream); border:1px solid var(--line); border-radius:999px;
     font-size:11.5px; padding:4px 10px; color:var(--ink-muted);
 }
-a.score-chip { color: inherit; }
 
 /* =====================================================================
    LANDING (INICIO) — v4
@@ -4297,11 +4284,6 @@ a.score-chip { color: inherit; }
     .data-table th { padding: 10px 12px; font-size: 10px; }
     .data-table td { padding: 10px 12px; }
     .panel { overflow-x: auto; }
-    .scoreboard { grid-template-columns: 1fr 1fr; gap: 10px; }
-    .score-chip { padding: 14px 16px; }
-    .score-chip .score-num { font-size: 30px; }
-    .reports-page .scoreboard { grid-template-columns: 1fr 1fr; }
-    .reports-page .score-chip .score-num { font-size: 22px; }
     .donut-chart-wrap { flex-direction: column; align-items: center; }
     .donut-ring { width: 130px; height: 130px; }
     .donut-ring::after { inset: 22px; font-size: 18px; }
@@ -4894,11 +4876,6 @@ a.score-chip { color: inherit; }
 .data-table tbody tr.tr-media { --dot: #F2A900; }
 .data-table tbody tr.tr-baja { --dot: #6B9E78; }
 
-.score-chip.sc-warning { --accent: #FFC72C; }
-.score-chip.sc-abierto { --accent: #D62B1F; }
-.score-chip.sc-progreso { --accent: #F2A900; }
-.score-chip.sc-resuelto { --accent: #2F7D4F; }
-.score-chip.sc-cerrado { --accent: #6B6259; }
 
 .report-simple-list li { background: var(--priority-bg, rgba(36,31,28,0.02)); }
 .report-simple-list li.mr-urgente { --priority-color: #D62B1F; --priority-bg: rgba(214,43,31,.10); }
