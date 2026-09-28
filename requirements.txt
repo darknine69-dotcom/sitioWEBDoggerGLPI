@@ -12,6 +12,9 @@ gunicorn>=22.0
 # --- Cloud (PostgreSQL) ---
 psycopg2-binary>=2.9
 
+# --- Hosting compartido (MySQL / MariaDB en cPanel) ---
+PyMySQL>=1.1
+
 # --- Local (SQL Server) — se instalan solo en Windows ---
 # mssql-django>=1.5
 # pyodbc>=5.1

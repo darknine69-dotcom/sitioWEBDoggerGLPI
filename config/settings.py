@@ -1,13 +1,14 @@
 """
 Django settings — Dogger HelpDesk
-Conectado a Microsoft SQL Server 2022 (local) o PostgreSQL (cloud).
+Conectado a Microsoft SQL Server 2022 (local), PostgreSQL (cloud) o
+MySQL/MariaDB (hosting compartido).
 """
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
 
-load_dotenv()
+load_dotenv(encoding="utf-8")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -92,8 +93,15 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # ---------------------------------------------------------------------------
-# Base de datos — SQL Server 2022 (local) o PostgreSQL (cloud)
+# Base de datos — SQL Server 2022 (local), PostgreSQL (cloud) o MySQL (cPanel)
 # ---------------------------------------------------------------------------
+try:
+    import pymysql
+
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    pass
+
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 if DATABASE_URL:
