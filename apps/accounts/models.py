@@ -60,6 +60,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     )
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    bienvenida_vista = models.DateTimeField(null=True, blank=True)
     glpi_user_id = models.PositiveIntegerField(
         "ID usuario GLPI",
         null=True,

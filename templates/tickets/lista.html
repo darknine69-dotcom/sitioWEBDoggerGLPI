@@ -16,6 +16,10 @@
 .corp-view-btn svg { width: 14px; height: 14px; }
 .corp-view-btn:hover { color: var(--ink); }
 .corp-view-btn.is-active { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(23,20,18,.12); }
+@media (max-width: 860px) {
+    /* Conmutador de vista con alto comodo para el dedo en movil y tableta. */
+    .corp-view-btn { padding: 10px 14px; }
+}
 
 /* ---- Indicadores (estadísticas) ---- */
 .tickets-stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 2px; }
@@ -49,7 +53,9 @@
 
 /* ---- Tarjetas ---- */
 .ty-results { margin-top: 16px; }
-.ty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(295px, 1fr)); gap: 14px; }
+.ty-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1180px) { .ty-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .ty-grid { grid-template-columns: minmax(0, 1fr); } }
 .ty-card {
     display: flex; flex-direction: column; gap: 10px;
     background: #fff; border: 1px solid var(--line); border-radius: 16px;
@@ -80,7 +86,7 @@
 .ty-empty { grid-column: 1 / -1; }
 
 /* ---- Vista "Lista" compacta (no es una tabla) ---- */
-.ty-results[data-view="lista"] .ty-grid { grid-template-columns: 1fr; gap: 10px; }
+.ty-results[data-view="lista"] .ty-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .ty-results[data-view="lista"] .ty-card {
     display: grid;
     grid-template-columns: auto minmax(0,1fr) auto;
@@ -294,6 +300,7 @@
         <div class="per-page-bar">
             <label for="perPageLista">Filas:</label>
             <select id="perPageLista" data-per-page-param="per_page">
+                <option value="9" {% if per_page == 9 %}selected{% endif %}>9</option>
                 <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
                 <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
                 <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>

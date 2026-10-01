@@ -12,6 +12,7 @@ urlpatterns = [
     path("consultar/", views.consultar_ticket, name="consultar"),
     path("faq/", views.faq, name="faq"),
     path("politica-privacidad/", views.politica_privacidad, name="politica_privacidad"),
+    path("quienes-somos/", views.quienes_somos, name="quienes_somos"),
     path("mi-panel/", views.mi_panel, name="mi_panel"),
     path("tickets/nuevo/", views.crear_ticket, name="crear_ticket"),
     path("descartar-ticket-aviso/", views.descartar_ticket_aviso, name="descartar_ticket_aviso"),

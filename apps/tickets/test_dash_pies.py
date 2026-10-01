@@ -267,3 +267,39 @@ class PapeleraTest(SmokeTestCase):
             self.client.get(reverse("tickets:detalle", args=[self.ticket.pk])).status_code, 404
         )
 
+class CodigoTicketTest(SmokeTestCase):
+    """El código es único en toda la base, papelera incluida."""
+
+    def setUp(self):
+        self.admin = Usuario.objects.create_user(
+            email="adm@x.com", password="x", nombre="Adm", rol=Usuario.Rol.ADMIN
+        )
+
+    def _crear(self, titulo="T"):
+        return Ticket.objects.create(
+            titulo=titulo, descripcion="d",
+            solicitante_nombre="User", solicitante_email="u@x.com",
+        )
+
+    def test_el_codigo_nunca_reutiliza_el_de_un_ticket_eliminado(self):
+        primero = self._crear("Primero")
+        segundo = self._crear("Segundo")
+        primero.mandar_a_la_papelera(self.admin)
+
+        # El vivo sigue marcando el máximo, así que el nuevo no puede chocar.
+        tercero = self._crear("Tercero")
+
+        codigos = set(Ticket.con_eliminados.values_list("codigo", flat=True))
+        self.assertEqual(len(codigos), 3)
+        self.assertNotEqual(tercero.codigo, primero.codigo)
+        self.assertEqual(tercero.codigo, "HD-0003")
+
+    def test_se_puede_crear_despues_de_borrar_todo_el_historico(self):
+        for i in range(3):
+            self._crear(f"T{i}").mandar_a_la_papelera(self.admin)
+        self.assertEqual(Ticket.objects.count(), 0)
+
+        nuevo = self._crear("Nuevo")
+
+        self.assertIsNotNone(nuevo.pk)
+        self.assertEqual(nuevo.codigo, "HD-0004")

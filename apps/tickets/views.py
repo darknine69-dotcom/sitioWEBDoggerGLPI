@@ -2012,6 +2012,10 @@ def faq(request):
     return render(request, "tickets/faq.html")
 
 
+def quienes_somos(request):
+    return render(request, "tickets/quienes_somos.html")
+
+
 def politica_privacidad(request):
     return render(request, "tickets/politica_privacidad.html")
 
@@ -2512,8 +2516,13 @@ def dashboard(request):
     )
 
 
+# Opciones del selector "Filas". El 9 es el que forma la rejilla de tarjetas
+# 3x3 de las vistas por tarjeta (3 columnas x 3 filas).
+PER_PAGE_OPCIONES = {5, 9, 10, 20, 50, 0}
+
+
 def _paginar(qs, request, param="page", per_page_param="per_page", per_page_default=5):
-    allowed = {5, 10, 20, 50, 0}
+    allowed = PER_PAGE_OPCIONES
     try:
         pp = int(request.GET.get(per_page_param, per_page_default))
     except (ValueError, TypeError):
@@ -2528,7 +2537,7 @@ def _paginar(qs, request, param="page", per_page_param="per_page", per_page_defa
 
 
 def _resolve_per_page(request, param="per_page", default=5):
-    allowed = {5, 10, 20, 50, 0}
+    allowed = PER_PAGE_OPCIONES
     try:
         pp = int(request.GET.get(param, default))
     except (ValueError, TypeError):
@@ -2838,7 +2847,7 @@ def lista_tickets(request):
             condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
         qs = qs.filter(condicion)
 
-    pp_lista = _resolve_per_page(request, "per_page", 5)
+    pp_lista = _resolve_per_page(request, "per_page", 9)
     if q or sv in ("vencen-hoy", "vencidas"):
         pp_lista = 0
     page_obj = _paginar(
@@ -3004,7 +3013,7 @@ def cambiar_estado(request, pk):
     else:
         ticket.estado = nuevo
         ticket.save()
-        notificar_ticket_actualizado(ticket, f"cambiado a {ticket.get_estado_display()}")
+        notificar_ticket_actualizado(ticket, f"cambiado a {ticket.get_estado_display()}", actor=request.user)
         try:
             sync_estado_to_glpi(ticket)
         except GlpiError as exc:
@@ -3408,7 +3417,7 @@ def panel_tecnico(request):
     estado = request.GET.get("estado", "").strip()
     q = request.GET.get("q", "").strip()
     q_cola = request.GET.get("q_cola", "").strip()
-    pp_mis = _resolve_per_page(request, "per_page", 5)
+    pp_mis = _resolve_per_page(request, "per_page", 9)
     pp_sol = _resolve_per_page(request, "per_page_sol", 5)
     if q:
         pp_mis = 0
@@ -3503,6 +3512,7 @@ def panel_tecnico(request):
 
     # Módulo corporativo "Mis solicitudes abiertas" (solo cuando no hay chat abierto)
     abiertas = []
+    tarjetas = []
     combinadas_map = {}
     sitios = []
     grupos = []
@@ -3598,7 +3608,26 @@ def panel_tecnico(request):
             if match_codigo:
                 condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
             mis_qs = mis_qs.filter(condicion)
+        # "abiertas" alimenta la tabla y la rejilla de tarjetas. Se pagina
+        # sobre mis_qs (el queryset ya filtrado de la pestaña) para que las
+        # tarjetas salgan en la rejilla 3x3 y no la lista completa; con filtro
+        # de texto o "todas" se mantiene la lista entera.
+        if q or pp_mis == 0:
+            tarjetas = list(mis_qs)
+        else:
+            tarjetas = list(
+                _paginar(
+                    mis_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
+                        "_prioridad_orden", "-fecha_creacion"
+                    ),
+                    request,
+                    per_page_default=pp_mis,
+                ).object_list
+            )
         abiertas = list(mis_qs)
+        tarjetas = _adjuntar_solicitantes(tarjetas)
+        for t in tarjetas:
+            t.combinadas = combinadas_map.get(t.pk, [])
         abiertas = _adjuntar_solicitantes(abiertas)
         for t in abiertas:
             t.combinadas = combinadas_map.get(t.pk, [])
@@ -3651,6 +3680,7 @@ def panel_tecnico(request):
             "alcances_tortas": _ALCANCES_TORTAS,
             "alcances_20dias": _ALCANCES_20_DIAS,
             "abiertas": abiertas,
+            "tarjetas": tarjetas,
             "abiertas_count": abiertas_count,
             "mis_count": mis_count,
             "sitios": sitios,

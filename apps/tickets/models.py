@@ -227,27 +227,40 @@ class Ticket(models.Model):
         except IntegrityError:
             es_insert = not self.pk or kwargs.get("force_insert")
             if es_insert and self.codigo and self.codigo.startswith("HD-"):
-                # Colisión de código (p. ej. por concurrencia): regenerar y reintentar.
-                self.codigo = self._generar_codigo()
-                kwargs["force_insert"] = True
-                super().save(*args, **kwargs)
+                # Colisión de código (p. ej. por concurrencia o porque otro
+                # ticket usa el código): se avanza hasta encontrar uno libre.
+                for _ in range(20):
+                    self.codigo = self._generar_codigo()
+                    kwargs["force_insert"] = True
+                    try:
+                        super().save(*args, **kwargs)
+                        break
+                    except IntegrityError:
+                        continue
+                else:
+                    raise
             else:
                 raise
 
     @staticmethod
     def _generar_codigo():
+        """Siguiente código correlativo libre, en el formato HD-0001.
+
+        Se mira el histórico completo (incluida la papelera) porque `codigo`
+        es único en la base: si solo se consideraran los tickets vivos, al
+        borrar el último ticket se volvería a generar su código y la
+        inserción fallaría con IntegrityError.
+        """
         from django.db.models import Max
 
-        mayor = Ticket.objects.aggregate(m=Max("codigo"))["m"] or ""
+        historico = Ticket.con_eliminados.all()
+        mayor = historico.aggregate(m=Max("codigo"))["m"] or ""
         try:
-            numero = int(mayor.split("-")[-1]) + 1
+            numero = int(str(mayor).split("-")[-1]) + 1
         except (ValueError, AttributeError):
-            numero = Ticket.objects.count() + 1
-        numero = max(
-            numero,
-            Ticket.objects.count() + 1,
-        )
-        while Ticket.objects.filter(codigo=f"HD-{numero:04d}").exists():
+            numero = historico.count() + 1
+        numero = max(numero, historico.count() + 1)
+        while Ticket.con_eliminados.filter(codigo=f"HD-{numero:04d}").exists():
             numero += 1
         return f"HD-{numero:04d}"
 

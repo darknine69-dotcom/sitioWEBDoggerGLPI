@@ -678,3 +678,33 @@ html[data-navcompact="1"] .nav-icon { width: 15px; height: 15px; }
 html[data-navcompact="1"] .main-nav-inner { min-height: 50px; }
 html[data-navicons="0"] .nav-icon { display: none; }
 html[data-navicons="0"] .nav-link { gap: 0; }
+/* ---- Portada: tarjetas nuevas y aviso destacado ---- */
+html[data-theme="dark"] .lp-notice { background: #2A2418; border-color: #6B5A2E; color: #E8D9AE; }
+html[data-theme="dark"] .lp-notice .icon { color: #E0C070; }
+html[data-theme="dark"] .lp-lookup-field { background: rgba(74,11,7,.72); border-color: rgba(255,138,128,.40); }
+html[data-theme="dark"] .lp-lookup-field:hover { background: rgba(74,11,7,.80); }
+html[data-theme="dark"] .lp-lookup-field:focus-within { background: rgba(74,11,7,.86); border-color: #FF8A80; }
+html[data-theme="dark"] .lp-lookup-input { color: #FFE9E4; }
+html[data-theme="dark"] .lp-lookup-input::placeholder { color: rgba(255,225,218,.55); }
+html[data-theme="dark"] .lp-lookup-label { color: rgba(255,225,218,.78); }
+html[data-theme="dark"] .lp-lookup-btn { background: #FF8A80; color: #2A0B07; }
+html[data-theme="dark"] .lp-final-legal a { color: var(--ink-muted); }
+html[data-theme="dark"] .nav-submenu { background: var(--dogger-paper); border-color: var(--line); }
+html[data-theme="dark"] .nav-submenu .nav-link:hover { background: #2E2620; }
+html[data-theme="dark"] .nav-submenu .nav-link.is-active { background: rgba(194,42,27,.16); }
+html[data-theme="dark"] .nav-link.is-active { background: rgba(194,42,27,.16); }
+html[data-theme="dark"] .nav-list > li:first-child > .nav-link { color: var(--ink); }
+
+/* ---- Campana de notificaciones en modo oscuro ---- */
+[data-theme="dark"] .notif-panel { background: var(--dogger-black-soft, #241F1C); }
+[data-theme="dark"] .notif-row { border-bottom-color: rgba(255,255,255,.08); }
+[data-theme="dark"] .notif-row.is-new { background: rgba(255,199,44,.10); }
+[data-theme="dark"] .notif-link { color: #F5EFE6; }
+[data-theme="dark"] .notif-msg { color: #B9AFA4; }
+[data-theme="dark"] .notif-icon { background: rgba(255,255,255,.08); color: #CFC7BC; }
+[data-theme="dark"] .notif-icon-bienvenida { background: rgba(255,199,44,.18); color: #FFC72C; }
+[data-theme="dark"] .notif-x { background: rgba(255,255,255,.08); color: #CFC7BC; }
+[data-theme="dark"] .notif-empty strong { color: #F5EFE6; }
+[data-theme="dark"] .notif-popup { background: var(--dogger-black-soft, #241F1C); }
+[data-theme="dark"] .notif-popup-title { color: #F5EFE6; }
+[data-theme="dark"] .notif-popup-text { color: #B9AFA4; }

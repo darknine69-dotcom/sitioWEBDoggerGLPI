@@ -30,7 +30,31 @@ def dogger_config(request):
     except Exception:
         # Si la tabla aún no existe (antes de migrar), se mantiene lo de settings.
         pass
-    return {"DOGGER": d, **_contador_papelera(request)}
+    return {"DOGGER": d, **_contador_papelera(request), **_contador_sin_asignar(request)}
+
+
+def _contador_sin_asignar(request):
+    """Tickets abiertos sin técnico, para el contador de la navbar del personal."""
+    usuario = getattr(request, "user", None)
+    if usuario is None or not usuario.is_authenticated:
+        return {"sin_asignar_total": 0}
+    if not getattr(usuario, "es_staff_helpdesk", False):
+        return {"sin_asignar_total": 0}
+    match = getattr(request, "resolver_match", None)
+    if match is not None and match.url_name == "sin_asignar":
+        return {}
+    try:
+        from apps.tickets.models import Ticket
+
+        total = (
+            Ticket.objects.filter(
+                estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
+                tecnico_asignado__isnull=True,
+            ).count()
+        )
+    except Exception:
+        return {"sin_asignar_total": 0}
+    return {"sin_asignar_total": total}
 
 
 def _contador_papelera(request):

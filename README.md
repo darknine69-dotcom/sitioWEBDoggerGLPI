@@ -69,7 +69,7 @@ El proyecto está pensado para funcionar en **cualquier hosting** de forma gené
 | `DJANGO_SECRET_KEY` | **Obligatorio** con `DJANGO_DEBUG=False`. |
 | `DJANGO_ALLOWED_HOSTS` | Dominios/servicios permitidos (coma). |
 | `DJANGO_CSRF_TRUSTED_ORIGINS` | Orígenes HTTPS del navegador (coma). |
-| `DATABASE_URL` | Conexión a PostgreSQL (`postgres://...`). |
+| `DATABASE_URL` | Conexión a la base de datos: `postgres://...`, `mysql://...` (cPanel) o `sqlserver://...`. |
 | `DJANGO_MEDIA_ROOT` | Ruta a un **volumen persistente** para adjuntos/avatares. |
 | `GLPI_ENABLED` | `False` en la nube (GLPI solo para LAN). |
 
@@ -132,6 +132,39 @@ gunicorn config.wsgi:application --bind 0.0.0.0:8000
 ```
 
 Sirve estáticos con Nginx/Caddy y programa las tareas GLPI con tu cron.
+
+### Opción D — Hosting compartido (cPanel) con MySQL/MariaDB
+
+1. En cPanel crea la base y el usuario MySQL y anótalos. En `.env`:
+
+   ```env
+   DATABASE_URL=mysql://USUARIO_CPANEL:CLAVE@localhost:3306/nombre_bd
+   DJANGO_DEBUG=False
+   DJANGO_ALLOWED_HOSTS=midominio.com
+   DJANGO_CSRF_TRUSTED_ORIGINS=https://midominio.com
+   ```
+
+2. Instala dependencias (incluye `PyMySQL`, que `config/settings.py` registra como `MySQLdb`):
+
+   ```bash
+   python -m venv .venv && .venv/bin/pip install -r requirements.txt
+   ```
+
+3. **Aplica las migraciones** — es lo que crea/actualiza las tablas (avisos de la campana, columna de bienvenida, etc.):
+
+   ```bash
+   .venv/bin/python manage.py migrate --noinput
+   .venv/bin/python manage.py collectstatic --noinput
+   ```
+
+4. Apunta el "Application root" de cPanel a la carpeta del proyecto y registra la app con el Passenger de Python.
+5. Reinicia la aplicación desde cPanel y entra a `/panel/`.
+
+Notes:
+
+- Ejecuta `migrate` en **cada** despliegue: es la única fuente de verdad del esquema.
+- `esquema.sql` es un script de **SQL Server** (T-SQL): no lo ejecutes en MySQL.
+- Si tu MySQL es antiguo (5.6 o inferior), pide al hosting InnoDB con `ROW_FORMAT=DYNAMIC` para evitar problemas con índices largos.
 
 ### Seguridad al desplegar
 

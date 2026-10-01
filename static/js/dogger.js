@@ -205,6 +205,8 @@
         });
         navList.querySelectorAll(".nav-link").forEach(function (link) {
             link.addEventListener("click", function () {
+                // El botón de un submenú solo lo abre: no cierra el menú lateral.
+                if (link.hasAttribute("data-submenu")) return;
                 navToggle.setAttribute("aria-expanded", "false");
                 navList.classList.remove("nav-open");
                 navToggle.classList.remove("is-active");
@@ -498,5 +500,223 @@
             catSelEl.addEventListener("change", function () { marcarAns(catSelEl.value); });
             if (catSelEl.value) marcarAns(catSelEl.value);
         }
+    }
+
+    /* ---- Menú de la portada (móvil): el nav de la landing se pliega ---- */
+    (function () {
+        var toggle = document.getElementById("ln-toggle");
+        var links = document.getElementById("ln-links");
+        if (!toggle || !links) return;
+
+        function abrir(abrir) {
+            links.classList.toggle("is-open", abrir);
+            toggle.setAttribute("aria-expanded", abrir ? "true" : "false");
+            toggle.setAttribute("aria-label", abrir ? "Ocultar el menú de la página" : "Ver el menú de la página");
+        }
+        function estaAbierto() { return links.classList.contains("is-open"); }
+        abrir(window.matchMedia("(min-width: 981px)").matches);
+
+        toggle.addEventListener("click", function () {
+            abrir(!estaAbierto());
+        });
+        links.addEventListener("click", function (ev) {
+            if (ev.target.closest("a")) abrir(false);
+        });
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape" && estaAbierto()) { abrir(false); toggle.focus(); }
+        });
+        document.addEventListener("click", function (ev) {
+            if (!estaAbierto()) return;
+            if (!ev.target.closest(".landing-nav")) abrir(false);
+        });
+    })();
+
+    /* ---- Preguntas frecuentes: "ver todas" despliega en la misma página ---- */
+    var faqBoton = document.getElementById("faq-ver-mas");
+    var faqExtra = document.getElementById("faq-extra");
+    var faqTexto = document.getElementById("faq-ver-mas-txt");
+    if (faqBoton && faqExtra) {
+        faqBoton.addEventListener("click", function () {
+            var abierto = faqExtra.hasAttribute("hidden");
+            if (abierto) {
+                faqExtra.removeAttribute("hidden");
+            } else {
+                faqExtra.setAttribute("hidden", "");
+            }
+            faqBoton.setAttribute("aria-expanded", abierto ? "true" : "false");
+            if (faqTexto) faqTexto.textContent = abierto ? "Ocultar las demás preguntas" : "Ver todas las preguntas frecuentes";
+            if (abierto) {
+                faqExtra.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+        });
+    }
+
+    /* ---- Espacio para escribir una pregunta: se envía por correo ---- */
+    var formPregunta = document.getElementById("lp-pregunta-form");
+    if (formPregunta) {
+        var aviso = document.getElementById("lp-pregunta-aviso");
+        formPregunta.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            var nombre = document.getElementById("pq-nombre");
+            var correo = document.getElementById("pq-correo");
+            var texto = document.getElementById("pq-texto");
+            if (!texto.value.trim() || !nombre.value.trim()) {
+                if (aviso) aviso.textContent = "Escribe tu nombre y tu pregunta para poder enviar el mensaje.";
+                (!texto.value.trim() ? texto : nombre).focus();
+                return;
+            }
+            if (aviso) aviso.textContent = "";
+            var cuerpo = "Pregunta enviada desde el portal\n\n" +
+                "Nombre: " + nombre.value.trim() + "\n" +
+                "Correo: " + (correo && correo.value.trim() ? correo.value.trim() : "no informado") + "\n\n" +
+                texto.value.trim();
+            var correoSoporte = formPregunta.getAttribute("data-correo") || "";
+            window.location.href = "mailto:" + correoSoporte +
+                "?subject=" + encodeURIComponent("Pregunta desde el portal - " + nombre.value.trim()) +
+                "&body=" + encodeURIComponent(cuerpo);
+            texto.value = "";
+            if (aviso) aviso.textContent = "Abrimos tu programa de correo con la pregunta lista para enviar.";
+        });
+    }
+})();
+
+/* =====================================================================
+   Campana de notificaciones: abrir la lista, marcar leídas, quitar con la
+   "x" y cerrar la ventana emergente del aviso nuevo.
+   ===================================================================== */
+(function () {
+    var wrap = document.getElementById("notifWrap");
+    var bell = document.getElementById("notifBell");
+    var panel = document.getElementById("notifPanel");
+
+    function csrf() {
+        var input = document.querySelector("[name=csrfmiddlewaretoken]");
+        if (input) { return input.value; }
+        var m = document.cookie.match(/(^|;\s*)csrftoken=([^;]+)/);
+        return m ? m[2] : "";
+    }
+
+    function pedir(destino) {
+        if (!destino) { return; }
+        try {
+            fetch(destino, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrf(),
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                credentials: "same-origin"
+            }).then(function (r) {
+                return r.ok ? r.json() : null;
+            }).then(function (data) {
+                if (data && typeof data.pendientes === "number") {
+                    pintarContador(data.pendientes);
+                }
+            }).catch(function () { });
+        } catch (e) { }
+    }
+
+    function pintarContador(pendientes) {
+        var badge = document.getElementById("notifBadge");
+        if (!badge || typeof pendientes !== "number") { return; }
+        badge.textContent = pendientes > 99 ? "99+" : pendientes;
+        badge.classList.toggle("is-empty", pendientes === 0);
+    }
+
+    function vacioHTML() {
+        return '<li class="notif-empty">' +
+            '<span class="notif-empty-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>' +
+            '<strong>No tienes avisos</strong>' +
+            '<span>Aquí verás tus tickets activos, tareas y recordatorios.</span>' +
+            '</li>';
+    }
+
+    function baseDe(atributo, id) {
+        var base = wrap.getAttribute(atributo) || "";
+        return id ? base.replace("/0/", "/" + id + "/") : base;
+    }
+
+    if (wrap && bell && panel) {
+        function abrir() {
+            panel.classList.add("open");
+            bell.setAttribute("aria-expanded", "true");
+            var nuevas = panel.querySelectorAll(".notif-row.is-new");
+            if (nuevas.length) {
+                Array.prototype.forEach.call(nuevas, function (fila) {
+                    fila.classList.remove("is-new");
+                });
+                pedir(baseDe("data-url-todas"));
+            }
+        }
+
+        function cerrar() {
+            panel.classList.remove("open");
+            bell.setAttribute("aria-expanded", "false");
+        }
+
+        bell.addEventListener("click", function (ev) {
+            ev.stopPropagation();
+            if (panel.classList.contains("open")) { cerrar(); } else { abrir(); }
+        });
+        document.addEventListener("click", function (ev) {
+            if (!wrap.contains(ev.target)) { cerrar(); }
+        });
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape") { cerrar(); }
+        });
+
+        panel.addEventListener("click", function (ev) {
+            var quitar = ev.target.closest("[data-notif-quitar]");
+            if (quitar) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                var fila = quitar.closest(".notif-row");
+                var id = quitar.getAttribute("data-notif-quitar");
+                if (fila) { fila.remove(); }
+                pedir(baseDe("data-url-descartar", id));
+                if (!panel.querySelector(".notif-row")) {
+                    var lista = panel.querySelector(".notif-list");
+                    if (lista && !lista.querySelector(".notif-empty")) {
+                        lista.innerHTML = vacioHTML();
+                    }
+                }
+                return;
+            }
+            var accion = ev.target.closest("[data-notif]");
+            if (!accion) { return; }
+            ev.stopPropagation();
+            var tipo = accion.getAttribute("data-notif");
+            if (tipo === "leer-todas") {
+                pedir(baseDe("data-url-todas"));
+                Array.prototype.forEach.call(
+                    panel.querySelectorAll(".notif-row"), function (f) { f.classList.remove("is-new"); }
+                );
+            } else if (tipo === "limpiar") {
+                pedir(baseDe("data-url-limpiar"));
+                var lista2 = panel.querySelector(".notif-list");
+                if (lista2) { lista2.innerHTML = vacioHTML(); }
+                var botones = panel.querySelectorAll(".notif-head-btn");
+                Array.prototype.forEach.call(botones, function (b) { b.remove(); });
+            }
+        });
+    }
+
+    /* ---- Ventana emergente del aviso nuevo ---- */
+    var popup = document.getElementById("notifPopup");
+    if (popup) {
+        function cerrarPopup() {
+            var id = popup.getAttribute("data-id");
+            popup.remove();
+            if (wrap) { pedir(baseDe("data-url-mostrada", id)); }
+        }
+        popup.addEventListener("click", function (ev) {
+            if (ev.target.closest("[data-notif-cerrar]")) {
+                ev.stopPropagation();
+                cerrarPopup();
+            }
+        });
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape" && document.getElementById("notifPopup")) { cerrarPopup(); }
+        });
     }
 })();

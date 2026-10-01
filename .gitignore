@@ -12,3 +12,6 @@ media/adjuntos/**
 !media/adjuntos/.gitkeep
 *.log
 .DS_Store
+
+# Wheels descargadas para instalar dependencias
+*.whl

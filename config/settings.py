@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.tickets",
     "apps.programador",
+    "apps.notificaciones",
 ]
 
 MIDDLEWARE = [
@@ -85,6 +86,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.tickets.context_processors.dogger_config",
+                "apps.notificaciones.context_processors.notificaciones",
             ],
         },
     },
@@ -256,6 +258,24 @@ DOGGER = {
     "mapa_google": "https://www.google.com/maps?q=Productos%20Alimenticios%20Dogger%20Envigado%20Antioquia&output=embed",
     "correo_soporte": os.getenv("DOGGER_CORREO", "sistemasbogota@dogger.com.co"),
     "whatsapp_soporte": os.getenv("DOGGER_WHATSAPP", "3103716129"),
+    # Contacto y ventana de atención (se muestran en la portada y en el pie).
+    "telefono_soporte": os.getenv("DOGGER_TELEFONO", ""),
+    "horario_atencion": os.getenv(
+        "DOGGER_HORARIO",
+        "Lunes a jueves 8:00 a.m.–5:30 p.m. · Viernes y sábado 7:00 a.m.–3:30 p.m.",
+    ),
+    # Agenda detallada: se muestra como tabla en la sección de contacto.
+    "horario_detalle": [
+        {"dias": "Lunes a jueves", "hora": "8:00 a.m. – 5:30 p.m.",
+         "nota": "Mesa de ayuda y atención en sitio"},
+        {"dias": "Viernes y sábado", "hora": "7:00 a.m. – 3:30 p.m.",
+         "nota": "Mesa de ayuda y atención en sitio"},
+        {"dias": "Domingos y festivos", "hora": "Horario hábil",
+         "nota": "Soporte en horario hábil"},
+    ],
+    # Aviso destacado de la portada. Vacío = no se muestra banda de aviso.
+    # Ejemplo: "Mantenimiento programado de SIESA el sábado 3 de octubre, 6:00 p.m."
+    "aviso_destacado": os.getenv("DOGGER_AVISO", ""),
     # Redes sociales (se muestran como iconos en el pie del portal).
     "facebook": os.getenv("DOGGER_FACEBOOK", "https://web.facebook.com/DoggerColombia"),
     "instagram": os.getenv("DOGGER_INSTAGRAM", "https://www.instagram.com/dogger1996"),
