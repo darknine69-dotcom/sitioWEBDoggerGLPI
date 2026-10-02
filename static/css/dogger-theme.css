@@ -2851,7 +2851,7 @@ select:focus-visible, textarea:focus-visible {
     color: var(--ink-muted);
     border-bottom: 3px solid transparent;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     transition: color .15s ease, background .15s ease;
 }
 .nav-link::after {
@@ -2886,6 +2886,45 @@ select:focus-visible, textarea:focus-visible {
     font-size: 10.5px;
     font-weight: 800;
     line-height: 1;
+}
+/* Contador de pendientes de cada entrada del menú, encima del texto */
+.nav-count {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #B7791F;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -.2px;
+    pointer-events: none;
+    box-shadow: 0 0 0 2px var(--dogger-paper);
+}
+.nav-count[data-nivel="alto"] { background: var(--dogger-red); }
+.nav-count[data-nivel="bajo"] { background: #2F7D4F; }
+.nav-link:hover .nav-count,
+.nav-link.is-active .nav-count { box-shadow: 0 0 0 2px #FFFFFF; }
+.nav-link.is-active .nav-count { background: var(--dogger-red); }
+.nav-count-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
 }
 .nav-link-trash .nav-label { font-size: 12.5px; }
 .nav-link-trash.is-active .nav-badge { background: var(--dogger-red); }

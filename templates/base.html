@@ -123,12 +123,16 @@
                 {% if request.user.is_authenticated and request.user.rol == 'usuario' %}
                 <li>
                     <a href="{% url 'tickets:mi_panel' %}" class="nav-link{% nav_active 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %}"{% nav_current 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-home"/></svg> Mi panel
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'tickets:crear_ticket' %}" class="nav-link{% nav_active 'crear_ticket' %}"{% nav_current 'crear_ticket' %}>
+                        {% if menu_respondidos %}<span class="nav-count" data-nivel="bajo">{{ menu_respondidos }}</span>{% endif %}
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-plus"/></svg> Reportar incidencia
+                        {% if menu_respondidos %}<span class="nav-count-sr">{{ menu_respondidos }} tickets con respuesta por revisar</span>{% endif %}
                     </a>
                 </li>
                 {% endif %}
@@ -136,18 +140,23 @@
                 {% if request.user.rol == 'tecnico' %}
                 <li>
                     <a href="{% url 'tickets:panel_tecnico' %}" class="nav-link{% nav_active 'panel_tecnico' 'mis_tickets' 'panel_tecnico_lote' %}"{% nav_current 'panel_tecnico' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-grid"/></svg> Panel
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'tickets:sin_asignar' %}" class="nav-link{% nav_active 'sin_asignar' %}"{% nav_current 'sin_asignar' %}>
+                        {% if sin_asignar_total %}<span class="nav-count" data-nivel="alto">{{ sin_asignar_total }}</span>{% endif %}
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-inbox"/></svg> Bandeja sin asignar
-                        {% if sin_asignar_total %}<span class="nav-badge">{{ sin_asignar_total }}</span>{% endif %}
+                        {% if sin_asignar_total %}<span class="nav-count-sr">{{ sin_asignar_total }} tickets sin técnico asignado</span>{% endif %}
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'tickets:lista' %}" class="nav-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-ticket"/></svg> Tickets
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
                     </a>
                 </li>
                 <li>
@@ -160,12 +169,16 @@
                 {% if request.user.rol == 'admin' %}
                 <li>
                     <a href="{% url 'tickets:dashboard' %}" class="nav-link{% nav_active 'dashboard' %}"{% nav_current 'dashboard' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-grid"/></svg> Panel
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'tickets:lista' %}" class="nav-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-ticket"/></svg> Tickets
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
                     </a>
                 </li>
                 <li>

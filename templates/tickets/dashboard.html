@@ -370,6 +370,7 @@
                     <div class="per-page-bar">
                         <label for="perPageRecientes">Filas:</label>
                         <select id="perPageRecientes" data-per-page-param="per_page_recientes">
+                            <option value="6" {% if per_page_recientes == 6 %}selected{% endif %}>6</option>
                             <option value="5" {% if per_page_recientes == 5 %}selected{% endif %}>5</option>
                             <option value="10" {% if per_page_recientes == 10 %}selected{% endif %}>10</option>
                             <option value="20" {% if per_page_recientes == 20 %}selected{% endif %}>20</option>
