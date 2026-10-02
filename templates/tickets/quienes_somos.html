@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Quiénes somos · Dogger{% endblock %}
+{% block header_title %}Quiénes somos{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'tickets:portal' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Portal</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.q-somos { max-width: 1000px; }
+.q-hero {
+    background: linear-gradient(135deg, #7E130C 0%, #A11B12 55%, #D62B1F 100%);
+    color: var(--dogger-cream); border-radius: 20px; padding: 34px 32px; margin-bottom: 22px;
+    box-shadow: var(--shadow-card);
+}
+.q-kicker { display: flex; align-items: center; gap: 8px; margin: 0 0 10px;
+    font-size: 13px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; color: #FFC72C; }
+.q-hero h2 { font-family: var(--font-display); font-size: 30px; line-height: 1.15;
+    margin: 0 0 12px; color: #fff; }
+.q-lead { font-size: 16.5px; line-height: 1.6; margin: 0 0 20px; color: #FFE7E2; max-width: 62ch; }
+.q-cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.q-cta .btn-outline { border-color: rgba(255,255,255,.45); color: #fff; }
+.q-cta .btn-outline:hover { background: rgba(255,255,255,.14); }
+
+.q-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 16px; margin-bottom: 16px; }
+.q-card {
+    background: var(--dogger-paper); border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px 20px 22px; box-shadow: var(--shadow-card);
+}
+.q-card h3 { font-family: var(--font-display); font-size: 17px; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 9px; }
+.q-card h3 .icon { color: var(--dogger-red); flex: 0 0 auto; }
+.q-card ul { margin: 0; padding-left: 20px; }
+.q-card li { font-size: 14.5px; line-height: 1.55; margin-bottom: 7px; color: var(--ink-soft); }
+.q-card li:last-child { margin-bottom: 0; }
+.q-card p { font-size: 14.5px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 14px; }
+.q-card a { color: var(--dogger-red); font-weight: 600; }
+.q-nota { color: var(--ink-muted); font-size: 13.5px; }
+
+@media (max-width: 640px) {
+    .q-hero { padding: 24px 20px; border-radius: 16px; }
+    .q-hero h2 { font-size: 23px; }
+    .q-lead { font-size: 15.5px; }
+    .q-cards { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="page q-somos">
+
+    <section class="q-hero">
+        <p class="q-kicker"><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg> {{ DOGGER.nombre_completo }}</p>
+        <h2>La mesa de ayuda de Dogger, en una sola página</h1>
+        <p class="q-lead">
+            Somos el equipo de soporte de {{ DOGGER.empresa }}. Atendemos a los colaboradores de todas
+            las sedes: registramos la falla, la clasifican los técnicos de mesa de ayuda y te
+            devolvemos el estado sin que tengas que llamar a nadie.
+        </p>
+        <div class="q-cta">
+            <a class="btn btn-accent" href="{% url 'tickets:portal' %}"><svg class="icon" aria-hidden="true"><use href="#i-ticket"/></svg> Ir al portal</a>
+            <a class="btn btn-outline" href="{% url 'tickets:consultar' %}"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg> Consultar un ticket</a>
+        </div>
+    </section>
+
+    <section class="q-cards">
+        <article class="q-card">
+            <h3><svg class="icon" aria-hidden="true"><use href="#i-headset"/></svg> Qué hacemos</h3>
+            <ul>
+                <li>Recibimos el reporte y le asignamos un técnico de mesa de ayuda.</li>
+                <li>Clasificamos por categoría y el impacto en la operación.</li>
+                <li>Atendemos por prioridad: <strong>Urgente 2&nbsp;h</strong>, <strong>Alta 8&nbsp;h</strong>, <strong>Media 12&nbsp;h</strong> y <strong>Baja 48&nbsp;h</strong>.</li>
+                <li>Te avisamos por correo cuando hay avances y cuando se cierra.</li>
+            </ul>
+        </article>
+
+        <article class="q-card">
+            <h3><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> Qué pedimos</h3>
+            <ul>
+                <li>Unas fotos o un PDF del aviso: aceleran el diagnóstico.</li>
+                <li>El nombre o el código del equipo afectado.</li>
+                <li>Describir qué estabas haciendo justo antes de la falla.</li>
+                <li>Revisar el correo: ahí llega la respuesta del técnico.</li>
+            </ul>
+        </article>
+
+        <article class="q-card">
+            <h3><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg> Horario y contacto</h3>
+            <ul>
+                {% for h in DOGGER.horario_detalle %}
+                <li><strong>{{ h.dias }}:</strong> {{ h.hora }} <span class="q-nota">({{ h.nota }})</span></li>
+                {% endfor %}
+                {% if DOGGER.correo_activo and DOGGER.correo_soporte %}
+                <li><a href="mailto:{{ DOGGER.correo_soporte }}">{{ DOGGER.correo_soporte }}</a></li>
+                {% endif %}
+                {% if DOGGER.whatsapp_activo and DOGGER.whatsapp_soporte %}
+                <li><a href="https://wa.me/57{{ DOGGER.whatsapp_soporte }}" rel="noopener" target="_blank">WhatsApp {{ DOGGER.whatsapp_soporte }}</a></li>
+                {% endif %}
+                <li>{{ DOGGER.direccion_detalle }}</li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="q-cards">
+        <article class="q-card">
+            <h3><svg class="icon" aria-hidden="true"><use href="#i-map-pin"/></svg> Puntos Dogger</h3>
+            <ul>
+                {% for p in DOGGER.puntos %}<li>{{ p.nombre }}{% if p.ciudad %} · {{ p.ciudad }}{% endif %}</li>{% endfor %}
+            </ul>
+        </article>
+
+        <article class="q-card">
+            <h3><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg> Antes de escribirnos</h3>
+            <ul>
+                <li>Si tu equipo tiene plusieurs personas con la misma falla, reporta <strong>una sola vez</strong>.</li>
+                <li>Si ya reportaste, <a href="{% url 'tickets:consultar' %}">consulta el código HD</a> en vez de abrir un caso nuevo.</li>
+                <li>Las <a href="{% url 'tickets:faq' %}">preguntas frecuentes</a> resuelven casi todo lo de la primera vez.</li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="q-cards">
+        <article class="q-card">
+            <h3><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg> Personal de mesa de ayuda</h2>
+            <p>Si eres técnico o administrador de sistemas, entra con tu usuario de mesa de ayuda TIC
+                para ver la cola de tickets, tomar casos y cambiar estados.</p>
+            <a class="btn btn-outline btn-sm" href="{% url 'accounts:login_staff' %}"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg> Acceso personal TIC</a>
+        </article>
+    </section>
+
+</main>
+{% endblock %}

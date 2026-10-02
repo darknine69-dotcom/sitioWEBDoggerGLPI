@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Buscar{% endblock %}
+{% block body_class %}observador-shell{% endblock %}
+{% block header_eyebrow %}{% endblock %}
+{% block header_title %}Observación{% endblock %}
+
+{% block content %}
+<main class="page obs-page">
+    <div class="page-head">
+        <div class="page-head-titles">
+            <h2>Buscar y agregar a mi lista</h2>
+            <p>Localiza una persona o un punto de tus zonas y guárdalo en tu panel personal.</p>
+        </div>
+    </div>
+
+    {% include "observador/_menu.html" with activa="buscar" %}
+
+    <form method="get" class="obs-buscador" action="{% url 'tickets:obs_buscar' %}">
+        <div class="obs-buscador-campo">
+            <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="search" name="q" value="{{ q }}"
+                   placeholder="Nombre de la persona, correo o punto" aria-label="Buscar">
+        </div>
+        <select name="tipo" class="obs-buscador-tipo" aria-label="Buscar en">
+            <option value="todo"{% if tipo == "todo" %} selected{% endif %}>Personas y puntos</option>
+            <option value="persona"{% if tipo == "persona" %} selected{% endif %}>Solo personas</option>
+            <option value="punto"{% if tipo == "punto" %} selected{% endif %}>Solo puntos</option>
+        </select>
+        <button type="submit" class="btn btn-sm">Buscar</button>
+    </form>
+
+    {% if q %}
+
+    <section class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Personas</h3>
+        <ul class="obs-resultados">
+            {% for p in resultados.personas %}
+            <li class="obs-resultado">
+                <span class="obs-resultado-ic"><svg class="icon"><use href="#i-users"/></svg></span>
+                <span class="obs-resultado-txt">
+                    <strong>{{ p.nombre|default:"Sin nombre" }}</strong>
+                    <small>{{ p.email|default:"sin correo" }}{% if p.punto %} · {{ p.punto }}{% endif %}</small>
+                </span>
+                {% if p.email %}
+                <form method="post" action="{% url 'tickets:obs_agregar' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="email" value="{{ p.email }}">
+                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-sm {% if p.ya_agregado %}btn-ghost{% else %}btn-outline{% endif %}">
+                        {% if p.ya_agregado %}En tu lista{% else %}Agregar a mi lista{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </li>
+            {% empty %}
+            <li class="obs-sin-datos">Ninguna persona coincide con “{{ q }}”.</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <section class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Puntos o zonas</h3>
+        <ul class="obs-resultados">
+            {% for p in resultados.puntos %}
+            <li class="obs-resultado">
+                <span class="obs-resultado-ic"><svg class="icon"><use href="#i-folder"/></svg></span>
+                <span class="obs-resultado-txt">
+                    <strong>{{ p.nombre }}</strong>
+                </span>
+                <form method="post" action="{% url 'tickets:obs_agregar' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="punto" value="{{ p.nombre }}">
+                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-sm {% if p.ya_agregado %}btn-ghost{% else %}btn-outline{% endif %}">
+                        {% if p.ya_agregado %}En tu lista{% else %}Agregar a mi lista{% endif %}
+                    </button>
+                </form>
+            </li>
+            {% empty %}
+            <li class="obs-sin-datos">Ningún punto coincide con “{{ q }}”.</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    {% else %}
+    <div class="obs-vacio">
+        <span class="obs-vacio-icon"><svg class="icon"><use href="#i-search"/></svg></span>
+        <strong>Escribe algo para empezar</strong>
+        <p>Tus puntos asignados: {{ puntos|join:", "|default:"ninguno todavía" }}.</p>
+    </div>
+    {% endif %}
+</main>
+{% endblock %}

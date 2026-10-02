@@ -145,7 +145,20 @@
 .dash-compact .dash-select select { padding: 5px 8px; font-size: 12px; }
 .dash-compact .chart-switch-btn { padding: 4px 9px; font-size: 11px; }
 @media (max-width: 900px) {
+    /* Sin esto la rejilla de 2 columnas se mantiene en movil: las tarjetas no
+       pueden encogerse por el ancho de la tabla y el contenido se sale. */
+    .dash-compact .charts-grid { grid-template-columns: minmax(0, 1fr); }
+    .dash-compact .dash-select,
+    .dash-compact .dash-select-solo { width: 100%; margin-left: 0; }
     .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr) 140px; gap: 10px; }
+}
+@media (max-width: 560px) {
+    /* En movil la leyenda de la torta va debajo del grafico. */
+    .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr); }
+    .dash-compact .chart-card-head { flex-wrap: wrap; }
+    .dash-compact .chart-card-head h3 { flex: 1 1 100%; }
+    .dash-compact .chart-stage { height: 170px; }
+    .dash-compact .chart-stage.canvas-sm { height: 165px; }
 }
 .admin-shell .dash-stat-row--mesas { grid-template-columns: repeat(6, 1fr); }
 @media (max-width: 1180px) { .admin-shell .dash-stat-row--mesas { grid-template-columns: repeat(3, 1fr); } }
@@ -357,6 +370,7 @@
                     <div class="per-page-bar">
                         <label for="perPageRecientes">Filas:</label>
                         <select id="perPageRecientes" data-per-page-param="per_page_recientes">
+                            <option value="6" {% if per_page_recientes == 6 %}selected{% endif %}>6</option>
                             <option value="5" {% if per_page_recientes == 5 %}selected{% endif %}>5</option>
                             <option value="10" {% if per_page_recientes == 10 %}selected{% endif %}>10</option>
                             <option value="20" {% if per_page_recientes == 20 %}selected{% endif %}>20</option>

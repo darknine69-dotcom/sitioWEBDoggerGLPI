@@ -10,6 +10,7 @@ urlpatterns = [
     path("", include("apps.tickets.urls")),
     path("cuenta/", include("apps.accounts.urls")),
     path("programador/", include("apps.programador.urls")),
+    path("notificaciones/", include("apps.notificaciones.urls")),
 ]
 
 if settings.DEBUG:

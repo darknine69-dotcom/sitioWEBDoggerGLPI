@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dogger · Observador{% endblock %}
+{% block body_class %}observador-shell{% endblock %}
+{% block header_eyebrow %}{% endblock %}
+{% block header_title %}Observación{% endblock %}
+
+{% block content %}
+<main class="page obs-page">
+    <div class="page-head">
+        <div class="page-head-titles">
+            <h2>Puntos y zonas asignadas</h2>
+            <p>Solo se muestran los puntos que tiene asignados. No puede crear ni editar tickets.</p>
+        </div>
+        <div class="obs-head-actions">
+            <a href="{% url 'tickets:obs_exportar' %}" class="btn btn-outline btn-sm">
+                <svg class="icon"><use href="#i-download"/></svg> Exportar
+            </a>
+            <button type="button" class="btn btn-outline btn-sm" onclick="window.print()">
+                <svg class="icon"><use href="#i-printer"/></svg> Imprimir
+            </button>
+        </div>
+    </div>
+
+    {% include "observador/_menu.html" with activa="panel" %}
+
+    {% if sin_puntos %}
+    <div class="obs-vacio">
+        <span class="obs-vacio-icon"><svg class="icon"><use href="#i-inbox"/></svg></span>
+        <strong>Todavía no tienes puntos asignados</strong>
+        <p>Pídele al administrador que te asigne las zonas que vas a observar.</p>
+    </div>
+    {% else %}
+
+    <div class="obs-resumen">
+        <div class="obs-kpi">
+            <span class="obs-kpi-n">{{ total_tickets }}</span>
+            <span class="obs-kpi-l">Tickets en tus puntos</span>
+        </div>
+        <div class="obs-kpi obs-kpi-verde">
+            <span class="obs-kpi-n">{{ conteo.verde }}</span>
+            <span class="obs-kpi-l"><span class="obs-dot obs-dot-verde"></span> Activos</span>
+        </div>
+        <div class="obs-kpi obs-kpi-amarillo">
+            <span class="obs-kpi-n">{{ conteo.amarillo }}</span>
+            <span class="obs-kpi-l"><span class="obs-dot obs-dot-amarillo"></span> Pendientes</span>
+        </div>
+        <div class="obs-kpi obs-kpi-rojo">
+            <span class="obs-kpi-n">{{ conteo.rojo }}</span>
+            <span class="obs-kpi-l"><span class="obs-dot obs-dot-rojo"></span> Incidencias</span>
+        </div>
+    </div>
+
+    <section class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Zonas bajo observación</h3>
+        <div class="obs-tarjetas">
+            {% for t in tarjetas %}
+            <a class="obs-tarjeta obs-estado-{{ t.estado }}" href="{% url 'tickets:obs_buscar' %}?q={{ t.punto|urlencode }}&tipo=punto">
+                <span class="obs-tarjeta-estado"><span class="obs-dot obs-dot-{{ t.estado }}"></span></span>
+                <strong class="obs-tarjeta-nombre">{{ t.punto }}</strong>
+                <span class="obs-tarjeta-dato">{{ t.total }} ticket{{ t.total|pluralize:"s" }}</span>
+                {% if t.sin_tecnico %}
+                <span class="obs-tarjeta-alerta">{{ t.sin_tecnico }} sin técnico</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Personas de esos puntos</h3>
+        <div class="obs-tabla-wrap">
+            <table class="obs-tabla">
+                <thead>
+                    <tr>
+                        <th>Persona</th>
+                        <th>Puntos</th>
+                        <th class="num">Abiertos</th>
+                        <th class="num">Totales</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in personas %}
+                    <tr>
+                        <td>
+                            <strong>{{ p.nombre|default:"Sin nombre" }}</strong>
+                            {% if p.email %}<small>{{ p.email }}</small>{% endif %}
+                        </td>
+                        <td class="obs-puntos">
+                            {% for punto in p.puntos %}<span class="chip chip-soft">{{ punto }}</span>{% empty %}<span class="muted">—</span>{% endfor %}
+                        </td>
+                        <td class="num">{{ p.abiertos }}</td>
+                        <td class="num">{{ p.total }}</td>
+                        <td><span class="obs-pill obs-pill-{{ p.estado }}"><span class="obs-dot obs-dot-{{ p.estado }}"></span>{{ p.estado|capfirst }}</span></td>
+                        <td class="obs-acciones">
+                            <form method="post" action="{% url 'tickets:obs_agregar' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="email" value="{{ p.email }}">
+                                <input type="hidden" name="volver" value="{% url 'tickets:obs_panel' %}">
+                                <button type="submit" class="btn btn-sm btn-outline">Agregar a mi lista</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="obs-sin-datos">Todavía no hay tickets en tus puntos.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}

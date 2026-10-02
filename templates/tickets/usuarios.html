@@ -50,7 +50,10 @@ html[data-theme="dark"] .usuarios-page .table-card .table-scroll::-webkit-scroll
 .ue-dot-w.is-hidden { display: none; }
 .ue-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #9AA0A6; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
 .ue-dot.green { background: #2F7D4F; }
+/* Activo pero sin conexion */
+.ue-dot.yellow { background: #EAB308; }
 .ue-dot.red { background: #D62B1F; }
+.ue-ficha-presencia { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--ink-muted); padding: 4px 11px; border-radius: 999px; background: #fff; border: 1px solid #EFE8DA; }
 .ue-name-line { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; }
 .ue-badge { display: inline-flex; align-items: center; gap: 5px; margin: 4px 0 0; padding: 2px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
 .ue-badge.ue-nuevo { color: #8a6116; background: #FFF3DB; border: 1px solid rgba(217,164,54,.35); }
@@ -211,10 +214,18 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                         <td data-label="Nombre">
                             <span class="ue-name-line">
                                 <strong>{{ u.nombre }}</strong>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
-                                <span class="ue-dot-w{% if not u.ficha.dot %} is-hidden{% endif %}" id="ue-dot-{{ u.pk }}" data-uid="{{ u.pk }}"
-                                      data-green="{{ u.ficha.dot_puede|yesno:'1,0' }}">
+                                {% if u.activo %}
+                                <span class="ue-dot-w{% if u.ficha.dot == 'red' %} is-hidden{% endif %}" id="ue-dot-{{ u.pk }}" data-uid="{{ u.pk }}"
+                                      data-estado="{{ u.ficha.dot }}"
+                                      title="{{ u.ficha.dot_titulo|default:'Estado de la cuenta' }}">
                                     <span class="ue-dot {{ u.ficha.dot }}"></span>
                                 </span>
+                                {% else %}
+                                <span class="ue-dot-w is-hidden" id="ue-dot-{{ u.pk }}" data-uid="{{ u.pk }}"
+                                      data-estado="red" title="Cuenta inactiva">
+                                    <span class="ue-dot red"></span>
+                                </span>
+                                {% endif %}
                             </span>
                             {% if u.ficha.es_nuevo %}<span class="ue-badge ue-nuevo">▸ Recién registrado</span>{% endif %}
                             {% if u.glpi_perfil %}
@@ -354,6 +365,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
             <div class="per-page-bar">
                 <label for="perPageUsuarios">Filas:</label>
                 <select id="perPageUsuarios" data-per-page-param="per_page">
+                    <option value="6" {% if per_page == 6 %}selected{% endif %}>6</option>
                     <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
                     <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
                     <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
@@ -460,8 +472,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                     <select name="tipo" id="t-tipo">
                         <option value="tarea">Tarea</option>
                         <option value="recordatorio">Recordatorio</option>
-                        <option value="proyecto">Proyecto</option>
-                        <option value="anuncio">Anuncio</option>
+                                                <option value="anuncio">Anuncio</option>
                     </select>
                 </div>
                 <div class="form-group span-2">
@@ -690,6 +701,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     document.querySelectorAll('[data-uid]').forEach(function (el) {
         uidSet[el.getAttribute('data-uid')] = true;
     });
+    var DOT_LABEL = { green: 'en linea', yellow: 'activo sin conexion', red: 'inactivo' };
     var uids = Object.keys(uidSet);
     if (uids.length) {
         var url = '{% url "tickets:usuarios_estado" %}?ids=' + uids.join(',');
@@ -699,16 +711,28 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                 var us = j.usuarios || {};
                 Object.keys(us).forEach(function (id) {
                     var st = us[id];
-                    var dotW = document.getElementById('ue-dot-' + id);
-                    if (dotW) {
-                        var on = !!st.en_linea;
-                        var green = dotW.dataset.green === '1';
-                        var dot = dotW.querySelector('.ue-dot');
-                        if (green && dot) {
-                            dot.classList.toggle('green', on);
-                            dot.classList.toggle('gray', !on);
+                    // El mismo punto aparece en la fila y en la ficha abierta.
+                    ['ue-dot-' + id, 'ue-dot-f-' + id].forEach(function (elId) {
+                        var dotW = document.getElementById(elId);
+                        if (!dotW || !st.dot) { return; }
+                        // El servidor ya resuelve el color: verde conectado,
+                        // amarillo activo sin conexion, rojo inactivo.
+                        var dot = dotW.classList.contains('ue-dot') ? dotW : dotW.querySelector('.ue-dot');
+                        if (dot) {
+                            dot.classList.remove('green', 'yellow', 'red', 'gray');
+                            dot.classList.add(st.dot);
                         }
-                    }
+                        var previo = dotW.dataset.estado || '';
+                        if (previo !== st.dot) {
+                            dotW.classList.add('is-new');
+                            if (previo && elId.indexOf('-f-') === -1) {
+                                toast('Estado de ' + (st.nombre || '') + ': ' + DOT_LABEL[st.dot], true);
+                            }
+                            dotW.dataset.estado = st.dot;
+                            clearTimeout(dotW._t);
+                            dotW._t = setTimeout(function () { dotW.classList.remove('is-new'); }, 4000);
+                        }
+                    });
                     if (st.ultimo_acceso) {
                         var etiqueta = accesoLabel(st.ultimo_acceso);
                         var acc = document.getElementById('ue-access-' + id);

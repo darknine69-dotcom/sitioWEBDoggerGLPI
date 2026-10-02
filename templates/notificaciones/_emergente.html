@@ -1,0 +1,23 @@
+{% comment %}Ventana emergente: aviso nuevo con icono alusivo. Solo aparece una vez por aviso.{% endcomment %}
+{% if request.user.is_authenticated and notif_emergente %}
+<div class="notif-popup-overlay" id="notifPopup"
+     data-id="{{ notif_emergente.pk }}"
+     data-url="{{ notif_emergente.url }}"
+     role="dialog" aria-modal="true" aria-labelledby="notifPopupTitle">
+    <div class="notif-popup notif-popup-{{ notif_emergente.tipo }}">
+        <button type="button" class="notif-popup-x" data-notif-cerrar aria-label="Cerrar">&times;</button>
+        <span class="notif-popup-head">
+            <span class="notif-popup-icon" aria-hidden="true">
+                <svg class="icon"><use href="#{{ notif_emergente.icono|default:'i-bell' }}"/></svg>
+            </span>
+            <h3 class="notif-popup-title" id="notifPopupTitle">{{ notif_emergente.titulo }}</h3>
+        </span>
+        <p class="notif-popup-text">{{ notif_emergente.mensaje }}</p>
+        <div class="notif-popup-actions">
+            <a class="btn btn-accent btn-sm notif-popup-ver" href="{{ notif_emergente.url|default:'#' }}" data-notif-cerrar>Ver</a>
+            <button type="button" class="btn btn-ghost btn-sm" data-notif-cerrar>Ahora no</button>
+        </div>
+        <small class="notif-popup-foot">También lo verás en la campana de notificaciones.</small>
+    </div>
+</div>
+{% endif %}

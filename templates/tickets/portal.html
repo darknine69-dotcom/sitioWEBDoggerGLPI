@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Dogger · Mesa de Ayuda TI{% endblock %}
+{% block title %}Mesa de Ayuda TI · Productos Alimenticios Dogger S.A.S.{% endblock %}
 {% block body_class %}landing-page{% endblock %}
+{% block meta_description %}Reporta y sigue las incidencias de tecnología de Dogger en todas sus sedes. Recibe un código HD, consulta su estado sin iniciar sesión y conoce los tiempos de atención comprometidos (ANS).{% endblock %}
 
 {% block header %}
 {% if request.user.is_authenticated %}{{ block.super }}{% endif %}
@@ -41,6 +42,567 @@
 .landing-nav .ln-brand img { width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,.2)); }
 .landing-nav ~ .portal-page { padding-top: 0; }
 .landing-nav ~ .portal-page .landing-hero { padding-top: 122px; }
+
+
+/* ---- Anclas: la barra fija no debe tapar la sección a la que saltas ---- */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+.portal-page [id] { scroll-margin-top: 112px; }
+#consulta { scroll-margin-top: 132px; }
+
+/* ---- Header: enlaces de página, botón Ingresar y menú móvil ---- */
+.ln-links { display: flex; align-items: center; gap: 2px; }
+.ln-links > a {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 12px; border-radius: 10px;
+    color: var(--dogger-cream); text-decoration: none;
+    font-size: 14.5px; font-weight: 600; white-space: nowrap;
+    transition: background .2s ease, color .2s ease;
+}
+.ln-links > a .icon { width: 17px; height: 17px; opacity: .85; }
+.ln-links > a:hover { background: rgba(255,255,255,.14); color: #fff; }
+.ln-links > a:focus-visible { outline: 2px solid var(--dogger-amber); outline-offset: 2px; }
+
+.ln-acciones { display: flex; align-items: center; gap: 4px; }
+.ln-btn-ingresar {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-left: 6px; padding: 10px 20px 10px 16px;
+    border-radius: 999px; white-space: nowrap;
+    background: linear-gradient(135deg, #FFC72C 0%, #F5A623 100%);
+    color: #4A1206; text-decoration: none;
+    font-size: 15px; font-weight: 800; letter-spacing: .01em;
+    box-shadow: 0 3px 0 rgba(0,0,0,.18), 0 8px 18px rgba(0,0,0,.18);
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.ln-btn-ingresar .icon { width: 18px; height: 18px; }
+.ln-btn-ingresar:hover { transform: translateY(-1px); filter: brightness(1.06);
+    box-shadow: 0 4px 0 rgba(0,0,0,.18), 0 12px 24px rgba(0,0,0,.24); }
+.ln-btn-ingresar:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(0,0,0,.2); }
+.ln-btn-ingresar:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+.ln-toggle { display: none; }
+.ln-toggle .icon { width: 22px; height: 22px; color: var(--dogger-cream); }
+
+@media (max-width: 980px) {
+    .ln-btn-ingresar { padding: 10px 16px 10px 13px; font-size: 14.5px; }
+    .ln-toggle {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 42px; height: 42px; padding: 0; cursor: pointer;
+        background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.26);
+        border-radius: 12px; color: var(--dogger-cream);
+    }
+    .ln-links {
+        position: absolute; top: calc(100% + 8px); right: 0;
+        flex-direction: column; align-items: stretch; gap: 4px;
+        min-width: 232px; padding: 12px;
+        background: #7E130C; border: 1px solid rgba(255,255,255,.22);
+        border-radius: 16px; box-shadow: 0 18px 40px rgba(0,0,0,.34);
+    }
+    .ln-links { display: none; }
+    .ln-links.is-open { display: flex; }
+    .ln-links > a { padding: 11px 12px; }
+}
+
+
+
+
+/* ---- Preguntas frecuentes: ver más y envío de preguntas ---- */
+.lp-faq-foot { display: flex; justify-content: center; margin-top: 18px; }
+#faq-ver-mas .faq-flecha { transition: transform .2s ease; }
+#faq-ver-mas[aria-expanded="true"] .faq-flecha { transform: rotate(180deg); }
+.lp-faq-extra { margin-top: 22px; animation: lp-fade .22s ease; }
+.lp-faq-extra[hidden] { display: none; }
+.lp-faq-extra-titulo {
+    margin: 0 0 12px; text-align: center;
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--dogger-red);
+}
+@keyframes lp-fade { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+.fcard-icon-wa { background: #E7FBF0; }
+.fcard-icon-wa svg { color: #128C7E; stroke: none; fill: #128C7E; }
+html[data-theme="dark"] .fcard-icon-wa { background: #06332B; }
+html[data-theme="dark"] .fcard-icon-wa svg { color: #25D366; fill: #25D366; }
+.btn-wa { color: #128C7E; border-color: rgba(18,140,126,.45); }
+.btn-wa:hover { background: rgba(18,140,126,.10); color: #0E6F64; }
+.btn-wa .icon { width: 16px; height: 16px; fill: #128C7E; stroke: none; }
+html[data-theme="dark"] .btn-wa { color: #25D366; border-color: rgba(37,211,102,.45); }
+html[data-theme="dark"] .btn-wa:hover { background: rgba(37,211,102,.14); color: #25D366; }
+html[data-theme="dark"] .btn-wa .icon { fill: #25D366; }
+
+.lp-pregunta {
+    margin-top: 18px; padding: 20px 22px;
+    background: linear-gradient(180deg, #FFF8E6 0%, #FDF1DC 100%);
+    border: 1px solid #EFD69B; border-left: 5px solid #E0A310;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 24px rgba(180,130,10,.12);
+}
+html[data-theme="dark"] .lp-pregunta {
+    background: linear-gradient(180deg, #2A2211 0%, #201A0D 100%);
+    border-color: #5A4A1E; border-left-color: #E0A310;
+    box-shadow: none;
+}
+.lp-pregunta .fcard-icon { background: #FFE9B8; }
+.lp-pregunta .fcard-icon svg { color: #9A6A00; stroke: #9A6A00; }
+html[data-theme="dark"] .lp-pregunta .fcard-icon { background: #3B2F0E; }
+html[data-theme="dark"] .lp-pregunta .fcard-icon svg { color: #FFC72C; stroke: #FFC72C; }
+.lp-pregunta-head h3 { color: #6B4A05; }
+html[data-theme="dark"] .lp-pregunta-head h3 { color: #FFE9B8; }
+.lp-pregunta-head p { color: #7A6231; }
+html[data-theme="dark"] .lp-pregunta-head p { color: #D6C08A; }
+.lp-pregunta-campo input,
+.lp-pregunta-campo textarea { background: #FFFDF7; border-color: #E6D3A6; }
+.lp-pregunta-campo label { color: #7A6231; }
+.lp-pregunta-campo input::placeholder,
+.lp-pregunta-campo textarea::placeholder { color: #9A8862; }
+.lp-pregunta-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.lp-pregunta-head .fcard-icon { margin: 0; flex: 0 0 auto; width: 36px; height: 36px; }
+.lp-pregunta-head .fcard-icon svg { width: 19px; height: 19px; }
+.lp-pregunta-head h3 {
+    margin: 0; font-family: var(--font-display);
+    font-size: 16.5px; font-weight: 800; color: var(--ink);
+}
+.lp-pregunta-head p { margin: 1px 0 0; font-size: 13px; line-height: 1.45; color: var(--ink-muted); }
+.lp-pregunta-form { display: flex; flex-direction: column; gap: 10px; }
+.lp-pregunta-fila { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 12px; align-items: start; }
+.lp-pregunta-campo label {
+    display: block; margin-bottom: 5px;
+    font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-muted);
+}
+.lp-pregunta-campo input,
+.lp-pregunta-campo textarea {
+    width: 100%; padding: 9px 12px;
+    border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--dogger-cream); color: var(--ink);
+    font-family: var(--font-body); font-size: 14px; line-height: 1.45;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+.lp-pregunta-campo textarea { resize: vertical; min-height: 62px; }
+.lp-pregunta-campo input:focus,
+.lp-pregunta-campo textarea:focus {
+    outline: none; border-color: #C98F0A;
+    box-shadow: 0 0 0 3px rgba(224,163,16,.22);
+}
+.lp-pregunta-campo input::placeholder,
+.lp-pregunta-campo textarea::placeholder { color: #6B5D55; }
+.lp-pregunta-aviso { display: block; font-size: 12.5px; font-weight: 700; color: #B3121B; }
+.lp-pregunta-pie { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 2px; }
+.lp-pregunta-pie .btn { flex: 0 0 auto; }
+@media (max-width: 720px) {
+    .lp-pregunta { padding: 16px 15px; }
+    .lp-pregunta-fila { grid-template-columns: 1fr; gap: 10px; }
+    .lp-pregunta-pie { flex-direction: column; align-items: stretch; gap: 8px; }
+    .lp-pregunta-pie .btn { width: 100%; justify-content: center; }
+}
+
+html[data-theme="dark"] .lp-pregunta-campo input,
+html[data-theme="dark"] .lp-pregunta-campo textarea { background: #191408; border-color: #5A4A1E; color: var(--ink); }
+html[data-theme="dark"] .lp-pregunta-campo input::placeholder,
+html[data-theme="dark"] .lp-pregunta-campo textarea::placeholder { color: #9A8862; }
+
+/* ---- Formas decorativas: fondo rojo y franja negra ---- */
+.steps-section { position: relative; overflow: hidden; }
+.steps-section > .page { position: relative; z-index: 1; }
+.steps-section .hd-blob-a { background: radial-gradient(circle, rgba(255,199,44,.13) 0%, transparent 68%); }
+.steps-section .hd-blob-b { background: radial-gradient(circle, rgba(214,43,31,.24) 0%, transparent 70%); }
+.steps-section .hd-ring { border-color: rgba(255,246,240,.10); }
+.steps-section .hd-ring-b { border-color: rgba(255,199,44,.20); }
+.steps-section .hd-dots {
+    background-image: radial-gradient(rgba(255,246,240,.12) 1.5px, transparent 1.6px);
+    -webkit-mask-image: linear-gradient(160deg, #000 0%, rgba(0,0,0,.5) 48%, transparent 80%);
+    mask-image: linear-gradient(160deg, #000 0%, rgba(0,0,0,.5) 48%, transparent 80%);
+}
+.steps-section .hd-glow {
+    background: radial-gradient(circle, rgba(255,199,44,.16) 0%, rgba(214,43,31,.10) 40%, transparent 68%);
+}
+.landing-hero-deco {
+    position: absolute; inset: 0; overflow: hidden;
+    pointer-events: none; z-index: 0;
+}
+.landing-hero-deco > span { position: absolute; display: block; }
+
+/* resplandor cálido arriba a la derecha */
+.hd-glow {
+    top: -180px; right: -140px; width: 620px; height: 620px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,199,44,.30) 0%, rgba(255,140,60,.14) 38%, transparent 66%);
+    animation: hd-float 16s ease-in-out infinite alternate;
+}
+/* puntos finos en cuadrícula */
+.hd-dots {
+    top: 0; right: 0; width: 42%; height: 58%;
+    background-image: radial-gradient(rgba(255,246,240,.16) 1.5px, transparent 1.6px);
+    background-size: 22px 22px;
+    -webkit-mask-image: linear-gradient(200deg, #000 0%, rgba(0,0,0,.55) 45%, transparent 78%);
+    mask-image: linear-gradient(200deg, #000 0%, rgba(0,0,0,.55) 45%, transparent 78%);
+}
+/* anillos concéntricos */
+.hd-ring { border-radius: 50%; border: 1.5px solid rgba(255,246,240,.14); }
+.hd-ring-a { right: -150px; bottom: -190px; width: 560px; height: 560px; }
+.hd-ring-b { right: -60px; bottom: -100px; width: 380px; height: 380px;
+    border-color: rgba(255,199,44,.22); border-width: 2px; }
+/* manchas suaves de profundidad */
+.hd-blob { border-radius: 50%; filter: blur(2px); }
+.hd-blob-a {
+    left: -190px; top: -130px; width: 460px; height: 460px;
+    background: radial-gradient(circle, rgba(60,4,2,.42) 0%, transparent 68%);
+}
+.hd-blob-b {
+    left: 12%; bottom: -260px; width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(126,19,12,.50) 0%, transparent 70%);
+}
+/* dos rayas diagonales paralelas a la franja existente */
+.hd-slash { width: 2px; height: 190%; transform: rotate(18deg); }
+.hd-slash-a { right: 16%; top: -45%; background: linear-gradient(180deg, transparent, rgba(255,246,240,.20), transparent); }
+.hd-slash-b { right: 10%; top: -45%; background: linear-gradient(180deg, transparent, rgba(255,199,44,.26), transparent); }
+
+@keyframes hd-float {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(-26px, 22px, 0) scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .hd-glow { animation: none; }
+}
+@media (max-width: 980px) {
+    .hd-dots { width: 55%; height: 42%; opacity: .75; }
+    .hd-ring-a { width: 420px; height: 420px; right: -190px; }
+    .hd-ring-b { width: 280px; height: 280px; right: -110px; }
+    .hd-slash-b { display: none; }
+}
+@media (max-width: 560px) {
+    .hd-ring-a, .hd-ring-b, .hd-dots { display: none; }
+    .hd-glow { width: 380px; height: 380px; right: -160px; }
+}
+
+/* ---- Hero: jerarquía título → subtítulo → texto → botones ---- */
+.landing-h1 {
+    font-size: clamp(30px, 4.6vw, 54px) !important;
+    line-height: 1.06; letter-spacing: -.02em;
+    margin: 0 0 14px !important;
+    color: #FFF6F0;
+    text-wrap: balance;
+}
+.landing-h1-dot { color: var(--dogger-yellow); font-weight: 400; }
+.landing-lead {
+    font-family: var(--font-display);
+    font-size: clamp(18px, 2.1vw, 25px);
+    font-weight: 700; line-height: 1.3;
+    color: var(--dogger-yellow);
+    margin: 0 0 12px; max-width: 30ch;
+    text-wrap: balance;
+}
+.landing-cta {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
+    gap: 14px; margin: 28px 0 0;
+}
+.landing-cta .btn { min-width: 232px; justify-content: center; }
+.btn-lg { padding: 14px 26px; font-size: 16px; font-weight: 800; border-radius: 999px; }
+.btn-lg .icon { width: 19px; height: 19px; }
+.btn-rojo {
+    background: #B3121B; color: #fff;
+    border: 2px solid rgba(255,255,255,.72);
+    box-shadow: 0 6px 18px rgba(90,6,4,.35);
+}
+.btn-rojo:hover:not(:disabled) { background: #D0121F; border-color: #fff; }
+.btn-rojo:focus-visible { outline: 3px solid var(--dogger-yellow); outline-offset: 2px; }
+.landing-cta .btn-accent:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+@media (max-width: 720px) {
+    .landing-cta { gap: 10px; margin-top: 22px; }
+    .landing-cta .btn { min-width: 0; width: 100%; }
+    .btn-lg { padding: 13px 20px; font-size: 15.5px; }
+}
+
+/* ---- Títulos de sección más grandes (conservando el diseño) ---- */
+.features-section > .features-title,
+.features-section .features-intro .features-title { font-size: clamp(25px, 2.9vw, 33px); line-height: 1.18; }
+.features-section > .section-kicker,
+.features-section .features-intro .section-kicker { font-size: 12px; letter-spacing: .17em; }
+@media (max-width: 720px) {
+    .features-section > .features-title,
+    .features-section .features-intro .features-title { font-size: 23px; }
+}
+
+/* ---- Campos nuevos: aviso, ANS, contacto y consulta de código ---- */
+.lp-notice {
+    display: flex; align-items: flex-start; gap: 12px;
+    max-width: 1180px; margin: 22px auto 0; padding: 14px 18px;
+    background: #FFF8E6; border: 1px solid #F2D89A; border-left: 5px solid #B07A00;
+    border-radius: 12px; color: #4A3A10; font-size: 14px; line-height: 1.5;
+}
+.lp-notice .icon { color: #B07A00; margin-top: 2px; }
+.lp-notice strong { display: block; margin-bottom: 2px; }
+
+.lp-ans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: start; }
+/* el detalle se despliega a lo ancho de la fila para que no comprima a las demás */
+.lp-ans-item { grid-column: span 1; }
+.lp-ans-item[open] { grid-column: 1 / -1; }
+.lp-ans-item[open] > summary {
+    display: grid; grid-template-columns: auto 1fr; grid-template-areas: "badge hours" "badge name";
+    justify-items: start; text-align: left; column-gap: 18px; row-gap: 2px;
+    padding: 18px 20px;
+}
+.lp-ans-item[open] > summary .lp-ans-badge { grid-area: badge; align-self: center; margin: 0; }
+.lp-ans-item[open] > summary .lp-ans-hours { grid-area: hours; margin: 0; justify-content: flex-start; }
+.lp-ans-item[open] > summary .lp-ans-name { grid-area: name; margin: 0; }
+.lp-ans-item[open] .lp-ans-detail {
+    border-radius: var(--radius); border-top: 1px solid var(--ans-color);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; align-items: start;
+}
+.lp-ans-item[open] .lp-ans-detail h3 { grid-column: 1 / -1; }
+.lp-ans-item[open] .lp-ans-detail p { grid-column: 1; }
+.lp-ans-item[open] .lp-ans-detail ul { grid-column: 1; }
+.lp-ans-item[open] .lp-ans-detail .lp-ans-ok { grid-column: 2; grid-row: 2 / span 2; margin: 0; align-self: start; }
+.lp-ans-item[open] .lp-ans-bar { grid-column: 2; grid-row: 4; align-self: center; }
+.lp-ans-item { position: relative; }
+.lp-ans-item.p-urgente { --ans-color: #C1121F; --ans-soft: #FDECEC; --ans-ink: #7E130C; }
+.lp-ans-item.p-alta    { --ans-color: #E0621F; --ans-soft: #FDF0E7; --ans-ink: #7A3A0C; }
+.lp-ans-item.p-media   { --ans-color: #E8A317; --ans-soft: #FDF5E2; --ans-ink: #6E5106; }
+.lp-ans-item.p-baja    { --ans-color: #4E8C4A; --ans-soft: #EFF6EE; --ans-ink: #2F5B2C; }
+
+/* Tarjeta compacta: el número manda y todo lo demás se despliega al hacer clic */
+.lp-ans-item > summary {
+    list-style: none; cursor: pointer; position: relative; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    background: var(--dogger-paper); border: 1px solid var(--line);
+    border-top: 5px solid var(--ans-color, #B9B0A6);
+    border-radius: var(--radius); padding: 18px 16px 16px;
+    box-shadow: var(--shadow-card);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.lp-ans-item > summary::-webkit-details-marker { display: none; }
+.lp-ans-item > summary:hover {
+    transform: translateY(-3px); box-shadow: 0 14px 28px rgba(126,19,12,.14);
+    border-color: var(--ans-color, #B9B0A6);
+}
+.lp-ans-item > summary:focus-visible {
+    outline: 3px solid rgba(214,43,31,.35); outline-offset: 3px;
+}
+.lp-ans-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 11px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    color: #fff; background: var(--ans-color, #B9B0A6);
+}
+.lp-ans-badge .icon { width: 13px; height: 13px; }
+.lp-ans-hours {
+    font-family: var(--font-display); font-size: 40px; font-weight: 800; line-height: 1;
+    color: var(--dogger-red); margin: 10px 0 4px;
+    display: flex; align-items: baseline; justify-content: center; gap: 2px;
+}
+.lp-ans-hours span { font-size: 19px; font-weight: 700; color: var(--ink-muted); }
+.lp-ans-name { font-weight: 800; font-size: 15px; margin: 0; }
+.lp-ans-item[open] > summary { border-color: var(--ans-color, #B9B0A6); }
+
+/* Detalle desplegado: qué significa ese tiempo */
+.lp-ans-detail {
+    display: block; margin-top: 10px; padding: 15px 16px 16px;
+    background: var(--ans-soft, var(--dogger-cream));
+    border: 1px solid var(--ans-color, #B9B0A6);
+    border-top: 0;
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: var(--shadow-card);
+    animation: lp-ans-open .22s ease;
+}
+@keyframes lp-ans-open { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.lp-ans-detail { padding: 20px 24px 22px; }
+.lp-ans-detail h3 {
+    margin: 0 0 10px; font-family: var(--font-display); font-size: 19px;
+    font-weight: 800; color: var(--ans-ink, var(--ink)); letter-spacing: .01em; line-height: 1.3;
+}
+.lp-ans-detail p { margin: 0 0 12px; font-size: 16.5px; line-height: 1.68; color: var(--ink); }
+.lp-ans-detail p strong { color: var(--ans-ink, var(--dogger-red)); }
+.lp-ans-detail ul { margin: 0 0 12px; padding-left: 20px; font-size: 16px; line-height: 1.68; color: var(--ink); }
+.lp-ans-detail li { margin-bottom: 7px; }
+.lp-ans-detail li::marker { color: var(--ans-color, #B9B0A6); }
+.lp-ans-detail .lp-ans-ok {
+    display: flex; align-items: flex-start; gap: 9px; margin: 0;
+    padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.75);
+    font-size: 15px; font-weight: 700; line-height: 1.55; color: var(--ans-ink, var(--ink));
+}
+.lp-ans-detail .lp-ans-ok .icon { width: 17px; height: 17px; flex: 0 0 auto; margin-top: 2px; }
+.lp-ans-bar { width: 100%; height: 6px; margin-top: 12px; border-radius: 999px; background: rgba(0,0,0,.08); overflow: hidden; }
+.lp-ans-bar i { display: block; height: 100%; border-radius: 999px; background: var(--ans-color, #B9B0A6); }
+.lp-ans-foot {
+    display: flex; align-items: center; gap: 10px; margin-top: 18px;
+    padding: 14px 18px; border-radius: 14px;
+    background: #FFF8E6; border: 1px solid #F2D89A; border-left: 5px solid #B07A00;
+    color: #4A3A10; font-size: 14px; line-height: 1.5;
+}
+.lp-ans-foot .icon { color: #B07A00; flex: 0 0 auto; }
+
+/* Preguntas frecuentes dentro de la portada */
+.lp-faq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.lp-faq details {
+    background: var(--dogger-paper); border: 1px solid var(--line);
+    border-radius: 14px; box-shadow: var(--shadow-card); overflow: hidden;
+}
+.lp-faq summary {
+    display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none;
+    padding: 15px 18px; font-weight: 700; font-size: 15px; line-height: 1.4;
+}
+.lp-faq summary::-webkit-details-marker { display: none; }
+.lp-faq summary .icon { flex: 0 0 auto; color: var(--dogger-red); }
+.lp-faq summary .fq-mas { margin-left: auto; font-size: 20px; font-weight: 400; color: var(--dogger-red); line-height: 1; }
+.lp-faq details[open] summary { border-bottom: 1px solid var(--line); background: rgba(126,19,12,.04); }
+.lp-faq details p { margin: 0; padding: 14px 18px 17px; font-size: 14px; line-height: 1.6; color: var(--ink-muted); }
+.lp-faq-foot { display: flex; justify-content: center; margin-top: 18px; }
+
+/* Contacto: horario de verdad, correo y WhatsApp, sin huecos */
+.lp-contact {
+    display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; align-items: stretch;
+}
+.lp-contact-col {
+    background: var(--dogger-paper); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px 22px; box-shadow: var(--shadow-card);
+    display: flex; flex-direction: column;
+}
+.lp-contact-head { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+.lp-contact-head .fcard-icon { margin: 0; flex: 0 0 auto; }
+.lp-contact-head strong { display: block; font-size: 15.5px; }
+.lp-contact-head small { display: block; font-size: 13px; color: var(--ink-muted); line-height: 1.4; }
+
+.lp-horario { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.lp-horario li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 13px; border-radius: 12px;
+    background: rgba(126,19,12,.045); border: 1px solid rgba(126,19,12,.10);
+}
+.lp-horario .hp-dias { font-weight: 800; font-size: 14px; min-width: 168px; }
+.lp-horario .hp-hora {
+    font-family: var(--font-mono); font-weight: 700; font-size: 13.5px;
+    color: var(--dogger-red); white-space: nowrap;
+}
+.lp-horario .hp-nota { font-size: 12.5px; color: var(--ink-muted); margin-left: auto; text-align: right; }
+.lp-horario li:last-child .hp-hora { font-family: var(--font-body); font-size: 13px; }
+
+.lp-contact-cards { display: grid; grid-template-rows: 1fr 1fr; gap: 16px; }
+.lp-contact-item {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--dogger-paper); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-card);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(126,19,12,.13); }
+.lp-contact-item .fcard-icon { margin: 0; flex: 0 0 auto; }
+.lp-contact-item .fcard-icon a, .lp-contact-item .fcard-icon a:hover { color: inherit; }
+.lp-contact-txt { min-width: 0; }
+.lp-contact-item strong { display: block; font-size: 14.5px; margin-bottom: 3px; }
+.lp-contact-item p, .lp-contact-item a, .lp-contact-item .lp-mail {
+    margin: 0; font-size: 13.5px; color: var(--ink-muted); line-height: 1.5;
+    text-decoration: none; word-break: break-word; display: block;
+}
+.lp-contact-item a, .lp-contact-item .lp-mail { color: var(--dogger-red); font-weight: 700; }
+.lp-contact-item a:hover { text-decoration: underline; }
+.lp-contact-cta { margin-left: auto; flex: 0 0 auto; }
+.lp-contact-cta .btn { padding: 9px 16px; font-size: 13.5px; }
+.lp-contact-ayuda {
+    display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0;
+    font-size: 12.5px; line-height: 1.5; color: var(--ink-muted);
+}
+.lp-contact-ayuda .icon { flex: 0 0 auto; margin-top: 1px; }
+
+.features-section .panel-sub {
+    font-size: 16px; line-height: 1.65; color: var(--ink-soft, var(--ink-muted));
+    max-width: 68ch; margin: 10px auto 26px;
+}
+.features-section .panel-sub strong { color: var(--ink); }
+
+/* Todos los encabezados de sección se centran igual: antes "Características" usaba
+   .features-intro (centrado) y los demás se quedaban a la izquierda. */
+.features-section > .section-kicker,
+.features-section > .features-title { text-align: center; margin-left: auto; margin-right: auto; }
+.features-section > .section-kicker { max-width: 640px; }
+.features-section > .features-title { max-width: 760px; }
+.features-section .features-intro { text-align: center; }
+.features-section > .panel-sub.lp-note {
+    text-align: left; margin-left: 0; margin-right: 0;
+}
+/* Preguntas frecuentes: subtítulo centrado junto con el título */
+#preguntas > .panel-sub { margin-top: 6px; margin-bottom: 26px; max-width: 54ch; }
+
+/* Contacto conserva el encabezado a la izquierda, como "Cómo funciona" */
+#contacto > .section-kicker,
+#contacto > .features-title { text-align: left; margin-left: 0; margin-right: 0; max-width: none; }
+
+.lp-lookup { width: 100%; flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
+.lp-lookup-label {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--font-body); font-size: 12.5px; font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase;
+    color: rgba(255,225,218,.85);
+}
+.lp-lookup-label .icon {
+    width: 16px; height: 16px; flex: 0 0 auto;
+    color: #FFC72C; stroke: #FFC72C;
+}
+.lp-lookup-row { display: flex; gap: 8px; width: 100%; }
+/* El campo usa el mismo diseño de los campos de los modales (borde 1.5px,
+   fondo crema y foco rojo) y lleva la lupa dentro, antes del placeholder. */
+.lp-lookup-field {
+    position: relative; display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 4px 5px 4px 16px;
+    border: 1px solid rgba(255,150,140,.32); border-radius: 999px;
+    background: rgba(97,15,10,.60);
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.lp-lookup-field:hover { background: rgba(97,15,10,.70); }
+.lp-lookup-field:focus-within {
+    border-color: #FF8A80;
+    background: rgba(97,15,10,.76);
+    box-shadow: 0 0 0 3px rgba(255,138,128,.22);
+}
+.lp-lookup-input {
+    width: 100%; min-width: 0;
+    padding: 8px 0;
+    border: 0; background: transparent; color: #FFF4EF;
+    font-family: var(--font-body); font-size: 14px; font-weight: 700;
+}
+.lp-lookup-input:focus { outline: none; }
+.lp-lookup-input::placeholder { color: rgba(255,225,218,.60); font-weight: 500; }
+.lp-lookup-btn {
+    flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; padding: 0;
+    border: 0; border-radius: 999px; cursor: pointer;
+    background: #FFF7F2; color: var(--dogger-red);
+    transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.lp-lookup-btn svg { width: 16px; height: 16px; }
+.lp-lookup-btn:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.20); }
+.lp-lookup-btn:active { transform: translateY(0); }
+
+@media (max-width: 980px) {
+    .lp-ans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lp-contact { grid-template-columns: 1fr; }
+    .lp-faq { grid-template-columns: 1fr; }
+}
+@media (max-width: 980px) {
+    .lp-ans { grid-template-columns: 1fr; }
+    .lp-ans-item[open] .lp-ans-detail { grid-template-columns: 1fr; }
+    .lp-ans-item[open] .lp-ans-detail p,
+    .lp-ans-item[open] .lp-ans-detail ul,
+    .lp-ans-item[open] .lp-ans-detail .lp-ans-ok,
+    .lp-ans-item[open] .lp-ans-bar { grid-column: 1; grid-row: auto; }
+}
+@media (max-width: 720px) {
+    .lp-ans-detail { padding: 16px 18px 18px; }
+    .lp-ans-detail h3 { font-size: 17px; }
+    .lp-ans-detail p { font-size: 15px; }
+    .lp-ans-detail ul { font-size: 14.5px; }
+    .lp-ans-detail .lp-ans-ok { font-size: 14px; }
+    .lp-ans-item[open] > summary {
+        display: flex; text-align: center; justify-items: center; align-items: center; padding: 18px 16px;
+    }
+    .lp-ans-item[open] > summary .lp-ans-hours,
+    .lp-ans-item[open] > summary .lp-ans-name { justify-content: center; }
+    .features-section .panel-sub { font-size: 14.5px; margin: 8px auto 20px; }
+    .landing-nav { padding: 10px 16px; }
+    .landing-nav ~ .portal-page .landing-hero { padding-top: 96px; }
+    .lp-ans { grid-template-columns: 1fr; }
+    .lp-horario li { flex-wrap: wrap; }
+    .lp-horario .hp-nota { margin-left: 0; text-align: left; width: 100%; }
+    .lp-lookup-row { flex-direction: column; }
+}
 </style>
 {% endblock %}
 
@@ -51,14 +613,42 @@
     <a class="ln-brand" href="#top" aria-label="Dogger, volver arriba">
         <img src="{% static 'images/dogger-logo.png' %}" alt="Dogger" />
     </a>
-    <a class="btn btn-outline-light btn-sm" href="{% url 'accounts:login_usuario' %}">Ingresar</a>
+    <div class="ln-acciones">
+        <div class="ln-links" id="ln-links">
+            <a href="#preguntas"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg> Preguntas</a>
+            <a href="#consulta"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg> Consultar</a>
+        </div>
+        <a class="ln-btn-ingresar" href="{% url 'accounts:login_usuario' %}">
+            <svg class="icon" aria-hidden="true"><use href="#i-user"/></svg> Ingresar
+        </a>
+        <button class="ln-toggle" type="button" id="ln-toggle" aria-expanded="false" aria-controls="ln-links" aria-label="Ver el menú de la página">
+            <svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg>
+        </button>
+    </div>
 </nav>
 {% endif %}
 
 <main class="portal-page" id="top">
 
+    {% if DOGGER.aviso_destacado %}
+    <div class="lp-notice" role="status">
+        <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+        <span><strong>Aviso de la mesa de ayuda</strong>{{ DOGGER.aviso_destacado }}</span>
+    </div>
+    {% endif %}
+
     <!-- HERO -->
     <section class="landing-hero">
+        <div class="landing-hero-deco" aria-hidden="true">
+            <span class="hd-glow"></span>
+            <span class="hd-dots"></span>
+            <span class="hd-ring hd-ring-a"></span>
+            <span class="hd-ring hd-ring-b"></span>
+            <span class="hd-blob hd-blob-a"></span>
+            <span class="hd-blob hd-blob-b"></span>
+            <span class="hd-slash hd-slash-a"></span>
+            <span class="hd-slash hd-slash-b"></span>
+        </div>
         <div class="landing-hero-inner">
             <div class="landing-hero-copy">
                 {% if request.user.is_authenticated and request.user.rol == 'admin' %}
@@ -89,36 +679,53 @@
                 </div>
 
                 {% elif request.user.is_authenticated %}
-                <p class="landing-kicker"><svg class="hc-icon"><use href="#i-layers"/></svg> Mesa de ayuda TI · Dogger</p>
-                <h1>¿Algún problema con tu equipo o sistemas?<br><span>Reporta tu incidencia aquí.</span></h1>
+                <p class="landing-kicker"><svg class="hc-icon"><use href="#i-headset"/></svg> Soporte corporativo</p>
+                <h1 class="landing-h1">Mesa de Ayuda TI <span class="landing-h1-dot">&middot;</span> Dogger</h1>
+                <p class="landing-lead">¿Algún problema con tu equipo o sistemas?</p>
                 <p class="landing-sub">
                     Centraliza tus solicitudes de soporte: POS-FE, SIESA, correos, impresoras y más.
                     Recibe un código <strong>HD-XXXX</strong> y haz seguimiento hasta la solución.
                 </p>
-                <div class="contact-row">
-                    <a class="btn btn-accent" href="{% url 'tickets:crear_ticket' %}"><svg class="icon"><use href="#i-ticket"/></svg> Reportar incidencia</a>
+                <div class="contact-row landing-cta">
+                    <a class="btn btn-accent btn-lg" href="{% url 'tickets:crear_ticket' %}"><svg class="icon"><use href="#i-ticket"/></svg> Reportar incidencia</a>
+                    <a class="btn btn-rojo btn-lg" href="#como-funciona"><svg class="icon"><use href="#i-help"/></svg> ¿Cómo funciona?</a>
                     <a class="btn btn-header" href="{% url 'tickets:mi_panel' %}"><svg class="icon"><use href="#i-user"/></svg> Ir a mi panel</a>
-                    <a class="btn btn-outline-light btn-sm" href="#como-funciona">¿Cómo funciona? ↓</a>
                 </div>
 
                 {% else %}
-                <p class="landing-kicker"><svg class="hc-icon"><use href="#i-layers"/></svg> Mesa de ayuda TI · Dogger</p>
-                <h1>¿Algún problema con tu equipo o sistemas?<br><span>Reporta tu incidencia aquí.</span></h1>
+                <p class="landing-kicker"><svg class="hc-icon"><use href="#i-headset"/></svg> Soporte corporativo</p>
+                <h1 class="landing-h1">Mesa de Ayuda TI <span class="landing-h1-dot">&middot;</span> Dogger</h1>
+                <p class="landing-lead">¿Algún problema con tu equipo o sistemas?</p>
                 <p class="landing-sub">
                     Centraliza tus solicitudes de soporte: POS-FE, SIESA, correos, impresoras y más.
                     Recibe un código <strong>HD-XXXX</strong> y haz seguimiento hasta la solución.
                 </p>
-                <div class="contact-row">
-                    <a class="btn btn-accent" href="{% url 'accounts:login_usuario' %}"><svg class="icon"><use href="#i-ticket"/></svg> Reportar incidencia</a>
-                    <a class="btn btn-header" href="{% url 'accounts:registro' %}"><svg class="icon"><use href="#i-edit"/></svg> Crear cuenta</a>
-                    <a class="btn btn-outline-light btn-sm" href="#como-funciona">¿Cómo funciona? ↓</a>
+                <div class="contact-row landing-cta">
+                    <a class="btn btn-accent btn-lg" href="{% url 'accounts:login_usuario' %}"><svg class="icon"><use href="#i-ticket"/></svg> Reportar incidencia</a>
+                    <a class="btn btn-rojo btn-lg" href="#como-funciona"><svg class="icon"><use href="#i-help"/></svg> ¿Cómo funciona?</a>
                 </div>
                 {% endif %}
             </div>
             <div class="landing-hero-card">
                 <img src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" class="hero-logo">
+                <div class="lp-lookup" id="consulta">
+                    <span class="lp-lookup-label">
+                        <svg class="icon" aria-hidden="true"><use href="#i-ticket"/></svg> Consultar un ticket
+                    </span>
+                    <form class="lp-lookup-row" method="get" action="{% url 'tickets:consultar' %}">
+                        <div class="lp-lookup-field">
+                            <input class="lp-lookup-input" type="text" id="lp-codigo" name="codigo"
+                                   placeholder="HD-0000" aria-label="Código del ticket"
+                                   autocomplete="off" spellcheck="false"
+                                   pattern="[Hh][Dd]-[0-9]{1,6}" required>
+                            <button class="lp-lookup-btn" type="submit" aria-label="Buscar ticket">
+                                <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
                 <div class="hero-chips">
-                    <span class="hero-chip"><svg class="hc-icon"><use href="#i-clock"/></svg> Atención en horario hábil</span>
+                    <span class="hero-chip"><svg class="hc-icon"><use href="#i-clock"/></svg> {{ DOGGER.horario_atencion }}</span>
                     <span class="hero-chip"><svg class="hc-icon"><use href="#i-paperclip"/></svg> Adjunta fotos o PDFs</span>
                     <span class="hero-chip"><svg class="hc-icon"><use href="#i-external"/></svg> Integrado con GLPI</span>
                     <span class="hero-chip"><svg class="hc-icon"><use href="#i-message"/></svg> Responde desde el portal</span>
@@ -184,8 +791,117 @@
         </div>
     </section>
 
+    <!-- TIEMPOS DE ATENCIÓN (ANS) -->
+    <section id="compromisos" class="page features-section">
+        <p class="section-kicker">Tiempos comprometidos</p>
+        <h2 class="features-title">Cada categoría tiene un tiempo máximo de resolución (ANS)</h2>
+        <p class="panel-sub">Al reportar eliges la categoría del problema; con ella se define la prioridad y el tiempo que el equipo se compromete a cumplir.</p>
+        <div class="lp-ans">
+
+            <details class="lp-ans-item p-urgente">
+                <summary>
+                    <span class="lp-ans-badge"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg> Prioridad máxima</span>
+                    <p class="lp-ans-hours">2<span>h</span></p>
+                    <p class="lp-ans-name">Urgente</p>
+                </summary>
+                <div class="lp-ans-detail">
+                    <h3>El tiempo más corto: se atiende de inmediato</h3>
+                    <p>Son <strong>2 horas hábiles</strong> como máximo entre que reportas el problema y un técnico
+                    toma el caso y empieza a resolverlo. Es la prioridad para todo lo que detiene la venta.</p>
+                    <ul>
+                        <li>El ticket entra directamente a la cola de prioridad máxima.</li>
+                        <li>No espera turno: se asigna al técnico disponible en ese momento.</li>
+                        <li>Si el caso no se resuelve en 2 horas, el ticket escala automáticamente.</li>
+                    </ul>
+                    <p class="lp-ans-ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                    Ejemplos: la caja no abre, no hay facturación, no hay señal de red.</p>
+                    <span class="lp-ans-bar" aria-hidden="true"><i style="width:4%"></i></span>
+                </div>
+            </details>
+
+            <details class="lp-ans-item p-alta">
+                <summary>
+                    <span class="lp-ans-badge"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg> Alta</span>
+                    <p class="lp-ans-hours">8<span>h</span></p>
+                    <p class="lp-ans-name">Alta</p>
+                </summary>
+                <div class="lp-ans-detail">
+                    <h3>El punto sigue operando, pero con serias limitaciones</h3>
+                    <p>Son <strong>8 horas hábiles</strong> como máximo. El ticket entra después de los urgentes,
+                    pero antes que el resto, y se atiende el mismo día hábil.</p>
+                    <ul>
+                        <li>Se agenda dentro de la jornada laboral del punto.</li>
+                        <li>Si necesitas el punto activo ya, escálalo a Urgente desde el reporte.</li>
+                        <li>El tiempo se pausa si el técnico necesita datos o piezas de tu lado.</li>
+                    </ul>
+                    <p class="lp-ans-ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                    Ejemplos: una impresora falla y solo se factura a mano, una terminal va lenta.</p>
+                    <span class="lp-ans-bar" aria-hidden="true"><i style="width:17%"></i></span>
+                </div>
+            </details>
+
+            <details class="lp-ans-item p-media">
+                <summary>
+                    <span class="lp-ans-badge"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg> Media</span>
+                    <p class="lp-ans-hours">12<span>h</span></p>
+                    <p class="lp-ans-name">Media</p>
+                </summary>
+                <div class="lp-ans-detail">
+                    <h3>Afectación parcial: algo falla, el resto funciona</h3>
+                    <p>Son <strong>12 horas hábiles</strong> como máximo. El ticket se atiende ese mismo día
+                    hábil, pero puede resolverse en menos si el técnico encuentra la causa rápido.</p>
+                    <ul>
+                        <li>Se toma en el orden en que llega, después de las prioridades altas.</li>
+                        <li>Puedes seguir operando con normalidad mientras se resuelve.</li>
+                        <li>No se escalate solo: si sube de impacto, cambia la prioridad desde el ticket.</li>
+                    </ul>
+                    <p class="lp-ans-ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                    Ejemplos: falla una sección del reporte, un módulo carga lento, avisos de inventario.</p>
+                    <span class="lp-ans-bar" aria-hidden="true"><i style="width:25%"></i></span>
+                </div>
+            </details>
+
+            <details class="lp-ans-item p-baja">
+                <summary>
+                    <span class="lp-ans-badge"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> Baja</span>
+                    <p class="lp-ans-hours">48<span>h</span></p>
+                    <p class="lp-ans-name">Baja</p>
+                </summary>
+                <div class="lp-ans-detail">
+                    <h3>Sin impacto en la venta: se puede esperar</h3>
+                    <p>Son <strong>48 horas hábiles</strong> como máximo, equivalente a dos días hábiles.
+                    El ticket entra al final de la cola y se planifica con calma.</p>
+                    <ul>
+                        <li>Se agrupa con otros casos parecidos para resolverlos de una vez.</li>
+                        <li>Puedes adjuntar capturas o archivos cuando tengas tiempo.</li>
+                        <li>No afecta la operación: nadie queda esperando en el punto.</li>
+                    </ul>
+                    <p class="lp-ans-ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                    Ejemplos: solicitud de un equipo nuevo, cambios de configuración, mejoras sugeridas.</p>
+                    <span class="lp-ans-bar" aria-hidden="true"><i style="width:100%"></i></span>
+                </div>
+            </details>
+
+        </div>
+        <p class="lp-ans-foot">
+            <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+            <span>El tiempo se cuenta en <strong>horas hábiles</strong> desde que el ticket entra a la cola de la mesa de ayuda
+            y se pausa mientras dependemos de información tuya o de un tercero.</span>
+        </p>
+    </section>
+
     <!-- CÓMO FUNCIONA -->
     <section id="como-funciona" class="steps-section">
+        <div class="landing-hero-deco" aria-hidden="true">
+            <span class="hd-glow"></span>
+            <span class="hd-dots"></span>
+            <span class="hd-ring hd-ring-a"></span>
+            <span class="hd-ring hd-ring-b"></span>
+            <span class="hd-blob hd-blob-a"></span>
+            <span class="hd-blob hd-blob-b"></span>
+            <span class="hd-slash hd-slash-a"></span>
+            <span class="hd-slash hd-slash-b"></span>
+        </div>
         <div class="page">
             <p class="section-kicker kicker-light">Cómo funciona</p>
             <h2 class="steps-title">De la incidencia a la solución en 4 pasos</h2>
@@ -196,6 +912,197 @@
                 <li class="step-card"><span class="step-num">4</span><strong>Confirma la solución</strong><small>Al resolverlo el ticket se cierra y queda en tu historial.</small></li>
             </ol>
         </div>
+    </section>
+
+    <!-- CONTACTO -->
+    <section id="contacto" class="page features-section">
+        <p class="section-kicker">Contacto</p>
+        <h2 class="features-title">¿Necesitas hablar con alguien?</h2>
+        <div class="lp-contact">
+            <div class="lp-contact-col">
+                <div class="lp-contact-head">
+                    <span class="fcard-icon"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></span>
+                    <span><strong>Horario de atención</strong><small>Hora Colombia · el ANS se cuenta en horas hábiles</small></span>
+                </div>
+                <ul class="lp-horario">
+                    {% for h in DOGGER.horario_detalle %}
+                    <li>
+                        <span class="hp-dias">{{ h.dias }}</span>
+                        <span class="hp-hora">{{ h.hora }}</span>
+                        <span class="hp-nota">{{ h.nota }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <p class="lp-contact-ayuda">
+                    <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+                    Fuera de ese horario los tickets quedan registrados y se atienden apenas abra la ventana,
+                    según la prioridad asignada.
+                </p>
+            </div>
+            <div class="lp-contact-cards">
+                <div class="lp-contact-item">
+                    <span class="fcard-icon"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg></span>
+                    <span class="lp-contact-txt">
+                        <strong>Correo de soporte</strong>
+                        <a href="mailto:{{ DOGGER.correo_soporte }}">{{ DOGGER.correo_soporte }}</a>
+                    </span>
+                </div>
+                <div class="lp-contact-item">
+                    <span class="fcard-icon fcard-icon-wa"><svg class="icon" aria-hidden="true"><use href="#i-whatsapp"/></svg></span>
+                    <span class="lp-contact-txt">
+                        <strong>WhatsApp de soporte</strong>
+                        <a href="https://wa.me/57{{ DOGGER.whatsapp_soporte }}" target="_blank" rel="noopener">+57 {{ DOGGER.whatsapp_soporte }}</a>
+                    </span>
+                    <span class="lp-contact-cta">
+                        <a class="btn btn-outline btn-sm btn-wa" href="https://wa.me/57{{ DOGGER.whatsapp_soporte }}" target="_blank" rel="noopener">
+                            <svg class="icon" aria-hidden="true"><use href="#i-whatsapp"/></svg> Escribir
+                        </a>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <p class="panel-sub lp-note">
+            Si la falla detiene la venta o la facturación, repórtala cuanto antes:
+            la categoría correcta asigna la prioridad <strong>Urgente</strong> y se atiende en 2 horas.
+        </p>
+        <div class="contact-row">
+            <a class="btn btn-outline" href="{% url 'accounts:login_staff' %}"><svg class="icon"><use href="#i-lock"/></svg> Acceso personal TIC</a>
+        </div>
+    </section>
+
+
+    <!-- PREGUNTAS FRECUENTES (dentro de la portada: el menú no se sale de la página) -->
+    <section id="preguntas" class="page features-section">
+        <p class="section-kicker">Preguntas frecuentes</p>
+        <h2 class="features-title">Lo que más nos preguntan</h2>
+        <p class="panel-sub">Si tu duda no está aquí, escríbenos y la respondemos por correo.</p>
+        <div class="lp-faq">
+            <details open>
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-ticket"/></svg> ¿Necesito cuenta para reportar?<span class="fq-mas">+</span></summary>
+                <p>Sí. Para levantar un ticket necesitas iniciar sesión o crear tu cuenta: así queda guardado tu
+                   historial y puedes ver las respuestas del técnico. Si solo quieres consultar el estado de un
+                   Ticket, basta con el código HD en el recuadro de arriba.</p>
+            </details>
+            <details>
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg> ¿Qué pasa si reporto fuera de horario?<span class="fq-mas">+</span></summary>
+                <p>Tu ticket queda registrado de una vez con la hora exacta. Se atiende apenas abra la ventana
+                   de soporte, respetando el orden de prioridad: primero los urgentes, después los de prioridad alta.</p>
+            </details>
+            <details>
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg> ¿Cómo sé si es urgente?<span class="fq-mas">+</span></summary>
+                <p>Si la falla <strong>detiene la venta o la facturación</strong>, es prioridad <strong>Urgente</strong>
+                   y se atiende en 2 horas hábiles. Si el punto opera con limitaciones, es prioridad Alta y el
+                   tiempo es de 8 horas.</p>
+            </details>
+            <details>
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg> ¿Varias personas tienen el mismo problema?<span class="fq-mas">+</span></summary>
+                <p>Reporten <strong>un solo ticket</strong> y agreguen los datos de los equipos afectados en la
+                   descripción. Así evitamos casos duplicados y el técnico resuelve todo en una sola visita.</p>
+            </details>
+            <details>
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg> ¿Qué evidencia debo adjuntar?<span class="fq-mas">+</span></summary>
+                <p>Fotos o capturas del mensaje de error, pantallazos del sistema y el nombre o código del
+                   equipo. Puedes adjuntar hasta {{ DOGGER.max_adjuntos }} archivos de {{ DOGGER.max_adjunto_mb }} MB.</p>
+            </details>
+            <details>
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg> ¿Dónde veo la respuesta del técnico?<span class="fq-mas">+</span></summary>
+                <p>En tu panel, dentro del ticket: puedes escribir y recibir respuestas. Además te enviamos un
+                   aviso por correo institucional cuando el caso avanza o se cierra.</p>
+            </details>
+            <details>
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> ¿Cómo sé que el ticket quedó registrado?<span class="fq-mas">+</span></summary>
+                <p>Apenas envías el reporte recibes un <strong>código HD-XXXX</strong> y un correo de confirmación.
+                   Con ese código puedes consultar el estado desde el buscador de la portada, sin necesidad de
+                   volver a entrar, y desde el mismo enlace recibes las actualizaciones del técnico.</p>
+            </details>
+            <details>
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-headset"/></svg> ¿Puedo reportar en nombre de otro punto?<span class="fq-mas">+</span></summary>
+                <p>Sí. Si atiendes varios locales o puntos de venta, escribe en la descripción el nombre del
+                   punto afectado. El ticket queda asociado a tu usuario, así que puedes revisarlo y responderle
+                   desde tu panel sin que el técnico tenga que pedirte datos adicionales.</p>
+            </details>
+        </div>
+        <div class="lp-faq-foot">
+            <button type="button" class="btn btn-outline" id="faq-ver-mas"
+                    aria-expanded="false" aria-controls="faq-extra">
+                <svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>
+                <span id="faq-ver-mas-txt">Ver todas las preguntas frecuentes</span>
+                <svg class="icon faq-flecha" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+            </button>
+        </div>
+
+        <div class="lp-faq-extra" id="faq-extra" hidden>
+            <p class="lp-faq-extra-titulo">Todas las preguntas</p>
+            <div class="lp-faq">
+                <details>
+                    <summary><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg> ¿Cuánto tarda la respuesta?<span class="fq-mas">+</span></summary>
+                    <p>Depende de la prioridad y la complejidad del caso, pero el equipo revisa las nuevas
+                       solicitudes el mismo día hábil en que se reportan.</p>
+                </details>
+                <details>
+                    <summary><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg> ¿Qué prioridad tendrá mi pedido y en cuánto se resuelve?<span class="fq-mas">+</span></summary>
+                    <p>La prioridad se asigna sola según la categoría del problema, y con ella el tiempo máximo
+                       de resolución: <strong>Urgente 2 h</strong>, <strong>Alta 8 h</strong>, <strong>Media 12 h</strong>
+                       y <strong>Baja 48 h</strong>. El tiempo restante lo ves en tu ticket.</p>
+                </details>
+                <details>
+                    <summary><svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg> ¿Puedo adjuntar evidencias?<span class="fq-mas">+</span></summary>
+                    <p>Sí. Puedes subir capturas o archivos PDF para apoyar la descripción del problema y
+                       facilitar la resolución, hasta {{ DOGGER.max_adjuntos }} archivos de {{ DOGGER.max_adjunto_mb }} MB.</p>
+                </details>
+                <details>
+                    <summary><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg> ¿Cómo sé en qué estado va mi pedido?<span class="fq-mas">+</span></summary>
+                    <p>En tu panel puedes revisar el estado, el historial y la actividad reciente de cada
+                       ticket, entrando al detalle de la solicitud.</p>
+                </details>
+                <details>
+                    <summary><svg class="icon" aria-hidden="true"><use href="#i-message"/></svg> ¿Puedo responder desde el portal?<span class="fq-mas">+</span></summary>
+                    <p>Sí. Desde el detalle del ticket respondes directamente y agregas una actualización o
+                       evidencia nueva sin salir de la página.</p>
+                </details>
+                <details>
+                    <summary><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg> ¿Puedo cerrar mi propio ticket?<span class="fq-mas">+</span></summary>
+                    <p>Puedes solicitar el cierre desde tu panel cuando la falla haya desaparecido. El técnico
+                       revisa la evidencia y confirma el cierre del caso.</p>
+                </details>
+            </div>
+            <div class="lp-pregunta">
+                <div class="lp-pregunta-head">
+                    <span class="fcard-icon"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg></span>
+                    <div>
+                        <h3>¿No encuentras tu respuesta?</h3>
+                        <p>Escríbenos tu pregunta y la respuesta queda en esta misma sección para que todos la vean.</p>
+                    </div>
+                </div>
+                <form class="lp-pregunta-form" id="lp-pregunta-form" novalidate
+                      data-correo="{{ DOGGER.correo_soporte }}">
+                    <div class="lp-pregunta-fila">
+                        <div class="lp-pregunta-campo">
+                            <label for="pq-nombre">Nombre</label>
+                            <input type="text" id="pq-nombre" name="nombre" maxlength="80"
+                                   placeholder="Tu nombre" autocomplete="name" required>
+                        </div>
+                        <div class="lp-pregunta-campo">
+                            <label for="pq-correo">Correo (opcional)</label>
+                            <input type="email" id="pq-correo" name="correo" maxlength="120"
+                                   placeholder="nombre@dogger.com.co" autocomplete="email">
+                        </div>
+                        <div class="lp-pregunta-campo">
+                            <label for="pq-texto">Tu pregunta</label>
+                            <textarea id="pq-texto" name="pregunta" rows="2" maxlength="600" required
+                                      placeholder="Escribe aquí tu duda"></textarea>
+                        </div>
+                    </div>
+                    <div class="lp-pregunta-pie">
+                        <small class="lp-pregunta-aviso" id="lp-pregunta-aviso" role="alert"></small>
+                        <button type="submit" class="btn btn-accent btn-sm">
+                            <svg class="icon" aria-hidden="true"><use href="#i-send"/></svg> Enviar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </section>
 
     <!-- LLAMADO A CREAR CUENTA -->
@@ -230,8 +1137,7 @@
                 <h2>¿Quieres reportar una incidencia?</h2>
                 <p>Necesitas <strong>iniciar sesión o crear tu cuenta</strong> para levantar tickets. Así tu historial queda guardado, puedes responder al equipo y descargar tus solicitudes cuando quieras.</p>
                 <div class="contact-row">
-                    <a class="btn btn-accent" href="{% url 'accounts:login_usuario' %}"><svg class="icon"><use href="#i-lock"/></svg> Iniciar sesión</a>
-                    <a class="btn btn-primary" href="{% url 'accounts:registro' %}"><svg class="icon"><use href="#i-plus"/></svg> Crear cuenta gratis</a>
+                    <a class="btn btn-accent" href="{% url 'accounts:registro' %}"><svg class="icon"><use href="#i-plus"/></svg> Crear cuenta gratis</a>
                     <a class="btn btn-outline" href="{% url 'tickets:consultar' %}"><svg class="icon"><use href="#i-search"/></svg> Solo consultar un código HD</a>
                 </div>
                 {% endif %}
@@ -246,16 +1152,17 @@
 <script>
 (function () {
     var nav = document.querySelector('.landing-nav');
-    if (!nav) return;
-    function onScroll() {
-        if (window.scrollY > 60) {
-            nav.classList.add('is-solid');
-        } else {
-            nav.classList.remove('is-solid');
+    if (nav) {
+        function onScroll() {
+            if (window.scrollY > 60) {
+                nav.classList.add('is-solid');
+            } else {
+                nav.classList.remove('is-solid');
+            }
         }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
     }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
 })();
 </script>
 {% endif %}

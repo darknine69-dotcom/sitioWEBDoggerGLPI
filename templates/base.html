@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Dogger · Mesa de Ayuda{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Mesa de Ayuda TI de Productos Alimenticios Dogger S.A.S.: reporta y sigue las incidencias de tecnología de todas las sedes, con código HD, tiempos de atención comprometidos (ANS) e integración con GLPI.{% endblock %}">
+    <meta name="theme-color" content="#A11B12">
+    <link rel="icon" href="{% static 'images/dogger-logo.svg' %}" type="image/svg+xml">
     <script>
     (function(){
         function g(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -18,12 +21,14 @@
         root.setAttribute('data-navicons', g('dogger:pv:navicons') === '0' ? '0' : '1');
     })();
     </script>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260927">
-    <link rel="stylesheet" href="{% static 'css/theme-modes.css' %}?v=20260927">
-    <script defer src="{% static 'js/dogger.js' %}?v=20260917"></script>
+    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260929">
+    <link rel="stylesheet" href="{% static 'css/theme-modes.css' %}?v=20260929">
+    <script defer src="{% static 'js/dogger.js' %}?v=20260929"></script>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %}"
+      {% if request.user.is_authenticated %}data-url-latido="{% url 'accounts:latido' %}"{% endif %}>
+<a class="skip-link" href="#contenido">Saltar al contenido principal</a>
 
 <!-- Iconos SVG compartidos (sprite) -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
@@ -47,8 +52,13 @@
     <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
     <symbol id="i-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></symbol>
     <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
     <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
     <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></symbol>
     <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
@@ -78,6 +88,12 @@
     <symbol id="i-instagram" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></symbol>
     <symbol id="i-tiktok" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M16.6 3c.35 1.53 1.4 2.85 2.9 3.33v2.73c-1.1.05-2.15-.27-3.08-.85v5.6a5.92 5.92 0 11-5.92-5.92c.32 0 .64.02.95.07v2.92a3 3 0 102.05 2.86V3h3.1z"/></symbol>
     <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-headset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-printer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
 </svg>
     {% block header %}
     <header class="brand-header">
@@ -93,7 +109,7 @@
         <div class="header-actions">
             {% if not request.user.is_authenticated %}
             <a href="{% url 'accounts:login_usuario' %}" class="btn btn-header btn-sm">Ingresar</a>
-            <a href="{% url 'accounts:login_staff' %}" class="btn btn-outline-light btn-sm">Staff</a>
+            <a href="{% url 'accounts:login_staff' %}" class="btn btn-outline-light btn-sm">Acceso personal TIC</a>
             {% endif %}
             {% block header_actions %}{% endblock %}
         </div>
@@ -107,27 +123,96 @@
                 <span class="nav-toggle-bar"></span>
             </button>
             <ul class="nav-list" id="navList">
+                {% load dogger_nav %}
+
+                {# Estado activo automático: cada plantilla ya no declara su bloque de navegación. #}
 
                 {% if request.user.is_authenticated and request.user.rol == 'usuario' %}
-                <li><a href="{% url 'tickets:mi_panel' %}" class="nav-link {% block nav_mi_panel %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg> Mis tickets</a></li>
-                <li><a href="{% url 'tickets:crear_ticket' %}" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo ticket</a></li>
+                <li>
+                    <a href="{% url 'tickets:mi_panel' %}" class="nav-link{% nav_active 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %}"{% nav_current 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-home"/></svg> Mi panel
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:crear_ticket' %}" class="nav-link{% nav_active 'crear_ticket' %}"{% nav_current 'crear_ticket' %}">
+                        {% if menu_respondidos %}<span class="nav-count" data-nivel="bajo">{{ menu_respondidos }}</span>{% endif %}
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-plus"/></svg> Reportar incidencia
+                        {% if menu_respondidos %}<span class="nav-count-sr">{{ menu_respondidos }} tickets con respuesta por revisar</span>{% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:categorias_publico' %}" class="nav-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %}>
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-folder"/></svg> ¿Qué categoría es?
+                    </a>
+                </li>
                 {% endif %}
 
-{% if request.user.rol == 'tecnico' %}
-                <li><a href="{% url 'tickets:panel_tecnico' %}" class="nav-link {% block nav_tecnico %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Panel técnico</a></li>
+                {% if request.user.rol == 'tecnico' %}
+                <li>
+                    <a href="{% url 'tickets:panel_tecnico' %}" class="nav-link{% nav_active 'panel_tecnico' 'mis_tickets' 'panel_tecnico_lote' %}"{% nav_current 'panel_tecnico' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-grid"/></svg> Panel
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:sin_asignar' %}" class="nav-link{% nav_active 'sin_asignar' %}"{% nav_current 'sin_asignar' %}>
+                        {% if sin_asignar_total %}<span class="nav-count" data-nivel="alto">{{ sin_asignar_total }}</span>{% endif %}
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-inbox"/></svg> Bandeja sin asignar
+                        {% if sin_asignar_total %}<span class="nav-count-sr">{{ sin_asignar_total }} tickets sin técnico asignado</span>{% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:lista' %}" class="nav-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-ticket"/></svg> Tickets
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'programador:panel_programador' %}" class="nav-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %}>
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-calendar"/></svg> Calendario
+                    </a>
+                </li>
                 {% endif %}
+
                 {% if request.user.rol == 'admin' %}
-                <li><a href="{% url 'tickets:dashboard' %}" class="nav-link {% block nav_dashboard %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Dashboard</a></li>
-                {% endif %}
-                {% if request.user.es_staff_helpdesk %}
-                <li><a href="{% url 'tickets:lista' %}" class="nav-link {% block nav_tickets %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5v2"/><path d="M15 11v2"/><path d="M15 17v2"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg> Tickets</a></li>
-                <li><a href="{% url 'programador:panel_programador' %}" class="nav-link {% block nav_programador %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Programador</a></li>
-                <li><a href="{% url 'tickets:categorias_arbol' %}" class="nav-link {% block nav_categorias %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Categorías</a></li>
-                {% endif %}
-                {% if request.user.rol == 'admin' %}
-                <li><a href="{% url 'tickets:reportes' %}" class="nav-link {% block nav_reportes %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Reportes</a></li>
-                <li><a href="{% url 'tickets:usuarios' %}" class="nav-link {% block nav_usuarios %}{% endblock %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Usuarios</a></li>
-                <li><a href="{% url 'tickets:papelera' %}" class="nav-link nav-link-trash {% block nav_papelera %}{% endblock %}" title="Papelera{% if papelera_total %}: {{ papelera_total }} eliminado{{ papelera_total|pluralize:"s,os" }}{% endif %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg><span class="nav-label">Papelera</span>{% if papelera_total %}<span class="nav-badge">{{ papelera_total }}</span>{% endif %}</a></li>
+                <li>
+                    <a href="{% url 'tickets:dashboard' %}" class="nav-link{% nav_active 'dashboard' %}"{% nav_current 'dashboard' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-grid"/></svg> Panel
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:lista' %}" class="nav-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %}>
+                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-ticket"/></svg> Tickets
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:reportes' %}" class="nav-link{% nav_active 'reportes' %}"{% nav_current 'reportes' %}>
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-chart"/></svg> Reportes
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'programador:panel_programador' %}" class="nav-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %}>
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-calendar"/></svg> Calendario
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:usuarios' %}" class="nav-link{% nav_active 'usuarios' %}"{% nav_current 'usuarios' %}>
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-users"/></svg> Usuarios y roles
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:categorias_arbol' %}" class="nav-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %}>
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-folder"/></svg> Categorías
+                    </a>
+                </li>
                 {% endif %}
             </ul>
             <div class="nav-side">
@@ -135,6 +220,7 @@
                 <a class="btn btn-accent btn-sm" href="{% url 'tickets:exportar_mis_tickets' %}"><svg class="icon"><use href="#i-download"/></svg> Exportar mis tickets</a>
                 {% endif %}
                 {% if request.user.is_authenticated %}
+                {% include "notificaciones/_campana.html" %}
                 <div class="user-chip-wrap">
                     <button type="button" class="user-chip" data-rol="{{ request.user.rol }}" id="userChipToggle" aria-expanded="false" aria-haspopup="true">
                         {% if request.user.avatar %}
@@ -165,6 +251,35 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             Consultar ticket HD
                         </a>
+                {% if request.user.rol == 'observador' %}
+                <li>
+                    <a href="{% url 'tickets:obs_panel' %}" class="nav-link{% nav_active 'obs_panel' 'obs_monitoreo' 'obs_mi_lista' 'obs_buscar' %}"{% nav_current 'obs_panel' 'obs_monitoreo' 'obs_mi_lista' 'obs_buscar' %}">
+                        {% if menu_total %}<span class="nav-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-eye"/></svg> Observación
+                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:obs_buscar' %}" class="nav-link{% nav_active 'obs_buscar' %}"{% nav_current 'obs_buscar' %}">
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-search"/></svg> Buscar y agregar
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:obs_monitoreo' %}" class="nav-link{% nav_active 'obs_monitoreo' 'obs_mi_lista' %}"{% nav_current 'obs_monitoreo' 'obs_mi_lista' %}">
+                        {% if menu_mios %}<span class="nav-count" data-nivel="bajo">{{ menu_mios }}</span>{% endif %}
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-check-circle"/></svg> Monitoreo
+                        {% if menu_mios %}<span class="nav-count-sr">{{ menu_mios }} elementos en tu lista</span>{% endif %}
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if request.user.rol == 'admin' %}
+                        <a href="{% url 'tickets:papelera' %}" class="user-dropdown-item{% nav_active 'papelera' %}" role="menuitem"{% nav_current 'papelera' %}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                            Papelera
+                            {% if papelera_total %}<span class="user-dropdown-badge">{{ papelera_total }}</span>{% endif %}
+                        </a>
+                        {% endif %}
                         <div class="user-dropdown-divider"></div>
                         <form method="post" action="{% url 'accounts:logout' %}">
                             {% csrf_token %}
@@ -208,7 +323,11 @@
     </div>
     {% endif %}
 
+    {% include "notificaciones/_emergente.html" %}
+
+    <div id="contenido">
     {% block content %}{% endblock %}
+    </div>
 
     {% block footer %}
     <footer class="brand-footer">
@@ -259,10 +378,12 @@
             </div>
             <div class="footer-info">
                 <p class="footer-kicker">Soporte</p>
+                {# El acceso de usuarios está en el header y el de personal TIC en la sección de contacto: aquí solo va la información de la empresa y la ayuda. #}
+                <a href="{% url 'tickets:quienes_somos' %}"><svg class="icon icon-sm"><use href="#i-users"/></svg> Quiénes somos</a>
                 <a href="{% url 'tickets:faq' %}"><svg class="icon icon-sm"><use href="#i-help"/></svg> Preguntas frecuentes</a>
                 <a href="{% url 'tickets:politica_privacidad' %}"><svg class="icon icon-sm"><use href="#i-file"/></svg> Política de Tratamiento de Datos</a>
-                {% if not request.user.is_authenticated %}
-                <a href="{% url 'accounts:login_staff' %}"><svg class="icon icon-sm"><use href="#i-lock"/></svg> Acceder</a>
+                {% if DOGGER.correo_activo and DOGGER.correo_soporte %}
+                <a href="mailto:{{ DOGGER.correo_soporte }}"><svg class="icon icon-sm"><use href="#i-mail"/></svg> Escribir a soporte</a>
                 {% endif %}
             </div>
             {% if DOGGER.pagina_mostrar_redes %}
@@ -330,28 +451,32 @@
     </div>
     {% endif %}
 
-    <!-- Barra flotante de acciones -->
+    {# Atajo de consulta: solo dentro del sistema, no en la portada. #}
+    {% if request.user.is_authenticated and request.resolver_match.url_name != 'portal' %}
     <aside class="action-float" aria-label="Consultar código HD">
         <a class="act-float-btn" href="{% url 'tickets:consultar' %}" title="Consultar por código HD">
-            <svg class="icon"><use href="#i-search"/></svg>
+            <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+            <span class="act-float-label">Consultar ticket HD</span>
         </a>
     </aside>
+    {% endif %}
 
     <script>
     (function(){
         var chip = document.getElementById('userChipToggle');
         var dd = document.getElementById('userDropdown');
-        if (!chip || !dd) return;
-        chip.addEventListener('click', function(e){
-            e.stopPropagation();
-            var open = dd.classList.toggle('open');
-            chip.setAttribute('aria-expanded', open);
-        });
-        document.addEventListener('click', function(){
-            dd.classList.remove('open');
-            chip.setAttribute('aria-expanded','false');
-        });
-        dd.addEventListener('click', function(e){ e.stopPropagation(); });
+        if (chip && dd) {
+            chip.addEventListener('click', function(e){
+                e.stopPropagation();
+                var open = dd.classList.toggle('open');
+                chip.setAttribute('aria-expanded', open);
+            });
+            document.addEventListener('click', function(){
+                dd.classList.remove('open');
+                chip.setAttribute('aria-expanded','false');
+            });
+            dd.addEventListener('click', function(e){ e.stopPropagation(); });
+        }
     })();
     </script>
 
@@ -446,6 +571,163 @@
     })();
     </script>
     {% endwith %}
+    {% endif %}
+
+    {# ---- Tour guiado: se muestra una vez por cuenta y se puede repetir
+       o apagar desde Ajustes -> Ayuda y tour. ---- #}
+    {% if request.user.is_authenticated and request.user.tour_habilitado and not request.user.tour_visto %}
+    <div class="tour-overlay" id="tourOverlay" hidden>
+        <div class="tour-bubble" id="tourBubble" role="dialog" aria-modal="true" aria-labelledby="tourTitulo">
+            <div class="tour-top">
+                <span class="tour-paso" id="tourPaso">1 / 6</span>
+                <button type="button" class="tour-x" id="tourX" aria-label="Cerrar el tour">&times;</button>
+            </div>
+            <h3 id="tourTitulo"></h3>
+            <p id="tourTexto"></p>
+            <div class="tour-foot">
+                <button type="button" class="btn btn-outline btn-sm" id="tourSaltar">Saltar</button>
+                <button type="button" class="btn btn-accent btn-sm" id="tourSiguiente">Siguiente</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function () {
+        "use strict";
+        var overlay = document.getElementById("tourOverlay");
+        if (!overlay) { return; }
+
+        // Un recorrido por el rol con el que se entro. Los pasos que no
+        // apliquen a este rol se saltan solos.
+        var ROL = "{{ request.user.rol|escapejs }}";
+        var COMUN = [
+            { sel: ".topbar, .brand-header", titulo: "Aqui esta todo el acceso",
+              texto: "Desde la barra superior llegas a tu panel, al calendario y a los ajustes." },
+            { sel: "#idNotifBell, .notif-bell", titulo: "La campana te avisa",
+              texto: "Se refresca sola: no hace falta recargar para enterarte de lo nuevo." },
+            { sel: ".nav-principal", titulo: "Tu menu con lo pendiente",
+              texto: "Cada entrada trae un numero con lo que falta por revisar. El punto de color indica si tu cuenta esta conectada." }
+        ];
+        var POR_ROL = {
+            usuario: [
+                { sel: "[href*='mi-panel']", titulo: "Mi panel",
+                  texto: "Aqui ves todas tus solicitudes y en que estado estan." },
+                { sel: "[href*='categorias-publico']", titulo: "No sabes que categoria es?",
+                  texto: "Esta pagina te dice donde reportar cada tipo de problema, con ejemplos." }
+            ],
+            tecnico: [
+                { sel: "[href*='panel-tecnico'], [href*='sin-asignar']", titulo: "Tu trabajo",
+                  texto: "Panel con lo asignado y Sin asignar con lo que esta esperando dueño." }
+            ],
+            admin: [
+                { sel: "[href*='panel-usuarios'], [href*='/panel/usuarios/']", titulo: "Tus cuentas",
+                  texto: "El punto de color de cada fila se actualiza solo: ves quien esta conectado." },
+                { sel: "[href*='categorias']", titulo: "Categorias",
+                  texto: "Puedes asignar varios tecnicos a cada una y escribir ejemplos para el usuario." }
+            ],
+            observador: [
+                { sel: "[href*='obs-panel'], [href*='/observador/']", titulo: "Tu observacion",
+                  texto: "Solo ves los puntos que tienes asignados, en modo lectura." },
+                { sel: "[href*='obs-buscar'], [href*='/observador/buscar/']", titulo: "Buscar y agregar",
+                  texto: "Encuentra a alguien por nombre o correo y agregalo a tu lista para monitorearlo." }
+            ]
+        };
+        var pasos = COMUN.concat(POR_ROL[ROL] || []);
+        var i = 0;
+
+        var elTitulo = document.getElementById("tourTitulo");
+        var elTexto = document.getElementById("tourTexto");
+        var elPaso = document.getElementById("tourPaso");
+        var elSig = document.getElementById("tourSiguiente");
+        var bubble = document.getElementById("tourBubble");
+        var SERVER = "{% url 'accounts:tour_preferencia' %}";
+
+        // Marca la cuenta como vista para que no vuelva a salir solo.
+        function terminar(accion) {
+            overlay.classList.remove("show");
+            overlay.hidden = true;
+            try {
+                fetch(SERVER, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-CSRFToken": (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || "",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    credentials: "same-origin",
+                    body: "accion=" + encodeURIComponent(accion) + "&ajax=1"
+                }).catch(function () {});
+            } catch (e) {}
+            try { localStorage.setItem("dogger.tour.visto", "1"); } catch (e) {}
+        }
+
+        function colocar(destacado) {
+            var w = window.innerWidth, h = window.innerHeight;
+            var bw = bubble.offsetWidth || 320, bh = bubble.offsetHeight || 150;
+            if (!destacado || !destacado.getBoundingClientRect) {
+                bubble.style.top = Math.max(24, (h - bh) / 2) + "px";
+                bubble.style.left = Math.max(24, (w - bw) / 2 - 120) + "px";
+                return;
+            }
+            var r = destacado.getBoundingClientRect();
+            // Si no se ve el elemento, se muestra centrado sin salirse.
+            if (r.bottom < 0 || r.top > h || r.right < 0 || r.left > w) {
+                bubble.style.top = Math.max(24, (h - bh) / 2) + "px";
+                bubble.style.left = Math.max(24, (w - bw) / 2) + "px";
+                return;
+            }
+            var top = r.bottom + 12;
+            if (top + bh > h - 16) { top = Math.max(16, r.top - bh - 12); }
+            var left = Math.min(Math.max(16, r.left + r.width / 2 - bw / 2), w - bw - 16);
+            bubble.style.top = top + "px";
+            bubble.style.left = left + "px";
+            var foco = bubble.querySelector(".tour-foco");
+            if (foco) {
+                foco.style.top = r.top + "px";
+                foco.style.left = r.left + "px";
+                foco.style.width = r.width + "px";
+                foco.style.height = r.height + "px";
+            }
+        }
+
+        function pintar() {
+            var p = pasos[i];
+            elTitulo.textContent = p.titulo;
+            elTexto.textContent = p.texto;
+            elPaso.textContent = (i + 1) + " / " + pasos.length;
+            elSig.textContent = (i === pasos.length - 1) ? "Listo" : "Siguiente";
+            overlay.querySelectorAll(".tour-foco").forEach(function (f) { f.remove(); });
+            var nodo = null;
+            try { nodo = document.querySelector(p.sel); } catch (e) {}
+            if (nodo) {
+                var foco = document.createElement("div");
+                foco.className = "tour-foco";
+                overlay.appendChild(foco);
+            }
+            colocar(nodo);
+        }
+
+        overlay.hidden = false;
+        requestAnimationFrame(function () {
+            overlay.classList.add("show");
+            pintar();
+        });
+        window.addEventListener("resize", function () { pintar(); });
+
+        elSig.addEventListener("click", function () {
+            if (i < pasos.length - 1) { i++; pintar(); }
+            else { terminar("desactivar"); }
+        });
+        document.getElementById("tourX").addEventListener("click", function () { terminar("desactivar"); });
+        document.getElementById("tourSaltar").addEventListener("click", function () { terminar("desactivar"); });
+        overlay.addEventListener("click", function (e) { if (e.target === overlay) { terminar("desactivar"); } });
+        document.addEventListener("keydown", function (e) {
+            if (!overlay.hidden) {
+                if (e.key === "Escape") { terminar("desactivar"); }
+                if (e.key === "ArrowRight") { elSig.click(); }
+            }
+        });
+    })();
+    </script>
     {% endif %}
 
     {% block extra_js %}{% endblock %}

@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, webhooks
+from . import views, webhooks, views_observador
 
 app_name = "tickets"
 
@@ -12,6 +12,7 @@ urlpatterns = [
     path("consultar/", views.consultar_ticket, name="consultar"),
     path("faq/", views.faq, name="faq"),
     path("politica-privacidad/", views.politica_privacidad, name="politica_privacidad"),
+    path("quienes-somos/", views.quienes_somos, name="quienes_somos"),
     path("mi-panel/", views.mi_panel, name="mi_panel"),
     path("tickets/nuevo/", views.crear_ticket, name="crear_ticket"),
     path("descartar-ticket-aviso/", views.descartar_ticket_aviso, name="descartar_ticket_aviso"),
@@ -59,4 +60,14 @@ urlpatterns = [
     path("panel/usuarios/importar-glpi/", views.usuarios_importar_glpi, name="usuarios_importar_glpi"),
     path("panel/usuarios/importar/<int:glpi_id>/", views.usuario_importar_uno, name="usuario_importar_uno"),
     path("api/glpi/webhook/", webhooks.glpi_webhook, name="glpi_webhook"),
+    # --- Módulo del observador ---
+    path("observador/", views_observador.panel_observador, name="obs_panel"),
+    path("observador/buscar/", views_observador.buscar_observador, name="obs_buscar"),
+    path("observador/mi-lista/", views_observador.mi_lista_observador, name="obs_mi_lista"),
+    path("observador/mi-lista/agregar/", views_observador.agregar_mi_lista, name="obs_agregar"),
+    path("observador/mi-lista/<int:pk>/quitar/", views_observador.quitar_mi_lista, name="obs_quitar"),
+    path("observador/monitoreo/", views_observador.monitorear_observador, name="obs_monitoreo"),
+    path("observador/exportar/", views_observador.exportar_observador, name="obs_exportar"),
+    path("manual/", views.manual_uso, name="manual_uso"),
+    path("categorias-publico/", views.categorias_publico, name="categorias_publico"),
 ]

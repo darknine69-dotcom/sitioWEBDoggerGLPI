@@ -189,6 +189,16 @@ def glpi_webhook(request):
             descripcion=f"{ticket.codigo}: estado cambiado a '{estado_nombre}' desde GLPI",
             payload_bruto=data,
         )
+        # Si el cambio deja el ticket cerrado o resuelto, el solicitante y el
+        # técnico también deben saberlo (correo con diseño + campana).
+        if nuevo_estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
+            try:
+                from .notifications import notificar_ticket_actualizado
+
+                ticket.refresh_from_db()
+                notificar_ticket_actualizado(ticket, f"cambiado a {ticket.get_estado_display()}")
+            except Exception as exc:
+                logger.warning("No se pudo notificar el cambio de estado desde GLPI: %s", exc)
         handled = True
 
     if evento in {"followup_created", "followup", "new_followup", "ticket_followup", "solution_approved", "ticket_solved"} or (

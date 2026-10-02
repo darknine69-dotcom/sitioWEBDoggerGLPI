@@ -205,6 +205,8 @@
         });
         navList.querySelectorAll(".nav-link").forEach(function (link) {
             link.addEventListener("click", function () {
+                // El botón de un submenú solo lo abre: no cierra el menú lateral.
+                if (link.hasAttribute("data-submenu")) return;
                 navToggle.setAttribute("aria-expanded", "false");
                 navList.classList.remove("nav-open");
                 navToggle.classList.remove("is-active");
@@ -499,4 +501,450 @@
             if (catSelEl.value) marcarAns(catSelEl.value);
         }
     }
+
+    /* ---- Menú de la portada (móvil): el nav de la landing se pliega ---- */
+    (function () {
+        var toggle = document.getElementById("ln-toggle");
+        var links = document.getElementById("ln-links");
+        if (!toggle || !links) return;
+
+        function abrir(abrir) {
+            links.classList.toggle("is-open", abrir);
+            toggle.setAttribute("aria-expanded", abrir ? "true" : "false");
+            toggle.setAttribute("aria-label", abrir ? "Ocultar el menú de la página" : "Ver el menú de la página");
+        }
+        function estaAbierto() { return links.classList.contains("is-open"); }
+        abrir(window.matchMedia("(min-width: 981px)").matches);
+
+        toggle.addEventListener("click", function () {
+            abrir(!estaAbierto());
+        });
+        links.addEventListener("click", function (ev) {
+            if (ev.target.closest("a")) abrir(false);
+        });
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape" && estaAbierto()) { abrir(false); toggle.focus(); }
+        });
+        document.addEventListener("click", function (ev) {
+            if (!estaAbierto()) return;
+            if (!ev.target.closest(".landing-nav")) abrir(false);
+        });
+    })();
+
+    /* ---- Preguntas frecuentes: "ver todas" despliega en la misma página ---- */
+    var faqBoton = document.getElementById("faq-ver-mas");
+    var faqExtra = document.getElementById("faq-extra");
+    var faqTexto = document.getElementById("faq-ver-mas-txt");
+    if (faqBoton && faqExtra) {
+        faqBoton.addEventListener("click", function () {
+            var abierto = faqExtra.hasAttribute("hidden");
+            if (abierto) {
+                faqExtra.removeAttribute("hidden");
+            } else {
+                faqExtra.setAttribute("hidden", "");
+            }
+            faqBoton.setAttribute("aria-expanded", abierto ? "true" : "false");
+            if (faqTexto) faqTexto.textContent = abierto ? "Ocultar las demás preguntas" : "Ver todas las preguntas frecuentes";
+            if (abierto) {
+                faqExtra.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+        });
+    }
+
+    /* ---- Espacio para escribir una pregunta: se envía por correo ---- */
+    var formPregunta = document.getElementById("lp-pregunta-form");
+    if (formPregunta) {
+        var aviso = document.getElementById("lp-pregunta-aviso");
+        formPregunta.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+            var nombre = document.getElementById("pq-nombre");
+            var correo = document.getElementById("pq-correo");
+            var texto = document.getElementById("pq-texto");
+            if (!texto.value.trim() || !nombre.value.trim()) {
+                if (aviso) aviso.textContent = "Escribe tu nombre y tu pregunta para poder enviar el mensaje.";
+                (!texto.value.trim() ? texto : nombre).focus();
+                return;
+            }
+            if (aviso) aviso.textContent = "";
+            var cuerpo = "Pregunta enviada desde el portal\n\n" +
+                "Nombre: " + nombre.value.trim() + "\n" +
+                "Correo: " + (correo && correo.value.trim() ? correo.value.trim() : "no informado") + "\n\n" +
+                texto.value.trim();
+            var correoSoporte = formPregunta.getAttribute("data-correo") || "";
+            window.location.href = "mailto:" + correoSoporte +
+                "?subject=" + encodeURIComponent("Pregunta desde el portal - " + nombre.value.trim()) +
+                "&body=" + encodeURIComponent(cuerpo);
+            texto.value = "";
+            if (aviso) aviso.textContent = "Abrimos tu programa de correo con la pregunta lista para enviar.";
+        });
+    }
 })();
+
+/* =====================================================================
+   Campana de notificaciones: abrir la lista, marcar leídas, quitar con la
+   "x", refresco automático y ventanas emergentes encadenadas.
+   ===================================================================== */
+(function () {
+    var wrap = document.getElementById("notifWrap");
+    var bell = document.getElementById("notifBell");
+    var panel = document.getElementById("notifPanel");
+    var URL_API = (wrap && wrap.getAttribute("data-url-api")) || "";
+
+    function csrf() {
+        var input = document.querySelector("[name=csrfmiddlewaretoken]");
+        if (input) { return input.value; }
+        var m = document.cookie.match(/(^|;\s*)csrftoken=([^;]+)/);
+        return m ? m[2] : "";
+    }
+
+    function pedir(destino) {
+        if (!destino) { return; }
+        try {
+            fetch(destino, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrf(),
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                credentials: "same-origin"
+            }).then(function (r) {
+                return r.ok ? r.json() : null;
+            }).then(function (data) {
+                if (data && typeof data.pendientes === "number") {
+                    pintarContador(data.pendientes);
+                }
+            }).catch(function () { });
+        } catch (e) { }
+    }
+
+    function pintarContador(pendientes) {
+        var badge = document.getElementById("notifBadge");
+        if (!badge || typeof pendientes !== "number") { return; }
+        badge.textContent = pendientes > 99 ? "99+" : pendientes;
+        badge.classList.toggle("is-empty", pendientes === 0);
+        if (bell) {
+            var oculto = document.querySelector(".visually-hidden", bell);
+            if (oculto) {
+                oculto.textContent = pendientes
+                    ? "Notificaciones: " + pendientes + " sin leer"
+                    : "Notificaciones";
+            }
+        }
+    }
+
+    /* ---- Aviso breve en la esquina inferior izquierda ----
+       Sale cuando llega algo nuevo, sin bloquear y se va solo. Es el mismo
+       sitio donde aparecen los mensajes del sistema. */
+    function toastAviso(n) {
+        var pila = document.querySelector(".toast-stack");
+        if (!pila) { return; }
+        var url = n.url || "#";
+        var el = document.createElement("div");
+        el.className = "toast toast-notif";
+        el.innerHTML =
+            '<span class="notif-icon notif-icon-' + esc(n.tipo) + '" aria-hidden="true">' +
+            '<svg class="icon icon-sm"><use href="#' + esc(n.icono || "i-bell") + '"/></svg></span>' +
+            '<div class="toast-body">' +
+            '<strong>' + esc(n.titulo) + '</strong>' +
+            '<span>' + esc(n.mensaje || "") + '</span>' +
+            '<a href="' + esc(url) + '">Ver</a>' +
+            '</div>' +
+            '<button type="button" class="toast-close" aria-label="Cerrar">&times;</button>';
+        pila.appendChild(el);
+
+        // Al hacer clic en "Ver" se marca como mostrada, como la emergente.
+        el.querySelector("a").addEventListener("click", function () {
+            pedir(baseDe("data-url-mostrada", n.id));
+        });
+        // Mismo auto-cierre con pausa al pasar el mouse que los toasts del servidor.
+        var delay = 7000;
+        el.style.setProperty("--toast-delay", delay + "ms");
+        var timer = null, started = Date.now(), remaining = delay;
+        function dismiss() {
+            if (!el.isConnected) { return; }
+            el.classList.add("toast-out");
+            setTimeout(function () { el.remove(); }, 340);
+        }
+        function schedule() {
+            if (timer) { clearTimeout(timer); timer = null; }
+            timer = setTimeout(dismiss, remaining);
+        }
+        var btn = el.querySelector(".toast-close");
+        if (btn) { btn.addEventListener("click", dismiss); }
+        el.addEventListener("mouseenter", function () {
+            remaining -= Date.now() - started;
+            if (timer) { clearTimeout(timer); timer = null; }
+        });
+        el.addEventListener("mouseleave", function () {
+            if (remaining <= 0) { return; }
+            started = Date.now();
+            schedule();
+        });
+        schedule();
+    }
+
+    function vacioHTML() {
+        return '<li class="notif-empty">' +
+            '<span class="notif-empty-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>' +
+            '<strong>No tienes avisos</strong>' +
+            '<span>Aquí verás tus tickets activos, tareas y recordatorios.</span>' +
+            '</li>';
+    }
+
+    function baseDe(atributo, id) {
+        var base = wrap.getAttribute(atributo) || "";
+        return id ? base.replace("/0/", "/" + id + "/") : base;
+    }
+
+    function esc(t) {
+        return String(t == null ? "" : t)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    /* ---- Ventanas emergentes: se acumulan y salen de una en una ---- */
+    var colaEmergente = [];
+    var emergenteViva = false;
+
+    function filaHTML(n) {
+        return '<li class="notif-row' + (n.nueva ? " is-new" : "") + '" data-id="' + esc(n.id) + '">' +
+            '<span class="notif-icon notif-icon-' + esc(n.tipo) + '" aria-hidden="true">' +
+            '<svg class="icon icon-sm"><use href="#' + esc(n.icono || "i-bell") + '"/></svg>' +
+            '</span>' +
+            '<span class="notif-text">' +
+            '<a class="notif-link" href="' + esc(n.url || "#") + '">' + esc(n.titulo) + '</a>' +
+            '<span class="notif-msg">' + esc(n.mensaje) + '</span>' +
+            '<small class="notif-time">ahora mismo</small>' +
+            '</span>' +
+            '<button type="button" class="notif-x" data-notif-quitar="' + esc(n.id) + '" ' +
+            'aria-label="Quitar notificación" title="Quitar">&times;</button>' +
+            '</li>';
+    }
+
+    function mostrarEmergenteSiguiente() {
+        if (emergenteViva || !colaEmergente.length) { return; }
+        var n = colaEmergente.shift();
+        emergenteViva = true;
+        var overlay = document.createElement("div");
+        overlay.className = "notif-popup-overlay notif-popup-viva notif-popup-" + esc(n.tipo);
+        overlay.setAttribute("data-id", n.id);
+        overlay.setAttribute("role", "dialog");
+        overlay.setAttribute("aria-modal", "true");
+        overlay.setAttribute("aria-labelledby", "notifPopVivaTitulo");
+        overlay.innerHTML =
+            '<div class="notif-popup">' +
+            '<button type="button" class="notif-popup-x" data-notif-cerrar aria-label="Cerrar">&times;</button>' +
+            '<span class="notif-popup-head">' +
+            '<span class="notif-popup-icon" aria-hidden="true">' +
+            '<svg class="icon"><use href="#' + esc(n.icono || "i-bell") + '"/></svg></span>' +
+            '<h3 class="notif-popup-title" id="notifPopVivaTitulo">' + esc(n.titulo) + '</h3>' +
+            '</span>' +
+            '<p class="notif-popup-text">' + esc(n.mensaje) + '</p>' +
+            '<div class="notif-popup-actions">' +
+            '<a class="btn btn-accent btn-sm notif-popup-ver" href="' + esc(n.url || "#") + '">Ver</a>' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-notif-cerrar>Ahora no</button>' +
+            '</div>' +
+            (colaEmergente.length
+                ? '<small class="notif-popup-foot notif-popup-faltan">Quedan ' +
+                  colaEmergente.length + ' aviso' + (colaEmergente.length === 1 ? "" : "s") +
+                  ' más.</small>'
+                : '<small class="notif-popup-foot">También lo verás en la campana de notificaciones.</small>') +
+            '</div>';
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", function (ev) {
+            if (ev.target.closest("[data-notif-cerrar]") || ev.target === overlay) {
+                ev.preventDefault();
+                cerrarEmergenteViva(overlay);
+            }
+        });
+        overlay.querySelectorAll("a").forEach(function (a) {
+            a.addEventListener("click", function () { pedir(baseDe("data-url-mostrada", n.id)); });
+        });
+    }
+
+    function cerrarEmergenteViva(overlay) {
+        var id = overlay.getAttribute("data-id");
+        overlay.remove();
+        emergenteViva = false;
+        if (wrap) { pedir(baseDe("data-url-mostrada", id)); }
+        // La siguiente emerge enseguida: así no se encadenan encima.
+        setTimeout(mostrarEmergenteSiguiente, 450);
+    }
+
+    /* ---- Refresco automático: el estado se consulta solo ---- */
+    function refrescar() {
+        if (!URL_API || document.hidden) { return; }
+        fetch(URL_API, {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+            credentials: "same-origin",
+            cache: "no-store"
+        }).then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
+            if (!data || !data.ok) { return; }
+            pintarContador(data.no_leidas);
+
+            // 1) Los avisos nuevos se apilan en la lista de la campana.
+            if (panel && Array.isArray(data.avisos)) {
+                var lista = panel.querySelector(".notif-list");
+                if (lista) {
+                    var actuales = {};
+                    lista.querySelectorAll(".notif-row[data-id]").forEach(function (f) {
+                        actuales[f.getAttribute("data-id")] = true;
+                    });
+                    var frescos = data.avisos.filter(function (n) { return !actuales[n.id]; });
+                    if (frescos.length) {
+                        var vacia = lista.querySelector(".notif-empty");
+                        if (vacia) { vacia.remove(); }
+                        lista.insertAdjacentHTML("afterbegin", frescos.reverse().map(function (n) {
+                            return filaHTML(n);
+                        }).join(""));
+                    }
+                    // Refresca el texto "hace x" de los que ya estaban.
+                    lista.querySelectorAll(".notif-row[data-id]").forEach(function (f) {
+                        var t = f.querySelector(".notif-time");
+                        if (t) { t.textContent = "ahora mismo"; }
+                    });
+                }
+            }
+
+            // 2) Las emergentes se acumulan y salen una detrás de otra.
+            if (Array.isArray(data.emergentes) && data.emergentes.length) {
+                var yaEnCola = {};
+                colaEmergente.forEach(function (n) { yaEnCola[n.id] = true; });
+                var actual = document.querySelector(".notif-popup-viva");
+                if (actual) { yaEnCola[actual.getAttribute("data-id")] = true; }
+                // La emergente inicial viene ya pintada por el servidor: si
+                // sigue en pantalla no se vuelve a encolar la misma.
+                var inicial = document.getElementById("notifPopup");
+                if (inicial && inicial.getAttribute("data-id")) {
+                    yaEnCola[inicial.getAttribute("data-id")] = true;
+                }
+                data.emergentes.forEach(function (n) {
+                    if (!yaEnCola[n.id]) {
+                        colaEmergente.push(n);
+                        // Aviso breve en la esquina inferior izquierda.
+                        toastAviso(n);
+                    }
+                });
+                mostrarEmergenteSiguiente();
+            }
+        }).catch(function () { });
+    }
+
+    /* ---- Latido: avisa que esta pestaña sigue viva ---- */
+    function latido() {
+        var url = document.body.getAttribute("data-url-latido");
+        if (!url || document.hidden) { return; }
+        fetch(url, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrf(), "X-Requested-With": "XMLHttpRequest" },
+            credentials: "same-origin",
+            cache: "no-store"
+        }).catch(function () { });
+    }
+
+    if (wrap && bell && panel) {
+        function abrir() {
+            panel.classList.add("open");
+            bell.setAttribute("aria-expanded", "true");
+            var nuevas = panel.querySelectorAll(".notif-row.is-new");
+            if (nuevas.length) {
+                Array.prototype.forEach.call(nuevas, function (fila) {
+                    fila.classList.remove("is-new");
+                });
+                pedir(baseDe("data-url-todas"));
+            }
+            refrescar();
+        }
+
+        function cerrar() {
+            panel.classList.remove("open");
+            bell.setAttribute("aria-expanded", "false");
+        }
+
+        bell.addEventListener("click", function (ev) {
+            ev.stopPropagation();
+            if (panel.classList.contains("open")) { cerrar(); } else { abrir(); }
+        });
+        document.addEventListener("click", function (ev) {
+            if (!wrap.contains(ev.target)) { cerrar(); }
+        });
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape") { cerrar(); }
+        });
+
+        panel.addEventListener("click", function (ev) {
+            var quitar = ev.target.closest("[data-notif-quitar]");
+            if (quitar) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                var fila = quitar.closest(".notif-row");
+                var id = quitar.getAttribute("data-notif-quitar");
+                if (fila) { fila.remove(); }
+                pedir(baseDe("data-url-descartar", id));
+                if (!panel.querySelector(".notif-row")) {
+                    var lista = panel.querySelector(".notif-list");
+                    if (lista && !lista.querySelector(".notif-empty")) {
+                        lista.innerHTML = vacioHTML();
+                    }
+                }
+                refrescar();
+                return;
+            }
+            var accion = ev.target.closest("[data-notif]");
+            if (!accion) { return; }
+            ev.stopPropagation();
+            var tipo = accion.getAttribute("data-notif");
+            if (tipo === "leer-todas") {
+                pedir(baseDe("data-url-todas"));
+                Array.prototype.forEach.call(
+                    panel.querySelectorAll(".notif-row"), function (f) { f.classList.remove("is-new"); }
+                );
+            } else if (tipo === "limpiar") {
+                pedir(baseDe("data-url-limpiar"));
+                var lista2 = panel.querySelector(".notif-list");
+                if (lista2) { lista2.innerHTML = vacioHTML(); }
+                var botones = panel.querySelectorAll(".notif-head-btn");
+                Array.prototype.forEach.call(botones, function (b) { b.remove(); });
+            }
+        });
+    }
+
+    /* ---- Ventana emergente inicial (la que trae la página) ---- */
+    var popup = document.getElementById("notifPopup");
+    if (popup) {
+        function cerrarPopup() {
+            var id = popup.getAttribute("data-id");
+            popup.remove();
+            if (wrap) { pedir(baseDe("data-url-mostrada", id)); }
+        }
+        popup.addEventListener("click", function (ev) {
+            if (ev.target.closest("[data-notif-cerrar]")) {
+                ev.stopPropagation();
+                cerrarPopup();
+            }
+        });
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape" && document.getElementById("notifPopup")) { cerrarPopup(); }
+        });
+    }
+
+    /* ---- Arranque del refresco automático ---- */
+    if (URL_API) {
+        // El intervalo es corto para que el contador no se sienta viejo.
+        setInterval(refrescar, 12000);
+        // Al volver a la pestaña se consulta de inmediato.
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) { refrescar(); }
+        });
+    }
+    if (document.body.getAttribute("data-url-latido")) {
+        // Un latido al entrar para que el punto quede verde de inmediato, y
+        // otro cada 2 minutos mientras la pestaña siga abierta.
+        latido();
+        setInterval(latido, 120000);
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) { latido(); }
+        });
+    }
+})();
+

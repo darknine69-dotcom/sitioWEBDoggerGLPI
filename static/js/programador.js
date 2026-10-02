@@ -22,16 +22,24 @@
         tarea: "i-wrench",
         solicitud: "i-ticket",
         recordatorio: "i-bell",
-        proyecto: "i-folder",
-        anuncio: "i-message"
+        anuncio: "i-message",
+        // Ya no se puede crear, pero se pintan los que quedaron en la base.
+        proyecto: "i-folder"
     };
     var LABELS = {
         tarea: ["Tarea", "Tareas"],
         solicitud: ["Solicitud", "Solicitudes"],
         recordatorio: ["Recordatorio", "Recordatorios"],
-        proyecto: ["Proyecto", "Proyectos"],
         anuncio: ["Anuncio", "Anuncios"]
     };
+    // Qué tipo "pinta" más el cuadro del día cuando hay varios registrados.
+    var PRIORIDAD_TIPO = {
+        solicitud: 1,
+        recordatorio: 2,
+        tarea: 3,
+        anuncio: 4
+    };
+    var TIPOS_EVENTO = ["tarea", "solicitud", "recordatorio", "anuncio"];
 
     var state = {
         anio: parseInt(app.dataset.anio, 10),
@@ -169,7 +177,9 @@
 
             if (enMes) {
                 cell.dataset.fecha = fecha;
-                cell.addEventListener("click", function () { abrirModalEvento(this.dataset.fecha); });
+                // El cuadro ya NO abre el modal al hacer clic: para crear hay
+                // que usar los iconos de acceso rápido, y para ver lo que hay
+                // registrado, hacer clic sobre el evento.
 
                 var head = document.createElement("div");
                 head.className = "prog-day-head";
@@ -185,13 +195,16 @@
                 var qAcciones = [
                     { accion: "falta", cls: "q-falta", icon: "i-clock", title: "Marcar falta de disponibilidad" },
                     { accion: "recordatorio", cls: "q-recordatorio", icon: "i-bell", title: "Agregar recordatorio" },
-                    { accion: "tarea", cls: "q-tarea", icon: "i-wrench", title: "Agregar tarea" }
+                    { accion: "tarea", cls: "q-tarea", icon: "i-wrench", title: "Agregar tarea" },
+                    { accion: "solicitud", cls: "q-solicitud", icon: "i-ticket", title: "Vincular una solicitud" },
+                    { accion: "anuncio", cls: "q-anuncio", icon: "i-message", title: "Publicar un anuncio" }
                 ];
                 qAcciones.forEach(function (q) {
                     var btn = document.createElement("button");
                     btn.type = "button";
                     btn.className = q.cls;
                     btn.title = q.title;
+                    btn.setAttribute("aria-label", q.title);
                     btn.innerHTML = '<svg class="icon"><use href="#' + q.icon + '"/></svg>';
                     btn.addEventListener("click", function (e) {
                         e.stopPropagation();
@@ -202,17 +215,42 @@
                 });
                 cell.appendChild(quick);
 
+                // Eventos registrados: cada chip abre el modal de ese evento.
                 var chips = document.createElement("div");
                 chips.className = "prog-day-chips";
-                var conteo = {};
-                (porFecha[fecha] || []).forEach(function (e) { conteo[e.tipo] = (conteo[e.tipo] || 0) + 1; });
-                Object.keys(conteo).forEach(function (tipo) {
-                    var chip = document.createElement("span");
-                    chip.className = "prog-chip ct-" + tipo;
-                    chip.innerHTML = '<svg class="icon"><use href="#' + ICON_BY_TIPO[tipo] + '"/></svg>' +
-                        esc(plural(conteo[tipo], LABELS[tipo][0], LABELS[tipo][1]));
+                var delDia = porFecha[fecha] || [];
+                // El cuadro toma un color según lo que tenga registrado.
+                if (delDia.length) {
+                    var peor = delDia.slice().sort(function (a, b) {
+                        return (PRIORIDAD_TIPO[b.tipo] || 9) - (PRIORIDAD_TIPO[a.tipo] || 9);
+                    })[0];
+                    cell.classList.add("has-events", "has-" + (peor.tipo || "tarea"));
+                }
+                delDia.slice(0, 4).forEach(function (ev) {
+                    var chip = document.createElement("button");
+                    chip.type = "button";
+                    chip.className = "prog-chip ct-" + ev.tipo + (ev.completado ? " done" : "");
+                    chip.title = (ev.hora ? ev.hora + " · " : "") + ev.titulo;
+                    chip.innerHTML = '<svg class="icon"><use href="#' + (ICON_BY_TIPO[ev.tipo] || "i-bell") + '"/></svg>' +
+                        esc(ev.titulo);
+                    chip.addEventListener("click", function (e) {
+                        e.stopPropagation();
+                        abrirModalDetalle(ev, fecha);
+                    });
                     chips.appendChild(chip);
                 });
+                if (delDia.length > 4) {
+                    var mas = document.createElement("button");
+                    mas.type = "button";
+                    mas.className = "prog-chip ct-mas";
+                    mas.textContent = "+" + (delDia.length - 4);
+                    mas.title = "Ver los " + delDia.length + " eventos del día";
+                    mas.addEventListener("click", function (e) {
+                        e.stopPropagation();
+                        abrirModalDetalle(null, fecha, delDia);
+                    });
+                    chips.appendChild(mas);
+                }
                 cell.appendChild(chips);
 
                 var nota = "";
@@ -395,7 +433,7 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
         $("evTicket").value = "";
         $("evTecnico").value = $("filtroTecnico").value || "";
         $("formEvento").querySelector("textarea[name=descripcion]").value = "";
-        if (tipo) $("evTipo").value = tipo;
+        if (tipo && TIPOS_EVENTO.indexOf(tipo) !== -1) $("evTipo").value = tipo;
         var tipoSel = $("evTipo").value;
         $("evSolicitudWrap").hidden = tipoSel !== "solicitud";
         if (tipoSel === "solicitud") {
@@ -404,6 +442,66 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
             $("evTitulo").focus();
         }
         abrirModal("modalEvento");
+    }
+
+    /* ---------- modal de un evento ya registrado ---------- */
+    function abrirModalDetalle(evento, fecha, lista) {
+        var overlay = $("modalDetalleEvento");
+        var cuerpo = $("detalleEventoCuerpo");
+        var titulo = $("detalleEventoTitulo");
+        var pie = $("detalleEventoAcciones");
+        overlay.hidden = false;
+
+        // Sin evento concreto (el chip "+N"): se listan todos los del día.
+        var eventos = lista || (evento ? [evento] : []);
+        var esVarios = !evento && lista && lista.length > 1;
+
+        if (esVarios) {
+            titulo.textContent = "Eventos del " + formatFecha(fecha);
+            cuerpo.innerHTML = '<ul class="prog-det-lista">' + lista.map(function (ev) {
+                return '<li class="prog-det-item ct-' + esc(ev.tipo) + (ev.completado ? " done" : "") + '">' +
+                    '<button type="button" class="prog-det-abrir" data-det-id="' + ev.id + '">' +
+                    '<svg class="icon"><use href="#' + (ICON_BY_TIPO[ev.tipo] || "i-bell") + '"/></svg>' +
+                    '<span><strong>' + esc(ev.titulo) + '</strong>' +
+                    '<small>' + esc(ev.tipo_label || "") + (ev.hora ? " · " + esc(ev.hora) : "") +
+                    (ev.tecnico ? " · " + esc(ev.tecnico) : "") + '</small></span></button></li>';
+            }).join("") + "</ul>";
+        } else {
+            var ev = eventos[0] || {};
+            titulo.textContent = ev.tipo_label || "Evento";
+            cuerpo.innerHTML =
+                '<p class="prog-det-titulo">' + esc(ev.titulo || "") + '</p>' +
+                '<dl class="prog-det-datos">' +
+                '<dt>Fecha</dt><dd>' + esc(formatFecha(ev.fecha || fecha)) +
+                    (ev.hora ? " · " + esc(ev.hora) : "") + '</dd>' +
+                (ev.tecnico ? '<dt>Técnico</dt><dd>' + esc(ev.tecnico) + '</dd>' : '') +
+                (ev.sitio ? '<dt>Punto</dt><dd>' + esc(ev.sitio) + '</dd>' : '') +
+                (ev.grupo ? '<dt>Grupo</dt><dd>' + esc(ev.grupo) + '</dd>' : '') +
+                (ev.ticket_codigo ? '<dt>Solicitud</dt><dd>' + esc(ev.ticket_codigo) + '</dd>' : '') +
+                '<dt>Estado</dt><dd>' + (ev.completado ? "Completado" : "Pendiente") + '</dd>' +
+                (ev.descripcion ? '<dt>Detalle</dt><dd>' + esc(ev.descripcion) + '</dd>' : '') +
+                '</dl>';
+        }
+
+        // Pie: "Ver" lo que hay y "Agregar otro" del mismo tipo.
+        var tipoAgregar = evento ? evento.tipo : "";
+        pie.innerHTML =
+            (evento && evento.ticket_id
+                ? '<a class="btn btn-ghost btn-sm" href="' + U.detalle.replace("/0/", "/" + evento.ticket_id + "/") +
+                  '" target="_blank" rel="noopener">Ver solicitud</a>'
+                : "") +
+            (tipoAgregar
+                ? '<button type="button" class="btn btn-accent btn-sm" data-det-otro="' + esc(tipoAgregar) +
+                  '" data-det-fecha="' + esc(fecha) + '">Agregar otro</button>'
+                : '<button type="button" class="btn btn-accent btn-sm" data-det-otro="" data-det-fecha="' +
+                  esc(fecha) + '">Agregar otro</button>') +
+            '<button type="button" class="btn btn-ghost btn-sm" data-det-cerrar>Cerrar</button>';
+
+        overlay.classList.add("open");
+    }
+
+    function cerrarDetalle() {
+        $("modalDetalleEvento").classList.remove("open");
     }
 
     function cargarDispLabel() {
@@ -472,6 +570,30 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
             $("evSolicitudWrap").hidden = this.value !== "solicitud";
         });
         $("evFechaShow").addEventListener("change", function () { $("evFecha").value = this.value; });
+
+        // --- Modal de detalle del evento ---
+        var detalleOv = $("modalDetalleEvento");
+        if (detalleOv) {
+            detalleOv.addEventListener("click", function (e) {
+                if (e.target === detalleOv) { cerrarDetalle(); return; }
+                if (e.target.closest("[data-det-cerrar]")) { cerrarDetalle(); return; }
+                var otro = e.target.closest("[data-det-otro]");
+                if (otro) {
+                    // "Agregar otro": abre la creación con el mismo tipo.
+                    cerrarDetalle();
+                    abrirModalEvento(otro.getAttribute("data-det-fecha"), otro.getAttribute("data-det-otro"));
+                    return;
+                }
+                var abrir = e.target.closest("[data-det-id]");
+                if (abrir) {
+                    var id = abrir.getAttribute("data-det-id");
+                    var encontrado = (data.eventos || []).filter(function (x) {
+                        return String(x.id) === id;
+                    })[0];
+                    if (encontrado) { abrirModalDetalle(encontrado, encontrado.fecha); }
+                }
+            });
+        }
         $("evDispBtn").addEventListener("click", function () {
             cerrarModales();
             abrirModalDisp($("evFecha").value);

@@ -44,3 +44,24 @@ def admin_required(view_func):
         return view_func(request, *args, **kwargs)
 
     return _wrapped
+
+
+def sin_observador(view_func):
+    """Bloquea al observador, que solo puede consultar.
+
+    Se pone encima de las vistas que crean o editan tickets: el observador
+    no crea, no edita y no responde. Si intenta entrar por la URL recibe un
+    403 con el enlace a su propio panel.
+    """
+
+    @wraps(view_func)
+    @login_required
+    def _wrapped(request, *args, **kwargs):
+        user = request.user
+        if getattr(user, "rol", None) == "observador":
+            raise PermissionDenied(
+                "El rol observador solo consulta: no puede crear ni editar tickets."
+            )
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped

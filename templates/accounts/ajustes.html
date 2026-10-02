@@ -44,6 +44,10 @@
                     <svg class="icon icon-sm"><use href="#i-lock"/></svg>
                     Contraseña
                 </a>
+                <a href="#ayuda" class="settings-nav-link" data-settings-tab="ayuda">
+                    <svg class="icon icon-sm"><use href="#i-book"/></svg>
+                    Ayuda y tour
+                </a>
                 <a href="#notificaciones" class="settings-nav-link" data-settings-tab="notificaciones">
                     <svg class="icon icon-sm"><use href="#i-bell"/></svg>
                     Notificaciones
@@ -173,6 +177,46 @@
             </section>
 
             <!-- NOTIFICACIONES -->
+            <section id="ayuda" class="settings-panel" data-settings-panel="ayuda">
+                <div class="settings-panel-header">
+                    <h3>Ayuda y tour guiado</h3>
+                    <p>Repasa el manual o vuelve a ver el recorrido de la web.</p>
+                </div>
+                <div class="settings-form">
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>Manual de uso</strong>
+                            <small>Todos los pasos de la plataforma, por rol y en el mismo orden en que los vas a usar.</small>
+                        </div>
+                        <a href="{% url 'tickets:manual_uso' %}" class="btn btn-outline btn-sm">
+                            <svg class="icon icon-sm"><use href="#i-book"/></svg> Abrir manual
+                        </a>
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>Tour guiado</strong>
+                            <small>
+                                {% if request.user.tour_habilitado %}
+                                    Está activo: verás el recorrido la próxima vez que entres.
+                                {% else %}
+                                    Está desactivado. Puedes volver a activarlo cuando quieras.
+                                {% endif %}
+                            </small>
+                        </div>
+                        <form method="post" action="{% url 'accounts:tour_preferencia' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="accion"
+                                   value="{% if request.user.tour_habilitado %}desactivar{% else %}activar{% endif %}">
+                            <button type="submit" class="btn btn-{% if request.user.tour_habilitado %}outline{% else %}primary{% endif %} btn-sm">
+                                <svg class="icon icon-sm"><use href="#i-play"/></svg>
+                                {% if request.user.tour_habilitado %}Desactivar{% else %}Activar{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
             <section id="notificaciones" class="settings-panel" data-settings-panel="notificaciones">
                 <div class="settings-panel-header">
                     <h3>Notificaciones</h3>

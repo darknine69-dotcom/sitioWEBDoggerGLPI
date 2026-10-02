@@ -260,6 +260,15 @@
     .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr) 140px; gap: 10px; }
 }
 
+@media (max-width: 560px) {
+    /* A 320px la columna de 140px de la leyenda no cabe junto al grafico:
+       se apila debajo y la leyenda deja de recortarse. */
+    .dash-compact .pie-flex,
+    .pie-flex { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .dash-compact .pie-legend,
+    .pie-legend { max-height: none; padding: 0; }
+}
+
 @media (max-width: 900px) {
     .tec-panel { grid-template-columns: 1fr; }
     .tec-list { max-height: 320px; }
@@ -366,7 +375,9 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 .corp-results[data-view="grid"] #gridAbiertas { display: grid; }
 .corp-results[data-view="lista"] #gridAbiertas { display: none; }
 
-.corp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 14px; margin-top: 16px; }
+.corp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+@media (max-width: 1180px) { .corp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .corp-grid { grid-template-columns: minmax(0, 1fr); } }
 .corp-card {
     display: flex; flex-direction: column; gap: 8px; padding: 14px 15px;
     border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
@@ -560,6 +571,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
             <div class="per-page-bar">
                 <label for="perPageCola">Filas:</label>
                 <select id="perPageCola" data-per-page-param="per_page_sol">
+                    <option value="6" {% if per_page_sol == 6 %}selected{% endif %}>6</option>
                     <option value="5" {% if per_page_sol == 5 %}selected{% endif %}>5</option>
                     <option value="10" {% if per_page_sol == 10 %}selected{% endif %}>10</option>
                     <option value="20" {% if per_page_sol == 20 %}selected{% endif %}>20</option>
@@ -619,7 +631,9 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                 <div class="per-page-bar">
                     <label for="perPageMis">Filas:</label>
                     <select id="perPageMis" data-per-page-param="per_page">
+                        <option value="6" {% if per_page == 6 %}selected{% endif %}>6</option>
                         <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                        <option value="9" {% if per_page == 9 %}selected{% endif %}>9</option>
                         <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
                         <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
                         <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
@@ -898,7 +912,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
     </div>
 
     <div class="corp-grid" id="gridAbiertas">
-        {% for t in abiertas %}
+        {% for t in tarjetas %}
         <a class="corp-card" href="{% url 'tickets:detalle' t.pk %}"
            data-pk="{{ t.pk }}"
            data-id="{{ t.codigo|lower }}"
@@ -1056,6 +1070,23 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 {% block extra_js %}
 <script>
 (function () {
+    /* ---- Conmutador Lista / Cuadrícula ----
+       Arranca en Lista (lo que trae la plantilla) y, si el usuario ya habia
+       elegido Cuadrícula antes, se recuerda esa preferencia. */
+    var cr = document.getElementById("corpResults");
+    var crBtns = document.querySelectorAll(".corp-view-btn[data-view]");
+    function crSetView(v, recordar) {
+        crBtns.forEach(function (x) { x.classList.toggle("is-active", x.getAttribute("data-view") === v); });
+        if (cr) cr.setAttribute("data-view", v);
+        if (recordar) { try { localStorage.setItem("dogger:pv:listview", v); } catch (e) {} }
+    }
+    var crGuardado = null;
+    try { crGuardado = localStorage.getItem("dogger:pv:listview"); } catch (e) {}
+    if (crGuardado === "grid" || crGuardado === "lista") { crSetView(crGuardado, false); }
+    crBtns.forEach(function (b) {
+        b.addEventListener("click", function () { crSetView(b.getAttribute("data-view"), true); });
+    });
+
     /* Contador en vivo del ANS: actualiza el texto cada segundo. */
     var ELS = Array.prototype.slice.call(document.querySelectorAll('[data-ans-count]'));
     if (!ELS.length) return;

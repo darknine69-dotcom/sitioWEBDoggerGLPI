@@ -36,6 +36,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         ADMIN = "admin", "Administrador"
         TECNICO = "tecnico", "Técnico"
         USUARIO = "usuario", "Usuario"
+        OBSERVADOR = "observador", "Observador"
 
     nombre = models.CharField("Nombre", max_length=100)
     email = models.EmailField("Correo", max_length=150, unique=True)
@@ -60,6 +61,24 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     )
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    bienvenida_vista = models.DateTimeField(null=True, blank=True)
+    ultima_actividad = models.DateTimeField(
+        "Última actividad",
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Se actualiza con el latido que envía el navegador; sirve para ver quién está conectado.",
+    )
+    tour_habilitado = models.BooleanField(
+        "Tour guiado activado",
+        default=True,
+        help_text="Si está activo, el tour guiado se ofrece en todas las vistas.",
+    )
+    tour_visto = models.BooleanField(
+        "Tour ya completado",
+        default=False,
+        help_text="Se marca al terminar el tour guiado para no volver a mostrarlo.",
+    )
     glpi_user_id = models.PositiveIntegerField(
         "ID usuario GLPI",
         null=True,
@@ -97,7 +116,27 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         return self.rol in (self.Rol.ADMIN, self.Rol.TECNICO) and self.is_active
 
     @property
-    def initials(self):
+    def es_observador(self):
+        """El observador solo consulta: nunca crea ni edita tickets."""
+        return self.rol == self.Rol.OBSERVADOR and self.is_active
+
+    @property
+    def puede_gestionar_tickets(self):
+        """Únicos roles con permiso para crear, editar o responder tickets."""
+        return self.rol in (self.Rol.ADMIN, self.Rol.TECNICO) and self.is_active
+
+    @property
+    def en_linea(self):
+        """Hay actividad en los últimos 5 minutos (lo reporta el navegador)."""
+        if not self.is_active:
+            return False
+        ultima = self.ultima_actividad
+        if not ultima:
+            return False
+        return (timezone.now() - ultima).total_seconds() < 300
+
+    @property
+    def iniciales(self):
         parts = (self.nombre or "").strip().split()
         if len(parts) >= 2:
             return (parts[0][0] + parts[-1][0]).upper()

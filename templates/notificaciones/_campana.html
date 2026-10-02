@@ -1,0 +1,55 @@
+{% comment %}Campana de notificaciones: icono junto al usuario, lista desplegable y ventana emergente.{% endcomment %}
+{% if request.user.is_authenticated %}
+<div class="notif-wrap"
+     id="notifWrap"
+     data-url-todas="{% url 'notificaciones:marcar_todas' %}"
+     data-url-descartar="{% url 'notificaciones:descartar_una' 0 %}"
+     data-url-mostrada="{% url 'notificaciones:marcar_mostrada' 0 %}"
+     data-url-api="{% url 'notificaciones:api' %}"
+     data-url-limpiar="{% url 'notificaciones:descartar_todas' %}">
+
+    <button type="button" class="notif-bell" id="notifBell"
+            aria-expanded="false" aria-haspopup="true" aria-controls="notifPanel"
+            title="Notificaciones">
+        <svg class="icon"><use href="#i-bell"/></svg>
+        <span class="notif-badge{% if not notif_no_leidas %} is-empty{% endif %}"
+              id="notifBadge" aria-hidden="true">{{ notif_no_leidas }}</span>
+        <span class="visually-hidden">Notificaciones{% if notif_no_leidas %}: {{ notif_no_leidas }} sin leer{% endif %}</span>
+    </button>
+
+    <div class="notif-panel" id="notifPanel" role="dialog" aria-label="Notificaciones">
+        <div class="notif-head">
+            <strong>Notificaciones</strong>
+            <div class="notif-head-actions">
+                {% if notif_lista %}
+                <button type="button" class="notif-head-btn" data-notif="leer-todas">Marcar leídas</button>
+                <button type="button" class="notif-head-btn is-danger" data-notif="limpiar">Borrar todo</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <ul class="notif-list" id="notifList">
+            {% for n in notif_lista %}
+            <li class="notif-row{% if n.sin_leer %} is-new{% endif %}" data-id="{{ n.pk }}">
+                <span class="notif-icon notif-icon-{{ n.tipo }}" aria-hidden="true">
+                    <svg class="icon icon-sm"><use href="#{{ n.icono|default:'i-bell' }}"/></svg>
+                </span>
+                <span class="notif-text">
+                    <a class="notif-link" href="{{ n.url|default:'#' }}">{{ n.titulo }}</a>
+                    <span class="notif-msg">{{ n.mensaje }}</span>
+                    <small class="notif-time">{{ n.creada_en|timesince }} atrás</small>
+                </span>
+                <button type="button" class="notif-x" data-notif-quitar="{{ n.pk }}"
+                        aria-label="Quitar notificación" title="Quitar">&times;</button>
+            </li>
+            {% empty %}
+            <li class="notif-empty">
+                <span class="notif-empty-icon" aria-hidden="true"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                <strong>No tienes avisos</strong>
+                <span>Aquí verás tus tickets activos, tareas y recordatorios.</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}

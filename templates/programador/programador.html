@@ -28,7 +28,7 @@
         <a class="back-btn" data-back href="{% if request.user.rol == 'admin' %}{% url 'tickets:dashboard' %}{% else %}{% url 'tickets:panel_tecnico' %}{% endif %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
         <div class="page-head-titles">
             <h2>Programador</h2>
-            <p>Programa tareas, solicitudes, recordatorios y proyectos; gestiona la disponibilidad de los técnicos.</p>
+            <p>Programa tareas, solicitudes, recordatorios y anuncios; gestiona la disponibilidad de los técnicos.</p>
         </div>
         <div hidden>{% csrf_token %}</div>
     </div>
@@ -139,7 +139,6 @@
                             <option value="tarea">Tarea</option>
                             <option value="solicitud">Solicitud</option>
                             <option value="recordatorio">Recordatorio</option>
-                            <option value="proyecto">Proyecto</option>
                             <option value="anuncio">Anuncio</option>
                         </select>
                     </label>
@@ -274,6 +273,23 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Modal del evento registrado: muestra lo que hay y permite agregar otro.
+     Lo necesitan todos los roles, asi que va fuera del bloque de admin. -->
+<div class="modal-overlay prog-modal" id="modalDetalleEvento" role="dialog" aria-modal="true" aria-labelledby="detalleEventoTitulo" hidden>
+    <div class="modal-box">
+        <div class="modal-head">
+            <div class="modal-head-ic"><svg class="icon"><use href="#i-bell"/></svg></div>
+            <div class="modal-head-txt">
+                <h3 id="detalleEventoTitulo">Evento</h3>
+                <span class="modal-head-sub">Lo que hay registrado para esa fecha</span>
+            </div>
+            <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body" id="detalleEventoCuerpo"></div>
+        <div class="corp-modal-actions" id="detalleEventoAcciones"></div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}

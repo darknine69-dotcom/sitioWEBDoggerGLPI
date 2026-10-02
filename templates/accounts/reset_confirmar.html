@@ -9,6 +9,10 @@
 </head>
 <body>
 <div class="login-screen">
+    <div class="login-deco" aria-hidden="true">
+        <span class="glow"></span><span class="sombra"></span><span class="puntos"></span>
+        <span class="franja-roja"></span><span class="franja-amarilla"></span>
+    </div>
     <div class="login-card">
         <a href="{% url 'tickets:portal' %}" class="login-back-arrow" aria-label="Volver al portal público">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
@@ -60,7 +64,10 @@
             <a href="{% url 'accounts:login' %}">↻ No recibí el código, reenviar</a>
         </p>
     </div>
+
+    <div class="login-foot">{% include "partials/_copyright.html" %}</div>
 </div>
+
 <script>
 (function () {
     var digits = document.querySelectorAll('.code-digit');

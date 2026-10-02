@@ -40,7 +40,12 @@ RANGOS_MIS = [
 ]
 
 from apps.accounts.models import Usuario
-from .decorators import admin_required, staff_required, user_required
+from .decorators import (
+    admin_required,
+    sin_observador,
+    staff_required,
+    user_required,
+)
 from .exports import generar_excel_reportes, generar_excel_tickets
 from .forms import (
     AsignarTecnicoForm,
@@ -65,6 +70,11 @@ from .services.glpi_client import (
     sync_ticket_to_glpi,
 )
 from .sugerencia_categoria import claves_para_json
+
+
+# Opciones del selector "Filas". El 6 es el predeterminado en todas las vistas.
+PER_PAGE_OPCIONES = {6, 5, 9, 10, 20, 50, 0}
+PER_PAGE_DEFECTO = 6
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -320,7 +330,8 @@ _DIAS_SEMANA = ("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
 _ALCANCES_TORTAS = (
     ("abiertas", "Abiertas", (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)),
     ("en_progreso", "En progreso", (Ticket.Estado.EN_PROGRESO,)),
-    ("resueltos", "Resueltas", (Ticket.Estado.RESUELTO,)),
+    # "Resueltas" junta lo ya terminado: resueltas y cerradas.
+    ("resueltos", "Resueltas", (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)),
     ("cerrados", "Cerradas", (Ticket.Estado.CERRADO,)),
     ("eliminados", "Eliminadas", ()),
     ("todas", "Todas", ()),
@@ -736,7 +747,7 @@ def _key_fecha(fecha):
 def _build_dashboard_context(request, tickets):
     chart_context = _build_chart_context(tickets)
     eventos_qs = GlpiEvento.objects.select_related("ticket").order_by("-fecha")
-    pp_glpi = _resolve_per_page(request, "per_page_glpi", 5)
+    pp_glpi = _resolve_per_page(request, "per_page_glpi", PER_PAGE_DEFECTO)
     page_number = request.GET.get("page_glpi", 1)
     paginator = Paginator(eventos_qs, pp_glpi)
     eventos_glpi_page = paginator.get_page(page_number)
@@ -1126,8 +1137,39 @@ def categorias_arbol(request):
             "tecnicos": User.objects.filter(
                 activo=True, rol__in=["admin", "tecnico"]
             ).order_by("nombre"),
+            "disponibilidad_tec": _disponibilidad_por_tecnico(),
         },
     )
+
+
+def _disponibilidad_por_tecnico():
+    """Técnicos con su estado de disponibilidad de hoy, para el autocompletado.
+
+    Al elegir varios técnicos en una categoría se ven de un vistazo cuáles
+    están disponibles y cuáles no, sin salir del formulario.
+    """
+    hoy = timezone.localdate()
+    from apps.programador.models import DisponibilidadTecnico
+
+    estados = {}
+    for d in DisponibilidadTecnico.objects.filter(fecha=hoy).select_related("tecnico"):
+        estados.setdefault(d.tecnico_id, d.tipo)
+    datos = []
+    for u in User.objects.filter(activo=True, rol__in=["admin", "tecnico"]).order_by("nombre"):
+        estado = estados.get(u.pk)
+        if not estado:
+            etiqueta, nivel = "Sin marcar", "neutro"
+        elif estado == "falta":
+            etiqueta, nivel = "Falta de disponibilidad", "falta"
+        elif estado == "ausencia":
+            etiqueta, nivel = "Ausencia", "ausencia"
+        else:
+            etiqueta, nivel = "Disponible", "disponible"
+        datos.append(
+            {"id": u.pk, "nombre": u.nombre, "estado": estado or "",
+             "etiqueta": etiqueta, "nivel": nivel}
+        )
+    return datos
 
 
 @staff_required
@@ -1184,8 +1226,17 @@ def categoria_actualizar(request, pk):
     ans_horas = request.POST.get("ans_horas", "").strip()
     if ans_horas.isdigit() and int(ans_horas) > 0:
         categoria.ans_horas = int(ans_horas)
+    categoria.descripcion = request.POST.get("descripcion", "").strip()
+    categoria.ejemplos = request.POST.get("ejemplos", "").strip()
     try:
         categoria.save()
+        # Varios técnicos pueden atender la misma categoría.
+        ids_tec = [
+            int(x) for x in request.POST.getlist("tecnicos") if x.strip().isdigit()
+        ]
+        categoria.tecnicos.set(
+            User.objects.filter(pk__in=ids_tec, activo=True, rol__in=["admin", "tecnico"])
+        )
         messages.success(request, f"Categoría actualizada: {categoria}.")
     except Exception:
         messages.error(request, "No se pudo actualizar la categoría.")
@@ -1213,6 +1264,36 @@ def categoria_eliminar(request, pk):
 # ---------------------------------------------------------------------------
 # Administración de cuentas (solo administrador)
 # ---------------------------------------------------------------------------
+# --- Presencia de las cuentas ---------------------------------------------
+# Un solo umbral para todo el sistema: lo consultan la tabla de usuarios,
+# su endpoint de estado y la ficha individual, para que los tres coincidan.
+MINUTOS_EN_LINEA = 10
+_TITULOS_DOT = {
+    "green": "Conectado ahora mismo",
+    "yellow": "Activo, pero sin conexion",
+    "red": "Cuenta inactiva",
+}
+
+
+def _indicador_cuenta(u, ahora=None):
+    """Color del punto de presencia: verde / amarillo / rojo.
+
+    Verde = el navegador esta mandando latidos ahora. Amarillo = cuenta
+    activa pero sin conexion. Rojo = cuenta inactiva.
+    """
+    if not u.activo:
+        color = "red"
+    else:
+        marca = u.ultima_actividad or u.last_login
+        limite = (ahora or timezone.now()) - timedelta(minutes=MINUTOS_EN_LINEA)
+        color = "green" if (marca and marca >= limite) else "yellow"
+    return {
+        "dot": color,
+        "dot_puede": u.activo,
+        "dot_titulo": _TITULOS_DOT[color],
+    }
+
+
 @admin_required
 def usuarios_lista(request):
     import time
@@ -1257,7 +1338,7 @@ def usuarios_lista(request):
                 Q(nombre__icontains=palabra) | Q(email__icontains=palabra)
             )
 
-    pp_us = _resolve_per_page(request, "per_page", 5)
+    pp_us = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
     page_obj = _paginar(usuarios, request, per_page_default=pp_us)
 
     # ---- Ficha por usuario: estadísticas de tickets, ubicación, actividad,
@@ -1338,12 +1419,16 @@ def usuarios_lista(request):
     for u in page_obj.object_list:
         em = (u.email or "").lower()
         st = stats_tickets.get(em) or {}
+        # "En línea" es en vivo: el navegador avisa cada poco y se guarda en
+        # `ultima_actividad`. `last_login` queda como respaldo para los que
+        # aún no han enviado ni un latido.
+        marca = u.ultima_actividad or u.last_login
         u.ficha = {
             "stats": st,
             "punto": punto_mas_comun.get(em, ""),
             "es_nuevo": bool(u.fecha_creacion and u.fecha_creacion >= hace_7d),
-            "en_linea": bool(u.last_login and u.last_login >= hace_10min),
-            "ultimo_acceso": u.last_login,
+            "en_linea": bool(marca and marca >= hace_10min),
+            "ultimo_acceso": marca,
             "registrado": u.fecha_creacion,
             "permisos": {
                 "es_staff": u.is_staff,
@@ -1352,19 +1437,10 @@ def usuarios_lista(request):
             "disponibilidad": disp_por_tec.get(u.pk, []),
             "eventos": evts_por_tec.get(u.pk, [])[:6],
         }
-        # Indicador junto al nombre: verde = activo con actividad reciente,
-        # gris = activo sin actividad, rojo = inactivo, sin punto = nunca ingresó.
-        ultimo_login = u.last_login
-        if ultimo_login is None:
-            u.ficha["dot"] = ""
-            u.ficha["dot_puede"] = False
-        elif not u.activo:
-            u.ficha["dot"] = "red"
-            u.ficha["dot_puede"] = False
-        else:
-            u.ficha["dot_puede"] = True
-            u.ficha["dot"] = "green" if u.ficha["en_linea"] else "gray"
-        u.ficha["acceso_label"] = _acceso_label(ultimo_login, ahora)
+        # Indicador junto al nombre: verde = conectado ahora mismo,
+        # amarillo = activo pero sin conexión, rojo = inactivo.
+        u.ficha.update(_indicador_cuenta(u, ahora))
+        u.ficha["acceso_label"] = _acceso_label(u.ficha["ultimo_acceso"], ahora)
         if u.rol in ("tecnico", "admin"):
             alertas = [
                 {
@@ -1514,16 +1590,21 @@ def usuarios_estado_api(request):
     """
     ids = [int(x) for x in request.GET.get("ids", "").split(",") if x.strip().isdigit()]
     ahora = timezone.now()
-    hace_10min = ahora - timedelta(minutes=10)
     hace_7d = ahora - timedelta(days=7)
     datos = {}
     for u in User.objects.filter(pk__in=ids):
+        # El navegador manda su latido, así que "en línea" es en vivo.
+        marca = u.ultima_actividad or u.last_login
+        estado = _indicador_cuenta(u, ahora)
         datos[str(u.pk)] = {
             "activo": u.activo,
             "es_staff": u.is_staff,
             "nuevo": bool(u.fecha_creacion and u.fecha_creacion >= hace_7d),
-            "en_linea": bool(u.last_login and u.last_login >= hace_10min),
-            "ultimo_acceso": u.last_login.isoformat() if u.last_login else None,
+            "en_linea": estado["dot"] == "green",
+            "dot": estado["dot"],
+            "dot_titulo": estado["dot_titulo"],
+            "nombre": u.nombre or u.email,
+            "ultimo_acceso": marca.isoformat() if marca else None,
         }
     return JsonResponse({"ok": True, "usuarios": datos})
 
@@ -1607,16 +1688,8 @@ def _ficha_usuario(u):
         "alertas": [],
     }
 
-    ultimo_login = u.last_login
-    if ultimo_login is None:
-        ficha["dot"] = ""
-        ficha["dot_puede"] = False
-    elif not u.activo:
-        ficha["dot"] = "red"
-        ficha["dot_puede"] = False
-    else:
-        ficha["dot_puede"] = True
-        ficha["dot"] = "green" if ficha["en_linea"] else "gray"
+    ultimo_login = u.ultima_actividad or u.last_login
+    ficha.update(_indicador_cuenta(u, ahora))
     ficha["acceso_label"] = _acceso_label(ultimo_login, ahora)
 
     if u.rol in ("tecnico", "admin"):
@@ -2012,6 +2085,10 @@ def faq(request):
     return render(request, "tickets/faq.html")
 
 
+def quienes_somos(request):
+    return render(request, "tickets/quienes_somos.html")
+
+
 def politica_privacidad(request):
     return render(request, "tickets/politica_privacidad.html")
 
@@ -2142,7 +2219,7 @@ def mi_panel(request):
             estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO],
         ).count(),
     }
-    pp_mp = _resolve_per_page(request, "per_page", 5)
+    pp_mp = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
     page_obj = _paginar(
         tickets_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
             "_prioridad_orden", "-fecha_creacion"
@@ -2172,6 +2249,7 @@ def mi_panel(request):
     )
 
 
+@sin_observador
 @login_required
 def crear_ticket(request):
     """
@@ -2318,6 +2396,7 @@ def mi_ticket(request, pk):
     )
 
 
+@sin_observador
 @user_required
 @require_POST
 def responder_ticket(request, pk):
@@ -2339,7 +2418,7 @@ def responder_ticket(request, pk):
         es_interno=False,
     )
 
-    notificar_comentario(ticket, request.user.nombre, comentario)
+    notificar_comentario(ticket, request.user.nombre, comentario, actor=request.user)
 
     if ticket.glpi_id:
         try:
@@ -2424,6 +2503,7 @@ def _url_vuelta(user, ticket) -> str:
     return reverse("tickets:mi_ticket", args=[ticket.pk])
 
 
+@sin_observador
 @login_required
 def editar_mi_ticket(request, pk):
     """El solicitante puede editar su ticket mientras siga abierto."""
@@ -2486,7 +2566,7 @@ def dashboard(request):
             _prioridad_orden=orden_prioridad_annotation()
         ).order_by("_prioridad_orden", "-fecha_creacion")[:200]
     )
-    pp_recientes = _resolve_per_page(request, "per_page_recientes", 5)
+    pp_recientes = _resolve_per_page(request, "per_page_recientes", PER_PAGE_DEFECTO)
     recientes_page = paginate_recent_tickets(request, tickets_qs, per_page=pp_recientes)
     dashboard_context = _build_dashboard_context(request, tickets)
     recientes = _adjuntar_solicitantes(recientes_page.object_list)
@@ -2512,8 +2592,8 @@ def dashboard(request):
     )
 
 
-def _paginar(qs, request, param="page", per_page_param="per_page", per_page_default=5):
-    allowed = {5, 10, 20, 50, 0}
+def _paginar(qs, request, param="page", per_page_param="per_page", per_page_default=PER_PAGE_DEFECTO):
+    allowed = PER_PAGE_OPCIONES
     try:
         pp = int(request.GET.get(per_page_param, per_page_default))
     except (ValueError, TypeError):
@@ -2527,8 +2607,8 @@ def _paginar(qs, request, param="page", per_page_param="per_page", per_page_defa
     return paginator.get_page(numero)
 
 
-def _resolve_per_page(request, param="per_page", default=5):
-    allowed = {5, 10, 20, 50, 0}
+def _resolve_per_page(request, param="per_page", default=PER_PAGE_DEFECTO):
+    allowed = PER_PAGE_OPCIONES
     try:
         pp = int(request.GET.get(param, default))
     except (ValueError, TypeError):
@@ -2729,7 +2809,7 @@ def sin_asignar(request):
         messages.error(request, "Acción no permitida.")
         return redirect("tickets:sin_asignar")
 
-    pp_mp = _resolve_per_page(request, "per_page", 15)
+    pp_mp = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
     page_obj = _paginar(base, request, param="page", per_page_default=pp_mp)
     return render(
         request,
@@ -2838,7 +2918,7 @@ def lista_tickets(request):
             condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
         qs = qs.filter(condicion)
 
-    pp_lista = _resolve_per_page(request, "per_page", 5)
+    pp_lista = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
     if q or sv in ("vencen-hoy", "vencidas"):
         pp_lista = 0
     page_obj = _paginar(
@@ -2927,7 +3007,9 @@ def detalle_ticket(request, pk):
                 c.usuario = request.user
                 c.autor_nombre = request.user.nombre
                 c.save()
-                notificar_comentario(ticket, request.user.nombre, c.comentario, c.es_interno)
+                notificar_comentario(
+                    ticket, request.user.nombre, c.comentario, c.es_interno, actor=request.user
+                )
                 messages.success(request, "Seguimiento agregado")
                 return redirect("tickets:detalle", pk=pk)
         elif action == "asignar":
@@ -3004,7 +3086,7 @@ def cambiar_estado(request, pk):
     else:
         ticket.estado = nuevo
         ticket.save()
-        notificar_ticket_actualizado(ticket, f"cambiado a {ticket.get_estado_display()}")
+        notificar_ticket_actualizado(ticket, f"cambiado a {ticket.get_estado_display()}", actor=request.user)
         try:
             sync_estado_to_glpi(ticket)
         except GlpiError as exc:
@@ -3368,7 +3450,7 @@ def mi_responder_ajax(request, pk):
         es_interno=False,
     )
 
-    notificar_comentario(ticket, request.user.nombre, comentario)
+    notificar_comentario(ticket, request.user.nombre, comentario, actor=request.user)
 
     notificado = False
     if ticket.glpi_id:
@@ -3408,8 +3490,8 @@ def panel_tecnico(request):
     estado = request.GET.get("estado", "").strip()
     q = request.GET.get("q", "").strip()
     q_cola = request.GET.get("q_cola", "").strip()
-    pp_mis = _resolve_per_page(request, "per_page", 5)
-    pp_sol = _resolve_per_page(request, "per_page_sol", 5)
+    pp_mis = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
+    pp_sol = _resolve_per_page(request, "per_page_sol", PER_PAGE_DEFECTO)
     if q:
         pp_mis = 0
     if q_cola:
@@ -3503,6 +3585,7 @@ def panel_tecnico(request):
 
     # Módulo corporativo "Mis solicitudes abiertas" (solo cuando no hay chat abierto)
     abiertas = []
+    tarjetas = []
     combinadas_map = {}
     sitios = []
     grupos = []
@@ -3598,7 +3681,26 @@ def panel_tecnico(request):
             if match_codigo:
                 condicion = Q(codigo__iexact=q.upper()) | Q(titulo__icontains=q) | Q(solicitante_nombre__icontains=q)
             mis_qs = mis_qs.filter(condicion)
+        # "abiertas" alimenta la tabla y la rejilla de tarjetas. Se pagina
+        # sobre mis_qs (el queryset ya filtrado de la pestaña) para que las
+        # tarjetas salgan en la rejilla 3x3 y no la lista completa; con filtro
+        # de texto o "todas" se mantiene la lista entera.
+        if q or pp_mis == 0:
+            tarjetas = list(mis_qs)
+        else:
+            tarjetas = list(
+                _paginar(
+                    mis_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
+                        "_prioridad_orden", "-fecha_creacion"
+                    ),
+                    request,
+                    per_page_default=pp_mis,
+                ).object_list
+            )
         abiertas = list(mis_qs)
+        tarjetas = _adjuntar_solicitantes(tarjetas)
+        for t in tarjetas:
+            t.combinadas = combinadas_map.get(t.pk, [])
         abiertas = _adjuntar_solicitantes(abiertas)
         for t in abiertas:
             t.combinadas = combinadas_map.get(t.pk, [])
@@ -3651,6 +3753,7 @@ def panel_tecnico(request):
             "alcances_tortas": _ALCANCES_TORTAS,
             "alcances_20dias": _ALCANCES_20_DIAS,
             "abiertas": abiertas,
+            "tarjetas": tarjetas,
             "abiertas_count": abiertas_count,
             "mis_count": mis_count,
             "sitios": sitios,
@@ -3963,7 +4066,7 @@ def panel_tecnico_chat_ajax(request, pk):
 
     notificado = False
     if not es_interno:
-        notificar_comentario(ticket, request.user.nombre, comentario)
+        notificar_comentario(ticket, request.user.nombre, comentario, actor=request.user)
         if ticket.glpi_id:
             try:
                 sync_followup_to_glpi(ticket, comentario)
@@ -3987,3 +4090,35 @@ def panel_tecnico_chat_ajax(request, pk):
             "texto": comentario,
         },
     })
+
+
+# =====================================================================
+# Manual de uso y categorías explicativas
+# =====================================================================
+@login_required
+def manual_uso(request):
+    """Manual de uso del aplicativo, abierto desde la configuración de cuenta."""
+    return render(request, "tickets/manual_uso.html", {"rol": getattr(request.user, "rol", "")})
+
+
+@login_required
+def categorias_publico(request):
+    """Categorías explicadas para el usuario: qué hace cada una y cuándo usarla.
+
+    Es la versión de solo lectura del árbol que ve el administrador: sirve
+    para que cualquiera sepa en qué casillar reportar antes de crear el ticket.
+    """
+    arbol = Categoria.arbol()
+    for grupo in arbol:
+        for sub in grupo["subcategorias"]:
+            # La plantilla recibe el nombre de los técnicos que la atienden,
+            # para que el usuario sepa a quién le llega la solicitud.
+            sub.nombres_tecnicos = ", ".join(
+                u.nombre for u in sub.tecnicos.all() if u.activo
+            )
+    inactivas = list(Categoria.objects.filter(activo=False).order_by("grupo", "nombre"))
+    return render(
+        request,
+        "tickets/categorias_publico.html",
+        {"arbol": arbol, "inactivas": inactivas},
+    )
