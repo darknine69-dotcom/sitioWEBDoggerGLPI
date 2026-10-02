@@ -70,19 +70,28 @@ def _contadores_menu(request):
             base = Ticket.objects.filter(tecnico_asignado=usuario, **activos)
             mios = base
             total = base
+            extra = {}
         elif rol == "admin":
             base = Ticket.objects.filter(**activos)
             mios = base.filter(tecnico_asignado__isnull=True)
             total = base
+            extra = {}
+        elif rol == "observador":
+            # El observador solo mira los puntos que tiene asignados.
+            base = _tickets_de_puntos_del_observador(usuario, activos)
+            mios = ElementoMiLista.objects.filter(observador=usuario)
+            total = base
+            extra = {"menu_mios": mios.count()}
         else:
             # El usuario solo ve lo suyo: lo que tiene abierto y lo que ya le
             # respondieron (resuelto o cerrado) y todavia no ha revisado.
             base = Ticket.objects.filter(solicitante_email=usuario.email, **activos)
             mios = base
             total = base
+            extra = {}
 
         respondidos = 0
-        if rol != "tecnico":
+        if rol not in ("tecnico", "observador"):
             respondidos = Ticket.objects.filter(
                 solicitante_email=usuario.email,
                 estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO],
@@ -93,10 +102,25 @@ def _contadores_menu(request):
             "menu_mios": mios.count(),
             "menu_urgentes": base.filter(prioridad=urgente).count(),
             "menu_respondidos": respondidos,
+            **extra,
         }
     except Exception:
         # Antes de migrar, o si la tabla aun no existe, el menú va sin conteos.
         return vacio
+
+
+def _tickets_de_puntos_del_observador(usuario, activos_extra):
+    """Tickets de los puntos asignados al observador (o ninguno si no tiene)."""
+    from apps.tickets.models import ObservadorPunto, Ticket
+
+    puntos = list(
+        ObservadorPunto.objects.filter(observador=usuario).values_list(
+            "punto__nombre", flat=True
+        )
+    )
+    if not puntos:
+        return Ticket.objects.none()
+    return Ticket.objects.filter(solicitante_punto__in=puntos, **activos_extra)
 
 
 def _contador_sin_asignar(request):

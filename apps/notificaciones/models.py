@@ -16,6 +16,7 @@ class Notificacion(models.Model):
         BIENVENIDA = "bienvenida", "Bienvenida"
         TICKET_NUEVO = "ticket_nuevo", "Ticket nuevo"
         TICKET_CERRADO = "ticket_cerrado", "Ticket cerrado"
+        TICKET_EDITADO = "ticket_editado", "Ticket editado"
         TICKET_RECORDATORIO = "ticket_recordatorio", "Recordatorio de tickets"
         EVENTO = "evento", "Tarea o evento"
         SISTEMA = "sistema", "Sistema"

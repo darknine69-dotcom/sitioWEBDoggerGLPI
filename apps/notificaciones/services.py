@@ -177,6 +177,67 @@ def ticket_cerrado(ticket, actor=None):
     return [n for n in creadas if n]
 
 
+def ticket_editado(ticket, actor, detalle=""):
+    """Cambio en un ticket: avisa al técnico y a quien lo pidió.
+
+    Se llama cuando alguien edita la solicitud, responde o cambia su estado,
+    para que el otro lado se entere sin tener que recargar la página.
+    """
+    creadas = []
+    quien = nombre_corto(actor)
+    texto = (detalle or "Se actualizó el ticket").strip()
+
+    # Al técnico asignado, salvo que sea el mismo quien editó.
+    if ticket.tecnico_asignado_id and ticket.tecnico_asignado_id != getattr(actor, "pk", None):
+        creadas.append(
+            crear(
+                ticket.tecnico_asignado,
+                Notificacion.Tipo.TICKET_EDITADO,
+                f"{ticket.codigo} se actualizó por {quien}",
+                f"{texto} · {ticket.titulo[:70]}",
+                url=_url_ticket(ticket, ticket.tecnico_asignado),
+                icono="i-pencil",
+                # Con el minuto de reloj para que dos cambios seguidos
+                # del mismo ticket no se pisen entre sí.
+                clave=f"ticket:{ticket.pk}:editado:{ticket.tecnico_asignado_id}:{timezone.now():%Y%m%d%H%M}",
+            )
+        )
+
+    # Al solicitante, si tiene cuenta y no fue él quien editó.
+    solicitante = _es_usuario_registrado(ticket.solicitante_email)
+    if solicitante is not None and solicitante.pk != getattr(actor, "pk", None):
+        creadas.append(
+            crear(
+                solicitante,
+                Notificacion.Tipo.TICKET_EDITADO,
+                f"{ticket.codigo} tuvo novedades",
+                f"{quien}: {texto} · {ticket.titulo[:70]}",
+                url=_url_ticket(ticket, solicitante),
+                icono="i-pencil",
+                clave=f"ticket:{ticket.pk}:editado:{solicitante.pk}:{timezone.now():%Y%m%d%H%M}",
+            )
+        )
+
+    # A los administradores: la mesa necesita enterarse del movimiento.
+    for admin in _personal_activo():
+        if admin.rol != "admin" or admin.pk == getattr(actor, "pk", None):
+            continue
+        if admin.pk in (ticket.tecnico_asignado_id, getattr(solicitante, "pk", None)):
+            continue
+        creadas.append(
+            crear(
+                admin,
+                Notificacion.Tipo.TICKET_EDITADO,
+                f"{ticket.codigo}: {texto}",
+                f"{quien} · {ticket.titulo[:70]}",
+                url=_url_ticket(ticket, admin),
+                icono="i-pencil",
+                clave=f"ticket:{ticket.pk}:editado:admin{admin.pk}:{timezone.now():%Y%m%d%H%M}",
+            )
+        )
+    return [n for n in creadas if n]
+
+
 # -------------------------------------------------------------- recordatorios
 def sincronizar(usuario, clave, tipo, titulo, mensaje, url="", icono=""):
     """Deja un aviso de tipo recordatorio siempre con el dato actualizado.

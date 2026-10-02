@@ -582,12 +582,13 @@
 
 /* =====================================================================
    Campana de notificaciones: abrir la lista, marcar leídas, quitar con la
-   "x" y cerrar la ventana emergente del aviso nuevo.
+   "x", refresco automático y ventanas emergentes encadenadas.
    ===================================================================== */
 (function () {
     var wrap = document.getElementById("notifWrap");
     var bell = document.getElementById("notifBell");
     var panel = document.getElementById("notifPanel");
+    var URL_API = (wrap && wrap.getAttribute("data-url-api")) || "";
 
     function csrf() {
         var input = document.querySelector("[name=csrfmiddlewaretoken]");
@@ -621,6 +622,65 @@
         if (!badge || typeof pendientes !== "number") { return; }
         badge.textContent = pendientes > 99 ? "99+" : pendientes;
         badge.classList.toggle("is-empty", pendientes === 0);
+        if (bell) {
+            var oculto = document.querySelector(".visually-hidden", bell);
+            if (oculto) {
+                oculto.textContent = pendientes
+                    ? "Notificaciones: " + pendientes + " sin leer"
+                    : "Notificaciones";
+            }
+        }
+    }
+
+    /* ---- Aviso breve en la esquina inferior izquierda ----
+       Sale cuando llega algo nuevo, sin bloquear y se va solo. Es el mismo
+       sitio donde aparecen los mensajes del sistema. */
+    function toastAviso(n) {
+        var pila = document.querySelector(".toast-stack");
+        if (!pila) { return; }
+        var url = n.url || "#";
+        var el = document.createElement("div");
+        el.className = "toast toast-notif";
+        el.innerHTML =
+            '<span class="notif-icon notif-icon-' + esc(n.tipo) + '" aria-hidden="true">' +
+            '<svg class="icon icon-sm"><use href="#' + esc(n.icono || "i-bell") + '"/></svg></span>' +
+            '<div class="toast-body">' +
+            '<strong>' + esc(n.titulo) + '</strong>' +
+            '<span>' + esc(n.mensaje || "") + '</span>' +
+            '<a href="' + esc(url) + '">Ver</a>' +
+            '</div>' +
+            '<button type="button" class="toast-close" aria-label="Cerrar">&times;</button>';
+        pila.appendChild(el);
+
+        // Al hacer clic en "Ver" se marca como mostrada, como la emergente.
+        el.querySelector("a").addEventListener("click", function () {
+            pedir(baseDe("data-url-mostrada", n.id));
+        });
+        // Mismo auto-cierre con pausa al pasar el mouse que los toasts del servidor.
+        var delay = 7000;
+        el.style.setProperty("--toast-delay", delay + "ms");
+        var timer = null, started = Date.now(), remaining = delay;
+        function dismiss() {
+            if (!el.isConnected) { return; }
+            el.classList.add("toast-out");
+            setTimeout(function () { el.remove(); }, 340);
+        }
+        function schedule() {
+            if (timer) { clearTimeout(timer); timer = null; }
+            timer = setTimeout(dismiss, remaining);
+        }
+        var btn = el.querySelector(".toast-close");
+        if (btn) { btn.addEventListener("click", dismiss); }
+        el.addEventListener("mouseenter", function () {
+            remaining -= Date.now() - started;
+            if (timer) { clearTimeout(timer); timer = null; }
+        });
+        el.addEventListener("mouseleave", function () {
+            if (remaining <= 0) { return; }
+            started = Date.now();
+            schedule();
+        });
+        schedule();
     }
 
     function vacioHTML() {
@@ -636,6 +696,152 @@
         return id ? base.replace("/0/", "/" + id + "/") : base;
     }
 
+    function esc(t) {
+        return String(t == null ? "" : t)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    /* ---- Ventanas emergentes: se acumulan y salen de una en una ---- */
+    var colaEmergente = [];
+    var emergenteViva = false;
+
+    function filaHTML(n) {
+        return '<li class="notif-row' + (n.nueva ? " is-new" : "") + '" data-id="' + esc(n.id) + '">' +
+            '<span class="notif-icon notif-icon-' + esc(n.tipo) + '" aria-hidden="true">' +
+            '<svg class="icon icon-sm"><use href="#' + esc(n.icono || "i-bell") + '"/></svg>' +
+            '</span>' +
+            '<span class="notif-text">' +
+            '<a class="notif-link" href="' + esc(n.url || "#") + '">' + esc(n.titulo) + '</a>' +
+            '<span class="notif-msg">' + esc(n.mensaje) + '</span>' +
+            '<small class="notif-time">ahora mismo</small>' +
+            '</span>' +
+            '<button type="button" class="notif-x" data-notif-quitar="' + esc(n.id) + '" ' +
+            'aria-label="Quitar notificación" title="Quitar">&times;</button>' +
+            '</li>';
+    }
+
+    function mostrarEmergenteSiguiente() {
+        if (emergenteViva || !colaEmergente.length) { return; }
+        var n = colaEmergente.shift();
+        emergenteViva = true;
+        var overlay = document.createElement("div");
+        overlay.className = "notif-popup-overlay notif-popup-viva notif-popup-" + esc(n.tipo);
+        overlay.setAttribute("data-id", n.id);
+        overlay.setAttribute("role", "dialog");
+        overlay.setAttribute("aria-modal", "true");
+        overlay.setAttribute("aria-labelledby", "notifPopVivaTitulo");
+        overlay.innerHTML =
+            '<div class="notif-popup">' +
+            '<button type="button" class="notif-popup-x" data-notif-cerrar aria-label="Cerrar">&times;</button>' +
+            '<span class="notif-popup-head">' +
+            '<span class="notif-popup-icon" aria-hidden="true">' +
+            '<svg class="icon"><use href="#' + esc(n.icono || "i-bell") + '"/></svg></span>' +
+            '<h3 class="notif-popup-title" id="notifPopVivaTitulo">' + esc(n.titulo) + '</h3>' +
+            '</span>' +
+            '<p class="notif-popup-text">' + esc(n.mensaje) + '</p>' +
+            '<div class="notif-popup-actions">' +
+            '<a class="btn btn-accent btn-sm notif-popup-ver" href="' + esc(n.url || "#") + '">Ver</a>' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-notif-cerrar>Ahora no</button>' +
+            '</div>' +
+            (colaEmergente.length
+                ? '<small class="notif-popup-foot notif-popup-faltan">Quedan ' +
+                  colaEmergente.length + ' aviso' + (colaEmergente.length === 1 ? "" : "s") +
+                  ' más.</small>'
+                : '<small class="notif-popup-foot">También lo verás en la campana de notificaciones.</small>') +
+            '</div>';
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", function (ev) {
+            if (ev.target.closest("[data-notif-cerrar]") || ev.target === overlay) {
+                ev.preventDefault();
+                cerrarEmergenteViva(overlay);
+            }
+        });
+        overlay.querySelectorAll("a").forEach(function (a) {
+            a.addEventListener("click", function () { pedir(baseDe("data-url-mostrada", n.id)); });
+        });
+    }
+
+    function cerrarEmergenteViva(overlay) {
+        var id = overlay.getAttribute("data-id");
+        overlay.remove();
+        emergenteViva = false;
+        if (wrap) { pedir(baseDe("data-url-mostrada", id)); }
+        // La siguiente emerge enseguida: así no se encadenan encima.
+        setTimeout(mostrarEmergenteSiguiente, 450);
+    }
+
+    /* ---- Refresco automático: el estado se consulta solo ---- */
+    function refrescar() {
+        if (!URL_API || document.hidden) { return; }
+        fetch(URL_API, {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+            credentials: "same-origin",
+            cache: "no-store"
+        }).then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
+            if (!data || !data.ok) { return; }
+            pintarContador(data.no_leidas);
+
+            // 1) Los avisos nuevos se apilan en la lista de la campana.
+            if (panel && Array.isArray(data.avisos)) {
+                var lista = panel.querySelector(".notif-list");
+                if (lista) {
+                    var actuales = {};
+                    lista.querySelectorAll(".notif-row[data-id]").forEach(function (f) {
+                        actuales[f.getAttribute("data-id")] = true;
+                    });
+                    var frescos = data.avisos.filter(function (n) { return !actuales[n.id]; });
+                    if (frescos.length) {
+                        var vacia = lista.querySelector(".notif-empty");
+                        if (vacia) { vacia.remove(); }
+                        lista.insertAdjacentHTML("afterbegin", frescos.reverse().map(function (n) {
+                            return filaHTML(n);
+                        }).join(""));
+                    }
+                    // Refresca el texto "hace x" de los que ya estaban.
+                    lista.querySelectorAll(".notif-row[data-id]").forEach(function (f) {
+                        var t = f.querySelector(".notif-time");
+                        if (t) { t.textContent = "ahora mismo"; }
+                    });
+                }
+            }
+
+            // 2) Las emergentes se acumulan y salen una detrás de otra.
+            if (Array.isArray(data.emergentes) && data.emergentes.length) {
+                var yaEnCola = {};
+                colaEmergente.forEach(function (n) { yaEnCola[n.id] = true; });
+                var actual = document.querySelector(".notif-popup-viva");
+                if (actual) { yaEnCola[actual.getAttribute("data-id")] = true; }
+                // La emergente inicial viene ya pintada por el servidor: si
+                // sigue en pantalla no se vuelve a encolar la misma.
+                var inicial = document.getElementById("notifPopup");
+                if (inicial && inicial.getAttribute("data-id")) {
+                    yaEnCola[inicial.getAttribute("data-id")] = true;
+                }
+                data.emergentes.forEach(function (n) {
+                    if (!yaEnCola[n.id]) {
+                        colaEmergente.push(n);
+                        // Aviso breve en la esquina inferior izquierda.
+                        toastAviso(n);
+                    }
+                });
+                mostrarEmergenteSiguiente();
+            }
+        }).catch(function () { });
+    }
+
+    /* ---- Latido: avisa que esta pestaña sigue viva ---- */
+    function latido() {
+        var url = document.body.getAttribute("data-url-latido");
+        if (!url || document.hidden) { return; }
+        fetch(url, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrf(), "X-Requested-With": "XMLHttpRequest" },
+            credentials: "same-origin",
+            cache: "no-store"
+        }).catch(function () { });
+    }
+
     if (wrap && bell && panel) {
         function abrir() {
             panel.classList.add("open");
@@ -647,6 +853,7 @@
                 });
                 pedir(baseDe("data-url-todas"));
             }
+            refrescar();
         }
 
         function cerrar() {
@@ -680,6 +887,7 @@
                         lista.innerHTML = vacioHTML();
                     }
                 }
+                refrescar();
                 return;
             }
             var accion = ev.target.closest("[data-notif]");
@@ -701,7 +909,7 @@
         });
     }
 
-    /* ---- Ventana emergente del aviso nuevo ---- */
+    /* ---- Ventana emergente inicial (la que trae la página) ---- */
     var popup = document.getElementById("notifPopup");
     if (popup) {
         function cerrarPopup() {
@@ -719,4 +927,24 @@
             if (ev.key === "Escape" && document.getElementById("notifPopup")) { cerrarPopup(); }
         });
     }
+
+    /* ---- Arranque del refresco automático ---- */
+    if (URL_API) {
+        // El intervalo es corto para que el contador no se sienta viejo.
+        setInterval(refrescar, 12000);
+        // Al volver a la pestaña se consulta de inmediato.
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) { refrescar(); }
+        });
+    }
+    if (document.body.getAttribute("data-url-latido")) {
+        // Un latido al entrar para que el punto quede verde de inmediato, y
+        // otro cada 2 minutos mientras la pestaña siga abierta.
+        latido();
+        setInterval(latido, 120000);
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) { latido(); }
+        });
+    }
 })();
+

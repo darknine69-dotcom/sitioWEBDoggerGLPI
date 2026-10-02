@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Categorías de solicitudes{% endblock %}
+
+{% block content %}
+<main class="wrap">
+    <div class="page-head">
+        <div>
+            <h1><svg class="icon"><use href="#i-folder"/></svg> ¿En qué casillero reporto?</h1>
+            <p class="panel-sub">
+                Estas son las categorías con las que trabaja el equipo. Al crear tu
+                solicitud puedes elegir la que mejor describa el problema: así llega
+                más rápido a quien puede resolverlo.
+            </p>
+        </div>
+        <a href="{% url 'tickets:crear_ticket' %}" class="btn btn-primary btn-sm">
+            <svg class="icon"><use href="#i-plus"/></svg> Crear solicitud
+        </a>
+    </div>
+
+    {% if arbol %}
+        <div class="cat-publico-busca">
+            <input type="search" id="catBusca" placeholder="Buscar una categoría o un ejemplo…"
+                   aria-label="Buscar categoría" autocomplete="off">
+            <span class="cat-busca-msg" id="catBuscaMsg"></span>
+        </div>
+
+        {% for grupo in arbol %}
+        <section class="cat-publico-grupo" data-grupo="{{ grupo.grupo }}">
+            <h2>
+                <span class="cat-publico-grupo-nombre">{{ grupo.grupo }}</span>
+                <span class="cat-count-badge">{{ grupo.subcategorias|length }} categoría{{ grupo.subcategorias|length|pluralize }}</span>
+            </h2>
+            <div class="cat-publico-grid">
+                {% for sub in grupo.subcategorias %}
+                <article class="cat-publico-card" data-busca="{{ sub.nombre|lower }} {{ sub.descripcion|lower }} {{ sub.ejemplos|lower }}">
+                    <h3>{{ sub.nombre }}</h3>
+                    {% if sub.descripcion %}
+                        <p class="cat-publico-desc">{{ sub.descripcion }}</p>
+                    {% endif %}
+                    {% if sub.ejemplos %}
+                        <div class="cat-publico-ejemplos">
+                            <span class="cat-publico-tag">Ejemplos</span>
+                            <ul>
+                                {% for linea in sub.ejemplos|linebreaks %}
+                                    {% if linea.strip %}<li>{{ linea|linebreaksbr }}</li>{% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    <div class="cat-publico-pie">
+                        {% if sub.nombres_tecnicos %}
+                            <span class="file-chip"><svg class="icon icon-sm"><use href="#i-wrench"/></svg> {{ sub.nombres_tecnicos }}</span>
+                        {% endif %}
+                        {% if sub.ans_horas %}
+                            <span class="file-chip"><svg class="icon icon-sm"><use href="#i-clock"/></svg> Respuesta en {{ sub.ans_horas }} h</span>
+                        {% endif %}
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    {% else %}
+        <p class="chart-empty">Todavía no hay categorías publicadas.</p>
+    {% endif %}
+
+    {% if inactivas %}
+        <details class="cat-inactivos">
+            <summary><svg class="icon icon-sm"><use href="#i-folder"/></svg> Categorías que ya no se usan</summary>
+            <div class="cat-inactivos-body">
+                {% for c in inactivas %}<span class="file-chip">{{ c.grupo }} · {{ c.nombre }}</span>{% endfor %}
+            </div>
+        </details>
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    "use strict";
+    var input = document.getElementById("catBusca");
+    if (!input) { return; }
+    var msg = document.getElementById("catBuscaMsg");
+    var tarjetas = Array.prototype.slice.call(document.querySelectorAll(".cat-publico-card"));
+    var grupos = Array.prototype.slice.call(document.querySelectorAll(".cat-publico-grupo"));
+
+    input.addEventListener("input", function () {
+        var q = input.value.trim().toLowerCase();
+        var total = 0;
+        tarjetas.forEach(function (c) {
+            var coincide = !q || (c.dataset.busca || "").indexOf(q) !== -1;
+            c.hidden = !coincide;
+            if (coincide) { total++; }
+        });
+        grupos.forEach(function (g) {
+            var visibles = g.querySelectorAll(".cat-publico-card:not([hidden])").length;
+            g.hidden = visibles === 0;
+        });
+        msg.textContent = q ? (total + (total === 1 ? " categoría" : " categorías")) : "";
+    });
+})();
+</script>
+{% endblock %}

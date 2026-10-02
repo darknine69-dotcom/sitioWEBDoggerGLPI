@@ -107,6 +107,9 @@ def notificar_ticket_actualizado(ticket, accion, detalle="", actor=None):
     if cerrado or "cerr" in (accion or "").lower() or "resuelt" in (accion or "").lower():
         _notificar_app(_cerrado, ticket, actor)
         return
+    # Cualquier otro cambio tambien deja aviso en la campana, para que el
+    # otro lado lo vea sin recargar la pagina.
+    _notificar_app(_editado, ticket, actor, detalle or accion)
     _enviar(_asunto(ticket, f"Ticket {accion}"), _mensaje(ticket, accion, detalle), _destinatarios(ticket))
 
 
@@ -118,7 +121,20 @@ def _cerrado(ticket, actor=None):
     return avisos
 
 
-def notificar_comentario(ticket, autor, comentario, es_interno=False):
+def _editado(ticket, actor=None, detalle=""):
+    from apps.notificaciones import services
+
+    return services.ticket_editado(ticket, actor, detalle)
+
+
+def notificar_comentario(ticket, autor, comentario, es_interno=False, actor=None):
+    """Respuesta en el hilo del ticket.
+
+    Las notas internas son solo para el equipo, asi que no avisan al
+    solicitante. El resto genera aviso en la campana para el otro lado.
+    """
     if es_interno:
         return
-    _enviar(_asunto(ticket, "Nuevo comentario"), _mensaje(ticket, f"{autor or 'Anonimo'} comento", comentario), _destinatarios(ticket))
+    quien = getattr(actor, "nombre", None) or autor
+    _notificar_app(_editado, ticket, actor, f"Respondio: {(comentario or '')[:90]}")
+    _enviar(_asunto(ticket, "Nuevo comentario"), _mensaje(ticket, f"{quien or 'Anonimo'} comento", comentario), _destinatarios(ticket))

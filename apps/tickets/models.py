@@ -43,6 +43,26 @@ class Categoria(models.Model):
         verbose_name="Técnico por defecto",
         help_text="Se asigna automáticamente a los tickets nuevos de esta categoría",
     )
+    tecnicos = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="categorias",
+        verbose_name="Técnicos de la categoría",
+        help_text="Uno o varios técnicos habilitados en esta categoría. El primero disponible gana el ticket.",
+    )
+    descripcion = models.TextField(
+        "Qué hace esta categoría",
+        blank=True,
+        default="",
+        help_text="Explicación para el usuario: qué incluye esta categoría y cuándo reportar aquí.",
+    )
+    ejemplos = models.CharField(
+        "Ejemplos de incidentes",
+        max_length=300,
+        blank=True,
+        default="",
+        help_text="Casos típicos, separados por comas, que ayudan al autocompletado.",
+    )
 
     class Meta:
         db_table = "Categorias"
@@ -572,3 +592,160 @@ class ConfigSitio(models.Model):
 
     def __str__(self):
         return "Configuración de la página"
+
+
+# =====================================================================
+# Módulo del observador: puntos/zones, lista personal y monitoreo
+# =====================================================================
+class Punto(models.Model):
+    """Punto o zona física que se monitorea (sucursal, caja, piso, etc.).
+
+    El catálogo se arma a partir de los puntos que ya existen en los tickets
+    (`solicitante_punto`) y en la ubicación de los usuarios, de modo que el
+    observador ve exactamente las mismas zonas que ve el resto de la mesa.
+    """
+
+    nombre = models.CharField("Punto o zona", max_length=80, unique=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "Puntos"
+        verbose_name = "Punto o zona"
+        verbose_name_plural = "Puntos o zonas"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+    @classmethod
+    def sincronizar(cls):
+        """Crea/activa los puntos que ya existen en tickets y usuarios.
+
+        Se ignoran los vacíos y los que dicen "N/A", que es como se guarda el
+        punto cuando el ticket se reporta sin ubicación.
+        """
+        nombres = set()
+        for valores in (
+            Ticket.objects.values_list("solicitante_punto", flat=True),
+            cls._usuarios_puntos(),
+        ):
+            for bruto in valores:
+                limpio = (bruto or "").strip()
+                if not limpio:
+                    continue
+                if limpio.upper() in {"N/A", "NA", "-", "NONE"}:
+                    continue
+                nombres.add(limpio[:80])
+
+        for nombre in sorted(nombres):
+            cls.objects.update_or_create(nombre=nombre, defaults={"activo": True})
+        return nombres
+
+    @staticmethod
+    def _usuarios_puntos():
+        from django.contrib.auth import get_user_model
+
+        return (
+            get_user_model()
+            .objects.values_list("ubicacion", flat=True)
+            .exclude(ubicacion="")
+        )
+
+
+class ObservadorPunto(models.Model):
+    """Un punto o zona que tiene asignada un observador concreto."""
+
+    observador = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="puntos_asignados",
+        db_column="ObservadorId",
+        verbose_name="Observador",
+    )
+    punto = models.ForeignKey(
+        Punto,
+        on_delete=models.CASCADE,
+        related_name="observadores",
+        db_column="PuntoId",
+        verbose_name="Punto o zona",
+    )
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "ObservadorPuntos"
+        verbose_name = "Punto asignado al observador"
+        verbose_name_plural = "Puntos asignados a observadores"
+        unique_together = [("observador", "punto")]
+        ordering = ["punto__nombre"]
+
+    def __str__(self):
+        return f"{self.observador} → {self.punto}"
+
+
+class ElementoMiLista(models.Model):
+    """Elemento que el observador agregó a su panel personal.
+
+    Puede ser una persona, un punto o ambos: al agregar un ticket se guardan
+    los dos para que la ficha muestre el punto y también la persona.
+    """
+
+    TIPO_USUARIO = "usuario"
+    TIPO_PUNTO = "punto"
+    TIPO_CHOICES = (
+        (TIPO_USUARIO, "Usuario"),
+        (TIPO_PUNTO, "Punto"),
+    )
+
+    observador = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="mi_lista",
+        db_column="ObservadorId",
+        verbose_name="Observador",
+    )
+    tipo = models.CharField(
+        max_length=10, choices=TIPO_CHOICES, default=TIPO_USUARIO, db_column="Tipo"
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="+",
+        db_column="UsuarioId",
+        verbose_name="Usuario",
+    )
+    punto = models.ForeignKey(
+        Punto,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="+",
+        db_column="PuntoId",
+        verbose_name="Punto o zona",
+    )
+    nota = models.CharField("Nota", max_length=200, blank=True, default="", db_column="Nota")
+    creado_en = models.DateTimeField(auto_now_add=True, db_column="CreadoEn")
+
+    class Meta:
+        db_table = "ElementosMiLista"
+        verbose_name = "Elemento de la lista del observador"
+        verbose_name_plural = "Elementos de la lista de los observadores"
+        ordering = ["-creado_en", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["observador", "usuario"],
+                condition=models.Q(usuario__isnull=False),
+                name="uq_milista_obs_usuario",
+            ),
+            models.UniqueConstraint(
+                fields=["observador", "punto"],
+                condition=models.Q(punto__isnull=False),
+                name="uq_milista_obs_punto",
+            ),
+        ]
+
+    def __str__(self):
+        if self.usuario_id and self.punto_id:
+            return f"{self.observador} → {self.usuario} @ {self.punto}"
+        return f"{self.observador} → {self.usuario or self.punto}"

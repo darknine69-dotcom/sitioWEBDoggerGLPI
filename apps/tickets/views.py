@@ -40,7 +40,12 @@ RANGOS_MIS = [
 ]
 
 from apps.accounts.models import Usuario
-from .decorators import admin_required, staff_required, user_required
+from .decorators import (
+    admin_required,
+    sin_observador,
+    staff_required,
+    user_required,
+)
 from .exports import generar_excel_reportes, generar_excel_tickets
 from .forms import (
     AsignarTecnicoForm,
@@ -325,7 +330,8 @@ _DIAS_SEMANA = ("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
 _ALCANCES_TORTAS = (
     ("abiertas", "Abiertas", (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)),
     ("en_progreso", "En progreso", (Ticket.Estado.EN_PROGRESO,)),
-    ("resueltos", "Resueltas", (Ticket.Estado.RESUELTO,)),
+    # "Resueltas" junta lo ya terminado: resueltas y cerradas.
+    ("resueltos", "Resueltas", (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)),
     ("cerrados", "Cerradas", (Ticket.Estado.CERRADO,)),
     ("eliminados", "Eliminadas", ()),
     ("todas", "Todas", ()),
@@ -1131,8 +1137,39 @@ def categorias_arbol(request):
             "tecnicos": User.objects.filter(
                 activo=True, rol__in=["admin", "tecnico"]
             ).order_by("nombre"),
+            "disponibilidad_tec": _disponibilidad_por_tecnico(),
         },
     )
+
+
+def _disponibilidad_por_tecnico():
+    """Técnicos con su estado de disponibilidad de hoy, para el autocompletado.
+
+    Al elegir varios técnicos en una categoría se ven de un vistazo cuáles
+    están disponibles y cuáles no, sin salir del formulario.
+    """
+    hoy = timezone.localdate()
+    from apps.programador.models import DisponibilidadTecnico
+
+    estados = {}
+    for d in DisponibilidadTecnico.objects.filter(fecha=hoy).select_related("tecnico"):
+        estados.setdefault(d.tecnico_id, d.tipo)
+    datos = []
+    for u in User.objects.filter(activo=True, rol__in=["admin", "tecnico"]).order_by("nombre"):
+        estado = estados.get(u.pk)
+        if not estado:
+            etiqueta, nivel = "Sin marcar", "neutro"
+        elif estado == "falta":
+            etiqueta, nivel = "Falta de disponibilidad", "falta"
+        elif estado == "ausencia":
+            etiqueta, nivel = "Ausencia", "ausencia"
+        else:
+            etiqueta, nivel = "Disponible", "disponible"
+        datos.append(
+            {"id": u.pk, "nombre": u.nombre, "estado": estado or "",
+             "etiqueta": etiqueta, "nivel": nivel}
+        )
+    return datos
 
 
 @staff_required
@@ -1189,8 +1226,17 @@ def categoria_actualizar(request, pk):
     ans_horas = request.POST.get("ans_horas", "").strip()
     if ans_horas.isdigit() and int(ans_horas) > 0:
         categoria.ans_horas = int(ans_horas)
+    categoria.descripcion = request.POST.get("descripcion", "").strip()
+    categoria.ejemplos = request.POST.get("ejemplos", "").strip()
     try:
         categoria.save()
+        # Varios técnicos pueden atender la misma categoría.
+        ids_tec = [
+            int(x) for x in request.POST.getlist("tecnicos") if x.strip().isdigit()
+        ]
+        categoria.tecnicos.set(
+            User.objects.filter(pk__in=ids_tec, activo=True, rol__in=["admin", "tecnico"])
+        )
         messages.success(request, f"Categoría actualizada: {categoria}.")
     except Exception:
         messages.error(request, "No se pudo actualizar la categoría.")
@@ -1218,6 +1264,36 @@ def categoria_eliminar(request, pk):
 # ---------------------------------------------------------------------------
 # Administración de cuentas (solo administrador)
 # ---------------------------------------------------------------------------
+# --- Presencia de las cuentas ---------------------------------------------
+# Un solo umbral para todo el sistema: lo consultan la tabla de usuarios,
+# su endpoint de estado y la ficha individual, para que los tres coincidan.
+MINUTOS_EN_LINEA = 10
+_TITULOS_DOT = {
+    "green": "Conectado ahora mismo",
+    "yellow": "Activo, pero sin conexion",
+    "red": "Cuenta inactiva",
+}
+
+
+def _indicador_cuenta(u, ahora=None):
+    """Color del punto de presencia: verde / amarillo / rojo.
+
+    Verde = el navegador esta mandando latidos ahora. Amarillo = cuenta
+    activa pero sin conexion. Rojo = cuenta inactiva.
+    """
+    if not u.activo:
+        color = "red"
+    else:
+        marca = u.ultima_actividad or u.last_login
+        limite = (ahora or timezone.now()) - timedelta(minutes=MINUTOS_EN_LINEA)
+        color = "green" if (marca and marca >= limite) else "yellow"
+    return {
+        "dot": color,
+        "dot_puede": u.activo,
+        "dot_titulo": _TITULOS_DOT[color],
+    }
+
+
 @admin_required
 def usuarios_lista(request):
     import time
@@ -1343,12 +1419,16 @@ def usuarios_lista(request):
     for u in page_obj.object_list:
         em = (u.email or "").lower()
         st = stats_tickets.get(em) or {}
+        # "En línea" es en vivo: el navegador avisa cada poco y se guarda en
+        # `ultima_actividad`. `last_login` queda como respaldo para los que
+        # aún no han enviado ni un latido.
+        marca = u.ultima_actividad or u.last_login
         u.ficha = {
             "stats": st,
             "punto": punto_mas_comun.get(em, ""),
             "es_nuevo": bool(u.fecha_creacion and u.fecha_creacion >= hace_7d),
-            "en_linea": bool(u.last_login and u.last_login >= hace_10min),
-            "ultimo_acceso": u.last_login,
+            "en_linea": bool(marca and marca >= hace_10min),
+            "ultimo_acceso": marca,
             "registrado": u.fecha_creacion,
             "permisos": {
                 "es_staff": u.is_staff,
@@ -1357,19 +1437,10 @@ def usuarios_lista(request):
             "disponibilidad": disp_por_tec.get(u.pk, []),
             "eventos": evts_por_tec.get(u.pk, [])[:6],
         }
-        # Indicador junto al nombre: verde = activo con actividad reciente,
-        # gris = activo sin actividad, rojo = inactivo, sin punto = nunca ingresó.
-        ultimo_login = u.last_login
-        if ultimo_login is None:
-            u.ficha["dot"] = ""
-            u.ficha["dot_puede"] = False
-        elif not u.activo:
-            u.ficha["dot"] = "red"
-            u.ficha["dot_puede"] = False
-        else:
-            u.ficha["dot_puede"] = True
-            u.ficha["dot"] = "green" if u.ficha["en_linea"] else "gray"
-        u.ficha["acceso_label"] = _acceso_label(ultimo_login, ahora)
+        # Indicador junto al nombre: verde = conectado ahora mismo,
+        # amarillo = activo pero sin conexión, rojo = inactivo.
+        u.ficha.update(_indicador_cuenta(u, ahora))
+        u.ficha["acceso_label"] = _acceso_label(u.ficha["ultimo_acceso"], ahora)
         if u.rol in ("tecnico", "admin"):
             alertas = [
                 {
@@ -1519,16 +1590,21 @@ def usuarios_estado_api(request):
     """
     ids = [int(x) for x in request.GET.get("ids", "").split(",") if x.strip().isdigit()]
     ahora = timezone.now()
-    hace_10min = ahora - timedelta(minutes=10)
     hace_7d = ahora - timedelta(days=7)
     datos = {}
     for u in User.objects.filter(pk__in=ids):
+        # El navegador manda su latido, así que "en línea" es en vivo.
+        marca = u.ultima_actividad or u.last_login
+        estado = _indicador_cuenta(u, ahora)
         datos[str(u.pk)] = {
             "activo": u.activo,
             "es_staff": u.is_staff,
             "nuevo": bool(u.fecha_creacion and u.fecha_creacion >= hace_7d),
-            "en_linea": bool(u.last_login and u.last_login >= hace_10min),
-            "ultimo_acceso": u.last_login.isoformat() if u.last_login else None,
+            "en_linea": estado["dot"] == "green",
+            "dot": estado["dot"],
+            "dot_titulo": estado["dot_titulo"],
+            "nombre": u.nombre or u.email,
+            "ultimo_acceso": marca.isoformat() if marca else None,
         }
     return JsonResponse({"ok": True, "usuarios": datos})
 
@@ -1612,16 +1688,8 @@ def _ficha_usuario(u):
         "alertas": [],
     }
 
-    ultimo_login = u.last_login
-    if ultimo_login is None:
-        ficha["dot"] = ""
-        ficha["dot_puede"] = False
-    elif not u.activo:
-        ficha["dot"] = "red"
-        ficha["dot_puede"] = False
-    else:
-        ficha["dot_puede"] = True
-        ficha["dot"] = "green" if ficha["en_linea"] else "gray"
+    ultimo_login = u.ultima_actividad or u.last_login
+    ficha.update(_indicador_cuenta(u, ahora))
     ficha["acceso_label"] = _acceso_label(ultimo_login, ahora)
 
     if u.rol in ("tecnico", "admin"):
@@ -2181,6 +2249,7 @@ def mi_panel(request):
     )
 
 
+@sin_observador
 @login_required
 def crear_ticket(request):
     """
@@ -2327,6 +2396,7 @@ def mi_ticket(request, pk):
     )
 
 
+@sin_observador
 @user_required
 @require_POST
 def responder_ticket(request, pk):
@@ -2348,7 +2418,7 @@ def responder_ticket(request, pk):
         es_interno=False,
     )
 
-    notificar_comentario(ticket, request.user.nombre, comentario)
+    notificar_comentario(ticket, request.user.nombre, comentario, actor=request.user)
 
     if ticket.glpi_id:
         try:
@@ -2433,6 +2503,7 @@ def _url_vuelta(user, ticket) -> str:
     return reverse("tickets:mi_ticket", args=[ticket.pk])
 
 
+@sin_observador
 @login_required
 def editar_mi_ticket(request, pk):
     """El solicitante puede editar su ticket mientras siga abierto."""
@@ -2936,7 +3007,9 @@ def detalle_ticket(request, pk):
                 c.usuario = request.user
                 c.autor_nombre = request.user.nombre
                 c.save()
-                notificar_comentario(ticket, request.user.nombre, c.comentario, c.es_interno)
+                notificar_comentario(
+                    ticket, request.user.nombre, c.comentario, c.es_interno, actor=request.user
+                )
                 messages.success(request, "Seguimiento agregado")
                 return redirect("tickets:detalle", pk=pk)
         elif action == "asignar":
@@ -3377,7 +3450,7 @@ def mi_responder_ajax(request, pk):
         es_interno=False,
     )
 
-    notificar_comentario(ticket, request.user.nombre, comentario)
+    notificar_comentario(ticket, request.user.nombre, comentario, actor=request.user)
 
     notificado = False
     if ticket.glpi_id:
@@ -3993,7 +4066,7 @@ def panel_tecnico_chat_ajax(request, pk):
 
     notificado = False
     if not es_interno:
-        notificar_comentario(ticket, request.user.nombre, comentario)
+        notificar_comentario(ticket, request.user.nombre, comentario, actor=request.user)
         if ticket.glpi_id:
             try:
                 sync_followup_to_glpi(ticket, comentario)
@@ -4017,3 +4090,35 @@ def panel_tecnico_chat_ajax(request, pk):
             "texto": comentario,
         },
     })
+
+
+# =====================================================================
+# Manual de uso y categorías explicativas
+# =====================================================================
+@login_required
+def manual_uso(request):
+    """Manual de uso del aplicativo, abierto desde la configuración de cuenta."""
+    return render(request, "tickets/manual_uso.html", {"rol": getattr(request.user, "rol", "")})
+
+
+@login_required
+def categorias_publico(request):
+    """Categorías explicadas para el usuario: qué hace cada una y cuándo usarla.
+
+    Es la versión de solo lectura del árbol que ve el administrador: sirve
+    para que cualquiera sepa en qué casillar reportar antes de crear el ticket.
+    """
+    arbol = Categoria.arbol()
+    for grupo in arbol:
+        for sub in grupo["subcategorias"]:
+            # La plantilla recibe el nombre de los técnicos que la atienden,
+            # para que el usuario sepa a quién le llega la solicitud.
+            sub.nombres_tecnicos = ", ".join(
+                u.nombre for u in sub.tecnicos.all() if u.activo
+            )
+    inactivas = list(Categoria.objects.filter(activo=False).order_by("grupo", "nombre"))
+    return render(
+        request,
+        "tickets/categorias_publico.html",
+        {"arbol": arbol, "inactivas": inactivas},
+    )

@@ -3,12 +3,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.conf import settings
 from django.contrib import messages
+from django.utils import timezone
 from django.core.mail import send_mail
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render, reverse
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.decorators.http import require_POST
+from datetime import timedelta
 import logging
 
 from .forms import (
@@ -64,6 +66,8 @@ class BaseRoleLoginView(LoginView):
     def get_success_url(self):
         user = self.request.user
         rol = getattr(user, "rol", None)
+        if rol == "observador":
+            return reverse_lazy("tickets:obs_panel")
         if rol == "usuario":
             return reverse_lazy("tickets:mi_panel")
         if rol == "tecnico":
@@ -149,6 +153,43 @@ def ajustes_cuenta(request):
 
         ctx["config_sitio"] = ConfigSitio.cargar()
     return render(request, "accounts/ajustes.html", ctx)
+
+
+@login_required
+@require_POST
+def tour_preferencia(request):
+    """Activa o desactiva el tour guiado de la cuenta.
+
+    Se llama desde los ajustes y también desde el propio tour, para poder
+    apagarlo sin tener que buscarlo en la configuración.
+    """
+    user = request.user
+    accion = request.POST.get("accion", "")
+    if accion == "activar":
+        user.tour_habilitado = True
+        user.tour_visto = False
+        mensaje = "El tour guiado quedo activado para tu cuenta."
+    elif accion == "desactivar":
+        user.tour_habilitado = False
+        mensaje = "El tour guiado quedo desactivado."
+    else:
+        # Sin accion explicita se invierte el estado actual.
+        user.tour_habilitado = not user.tour_habilitado
+        if user.tour_habilitado:
+            user.tour_visto = False
+        mensaje = (
+            "El tour guiado quedo activado."
+            if user.tour_habilitado
+            else "El tour guiado quedo desactivado."
+        )
+    user.save(update_fields=["tour_habilitado", "tour_visto"])
+    if request.POST.get("ajax") == "1":
+        return JsonResponse(
+            {"ok": True, "tour_habilitado": user.tour_habilitado}
+        )
+    messages.success(request, mensaje)
+    destino = request.POST.get("next") or reverse("accounts:ajustes")
+    return redirect(destino)
 
 
 @login_required
@@ -487,3 +528,47 @@ def configuracion_pagina(request):
     cfg.save()
     messages.success(request, "Configuración de la página actualizada.")
     return redirect(reverse("accounts:ajustes") + "#pagina")
+
+
+# =====================================================================
+# Presencia en tiempo real: latido del navegador y consulta de estados
+# =====================================================================
+@login_required
+@require_POST
+def latido(request):
+    """El navegador avisa que sigue aquí y guardamos la hora.
+
+    Se llama cada pocos segundos mientras la pestaña está visible. Con esa
+    marca el administrador ve el punto verde/rojo al día, y el propio
+    usuario aparece como conectado en la vista de observador.
+    """
+    Usuario.objects.filter(pk=request.user.pk).update(ultima_actividad=timezone.now())
+    return JsonResponse({"ok": True})
+
+
+@login_required
+def presencia(request):
+    """Devuelve quién está conectado ahora mismo, para refrescar los puntos.
+
+    Acepta `ids` separados por comas (los que hay pintados en pantalla) y
+    opcionalmente `punto` para el módulo del observador. La respuesta es
+    ligera: solo el estado, sin datos personales.
+    """
+    ids = [int(x) for x in request.GET.get("ids", "").split(",") if x.strip().isdigit()]
+    ahora = timezone.now()
+    desde = ahora - timedelta(minutes=5)
+
+    consulta = Usuario.objects.filter(is_active=True)
+    if ids:
+        consulta = consulta.filter(pk__in=ids)
+    else:
+        consulta = consulta.filter(pk__in=[])  # sin ids no se devuelve nada
+
+    en_linea = set(
+        consulta.filter(ultima_actividad__gte=desde).values_list("pk", flat=True)
+    )
+    return JsonResponse({
+        "ok": True,
+        "en_linea": sorted(en_linea),
+        "consultado": timezone.now().isoformat(),
+    })

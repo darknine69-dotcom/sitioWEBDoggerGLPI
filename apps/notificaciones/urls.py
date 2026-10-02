@@ -9,4 +9,5 @@ urlpatterns = [
     path("descartar/", views.descartar_todas, name="descartar_todas"),
     path("<int:pk>/quitar/", views.descartar, name="descartar_una"),
     path("<int:pk>/mostrada/", views.marcar_mostrada, name="marcar_mostrada"),
+    path("api/", views.api, name="api"),
 ]

@@ -11,9 +11,12 @@ from .views import (
     descartar_aviso,
     glpi_pull_perfil,
     glpi_push_avatar,
+    latido,
     perfil_usuario,
+    presencia,
     restablecer_password,
     solicitar_reset,
+    tour_preferencia,
 )
 
 app_name = "accounts"
@@ -27,6 +30,9 @@ urlpatterns = [
     path("ajustes/", ajustes_cuenta, name="ajustes"),
     path("ajustes/configuracion-pagina/", configuracion_pagina, name="configuracion_pagina"),
     path("perfil/", perfil_usuario, name="perfil"),
+    path("tour/preferencia/", tour_preferencia, name="tour_preferencia"),
+    path("latido/", latido, name="latido"),
+    path("presencia/", presencia, name="presencia"),
     path("cambiar-password/", cambiar_password, name="cambiar_password"),
     path("cambiar-password-forzado/", cambiar_password_forzado, name="cambiar_password_forzado"),
     path("descartar-aviso/", descartar_aviso, name="descartar_aviso"),

@@ -1,4 +1,11 @@
 <div class="ue-ficha-meta">
+    {# Circulo de presencia en vivo: verde conectado, amarillo activo sin
+       conexion, rojo inactivo. El JS lo refresca con el endpoint de estado. #}
+    <span class="ue-ficha-presencia" title="{{ u.ficha.dot_titulo|default:'Presencia' }}">
+        <span class="ue-dot {{ u.ficha.dot }}" id="ue-dot-f-{{ u.pk }}" data-uid="{{ u.pk }}"
+              data-estado="{{ u.ficha.dot }}"></span>
+        {{ u.ficha.dot_titulo|default:"" }}
+    </span>
     <span class="ue-ficha-meta-item"><b>{{ u.nombre }}</b></span>
     {% if u.glpi_user_id %}<span class="ue-ficha-meta-item">ID GLPI <b>{{ u.glpi_user_id }}</b></span>{% endif %}
     <span class="ue-ficha-meta-item">Estado <b class="{% if not u.activo %}meta-off{% endif %}">{% if u.activo %}Activa{% else %}Inactiva{% endif %}</b></span>
