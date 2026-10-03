@@ -19,6 +19,12 @@
         root.setAttribute('data-contrast', g('dogger:pv:contrast') || 'normal');
         root.setAttribute('data-navcompact', g('dogger:pv:navcompact') === '1' ? '1' : '0');
         root.setAttribute('data-navicons', g('dogger:pv:navicons') === '0' ? '0' : '1');
+        /* Color del menú lateral: la paleta elegida o, si hay uno, el color
+           personalizado. Se aplica aquí para que no se vea el color anterior. */
+        var paleta = g('dogger:pv:navpalette');
+        var color = g('dogger:pv:navcolor');
+        if (paleta) root.setAttribute('data-navpalette', paleta);
+        if (color && /^#[0-9a-f]{6}$/i.test(color)) root.style.setProperty('--sb-accent', color);
     })();
     </script>
     <link rel="stylesheet" href="{% asset 'css/dogger-theme.css' %}">
@@ -277,7 +283,28 @@
             </div>
         </nav>
 
-        <div class="sidebar-foot">
+    </aside>
+
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
+    {% endif %}
+
+    {% comment %}Una sola cabecera para todos: cambia de aspecto segun haya sesion,
+    pero los bloques de titulo se escriben una unica vez.{% endcomment %}
+    <header class="{% if request.user.is_authenticated %}topbar{% else %}brand-header{% endif %}">
+        {% if request.user.is_authenticated %}
+        {% comment %}Encabezado superior: va POR ENCIMA del título de la vista y
+        sostiene el acceso del usuario, el badge de la cuenta y la campana.{% endcomment %}
+        <div class="topbar-top">
+            <a class="account-badge" href="{% url 'tickets:portal' %}" aria-label="Ir al inicio">
+                <img class="account-logo" src="{% static 'images/dogger-logo.png' %}" alt="Dogger">
+                <span class="account-badge-txt">
+                    <strong>Dogger</strong>
+                    <small>Mesa de Ayuda TI</small>
+                </span>
+            </a>
+            <div class="topbar-account">
+                <span class="account-rol" data-rol="{{ request.user.rol }}">{{ request.user.get_rol_display }}</span>
             {% include "notificaciones/_campana.html" %}
             <div class="user-chip-wrap">
                 <button type="button" class="user-chip" data-rol="{{ request.user.rol }}" id="userChipToggle" aria-expanded="false" aria-haspopup="true">
@@ -319,16 +346,10 @@
                     </form>
                 </div>
             </div>
+            </div>
         </div>
-    </aside>
-
-    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
-
-    {% endif %}
-
-    {% comment %}Una sola cabecera para todos: cambia de aspecto segun haya sesion,
-    pero los bloques de titulo se escriben una unica vez.{% endcomment %}
-    <header class="{% if request.user.is_authenticated %}topbar{% else %}brand-header{% endif %}">
+        {% endif %}
+        <div class="header-row">
         {% if request.user.is_authenticated %}
         <button type="button" class="topbar-burger" id="sidebarBurger" aria-label="Abrir menú" aria-expanded="false">
             <span class="nav-toggle-bar"></span>
@@ -356,6 +377,7 @@
             <a href="{% url 'accounts:login_staff' %}" class="btn btn-outline-light btn-sm">Acceso personal TIC</a>
             {% endif %}
             {% block header_actions %}{% endblock %}
+        </div>
         </div>
     </header>
     {% endblock %}

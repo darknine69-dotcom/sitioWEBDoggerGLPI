@@ -95,6 +95,41 @@
 .prof-radio input:checked + .prof-radio-box svg { color: var(--dogger-red); }
 .prof-radio input:focus-visible + .prof-radio-box { outline: 2px solid var(--dogger-red); outline-offset: 2px; }
 
+/* ---- Paletas del menú lateral ---- */
+.prof-paletas { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 2px; }
+.prof-paleta {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 13px 7px 9px;
+    border: 1.5px solid var(--line); border-radius: 999px;
+    background: #FBFAF7; color: var(--ink-muted);
+    font-family: var(--font-body); font-size: 12.5px; font-weight: 700;
+    cursor: pointer; transition: border-color .15s, background .15s, color .15s;
+}
+.prof-paleta:hover { border-color: var(--dogger-red); color: var(--ink); }
+.prof-paleta.is-on {
+    border-color: var(--dogger-red); background: #FFF6F4; color: var(--ink);
+    box-shadow: 0 3px 10px rgba(214,43,31,.10);
+}
+.prof-paleta:focus-visible { outline: 2px solid var(--dogger-red); outline-offset: 2px; }
+.prof-paleta-dot {
+    width: 18px; height: 18px; flex: none; border-radius: 50%;
+    background: var(--c); border: 1px solid rgba(0,0,0,.12);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
+}
+.prof-paleta-name { white-space: nowrap; }
+.prof-color { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+.prof-color input[type="color"] {
+    width: 42px; height: 34px; padding: 2px; cursor: pointer;
+    border: 1.5px solid var(--line); border-radius: 9px; background: #fff;
+}
+.prof-color input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.prof-color input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
+.prof-color code {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 12px; font-weight: 700; color: var(--ink-muted);
+    padding: 6px 9px; border-radius: 8px; background: #FBFAF7; border: 1px solid var(--line);
+}
+
 /* ---- Filas de preferencias ---- */
 .prof-row {
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -300,6 +335,43 @@
                     <div class="prof-row-label"><b>Mostrar iconos</b><small>Muestra los iconos junto a cada pestaña.</small></div>
                     <label class="switch"><input type="checkbox" id="prefNavIcons" checked><span class="slider"></span></label>
                 </div>
+
+                {% comment %}Personalización del menú lateral: paleta y color propio.{% endcomment %}
+                <div class="settings-panel-header">
+                    <h3>Color del menú lateral</h3>
+                    <p>Elige una de las paletas o pon el color que quieras. Se aplica al instante en todas las páginas.</p>
+                </div>
+                <div class="prof-paletas" id="prefPaletas" role="radiogroup" aria-label="Paleta del menú lateral">
+                    <button type="button" class="prof-paleta" data-palette="dogger" data-color="#D62B1F" role="radio" aria-checked="true" title="Dogger">
+                        <span class="prof-paleta-dot" style="--c:#D62B1F"></span><span class="prof-paleta-name">Dogger</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="azul" data-color="#1F6FD6" role="radio" aria-checked="false" title="Azul">
+                        <span class="prof-paleta-dot" style="--c:#1F6FD6"></span><span class="prof-paleta-name">Azul</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="indigo" data-color="#4B4BC4" role="radio" aria-checked="false" title="Índigo">
+                        <span class="prof-paleta-dot" style="--c:#4B4BC4"></span><span class="prof-paleta-name">Índigo</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="esmeralda" data-color="#0F8A5F" role="radio" aria-checked="false" title="Esmeralda">
+                        <span class="prof-paleta-dot" style="--c:#0F8A5F"></span><span class="prof-paleta-name">Esmeralda</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="ambar" data-color="#B4740A" role="radio" aria-checked="false" title="Ámbar">
+                        <span class="prof-paleta-dot" style="--c:#B4740A"></span><span class="prof-paleta-name">Ámbar</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="rosa" data-color="#C02A6B" role="radio" aria-checked="false" title="Rosa">
+                        <span class="prof-paleta-dot" style="--c:#C02A6B"></span><span class="prof-paleta-name">Rosa</span>
+                    </button>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label">
+                        <b>Color personalizado</b>
+                        <small>Toma el control del tono. Elige una paleta para volver al color de la empresa.</small>
+                    </div>
+                    <div class="prof-color">
+                        <input type="color" id="prefNavColor" value="#D62B1F" aria-label="Color personalizado del menú">
+                        <code id="prefNavColorHex">#D62B1F</code>
+                        <button type="button" class="btn btn-outline btn-sm" id="prefNavColorClear">Quitar</button>
+                    </div>
+                </div>
             </section>
         </div>
     </div>
@@ -417,6 +489,75 @@
     navIcons.addEventListener("change", function () {
         s("dogger:pv:navicons", navIcons.checked ? "1" : "0");
         setAttr("data-navicons", navIcons.checked ? "1" : "0");
+        saved();
+    });
+
+    /* Color del menú lateral: paletas y color propio.
+       El color propio se guarda aparte y manda sobre la paleta, así que
+       quitarlo devuelve el menú al color de la paleta elegida. */
+    var paletas = Array.prototype.slice.call(document.querySelectorAll("#prefPaletas .prof-paleta"));
+    var pinColor = document.getElementById("prefNavColor");
+    var hexColor = document.getElementById("prefNavColorHex");
+    var quitarColor = document.getElementById("prefNavColorClear");
+
+    function marcarPaleta(nombre) {
+        paletas.forEach(function (b) {
+            var	on = b.getAttribute("data-palette") === nombre;
+            b.classList.toggle("is-on", on);
+            b.setAttribute("aria-checked", on ? "true" : "false");
+        });
+    }
+    function borrarColorGuardado() {
+        try { localStorage.removeItem("dogger:pv:navcolor"); } catch (e) {}
+    }
+    function mostrarColor(hexa) {
+        pinColor.value = hexa;
+        hexColor.textContent = hexa.toUpperCase();
+    }
+    function elegirPaleta(boton) {
+        var nombre = boton.getAttribute("data-palette");
+        root.setAttribute("data-navpalette", nombre);
+        root.style.removeProperty("--sb-accent");
+        borrarColorGuardado();
+        s("dogger:pv:navpalette", nombre);
+        mostrarColor(boton.getAttribute("data-color"));
+        marcarPaleta(nombre);
+        saved();
+    }
+    function ponerColorPropio(hexa) {
+        root.style.setProperty("--sb-accent", hexa);
+        borrarColorGuardado();
+        try { localStorage.removeItem("dogger:pv:navpalette"); } catch (e) {}
+        s("dogger:pv:navcolor", hexa);
+        mostrarColor(hexa);
+        marcarPaleta("");
+    }
+
+    /* El script de la cabecera ya aplicó el color guardado: aquí solo se
+       refleja en los controles y se deja el estado inicial listo. */
+    var paletaGuardada = g("dogger:pv:navpalette");
+    var colorGuardado = g("dogger:pv:navcolor");
+    if (colorGuardado && /^#[0-9a-f]{6}$/i.test(colorGuardado)) {
+        mostrarColor(colorGuardado);
+        marcarPaleta("");
+    } else {
+        var inicial = paletaGuardada || "dogger";
+        marcarPaleta(inicial);
+        paletas.forEach(function (b) {
+            if (b.getAttribute("data-palette") === inicial) mostrarColor(b.getAttribute("data-color"));
+        });
+    }
+    paletas.forEach(function (b) {
+        b.addEventListener("click", function () { elegirPaleta(b); });
+    });
+    pinColor.addEventListener("input", function () { ponerColorPropio(pinColor.value); });
+    pinColor.addEventListener("change", function () { ponerColorPropio(pinColor.value); saved(); });
+    quitarColor.addEventListener("click", function () {
+        root.style.removeProperty("--sb-accent");
+        borrarColorGuardado();
+        var actual = root.getAttribute("data-navpalette") || "dogger";
+        if (actual) s("dogger:pv:navpalette", actual);
+        marcarPaleta(actual);
         saved();
     });
 

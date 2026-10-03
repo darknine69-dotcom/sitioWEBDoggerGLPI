@@ -6375,6 +6375,17 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
    y cajón deslizante en pantallas pequeñas.
    ===================================================================== */
 
+/* ---- Paleta del menú lateral ----
+   Se elige en Perfil › Navegación. "dogger" es el color de siempre; las demás
+   paletas solo cambian el acento. Un color personalizado se aplica con una
+   variable en línea sobre <html>, por eso tiene prioridad sobre la paleta. */
+:root { --sb-accent: #D62B1F; }
+html[data-navpalette="azul"]      { --sb-accent: #1F6FD6; }
+html[data-navpalette="indigo"]    { --sb-accent: #4B4BC4; }
+html[data-navpalette="esmeralda"] { --sb-accent: #0F8A5F; }
+html[data-navpalette="ambar"]     { --sb-accent: #B4740A; }
+html[data-navpalette="rosa"]      { --sb-accent: #C02A6B; }
+
 /* El margen del contenido solo existe si la página trae sidebar; el portal
    y las páginas públicas reescriben el bloque header y no lo tienen. */
 body:has(> .sidebar) { padding-left: 272px; }
@@ -6487,7 +6498,9 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
 .sidebar-link + .sidebar-link { margin-top: 2px; }
 .sidebar-link:hover { background: rgba(255, 255, 255, .06); color: #fff; }
 .sidebar-link.is-active {
-  background: linear-gradient(90deg, rgba(214, 43, 31, .26), rgba(214, 43, 31, .04));
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--sb-accent) 30%, transparent),
+    color-mix(in srgb, var(--sb-accent) 5%, transparent));
   color: #fff;
 }
 .sidebar-link.is-active::before {
@@ -6498,7 +6511,7 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   bottom: 8px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--dogger-red);
+  background: var(--sb-accent);
 }
 .sidebar-ico {
   flex: none;
@@ -6516,7 +6529,7 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   min-width: 22px;
   padding: 2px 7px;
   border-radius: 999px;
-  background: var(--dogger-red);
+  background: var(--sb-accent);
   color: #fff;
   font-size: 10.5px;
   font-weight: 800;
@@ -6550,14 +6563,85 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   top: 0;
   z-index: 80;
   display: flex;
-  align-items: center;
-  gap: 14px;
-  min-height: 66px;
-  padding: 10px 24px;
+  flex-direction: column;
+  align-items: stretch;
   background: color-mix(in srgb, var(--dogger-paper) 92%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
+/* La cabecera pública no usa dos filas: su .header-row se transparenta para
+   que el marcado antiguo se conserve tal cual. */
+.brand-header > .header-row { display: contents; }
+.topbar > .header-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 66px;
+  padding: 10px 24px;
+}
+
+/* ---- Encabezado superior: acceso del usuario, badge de cuenta y campana ---- */
+.topbar-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 24px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--dogger-paper) 96%, var(--sb-accent) 4%);
+}
+.account-badge {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  text-decoration: none;
+  color: var(--ink);
+}
+.account-logo {
+  width: 27px;
+  height: 27px;
+  flex: none;
+  object-fit: contain;
+  padding: 3px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.account-badge-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.account-badge-txt strong {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.account-badge-txt small {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.topbar-account { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.account-rol {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--sb-accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+/* La tarjeta del usuario pasa del fondo oscuro al claro, así que recupera
+   sus propios colores en vez de los que tenía sobre el sidebar. */
+.topbar .user-chip { background: #fff; border-color: var(--line); color: var(--ink); }
+.topbar .user-chip:hover { background: var(--dogger-cream); border-color: var(--sb-accent); }
+.topbar .user-chip small { color: var(--ink-muted); opacity: 1; }
+.topbar .user-chip-chevron { stroke: var(--ink-muted); }
 .topbar-titles { min-width: 0; }
 .topbar-titles .eyebrow {
     margin: 0;
@@ -6609,8 +6693,6 @@ html[data-navcompact="1"] .sidebar-brand { justify-content: center; flex: none; 
 html[data-navcompact="1"] .sidebar-brand-txt,
 html[data-navcompact="1"] .sidebar-group-title,
 html[data-navcompact="1"] .sidebar-label,
-html[data-navcompact="1"] .sidebar-foot .user-chip-text,
-html[data-navcompact="1"] .sidebar-foot .user-chip-chevron { display: none; }
 html[data-navcompact="1"] .sidebar-link { justify-content: center; padding: 11px 0; }
 html[data-navcompact="1"] .sidebar-link.is-active::before { left: -12px; }
 html[data-navcompact="1"] .sidebar-ico { display: block; }
@@ -6622,9 +6704,6 @@ html[data-navcompact="1"] .sidebar-count {
   padding: 1px 5px;
   font-size: 9.5px;
 }
-html[data-navcompact="1"] .sidebar-foot { justify-content: center; padding: 10px 8px 14px; }
-html[data-navcompact="1"] .sidebar-foot .user-chip-wrap { flex: none; }
-html[data-navcompact="1"] .sidebar-foot .user-chip { padding: 4px; }
 html[data-navcompact="1"] .sidebar-toggle { position: absolute; top: 68px; right: 8px; z-index: 2; }
 
 /* Aviso emergente al pasar el ratón por un icono plegado. */
@@ -6669,6 +6748,8 @@ html[data-navcompact="1"] .sidebar-link:hover::after { opacity: 1; }
   }
   .sidebar.is-open { transform: none; box-shadow: 0 0 70px rgba(0, 0, 0, .5); }
   .topbar-burger { display: flex; }
+  .topbar-top { padding: 6px 16px; }
+  .topbar > .header-row { padding: 10px 16px; }
   /* En el cajón siempre va completo: el ancho completo es lo cómodo al navegar. */
   html[data-navcompact="1"] body:has(> .sidebar) { padding-left: 0; }
   html[data-navcompact="1"] .sidebar { width: 272px; }
@@ -6678,15 +6759,28 @@ html[data-navcompact="1"] .sidebar-link:hover::after { opacity: 1; }
   html[data-navcompact="1"] .sidebar-group-title { display: block; }
   html[data-navcompact="1"] .sidebar-label { display: block; }
   html[data-navcompact="1"] .sidebar-link { justify-content: flex-start; padding: 10px 12px; }
-  html[data-navcompact="1"] .sidebar-foot { justify-content: flex-start; padding: 10px 12px 14px; }
-  html[data-navcompact="1"] .sidebar-foot .user-chip-wrap { flex: 1; }
-  html[data-navcompact="1"] .sidebar-foot .user-chip { padding: 5px 10px; }
   html[data-navcompact="1"] .sidebar-toggle { position: static; }
   html[data-navcompact="1"] .sidebar-link::after { display: none; }
 }
 
 @media (max-width: 560px) {
-  .topbar { min-height: 58px; padding: 8px 14px; gap: 10px; }
+  /* El padding vive en la fila del título, no en el contenedor del encabezado. */
+  .topbar { gap: 0; }
+  .topbar > .header-row { min-height: 58px; padding: 8px 14px; gap: 10px; }
   .topbar-titles h1 { font-size: 16.5px; }
   .topbar-titles .eyebrow { font-size: 10px; }
+}
+
+/* En pantallas estrechas el encabezado superior se queda con lo imprescindible:
+   el logo, la inicial del rol, la campana y el avatar. */
+@media (max-width: 720px) {
+  .account-badge-txt { display: none; }
+  .topbar-account { gap: 8px; }
+  .account-rol {
+    max-width: 26px; padding: 3px 7px; overflow: hidden;
+    text-overflow: ellipsis; letter-spacing: 0;
+  }
+  .topbar .user-chip-text { display: none; }
+  .topbar .user-chip { padding: 4px; }
+  .topbar .user-chip-chevron { display: none; }
 }
