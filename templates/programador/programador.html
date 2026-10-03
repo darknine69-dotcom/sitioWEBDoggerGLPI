@@ -160,8 +160,10 @@
     </div>
 </div>
 
-{# Biblioteca de campos. Vive FUERA del <form>: JS mete en el formulario solo
-   los que corresponden al tipo elegido, asi los demas no se envian. #}
+{% comment %}
+    Biblioteca de campos. Vive FUERA del <form>: JS mete en el formulario solo
+    los que corresponden al tipo elegido, asi los demas no se envian.
+{% endcomment %}
 <div id="evBiblioteca" hidden>
     <datalist id="evSitios">
         {% for s in sitios %}<option value="{{ s }}">{% endfor %}

@@ -573,8 +573,10 @@
     {% endwith %}
     {% endif %}
 
-    {# ---- Tour guiado: se muestra una vez por cuenta y se puede repetir
-       o apagar desde Ajustes -> Ayuda y tour. ---- #}
+    {% comment %}
+        Tour guiado: se muestra una vez por cuenta y se puede repetir o apagar
+        desde Ajustes -> Ayuda y tour.
+    {% endcomment %}
     {% if request.user.is_authenticated and request.user.tour_habilitado and not request.user.tour_visto %}
     <div class="tour-overlay" id="tourOverlay" hidden>
         <div class="tour-bubble" id="tourBubble" role="dialog" aria-modal="true" aria-labelledby="tourTitulo">
