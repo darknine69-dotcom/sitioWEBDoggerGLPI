@@ -2891,16 +2891,18 @@ select:focus-visible, textarea:focus-visible {
 }
 /* Contador de pendientes de cada entrada del menú, encima del texto */
 .nav-count {
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
+    /* El contador va a la derecha del ítem, no encima del icono: así se lee
+       de un vistazo al final de la etiqueta. */
+    position: static;
+    order: 9;
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 17px;
     height: 15px;
     padding: 0 4px;
+    margin-left: auto;
     border-radius: 8px;
     background: #B7791F;
     color: #fff;
@@ -2910,12 +2912,12 @@ select:focus-visible, textarea:focus-visible {
     line-height: 1;
     letter-spacing: -.2px;
     pointer-events: none;
-    box-shadow: 0 0 0 2px var(--dogger-paper);
+    box-shadow: none;
 }
 .nav-count[data-nivel="alto"] { background: var(--dogger-red); }
 .nav-count[data-nivel="bajo"] { background: #2F7D4F; }
 .nav-link:hover .nav-count,
-.nav-link.is-active .nav-count { box-shadow: 0 0 0 2px #FFFFFF; }
+.nav-link.is-active .nav-count { box-shadow: none; }
 .nav-link.is-active .nav-count { background: var(--dogger-red); }
 .nav-count-sr {
     position: absolute;
@@ -3207,6 +3209,9 @@ select:focus-visible, textarea:focus-visible {
     font-size: 13.5px;
     line-height: 1.5;
     color: #475569;
+    /* Los avisos de confirmación traen saltos de línea para separar el
+       qué pasa del "¿continuar?". */
+    white-space: pre-line;
 }
 .confirm-actions {
     display: flex;

@@ -320,12 +320,6 @@ _LABEL_MODO = {
 }
 
 
-# Una solicitud resuelta queda tambien marcada como cerrada: estos son los
-# estados con los que ya no esta pendiente de atencion. El filtro de
-# "resueltas" trae los dos.
-ESTADOS_TERMINADOS = (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
-
-
 _DIAS_SEMANA = ("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
 
 # --- Ámbitos de los desplegables de las tarjetas --------------------------
@@ -337,7 +331,9 @@ _ALCANCES_TORTAS = (
     ("abiertas", "Abiertas", (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)),
     ("en_progreso", "En progreso", (Ticket.Estado.EN_PROGRESO,)),
     # "Resueltas" junta lo ya terminado: resueltas y cerradas.
-    ("resueltos", "Resueltas", ESTADOS_TERMINADOS),
+    # "Resueltas" ya no es un estado guardado sino la marca de resolución,
+    # así que no agrupa estados: se resuelve aparte en `_filtrar_estado`.
+    ("resueltos", "Resueltas", ()),
     ("cerrados", "Cerradas", (Ticket.Estado.CERRADO,)),
     ("eliminados", "Eliminadas", ()),
     ("todas", "Todas", ()),
@@ -436,6 +432,9 @@ def _build_tecnico_dashboard(tecnico_id=None):
             return list(papelera)
         if alcance == "todas":
             return base + list(papelera) if con_papelera else base
+        if alcance == "resueltos":
+            # Resuelto ya no es un estado guardado: se busca la marca.
+            return [t for t in base if t.fecha_resolucion or t.estado == Ticket.Estado.RESUELTO]
         estados = dict((k, e) for k, _, e in _ALCANCES_TORTAS)[alcance]
         return [t for t in base if t.estado in estados]
 
@@ -870,9 +869,6 @@ def _reportes_metricas_kpis(tickets):
         "en_progreso": en_progreso,
         "resueltos": resueltos,
         "cerrados": cerrados,
-        # El filtro de resueltas trae las dos, asi que el chip que lo enlaza
-        # muestra la suma. "resueltos" y "cerrados" se siguen usando sueltos
-        # para el desglose y el total.
         "resueltos_cerrados": resueltos + cerrados,
         "vencidos": vencidos,
         "sla_ok": sla_ok,
@@ -1069,15 +1065,16 @@ def reportes(request):
 def _filtrar_estado(qs, estado):
     """Aplica el filtro de estado de las listas.
 
-    "Resuelto" es un estado en si mismo, pero una solicitud resuelta tambien
-    se marca como cerrada. Por eso el filtro de resueltas trae las dos, y no
-    solo las que siguen con el estado literal "resuelto" (que son pocas y
-    hacian que el filtro pareciera vacio).
+    "Resuelto" ya no es un estado que quede en el ticket: al marcarlo
+    resuelto se cierra y queda registrada la fecha (`fecha_resolucion`). Por
+    eso el filtro busca esa marca y no el estado literal, que solo queda en
+    los tickets antiguos. Un ticket cerrado sin marca se cerró directo y no
+    cuenta como resuelto.
     """
     if not estado:
         return qs
     if estado == Ticket.Estado.RESUELTO:
-        return qs.filter(estado__in=ESTADOS_TERMINADOS)
+        return qs.filter(Q(fecha_resolucion__isnull=False) | Q(estado=Ticket.Estado.RESUELTO))
     return qs.filter(estado=estado)
 
 
@@ -2198,9 +2195,13 @@ def mi_panel(request):
         "total": total_qs,
         "abiertos": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.ABIERTO).count(),
         "en_progreso": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.EN_PROGRESO).count(),
+        # El KPI "Resueltas" enlaza al filtro de resueltas, así que cuenta lo
+        # mismo: los que tienen la marca de resolución, no las cerradas tal
+        # cual (una se puede cerrar sin haber pasado por "marcar resuelto").
         "resueltos": Ticket.objects.filter(
-            solicitante_email=request.user.email,
-            estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO],
+            solicitante_email=request.user.email
+        ).filter(
+            Q(fecha_resolucion__isnull=False) | Q(estado=Ticket.Estado.RESUELTO)
         ).count(),
     }
     pp_mp = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
@@ -2824,9 +2825,9 @@ def lista_tickets(request):
     stats = scope_qs.aggregate(
         abiertas=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
         progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
-        # El filtro de resueltas trae resueltas y cerradas, asi que el chip
-        # suma las dos para no prometer menos de lo que realmente lista.
-        resueltas=Count("pk", filter=Q(estado__in=ESTADOS_TERMINADOS)),
+        # El chip cuenta lo mismo que el filtro "Resueltas": los que tienen
+        # la marca de resolución.
+        resueltas=Count("pk", filter=Q(fecha_resolucion__isnull=False)),
         cerradas=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
     )
     stats["sin_asignar"] = (
@@ -3069,15 +3070,26 @@ def cambiar_estado(request, pk):
     if nuevo not in validos:
         messages.error(request, "Estado no valido.")
     else:
-        ticket.estado = nuevo
+        if nuevo == Ticket.Estado.RESUELTO:
+            # Marcar resuelto cierra el ticket: queda registrado que se
+            # resolvió y desde cuándo, y el solicitante lo ve cerrado. Por eso
+            # no se puede reabrir como "resuelto" sin volver a cerrarse.
+            ticket.estado = Ticket.Estado.CERRADO
+            ticket.fecha_resolucion = timezone.now()
+        else:
+            ticket.estado = nuevo
         ticket.save()
+        if nuevo == Ticket.Estado.RESUELTO:
+            aviso = f"{ticket.codigo} quedó resuelto y cerrado."
+        else:
+            aviso = f"{ticket.codigo} → {ticket.get_estado_display()}"
         notificar_ticket_actualizado(ticket, f"cambiado a {ticket.get_estado_display()}", actor=request.user)
         try:
             sync_estado_to_glpi(ticket)
         except GlpiError as exc:
             messages.warning(request, f"No se pudo actualizar el estado en GLPI: {exc}")
             logger.warning("GLPI estado sync: %s", exc)
-        messages.success(request, f"{ticket.codigo} → {ticket.get_estado_display()}")
+        messages.success(request, aviso)
     next_url = request.POST.get("next") or "tickets:lista"
     if next_url.startswith("/"):
         return redirect(next_url)
@@ -3291,6 +3303,9 @@ def mi_ticket_info_ajax(request, pk):
                 "solicitante_punto": ticket.solicitante_punto,
                 "estado": ticket.estado,
                 "estado_label": ticket.get_estado_display(),
+                # El JS refresca los distintivos solo: necesita saber si hubo
+                # un "marcar resuelto" para pintar los dos.
+                "resuelto": ticket.fue_resuelto,
                 "fecha": ticket.fecha_creacion.strftime("%d/%m/%Y %H:%M") if ticket.fecha_creacion else "",
                 "editable": ticket.estado == ticket.Estado.ABIERTO,
                 "cerrable": ticket.estado in (ticket.Estado.ABIERTO, ticket.Estado.EN_PROGRESO),
@@ -3507,7 +3522,7 @@ def panel_tecnico(request):
         total=Count("id"),
         abiertos=Count("id", filter=Q(estado=Ticket.Estado.ABIERTO)),
         en_progreso=Count("id", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
-        resueltos=Count("id", filter=Q(estado__in=ESTADOS_TERMINADOS)),
+        resueltos=Count("id", filter=Q(fecha_resolucion__isnull=False)),
         cerrados=Count("id", filter=Q(estado=Ticket.Estado.CERRADO)),
     )
     chart_context = _build_chart_context(
@@ -3839,7 +3854,7 @@ def panel_tecnico_lote(request):
             if t.estado == Ticket.Estado.CERRADO:
                 continue
             t.estado = Ticket.Estado.CERRADO
-            t.save(update_fields=["estado", "fecha_cierre", "fecha_actualizacion"])
+            t.save(update_fields=["estado", "fecha_cierre", "fecha_resolucion", "fecha_actualizacion"])
             notificar_ticket_actualizado(t, "cambiado a Cerrado")
             try:
                 sync_estado_to_glpi(t)

@@ -930,6 +930,10 @@
 
     /* ---- Arranque del refresco automático ---- */
     if (URL_API) {
+        // Al entrar, lo que ya se está viendo pasa a leído: el contador se
+        // queda en 0 en vez de quedar activo hasta que alguien abra la campana.
+        // Los avisos siguen en la lista, solo dejan de contar como pendientes.
+        pedir(baseDe("data-url-todas"));
         // El intervalo es corto para que el contador no se sienta viejo.
         setInterval(refrescar, 12000);
         // Al volver a la pestaña se consulta de inmediato.

@@ -547,7 +547,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                             {% endif %}
                         </td>
                         <td data-label="Estado">
-                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}
                         </td>
                         <td data-label="Acciones" class="cell-actions">
                             <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}">Ver</a>
@@ -872,7 +872,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         <td data-label="Grupo">
                             {% if t.categoria %}{{ t.categoria.grupo }}{% else %}<span class="sin-asignar">—</span>{% endif %}
                         </td>
-                        <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}</td>
+                        <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
                         <td data-label="Vencimiento">
                             {% with info=t.info_ans %}
                             {% if info.0 %}
@@ -924,7 +924,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
            data-tecnico-pk="{{ t.tecnico_asignado_id|default:'' }}">
             <div class="corp-card-head">
                 <span class="table-code">{{ t.codigo }}</span>
-                {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+                {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}
             </div>
             <strong class="corp-card-title">{{ t.titulo }}</strong>
             {% with combinadas=t.combinadas %}{% if combinadas %}

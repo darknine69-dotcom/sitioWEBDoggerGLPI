@@ -113,7 +113,7 @@
                     </p>
                 </div>
             </div>
-            {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}
+            {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display resuelto=ticket.fue_resuelto cerrado=ticket.esta_cerrado %}
         </div>
 
         <div class="corp-detail-badges ticket-meta-row">

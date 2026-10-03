@@ -230,7 +230,7 @@
                     <span class="pap-sub">{{ t.solicitante_email }}</span>
                 </td>
                 <td data-label="Técnico">{% if t.tecnico_asignado %}{{ t.tecnico_asignado.nombre }}{% else %}<span class="pap-sub">Sin asignar</span>{% endif %}</td>
-                <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}</td>
+                <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
                 <td data-label="Eliminado" class="pap-date">
                     {{ t.eliminado_en|date:"d/m/Y H:i" }}
                     <span class="pap-sub">por {{ t.eliminado_por.nombre|default:"sistema" }}</span>

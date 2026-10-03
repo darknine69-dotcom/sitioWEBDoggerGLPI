@@ -164,6 +164,12 @@ class Ticket(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     fecha_cierre = models.DateTimeField(null=True, blank=True)
+    # Cuándo se marcó resuelto. Al resolver, el ticket queda cerrado, así que
+    # `estado` por sí solo no dice si hubo un "marcar resuelto" de por medio:
+    # un ticket se puede cerrar directamente desde abierto o en progreso. Este
+    # campo es lo que permite mostrar el distintivo "Resuelto" con verdad y
+    # filtrar por "Resueltas" sin incluir los que solo se cerraron.
+    fecha_resolucion = models.DateTimeField(null=True, blank=True)
     # --- Papelera: el borrado es lógico, se puede restaurar ---
     eliminado_en = models.DateTimeField(
         "Eliminado", null=True, blank=True, db_index=True
@@ -215,6 +221,20 @@ class Ticket(models.Model):
     def __str__(self):
         return f"{self.codigo} — {self.titulo}"
 
+    @property
+    def fue_resuelto(self):
+        """True si en algún momento se marcó resuelto.
+
+        Al resolver, el ticket se cierra, así que `estado` no lo dice: hace
+        falta la marca de `fecha_resolucion`. Los tickets antiguos que siguen
+        en estado "resuelto" también cuentan.
+        """
+        return bool(self.fecha_resolucion) or self.estado == self.Estado.RESUELTO
+
+    @property
+    def esta_cerrado(self):
+        return self.estado == self.Estado.CERRADO
+
     def save(self, *args, **kwargs):
         if not self.codigo:
             self.codigo = self._generar_codigo()
@@ -222,6 +242,11 @@ class Ticket(models.Model):
             self.fecha_cierre = timezone.now()
         if self.estado in (self.Estado.ABIERTO, self.Estado.EN_PROGRESO):
             self.fecha_cierre = None
+            # Al reabrir se pierde la marca de resolución: si vuelve a
+            # resolverse, se vuelve a registrar con la fecha de ese momento.
+            self.fecha_resolucion = None
+        if self.estado == self.Estado.RESUELTO and not self.fecha_resolucion:
+            self.fecha_resolucion = timezone.now()
         try:
             super().save(*args, **kwargs)
         except IntegrityError:
