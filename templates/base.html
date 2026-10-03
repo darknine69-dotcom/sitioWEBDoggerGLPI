@@ -283,6 +283,23 @@
             </div>
         </nav>
 
+        {% comment %}Identidad de la cuenta al pie del menú: se ve igual en todas
+        las vistas y el acceso a Mi perfil queda justo debajo.{% endcomment %}
+        <div class="sidebar-foot">
+            <div class="sidebar-ident">
+                {% if request.user.avatar %}
+                <img class="sidebar-ident-avatar" src="{{ request.user.avatar.url }}" alt="">
+                {% else %}
+                <span class="sidebar-ident-avatar">{{ request.user.initials }}</span>
+                {% endif %}
+                <strong class="sidebar-ident-name">{{ request.user.nombre }}</strong>
+                <span class="sidebar-ident-rol">{{ request.user.get_rol_display }}</span>
+            </div>
+            <a href="{% url 'accounts:perfil' %}" class="sidebar-link sidebar-perfil{% nav_active 'perfil' %}"{% nav_current 'perfil' %} data-title="Mi perfil">
+                <svg class="sidebar-ico" aria-hidden="true"><use href="#i-user"/></svg>
+                <span class="sidebar-label">Mi perfil</span>
+            </a>
+        </div>
     </aside>
 
     <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>

@@ -227,9 +227,6 @@
                 <a class="btn btn-primary btn-sm" href="{% url 'accounts:ajustes' %}">
                     <svg class="icon"><use href="#i-settings"/></svg> Mi cuenta
                 </a>
-                <button type="button" class="btn btn-outline btn-sm" id="btnPersonalizar">
-                    <svg class="icon"><use href="#i-edit"/></svg> Personalizar
-                </button>
             </div>
         </aside>
 
@@ -570,10 +567,6 @@
     }
     tabs.forEach(function (t) {
         t.addEventListener("click", function () { mostrar(t.getAttribute("data-tab")); });
-    });
-    document.getElementById("btnPersonalizar").addEventListener("click", function () {
-        mostrar("visualizacion");
-        document.querySelector('[data-tab="visualizacion"]').scrollIntoView({ behavior: "smooth", block: "start" });
     });
 })();
 </script>
