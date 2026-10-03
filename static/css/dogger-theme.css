@@ -3366,7 +3366,9 @@ select:focus-visible, textarea:focus-visible {
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow-card);
-    overflow: hidden;
+    /* clip y no hidden: recorta las esquinas pero no secuestra la rueda,
+       que antes se perdia al llegar al final de la tabla. */
+    overflow: clip;
     margin-bottom: 18px;
 }
 .table-scroll { overflow-x: auto; }
@@ -4595,7 +4597,7 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 /* Scroll suave en tablas con overflow */
 .table-scroll {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
+    overscroll-behavior: auto;
 }
 
 /* Imágenes y iframes: renderizar de forma aislada */
@@ -6131,7 +6133,7 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .obs-estado-amarillo { border-left-color: #D9A436; }
 .obs-estado-rojo { border-left-color: var(--dogger-red); }
 
-.obs-tabla-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
+.obs-tabla-wrap { overflow: auto; overscroll-behavior: auto; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
 .obs-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
 .obs-tabla th, .obs-tabla td { padding: 11px 13px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .obs-tabla thead th {

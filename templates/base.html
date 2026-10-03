@@ -207,6 +207,11 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{% url 'tickets:monitoreo_admin' %}" class="nav-link{% nav_active 'monitoreo_admin' %}"{% nav_current 'monitoreo_admin' %}>
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-eye"/></svg> Monitoreo
+                    </a>
+                </li>
+                <li>
                     <a href="{% url 'tickets:categorias_arbol' %}" class="nav-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %}>
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-folder"/></svg> Categorías
                     </a>

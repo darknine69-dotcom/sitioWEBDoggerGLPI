@@ -14,6 +14,19 @@ def rellenar_correo(apps, schema_editor):
             )
 
 
+def borrar_filas_vacias(apps, schema_editor):
+    """Quita las filas que no guardaban ni persona ni zona.
+
+    El bug anterior guardaba la fila sin usuario y sin correo, así que no
+    guardaban nada: en la lista salían como "—" contando todos los tickets
+    de las zonas. No hay forma de saber a quién apuntaban, así que se van.
+    """
+    ElementoMiLista = apps.get_model("tickets", "ElementoMiLista")
+    ElementoMiLista.objects.filter(
+        usuario_email="", usuario__isnull=True, punto__isnull=True
+    ).delete()
+
+
 def quitar_correo(apps, schema_editor):
     ElementoMiLista = apps.get_model("tickets", "ElementoMiLista")
     ElementoMiLista.objects.update(usuario_email="")
@@ -33,6 +46,7 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, db_column='UsuarioEmail', default='', help_text='Se guarda aunque la persona no tenga usuario registrado.', max_length=150, verbose_name='Correo de la persona observada'),
         ),
         migrations.RunPython(rellenar_correo, quitar_correo),
+        migrations.RunPython(borrar_filas_vacias, migrations.RunPython.noop),
         migrations.AddConstraint(
             model_name='elementomilista',
             constraint=models.UniqueConstraint(condition=models.Q(('usuario_email__gt', '')), fields=('observador', 'usuario_email'), name='uq_milista_obs_email'),
