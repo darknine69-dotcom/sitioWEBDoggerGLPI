@@ -283,23 +283,6 @@
             </div>
         </nav>
 
-        {% comment %}Identidad de la cuenta al pie del menú: se ve igual en todas
-        las vistas y el acceso a Mi perfil queda justo debajo.{% endcomment %}
-        <div class="sidebar-foot">
-            <div class="sidebar-ident">
-                {% if request.user.avatar %}
-                <img class="sidebar-ident-avatar" src="{{ request.user.avatar.url }}" alt="">
-                {% else %}
-                <span class="sidebar-ident-avatar">{{ request.user.initials }}</span>
-                {% endif %}
-                <strong class="sidebar-ident-name">{{ request.user.nombre }}</strong>
-                <span class="sidebar-ident-rol">{{ request.user.get_rol_display }}</span>
-            </div>
-            <a href="{% url 'accounts:perfil' %}" class="sidebar-link sidebar-perfil{% nav_active 'perfil' %}"{% nav_current 'perfil' %} data-title="Mi perfil">
-                <svg class="sidebar-ico" aria-hidden="true"><use href="#i-user"/></svg>
-                <span class="sidebar-label">Mi perfil</span>
-            </a>
-        </div>
     </aside>
 
     <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
@@ -337,6 +320,10 @@
                             <small>{{ request.user.email }}</small>
                         </div>
                     </div>
+                    <a href="{% url 'accounts:perfil' %}" class="user-dropdown-item" role="menuitem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Mi perfil
+                    </a>
                     <a href="{% url 'accounts:ajustes' %}" class="user-dropdown-item" role="menuitem">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00.33 1.82 1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                         Ajustes de cuenta
