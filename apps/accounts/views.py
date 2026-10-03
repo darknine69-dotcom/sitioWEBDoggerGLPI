@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.utils import timezone
 from django.core.mail import send_mail
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, reverse
 from django.urls import reverse_lazy
 from django.views import View
@@ -48,6 +48,7 @@ class BaseRoleLoginView(LoginView):
     redirect_authenticated_user = True
     role_name = "staff"
     role_label = "Staff"
+    modo_observador = False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -56,17 +57,34 @@ class BaseRoleLoginView(LoginView):
         return context
 
     def form_valid(self, form):
+        # super().form_valid() es quien autentica, asi que el rol ya se puede
+        # mirar despues de llamarlo.
         response = super().form_valid(form)
         if not form.cleaned_data.get("remember_me"):
             self.request.session.set_expiry(0)
         else:
             self.request.session.set_expiry(1209600)
+
+        # Con "Modo Observador" marcado se entra al panel de observacion. Si
+        # la cuenta no es de ese rol se cierra la sesion y se explica, para
+        # que el rechazo no parezca un fallo de clave.
+        if form.cleaned_data.get("modo_observador"):
+            if getattr(self.request.user, "rol", None) == "observador":
+                self.modo_observador = True
+                return HttpResponseRedirect(str(self.get_success_url()))
+            logout(self.request)
+            form.add_error(
+                "modo_observador",
+                "Esta cuenta no tiene el modo Observador. "
+                "Pídele a un administrador que te lo asigne.",
+            )
+            return self.form_invalid(form)
         return response
 
     def get_success_url(self):
         user = self.request.user
         rol = getattr(user, "rol", None)
-        if rol == "observador":
+        if self.modo_observador or rol == "observador":
             return reverse_lazy("tickets:obs_panel")
         if rol == "usuario":
             return reverse_lazy("tickets:mi_panel")

@@ -163,7 +163,12 @@ def programador_agregar(request):
     tipo = request.POST.get("tipo")
     titulo = (request.POST.get("titulo") or "").strip()
     ticket_id = request.POST.get("ticket_id") or ""
-    if not fecha or not tipo or not (titulo or (tipo == "solicitud" and ticket_id.isdigit())):
+    # Solo los cuatro tipos que el formulario ofrece. "proyecto" sigue en el
+    # modelo para no perder lo ya registrado, pero ya no se puede crear.
+    validos = {"tarea", "solicitud", "recordatorio", "anuncio"}
+    if tipo not in validos:
+        return JsonResponse({"error": "Tipo de evento no válido"}, status=400)
+    if not fecha or not (titulo or (tipo == "solicitud" and ticket_id.isdigit())):
         return JsonResponse({"error": "Fecha, tipo y título son obligatorios"}, status=400)
     try:
         fecha = dt.date.fromisoformat(fecha)

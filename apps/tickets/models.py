@@ -43,26 +43,6 @@ class Categoria(models.Model):
         verbose_name="Técnico por defecto",
         help_text="Se asigna automáticamente a los tickets nuevos de esta categoría",
     )
-    tecnicos = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        blank=True,
-        related_name="categorias",
-        verbose_name="Técnicos de la categoría",
-        help_text="Uno o varios técnicos habilitados en esta categoría. El primero disponible gana el ticket.",
-    )
-    descripcion = models.TextField(
-        "Qué hace esta categoría",
-        blank=True,
-        default="",
-        help_text="Explicación para el usuario: qué incluye esta categoría y cuándo reportar aquí.",
-    )
-    ejemplos = models.CharField(
-        "Ejemplos de incidentes",
-        max_length=300,
-        blank=True,
-        default="",
-        help_text="Casos típicos, separados por comas, que ayudan al autocompletado.",
-    )
 
     class Meta:
         db_table = "Categorias"

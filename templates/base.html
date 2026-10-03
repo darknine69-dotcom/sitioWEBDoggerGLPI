@@ -1,4 +1,4 @@
-{% load static %}
+{% load static %}{% load asset %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -21,9 +21,9 @@
         root.setAttribute('data-navicons', g('dogger:pv:navicons') === '0' ? '0' : '1');
     })();
     </script>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260929">
-    <link rel="stylesheet" href="{% static 'css/theme-modes.css' %}?v=20260929">
-    <script defer src="{% static 'js/dogger.js' %}?v=20260929"></script>
+    <link rel="stylesheet" href="{% asset 'css/dogger-theme.css' %}">
+    <link rel="stylesheet" href="{% asset 'css/theme-modes.css' %}">
+    <script defer src="{% asset 'js/dogger.js' %}"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}"
@@ -615,14 +615,14 @@
                   texto: "Esta pagina te dice donde reportar cada tipo de problema, con ejemplos." }
             ],
             tecnico: [
-                { sel: "[href*='panel-tecnico'], [href*='sin-asignar']", titulo: "Tu trabajo",
+                { sel: "[href*='/panel/tecnico/'], [href*='/panel/sin-asignar/']", titulo: "Tu trabajo",
                   texto: "Panel con lo asignado y Sin asignar con lo que esta esperando dueño." }
             ],
             admin: [
                 { sel: "[href*='panel-usuarios'], [href*='/panel/usuarios/']", titulo: "Tus cuentas",
                   texto: "El punto de color de cada fila se actualiza solo: ves quien esta conectado." },
                 { sel: "[href*='categorias']", titulo: "Categorias",
-                  texto: "Puedes asignar varios tecnicos a cada una y escribir ejemplos para el usuario." }
+                  texto: "Aqui se crea el listado de categorias con el que reportan los usuarios." }
             ],
             observador: [
                 { sel: "[href*='obs-panel'], [href*='/observador/']", titulo: "Tu observacion",
@@ -680,7 +680,10 @@
             var left = Math.min(Math.max(16, r.left + r.width / 2 - bw / 2), w - bw - 16);
             bubble.style.top = top + "px";
             bubble.style.left = left + "px";
-            var foco = bubble.querySelector(".tour-foco");
+            // El marco vive en el overlay (no dentro del bubble), asi que
+            // se busca con overlay: si se busca en el bubble nunca aparece
+            // y el tour se queda sin senalar nada.
+            var foco = overlay.querySelector(".tour-foco");
             if (foco) {
                 foco.style.top = r.top + "px";
                 foco.style.left = r.left + "px";

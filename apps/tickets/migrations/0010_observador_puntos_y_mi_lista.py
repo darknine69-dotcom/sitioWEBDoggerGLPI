@@ -27,21 +27,6 @@ class Migration(migrations.Migration):
                 'ordering': ['nombre'],
             },
         ),
-        migrations.AddField(
-            model_name='categoria',
-            name='descripcion',
-            field=models.TextField(blank=True, default='', help_text='Explicación para el usuario: qué incluye esta categoría y cuándo reportar aquí.', verbose_name='Qué hace esta categoría'),
-        ),
-        migrations.AddField(
-            model_name='categoria',
-            name='ejemplos',
-            field=models.CharField(blank=True, default='', help_text='Casos típicos, separados por comas, que ayudan al autocompletado.', max_length=300, verbose_name='Ejemplos de incidentes'),
-        ),
-        migrations.AddField(
-            model_name='categoria',
-            name='tecnicos',
-            field=models.ManyToManyField(blank=True, help_text='Uno o varios técnicos habilitados en esta categoría. El primero disponible gana el ticket.', related_name='categorias', to=settings.AUTH_USER_MODEL, verbose_name='Técnicos de la categoría'),
-        ),
         migrations.CreateModel(
             name='ObservadorPunto',
             fields=[

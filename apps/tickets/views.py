@@ -1137,39 +1137,8 @@ def categorias_arbol(request):
             "tecnicos": User.objects.filter(
                 activo=True, rol__in=["admin", "tecnico"]
             ).order_by("nombre"),
-            "disponibilidad_tec": _disponibilidad_por_tecnico(),
         },
     )
-
-
-def _disponibilidad_por_tecnico():
-    """Técnicos con su estado de disponibilidad de hoy, para el autocompletado.
-
-    Al elegir varios técnicos en una categoría se ven de un vistazo cuáles
-    están disponibles y cuáles no, sin salir del formulario.
-    """
-    hoy = timezone.localdate()
-    from apps.programador.models import DisponibilidadTecnico
-
-    estados = {}
-    for d in DisponibilidadTecnico.objects.filter(fecha=hoy).select_related("tecnico"):
-        estados.setdefault(d.tecnico_id, d.tipo)
-    datos = []
-    for u in User.objects.filter(activo=True, rol__in=["admin", "tecnico"]).order_by("nombre"):
-        estado = estados.get(u.pk)
-        if not estado:
-            etiqueta, nivel = "Sin marcar", "neutro"
-        elif estado == "falta":
-            etiqueta, nivel = "Falta de disponibilidad", "falta"
-        elif estado == "ausencia":
-            etiqueta, nivel = "Ausencia", "ausencia"
-        else:
-            etiqueta, nivel = "Disponible", "disponible"
-        datos.append(
-            {"id": u.pk, "nombre": u.nombre, "estado": estado or "",
-             "etiqueta": etiqueta, "nivel": nivel}
-        )
-    return datos
 
 
 @staff_required
@@ -1226,20 +1195,8 @@ def categoria_actualizar(request, pk):
     ans_horas = request.POST.get("ans_horas", "").strip()
     if ans_horas.isdigit() and int(ans_horas) > 0:
         categoria.ans_horas = int(ans_horas)
-    categoria.descripcion = request.POST.get("descripcion", "").strip()
-    categoria.ejemplos = request.POST.get("ejemplos", "").strip()
-    try:
-        categoria.save()
-        # Varios técnicos pueden atender la misma categoría.
-        ids_tec = [
-            int(x) for x in request.POST.getlist("tecnicos") if x.strip().isdigit()
-        ]
-        categoria.tecnicos.set(
-            User.objects.filter(pk__in=ids_tec, activo=True, rol__in=["admin", "tecnico"])
-        )
-        messages.success(request, f"Categoría actualizada: {categoria}.")
-    except Exception:
-        messages.error(request, "No se pudo actualizar la categoría.")
+    categoria.save()
+    messages.success(request, f"Categoría actualizada: {categoria}.")
     return redirect("tickets:categorias_arbol")
 
 
@@ -4109,13 +4066,6 @@ def categorias_publico(request):
     para que cualquiera sepa en qué casillar reportar antes de crear el ticket.
     """
     arbol = Categoria.arbol()
-    for grupo in arbol:
-        for sub in grupo["subcategorias"]:
-            # La plantilla recibe el nombre de los técnicos que la atienden,
-            # para que el usuario sepa a quién le llega la solicitud.
-            sub.nombres_tecnicos = ", ".join(
-                u.nombre for u in sub.tecnicos.all() if u.activo
-            )
     inactivas = list(Categoria.objects.filter(activo=False).order_by("grupo", "nombre"))
     return render(
         request,
