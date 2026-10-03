@@ -193,26 +193,57 @@
         });
     });
 
-    /* ---- Hamburger menu toggle (mobile) ---- */
-    var navToggle = document.getElementById("navToggle");
-    var navList = document.getElementById("navList");
-    if (navToggle && navList) {
-        navToggle.addEventListener("click", function () {
-            var expanded = navToggle.getAttribute("aria-expanded") === "true";
-            navToggle.setAttribute("aria-expanded", String(!expanded));
-            navList.classList.toggle("nav-open");
-            navToggle.classList.toggle("is-active");
-        });
-        navList.querySelectorAll(".nav-link").forEach(function (link) {
-            link.addEventListener("click", function () {
-                // El botón de un submenú solo lo abre: no cierra el menú lateral.
-                if (link.hasAttribute("data-submenu")) return;
-                navToggle.setAttribute("aria-expanded", "false");
-                navList.classList.remove("nav-open");
-                navToggle.classList.remove("is-active");
+    /* ---- Sidebar lateral: plegar a iconos y cajón en móvil ---- */
+    (function () {
+        var side = document.getElementById("sidebar");
+        if (!side) return;
+        var burger = document.getElementById("sidebarBurger");
+        var backdrop = document.getElementById("sidebarBackdrop");
+        var plegar = document.getElementById("sidebarCollapse");
+
+        /* Plegado: se guarda igual que la preferencia de "navegación compacta"
+           de Ajustes, así que los dos sitios controlan lo mismo. */
+        function plegarA(mini) {
+            document.documentElement.setAttribute("data-navcompact", mini ? "1" : "0");
+            try { localStorage.setItem("dogger:pv:navcompact", mini ? "1" : "0"); } catch (e) {}
+            if (plegar) {
+                plegar.setAttribute("aria-label", mini ? "Expandir el menú" : "Contraer el menú");
+                plegar.title = mini ? "Expandir el menú" : "Contraer el menú";
+            }
+        }
+        if (plegar) {
+            plegar.addEventListener("click", function () {
+                plegarA(document.documentElement.getAttribute("data-navcompact") !== "1");
             });
+        }
+
+        function abrir(abrir) {
+            side.classList.toggle("is-open", abrir);
+            if (burger) {
+                burger.classList.toggle("is-active", abrir);
+                burger.setAttribute("aria-expanded", String(abrir));
+            }
+            if (backdrop) backdrop.hidden = !abrir;
+            document.body.classList.toggle("sidebar-abierto", abrir);
+        }
+        if (burger) {
+            burger.addEventListener("click", function () {
+                abrir(!side.classList.contains("is-open"));
+            });
+        }
+        if (backdrop) backdrop.addEventListener("click", function () { abrir(false); });
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape") abrir(false);
         });
-    }
+        // Al navegar dentro del cajón se cierra, para no tapar la página nueva.
+        side.querySelectorAll(".sidebar-link").forEach(function (link) {
+            link.addEventListener("click", function () { abrir(false); });
+        });
+        // Si la ventana crece y deja de ser móvil, el cajón se olvida.
+        window.addEventListener("resize", function () {
+            if (window.innerWidth > 1080) abrir(false);
+        });
+    })();
 
     /* ---- Nombre de archivos seleccionados + preview de imagen ---- */
     document.querySelectorAll('input[type="file"][multiple], input[type="file"]').forEach(function (input) {

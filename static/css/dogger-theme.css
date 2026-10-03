@@ -6338,7 +6338,7 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 }
 
 @media print {
-    .manual-toc, .page-head .btn, .topbar, .brand-header, .nav-principal, .site-footer { display:none !important; }
+    .manual-toc, .page-head .btn, .topbar, .brand-header, .sidebar, .site-footer { display:none !important; }
     .manual-layout { grid-template-columns:1fr; }
     .manual-seccion { break-inside:avoid; box-shadow:none; border-color:#ddd; }
 }
@@ -6368,3 +6368,325 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .toast-notif .toast-body span { font-size:12.2px; color:var(--ink-muted); line-height:1.45; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .toast-notif .toast-body a { align-self:flex-start; margin-top:5px; font-size:12px; font-weight:800; color:var(--dogger-red); text-decoration:none; }
 .toast-notif .toast-body a:hover { text-decoration:underline; }
+
+/* =====================================================================
+   Sidebar lateral — navegación principal del sistema
+   Reemplaza la barra horizontal: fijo a la izquierda, plegable a iconos
+   y cajón deslizante en pantallas pequeñas.
+   ===================================================================== */
+
+/* El margen del contenido solo existe si la página trae sidebar; el portal
+   y las páginas públicas reescriben el bloque header y no lo tienen. */
+body:has(> .sidebar) { padding-left: 272px; }
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 272px;
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #221D1A 0%, #14100E 100%);
+  color: #EFE9E1;
+  border-right: 1px solid rgba(255, 255, 255, .08);
+}
+
+/* ---- Cabecera: marca + botón de plegar ---- */
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 12px 15px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+.sidebar-brand { display: flex; align-items: center; gap: 11px; min-width: 0; flex: 1; }
+.sidebar-logo {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  object-fit: contain;
+  padding: 5px;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+}
+.sidebar-brand-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.sidebar-brand-txt strong {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-brand-txt small {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(239, 233, 225, .5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-toggle {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .05);
+  color: rgba(239, 233, 225, .75);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.sidebar-toggle:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.sidebar-toggle .icon { width: 15px; height: 15px; transition: transform .2s ease; }
+html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
+
+/* ---- Secciones y enlaces ---- */
+.sidebar-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 12px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .18) transparent;
+}
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .18); border-radius: 999px; }
+.sidebar-group + .sidebar-group { margin-top: 16px; }
+.sidebar-group-title {
+  margin: 0 0 6px;
+  padding: 0 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: rgba(239, 233, 225, .4);
+}
+.sidebar-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: rgba(239, 233, 225, .76);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: background .15s ease, color .15s ease;
+}
+.sidebar-link + .sidebar-link { margin-top: 2px; }
+.sidebar-link:hover { background: rgba(255, 255, 255, .06); color: #fff; }
+.sidebar-link.is-active {
+  background: linear-gradient(90deg, rgba(214, 43, 31, .26), rgba(214, 43, 31, .04));
+  color: #fff;
+}
+.sidebar-link.is-active::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--dogger-red);
+}
+.sidebar-ico {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sidebar-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-count {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--dogger-red);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.sidebar-count[data-nivel="bajo"] { background: #2F7D4F; }
+
+/* ---- Pie: campana y tarjeta del usuario ---- */
+.sidebar-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 14px;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+}
+.sidebar-foot .user-chip-wrap { flex: 1; min-width: 0; }
+.sidebar-foot .user-chip {
+  width: 100%;
+  background: rgba(255, 255, 255, .06);
+  border-color: rgba(255, 255, 255, .1);
+  color: #EFE9E1;
+}
+.sidebar-foot .user-chip:hover { background: rgba(255, 255, 255, .12); }
+.sidebar-foot .user-chip small { color: rgba(239, 233, 225, .55); }
+.sidebar-foot .user-chip-chevron { stroke: rgba(239, 233, 225, .6); }
+
+/* ---- Barra superior: título de la página y acciones ---- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 66px;
+  padding: 10px 24px;
+  background: color-mix(in srgb, var(--dogger-paper) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-titles { min-width: 0; }
+.topbar-titles .eyebrow {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+.topbar-titles .eyebrow:empty { display: none; }
+.topbar-titles h1 {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.topbar .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.topbar-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--dogger-paper);
+  cursor: pointer;
+}
+.topbar-burger:hover { border-color: var(--dogger-red); }
+.topbar-burger .nav-toggle-bar { display: block; width: 18px; height: 2px; margin: 0 auto; border-radius: 2px; background: var(--ink); }
+.topbar-burger.is-active { border-color: var(--dogger-red); }
+.topbar-burger.is-active .nav-toggle-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.topbar-burger.is-active .nav-toggle-bar:nth-child(2) { opacity: 0; }
+.topbar-burger.is-active .nav-toggle-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* La página ya no está debajo de una barra fija, así no hace falta el offset. */
+body:has(> .sidebar) { scroll-padding-top: 80px; }
+
+/* ---- Modo plegado: solo iconos ---- */
+html[data-navcompact="1"] body:has(> .sidebar) { padding-left: 84px; }
+html[data-navcompact="1"] .sidebar { width: 84px; }
+html[data-navcompact="1"] .sidebar-top { padding: 15px 0 15px 12px; flex-direction: column; gap: 10px; }
+html[data-navcompact="1"] .sidebar-brand { justify-content: center; flex: none; }
+html[data-navcompact="1"] .sidebar-brand-txt,
+html[data-navcompact="1"] .sidebar-group-title,
+html[data-navcompact="1"] .sidebar-label,
+html[data-navcompact="1"] .sidebar-foot .user-chip-text,
+html[data-navcompact="1"] .sidebar-foot .user-chip-chevron { display: none; }
+html[data-navcompact="1"] .sidebar-link { justify-content: center; padding: 11px 0; }
+html[data-navcompact="1"] .sidebar-link.is-active::before { left: -12px; }
+html[data-navcompact="1"] .sidebar-ico { display: block; }
+html[data-navcompact="1"] .sidebar-count {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  min-width: 17px;
+  padding: 1px 5px;
+  font-size: 9.5px;
+}
+html[data-navcompact="1"] .sidebar-foot { justify-content: center; padding: 10px 8px 14px; }
+html[data-navcompact="1"] .sidebar-foot .user-chip-wrap { flex: none; }
+html[data-navcompact="1"] .sidebar-foot .user-chip { padding: 4px; }
+html[data-navcompact="1"] .sidebar-toggle { position: absolute; top: 68px; right: 8px; z-index: 2; }
+
+/* Aviso emergente al pasar el ratón por un icono plegado. */
+html[data-navcompact="1"] .sidebar-link::after {
+  content: attr(data-title);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #14100E;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .14s ease;
+  z-index: 4;
+}
+html[data-navcompact="1"] .sidebar-link:hover::after { opacity: 1; }
+
+/* ---- Cajón deslizante en pantallas pequeñas ---- */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 94;
+  background: rgba(20, 16, 14, .55);
+  backdrop-filter: blur(2px);
+}
+.sidebar-backdrop[hidden] { display: none; }
+
+@media (max-width: 1080px) {
+  body:has(> .sidebar) { padding-left: 0; }
+  .sidebar {
+    width: 272px;
+    transform: translateX(-100%);
+    transition: transform .24s ease;
+    box-shadow: none;
+  }
+  .sidebar.is-open { transform: none; box-shadow: 0 0 70px rgba(0, 0, 0, .5); }
+  .topbar-burger { display: flex; }
+  /* En el cajón siempre va completo: el ancho completo es lo cómodo al navegar. */
+  html[data-navcompact="1"] body:has(> .sidebar) { padding-left: 0; }
+  html[data-navcompact="1"] .sidebar { width: 272px; }
+  html[data-navcompact="1"] .sidebar-top { padding: 15px 12px 15px 16px; flex-direction: row; }
+  html[data-navcompact="1"] .sidebar-brand { justify-content: flex-start; flex: 1; }
+  html[data-navcompact="1"] .sidebar-brand-txt { display: flex; }
+  html[data-navcompact="1"] .sidebar-group-title { display: block; }
+  html[data-navcompact="1"] .sidebar-label { display: block; }
+  html[data-navcompact="1"] .sidebar-link { justify-content: flex-start; padding: 10px 12px; }
+  html[data-navcompact="1"] .sidebar-foot { justify-content: flex-start; padding: 10px 12px 14px; }
+  html[data-navcompact="1"] .sidebar-foot .user-chip-wrap { flex: 1; }
+  html[data-navcompact="1"] .sidebar-foot .user-chip { padding: 5px 10px; }
+  html[data-navcompact="1"] .sidebar-toggle { position: static; }
+  html[data-navcompact="1"] .sidebar-link::after { display: none; }
+}
+
+@media (max-width: 560px) {
+  .topbar { min-height: 58px; padding: 8px 14px; gap: 10px; }
+  .topbar-titles h1 { font-size: 16.5px; }
+  .topbar-titles .eyebrow { font-size: 10px; }
+}
