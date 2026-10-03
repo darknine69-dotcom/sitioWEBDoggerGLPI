@@ -6439,16 +6439,6 @@ body:has(> .sidebar) { padding-left: 272px; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sidebar-brand-txt small {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: rgba(239, 233, 225, .5);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .sidebar-toggle {
   flex: none;
   width: 30px;
@@ -6641,6 +6631,7 @@ html[data-navcompact="1"] .sidebar-top {
   padding: 14px 10px;
 }
 html[data-navcompact="1"] .sidebar-brand { justify-content: center; flex: none; }
+html[data-navcompact="1"] .sidebar-brand-txt { display: none; }
 html[data-navcompact="1"] .sidebar-toggle { position: static; }
 
 /* El texto del grupo se sustituye por una línea divisoria. */
