@@ -5,6 +5,7 @@ las series que cuentan únicamente abiertas salían en blanco aunque tuviera
 datos.
 """
 import json
+import re
 from datetime import timedelta
 
 from django.test import TestCase, override_settings
@@ -309,3 +310,86 @@ class CodigoTicketTest(SmokeTestCase):
 
         self.assertIsNotNone(nuevo.pk)
         self.assertEqual(nuevo.codigo, "HD-0004")
+
+
+class FiltroResueltasTest(SmokeTestCase):
+    """El filtro de resueltas trae las resueltas y las cerradas.
+
+    Una solicitud resuelta queda marcada como cerrada, así que filtrando por
+    "resuelto" se esperaban las dos. Antes solo devolvía las que seguían con
+    el estado literal "resuelto" (unas pocas) y el filtro parecía vacío.
+    Además, esas solicitudes se muestran con los dos distintivos.
+    """
+
+    def setUp(self):
+        self.admin = Usuario.objects.create_user(
+            email="adm@x.com", password="x", nombre="Adm", rol=Usuario.Rol.ADMIN
+        )
+        self.client.force_login(self.admin)
+        self.cat = Categoria.objects.create(grupo="SIESA", nombre="General")
+
+    def _ticket(self, estado, titulo="T"):
+        return Ticket.objects.create(
+            titulo=titulo,
+            descripcion="d",
+            prioridad=Ticket.Prioridad.MEDIA,
+            estado=estado,
+            solicitante_nombre="User",
+            categoria=self.cat,
+        )
+
+    def _listado(self, estado):
+        r = self.client.get(reverse("tickets:lista"), {"estado": estado, "per_page": 0})
+        self.assertEqual(r.status_code, 200)
+        return r.content.decode()
+
+    def test_filtrar_por_resuelto_trae_resueltas_y_cerradas(self):
+        self._ticket(Ticket.Estado.RESUELTO, "ZK-Resuelta")
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Cerrada")
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+
+        html = self._listado(Ticket.Estado.RESUELTO)
+        self.assertIn("ZK-Resuelta", html)
+        self.assertIn("ZK-Cerrada", html)
+        self.assertNotIn("ZK-Abierta", html)
+
+    def test_cerrado_sigue_traendo_solo_cerradas(self):
+        self._ticket(Ticket.Estado.RESUELTO, "ZK-Resuelta")
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Cerrada")
+
+        html = self._listado(Ticket.Estado.CERRADO)
+        self.assertIn("ZK-Cerrada", html)
+        self.assertNotIn("ZK-Resuelta", html)
+
+    def test_el_chip_de_resueltas_cuadra_con_el_listado(self):
+        from apps.tickets.views import ESTADOS_TERMINADOS
+
+        self._ticket(Ticket.Estado.RESUELTO, "ZK-Resuelta")
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Cerrada")
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+
+        html = self._listado(Ticket.Estado.RESUELTO)
+        esperado = Ticket.objects.filter(estado__in=ESTADOS_TERMINADOS).count()
+        chip = re.search(r'stat-n">(\d+)</span><span class="stat-l">Resueltas', html)
+        self.assertIsNotNone(chip, "no se encontro el chip de resueltas")
+        self.assertEqual(int(chip.group(1)), esperado)
+
+    def test_los_terminados_muestran_los_dos_distintivos(self):
+        self._ticket(Ticket.Estado.RESUELTO, "ZK-Resuelta")
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Cerrada")
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+
+        html = self._listado(Ticket.Estado.RESUELTO)
+        # La resuelta y la cerrada salen con "Resuelto" y "Cerrado".
+        self.assertEqual(html.count("status-pill status-cerrado"), 2)
+        self.assertEqual(html.count("status-pill status-resuelto"), 2)
+        # La abierta conserva su unico distintivo.
+        abierta = self._listado(Ticket.Estado.ABIERTO)
+        self.assertNotIn("status-pill status-resuelto", abierta)
+
+    def test_el_comentario_de_la_plantilla_no_se_imprime(self):
+        """Un {# #} de varias lineas no lo reconoce Django y se veria en pantalla."""
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+        html = self._listado(Ticket.Estado.ABIERTO)
+        self.assertNotIn("{#", html)
+        self.assertNotIn("#}", html)

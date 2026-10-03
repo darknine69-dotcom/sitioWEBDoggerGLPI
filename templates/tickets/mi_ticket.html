@@ -239,7 +239,18 @@
         fill.className = "dash-life-fill" + (n === 3 ? " is-done" : "");
         fill.style.width = (n * 33.4) + "%";
         if (step) step.textContent = "Paso " + n + " de 3 · " + l;
-        if (pill) { pill.className = "status-pill status-" + estado; pill.textContent = l; }
+        if (!pill) return;
+        var cerrado = document.getElementById("corp-estado-pill-cerrado");
+        if (estado === "resuelto" || estado === "cerrado") {
+            // Al resolver queda marcada como cerrada: se ven los dos distintivos.
+            pill.className = "status-pill status-resuelto is-resuelto-pill";
+            pill.textContent = "Resuelto";
+            if (cerrado) cerrado.style.display = "";
+        } else {
+            pill.className = "status-pill status-" + estado;
+            pill.textContent = l;
+            if (cerrado) cerrado.style.display = "none";
+        }
     }
     applyP(fill.getAttribute("data-estado"));
     setInterval(function () {

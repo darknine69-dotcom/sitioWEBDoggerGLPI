@@ -1,1 +1,10 @@
+{% comment %}
+    Una solicitud resuelta queda marcada como cerrada, asi que en las listas
+    se muestran los dos distintivos. El id, cuando se pasa, va en el primero:
+    el JS de la ficha los actualiza por separado.
+{% endcomment %}
+{% if estado == "resuelto" or estado == "cerrado" %}
+<span class="status-pill status-resuelto{% if id %} is-resuelto-pill{% endif %}"{% if id %} id="{{ id }}"{% endif %}>Resuelto</span><span class="status-pill status-cerrado{% if id %} is-cerrado-pill{% endif %}"{% if id %} id="{{ id }}-cerrado"{% endif %}>Cerrado</span>
+{% else %}
 <span class="status-pill status-{{ estado }}"{% if id %} id="{{ id }}"{% endif %}>{{ label }}</span>
+{% endif %}

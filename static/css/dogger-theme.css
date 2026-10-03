@@ -2070,6 +2070,8 @@ table.data-table tbody tr td:first-child {
     color: #fff;
     background: var(--pill, var(--ink-muted));
 }
+/* Una solicitud resuelta lleva dos distintivos (resuelto + cerrado). */
+.status-pill + .status-pill { margin-left: 4px; }
 
 .admin-shell { min-height: 100vh; }
 .admin-topbar-actions .user-chip {

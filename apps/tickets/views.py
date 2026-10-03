@@ -320,6 +320,12 @@ _LABEL_MODO = {
 }
 
 
+# Una solicitud resuelta queda tambien marcada como cerrada: estos son los
+# estados con los que ya no esta pendiente de atencion. El filtro de
+# "resueltas" trae los dos.
+ESTADOS_TERMINADOS = (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
+
+
 _DIAS_SEMANA = ("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
 
 # --- Ámbitos de los desplegables de las tarjetas --------------------------
@@ -331,7 +337,7 @@ _ALCANCES_TORTAS = (
     ("abiertas", "Abiertas", (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)),
     ("en_progreso", "En progreso", (Ticket.Estado.EN_PROGRESO,)),
     # "Resueltas" junta lo ya terminado: resueltas y cerradas.
-    ("resueltos", "Resueltas", (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)),
+    ("resueltos", "Resueltas", ESTADOS_TERMINADOS),
     ("cerrados", "Cerradas", (Ticket.Estado.CERRADO,)),
     ("eliminados", "Eliminadas", ()),
     ("todas", "Todas", ()),
@@ -864,6 +870,10 @@ def _reportes_metricas_kpis(tickets):
         "en_progreso": en_progreso,
         "resueltos": resueltos,
         "cerrados": cerrados,
+        # El filtro de resueltas trae las dos, asi que el chip que lo enlaza
+        # muestra la suma. "resueltos" y "cerrados" se siguen usando sueltos
+        # para el desglose y el total.
+        "resueltos_cerrados": resueltos + cerrados,
         "vencidos": vencidos,
         "sla_ok": sla_ok,
         "sla_no": sla_no,
@@ -1056,6 +1066,21 @@ def reportes(request):
     )
 
 
+def _filtrar_estado(qs, estado):
+    """Aplica el filtro de estado de las listas.
+
+    "Resuelto" es un estado en si mismo, pero una solicitud resuelta tambien
+    se marca como cerrada. Por eso el filtro de resueltas trae las dos, y no
+    solo las que siguen con el estado literal "resuelto" (que son pocas y
+    hacian que el filtro pareciera vacio).
+    """
+    if not estado:
+        return qs
+    if estado == Ticket.Estado.RESUELTO:
+        return qs.filter(estado__in=ESTADOS_TERMINADOS)
+    return qs.filter(estado=estado)
+
+
 @admin_required
 def exportar_reportes(request):
     f, qs = _reportes_filtros(request)
@@ -1108,8 +1133,7 @@ def exportar_tickets_admin(request):
     prioridad = request.GET.get("prioridad")
     categoria = request.GET.get("categoria")
     tecnico = request.GET.get("tecnico")
-    if estado:
-        qs = qs.filter(estado=estado)
+    qs = _filtrar_estado(qs, estado)
     if prioridad:
         qs = qs.filter(prioridad=prioridad)
     if categoria:
@@ -2800,7 +2824,9 @@ def lista_tickets(request):
     stats = scope_qs.aggregate(
         abiertas=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
         progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
-        resueltas=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
+        # El filtro de resueltas trae resueltas y cerradas, asi que el chip
+        # suma las dos para no prometer menos de lo que realmente lista.
+        resueltas=Count("pk", filter=Q(estado__in=ESTADOS_TERMINADOS)),
         cerradas=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
     )
     stats["sin_asignar"] = (
@@ -2856,8 +2882,7 @@ def lista_tickets(request):
     if mias:
         qs = qs.filter(tecnico_asignado=request.user)
 
-    if estado:
-        qs = qs.filter(estado=estado)
+    qs = _filtrar_estado(qs, estado)
     if prioridad:
         qs = qs.filter(prioridad=prioridad)
     if categoria:
@@ -3462,8 +3487,7 @@ def panel_tecnico(request):
         .select_related("categoria", "tecnico_asignado")
         .prefetch_related("comentarios", "eventos_glpi")
     )
-    if estado:
-        qs = qs.filter(estado=estado)
+    qs = _filtrar_estado(qs, estado)
     if q:
         match_codigo = re.match(r"^HD-(\d+)$", q.upper())
         condicion = (
@@ -3483,7 +3507,7 @@ def panel_tecnico(request):
         total=Count("id"),
         abiertos=Count("id", filter=Q(estado=Ticket.Estado.ABIERTO)),
         en_progreso=Count("id", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
-        resueltos=Count("id", filter=Q(estado=Ticket.Estado.RESUELTO)),
+        resueltos=Count("id", filter=Q(estado__in=ESTADOS_TERMINADOS)),
         cerrados=Count("id", filter=Q(estado=Ticket.Estado.CERRADO)),
     )
     chart_context = _build_chart_context(
@@ -3615,8 +3639,7 @@ def panel_tecnico(request):
             )
         except (TypeError, ValueError):
             pass
-    if estado:
-        mis_qs = mis_qs.filter(estado=estado)
+    mis_qs = _filtrar_estado(mis_qs, estado)
     if mias:
         mis_qs = mis_qs.filter(tecnico_asignado=tecnico)
     mis_qs = mis_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
