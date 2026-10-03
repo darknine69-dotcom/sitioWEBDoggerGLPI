@@ -137,14 +137,12 @@
                 </li>
                 <li>
                     <a href="{% url 'tickets:crear_ticket' %}" class="nav-link{% nav_active 'crear_ticket' %}"{% nav_current 'crear_ticket' %}">
-                        {% if menu_respondidos %}<span class="nav-count" data-nivel="bajo">{{ menu_respondidos }}</span>{% endif %}
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-plus"/></svg> Reportar incidencia
-                        {% if menu_respondidos %}<span class="nav-count-sr">{{ menu_respondidos }} tickets con respuesta por revisar</span>{% endif %}
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'tickets:categorias_publico' %}" class="nav-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %}>
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-folder"/></svg> ¿Qué categoría es?
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-folder"/></svg> Categoría
                     </a>
                 </li>
                 {% endif %}
@@ -257,6 +255,11 @@
                         {% if menu_total %}<span class="nav-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
                         <svg class="nav-icon" aria-hidden="true"><use href="#i-eye"/></svg> Observación
                         {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'tickets:obs_usuarios' %}" class="nav-link{% nav_active 'obs_usuarios' %}"{% nav_current 'obs_usuarios' %}">
+                        <svg class="nav-icon" aria-hidden="true"><use href="#i-user"/></svg> Usuarios
                     </a>
                 </li>
                 <li>

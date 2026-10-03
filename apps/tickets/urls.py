@@ -63,6 +63,7 @@ urlpatterns = [
     # --- Módulo del observador ---
     path("observador/", views_observador.panel_observador, name="obs_panel"),
     path("observador/buscar/", views_observador.buscar_observador, name="obs_buscar"),
+    path("observador/usuarios/", views_observador.usuarios_observador, name="obs_usuarios"),
     path("observador/mi-lista/", views_observador.mi_lista_observador, name="obs_mi_lista"),
     path("observador/mi-lista/agregar/", views_observador.agregar_mi_lista, name="obs_agregar"),
     path("observador/mi-lista/<int:pk>/quitar/", views_observador.quitar_mi_lista, name="obs_quitar"),

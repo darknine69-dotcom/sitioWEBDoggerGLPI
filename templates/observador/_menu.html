@@ -4,6 +4,9 @@
     <a href="{% url 'tickets:obs_panel' %}" class="obs-tab{% if activa == 'panel' %} is-active{% endif %}">
         <svg class="icon"><use href="#i-grid"/></svg> Puntos asignados
     </a>
+    <a href="{% url 'tickets:obs_usuarios' %}" class="obs-tab{% if activa == 'usuarios' %} is-active{% endif %}">
+        <svg class="icon"><use href="#i-user"/></svg> Usuarios
+    </a>
     <a href="{% url 'tickets:obs_buscar' %}" class="obs-tab{% if activa == 'buscar' %} is-active{% endif %}">
         <svg class="icon"><use href="#i-search"/></svg> Buscar y agregar
     </a>

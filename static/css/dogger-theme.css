@@ -3735,6 +3735,17 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 .cat-det-datos dd { margin:0; color:var(--ink); }
 .cat-det-bloque h4 { margin:0 0 8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted); }
 .cat-det-lista { margin:0; padding:11px 14px 11px 30px; background:#FBF7EF; border:1px solid #EFE8DA; border-radius:9px; font-size:13px; color:var(--ink); line-height:1.65; }
+/* Modal de categoría compacto: ya no se estira en vertical. */
+.cat-modal { max-width: 460px; }
+.cat-modal .modal-body { padding: 14px 18px 16px; max-height: 46vh; }
+.cat-det-facts { list-style:none; margin:0 0 16px; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.cat-det-facts li { background:#FBF7EF; border:1px solid #EFE8DA; border-radius:9px; padding:8px 10px; min-width:0; }
+.cat-det-facts-l { display:block; font-size:10.5px; font-weight:800; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
+.cat-det-facts-v { display:block; font-size:13px; color:var(--ink); overflow-wrap:anywhere; }
+.cat-det-chips { display:flex; flex-wrap:wrap; gap:6px; max-height:132px; overflow-y:auto; padding:2px; }
+.cat-det-chip { font:inherit; font-size:12px; line-height:1.4; padding:5px 10px; border-radius:999px; background:#fff; border:1px solid var(--line); color:var(--ink); cursor:pointer; }
+.cat-det-chip:hover { border-color:var(--dogger-red); color:var(--dogger-red); }
+@media (max-width:520px) { .cat-det-facts { grid-template-columns:1fr; } }
 .cat-new-form .row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
 .cat-new-form label { display:block; font-size:11.5px; font-weight:700; color:var(--ink-muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em; }
 .cat-inactivos summary { cursor:pointer; font-weight:600; font-size:13.5px; color:var(--ink-muted); }
@@ -6096,6 +6107,26 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .obs-tarjeta-nombre { font-size: 14.5px; font-weight: 700; padding-right: 22px; }
 .obs-tarjeta-dato { font-size: 12.5px; color: var(--ink-muted); }
 .obs-tarjeta-alerta { font-size: 11.5px; font-weight: 700; color: var(--dogger-red); }
+/* Barra de reparto por estado dentro de la tarjeta de zona. */
+.obs-bar { display: flex; gap: 2px; height: 6px; margin-top: 8px; border-radius: 999px; overflow: hidden; background: #F1EDE6; }
+.obs-bar-seg { display: block; min-width: 0; }
+.obs-bar-verde { background: #2F7D4F; }
+.obs-bar-amarillo { background: #D9A436; }
+.obs-bar-rojo { background: var(--dogger-red); }
+/* Accesos directos del panel. */
+.obs-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 26px; }
+.obs-quick-btn {
+    display: flex; align-items: center; gap: 11px;
+    padding: 12px 14px; background: #fff;
+    border: 1px solid var(--line); border-radius: 12px;
+    text-decoration: none; color: inherit;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.obs-quick-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(23,20,18,.10); }
+.obs-quick-btn > .icon { width: 19px; height: 19px; flex: none; color: var(--dogger-red); }
+.obs-quick-btn span { min-width: 0; }
+.obs-quick-btn strong { display: block; font-size: 13.5px; }
+.obs-quick-btn small { display: block; font-size: 11.5px; color: var(--ink-muted); }
 .obs-estado-verde { border-left-color: #2F7D4F; }
 .obs-estado-amarillo { border-left-color: #D9A436; }
 .obs-estado-rojo { border-left-color: var(--dogger-red); }
@@ -6153,6 +6184,9 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
     border: 1px solid var(--line); border-radius: 10px;
     background: #fff; font-size: 13px;
 }
+/* Filtros de la vista de usuarios. */
+.obs-filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 22px; }
+.obs-filtros .obs-buscador-campo { flex: 1 1 240px; }
 
 .obs-resultados { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .obs-resultado {
@@ -6187,6 +6221,7 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .obs-fila-txt small { display: block; font-size: 11.5px; color: var(--ink-muted); }
 .obs-fila-dato { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 .obs-fila-quitar { margin-left: 4px; }
+.obs-fila .muted { font-size: 11.5px; }
 
 .obs-vacio {
     display: flex; flex-direction: column; align-items: center; gap: 8px;

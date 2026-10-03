@@ -720,6 +720,14 @@ class ElementoMiLista(models.Model):
         db_column="UsuarioId",
         verbose_name="Usuario",
     )
+    usuario_email = models.CharField(
+        "Correo de la persona observada",
+        max_length=150,
+        blank=True,
+        default="",
+        db_column="UsuarioEmail",
+        help_text="Se guarda aunque la persona no tenga usuario registrado.",
+    )
     punto = models.ForeignKey(
         Punto,
         on_delete=models.CASCADE,
@@ -747,6 +755,11 @@ class ElementoMiLista(models.Model):
                 fields=["observador", "punto"],
                 condition=models.Q(punto__isnull=False),
                 name="uq_milista_obs_punto",
+            ),
+            models.UniqueConstraint(
+                fields=["observador", "usuario_email"],
+                condition=models.Q(usuario_email__gt=""),
+                name="uq_milista_obs_email",
             ),
         ]
 
