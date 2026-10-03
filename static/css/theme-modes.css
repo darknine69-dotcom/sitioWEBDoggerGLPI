@@ -439,16 +439,7 @@ html[data-theme="dark"] { color-scheme: dark; }
 }
 [data-theme="dark"] .profile-avatar { box-shadow: 0 0 0 1px var(--line), 0 8px 20px rgba(0, 0, 0, .5); }
 
-/* ---- Modo oscuro: encabezado superior y paletas del menú ---- */
-[data-theme="dark"] .topbar .user-chip {
-    background: #241D17;
-    border-color: var(--line);
-    color: var(--ink);
-}
-[data-theme="dark"] .topbar .user-chip:hover { background: #2E251D; border-color: var(--sb-accent); }
-[data-theme="dark"] .topbar .user-chip small,
-[data-theme="dark"] .topbar .user-chip-chevron { color: var(--ink-muted); }
-[data-theme="dark"] .account-logo { background: #F2ECE1; }
+/* ---- Modo oscuro: paletas del menú ---- */
 [data-theme="dark"] .prof-paleta { background: #241D17; color: var(--ink-muted); border-color: var(--line); }
 [data-theme="dark"] .prof-paleta.is-on { background: #2E1D1A; border-color: var(--sb-accent); color: var(--ink); }
 [data-theme="dark"] .prof-paleta:hover { border-color: var(--sb-accent); color: var(--ink); }

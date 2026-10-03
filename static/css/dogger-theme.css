@@ -6587,61 +6587,17 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   align-items: center;
   gap: 12px;
   padding: 7px 24px;
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--dogger-paper) 96%, var(--sb-accent) 4%);
-}
-.account-badge {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-  text-decoration: none;
-  color: var(--ink);
-}
-.account-logo {
-  width: 27px;
-  height: 27px;
-  flex: none;
-  object-fit: contain;
-  padding: 3px;
-  border-radius: 8px;
-  background: #fff;
-  border: 1px solid var(--line);
-}
-.account-badge-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-.account-badge-txt strong {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-.account-badge-txt small {
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-  white-space: nowrap;
+  /* Mismo fondo que el sidebar: el encabezado y el menú se leen como una pieza. */
+  background: linear-gradient(180deg, #221D1A 0%, #14100E 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
 }
 .topbar-account { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-.account-rol {
-  flex: none;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--sb-accent);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-/* La tarjeta del usuario pasa del fondo oscuro al claro, así que recupera
-   sus propios colores en vez de los que tenía sobre el sidebar. */
-.topbar .user-chip { background: #fff; border-color: var(--line); color: var(--ink); }
-.topbar .user-chip:hover { background: var(--dogger-cream); border-color: var(--sb-accent); }
-.topbar .user-chip small { color: var(--ink-muted); opacity: 1; }
-.topbar .user-chip-chevron { stroke: var(--ink-muted); }
+/* Encabezado oscuro: la tarjeta se recorta un poco más para que el avatar
+   y el nombre destaquen sobre el fondo del sidebar. */
+.topbar .user-chip { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .18); }
+.topbar .user-chip:hover { background: rgba(255, 255, 255, .17); border-color: rgba(255, 255, 255, .3); }
+.topbar .user-chip small { color: rgba(239, 233, 225, .6); }
+.topbar .user-chip-chevron { stroke: rgba(239, 233, 225, .65); }
 .topbar-titles { min-width: 0; }
 .topbar-titles .eyebrow {
     margin: 0;
@@ -6774,12 +6730,7 @@ html[data-navcompact="1"] .sidebar-link:hover::after { opacity: 1; }
 /* En pantallas estrechas el encabezado superior se queda con lo imprescindible:
    el logo, la inicial del rol, la campana y el avatar. */
 @media (max-width: 720px) {
-  .account-badge-txt { display: none; }
   .topbar-account { gap: 8px; }
-  .account-rol {
-    max-width: 26px; padding: 3px 7px; overflow: hidden;
-    text-overflow: ellipsis; letter-spacing: 0;
-  }
   .topbar .user-chip-text { display: none; }
   .topbar .user-chip { padding: 4px; }
   .topbar .user-chip-chevron { display: none; }

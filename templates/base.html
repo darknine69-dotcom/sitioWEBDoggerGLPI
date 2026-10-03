@@ -294,17 +294,9 @@
     <header class="{% if request.user.is_authenticated %}topbar{% else %}brand-header{% endif %}">
         {% if request.user.is_authenticated %}
         {% comment %}Encabezado superior: va POR ENCIMA del título de la vista y
-        sostiene el acceso del usuario, el badge de la cuenta y la campana.{% endcomment %}
+        sostiene el acceso del usuario y la campana.{% endcomment %}
         <div class="topbar-top">
-            <a class="account-badge" href="{% url 'tickets:portal' %}" aria-label="Ir al inicio">
-                <img class="account-logo" src="{% static 'images/dogger-logo.png' %}" alt="Dogger">
-                <span class="account-badge-txt">
-                    <strong>Dogger</strong>
-                    <small>Mesa de Ayuda TI</small>
-                </span>
-            </a>
             <div class="topbar-account">
-                <span class="account-rol" data-rol="{{ request.user.rol }}">{{ request.user.get_rol_display }}</span>
             {% include "notificaciones/_campana.html" %}
             <div class="user-chip-wrap">
                 <button type="button" class="user-chip" data-rol="{{ request.user.rol }}" id="userChipToggle" aria-expanded="false" aria-haspopup="true">
