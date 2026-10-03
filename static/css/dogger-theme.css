@@ -6381,10 +6381,13 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
    variable en línea sobre <html>, por eso tiene prioridad sobre la paleta. */
 :root {
   --sb-accent: #D62B1F;
-  /* El fondo se tiñe con el color elegido, pero siempre desde un tono oscuro
-     para que el texto blanco y los iconos sigan siendo legibles. */
-  --sb-bg-1: color-mix(in srgb, var(--sb-accent) 26%, #221D1A);
-  --sb-bg-2: color-mix(in srgb, var(--sb-accent) 11%, #14100E);
+  /* El color elegido se aplica tal cual: el menú empieza en ese color y se
+     oscurece hacia abajo mezclándose con negro, no al revés. */
+  --sb-bg-1: var(--sb-accent);
+  --sb-bg-2: color-mix(in srgb, var(--sb-accent) 58%, #000);
+  /* Velo fijo encima del color: mantiene legible el texto blanco aunque se
+     elija un tono claro, sin apagarlo. */
+  --sb-scrim: linear-gradient(rgba(0, 0, 0, .20), rgba(0, 0, 0, .34));
 }
 html[data-navpalette="azul"]      { --sb-accent: #1F6FD6; }
 html[data-navpalette="indigo"]    { --sb-accent: #4B4BC4; }
@@ -6405,9 +6408,9 @@ body:has(> .sidebar) { padding-left: 272px; }
   z-index: 95;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, var(--sb-bg-1) 0%, var(--sb-bg-2) 100%);
+  background: var(--sb-scrim), linear-gradient(180deg, var(--sb-bg-1) 0%, var(--sb-bg-2) 100%);
   color: #EFE9E1;
-  border-right: 1px solid rgba(255, 255, 255, .08);
+  border-right: 1px solid rgba(255, 255, 255, .12);
 }
 
 /* ---- Cabecera: marca + botón de plegar ---- */
@@ -6527,6 +6530,7 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   border-radius: 999px;
   background: var(--sb-accent);
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .45);
   font-size: 10.5px;
   font-weight: 800;
   text-align: center;
@@ -6565,8 +6569,8 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   gap: 12px;
   padding: 7px 24px;
   /* Mismo fondo que el sidebar: el encabezado y el menú se leen como una pieza. */
-  background: linear-gradient(180deg, var(--sb-bg-1) 0%, var(--sb-bg-2) 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background: var(--sb-scrim), linear-gradient(180deg, var(--sb-bg-1) 0%, var(--sb-bg-2) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
 }
 .topbar-account { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 /* Encabezado oscuro: la tarjeta se recorta un poco más para que el avatar
