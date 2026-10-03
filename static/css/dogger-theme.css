@@ -6140,6 +6140,23 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
   padding: 1px 0;
 }
 .obs-tecnicos li + li { border-top: 1px dotted var(--line); }
+/* Tabla de resultados: seis filas a la vista y el resto con scroll. */
+.tabla-scroll-seis {
+  max-height: 372px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #C9C0B2 transparent;
+}
+.tabla-scroll-seis::-webkit-scrollbar { width: 8px; }
+.tabla-scroll-seis::-webkit-scrollbar-track { background: transparent; }
+.tabla-scroll-seis::-webkit-scrollbar-thumb { background: #C9C0B2; border-radius: 999px; }
+.tabla-scroll-seis thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    box-shadow: 0 1px 0 var(--line);
+}
 .obs-tecnico-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .obs-tecnico-c { flex: none; color: var(--ink-muted); font-size: 11.5px; white-space: nowrap; }
 /* Accesos directos del panel. */
