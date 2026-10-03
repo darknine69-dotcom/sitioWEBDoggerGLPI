@@ -52,9 +52,15 @@
                             </small>
                         </td>
                         <td>
-                            {% if f.tecnico %}
-                                {{ f.tecnico }}
-                                {% if f.tecnicos|length > 1 %}<small>y {{ f.tecnicos|length|add:"-1" }} más</small>{% endif %}
+                            {% if f.tecnicos %}
+                            <ul class="obs-tecnicos">
+                                {% for t in f.tecnicos %}
+                                <li>
+                                    <span class="obs-tecnico-n">{{ t.nombre }}</span>
+                                    <span class="obs-tecnico-c">{{ t.tickets }} ticket{{ t.tickets|pluralize:"s" }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
                             {% elif f.total %}
                                 <span class="muted">Sin asignar</span>
                             {% else %}

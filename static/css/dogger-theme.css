@@ -6116,6 +6116,32 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .obs-bar-amarillo { background: #D9A436; }
 .obs-bar-rojo { background: var(--dogger-red); }
 .obs-bar-vacio { background: transparent; }
+/* Tecnicos asignados a un usuario: se ven seis y el resto con scroll. */
+.obs-tecnicos {
+  max-height: 132px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  margin: 0;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: #C9C0B2 transparent;
+}
+.obs-tecnicos::-webkit-scrollbar { width: 6px; }
+.obs-tecnicos::-webkit-scrollbar-track { background: transparent; }
+.obs-tecnicos::-webkit-scrollbar-thumb { background: #C9C0B2; border-radius: 999px; }
+.obs-tecnicos li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 1px 0;
+}
+.obs-tecnicos li + li { border-top: 1px dotted var(--line); }
+.obs-tecnico-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.obs-tecnico-c { flex: none; color: var(--ink-muted); font-size: 11.5px; white-space: nowrap; }
 /* Accesos directos del panel. */
 .obs-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 26px; }
 .obs-quick-btn {

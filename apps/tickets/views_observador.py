@@ -183,7 +183,12 @@ def _resumen_por_correo(usuario):
             max(f["tecnicos"].items(), key=lambda kv: kv[1])[0]
             if f["tecnicos"] else ""
         )
-        f["tecnicos"] = sorted(f["tecnicos"])
+        f["tecnicos"] = [
+            {"nombre": nombre, "tickets": cuentas}
+            for nombre, cuentas in sorted(
+                f["tecnicos"].items(), key=lambda kv: (-kv[1], kv[0])
+            )
+        ]
         f["cerrados_total"] = f["resueltos"] + f["cerrados"]
         f["avance"] = (
             int(round(100.0 * f["cerrados_total"] / f["total"])) if f["total"] else 0
