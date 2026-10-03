@@ -6115,6 +6115,7 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .obs-bar-verde { background: #2F7D4F; }
 .obs-bar-amarillo { background: #D9A436; }
 .obs-bar-rojo { background: var(--dogger-red); }
+.obs-bar-vacio { background: transparent; }
 /* Accesos directos del panel. */
 .obs-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 26px; }
 .obs-quick-btn {

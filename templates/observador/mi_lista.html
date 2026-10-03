@@ -22,26 +22,78 @@
     {% include "observador/_menu.html" with activa="lista" total_mi_lista=total %}
 
     {% if filas %}
-    <ul class="obs-lista">
-        {% for f in filas %}
-        <li class="obs-fila obs-estado-{{ f.estado }}">
-            <span class="obs-fila-estado"><span class="obs-dot obs-dot-{{ f.estado }}"></span></span>
-            <span class="obs-fila-txt">
-                <strong>{{ f.nombre }}</strong>
-                {% if f.detalle %}<small>{{ f.detalle }}</small>{% endif %}
-            </span>
-            <span class="obs-fila-dato">
-                <span class="obs-pill obs-pill-{{ f.estado }}">{{ f.estado|capfirst }}</span>
-                <small class="muted">{{ f.abiertos }} abierto{{ f.abiertos|pluralize:"s" }} · {{ f.total }} total</small>
-            </span>
-            <form method="post" action="{% url 'tickets:obs_quitar' f.elemento.pk %}" class="obs-fila-quitar">
-                {% csrf_token %}
-                <input type="hidden" name="volver" value="{% url 'tickets:obs_mi_lista' %}">
-                <button type="submit" class="btn btn-sm btn-ghost" title="Quitar de mi lista">Quitar</button>
-            </form>
-        </li>
-        {% endfor %}
-    </ul>
+    <p class="panel-sub" style="margin-bottom:14px">
+        Agregá a quien quieras seguir. Acá ves qué técnico tiene el caso y qué tanto
+        lleva resuelto cada usuario.
+    </p>
+    <div class="table-card">
+        <div class="table-scroll">
+            <table class="obs-tabla">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Técnico</th>
+                        <th class="num">Abiertos</th>
+                        <th class="num">Resueltos</th>
+                        <th class="num">Tickets</th>
+                        <th>Avance</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in filas %}
+                    <tr>
+                        <td>
+                            <strong>{{ f.nombre }}</strong>
+                            <small>
+                                {% if f.email %}{{ f.email }}{% endif %}
+                                {% if f.detalle %} · {{ f.detalle }}{% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            {% if f.tecnico %}
+                                {{ f.tecnico }}
+                                {% if f.tecnicos|length > 1 %}<small>y {{ f.tecnicos|length|add:"-1" }} más</small>{% endif %}
+                            {% elif f.total %}
+                                <span class="muted">Sin asignar</span>
+                            {% else %}
+                                <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="num">
+                            {% if f.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ f.abiertos }}</span>
+                            {% else %}<span class="muted">0</span>{% endif %}
+                        </td>
+                        <td class="num">{{ f.cerrados_total }}</td>
+                        <td class="num">{{ f.total }}</td>
+                        <td>
+                            {% if f.total %}
+                            <span class="obs-bar" role="img" aria-label="Avance {{ f.avance }} por ciento">
+                                <span class="obs-bar-seg obs-bar-verde" style="flex:{{ f.avance }}"></span>
+                                <span class="obs-bar-seg obs-bar-vacio" style="flex:{{ f.falta }}"></span>
+                            </span>
+                            <small>{{ f.avance }}%</small>
+                            {% else %}<span class="muted">—</span>{% endif %}
+                        </td>
+                        <td>
+                            <span class="obs-pill obs-pill-{{ f.estado }}">
+                                <span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}
+                            </span>
+                        </td>
+                        <td class="obs-acciones">
+                            <form method="post" action="{% url 'tickets:obs_quitar' f.elemento.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="volver" value="{% url 'tickets:obs_mi_lista' %}">
+                                <button type="submit" class="btn btn-sm btn-ghost" title="Quitar de mi lista">Quitar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
     {% else %}
     <div class="obs-vacio">
         <span class="obs-vacio-icon"><svg class="icon"><use href="#i-inbox"/></svg></span>

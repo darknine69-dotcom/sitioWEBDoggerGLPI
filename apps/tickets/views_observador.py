@@ -127,6 +127,75 @@ def _resumen_por_punto(usuario):
     return [por_punto[p] for p in puntos]
 
 
+def _resumen_por_correo(usuario):
+    """Acumula, por correo, los tickets de las zonas del observador.
+
+    De cada persona deja cuántos tickets lleva, cuántos se resolvieron y qué
+    técnicos tiene asignados. Es lo que permite mostrar el avance de la
+    resolución y quién está viendo el caso.
+    """
+    resumen = {}
+
+    def fila(correo):
+        return resumen.setdefault(
+            correo,
+            {
+                "total": 0,
+                "abiertos": 0,
+                "resueltos": 0,
+                "cerrados": 0,
+                "en_progreso": 0,
+                "tecnicos": {},
+                "puntos": set(),
+                "estado": ESTADO_VERDE,
+                "ultimo": None,
+            },
+        )
+
+    for t in _visible_a_observador(usuario, Ticket.objects.all()).select_related(
+        "tecnico_asignado"
+    ):
+        correo = (t.solicitante_email or "").strip().lower()
+        if not correo:
+            continue
+        f = fila(correo)
+        f["total"] += 1
+        if t.estado in _ACTIVOS:
+            f["abiertos"] += 1
+        if t.estado == Ticket.Estado.RESUELTO:
+            f["resueltos"] += 1
+        elif t.estado == Ticket.Estado.CERRADO:
+            f["cerrados"] += 1
+        elif t.estado == Ticket.Estado.EN_PROGRESO:
+            f["en_progreso"] += 1
+        if t.tecnico_asignado_id:
+            nombre = (t.tecnico_asignado.nombre or "").strip()
+            if nombre:
+                f["tecnicos"][nombre] = f["tecnicos"].get(nombre, 0) + 1
+        if t.solicitante_punto:
+            f["puntos"].add(t.solicitante_punto.strip())
+        if t.fecha_creacion and (f["ultimo"] is None or t.fecha_creacion > f["ultimo"]):
+            f["ultimo"] = t.fecha_creacion
+
+    for f in resumen.values():
+        f["puntos"] = sorted(f["puntos"])
+        f["tecnico_principal"] = (
+            max(f["tecnicos"].items(), key=lambda kv: kv[1])[0]
+            if f["tecnicos"] else ""
+        )
+        f["tecnicos"] = sorted(f["tecnicos"])
+        f["cerrados_total"] = f["resueltos"] + f["cerrados"]
+        f["avance"] = (
+            int(round(100.0 * f["cerrados_total"] / f["total"])) if f["total"] else 0
+        )
+        # Verde si ya no queda nada pendiente, amarillo si sigue abierto.
+        if f["abiertos"]:
+            f["estado"] = ESTADO_AMARILLO
+        else:
+            f["estado"] = ESTADO_VERDE
+    return resumen
+
+
 # ------------------------------------------------------------------- vistas
 @solo_observador
 def panel_observador(request):
@@ -196,13 +265,14 @@ def panel_observador(request):
 def buscar_observador(request):
     """Búsqueda y agregación: encuentra personas o puntos y los mete a su lista.
 
-    El buscador nunca sale de los puntos asignados: lo que no es suyo no
-    aparece, así que no se puede filtrar la información por otro lado.
+    Busca en dos lados: en las cuentas de la aplicación (las mismas que ve el
+    administrador) y en los solicitantes que dejaron tickets en las zonas del
+    observador. Los puntos siguen limitados a los asignados.
     """
     usuario = request.user
     q = request.GET.get("q", "").strip()
     tipo = request.GET.get("tipo", "todo").strip()
-    resultados = {"personas": [], "puntos": []}
+    resultados = {"cuentas": [], "personas": [], "puntos": []}
 
     # Las zonas nuevas se registran antes de filtrar, para que el buscador
     # no se quede corto si los tickets todavia no las tienen.
@@ -210,6 +280,36 @@ def buscar_observador(request):
     puntos = puntos_del_observador(usuario)
 
     if q:
+        # Cuentas de la aplicación: mismo origen que la vista del admin, para
+        # que el observador encuentre a cualquiera que tenga usuario.
+        if tipo in ("todo", "persona"):
+            ya = set(
+                (e.usuario_email or "").strip().lower()
+                for e in ElementoMiLista.objects.filter(observador=usuario)
+            )
+            resumen = _resumen_por_correo(usuario)
+            consulta = Usuario.objects.filter(activo=True, is_active=True).filter(
+                Q(nombre__icontains=q) | Q(email__icontains=q)
+                | Q(ubicacion__icontains=q)
+            ).order_by("nombre")[:40]
+            for u in consulta:
+                correo = (u.email or "").strip().lower()
+                r = resumen.get(correo, {})
+                resultados["cuentas"].append(
+                    {
+                        "nombre": u.nombre or u.email,
+                        "email": correo,
+                        "rol": u.get_rol_display(),
+                        "ubicacion": u.ubicacion,
+                        "tecnico": r.get("tecnico_principal", ""),
+                        "total": r.get("total", 0),
+                        "abiertos": r.get("abiertos", 0),
+                        "avance": r.get("avance", 0),
+                        "falta": 100 - r.get("avance", 0),
+                        "ya_agregado": correo in ya,
+                    }
+                )
+
         # Puntos: coincidencia por nombre dentro de los asignados.
         if tipo in ("todo", "punto"):
             consulta_p = Punto.objects.filter(nombre__icontains=q)
@@ -250,7 +350,10 @@ def buscar_observador(request):
                     fila["ya_agregado"] = ya.filter(punto__nombre=fila["punto"]).exists()
                 else:
                     fila["ya_agregado"] = False
-            resultados["personas"] = list(vistos.values())[:40]
+            resultados["personas"] = [
+                p for p in vistos.values()
+                if p["email"] not in {c["email"] for c in resultados["cuentas"]}
+            ][:40]
 
     return render(
         request,
@@ -261,93 +364,83 @@ def buscar_observador(request):
 
 @solo_observador
 def usuarios_observador(request):
-    """Usuarios que se ven desde las zonas asignadas, con filtros.
+    """Tabla de usuarios de la aplicación, con el avance de sus tickets.
 
-    Es el equivalente del listado de usuarios del administrador, pero acotado:
-    solo aparecen las personas que tienen tickets en los puntos del observador,
-    con su estado y sus números. No hay forma de editar ni de salir de la zona.
+    Sale del mismo sitio que la vista del administrador, así que el observador
+    ve exactamente las cuentas que existen. Lo que se acota son los números:
+    los tickets que se cuentan son solo los de sus zonas, con su técnico y su
+    avance de resolución.
     """
     usuario = request.user
-    q = request.GET.get("q", "").strip()
-    punto = request.GET.get("punto", "").strip()
-    estado = request.GET.get("estado", "").strip()
-    orden = request.GET.get("orden", "abiertos").strip()
+    q = (request.GET.get("q") or "").strip()
+    rol = (request.GET.get("rol") or "").strip()
+    punto = (request.GET.get("punto") or "").strip()
+    estado = (request.GET.get("estado") or "").strip()
+    orden = (request.GET.get("orden") or "nombre").strip()
 
-    visibles = _visible_a_observador(usuario, Ticket.objects.all())
-
-    if punto:
-        visibles = visibles.filter(solicitante_punto=punto)
-
-    ahora = timezone.now()
     ya_en_lista = {
         (e.usuario_email or "").strip().lower()
         for e in ElementoMiLista.objects.filter(observador=usuario)
         if (e.usuario_email or "").strip()
     }
+    resumen = _resumen_por_correo(usuario)
 
-    personas = {}
-    for t in visibles.only(
-        "solicitante_email", "solicitante_nombre", "solicitante_punto",
-        "estado", "prioridad", "fecha_creacion",
-    ):
-        correo = (t.solicitante_email or "").strip().lower()
-        clave = correo or (t.solicitante_nombre or "").strip().lower()
-        if not clave:
-            continue
-        fila = personas.setdefault(
-            clave,
-            {
-                "clave": clave,
-                "email": correo,
-                "nombre": t.solicitante_nombre or (correo or "Sin nombre"),
-                "puntos": set(),
-                "total": 0,
-                "abiertos": 0,
-                "estado": ESTADO_VERDE,
-                "ultimo": t.fecha_creacion,
-                "ya_agregado": correo in ya_en_lista,
-            },
+    cuentas = Usuario.objects.filter(activo=True, is_active=True)
+    if rol:
+        cuentas = cuentas.filter(rol=rol)
+    if q:
+        cuentas = cuentas.filter(
+            Q(nombre__icontains=q) | Q(email__icontains=q)
+            | Q(ubicacion__icontains=q)
         )
-        fila["total"] += 1
-        if t.solicitante_punto:
-            fila["puntos"].add(t.solicitante_punto.strip())
-        if t.estado in _ACTIVOS:
-            fila["abiertos"] += 1
-        if t.fecha_creacion and (fila["ultimo"] is None or t.fecha_creacion > fila["ultimo"]):
-            fila["ultimo"] = t.fecha_creacion
-        orden_estado = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
-        est = _estado_de(t, ahora)
-        if orden_estado[est] > orden_estado[fila["estado"]]:
-            fila["estado"] = est
 
-    filas = list(personas.values())
-    for f in filas:
-        f["puntos"] = sorted(f["puntos"])
+    filas = []
+    for u in cuentas.order_by("nombre"):
+        correo = (u.email or "").strip().lower()
+        r = resumen.get(correo, {})
+        filas.append(
+            {
+                "obj": u,
+                "nombre": u.nombre or u.email,
+                "email": correo,
+                "rol": u.get_rol_display(),
+                "ubicacion": u.ubicacion or "—",
+                "tecnico": r.get("tecnico_principal", ""),
+                "tecnicos": r.get("tecnicos", []),
+                "total": r.get("total", 0),
+                "abiertos": r.get("abiertos", 0),
+                "cerrados_total": r.get("cerrados_total", 0),
+                "avance": r.get("avance", 0),
+                "falta": 100 - r.get("avance", 0),
+                "estado": r.get("estado", ESTADO_VERDE),
+                "ya_agregado": correo in ya_en_lista,
+                "puntos": r.get("puntos", []),
+            }
+        )
 
     total_sin_filtro = len(filas)
 
-    if q:
-        aguja = q.lower()
-        filas = [
-            f for f in filas
-            if aguja in (f["nombre"] or "").lower() or aguja in (f["email"] or "").lower()
-        ]
-
+    if punto:
+        filas = [f for f in filas if punto in (f["ubicacion"], *(f["puntos"] or []))]
     if estado == "activos":
         filas = [f for f in filas if f["abiertos"] > 0]
-    elif estado == "alerta":
-        filas = [f for f in filas if f["estado"] == ESTADO_ROJO]
-    elif estado == "tranquilos":
-        filas = [f for f in filas if f["estado"] == ESTADO_VERDE]
+    elif estado == "agregados":
+        filas = [f for f in filas if f["ya_agregado"]]
+    elif estado == "pendientes":
+        filas = [f for f in filas if not f["ya_agregado"]]
+    elif estado == "con_tickets":
+        filas = [f for f in filas if f["total"] > 0]
+    elif estado == "resueltos":
+        filas = [f for f in filas if f["total"] > 0 and f["avance"] == 100]
 
-    if orden == "nombre":
-        filas.sort(key=lambda f: (f["nombre"] or "").lower())
+    if orden == "abiertos":
+        filas.sort(key=lambda f: (-f["abiertos"], f["nombre"].lower()))
     elif orden == "tickets":
-        filas.sort(key=lambda f: (-f["total"], (f["nombre"] or "").lower()))
-    elif orden == "recientes":
-        filas.sort(key=lambda f: (f["ultimo"] is None, -(f["ultimo"].timestamp() if f["ultimo"] else 0)))
+        filas.sort(key=lambda f: (-f["total"], f["nombre"].lower()))
+    elif orden == "avance":
+        filas.sort(key=lambda f: (f["avance"], -f["total"]))
     else:
-        filas.sort(key=lambda f: (-f["abiertos"], f["estado"] != ESTADO_ROJO, (f["nombre"] or "").lower()))
+        filas.sort(key=lambda f: f["nombre"].lower())
 
     conteo = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
     for f in filas:
@@ -362,9 +455,10 @@ def usuarios_observador(request):
             "total": len(filas),
             "total_sin_filtro": total_sin_filtro,
             "q": q,
+            "rol_sel": rol,
             "punto_sel": punto,
             "estado_sel": estado,
-            "orden_sel": orden if orden in ("abiertos", "nombre", "tickets", "recientes") else "abiertos",
+            "orden_sel": orden if orden in ("nombre", "abiertos", "tickets", "avance") else "nombre",
             "puntos": puntos_del_observador(usuario),
         },
     )
@@ -395,10 +489,11 @@ def _filas_de_mi_lista(usuario, elementos):
     puntos = puntos_del_observador(usuario)
     visibles = _visible_a_observador(usuario, Ticket.objects.all())
     ahora = timezone.now()
+    resumen = _resumen_por_correo(usuario)
     filas = []
     for e in elementos:
-        consulta = visibles
         correo = (e.usuario_email or "").strip().lower()
+        consulta = visibles
         if correo:
             consulta = visibles.filter(
                 Q(solicitante_email__iexact=correo)
@@ -413,6 +508,7 @@ def _filas_de_mi_lista(usuario, elementos):
             est = _estado_de(t, ahora)
             if orden[est] > orden[estado]:
                 estado = est
+        r = resumen.get(correo, {})
         filas.append(
             {
                 "elemento": e,
@@ -421,6 +517,7 @@ def _filas_de_mi_lista(usuario, elementos):
                     if e.usuario_id
                     else (e.usuario_email or (e.punto.nombre if e.punto_id else "—"))
                 ),
+                "email": e.usuario_email or "",
                 "detalle": (
                     (e.punto.nombre if e.punto_id else "")
                     + (" · " if e.punto_id and e.usuario_id else "")
@@ -430,6 +527,15 @@ def _filas_de_mi_lista(usuario, elementos):
                 "abiertos": sum(1 for t in tickets if t.estado in _ACTIVOS),
                 "total": len(tickets),
                 "estado": estado,
+                "tecnico": r.get("tecnico_principal", ""),
+                "tecnicos": r.get("tecnicos", []),
+                "cerrados_total": sum(
+                    1 for t in tickets
+                    if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
+                ),
+                "avance": r.get("avance", 0),
+                "falta": 100 - r.get("avance", 0),
+                "es_punto": bool(e.punto_id and not e.usuario_id),
             }
         )
     return filas
