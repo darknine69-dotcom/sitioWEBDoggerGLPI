@@ -98,10 +98,10 @@
     {% load dogger_nav %}
 
     {% if request.user.is_authenticated %}
-    {# =========================================================================
-       Navegación del sistema: sidebar lateral + barra superior de contexto.
-       Las páginas públicas reescriben este bloque y conservan la portada.
-       ========================================================================= #}
+    {% comment %}
+    Navegación del sistema: sidebar lateral + barra superior de contexto.
+    Las páginas públicas reescriben este bloque y conservan la portada.
+    {% endcomment %}
 
     <aside class="sidebar" id="sidebar" aria-label="Menú principal">
         <div class="sidebar-top">
@@ -119,8 +119,8 @@
         </div>
 
         <nav class="sidebar-nav" id="sidebarNav" aria-label="Secciones">
-            {# El estado activo sale del nombre de la URL: cada sección ya no
-               declara su propio bloque de navegación. #}
+            {% comment %}El estado activo sale del nombre de la URL: cada sección
+            ya no declara su propio bloque de navegación.{% endcomment %}
 
             {% if request.user.rol == 'usuario' %}
             <div class="sidebar-group">
@@ -326,8 +326,8 @@
 
     {% endif %}
 
-    {# Una sola cabecera para todos: cambia de aspecto segun haya sesion, pero
-       los bloques de titulo se escriben una unica vez. #}
+    {% comment %}Una sola cabecera para todos: cambia de aspecto segun haya sesion,
+    pero los bloques de titulo se escriben una unica vez.{% endcomment %}
     <header class="{% if request.user.is_authenticated %}topbar{% else %}brand-header{% endif %}">
         {% if request.user.is_authenticated %}
         <button type="button" class="topbar-burger" id="sidebarBurger" aria-label="Abrir menú" aria-expanded="false">
