@@ -9,11 +9,11 @@
 {% block extra_css %}
 <style>
 .usuarios-page .brand-titles { display: none; }
-/* Scroll vertical fino al lado de la tabla (se resalta al pasar el ratón) */
+/* Scroll vertical fino al lado de la tabla (se resalta al pasar el ratón).
+   El alto lo pone .tabla-scroll-seis, que deja seis filas a la vista. */
 .usuarios-page .table-card .table-scroll {
-    max-height: 580px;
     overflow-y: auto;
-    overscroll-behavior: auto;
+    overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: rgba(120, 104, 84, .45) transparent;
 }
@@ -193,7 +193,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     {% endif %}
 
     <div class="table-card">
-        <div class="table-scroll">
+        <div class="table-scroll tabla-scroll-seis" data-filas="6">
             <table class="data-table cards-mobile" id="tablaUsuarios">
                 <thead>
                     <tr>

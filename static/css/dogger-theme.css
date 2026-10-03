@@ -6140,9 +6140,11 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
   padding: 1px 0;
 }
 .obs-tecnicos li + li { border-top: 1px dotted var(--line); }
-/* Tabla de resultados: seis filas a la vista y el resto con scroll. */
+/* Tabla de resultados: seis filas a la vista y el resto con scroll.
+   El alto lo calcula dogger.js midiendo la fila real de cada tabla, asi que
+   --alto-filas se deja como respaldo para cuando el script no corre. */
 .tabla-scroll-seis {
-  max-height: 372px;
+  max-height: var(--alto-filas, 372px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;

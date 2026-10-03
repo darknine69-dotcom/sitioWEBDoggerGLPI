@@ -928,6 +928,54 @@
         });
     }
 
+
+    /* ---- Tablas con scroll: exactamente N filas a la vista ----
+       Cada tabla se ve densa, asi que una altura fija deja 4 filas en una y
+       8 en otra. Se mide la fila real y se limita el alto a la del encabezado
+       mas N filas: siempre se ven las mismas N, ni mas ni menos. */
+    function ajustarFilas(wrap) {
+        var tabla = wrap.querySelector("table");
+        if (!tabla) return;
+        var thead = wrap.querySelector("thead");
+        var filas = wrap.querySelectorAll("tbody tr");
+        if (!filas.length) { wrap.style.removeProperty("--alto-filas"); return; }
+        var n = parseInt(wrap.getAttribute("data-filas"), 10) || 6;
+        // Se promedian las primeras n filas para que una fila alta
+        // no empuje la altura de toda la tabla.
+        var muestra = Array.prototype.slice.call(filas, 0, n);
+        var suma = 0;
+        muestra.forEach(function (f) { suma += f.offsetHeight; });
+        var alto = (suma / muestra.length) * n + (thead ? thead.offsetHeight : 0);
+        wrap.style.setProperty("--alto-filas", Math.ceil(alto) + "px");
+    }
+
+    function ajustarTablas() {
+        var wraps = document.querySelectorAll("[data-filas]");
+        wraps.forEach(ajustarFilas);
+        // Se vuelve a medir cuando cambian las filas: al abrir la ficha de un
+        // usuario se inserta una fila y el alto volveria a quedar corto.
+        wraps.forEach(function (wrap) {
+            var cuerpo = wrap.querySelector("tbody");
+            if (!cuerpo || cuerpo.dataset.observado) return;
+            cuerpo.dataset.observado = "1";
+            new MutationObserver(function () {
+                clearTimeout(cuerpo._t);
+                cuerpo._t = setTimeout(ajustarFilas, 80);
+            }).observe(cuerpo, { childList: true });
+        });
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", ajustarTablas);
+    } else {
+        ajustarTablas();
+    }
+    window.addEventListener("load", ajustarTablas);
+    var pending;
+    window.addEventListener("resize", function () {
+        clearTimeout(pending);
+        pending = setTimeout(ajustarTablas, 150);
+    });
+
     /* ---- Arranque del refresco automático ---- */
     if (URL_API) {
         // Al entrar, lo que ya se está viendo pasa a leído: el contador se
