@@ -243,6 +243,45 @@
         window.addEventListener("resize", function () {
             if (window.innerWidth > 1080) abrir(false);
         });
+
+        /* Aviso con el nombre del enlace al pasar el ratón por un icono.
+           Va pegado al body y posicionado con fixed porque el menú es la
+           zona desplazable: dentro de él el rótulo se recortaba. */
+        var tip = document.createElement("div");
+        tip.className = "sidebar-tip";
+        tip.setAttribute("role", "tooltip");
+        tip.hidden = true;
+        document.body.appendChild(tip);
+
+        function plegado() {
+            return document.documentElement.getAttribute("data-navcompact") === "1"
+                && window.innerWidth > 1080;
+        }
+        function mostrarTip(link) {
+            var texto = link.getAttribute("data-title");
+            if (!texto) return;
+            tip.textContent = texto;
+            tip.hidden = false;
+            var r = link.getBoundingClientRect();
+            var alto = tip.offsetHeight;
+            var arriba = r.top + (r.height / 2) - (alto / 2);
+            tip.style.left = (r.right + 10) + "px";
+            tip.style.top = Math.max(8, Math.min(arriba, window.innerHeight - alto - 8)) + "px";
+        }
+        function ocultarTip() { tip.hidden = true; }
+
+        side.querySelectorAll(".sidebar-link").forEach(function (link) {
+            link.addEventListener("mouseenter", function () { if (plegado()) mostrarTip(link); });
+            link.addEventListener("focus", function () { if (plegado()) mostrarTip(link); });
+            link.addEventListener("mouseleave", ocultarTip);
+            link.addEventListener("blur", ocultarTip);
+        });
+        side.addEventListener("scroll", ocultarTip, { passive: true });
+        if (plegar) plegar.addEventListener("click", ocultarTip);
+        window.addEventListener("resize", ocultarTip);
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape") ocultarTip();
+        });
     })();
 
     /* ---- Nombre de archivos seleccionados + preview de imagen ---- */

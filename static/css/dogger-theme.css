@@ -6628,48 +6628,82 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
 /* La página ya no está debajo de una barra fija, así no hace falta el offset. */
 body:has(> .sidebar) { scroll-padding-top: 80px; }
 
-/* ---- Modo plegado: solo iconos ---- */
+/* ---- Modo plegado: una barra de solo iconos ----
+   El botón de desplegar deja de flotar (se montaba encima del logo) y los
+   rótulos se ocultan sin desaparecer del árbol de accesibilidad. */
 html[data-navcompact="1"] body:has(> .sidebar) { padding-left: 84px; }
 html[data-navcompact="1"] .sidebar { width: 84px; }
-html[data-navcompact="1"] .sidebar-top { padding: 15px 0 15px 12px; flex-direction: column; gap: 10px; }
+
+html[data-navcompact="1"] .sidebar-top {
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 10px;
+}
 html[data-navcompact="1"] .sidebar-brand { justify-content: center; flex: none; }
-html[data-navcompact="1"] .sidebar-brand-txt,
-html[data-navcompact="1"] .sidebar-group-title,
-html[data-navcompact="1"] .sidebar-label,
-html[data-navcompact="1"] .sidebar-link { justify-content: center; padding: 11px 0; }
-html[data-navcompact="1"] .sidebar-link.is-active::before { left: -12px; }
+html[data-navcompact="1"] .sidebar-toggle { position: static; }
+
+/* El texto del grupo se sustituye por una línea divisoria. */
+html[data-navcompact="1"] .sidebar-group-title { display: none; }
+html[data-navcompact="1"] .sidebar-group + .sidebar-group {
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, .09);
+}
+html[data-navcompact="1"] .sidebar-nav { padding: 10px 8px 18px; }
+
+html[data-navcompact="1"] .sidebar-link {
+  justify-content: center;
+  height: 42px;
+  padding: 0;
+  border-radius: 11px;
+}
 html[data-navcompact="1"] .sidebar-ico { display: block; }
+/* El rótulo se oculta sin display: none para que el enlace conserve su
+   nombre accesible en los lectores de pantalla. */
+html[data-navcompact="1"] .sidebar-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+html[data-navcompact="1"] .sidebar-link.is-active::before { left: -8px; }
+/* El contador se ancla a la esquina del icono. */
 html[data-navcompact="1"] .sidebar-count {
   position: absolute;
-  top: 3px;
-  right: 5px;
-  min-width: 17px;
-  padding: 1px 5px;
-  font-size: 9.5px;
+  top: 6px;
+  left: 50%;
+  margin-left: 2px;
+  min-width: 16px;
+  padding: 1px 4px;
+  font-size: 9px;
 }
-html[data-navcompact="1"] .sidebar-toggle { position: absolute; top: 68px; right: 8px; z-index: 2; }
 
-/* Aviso emergente al pasar el ratón por un icono plegado. */
-html[data-navcompact="1"] .sidebar-link::after {
-  content: attr(data-title);
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 6px 10px;
-  border-radius: 8px;
+/* Rótulo flotante del enlace, creado desde JS fuera del menú desplazable. */
+.sidebar-tip {
+  position: fixed;
+  z-index: 200;
+  max-width: 240px;
+  padding: 7px 11px;
+  border-radius: 9px;
   background: #14100E;
+  border: 1px solid rgba(255, 255, 255, .12);
   color: #fff;
-  font-size: 12px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
   font-weight: 600;
+  line-height: 1.3;
   white-space: nowrap;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, .4);
-  opacity: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .45);
   pointer-events: none;
-  transition: opacity .14s ease;
-  z-index: 4;
 }
-html[data-navcompact="1"] .sidebar-link:hover::after { opacity: 1; }
+.sidebar-tip[hidden] { display: none; }
 
 /* ---- Cajón deslizante en pantallas pequeñas ---- */
 .sidebar-backdrop {
@@ -6693,17 +6727,34 @@ html[data-navcompact="1"] .sidebar-link:hover::after { opacity: 1; }
   .topbar-burger { display: flex; }
   .topbar-top { padding: 6px 16px; }
   .topbar > .header-row { padding: 10px 16px; }
-  /* En el cajón siempre va completo: el ancho completo es lo cómodo al navegar. */
+  /* En el cajón siempre va completo: el ancho completo es lo cómodo al navegar,
+     así que aquí se deshace una por una las reglas del modo plegado. */
   html[data-navcompact="1"] body:has(> .sidebar) { padding-left: 0; }
   html[data-navcompact="1"] .sidebar { width: 272px; }
   html[data-navcompact="1"] .sidebar-top { padding: 15px 12px 15px 16px; flex-direction: row; }
   html[data-navcompact="1"] .sidebar-brand { justify-content: flex-start; flex: 1; }
   html[data-navcompact="1"] .sidebar-brand-txt { display: flex; }
   html[data-navcompact="1"] .sidebar-group-title { display: block; }
-  html[data-navcompact="1"] .sidebar-label { display: block; }
-  html[data-navcompact="1"] .sidebar-link { justify-content: flex-start; padding: 10px 12px; }
+  html[data-navcompact="1"] .sidebar-group + .sidebar-group { margin-top: 16px; padding-top: 0; border-top: 0; }
+  html[data-navcompact="1"] .sidebar-nav { padding: 12px 12px 20px; }
+  html[data-navcompact="1"] .sidebar-link { justify-content: flex-start; height: auto; padding: 10px 12px; }
+  html[data-navcompact="1"] .sidebar-link.is-active::before { left: -12px; }
+  html[data-navcompact="1"] .sidebar-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+  html[data-navcompact="1"] .sidebar-count {
+    position: static;
+    margin-left: auto;
+    min-width: 22px;
+    padding: 2px 7px;
+    font-size: 10.5px;
+  }
   html[data-navcompact="1"] .sidebar-toggle { position: static; }
-  html[data-navcompact="1"] .sidebar-link::after { display: none; }
 }
 
 @media (max-width: 560px) {
