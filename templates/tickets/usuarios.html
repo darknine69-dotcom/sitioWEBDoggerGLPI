@@ -415,9 +415,9 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                 <div class="form-group">
                     <label for="u-rol">Rol <span class="req">*</span></label>
                     <select name="rol" id="u-rol">
-                        <option value="usuario">Usuario</option>
-                        <option value="tecnico">Técnico</option>
-                        <option value="admin">Administrador</option>
+                        {% for valor, etiqueta in rol_choices %}
+                        <option value="{{ valor }}">{{ etiqueta }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="form-group">

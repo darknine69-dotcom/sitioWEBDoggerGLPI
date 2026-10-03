@@ -1531,6 +1531,9 @@ def usuarios_lista(request):
             "glpi_error": glpi_error,
             "per_page": pp_us,
             "tipo_label": _tipo_label,
+            # Los roles salen del formulario, para que el desplegable y la
+            # validación no se puedan quedar desincronizados.
+            "rol_choices": UsuarioPanelForm.ROL_CHOICES,
             "hoy": date.today(),
             "n_nuevos": User.objects.filter(fecha_creacion__gte=hace_7d).count(),
             "n_en_linea": User.objects.filter(last_login__gte=hace_10min).count(),
