@@ -3,18 +3,11 @@
 {% block title %}Dogger · Categorías{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_categorias %}is-active{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Categorías{% endblock %}
+{% block header_desc %}Organiza las solicitudes por grupo y subcategoría · sincronizado con GLPI.{% endblock %}
 
 {% block content %}
 <main class="page">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Categorías</h2>
-            <p>Organiza las solicitudes por grupo y subcategoría · sincronizado con GLPI.</p>
-        </div>
-    </div>
 
     <div class="cats-manager">
 
@@ -58,38 +51,6 @@
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm">Crear</button>
             </div>
-
-            <div class="cat-new-extra">
-                <div>
-                    <label>Técnicos que atienden esta categoría</label>
-                    <p class="panel-sub sub-note">
-                        Se puede marcar más de uno. El autocompletado marca en verde
-                        a los que están disponibles hoy y en rojo a los que tienen
-                        falta o ausencia.
-                    </p>
-                    <div class="cat-tec-list" data-tec-list>
-                        {% for t in disponibilidad_tec %}
-                        <label class="cat-tec" data-estado="{{ t.nivel }}">
-                            <input type="checkbox" name="tecnicos" value="{{ t.id }}"
-                                   data-nombre="{{ t.nombre|lower }}"
-                                   data-nivel="{{ t.nivel }}">
-                            <span class="cat-tec-nombre">{{ t.nombre }}</span>
-                            <span class="cat-tec-estado">{{ t.etiqueta }}</span>
-                        </label>
-                        {% empty %}
-                        <p class="panel-sub">Todavía no hay técnicos activos.</p>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div>
-                    <label for="id_descripcion">Descripción</label>
-                    {{ form.descripcion }}
-                    <label for="id_ejemplos">Ejemplos de casos</label>
-                    {{ form.ejemplos }}
-                </div>
-            </div>
-            {% if form.tecnicos.errors %}<p class="cat-error">{{ form.tecnicos.errors|join:", " }}</p>{% endif %}
-            {% if form.tecnico_default.errors %}<p class="cat-error">{{ form.tecnico_default.errors|join:", " }}</p>{% endif %}
         </form>
 
         {% for grupo in arbol %}
@@ -149,23 +110,6 @@
                                 </select>
                                 <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
                                 <button type="button" class="btn btn-outline btn-sm" data-inline-toggle="editar-cat-{{ sub.pk }}">Cancelar</button>
-                                <div class="cat-edit-extra">
-                                    <label class="cat-edit-label">También atienden esta categoría:</label>
-                                    {% for t in disponibilidad_tec %}
-                                    <label class="cat-tec cat-tec-sm" data-estado="{{ t.nivel }}">
-                                        <input type="checkbox" name="tecnicos" value="{{ t.id }}"
-                                               {% if t.id in sub.tecnicos.all %}checked{% endif %}
-                                               data-nombre="{{ t.nombre|lower }}"
-                                               data-nivel="{{ t.nivel }}">
-                                        <span class="cat-tec-nombre">{{ t.nombre }}</span>
-                                        <span class="cat-tec-estado">{{ t.etiqueta }}</span>
-                                    </label>
-                                    {% endfor %}
-                                    <textarea name="descripcion" rows="2"
-                                              placeholder="Descripción">{{ sub.descripcion|default_if_none:'' }}</textarea>
-                                    <textarea name="ejemplos" rows="2"
-                                              placeholder="Ejemplos de casos">{{ sub.ejemplos|default_if_none:'' }}</textarea>
-                                </div>
                             </form>
                         </td>
                     </tr>
@@ -206,61 +150,4 @@
 
 {% block extra_js %}
 {{ form.media }}
-<script>
-(function () {
-    "use strict";
-    var raiz = document.querySelector(".cats-manager");
-    if (!raiz) { return; }
-
-    // ---- Autocompletado de técnicos: escribe y se van marcando los que
-    //      coinciden con lo que hay en la categoría, ordenados por los que
-    //      están disponibles hoy.
-    var buscador = document.createElement("div");
-    buscador.className = "cat-tec-busca";
-    buscador.innerHTML = '<input type="search" placeholder="Escribe para filtrar técnicos…" ' +
-        'aria-label="Filtrar técnicos" autocomplete="off"><span class="cat-tec-msg"></span>';
-    var lista = raiz.querySelector("[data-tec-list]");
-    if (lista) { lista.parentNode.insertBefore(buscador, lista); }
-
-    var input = buscador.querySelector("input");
-    var msg = buscador.querySelector(".cat-tec-msg");
-
-    function filtrar() {
-        var q = (input.value || "").trim().toLowerCase();
-        var visibles = 0;
-        raiz.querySelectorAll(".cat-tec").forEach(function (et) {
-            var coincide = !q || (et.dataset.nombre || "").indexOf(q) !== -1;
-            et.hidden = !coincide;
-            if (coincide) { visibles++; }
-        });
-        msg.textContent = q ? (visibles + (visibles === 1 ? " técnico" : " técnicos")) : "";
-    }
-    if (input) { input.addEventListener("input", filtrar); }
-
-    // Al marcar/desmarcar, el principal se mantiene consistente: si el
-    // técnico por defecto no está marcado, se marca solo.
-    var selPrincipal = raiz.querySelector("select[name=tecnico_default]");
-    function sincronizarPrincipal() {
-        if (!selPrincipal || !selPrincipal.value) { return; }
-        var marcar = raiz.querySelector(
-            '.cat-tec input[value="' + selPrincipal.value + '"]'
-        );
-        if (marcar) { marcar.checked = true; }
-    }
-    if (selPrincipal) { selPrincipal.addEventListener("change", sincronizarPrincipal); }
-
-    raiz.querySelectorAll('.cat-tec input[type=checkbox]').forEach(function (c) {
-        c.addEventListener("change", function () {
-            var et = c.closest(".cat-tec");
-            if (et) { et.classList.toggle("is-checked", c.checked); }
-            if (selPrincipal && c.checked && !selPrincipal.value) {
-                selPrincipal.value = c.value;
-            }
-        });
-        var et0 = c.closest(".cat-tec");
-        if (et0) { et0.classList.toggle("is-checked", c.checked); }
-    });
-})();
-</script>
-{% endblock %}
-{% block footer %}{% include "tickets/_redes.html" %}{% endblock %}
+{% endblock %}

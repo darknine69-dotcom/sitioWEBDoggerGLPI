@@ -2,17 +2,11 @@
 
 {% block title %}Dogger · Buscar{% endblock %}
 {% block body_class %}observador-shell{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Observación{% endblock %}
+{% block header_desc %}Localiza una persona o un punto de tus zonas y guárdalo en tu panel personal.{% endblock %}
 
 {% block content %}
 <main class="page obs-page">
-    <div class="page-head">
-        <div class="page-head-titles">
-            <h2>Buscar y agregar a mi lista</h2>
-            <p>Localiza una persona o un punto de tus zonas y guárdalo en tu panel personal.</p>
-        </div>
-    </div>
 
     {% include "observador/_menu.html" with activa="buscar" %}
 
@@ -33,7 +27,39 @@
     {% if q %}
 
     <section class="obs-bloque">
-        <h3 class="obs-bloque-titulo">Personas</h3>
+        <h3 class="obs-bloque-titulo">Cuentas de la aplicación</h3>
+        <ul class="obs-resultados">
+            {% for c in resultados.cuentas %}
+            <li class="obs-resultado">
+                <span class="obs-resultado-ic"><svg class="icon"><use href="#i-user"/></svg></span>
+                <span class="obs-resultado-txt">
+                    <strong>{{ c.nombre }}</strong>
+                    <small>
+                        {{ c.rol }}{% if c.ubicacion %} · {{ c.ubicacion }}{% endif %}
+                        {% if c.total %} · {{ c.abiertos }} abiertos de {{ c.total }}{% endif %}
+                        {% if c.tecnico %} · técnico {{ c.tecnico }}{% endif %}
+                    </small>
+                </span>
+                {% if c.email %}
+                <form method="post" action="{% url 'tickets:obs_agregar' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="email" value="{{ c.email }}">
+                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-sm {% if c.ya_agregado %}btn-ghost{% else %}btn-accent{% endif %}">
+                        {% if c.ya_agregado %}En tu lista{% else %}Agregar a mi lista{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </li>
+            {% empty %}
+            <li class="obs-sin-datos">Ninguna cuenta coincide con “{{ q }}”.</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    {% if resultados.personas %}
+    <section class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Personas que solo aparecen en tickets</h3>
         <ul class="obs-resultados">
             {% for p in resultados.personas %}
             <li class="obs-resultado">
@@ -53,11 +79,10 @@
                 </form>
                 {% endif %}
             </li>
-            {% empty %}
-            <li class="obs-sin-datos">Ninguna persona coincide con “{{ q }}”.</li>
             {% endfor %}
         </ul>
     </section>
+    {% endif %}
 
     <section class="obs-bloque">
         <h3 class="obs-bloque-titulo">Puntos o zonas</h3>

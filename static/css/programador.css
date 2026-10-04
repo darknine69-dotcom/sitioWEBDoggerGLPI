@@ -436,3 +436,15 @@
     .prog-modal .modal-head { padding: 15px 18px; }
     .prog-modal .modal-body { padding: 18px 18px 22px; }
 }
+/* Cuerpo del formulario de evento: cambia con el tipo elegido. */
+.ev-pista {
+    margin: 2px 0 10px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    background: #F7F4F1;
+    border-left: 3px solid var(--dogger-red);
+    border-radius: 0 8px 8px 0;
+    padding: 7px 11px;
+}
+.ev-cuerpo:empty { display: none; }
+.prog-modal .corp-field .corp-ayuda { color: var(--ink-muted); }

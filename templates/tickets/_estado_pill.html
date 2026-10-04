@@ -1,1 +1,22 @@
+{% comment %}
+    Distintivos de estado.
+
+    Al marcar un ticket como resuelto este se cierra, así que normalmente
+    lleva los dos: "Resuelto" (la marca de que hubo un "marcar resuelto") y
+    "Cerrado". Pero en el filtro de Cerradas solo se muestra "Cerrado", que es
+    lo que se está mirando ahí.
+
+    Se usan `resuelto` y `cerrado` para no repetir la condición en las 11
+    plantillas que incluyen esta. El `id`, cuando se pasa, va en el primero:
+    el JS de la ficha los actualiza por separado.
+{% endcomment %}
+{% if not mostrar_resuelto and filtro_estado == 'cerrado' %}
+{# En el filtro de cerradas solo interesa el estado cerrado. #}
+<span class="status-pill status-cerrado{% if id %} is-cerrado-pill{% endif %}"{% if id %} id="{{ id }}"{% endif %}>Cerrado</span>
+{% elif cerrado %}
+<span class="status-pill status-resuelto{% if id %} is-resuelto-pill{% endif %}"{% if id %} id="{{ id }}"{% endif %}>Resuelto</span><span class="status-pill status-cerrado{% if id %} is-cerrado-pill{% endif %}"{% if id %} id="{{ id }}-cerrado"{% endif %}>Cerrado</span>
+{% elif resuelto %}
+<span class="status-pill status-resuelto{% if id %} is-resuelto-pill{% endif %}"{% if id %} id="{{ id }}"{% endif %}>Resuelto</span>
+{% else %}
 <span class="status-pill status-{{ estado }}"{% if id %} id="{{ id }}"{% endif %}>{{ label }}</span>
+{% endif %}

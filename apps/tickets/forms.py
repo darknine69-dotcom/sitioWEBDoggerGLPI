@@ -191,35 +191,12 @@ class TicketEdicionForm(forms.ModelForm):
 class CategoriaForm(forms.ModelForm):
     class Meta:
         model = Categoria
-        fields = [
-            "grupo",
-            "nombre",
-            "prioridad_default",
-            "ans_horas",
-            "glpi_category_id",
-            "tecnico_default",
-            "tecnicos",
-            "descripcion",
-            "ejemplos",
-        ]
+        fields = ["grupo", "nombre", "prioridad_default", "ans_horas", "glpi_category_id", "tecnico_default"]
         widgets = {
             "grupo": forms.TextInput(
                 attrs={"list": "lista-grupos", "placeholder": "Ej: SIESA ERP"}
             ),
             "nombre": forms.TextInput(attrs={"placeholder": "Ej: POS-FE"}),
-            "tecnicos": forms.CheckboxSelectMultiple(),
-            "descripcion": forms.Textarea(
-                attrs={
-                    "rows": 3,
-                    "placeholder": "Para qué sirve esta categoría y cuándo usarla.",
-                }
-            ),
-            "ejemplos": forms.Textarea(
-                attrs={
-                    "rows": 3,
-                    "placeholder": "Un ejemplo por línea, p. ej. «No imprime el ticket».",
-                }
-            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -229,29 +206,6 @@ class CategoriaForm(forms.ModelForm):
         ).order_by("nombre")
         self.fields["tecnico_default"].required = False
         self.fields["glpi_category_id"].required = False
-        # Varios técnicos: los que atienden la categoría.
-        self.fields["tecnicos"].queryset = User.objects.filter(
-            activo=True, rol__in=["admin", "tecnico"]
-        ).order_by("nombre")
-        self.fields["tecnicos"].required = False
-        self.fields["descripcion"].required = False
-        self.fields["ejemplos"].required = False
-
-    def clean(self):
-        limpio = super().clean()
-        # Si hay varios técnicos marcados, el principal no puede quedar fuera.
-        if self.errors:
-            return limpio
-        varios = limpio.get("tecnicos")
-        principal = limpio.get("tecnico_default")
-        if varios and principal and principal not in varios:
-            limpio["tecnico_default"] = principal
-            self.add_error(
-                "tecnicos",
-                "El técnico principal también debe estar en la lista de "
-                "técnicos que atienden la categoría.",
-            )
-        return limpio
 
 
 class UsuarioPanelForm(forms.Form):
@@ -260,6 +214,7 @@ class UsuarioPanelForm(forms.Form):
     ROL_CHOICES = [
         ("usuario", "Usuario"),
         ("tecnico", "Técnico"),
+        ("observador", "Observador"),
         ("admin", "Administrador"),
     ]
 

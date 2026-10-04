@@ -13,6 +13,13 @@ urlpatterns = [
     path("notificaciones/", include("apps.notificaciones.urls")),
 ]
 
+# Las páginas de "no tienes acceso" y "no encontramos esa página" son las de
+# Dogger, no las grises de Django. Son dos manejadores y no uno porque varias
+# vistas lanzan Http404 (que es un 404, no un 403) cuando el registro no es
+# visible para quien pregunta.
+handler403 = "apps.accounts.views.pagina_no_autorizada"
+handler404 = "apps.accounts.views.pagina_no_encontrada"
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])

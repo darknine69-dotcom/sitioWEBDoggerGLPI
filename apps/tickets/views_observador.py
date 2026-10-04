@@ -14,11 +14,13 @@ aunque manipule la URL no llega a ver zonas ajenas.
 import csv
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
-from django.http import Http404, HttpResponse, JsonResponse
+from django.db.models import Q
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+
+from apps.accounts.models import Usuario
 
 from .models import ElementoMiLista, ObservadorPunto, Punto, Ticket
 
@@ -38,7 +40,7 @@ def solo_observador(vista):
     def envoltura(request, *args, **kwargs):
         usuario = request.user
         if not getattr(usuario, "es_observador", False):
-            return render(request, "403.html", status=403)
+            return render(request, "forbidden.html", status=403)
         return vista(request, *args, **kwargs)
 
     envoltura.__name__ = vista.__name__
@@ -99,10 +101,23 @@ def _resumen_por_punto(usuario):
         if clave not in puntos:
             continue
         fila = por_punto.setdefault(
-            clave, {"punto": clave, "total": 0, "estado": ESTADO_VERDE, "sin_tecnico": 0}
+            clave,
+            {
+                "punto": clave,
+                "total": 0,
+                "estado": ESTADO_VERDE,
+                "sin_tecnico": 0,
+                "verde": 0,
+                "rojo": 0,
+                "amarillo": 0,
+                "abiertos": 0,
+            },
         )
         fila["total"] += 1
         estado = _estado_de(t, ahora)
+        fila[estado] += 1
+        if t.estado in _ACTIVOS:
+            fila["abiertos"] += 1
         # El peor estado manda: si hay algo rojo, el punto aparece en rojo.
         orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
         if orden[estado] > orden[fila["estado"]]:
@@ -110,6 +125,80 @@ def _resumen_por_punto(usuario):
         if not t.tecnico_asignado_id:
             fila["sin_tecnico"] += 1
     return [por_punto[p] for p in puntos]
+
+
+def _resumen_por_correo(usuario):
+    """Acumula, por correo, los tickets de las zonas del observador.
+
+    De cada persona deja cuántos tickets lleva, cuántos se resolvieron y qué
+    técnicos tiene asignados. Es lo que permite mostrar el avance de la
+    resolución y quién está viendo el caso.
+    """
+    resumen = {}
+
+    def fila(correo):
+        return resumen.setdefault(
+            correo,
+            {
+                "total": 0,
+                "abiertos": 0,
+                "resueltos": 0,
+                "cerrados": 0,
+                "en_progreso": 0,
+                "tecnicos": {},
+                "puntos": set(),
+                "estado": ESTADO_VERDE,
+                "ultimo": None,
+            },
+        )
+
+    for t in _visible_a_observador(usuario, Ticket.objects.all()).select_related(
+        "tecnico_asignado"
+    ):
+        correo = (t.solicitante_email or "").strip().lower()
+        if not correo:
+            continue
+        f = fila(correo)
+        f["total"] += 1
+        if t.estado in _ACTIVOS:
+            f["abiertos"] += 1
+        if t.estado == Ticket.Estado.RESUELTO:
+            f["resueltos"] += 1
+        elif t.estado == Ticket.Estado.CERRADO:
+            f["cerrados"] += 1
+        elif t.estado == Ticket.Estado.EN_PROGRESO:
+            f["en_progreso"] += 1
+        if t.tecnico_asignado_id:
+            nombre = (t.tecnico_asignado.nombre or "").strip()
+            if nombre:
+                f["tecnicos"][nombre] = f["tecnicos"].get(nombre, 0) + 1
+        if t.solicitante_punto:
+            f["puntos"].add(t.solicitante_punto.strip())
+        if t.fecha_creacion and (f["ultimo"] is None or t.fecha_creacion > f["ultimo"]):
+            f["ultimo"] = t.fecha_creacion
+
+    for f in resumen.values():
+        f["puntos"] = sorted(f["puntos"])
+        f["tecnico_principal"] = (
+            max(f["tecnicos"].items(), key=lambda kv: kv[1])[0]
+            if f["tecnicos"] else ""
+        )
+        f["tecnicos"] = [
+            {"nombre": nombre, "tickets": cuentas}
+            for nombre, cuentas in sorted(
+                f["tecnicos"].items(), key=lambda kv: (-kv[1], kv[0])
+            )
+        ]
+        f["cerrados_total"] = f["resueltos"] + f["cerrados"]
+        f["avance"] = (
+            int(round(100.0 * f["cerrados_total"] / f["total"])) if f["total"] else 0
+        )
+        # Verde si ya no queda nada pendiente, amarillo si sigue abierto.
+        if f["abiertos"]:
+            f["estado"] = ESTADO_AMARILLO
+        else:
+            f["estado"] = ESTADO_VERDE
+    return resumen
 
 
 # ------------------------------------------------------------------- vistas
@@ -166,6 +255,11 @@ def panel_observador(request):
             "tarjetas": tarjetas,
             "personas": lista_personas,
             "total_tickets": total_tickets,
+            "total_personas": len(lista_personas),
+            "total_zonas": len(tarjetas),
+            "personas_en_alerta": sum(
+                1 for f in lista_personas if f["estado"] == ESTADO_ROJO
+            ),
             "conteo": _contar_por_estado(visibles),
             "sin_puntos": not tarjetas,
         },
@@ -176,17 +270,51 @@ def panel_observador(request):
 def buscar_observador(request):
     """Búsqueda y agregación: encuentra personas o puntos y los mete a su lista.
 
-    El buscador nunca sale de los puntos asignados: lo que no es suyo no
-    aparece, así que no se puede filtrar la información por otro lado.
+    Busca en dos lados: en las cuentas de la aplicación (las mismas que ve el
+    administrador) y en los solicitantes que dejaron tickets en las zonas del
+    observador. Los puntos siguen limitados a los asignados.
     """
     usuario = request.user
     q = request.GET.get("q", "").strip()
     tipo = request.GET.get("tipo", "todo").strip()
-    resultados = {"personas": [], "puntos": []}
+    resultados = {"cuentas": [], "personas": [], "puntos": []}
 
+    # Las zonas nuevas se registran antes de filtrar, para que el buscador
+    # no se quede corto si los tickets todavia no las tienen.
+    Punto.sincronizar()
     puntos = puntos_del_observador(usuario)
 
     if q:
+        # Cuentas de la aplicación: mismo origen que la vista del admin, para
+        # que el observador encuentre a cualquiera que tenga usuario.
+        if tipo in ("todo", "persona"):
+            ya = set(
+                (e.usuario_email or "").strip().lower()
+                for e in ElementoMiLista.objects.filter(observador=usuario)
+            )
+            resumen = _resumen_por_correo(usuario)
+            consulta = Usuario.objects.filter(activo=True, is_active=True).filter(
+                Q(nombre__icontains=q) | Q(email__icontains=q)
+                | Q(ubicacion__icontains=q)
+            ).order_by("nombre")[:40]
+            for u in consulta:
+                correo = (u.email or "").strip().lower()
+                r = resumen.get(correo, {})
+                resultados["cuentas"].append(
+                    {
+                        "nombre": u.nombre or u.email,
+                        "email": correo,
+                        "rol": u.get_rol_display(),
+                        "ubicacion": u.ubicacion,
+                        "tecnico": r.get("tecnico_principal", ""),
+                        "total": r.get("total", 0),
+                        "abiertos": r.get("abiertos", 0),
+                        "avance": r.get("avance", 0),
+                        "falta": 100 - r.get("avance", 0),
+                        "ya_agregado": correo in ya,
+                    }
+                )
+
         # Puntos: coincidencia por nombre dentro de los asignados.
         if tipo in ("todo", "punto"):
             consulta_p = Punto.objects.filter(nombre__icontains=q)
@@ -222,17 +350,122 @@ def buscar_observador(request):
                 }
                 ya = ElementoMiLista.objects.filter(observador=usuario)
                 if correo:
-                    fila["ya_agregado"] = ya.filter(usuario__email=correo).exists()
+                    fila["ya_agregado"] = ya.filter(usuario_email=correo).exists()
                 elif fila["punto"]:
                     fila["ya_agregado"] = ya.filter(punto__nombre=fila["punto"]).exists()
                 else:
                     fila["ya_agregado"] = False
-            resultados["personas"] = list(vistos.values())[:40]
+            resultados["personas"] = [
+                p for p in vistos.values()
+                if p["email"] not in {c["email"] for c in resultados["cuentas"]}
+            ][:40]
 
     return render(
         request,
         "observador/buscar.html",
         {"q": q, "tipo": tipo, "resultados": resultados, "puntos": puntos},
+    )
+
+
+@solo_observador
+def usuarios_observador(request):
+    """Tabla de usuarios de la aplicación, con el avance de sus tickets.
+
+    Sale del mismo sitio que la vista del administrador, así que el observador
+    ve exactamente las cuentas que existen. Lo que se acota son los números:
+    los tickets que se cuentan son solo los de sus zonas, con su técnico y su
+    avance de resolución.
+    """
+    usuario = request.user
+    q = (request.GET.get("q") or "").strip()
+    rol = (request.GET.get("rol") or "").strip()
+    punto = (request.GET.get("punto") or "").strip()
+    estado = (request.GET.get("estado") or "").strip()
+    orden = (request.GET.get("orden") or "nombre").strip()
+
+    ya_en_lista = {
+        (e.usuario_email or "").strip().lower()
+        for e in ElementoMiLista.objects.filter(observador=usuario)
+        if (e.usuario_email or "").strip()
+    }
+    resumen = _resumen_por_correo(usuario)
+
+    cuentas = Usuario.objects.filter(activo=True, is_active=True)
+    if rol:
+        cuentas = cuentas.filter(rol=rol)
+    if q:
+        cuentas = cuentas.filter(
+            Q(nombre__icontains=q) | Q(email__icontains=q)
+            | Q(ubicacion__icontains=q)
+        )
+
+    filas = []
+    for u in cuentas.order_by("nombre"):
+        correo = (u.email or "").strip().lower()
+        r = resumen.get(correo, {})
+        filas.append(
+            {
+                "obj": u,
+                "nombre": u.nombre or u.email,
+                "email": correo,
+                "rol": u.get_rol_display(),
+                "ubicacion": u.ubicacion or "—",
+                "tecnico": r.get("tecnico_principal", ""),
+                "tecnicos": r.get("tecnicos", []),
+                "total": r.get("total", 0),
+                "abiertos": r.get("abiertos", 0),
+                "cerrados_total": r.get("cerrados_total", 0),
+                "avance": r.get("avance", 0),
+                "falta": 100 - r.get("avance", 0),
+                "estado": r.get("estado", ESTADO_VERDE),
+                "ya_agregado": correo in ya_en_lista,
+                "puntos": r.get("puntos", []),
+            }
+        )
+
+    total_sin_filtro = len(filas)
+
+    if punto:
+        filas = [f for f in filas if punto in (f["ubicacion"], *(f["puntos"] or []))]
+    if estado == "activos":
+        filas = [f for f in filas if f["abiertos"] > 0]
+    elif estado == "agregados":
+        filas = [f for f in filas if f["ya_agregado"]]
+    elif estado == "pendientes":
+        filas = [f for f in filas if not f["ya_agregado"]]
+    elif estado == "con_tickets":
+        filas = [f for f in filas if f["total"] > 0]
+    elif estado == "resueltos":
+        filas = [f for f in filas if f["total"] > 0 and f["avance"] == 100]
+
+    if orden == "abiertos":
+        filas.sort(key=lambda f: (-f["abiertos"], f["nombre"].lower()))
+    elif orden == "tickets":
+        filas.sort(key=lambda f: (-f["total"], f["nombre"].lower()))
+    elif orden == "avance":
+        filas.sort(key=lambda f: (f["avance"], -f["total"]))
+    else:
+        filas.sort(key=lambda f: f["nombre"].lower())
+
+    conteo = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
+    for f in filas:
+        conteo[f["estado"]] += 1
+
+    return render(
+        request,
+        "observador/usuarios.html",
+        {
+            "filas": filas,
+            "conteo": conteo,
+            "total": len(filas),
+            "total_sin_filtro": total_sin_filtro,
+            "q": q,
+            "rol_sel": rol,
+            "punto_sel": punto,
+            "estado_sel": estado,
+            "orden_sel": orden if orden in ("nombre", "abiertos", "tickets", "avance") else "nombre",
+            "puntos": puntos_del_observador(usuario),
+        },
     )
 
 
@@ -261,13 +494,18 @@ def _filas_de_mi_lista(usuario, elementos):
     puntos = puntos_del_observador(usuario)
     visibles = _visible_a_observador(usuario, Ticket.objects.all())
     ahora = timezone.now()
+    resumen = _resumen_por_correo(usuario)
     filas = []
     for e in elementos:
+        correo = (e.usuario_email or "").strip().lower()
         consulta = visibles
-        if e.usuario_id and e.usuario_email:
-            consulta = consulta.filter(solicitante_email=e.usuario_email)
+        if correo:
+            consulta = visibles.filter(
+                Q(solicitante_email__iexact=correo)
+                | Q(solicitante_nombre__iexact=e.usuario.nombre if e.usuario_id else "")
+            )
         elif e.punto_id:
-            consulta = consulta.filter(solicitante_punto=e.punto.nombre)
+            consulta = visibles.filter(solicitante_punto=e.punto.nombre)
         tickets = list(consulta.order_by("-fecha_creacion")[:60])
         estado = ESTADO_VERDE
         orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
@@ -275,10 +513,16 @@ def _filas_de_mi_lista(usuario, elementos):
             est = _estado_de(t, ahora)
             if orden[est] > orden[estado]:
                 estado = est
+        r = resumen.get(correo, {})
         filas.append(
             {
                 "elemento": e,
-                "nombre": e.usuario.nombre if e.usuario_id else (e.punto.nombre if e.punto_id else "—"),
+                "nombre": (
+                    e.usuario.nombre
+                    if e.usuario_id
+                    else (e.usuario_email or (e.punto.nombre if e.punto_id else "—"))
+                ),
+                "email": e.usuario_email or "",
                 "detalle": (
                     (e.punto.nombre if e.punto_id else "")
                     + (" · " if e.punto_id and e.usuario_id else "")
@@ -288,6 +532,15 @@ def _filas_de_mi_lista(usuario, elementos):
                 "abiertos": sum(1 for t in tickets if t.estado in _ACTIVOS),
                 "total": len(tickets),
                 "estado": estado,
+                "tecnico": r.get("tecnico_principal", ""),
+                "tecnicos": r.get("tecnicos", []),
+                "cerrados_total": sum(
+                    1 for t in tickets
+                    if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
+                ),
+                "avance": r.get("avance", 0),
+                "falta": 100 - r.get("avance", 0),
+                "es_punto": bool(e.punto_id and not e.usuario_id),
             }
         )
     return filas
@@ -305,10 +558,16 @@ def agregar_mi_lista(request):
 
     elemento = None
     if correo:
-        elemento, _ = ElementoMiLista.objects.get_or_create(
+        # La persona puede no tener usuario registrado: guardamos el correo
+        # siempre y enlazamos el usuario solo si existe.
+        ElementoMiLista.objects.filter(
+            observador=usuario, usuario_email=correo
+        ).delete()
+        elemento = ElementoMiLista.objects.create(
             observador=usuario,
-            usuario__email=correo,
-            defaults={"tipo": ElementoMiLista.TIPO_USUARIO},
+            tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario_email=correo,
+            usuario=Usuario.objects.filter(email__iexact=correo).first(),
         )
     elif nombre_punto:
         punto = Punto.objects.filter(nombre=nombre_punto).first()

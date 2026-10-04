@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static %}{% load asset %}
 
 {% block title %}Dogger · Programador{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_programador %}is-active{% endblock %}
-{% block header_eyebrow %}Dogger · Programación y disponibilidad{% endblock %}
 {% block header_title %}Programador{% endblock %}
+{% block header_desc %}Programa tareas, solicitudes, recordatorios y anuncios; gestiona la disponibilidad de los técnicos.{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/programador.css' %}">
+<link rel="stylesheet" href="{% asset 'css/programador.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -24,14 +24,8 @@
       data-url-disp="{% url 'programador:disponibilidad' %}"
       data-url-festivo="{% url 'programador:festivo' %}"
       data-url-detalle="{% url 'tickets:detalle' 0 %}">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% if request.user.rol == 'admin' %}{% url 'tickets:dashboard' %}{% else %}{% url 'tickets:panel_tecnico' %}{% endif %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Programador</h2>
-            <p>Programa tareas, solicitudes, recordatorios y anuncios; gestiona la disponibilidad de los técnicos.</p>
-        </div>
-        <div hidden>{% csrf_token %}</div>
-    </div>
+    {# El JavaScript de la página necesita el token para sus envíos por fetch. #}
+    <div hidden>{% csrf_token %}</div>
 
     {# ---- Filtros superiores ---- #}
     <div class="prog-filters">
@@ -142,49 +136,13 @@
                             <option value="anuncio">Anuncio</option>
                         </select>
                     </label>
-                    <label class="corp-field">Fecha
+                    <label class="corp-field" id="evFechaWrap">Fecha
                         <input type="date" name="fecha_show" id="evFechaShow" required>
                     </label>
                 </div>
-                <div class="corp-form-grid" id="evSolicitudWrap" hidden>
-                    <label class="corp-field corp-field-full">Vincular solicitud
-                        <select name="ticket_id" id="evTicket">
-                            <option value="">— Sin vincular —</option>
-                            {% for t in tickets_abiertos %}<option value="{{ t.pk }}">{{ t.codigo }} · {{ t.titulo|truncatechars:52 }}</option>{% endfor %}
-                        </select>
-                    </label>
-                </div>
-                <label class="corp-field corp-field-full">Título
-                    <input type="text" name="titulo" id="evTitulo" placeholder="Ej: Configuración de Caja 3" maxlength="150" required>
-                </label>
-                <div class="corp-form-grid">
-                    <label class="corp-field">Hora
-                        <input type="time" name="hora" id="evHora">
-                    </label>
-                    <label class="corp-field">Técnico
-                        <select name="tecnico_id" id="evTecnico">
-                            <option value="">— General —</option>
-                            {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
-                        </select>
-                    </label>
-                </div>
-                <div class="corp-form-grid">
-                    <label class="corp-field">Sitio
-                        <input type="text" name="sitio" id="evSitio" list="evSitios" placeholder="Base Site…">
-                    </label>
-                    <label class="corp-field">Grupo
-                        <select name="grupo" id="evGrupo">
-                            <option value="">— Grupo —</option>
-                            {% for g in grupos %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
-                        </select>
-                    </label>
-                </div>
-                <datalist id="evSitios">
-                    {% for s in sitios %}<option value="{{ s }}">{% endfor %}
-                </datalist>
-                <label class="corp-field corp-field-full">Descripción
-                    <textarea name="descripcion" rows="3" placeholder="Detalle del evento…"></textarea>
-                </label>
+                <p class="ev-pista" id="evPista"></p>
+                {# El cuerpo se arma en JS: cada tipo muestra sus propios campos. #}
+                <div class="corp-form-grid ev-cuerpo" id="evCuerpo"></div>
                 <div class="corp-modal-actions prog-modal-actions">
                     <button type="button" class="btn btn-outline btn-sm" id="evDispBtn"><svg class="icon"><use href="#i-clock"/></svg> Disponibilidad…</button>
                     {% if request.user.rol == 'admin' %}<button type="button" class="btn btn-outline btn-sm" id="evFestivoBtn"><svg class="icon"><use href="#i-home"/></svg> Festivo…</button>{% endif %}
@@ -194,6 +152,63 @@
             </form>
         </div>
     </div>
+</div>
+
+{% comment %}
+    Biblioteca de campos. Vive FUERA del <form>: JS mete en el formulario solo
+    los que corresponden al tipo elegido, asi los demas no se envian.
+{% endcomment %}
+<div id="evBiblioteca" hidden>
+    <datalist id="evSitios">
+        {% for s in sitios %}<option value="{{ s }}">{% endfor %}
+    </datalist>
+
+    <label class="corp-field corp-field-full" data-campo="titulo">
+        <span id="evTituloLabel">Título</span>
+        <input type="text" name="titulo" id="evTitulo" maxlength="150">
+        <small class="corp-ayuda" id="evTituloAyuda"></small>
+    </label>
+
+    <label class="corp-field" data-campo="hora">
+        Hora
+        <input type="time" name="hora" id="evHora">
+    </label>
+
+    <label class="corp-field" data-campo="tecnico">
+        <span id="evTecnicoLabel">Técnico</span>
+        <select name="tecnico_id" id="evTecnico">
+            <option value="">— General —</option>
+            {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
+        </select>
+    </label>
+
+    <label class="corp-field corp-field-full" data-campo="ticket">
+        Vincular solicitud
+        <select name="ticket_id" id="evTicket">
+            <option value="">— Sin vincular —</option>
+            {% for t in tickets_abiertos %}<option value="{{ t.pk }}">{{ t.codigo }} · {{ t.titulo|truncatechars:52 }}</option>{% endfor %}
+        </select>
+        <small class="corp-ayuda">El título y el punto se toman del ticket.</small>
+    </label>
+
+    <label class="corp-field" data-campo="sitio">
+        <span id="evSitioLabel">Sitio</span>
+        <input type="text" name="sitio" id="evSitio" list="evSitios">
+    </label>
+
+    <label class="corp-field" data-campo="grupo">
+        Grupo
+        <select name="grupo" id="evGrupo">
+            <option value="">— Grupo —</option>
+            {% for g in grupos %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+        </select>
+    </label>
+
+    <label class="corp-field corp-field-full" data-campo="descripcion">
+        <span id="evDescLabel">Descripción</span>
+        <textarea name="descripcion" rows="3"></textarea>
+        <small class="corp-ayuda" id="evDescAyuda"></small>
+    </label>
 </div>
 
 {# Modal: disponibilidad #}
@@ -293,5 +308,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/programador.js' %}"></script>
-{% endblock %}
+<script src="{% asset 'js/programador.js' %}"></script>
+{% endblock %}

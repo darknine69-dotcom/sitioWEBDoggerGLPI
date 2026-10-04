@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Monitoreo{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block nav_usuarios %}is-active{% endblock %}
+{% block header_title %}Monitoreo por zona{% endblock %}
+{% block header_desc %}Elige un observador, mira los usuarios activos y guárdalos en la zona que le toca. El observador los ve de inmediato en su panel.{% endblock %}
+
+{% block content %}
+<main class="wrap">
+
+    {% if not observadores %}
+    <div class="panel">
+        <p class="panel-sub">No hay observadores activos. Crea uno desde Usuarios y técnicos.</p>
+    </div>
+    {% else %}
+
+    <form method="get" class="cat-publico-busca" style="margin-bottom:18px">
+        <label for="f-obs" style="font-size:12px;font-weight:700">Observador</label>
+        <select name="observador" id="f-obs" class="obs-buscador-tipo" style="min-width:220px">
+            {% for pk, nombre in observadores %}
+            <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-sm">Cambiar</button>
+        <span class="muted" style="align-self:center">
+            Zonas asignadas:
+            {% if zonas %}{% for z in zonas %}<span class="chip chip-soft">{{ z }}</span>{% endfor %}
+            {% else %}<em>ninguna todavía</em>{% endif %}
+        </span>
+    </form>
+
+    <form method="get" class="cat-publico-busca" style="margin-bottom:18px;flex-wrap:wrap">
+        <input type="hidden" name="observador" value="{{ observador_id }}">
+        <div class="cat-publico-busca-campo" style="flex:1 1 240px">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="search" name="q" value="{{ q }}"
+                   placeholder="Nombre, correo o ubicación" aria-label="Buscar usuario">
+        </div>
+        <select name="rol" class="obs-buscador-tipo" aria-label="Filtrar por rol">
+            <option value="">Todos los roles</option>
+            <option value="usuario"{% if rol_sel == 'usuario' %} selected{% endif %}>Usuarios</option>
+            <option value="tecnico"{% if rol_sel == 'tecnico' %} selected{% endif %}>Técnicos</option>
+            <option value="admin"{% if rol_sel == 'admin' %} selected{% endif %}>Administradores</option>
+        </select>
+        <select name="zona" class="obs-buscador-tipo" aria-label="Filtrar por zona">
+            <option value="">Cualquier zona</option>
+            {% for z in zonas %}
+            <option value="{{ z }}"{% if zona_sel == z %} selected{% endif %}>{{ z }}</option>
+            {% endfor %}
+        </select>
+        <select name="estado" class="obs-buscador-tipo" aria-label="Filtrar por estado">
+            <option value="">Todos</option>
+            <option value="pendientes"{% if estado_sel == 'pendientes' %} selected{% endif %}>Sin agregar</option>
+            <option value="agregados"{% if estado_sel == 'agregados' %} selected{% endif %}>Ya agregados</option>
+            <option value="con_tickets"{% if estado_sel == 'con_tickets' %} selected{% endif %}>Con tickets abiertos</option>
+        </select>
+        <button type="submit" class="btn btn-sm">Filtrar</button>
+        <a href="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}" class="btn btn-outline btn-sm">Limpiar</a>
+    </form>
+
+    <div class="panel">
+        <p class="panel-sub">
+            {{ total }} usuario{{ total|pluralize }} activo{{ total|pluralize:"s, :" }}.
+            Se guarda en <strong>{{ zona_elegida|default:"la zona elegida" }}</strong> para
+            <strong>{{ observador.nombre }}</strong>.
+        </p>
+
+        <div class="table-card" style="margin-bottom:16px">
+            <div class="table-scroll">
+                <table class="obs-tabla">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Correo</th>
+                            <th>Rol</th>
+                            <th>Zona</th>
+                            <th class="num">Abiertos</th>
+                            <th>Monitoreo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in filas %}
+                        <tr>
+                            <td><strong>{{ f.nombre }}</strong></td>
+                            <td>{{ f.email|default:"—" }}</td>
+                            <td>{{ f.rol }}</td>
+                            <td>{{ f.ubicacion }}</td>
+                            <td class="num">
+                                {% if f.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ f.abiertos }}</span>
+                                {% else %}<span class="muted">0</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if f.ya_agregado %}
+                                <span class="obs-pill obs-pill-verde">En la lista</span>
+                                {% else %}
+                                <form method="post" action="{% url 'tickets:monitoreo_agregar' %}"
+                                      style="display:flex;gap:6px;align-items:center">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="observador" value="{{ observador_id }}">
+                                    <input type="hidden" name="email" value="{{ f.email }}">
+                                    <input type="hidden" name="zona" value="{{ zona_elegida }}">
+                                    <input type="hidden" name="volver"
+                                           value="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if rol_sel %}&amp;rol={{ rol_sel }}{% endif %}{% if zona_sel %}&amp;zona={{ zona_sel|urlencode }}{% endif %}{% if estado_sel %}&amp;estado={{ estado_sel }}{% endif %}">
+                                    <button type="submit" class="btn btn-sm btn-accent">Agregar</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="obs-sin-datos">Ningún usuario activo coincide con el filtro.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h3 class="cat-det-bloque" style="font-size:14px;margin-bottom:10px">Zonas del observador</h3>
+        <form method="post" action="{% url 'tickets:monitoreo_zonas' %}"
+              style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            {% csrf_token %}
+            <input type="hidden" name="observador" value="{{ observador_id }}">
+            <input type="hidden" name="volver" value="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}">
+            <select name="punto" class="obs-buscador-tipo" aria-label="Zona" required>
+                {% for z in zonas %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
+            </select>
+            <button type="submit" name="accion" value="asignar" class="btn btn-sm">Asignar zona</button>
+            <button type="submit" name="accion" value="quitar" class="btn btn-outline btn-sm">Quitar zona</button>
+        </form>
+    </div>
+    {% endif %}
+</main>
+{% endblock %}

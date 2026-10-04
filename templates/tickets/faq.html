@@ -2,6 +2,7 @@
 
 {% block title %}Preguntas frecuentes · Dogger{% endblock %}
 {% block header_title %}Preguntas frecuentes{% endblock %}
+{% block header_desc %}Las dudas más comunes y sus respuestas.{% endblock %}
 
 {% block header_actions %}
 <a href="{% url 'tickets:portal' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Portal</a>
@@ -11,4 +12,4 @@
 <main class="page">
     {% include "tickets/_faq.html" %}
 </main>
-{% endblock %}
+{% endblock %}

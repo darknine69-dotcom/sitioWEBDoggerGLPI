@@ -3,8 +3,8 @@
 {% block title %}Dogger · {% if es_admin %}Gestión de Tickets{% else %}Mis tickets{% endif %}{% endblock %}
 {% block body_class %}admin-shell lista-page{% endblock %}
 {% block nav_tickets %}is-active{% endblock %}
-{% block header_eyebrow %}{% endblock %}
-{% block header_title %}{% endblock %}
+{% block header_title %}Tickets{% endblock %}
+{% block header_desc %}{% if es_admin %}Filtra, busca y gestiona todas las solicitudes del helpdesk.{% else %}Tus tickets asignados · responde desde el panel técnico.{% endif %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -151,14 +151,6 @@
 
 {% block content %}
 <main class="page">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% if es_admin %}{% url 'tickets:dashboard' %}{% else %}{% url 'tickets:panel_tecnico' %}{% endif %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>{% if es_admin %}Tickets{% else %}Mis tickets{% endif %}</h2>
-            <p>{% if es_admin %}Filtra, busca y gestiona todas las solicitudes del helpdesk.{% else %}Tus tickets asignados · responde desde el panel técnico.{% endif %}</p>
-        </div>
-    </div>
-
     <div class="tickets-stats">
         <a class="stat-chip is-abiertas {% if filtro_estado == 'abierto' %}is-active{% endif %}" href="?estado=abierto" title="Solo solicitudes abiertas (pendientes de atención)">
             <span class="stat-ico"><svg class="icon"><use href="#i-alert"/></svg></span>
@@ -268,7 +260,7 @@
                     </div>
                 </div>
                 <div class="ty-card-foot">
-                    {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+                    {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}
                     {% with info=t.info_ans %}
                     {% if info.0 %}
                     <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
@@ -350,18 +342,27 @@
     var menuEl = null;
     var triggerEl = null;
 
+    // Cada cambio de estado avisa lo que va a pasar antes de hacerlo: el
+    // técnico decide con la consecuencia a la vista, no a ciegas.
+    var EN_PROGRESO = {
+        e:'en-progreso', l:'Poner en progreso', icon:'#i-wrench',
+        confirm:'Se activará el trabajo del técnico y el solicitante recibirá un aviso de que su ticket está en progreso.\n\n¿Continuar?'
+    };
+    var RESUELTO = {
+        e:'resuelto', l:'Marcar resuelto', icon:'#i-check-circle',
+        confirm:'Al marcar el ticket como resuelto se cerrará:\n\nel solicitante lo verá como CERRADO y ya no podrá comentar.\n\n¿Continuar?'
+    };
     var ESTADO_ITEMS = {
-        'abierto': [
-            {e:'en-progreso', l:'Poner en progreso', icon:'#i-wrench'},
-            {e:'resuelto',    l:'Marcar resuelto', icon:'#i-check-circle'}
-        ],
-        'en-progreso': [
-            {e:'resuelto',    l:'Marcar resuelto', icon:'#i-check-circle'}
-        ],
+        'abierto': [EN_PROGRESO, RESUELTO],
+        'en-progreso': [RESUELTO],
         'resuelto': [],
         'cerrado': []
     };
-    var CERRAR  = {e:'cerrado', l:'Cerrar ticket', icon:'#i-lock', danger:true, confirm:'¿Cerrar este ticket?'};
+    var CERRAR  = {
+        e:'cerrado', l:'Cerrar ticket', icon:'#i-lock', danger:true,
+        confirm:'¿Cerrar este ticket?\n\nEl solicitante dejará de verlo pendiente.'
+    };
+    var REABRIR = {e:'abierto', l:'Reabrir ticket', icon:'#i-refresh', danger:false};
     var REABRIR = {e:'abierto', l:'Reabrir ticket', icon:'#i-refresh', danger:false};
 
     function build(estado, eliminarUrl, codigo) {
@@ -535,4 +536,4 @@
     });
 })();
 </script>
-{% endblock %}
+{% endblock %}

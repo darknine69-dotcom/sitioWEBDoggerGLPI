@@ -3,8 +3,8 @@
 {% block title %}Dogger · Papelera{% endblock %}
 {% block body_class %}admin-shell lista-page{% endblock %}
 {% block nav_papelera %}is-active{% endblock %}
-{% block header_eyebrow %}{% endblock %}
-{% block header_title %}{% endblock %}
+{% block header_title %}Papelera{% endblock %}
+{% block header_desc %}Tickets eliminados que todavía puedes recuperar.{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -28,8 +28,6 @@
     color: var(--dogger-red);
 }
 .pap-hero-icon .icon { width: 20px; height: 20px; }
-.pap-hero-titles h2 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.01em; }
-.pap-hero-titles p { margin: 2px 0 0; color: var(--ink-muted); font-size: 12.5px; }
 .pap-hero-count {
     margin-left: auto;
     display: inline-flex;
@@ -169,7 +167,6 @@
 /* ---------- Pantallas muy estrechas ---------- */
 @media (max-width: 400px) {
     .pap-hero-icon { width: 36px; height: 36px; }
-    .pap-hero-titles h2 { font-size: 18px; }
     .pap-table tr { padding: 12px; }
     .pap-table td { grid-template-columns: 78px minmax(0, 1fr); gap: 8px; }
     /* Los dos botones se apilan para que quepan en la tarjeta. */
@@ -184,10 +181,6 @@
 <main class="page">
     <div class="pap-hero">
         <span class="pap-hero-icon"><svg class="icon"><use href="#i-trash"/></svg></span>
-        <div class="pap-hero-titles">
-            <h2>Papelera</h2>
-            <p>Tickets eliminados que todavía puedes recuperar.</p>
-        </div>
         <span class="pap-hero-count">
             <b>{{ total }}</b> ticket{{ total|pluralize }} eliminado{{ total|pluralize:"s,os" }}
         </span>
@@ -230,7 +223,7 @@
                     <span class="pap-sub">{{ t.solicitante_email }}</span>
                 </td>
                 <td data-label="Técnico">{% if t.tecnico_asignado %}{{ t.tecnico_asignado.nombre }}{% else %}<span class="pap-sub">Sin asignar</span>{% endif %}</td>
-                <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}</td>
+                <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
                 <td data-label="Eliminado" class="pap-date">
                     {{ t.eliminado_en|date:"d/m/Y H:i" }}
                     <span class="pap-sub">por {{ t.eliminado_por.nombre|default:"sistema" }}</span>

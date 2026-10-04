@@ -32,6 +32,20 @@ class LoginForm(AuthenticationForm):
         initial=True,
         widget=forms.CheckboxInput(attrs={"class": "checkbox-recordar"}),
     )
+    modo_observador = forms.BooleanField(
+        label="Modo Observador",
+        required=False,
+        widget=forms.CheckboxInput(attrs={"class": "checkbox-modo-observador"}),
+        help_text="Entra al panel de observacion, en modo lectura.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # El aviso solo tiene sentido cuando se elige el modo a proposito.
+        if self.is_bound:
+            modo = self.data.get("modo_observador")
+            if not modo:
+                self.fields["modo_observador"].help_text = ""
 
     error_messages = {
         "invalid_login": "Correo o contraseña incorrectos.",

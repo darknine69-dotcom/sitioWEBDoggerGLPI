@@ -3,33 +3,36 @@
 {% block title %}Dogger · Usuarios y técnicos{% endblock %}
 {% block body_class %}admin-shell usuarios-page{% endblock %}
 {% block nav_usuarios %}is-active{% endblock %}
-{% block header_eyebrow %}Dogger · Administración{% endblock %}
 {% block header_title %}Usuarios y técnicos{% endblock %}
+{% block header_desc %}Usuarios finales y técnicos (importados o creados en GLPI) con actividad en tiempo real.{% endblock %}
 
 {% block extra_css %}
 <style>
 .usuarios-page .brand-titles { display: none; }
-/* Scroll vertical fino al lado de la tabla (aparece al pasar el ratón) */
+/* Scroll vertical fino al lado de la tabla (se resalta al pasar el ratón).
+   El alto lo pone .tabla-scroll-seis, que deja seis filas a la vista. */
 .usuarios-page .table-card .table-scroll {
-    max-height: 580px;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
+    scrollbar-color: rgba(120, 104, 84, .45) transparent;
 }
 .usuarios-page .table-card .table-scroll:hover {
-    scrollbar-color: rgba(120, 104, 84, .55) transparent;
+    scrollbar-color: rgba(120, 104, 84, .7) transparent;
 }
 .usuarios-page .table-card .table-scroll::-webkit-scrollbar { width: 10px; }
 .usuarios-page .table-card .table-scroll::-webkit-scrollbar-track { background: transparent; }
 .usuarios-page .table-card .table-scroll::-webkit-scrollbar-thumb {
-    background: rgba(120, 104, 84, .35);
+    background: rgba(120, 104, 84, .5);
     border-radius: 999px;
     border: 3px solid transparent;
     background-clip: content-box;
 }
-.usuarios-page .table-card .table-scroll::-webkit-scrollbar-thumb:hover { background: rgba(160, 40, 32, .65); background-clip: content-box; }
+.usuarios-page .table-card .table-scroll:hover::-webkit-scrollbar-thumb { background: rgba(160, 40, 32, .65); background-clip: content-box; }
 .usuarios-page .table-card .table-scroll::-webkit-scrollbar-thumb:active { background: rgba(120, 104, 84, .75); background-clip: content-box; }
+html[data-theme="dark"] .usuarios-page .table-card .table-scroll {
+    scrollbar-color: rgba(255, 255, 255, .35) transparent;
+}
 html[data-theme="dark"] .usuarios-page .table-card .table-scroll:hover {
     scrollbar-color: rgba(255, 255, 255, .3) transparent;
 }
@@ -143,14 +146,9 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 {% block content %}
 <main class="page">
     <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Cuentas del sistema</h2>
-            <p>Usuarios finales y técnicos (importados o creados en GLPI) con actividad en tiempo real.</p>
-            <div class="live-head-badge">
-                <span class="live-head-item is-new"><span class="live-dot"></span> {{ n_nuevos }} nuevo{{ n_nuevos|pluralize }} esta semana</span>
-                <span class="live-head-item"><span class="dot-on"></span> {{ n_en_linea }} en línea ahora</span>
-            </div>
+        <div class="live-head-badge">
+            <span class="live-head-item is-new"><span class="live-dot"></span> {{ n_nuevos }} nuevo{{ n_nuevos|pluralize }} esta semana</span>
+            <span class="live-head-item"><span class="dot-on"></span> {{ n_en_linea }} en línea ahora</span>
         </div>
     </div>
 
@@ -190,7 +188,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     {% endif %}
 
     <div class="table-card">
-        <div class="table-scroll">
+        <div class="table-scroll tabla-scroll-seis" data-filas="6">
             <table class="data-table cards-mobile" id="tablaUsuarios">
                 <thead>
                     <tr>
@@ -415,9 +413,9 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                 <div class="form-group">
                     <label for="u-rol">Rol <span class="req">*</span></label>
                     <select name="rol" id="u-rol">
-                        <option value="usuario">Usuario</option>
-                        <option value="tecnico">Técnico</option>
-                        <option value="admin">Administrador</option>
+                        {% for valor, etiqueta in rol_choices %}
+                        <option value="{{ valor }}">{{ etiqueta }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="form-group">
@@ -746,4 +744,4 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     }
 })();
 </script>
-{% endblock %}
+{% endblock %}

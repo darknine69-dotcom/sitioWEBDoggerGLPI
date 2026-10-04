@@ -2,18 +2,11 @@
 
 {% block title %}Dogger · Nuevo ticket{% endblock %}
 {% block nav_mi_panel %}{% endblock %}
-{% block header_eyebrow %}Dogger · Mesa de Ayuda{% endblock %}
 {% block header_title %}Reportar incidencia{% endblock %}
+{% block header_desc %}Describe el problema con claridad y se asignará al técnico más disponible.{% endblock %}
 
 {% block content %}
 <main class="page">
-    <div class="page-head ticket-form-head">
-        <a class="back-btn" data-back href="{% if es_usuario_final %}{% url 'tickets:mi_panel' %}{% else %}{% url 'tickets:lista' %}{% endif %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Nueva solicitud de soporte</h2>
-            <p>Describe el problema con claridad y se asignará al técnico más disponible.</p>
-        </div>
-    </div>
 
     <div class="ticket-form-layout">
         <div class="panel ticket-form-panel">
@@ -67,5 +60,4 @@
 </main>
 
 <script type="application/json" id="dogger-cat-keywords">{{ cat_sugerencias_json|safe }}</script>
-{% endblock %}
-{% block footer %}{% include "tickets/_redes.html" %}{% endblock %}
+{% endblock %}

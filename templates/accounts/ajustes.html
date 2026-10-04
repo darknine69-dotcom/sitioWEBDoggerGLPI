@@ -3,18 +3,11 @@
 
 {% block title %}Dogger · Ajustes de cuenta{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
-{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
 {% block header_title %}Ajustes de cuenta{% endblock %}
+{% block header_desc %}Administra tu perfil, contraseña y notificaciones.{% endblock %}
 
 {% block content %}
 <main class="page">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:portal' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Mi cuenta</h2>
-            <p>Administra tu perfil, contraseña y notificaciones.</p>
-        </div>
-    </div>
 
     <div class="settings-grid">
         <!-- SIDEBAR -->
@@ -439,4 +432,4 @@
         </div>
     </div>
 </main>
-{% endblock %}
+{% endblock %}

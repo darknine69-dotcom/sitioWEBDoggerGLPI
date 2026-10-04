@@ -2,8 +2,8 @@
 
 {% block title %}{{ ticket.codigo }} · Mi ticket{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
-{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
 {% block header_title %}Mis tickets{% endblock %}
+{% block header_desc %}Descripción, avance e historial de la solicitud.{% endblock %}
 
 {% block extra_css %}
 {% load static %}
@@ -27,7 +27,7 @@
                             <h2>{{ ticket.titulo }}</h2>
                         </div>
                     </div>
-                    {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display id="corp-estado-pill" %}
+                    {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display id="corp-estado-pill" resuelto=ticket.fue_resuelto cerrado=ticket.esta_cerrado %}
                 </div>
 
                 <div class="corp-detail-badges ticket-meta-row">
@@ -141,7 +141,7 @@
                         <dt><svg class="icon icon-xs"><use href="#i-clock"/></svg> Ciclo de vida</dt>
                         <dd>
                             <div class="dash-life">
-                                <div class="dash-life-fill{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% endif %}" id="dash-life-fill" data-estado="{{ ticket.estado }}" data-pk="{{ ticket.pk }}"></div>
+                                <div class="dash-life-fill{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %} is-done{% endif %}" id="dash-life-fill" data-estado="{{ ticket.estado }}" data-resuelto="{% if ticket.fue_resuelto %}1{% else %}0{% endif %}" data-pk="{{ ticket.pk }}"></div>
                             </div>
                             <small class="dash-life-step" id="dash-life-step">{{ ticket.get_estado_display }}</small>
                         </dd>
@@ -233,25 +233,34 @@
         if (estado === "en-progreso") return 2;
         return 1;
     }
-    function applyP(estado) {
+    function applyP(estado, fueResuelto) {
         var l = LABELS[estado] || estado;
         var n = stepOf(estado);
         fill.className = "dash-life-fill" + (n === 3 ? " is-done" : "");
         fill.style.width = (n * 33.4) + "%";
         if (step) step.textContent = "Paso " + n + " de 3 · " + l;
-        if (pill) { pill.className = "status-pill status-" + estado; pill.textContent = l; }
+        if (!pill) return;
+        var cerrado = document.getElementById("corp-estado-pill-cerrado");
+        if (fueResuelto || estado === "resuelto") {
+            // Se marcó resuelto, lo que además lo dejó cerrado: los dos.
+            pill.className = "status-pill status-resuelto is-resuelto-pill";
+            pill.textContent = "Resuelto";
+            if (cerrado) cerrado.style.display = "";
+        } else {
+            pill.className = "status-pill status-" + estado;
+            pill.textContent = l;
+            if (cerrado) cerrado.style.display = "none";
+        }
     }
-    applyP(fill.getAttribute("data-estado"));
+    applyP(fill.getAttribute("data-estado"), fill.getAttribute("data-resuelto") === "1");
     setInterval(function () {
         var pk = fill.getAttribute("data-pk");
         if (!pk) return;
         fetch("/mi-panel/api/tickets/" + pk + "/info/", { headers: { "Accept": "application/json" } })
             .then(function (r) { return r.json(); })
-            .then(function (d) { if (d && d.ok && d.ticket && d.ticket.estado) applyP(d.ticket.estado); })
+            .then(function (d) { if (d && d.ok && d.ticket && d.ticket.estado) applyP(d.ticket.estado, !!d.ticket.resuelto); })
             .catch(function () {});
     }, 8000);
 })();
 </script>
 {% endblock %}
-
-{% block footer %}{% include "tickets/_redes.html" %}{% endblock %}

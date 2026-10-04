@@ -177,9 +177,12 @@
 
             if (enMes) {
                 cell.dataset.fecha = fecha;
-                // El cuadro ya NO abre el modal al hacer clic: para crear hay
-                // que usar los iconos de acceso rápido, y para ver lo que hay
-                // registrado, hacer clic sobre el evento.
+                // Clic en el fondo del cuadro: abre el formulario de evento.
+                // Si se hace clic sobre un chip, ese chip detiene la
+                // propagacion y gana su propio modal de detalle.
+                cell.addEventListener("click", function () {
+                    abrirModalEvento(fecha, "");
+                });
 
                 var head = document.createElement("div");
                 head.className = "prog-day-head";
@@ -423,25 +426,105 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
         document.querySelectorAll(".modal-overlay.open").forEach(function (m) { m.classList.remove("open"); });
     }
 
+    /* Cada tipo de evento tiene su propio formulario: se zien distintos
+       campos, con otras etiquetas y otras ayudas. Los campos viven en
+       #evBiblioteca (fuera del <form>) y aqui se meten solo los del tipo
+       elegido, para que lo que no aplica no se envie al servidor. */
+    var FORM_TIPO = {
+        tarea: {
+            campos: ["titulo", "hora", "tecnico", "sitio", "grupo", "descripcion"],
+            pista: "Una labor concreta para alguien, en una fecha.",
+            tituloLabel: "Título", tituloPh: "Ej: Configuración de Caja 3",
+            tituloAyuda: "Qué hay que hacer, en una línea.",
+            tecnicoLabel: "Se asigna a", descLabel: "Detalles de la tarea",
+            descPh: "Pasos, repuestos o lo que haga falta saber…",
+            descAyuda: "Lo que necesite quien la atienda.", requerido: ["titulo"]
+        },
+        solicitud: {
+            campos: ["ticket", "hora", "tecnico", "descripcion"],
+            pista: "Una atención programada a partir de un ticket abierto.",
+            tituloLabel: "", tituloPh: "", tituloAyuda: "",
+            tecnicoLabel: "Atiende", descLabel: "Motivo de la visita",
+            descPh: "Por qué se agenda esa atención…",
+            descAyuda: "El título y el punto salen del ticket.",
+            requerido: ["ticket"], foco: "ticket"
+        },
+        recordatorio: {
+            campos: ["titulo", "hora", "tecnico", "descripcion"],
+            pista: "Un aviso para no dejar pasar algo en esa fecha.",
+            tituloLabel: "Qué recordar", tituloPh: "Ej: Renovar el antivirus del punto",
+            tituloAyuda: "El asunto del recordatorio.",
+            tecnicoLabel: "Se le recuerda a", descLabel: "Qué tener presente",
+            descPh: "Antecedentes, fecha límite, contraseña…",
+            descAyuda: "Lo que debe tener en mente ese día.",
+            requerido: ["titulo", "tecnico"], foco: "titulo"
+        },
+        anuncio: {
+            campos: ["titulo", "sitio", "grupo", "descripcion"],
+            pista: "Un aviso para todo el equipo, visible para todos.",
+            tituloLabel: "Título del aviso", tituloPh: "Ej: Cambio de horario de soporte",
+            tituloAyuda: "La idea en una línea.",
+            tecnicoLabel: "", descLabel: "Mensaje",
+            descPh: "Escribe el mensaje completo…",
+            descAyuda: "Lo leerán todos los usuarios del panel.",
+            requerido: ["titulo", "descripcion"], foco: "titulo"
+        }
+    };
+
+    function pintarFormTipo(tipo) {
+        var cfg = FORM_TIPO[tipo] || FORM_TIPO.tarea;
+        var cuerpo = $("evCuerpo");
+        var biblio = $("evBiblioteca");
+
+        // Se vacía el cuerpo y se devuelven todos los campos a la biblioteca.
+        while (cuerpo.firstChild) biblio.appendChild(cuerpo.firstChild);
+
+        cfg.campos.forEach(function (nombre) {
+            var nodo = biblio.querySelector('[data-campo="' + nombre + '"]');
+            if (nodo) cuerpo.appendChild(nodo);
+        });
+
+        // Etiquetas y ayudas propias de cada tipo.
+        $("evPista").textContent = cfg.pista;
+        $("evTituloLabel").textContent = cfg.tituloLabel || "Título";
+        $("evTitulo").placeholder = cfg.tituloPh || "";
+        $("evTituloAyuda").textContent = cfg.tituloAyuda || "";
+        $("evTecnicoLabel").textContent = cfg.tecnicoLabel || "Técnico";
+        $("evDescLabel").textContent = cfg.descLabel || "Descripción";
+        $("evDescAyuda").textContent = cfg.descAyuda || "";
+        $("evCuerpo").querySelector("textarea").placeholder = cfg.descPh || "";
+
+        var wrapFecha = $("evFechaWrap");
+        wrapFecha.childNodes[0].nodeValue = tipo === "anuncio" ? "Visible desde" : "Fecha";
+
+        cuerpo.dataset.requerido = (cfg.requerido || []).join(",");
+        cuerpo.dataset.foco = cfg.foco || "titulo";
+        return cfg;
+    }
+
     function abrirModalEvento(fecha, tipo) {
         $("evFecha").value = fecha;
         $("evFechaShow").value = fecha;
+        if (tipo && TIPOS_EVENTO.indexOf(tipo) !== -1) $("evTipo").value = tipo;
+
+        var tipoSel = $("evTipo").value;
+        var cfg = pintarFormTipo(tipoSel);
+
+        // Se limpian solo los campos que este tipo usa.
         $("evTitulo").value = "";
         $("evHora").value = "";
         $("evSitio").value = "";
         $("evGrupo").value = "";
         $("evTicket").value = "";
-        $("evTecnico").value = $("filtroTecnico").value || "";
-        $("formEvento").querySelector("textarea[name=descripcion]").value = "";
-        if (tipo && TIPOS_EVENTO.indexOf(tipo) !== -1) $("evTipo").value = tipo;
-        var tipoSel = $("evTipo").value;
-        $("evSolicitudWrap").hidden = tipoSel !== "solicitud";
-        if (tipoSel === "solicitud") {
-            $("evTicket").focus();
-        } else {
-            $("evTitulo").focus();
-        }
+        $("evTecnico").value = tipoSel === "anuncio" ? "" : ($("filtroTecnico").value || "");
+        $("evCuerpo").querySelector("textarea").value = "";
+
         abrirModal("modalEvento");
+        var foco = $("evCuerpo").querySelector('[data-campo="' + (cfg.foco || "titulo") + '"]');
+        if (foco) {
+            var input = foco.querySelector("input, select, textarea");
+            if (input) input.focus();
+        }
     }
 
     /* ---------- modal de un evento ya registrado ---------- */
@@ -609,9 +692,29 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
             b.addEventListener("click", function () { marcarDisp(this.dataset.tipo); });
         });
 
+        $("evTipo").addEventListener("change", function () {
+            pintarFormTipo(this.value);
+        });
+
         $("formEvento").addEventListener("submit", function (e) {
             e.preventDefault();
-            if (!$("evTitulo").value.trim()) { toast("El título es obligatorio", false); return; }
+            var cuerpo = $("evCuerpo");
+            var cfg = FORM_TIPO[$("evTipo").value] || FORM_TIPO.tarea;
+
+            // Solo se exigen los campos que el tipo chosen muestra.
+            var faltan = [];
+            (cfg.requerido || []).forEach(function (nombre) {
+                var nodo = cuerpo.querySelector('[data-campo="' + nombre + '"]');
+                var input = nodo && nodo.querySelector("input, select, textarea");
+                if (!input || !String(input.value).trim()) {
+                    var et = nodo && nodo.querySelector("span");
+                    faltan.push(et ? et.textContent.trim() : nombre);
+                }
+            });
+            if (faltan.length) {
+                toast("Completa: " + faltan.join(", "), false);
+                return;
+            }
             post(U.agregar, new FormData(this), function () {
                 cerrarModales();
                 toast("Evento guardado", true);

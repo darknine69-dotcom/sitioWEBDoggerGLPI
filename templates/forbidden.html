@@ -1,18 +1,10 @@
 {% extends "base.html" %}
 {% block title %}No tienes acceso{% endblock %}
+{% block header_title %}No tienes acceso{% endblock %}
+{% block header_desc %}Esta sección es para otro tipo de cuenta. Si crees que debería estar disponible para ti, escríbenos y lo revisamos.{% endblock %}
 
 {% block content %}
 <main class="wrap">
-    <div class="page-head">
-        <div>
-            <h1><svg class="icon"><use href="#i-lock"/></svg> No tienes acceso a esta página</h1>
-            <p class="panel-sub">
-                Esta sección es para otro tipo de cuenta. Si crees que debería
-                estar disponible para ti, escríbenos y lo revisamos.
-            </p>
-        </div>
-    </div>
-
     <div class="cat-publico-card" style="max-width:640px">
         <div class="cat-publico-pie">
             <a href="{% url 'accounts:ajustes' %}" class="btn btn-outline btn-sm">

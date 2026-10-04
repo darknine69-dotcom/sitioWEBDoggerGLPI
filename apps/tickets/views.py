@@ -40,6 +40,7 @@ RANGOS_MIS = [
 ]
 
 from apps.accounts.models import Usuario
+from apps.accounts.routing import landing_por_rol
 from .decorators import (
     admin_required,
     sin_observador,
@@ -331,7 +332,9 @@ _ALCANCES_TORTAS = (
     ("abiertas", "Abiertas", (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)),
     ("en_progreso", "En progreso", (Ticket.Estado.EN_PROGRESO,)),
     # "Resueltas" junta lo ya terminado: resueltas y cerradas.
-    ("resueltos", "Resueltas", (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)),
+    # "Resueltas" ya no es un estado guardado sino la marca de resolución,
+    # así que no agrupa estados: se resuelve aparte en `_filtrar_estado`.
+    ("resueltos", "Resueltas", ()),
     ("cerrados", "Cerradas", (Ticket.Estado.CERRADO,)),
     ("eliminados", "Eliminadas", ()),
     ("todas", "Todas", ()),
@@ -430,6 +433,9 @@ def _build_tecnico_dashboard(tecnico_id=None):
             return list(papelera)
         if alcance == "todas":
             return base + list(papelera) if con_papelera else base
+        if alcance == "resueltos":
+            # Resuelto ya no es un estado guardado: se busca la marca.
+            return [t for t in base if t.fecha_resolucion or t.estado == Ticket.Estado.RESUELTO]
         estados = dict((k, e) for k, _, e in _ALCANCES_TORTAS)[alcance]
         return [t for t in base if t.estado in estados]
 
@@ -864,6 +870,7 @@ def _reportes_metricas_kpis(tickets):
         "en_progreso": en_progreso,
         "resueltos": resueltos,
         "cerrados": cerrados,
+        "resueltos_cerrados": resueltos + cerrados,
         "vencidos": vencidos,
         "sla_ok": sla_ok,
         "sla_no": sla_no,
@@ -1056,6 +1063,22 @@ def reportes(request):
     )
 
 
+def _filtrar_estado(qs, estado):
+    """Aplica el filtro de estado de las listas.
+
+    "Resuelto" ya no es un estado que quede en el ticket: al marcarlo
+    resuelto se cierra y queda registrada la fecha (`fecha_resolucion`). Por
+    eso el filtro busca esa marca y no el estado literal, que solo queda en
+    los tickets antiguos. Un ticket cerrado sin marca se cerró directo y no
+    cuenta como resuelto.
+    """
+    if not estado:
+        return qs
+    if estado == Ticket.Estado.RESUELTO:
+        return qs.filter(Q(fecha_resolucion__isnull=False) | Q(estado=Ticket.Estado.RESUELTO))
+    return qs.filter(estado=estado)
+
+
 @admin_required
 def exportar_reportes(request):
     f, qs = _reportes_filtros(request)
@@ -1108,8 +1131,7 @@ def exportar_tickets_admin(request):
     prioridad = request.GET.get("prioridad")
     categoria = request.GET.get("categoria")
     tecnico = request.GET.get("tecnico")
-    if estado:
-        qs = qs.filter(estado=estado)
+    qs = _filtrar_estado(qs, estado)
     if prioridad:
         qs = qs.filter(prioridad=prioridad)
     if categoria:
@@ -1137,39 +1159,8 @@ def categorias_arbol(request):
             "tecnicos": User.objects.filter(
                 activo=True, rol__in=["admin", "tecnico"]
             ).order_by("nombre"),
-            "disponibilidad_tec": _disponibilidad_por_tecnico(),
         },
     )
-
-
-def _disponibilidad_por_tecnico():
-    """Técnicos con su estado de disponibilidad de hoy, para el autocompletado.
-
-    Al elegir varios técnicos en una categoría se ven de un vistazo cuáles
-    están disponibles y cuáles no, sin salir del formulario.
-    """
-    hoy = timezone.localdate()
-    from apps.programador.models import DisponibilidadTecnico
-
-    estados = {}
-    for d in DisponibilidadTecnico.objects.filter(fecha=hoy).select_related("tecnico"):
-        estados.setdefault(d.tecnico_id, d.tipo)
-    datos = []
-    for u in User.objects.filter(activo=True, rol__in=["admin", "tecnico"]).order_by("nombre"):
-        estado = estados.get(u.pk)
-        if not estado:
-            etiqueta, nivel = "Sin marcar", "neutro"
-        elif estado == "falta":
-            etiqueta, nivel = "Falta de disponibilidad", "falta"
-        elif estado == "ausencia":
-            etiqueta, nivel = "Ausencia", "ausencia"
-        else:
-            etiqueta, nivel = "Disponible", "disponible"
-        datos.append(
-            {"id": u.pk, "nombre": u.nombre, "estado": estado or "",
-             "etiqueta": etiqueta, "nivel": nivel}
-        )
-    return datos
 
 
 @staff_required
@@ -1226,20 +1217,8 @@ def categoria_actualizar(request, pk):
     ans_horas = request.POST.get("ans_horas", "").strip()
     if ans_horas.isdigit() and int(ans_horas) > 0:
         categoria.ans_horas = int(ans_horas)
-    categoria.descripcion = request.POST.get("descripcion", "").strip()
-    categoria.ejemplos = request.POST.get("ejemplos", "").strip()
-    try:
-        categoria.save()
-        # Varios técnicos pueden atender la misma categoría.
-        ids_tec = [
-            int(x) for x in request.POST.getlist("tecnicos") if x.strip().isdigit()
-        ]
-        categoria.tecnicos.set(
-            User.objects.filter(pk__in=ids_tec, activo=True, rol__in=["admin", "tecnico"])
-        )
-        messages.success(request, f"Categoría actualizada: {categoria}.")
-    except Exception:
-        messages.error(request, "No se pudo actualizar la categoría.")
+    categoria.save()
+    messages.success(request, f"Categoría actualizada: {categoria}.")
     return redirect("tickets:categorias_arbol")
 
 
@@ -1574,6 +1553,9 @@ def usuarios_lista(request):
             "glpi_error": glpi_error,
             "per_page": pp_us,
             "tipo_label": _tipo_label,
+            # Los roles salen del formulario, para que el desplegable y la
+            # validación no se puedan quedar desincronizados.
+            "rol_choices": UsuarioPanelForm.ROL_CHOICES,
             "hoy": date.today(),
             "n_nuevos": User.objects.filter(fecha_creacion__gte=hace_7d).count(),
             "n_en_linea": User.objects.filter(last_login__gte=hace_10min).count(),
@@ -2094,13 +2076,11 @@ def politica_privacidad(request):
 
 
 def portal(request):
+    # Quien ya entró no ve el portal: lo manda a su panel. El destino lo
+    # decide `landing_por_rol`, el mismo que usa el login, para que ninguna
+    # cuenta aterrice en una vista que su rol no puede abrir.
     if request.user.is_authenticated:
-        rol = getattr(request.user, "rol", "")
-        if rol == Usuario.Rol.TECNICO:
-            return redirect("tickets:panel_tecnico")
-        if rol == Usuario.Rol.USUARIO:
-            return redirect("tickets:mi_panel")
-        return redirect("tickets:dashboard")
+        return redirect(landing_por_rol(request.user))
 
     if request.method == "POST":
         form = TicketForm(request.POST, request.FILES)
@@ -2214,9 +2194,13 @@ def mi_panel(request):
         "total": total_qs,
         "abiertos": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.ABIERTO).count(),
         "en_progreso": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.EN_PROGRESO).count(),
+        # El KPI "Resueltas" enlaza al filtro de resueltas, así que cuenta lo
+        # mismo: los que tienen la marca de resolución, no las cerradas tal
+        # cual (una se puede cerrar sin haber pasado por "marcar resuelto").
         "resueltos": Ticket.objects.filter(
-            solicitante_email=request.user.email,
-            estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO],
+            solicitante_email=request.user.email
+        ).filter(
+            Q(fecha_resolucion__isnull=False) | Q(estado=Ticket.Estado.RESUELTO)
         ).count(),
     }
     pp_mp = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
@@ -2840,7 +2824,9 @@ def lista_tickets(request):
     stats = scope_qs.aggregate(
         abiertas=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
         progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
-        resueltas=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
+        # El chip cuenta lo mismo que el filtro "Resueltas": los que tienen
+        # la marca de resolución.
+        resueltas=Count("pk", filter=Q(fecha_resolucion__isnull=False)),
         cerradas=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
     )
     stats["sin_asignar"] = (
@@ -2896,8 +2882,7 @@ def lista_tickets(request):
     if mias:
         qs = qs.filter(tecnico_asignado=request.user)
 
-    if estado:
-        qs = qs.filter(estado=estado)
+    qs = _filtrar_estado(qs, estado)
     if prioridad:
         qs = qs.filter(prioridad=prioridad)
     if categoria:
@@ -3084,15 +3069,26 @@ def cambiar_estado(request, pk):
     if nuevo not in validos:
         messages.error(request, "Estado no valido.")
     else:
-        ticket.estado = nuevo
+        if nuevo == Ticket.Estado.RESUELTO:
+            # Marcar resuelto cierra el ticket: queda registrado que se
+            # resolvió y desde cuándo, y el solicitante lo ve cerrado. Por eso
+            # no se puede reabrir como "resuelto" sin volver a cerrarse.
+            ticket.estado = Ticket.Estado.CERRADO
+            ticket.fecha_resolucion = timezone.now()
+        else:
+            ticket.estado = nuevo
         ticket.save()
+        if nuevo == Ticket.Estado.RESUELTO:
+            aviso = f"{ticket.codigo} quedó resuelto y cerrado."
+        else:
+            aviso = f"{ticket.codigo} → {ticket.get_estado_display()}"
         notificar_ticket_actualizado(ticket, f"cambiado a {ticket.get_estado_display()}", actor=request.user)
         try:
             sync_estado_to_glpi(ticket)
         except GlpiError as exc:
             messages.warning(request, f"No se pudo actualizar el estado en GLPI: {exc}")
             logger.warning("GLPI estado sync: %s", exc)
-        messages.success(request, f"{ticket.codigo} → {ticket.get_estado_display()}")
+        messages.success(request, aviso)
     next_url = request.POST.get("next") or "tickets:lista"
     if next_url.startswith("/"):
         return redirect(next_url)
@@ -3306,6 +3302,9 @@ def mi_ticket_info_ajax(request, pk):
                 "solicitante_punto": ticket.solicitante_punto,
                 "estado": ticket.estado,
                 "estado_label": ticket.get_estado_display(),
+                # El JS refresca los distintivos solo: necesita saber si hubo
+                # un "marcar resuelto" para pintar los dos.
+                "resuelto": ticket.fue_resuelto,
                 "fecha": ticket.fecha_creacion.strftime("%d/%m/%Y %H:%M") if ticket.fecha_creacion else "",
                 "editable": ticket.estado == ticket.Estado.ABIERTO,
                 "cerrable": ticket.estado in (ticket.Estado.ABIERTO, ticket.Estado.EN_PROGRESO),
@@ -3502,8 +3501,7 @@ def panel_tecnico(request):
         .select_related("categoria", "tecnico_asignado")
         .prefetch_related("comentarios", "eventos_glpi")
     )
-    if estado:
-        qs = qs.filter(estado=estado)
+    qs = _filtrar_estado(qs, estado)
     if q:
         match_codigo = re.match(r"^HD-(\d+)$", q.upper())
         condicion = (
@@ -3523,7 +3521,7 @@ def panel_tecnico(request):
         total=Count("id"),
         abiertos=Count("id", filter=Q(estado=Ticket.Estado.ABIERTO)),
         en_progreso=Count("id", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
-        resueltos=Count("id", filter=Q(estado=Ticket.Estado.RESUELTO)),
+        resueltos=Count("id", filter=Q(fecha_resolucion__isnull=False)),
         cerrados=Count("id", filter=Q(estado=Ticket.Estado.CERRADO)),
     )
     chart_context = _build_chart_context(
@@ -3655,8 +3653,7 @@ def panel_tecnico(request):
             )
         except (TypeError, ValueError):
             pass
-    if estado:
-        mis_qs = mis_qs.filter(estado=estado)
+    mis_qs = _filtrar_estado(mis_qs, estado)
     if mias:
         mis_qs = mis_qs.filter(tecnico_asignado=tecnico)
     mis_qs = mis_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
@@ -3856,7 +3853,7 @@ def panel_tecnico_lote(request):
             if t.estado == Ticket.Estado.CERRADO:
                 continue
             t.estado = Ticket.Estado.CERRADO
-            t.save(update_fields=["estado", "fecha_cierre", "fecha_actualizacion"])
+            t.save(update_fields=["estado", "fecha_cierre", "fecha_resolucion", "fecha_actualizacion"])
             notificar_ticket_actualizado(t, "cambiado a Cerrado")
             try:
                 sync_estado_to_glpi(t)
@@ -4109,13 +4106,6 @@ def categorias_publico(request):
     para que cualquiera sepa en qué casillar reportar antes de crear el ticket.
     """
     arbol = Categoria.arbol()
-    for grupo in arbol:
-        for sub in grupo["subcategorias"]:
-            # La plantilla recibe el nombre de los técnicos que la atienden,
-            # para que el usuario sepa a quién le llega la solicitud.
-            sub.nombres_tecnicos = ", ".join(
-                u.nombre for u in sub.tecnicos.all() if u.activo
-            )
     inactivas = list(Categoria.objects.filter(activo=False).order_by("grupo", "nombre"))
     return render(
         request,

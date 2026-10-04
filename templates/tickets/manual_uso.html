@@ -1,17 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Manual de uso{% endblock %}
+{% block header_title %}Manual de uso{% endblock %}
+{% block header_desc %}Los pasos de la plataforma en el orden en que los vas a usar, separados por rol. Puedes volver cuando quieras desde Tus ajustes.{% endblock %}
 
 {% block content %}
 <main class="wrap">
     <div class="page-head">
-        <div>
-            <h1><svg class="icon"><use href="#i-book"/></svg> Manual de uso</h1>
-            <p class="panel-sub">
-                Los pasos de la plataforma en el orden en que los vas a usar,
-                separados por rol. Puedes volver cuando quieras desde
-                <a href="{% url 'accounts:ajustes' %}#ayuda">Tus ajustes</a>.
-            </p>
-        </div>
         <button type="button" class="btn btn-outline btn-sm" onclick="window.print()">
             <svg class="icon icon-sm"><use href="#i-printer"/></svg> Imprimir
         </button>
@@ -78,7 +72,7 @@
                 <ol class="manual-pasos">
                     <li>Entra a <b>Reportar incidencia</b>.</li>
                     <li>Si no sabes en qué casillar cae, mira
-                        <a href="{% url 'tickets:categorias_publico' %}">¿Qué categoría es?</a>:
+                        <a href="{% url 'tickets:categorias_publico' %}">Categoría</a>:
                         cada categoría explica para qué sirve y trae ejemplos.
                     </li>
                     <li>Escribe el problema con tus propias palabras y adjunta
@@ -155,7 +149,7 @@
                         están disponibles hoy.</li>
                     <li>Si escribes una descripción y algunos ejemplos, el
                         usuario los verá en
-                        <a href="{% url 'tickets:categorias_publico' %}">¿Qué categoría es?</a>
+                        <a href="{% url 'tickets:categorias_publico' %}">Categoría</a>
                         yasí sabrá dónde reportar.</li>
                 </ol>
             </section>

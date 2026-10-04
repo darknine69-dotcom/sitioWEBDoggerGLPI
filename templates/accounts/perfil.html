@@ -3,19 +3,19 @@
 
 {% block title %}Dogger · Mi perfil{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
-{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
 {% block header_title %}Mi perfil{% endblock %}
+{% block header_desc %}Tus datos, tu rol y cómo se ve la plataforma.{% endblock %}
 
 {% block extra_css %}
 <style>
 /* ============ Perfil corporativo Dogger ============ */
 .profile-page { max-width: 1080px; }
+/* El título y la explicación ya están en el encabezado; aquí solo queda la
+   acción de cerrar sesión, alineada a la derecha. */
 .profile-top {
-    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+    display: flex; align-items: center; justify-content: flex-end; gap: 16px;
     margin-bottom: 22px; flex-wrap: wrap;
 }
-.profile-title { margin: 0; font-size: 22px; color: #111; letter-spacing: -.02em; }
-.profile-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-muted); }
 .profile-logout { display: inline-flex; align-items: center; gap: 7px; }
 .profile-logout .icon { width: 15px; height: 15px; }
 
@@ -29,9 +29,11 @@
 
 /* ---- Columna de identidad ---- */
 .profile-ident { text-align: center; position: sticky; top: 78px; }
+/* La foto es una caja de bloque: si no, comparte línea con el badge y la
+   columna deja de estar centrada. */
 .profile-avatar {
     width: 88px; height: 88px; margin: 4px auto 14px; border-radius: 50%;
-    display: inline-flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     background: var(--dogger-yellow); color: var(--dogger-black);
     font-family: var(--font-display); font-weight: 800; font-size: 30px; letter-spacing: .02em;
     overflow: hidden; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--line), 0 8px 20px rgba(23,20,18,.12);
@@ -39,7 +41,12 @@
 .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .profile-ident h3 { margin: 10px 0 2px; font-size: 19px; color: #111; letter-spacing: -.02em; }
 .profile-email { margin: 0; font-size: 13px; color: var(--ink-muted); overflow-wrap: anywhere; }
-.badge-role-perfil { margin-top: 12px; }
+/* El badge también es una caja de bloque para que su margen superior empuje
+   el nombre hacia abajo y no se monte encima de la foto. */
+.badge-role-perfil {
+    display: flex; align-items: center; justify-content: center;
+    width: fit-content; margin: 12px auto 0;
+}
 
 .profile-facts { margin: 18px 0 0; padding: 0; list-style: none; text-align: left; }
 .profile-facts > div {
@@ -94,6 +101,41 @@
 }
 .prof-radio input:checked + .prof-radio-box svg { color: var(--dogger-red); }
 .prof-radio input:focus-visible + .prof-radio-box { outline: 2px solid var(--dogger-red); outline-offset: 2px; }
+
+/* ---- Paletas del menú lateral ---- */
+.prof-paletas { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 2px; }
+.prof-paleta {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 13px 7px 9px;
+    border: 1.5px solid var(--line); border-radius: 999px;
+    background: #FBFAF7; color: var(--ink-muted);
+    font-family: var(--font-body); font-size: 12.5px; font-weight: 700;
+    cursor: pointer; transition: border-color .15s, background .15s, color .15s;
+}
+.prof-paleta:hover { border-color: var(--dogger-red); color: var(--ink); }
+.prof-paleta.is-on {
+    border-color: var(--dogger-red); background: #FFF6F4; color: var(--ink);
+    box-shadow: 0 3px 10px rgba(214,43,31,.10);
+}
+.prof-paleta:focus-visible { outline: 2px solid var(--dogger-red); outline-offset: 2px; }
+.prof-paleta-dot {
+    width: 18px; height: 18px; flex: none; border-radius: 50%;
+    background: var(--c); border: 1px solid rgba(0,0,0,.12);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.35);
+}
+.prof-paleta-name { white-space: nowrap; }
+.prof-color { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+.prof-color input[type="color"] {
+    width: 42px; height: 34px; padding: 2px; cursor: pointer;
+    border: 1.5px solid var(--line); border-radius: 9px; background: #fff;
+}
+.prof-color input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.prof-color input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
+.prof-color code {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 12px; font-weight: 700; color: var(--ink-muted);
+    padding: 6px 9px; border-radius: 8px; background: #FBFAF7; border: 1px solid var(--line);
+}
 
 /* ---- Filas de preferencias ---- */
 .prof-row {
@@ -156,10 +198,6 @@
 {% block content %}
 <main class="page page-corporate profile-page">
     <div class="profile-top">
-        <div>
-            <h2 class="profile-title">Mi perfil</h2>
-            <p class="profile-sub">Gestiona tu cuenta, personaliza la visualización y accede a la configuración clave.</p>
-        </div>
         <form method="post" action="{% url 'accounts:logout' %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline btn-sm profile-logout" title="Cerrar sesión">
@@ -192,9 +230,6 @@
                 <a class="btn btn-primary btn-sm" href="{% url 'accounts:ajustes' %}">
                     <svg class="icon"><use href="#i-settings"/></svg> Mi cuenta
                 </a>
-                <button type="button" class="btn btn-outline btn-sm" id="btnPersonalizar">
-                    <svg class="icon"><use href="#i-edit"/></svg> Personalizar
-                </button>
             </div>
         </aside>
 
@@ -300,6 +335,43 @@
                     <div class="prof-row-label"><b>Mostrar iconos</b><small>Muestra los iconos junto a cada pestaña.</small></div>
                     <label class="switch"><input type="checkbox" id="prefNavIcons" checked><span class="slider"></span></label>
                 </div>
+
+                {% comment %}Personalización del menú lateral: paleta y color propio.{% endcomment %}
+                <div class="settings-panel-header">
+                    <h3>Color del menú lateral</h3>
+                    <p>Elige una de las paletas o pon el color que quieras. Se aplica al instante en todas las páginas.</p>
+                </div>
+                <div class="prof-paletas" id="prefPaletas" role="radiogroup" aria-label="Paleta del menú lateral">
+                    <button type="button" class="prof-paleta" data-palette="dogger" data-color="#D62B1F" role="radio" aria-checked="true" title="Dogger">
+                        <span class="prof-paleta-dot" style="--c:#D62B1F"></span><span class="prof-paleta-name">Dogger</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="azul" data-color="#1F6FD6" role="radio" aria-checked="false" title="Azul">
+                        <span class="prof-paleta-dot" style="--c:#1F6FD6"></span><span class="prof-paleta-name">Azul</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="indigo" data-color="#4B4BC4" role="radio" aria-checked="false" title="Índigo">
+                        <span class="prof-paleta-dot" style="--c:#4B4BC4"></span><span class="prof-paleta-name">Índigo</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="esmeralda" data-color="#0F8A5F" role="radio" aria-checked="false" title="Esmeralda">
+                        <span class="prof-paleta-dot" style="--c:#0F8A5F"></span><span class="prof-paleta-name">Esmeralda</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="ambar" data-color="#B4740A" role="radio" aria-checked="false" title="Ámbar">
+                        <span class="prof-paleta-dot" style="--c:#B4740A"></span><span class="prof-paleta-name">Ámbar</span>
+                    </button>
+                    <button type="button" class="prof-paleta" data-palette="rosa" data-color="#C02A6B" role="radio" aria-checked="false" title="Rosa">
+                        <span class="prof-paleta-dot" style="--c:#C02A6B"></span><span class="prof-paleta-name">Rosa</span>
+                    </button>
+                </div>
+                <div class="prof-row">
+                    <div class="prof-row-label">
+                        <b>Color personalizado</b>
+                        <small>Toma el control del tono. Elige una paleta para volver al color de la empresa.</small>
+                    </div>
+                    <div class="prof-color">
+                        <input type="color" id="prefNavColor" value="#D62B1F" aria-label="Color personalizado del menú">
+                        <code id="prefNavColorHex">#D62B1F</code>
+                        <button type="button" class="btn btn-outline btn-sm" id="prefNavColorClear">Quitar</button>
+                    </div>
+                </div>
             </section>
         </div>
     </div>
@@ -311,7 +383,6 @@
 </div>
 {% endblock %}
 
-{% block footer %}{% include "tickets/_redes.html" %}{% endblock %}
 
 {% block extra_js %}
 <script>
@@ -421,6 +492,79 @@
         saved();
     });
 
+    /* Color del menú lateral: paletas y color propio.
+       El color propio se guarda aparte y manda sobre la paleta, así que
+       quitarlo devuelve el menú al color de la paleta elegida. */
+    var paletas = Array.prototype.slice.call(document.querySelectorAll("#prefPaletas .prof-paleta"));
+    var pinColor = document.getElementById("prefNavColor");
+    var hexColor = document.getElementById("prefNavColorHex");
+    var quitarColor = document.getElementById("prefNavColorClear");
+    /* El color de cada paleta se toma de los propios botones, así el valor por
+       defecto nunca depende de una lista repetida en el JavaScript. */
+    var COLORES = {};
+    paletas.forEach(function (b) { COLORES[b.getAttribute("data-palette")] = b.getAttribute("data-color"); });
+
+    function marcarPaleta(nombre) {
+        paletas.forEach(function (b) {
+            var	on = b.getAttribute("data-palette") === nombre;
+            b.classList.toggle("is-on", on);
+            b.setAttribute("aria-checked", on ? "true" : "false");
+        });
+    }
+    function mostrarColor(hexa) {
+        pinColor.value = hexa;
+        hexColor.textContent = hexa.toUpperCase();
+    }
+    function quitarGuardado(clave) {
+        try { localStorage.removeItem(clave); } catch (e) {}
+    }
+    /* Un solo sitio decide el color: siempre se escribe el color resultante en
+       la variable de <html>, sin depender de que la hoja de estilo la resuelva,
+       y los controles quedan mostrando lo que se ve. "Quitar" pasa por aquí, así
+       el menú y los controles nunca se contradicen. Sin color propio siempre
+       queda una paleta, y si no se reconoce se usa la de Dogger. */
+    function aplicarColor(paleta, hexa) {
+        var color = hexa || COLORES[paleta] || COLORES["dogger"];
+        root.style.setProperty("--sb-accent", color);
+        if (paleta) {
+            root.setAttribute("data-navpalette", paleta);
+            s("dogger:pv:navpalette", paleta);
+        } else {
+            root.removeAttribute("data-navpalette");
+            quitarGuardado("dogger:pv:navpalette");
+        }
+        if (hexa) {
+            s("dogger:pv:navcolor", hexa);
+        } else {
+            quitarGuardado("dogger:pv:navcolor");
+        }
+        mostrarColor(color);
+        marcarPaleta(hexa ? "" : paleta);
+    }
+    function paletaActual() {
+        var actual = root.getAttribute("data-navpalette");
+        return Object.prototype.hasOwnProperty.call(COLORES, actual) ? actual : "dogger";
+    }
+
+    paletas.forEach(function (b) {
+        b.addEventListener("click", function () {
+            aplicarColor(b.getAttribute("data-palette"), "");
+            saved();
+        });
+    });
+    pinColor.addEventListener("input", function () { aplicarColor("", pinColor.value); });
+    pinColor.addEventListener("change", function () { aplicarColor("", pinColor.value); saved(); });
+    quitarColor.addEventListener("click", function () {
+        aplicarColor(paletaActual(), "");
+        saved();
+    });
+
+    /* El script de la cabecera ya aplicó el color guardado: aquí solo se
+       refleja en los controles y se deja el estado inicial listo. */
+    var colorGuardado = g("dogger:pv:navcolor");
+    aplicarColor(paletaActual(),
+        colorGuardado && /^#[0-9a-f]{6}$/i.test(colorGuardado) ? colorGuardado : "");
+
     // Pestañas
     var tabs = Array.prototype.slice.call(document.querySelectorAll("#profileTabs button"));
     var panels = Array.prototype.slice.call(document.querySelectorAll(".profile-panel"));
@@ -431,10 +575,6 @@
     tabs.forEach(function (t) {
         t.addEventListener("click", function () { mostrar(t.getAttribute("data-tab")); });
     });
-    document.getElementById("btnPersonalizar").addEventListener("click", function () {
-        mostrar("visualizacion");
-        document.querySelector('[data-tab="visualizacion"]').scrollIntoView({ behavior: "smooth", block: "start" });
-    });
 })();
 </script>
-{% endblock %}
+{% endblock %}

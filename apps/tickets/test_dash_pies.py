@@ -5,6 +5,7 @@ las series que cuentan únicamente abiertas salían en blanco aunque tuviera
 datos.
 """
 import json
+import re
 from datetime import timedelta
 
 from django.test import TestCase, override_settings
@@ -85,10 +86,11 @@ class DashPiesTest(SmokeTestCase):
         for ambito, cat in (("en_progreso", "SIESA › Facturación"),
                             ("cerrados", "POS › Impresora")):
             self.assertEqual(self._mapa(d["pie_categoria"][ambito]), {cat: 1}, ambito)
-        # "Resueltas" agrupa lo ya terminado: resueltas Y cerradas, por eso
-        # en esa categoría entran las dos (R1 resuelto y C1 cerrado).
+        # "Resueltas" ya no agrupa estados: busca la marca de resolución. R1
+        # está en estado "resuelto" (los antiguos), C1 se cerró sin marcar,
+        # así que solo entra R1.
         self.assertEqual(
-            self._mapa(d["pie_categoria"]["resueltos"]), {"POS › Impresora": 2}
+            self._mapa(d["pie_categoria"]["resueltos"]), {"POS › Impresora": 1}
         )
         self.assertEqual(d["pie_categoria"]["eliminados"], [])
         self.assertEqual(len(self._mapa(d["pie_categoria"]["todas"])), 2)  # 2 categorías
@@ -96,7 +98,7 @@ class DashPiesTest(SmokeTestCase):
         self.assertEqual(self._mapa(d["pie_prioridad"]["abiertas"]), {"Urgente": 1, "Alta": 1})
         self.assertEqual(self._mapa(d["pie_prioridad"]["cerrados"]), {"Media": 1})
         self.assertEqual(
-            self._mapa(d["pie_prioridad"]["resueltos"]), {"Baja": 1, "Media": 1}
+            self._mapa(d["pie_prioridad"]["resueltos"]), {"Baja": 1}
         )
 
     def test_el_ambito_eliminados_solo_muestra_la_papelera(self):
@@ -309,3 +311,132 @@ class CodigoTicketTest(SmokeTestCase):
 
         self.assertIsNotNone(nuevo.pk)
         self.assertEqual(nuevo.codigo, "HD-0004")
+
+
+class FiltroResueltasTest(SmokeTestCase):
+    """Marcar resuelto cierra el ticket, y los filtros lo reflejan.
+
+    Al resolver, el ticket queda cerrado y se registra la fecha de
+    resolución. `estado` por sí solo no alcanza: un ticket se puede cerrar
+    directo desde abierto o en progreso, y ese no cuenta como resuelto. Por
+    eso el filtro de "Resueltas" busca la marca y no el estado.
+    """
+
+    def setUp(self):
+        self.admin = Usuario.objects.create_user(
+            email="adm@x.com", password="x", nombre="Adm", rol=Usuario.Rol.ADMIN
+        )
+        self.client.force_login(self.admin)
+        self.cat = Categoria.objects.create(grupo="SIESA", nombre="General")
+
+    def _ticket(self, estado, titulo="T", resuelta=False):
+        t = Ticket.objects.create(
+            titulo=titulo,
+            descripcion="d",
+            prioridad=Ticket.Prioridad.MEDIA,
+            estado=estado,
+            solicitante_nombre="User",
+            categoria=self.cat,
+        )
+        if resuelta:
+            t.fecha_resolucion = timezone.now()
+            t.save()
+        return t
+
+    def _listado(self, estado):
+        r = self.client.get(reverse("tickets:lista"), {"estado": estado, "per_page": 0})
+        self.assertEqual(r.status_code, 200)
+        return r.content.decode()
+
+    def test_marcar_resuelto_cierra_el_ticket(self):
+        t = self._ticket(Ticket.Estado.EN_PROGRESO, "ZK-Progreso")
+        r = self.client.post(
+            reverse("tickets:cambiar_estado", args=[t.pk]),
+            {"estado": Ticket.Estado.RESUELTO, "next": "/panel/tickets/"},
+        )
+        self.assertEqual(r.status_code, 302)
+        t.refresh_from_db()
+        self.assertEqual(t.estado, Ticket.Estado.CERRADO)
+        self.assertIsNotNone(t.fecha_resolucion, "debe quedar registrada la resolución")
+        self.assertIsNotNone(t.fecha_cierre)
+        self.assertTrue(t.fue_resuelto)
+        self.assertTrue(t.esta_cerrado)
+
+    def test_reabrir_borra_la_marca_de_resolucion(self):
+        t = self._ticket(Ticket.Estado.CERRADO, "ZK-Cerrada", resuelta=True)
+        self.client.post(
+            reverse("tickets:cambiar_estado", args=[t.pk]),
+            {"estado": Ticket.Estado.ABIERTO, "next": "/panel/tickets/"},
+        )
+        t.refresh_from_db()
+        self.assertIsNone(t.fecha_resolucion)
+        self.assertFalse(t.fue_resuelto)
+
+    def test_filtrar_por_resuelto_trae_solo_los_resueltos(self):
+        # Este se resolvió: al resolverlo se cerró, así que cuenta.
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Resuelta", resuelta=True)
+        # Este se cerró directo, sin pasar por "marcar resuelto".
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Solo-cerrada")
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+
+        html = self._listado(Ticket.Estado.RESUELTO)
+        self.assertIn("ZK-Resuelta", html)
+        self.assertNotIn("ZK-Solo-cerrada", html)
+        self.assertNotIn("ZK-Abierta", html)
+
+    def test_cerrado_trae_las_cerradas_sean_resueltas_o_no(self):
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Resuelta", resuelta=True)
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Solo-cerrada")
+
+        html = self._listado(Ticket.Estado.CERRADO)
+        self.assertIn("ZK-Resuelta", html)
+        self.assertIn("ZK-Solo-cerrada", html)
+
+    def test_el_chip_de_resueltas_cuadra_con_el_listado(self):
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Resuelta", resuelta=True)
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Solo-cerrada")
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+
+        html = self._listado(Ticket.Estado.RESUELTO)
+        esperado = Ticket.objects.filter(fecha_resolucion__isnull=False).count()
+        chip = re.search(r'stat-n">(\d+)</span><span class="stat-l">Resueltas', html)
+        self.assertIsNotNone(chip, "no se encontro el chip de resueltas")
+        self.assertEqual(int(chip.group(1)), esperado)
+        self.assertEqual(esperado, 1)
+
+    def test_en_resueltas_salen_los_dos_distintivos(self):
+        # Al resolverse queda cerrado, así que lleva "Resuelto" y "Cerrado".
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Resuelta", resuelta=True)
+        html = self._listado(Ticket.Estado.RESUELTO)
+        self.assertEqual(html.count("status-pill status-resuelto"), 1)
+        self.assertEqual(html.count("status-pill status-cerrado"), 1)
+
+    def test_en_cerradas_solo_sale_el_distintivo_cerrado(self):
+        # Aunque se haya resuelto, en el filtro de cerradas solo se ve
+        # "Cerrado": es lo que se está mirando en esa lista.
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Resuelta", resuelta=True)
+        self._ticket(Ticket.Estado.CERRADO, "ZK-Solo-cerrada")
+        html = self._listado(Ticket.Estado.CERRADO)
+        self.assertNotIn("status-pill status-resuelto", html)
+        self.assertEqual(html.count("status-pill status-cerrado"), 2)
+
+    def test_una_abierta_conserva_su_unico_distintivo(self):
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+        html = self._listado(Ticket.Estado.ABIERTO)
+        self.assertIn("status-pill status-abierto", html)
+        self.assertNotIn("status-pill status-resuelto", html)
+        self.assertNotIn("status-pill status-cerrado", html)
+
+    def test_los_mensajes_de_confirmacion_avisan_la_accion(self):
+        """Al cambiar de estado se avisa qué va a pasar antes de hacerlo."""
+        html = self.client.get(reverse("tickets:lista")).content.decode()
+        self.assertIn("Se activará el trabajo del técnico", html)
+        self.assertIn("se cerrará", html)
+        self.assertIn("¿Continuar?", html)
+
+    def test_el_comentario_de_la_plantilla_no_se_imprime(self):
+        """Un {# #} de varias lineas no lo reconoce Django y se veria en pantalla."""
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+        html = self._listado(Ticket.Estado.ABIERTO)
+        self.assertNotIn("{#", html)
+        self.assertNotIn("#}", html)

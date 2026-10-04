@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, webhooks, views_observador
+from . import views, views_monitoreo, views_observador, webhooks
 
 app_name = "tickets"
 
@@ -50,6 +50,10 @@ urlpatterns = [
     path("panel/categorias/<int:pk>/toggle/", views.categoria_toggle, name="categoria_toggle"),
     path("panel/categorias/<int:pk>/eliminar/", views.categoria_eliminar, name="categoria_eliminar"),
     path("panel/usuarios/", views.usuarios_lista, name="usuarios"),
+    path("panel/monitoreo/", views_monitoreo.monitoreo_admin, name="monitoreo_admin"),
+    path("panel/monitoreo/agregar/", views_monitoreo.monitoreo_agregar, name="monitoreo_agregar"),
+    path("panel/monitoreo/quitar/<int:pk>/", views_monitoreo.monitoreo_quitar, name="monitoreo_quitar"),
+    path("panel/monitoreo/zonas/", views_monitoreo.monitoreo_zonas, name="monitoreo_zonas"),
     path("panel/usuarios/estado.json", views.usuarios_estado_api, name="usuarios_estado"),
     path("panel/usuarios/guardar/", views.usuario_guardar, name="usuario_guardar"),
     path("panel/usuarios/<int:pk>/ficha/", views.usuario_ficha_api, name="usuario_ficha"),
@@ -63,6 +67,7 @@ urlpatterns = [
     # --- Módulo del observador ---
     path("observador/", views_observador.panel_observador, name="obs_panel"),
     path("observador/buscar/", views_observador.buscar_observador, name="obs_buscar"),
+    path("observador/usuarios/", views_observador.usuarios_observador, name="obs_usuarios"),
     path("observador/mi-lista/", views_observador.mi_lista_observador, name="obs_mi_lista"),
     path("observador/mi-lista/agregar/", views_observador.agregar_mi_lista, name="obs_agregar"),
     path("observador/mi-lista/<int:pk>/quitar/", views_observador.quitar_mi_lista, name="obs_quitar"),

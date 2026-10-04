@@ -7,7 +7,6 @@ from django.utils import timezone
 from django.core.mail import send_mail
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render, reverse
-from django.urls import reverse_lazy
 from django.views import View
 from django.views.decorators.http import require_POST
 from datetime import timedelta
@@ -23,6 +22,7 @@ from .forms import (
     UserRegisterForm,
 )
 from .models import ResetPasswordToken, Usuario
+from .routing import landing_por_rol
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ class BaseRoleLoginView(LoginView):
     redirect_authenticated_user = True
     role_name = "staff"
     role_label = "Staff"
+    modo_observador = False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -56,6 +57,23 @@ class BaseRoleLoginView(LoginView):
         return context
 
     def form_valid(self, form):
+        # Con "Modo Observador" marcado se revisa el rol ANTES de iniciar
+        # sesion. form.get_user() solo comprueba las credenciales: no crea
+        # sesion ni rota el token CSRF, asi que un rechazo no deja al
+        # navegador con un token distinto al de la pagina.
+        if form.cleaned_data.get("modo_observador"):
+            user = form.get_user()
+            if user is None or not user.is_active:
+                return super().form_valid(form)
+            if getattr(user, "rol", None) != "observador":
+                form.add_error(
+                    "modo_observador",
+                    "Esta cuenta no tiene el modo Observador. "
+                    "Pídele a un administrador que te lo asigne.",
+                )
+                return self.form_invalid(form)
+            self.modo_observador = True
+
         response = super().form_valid(form)
         if not form.cleaned_data.get("remember_me"):
             self.request.session.set_expiry(0)
@@ -64,15 +82,9 @@ class BaseRoleLoginView(LoginView):
         return response
 
     def get_success_url(self):
-        user = self.request.user
-        rol = getattr(user, "rol", None)
-        if rol == "observador":
-            return reverse_lazy("tickets:obs_panel")
-        if rol == "usuario":
-            return reverse_lazy("tickets:mi_panel")
-        if rol == "tecnico":
-            return reverse_lazy("tickets:panel_tecnico")
-        return reverse_lazy("tickets:dashboard")
+        # El modo Observador ya está comprobado como rol observador, así que
+        # el mismo enrutado por rol cubre ese caso y cualquier otro.
+        return landing_por_rol(self.request.user)
 
 
 class StaffLoginView(BaseRoleLoginView):
@@ -382,7 +394,7 @@ def restablecer_password(request):
             login(request, usuario)
             request.session.pop("reset_pwd_email", None)
             request.session["force_password_change"] = True
-            return redirect(_landing_por_rol(usuario))
+            return redirect(landing_por_rol(usuario))
 
         return render(
             request,
@@ -436,20 +448,25 @@ def _enviar_codigo_reset(request, usuario, codigo):
     )
 
 
-def _landing_por_rol(user):
-    rol = getattr(user, "rol", None)
-    if rol == "usuario":
-        return reverse("tickets:mi_panel")
-    if rol == "tecnico":
-        return reverse("tickets:panel_tecnico")
-    return reverse("tickets:dashboard")
+def pagina_no_autorizada(request, exception=None):
+    """403 de la casa: el rol no alcanza para la URL que se pidió.
+
+    Sin esto Django enseña su página gris de "Forbidden", que no dice ni a
+    dónde ir. `forbidden.html` ya explica la situación y ofrece los ajustes.
+    """
+    return render(request, "forbidden.html", status=403)
+
+
+def pagina_no_encontrada(request, exception=None):
+    """404 de la casa: la URL no existe, con salida al portal y al panel."""
+    return render(request, "no_encontrado.html", status=404)
 
 
 @login_required
 def cambiar_password_forzado(request):
     """Vista que procesa el modal 'Debes actualizar tu contraseña'."""
     if not request.session.get("force_password_change"):
-        return redirect(_landing_por_rol(request.user))
+        return redirect(landing_por_rol(request.user))
 
     if request.method == "POST":
         form = CambiarPasswordForzadoForm(request.POST)
@@ -460,7 +477,7 @@ def cambiar_password_forzado(request):
             request.session.pop("force_password_change", None)
             request.session.pop("force_password_error", None)
             request.session["pwd_cambiada_ok"] = True
-            return redirect(_landing_por_rol(request.user))
+            return redirect(landing_por_rol(request.user))
 
         error_msg = next(
             (msg for msgs in form.errors.values() for msg in msgs),
@@ -468,7 +485,7 @@ def cambiar_password_forzado(request):
         )
         request.session["force_password_error"] = error_msg
         messages.error(request, "Revisa los errores en la ventana e inténtalo de nuevo.")
-    return redirect(_landing_por_rol(request.user))
+    return redirect(landing_por_rol(request.user))
 
 
 @require_POST

@@ -1,6 +1,8 @@
 <div class="ue-ficha-meta">
-    {# Circulo de presencia en vivo: verde conectado, amarillo activo sin
-       conexion, rojo inactivo. El JS lo refresca con el endpoint de estado. #}
+    {% comment %}
+        Circulo de presencia en vivo: verde conectado, amarillo activo sin
+        conexion, rojo inactivo. El JS lo refresca con el endpoint de estado.
+    {% endcomment %}
     <span class="ue-ficha-presencia" title="{{ u.ficha.dot_titulo|default:'Presencia' }}">
         <span class="ue-dot {{ u.ficha.dot }}" id="ue-dot-f-{{ u.pk }}" data-uid="{{ u.pk }}"
               data-estado="{{ u.ficha.dot }}"></span>

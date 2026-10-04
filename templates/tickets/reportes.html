@@ -4,8 +4,8 @@
 {% block title %}Dogger · Reportes corporativos{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_reportes %}is-active{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Reportes{% endblock %}
+{% block header_desc %}Comparativos por técnico, categoría y usuario.{% endblock %}
 
 {% block extra_css %}
 {% load static %}
@@ -130,8 +130,6 @@
                 <svg class="icon"><use href="#i-download"/></svg> Descargar en Excel
             </a>
         </div>
-        <h1>Reportes corporativos</h1>
-
         <div class="dash-stat-row">
             <a class="dash-stat" href="{% url 'tickets:lista' %}" title="Tickets incluidos según los filtros aplicados">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
@@ -161,7 +159,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltos</span>
-                    <span class="dash-stat-value st-resueltos">{{ kpis.resueltos }}</span>
+                    <span class="dash-stat-value st-resueltos">{{ kpis.resueltos_cerrados }}</span>
                     <span class="dash-stat-hint">{{ kpis.cerrados }} cerrados</span>
                 </span>
             </a>
@@ -374,7 +372,6 @@
 </main>
 {% endblock %}
 
-{% block footer %}{% include "tickets/_redes.html" %}{% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
@@ -622,4 +619,4 @@
     if (rows.length) render();
 })();
 </script>
-{% endblock %}
+{% endblock %}

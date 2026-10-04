@@ -3,8 +3,8 @@
 {% block title %}Dogger · Panel de Administración{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_dashboard %}is-active{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Panel Administrador{% endblock %}
+{% block header_desc %}Carga de los técnicos, el ANS y las últimas solicitudes.{% endblock %}
 
 {% block extra_css %}
 {% load static %}
@@ -217,8 +217,6 @@
                 </a>
             </span>
         </div>
-        <h1>Resumen del helpdesk</h1>
-
         <div class="dash-stat-row dash-stat-row--mesas">
             <a class="dash-stat" href="{% url 'tickets:lista' %}">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
@@ -248,7 +246,7 @@
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltos</span>
-                    <span class="dash-stat-value st-resueltos">{{ stats.resueltos|default:0 }}</span>
+                    <span class="dash-stat-value st-resueltos">{{ stats.resueltos_cerrados|default:0 }}</span>
                     <span class="dash-stat-hint">{{ stats.cerrados|default:0 }} cerrados</span>
                 </span>
             </a>
@@ -355,7 +353,7 @@
                                 <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
                                 <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
                                 <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
-                                <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}</td>
+                                <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
                                 <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
                             </tr>
                             {% empty %}
@@ -422,5 +420,3 @@
     </div>
 </div>
 {% endblock %}
-
-{% block footer %}{% include "tickets/_redes.html" %}{% endblock %}

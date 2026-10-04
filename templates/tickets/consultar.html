@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Consultar ticket · Dogger{% endblock %}
 {% block header_title %}Consultar pedido{% endblock %}
+{% block header_desc %}Escribe el código del ticket y mira su estado.{% endblock %}
 {% block header_actions %}
 <a href="{% url 'tickets:portal' %}" class="btn btn-outline-light btn-sm"><svg class="icon"><use href="#i-arrow-left"/></svg> Portal</a>
 {% endblock %}
@@ -39,4 +40,4 @@
     </section>
     {% endif %}
 </main>
-{% endblock %}
+{% endblock %}

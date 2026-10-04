@@ -607,7 +607,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ---- Layout profesional del formulario de soporte ---- */
-.ticket-form-head { margin-bottom: 0; }
 .ticket-form-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
@@ -2070,6 +2069,8 @@ table.data-table tbody tr td:first-child {
     color: #fff;
     background: var(--pill, var(--ink-muted));
 }
+/* Una solicitud resuelta lleva dos distintivos (resuelto + cerrado). */
+.status-pill + .status-pill { margin-left: 4px; }
 
 .admin-shell { min-height: 100vh; }
 .admin-topbar-actions .user-chip {
@@ -2889,16 +2890,18 @@ select:focus-visible, textarea:focus-visible {
 }
 /* Contador de pendientes de cada entrada del menú, encima del texto */
 .nav-count {
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
+    /* El contador va a la derecha del ítem, no encima del icono: así se lee
+       de un vistazo al final de la etiqueta. */
+    position: static;
+    order: 9;
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 17px;
     height: 15px;
     padding: 0 4px;
+    margin-left: auto;
     border-radius: 8px;
     background: #B7791F;
     color: #fff;
@@ -2908,12 +2911,12 @@ select:focus-visible, textarea:focus-visible {
     line-height: 1;
     letter-spacing: -.2px;
     pointer-events: none;
-    box-shadow: 0 0 0 2px var(--dogger-paper);
+    box-shadow: none;
 }
 .nav-count[data-nivel="alto"] { background: var(--dogger-red); }
 .nav-count[data-nivel="bajo"] { background: #2F7D4F; }
 .nav-link:hover .nav-count,
-.nav-link.is-active .nav-count { box-shadow: 0 0 0 2px #FFFFFF; }
+.nav-link.is-active .nav-count { box-shadow: none; }
 .nav-link.is-active .nav-count { background: var(--dogger-red); }
 .nav-count-sr {
     position: absolute;
@@ -3205,6 +3208,9 @@ select:focus-visible, textarea:focus-visible {
     font-size: 13.5px;
     line-height: 1.5;
     color: #475569;
+    /* Los avisos de confirmación traen saltos de línea para separar el
+       qué pasa del "¿continuar?". */
+    white-space: pre-line;
 }
 .confirm-actions {
     display: flex;
@@ -3273,31 +3279,15 @@ select:focus-visible, textarea:focus-visible {
 @keyframes ticketOkFadeOut { to { opacity: 0; } }
 @keyframes ticketOkBoxOut { to { opacity: 0; transform: translateY(12px) scale(.94); } }
 
-/* ---- Botón volver + encabezado de página ---- */
+/* ---- Encabezado de página ----
+   El título y su explicación viven ahora en la barra superior; aquí solo queda
+   lo que la vista aporta aparte: distintivos, filtros o acciones. */
 .page-head {
     display: flex;
     align-items: center;
     gap: 14px;
     margin: 22px 0 6px;
 }
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: #fff;
-    border: 1px solid var(--line);
-    color: var(--ink-muted);
-    font-size: 16px;
-    cursor: pointer;
-    transition: all .15s ease;
-    flex-shrink: 0;
-}
-.back-btn:hover { color: var(--dogger-red); border-color: var(--dogger-red); transform: translateX(-2px); }
-.page-head-titles h2 { margin: 0; font-size: 21px; }
-.page-head-titles p { margin: 2px 0 0; color: var(--ink-muted); font-size: 12.5px; }
 
 /* ---- Toolbar de filtros para tablas ---- */
 .table-toolbar {
@@ -3359,7 +3349,9 @@ select:focus-visible, textarea:focus-visible {
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow-card);
-    overflow: hidden;
+    /* clip y no hidden: recorta las esquinas pero no secuestra la rueda,
+       que antes se perdia al llegar al final de la tabla. */
+    overflow: clip;
     margin-bottom: 18px;
 }
 .table-scroll { overflow-x: auto; }
@@ -3710,19 +3702,35 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 .cat-publico-busca input { flex:1; font:inherit; font-size:14px; padding:11px 15px; border:1px solid var(--line); border-radius:999px; background:#fff; }
 .cat-publico-busca input:focus { outline:2px solid var(--dogger-red); outline-offset:1px; border-color:transparent; }
 .cat-busca-msg { font-size:12.5px; color:var(--ink-muted); white-space:nowrap; }
-.cat-publico-grupo { margin-top:26px; }
-.cat-publico-grupo h2 { display:flex; align-items:center; gap:10px; font-size:17px; margin:0 0 12px; padding-bottom:8px; border-bottom:2px solid var(--line); }
-.cat-publico-grupo[hidden] { display:none; }
-.cat-publico-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
-.cat-publico-card { background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; display:flex; flex-direction:column; gap:9px; box-shadow:var(--shadow-card); }
-.cat-publico-card[hidden] { display:none; }
-.cat-publico-card h3 { font-size:15px; margin:0; color:var(--ink); }
-.cat-publico-desc { margin:0; font-size:13.5px; color:var(--ink-muted); line-height:1.5; }
-.cat-publico-ejemplos { background:#FBF7EF; border:1px solid #EFE8DA; border-radius:9px; padding:9px 11px; }
-.cat-publico-tag { display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#8a6116; background:#FFF3DB; border-radius:999px; padding:2px 8px; margin-bottom:5px; }
-.cat-publico-ejemplos ul { margin:0; padding-left:17px; font-size:12.5px; color:var(--ink); line-height:1.55; }
-.cat-publico-pie { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; padding-top:6px; }
-.cat-publico-pie .file-chip { font-size:11px; }
+.cat-publico-vacio { margin:22px 0; font-size:13.5px; color:var(--ink-muted); text-align:center; }
+/* Fila clicable: al tocarla se abre el detalle de la categoría. */
+.cat-sub-table .cat-fila { cursor:pointer; transition:background .12s ease; }
+.cat-sub-table .cat-fila:hover { background:#FFF9F7; }
+.cat-sub-table .cat-fila:focus-visible { outline:2px solid var(--dogger-red); outline-offset:-2px; }
+.cat-ver-mas {
+    display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700;
+    color:var(--dogger-red); white-space:nowrap;
+}
+.cat-fila:hover .cat-ver-mas .icon { transform:translateX(2px); }
+.cat-ver-mas .icon { transition:transform .12s ease; }
+/* Detalle de la categoría. */
+.cat-det-grupo { margin:0 0 12px; font-size:12.5px; font-weight:700; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.04em; }
+.cat-det-datos { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; margin:0 0 16px; font-size:13.5px; }
+.cat-det-datos dt { font-weight:700; color:var(--ink-muted); }
+.cat-det-datos dd { margin:0; color:var(--ink); }
+.cat-det-bloque h4 { margin:0 0 8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted); }
+.cat-det-lista { margin:0; padding:11px 14px 11px 30px; background:#FBF7EF; border:1px solid #EFE8DA; border-radius:9px; font-size:13px; color:var(--ink); line-height:1.65; }
+/* Modal de categoría compacto: ya no se estira en vertical. */
+.cat-modal { max-width: 460px; }
+.cat-modal .modal-body { padding: 14px 18px 16px; max-height: 46vh; }
+.cat-det-facts { list-style:none; margin:0 0 16px; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.cat-det-facts li { background:#FBF7EF; border:1px solid #EFE8DA; border-radius:9px; padding:8px 10px; min-width:0; }
+.cat-det-facts-l { display:block; font-size:10.5px; font-weight:800; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
+.cat-det-facts-v { display:block; font-size:13px; color:var(--ink); overflow-wrap:anywhere; }
+.cat-det-chips { display:flex; flex-wrap:wrap; gap:6px; max-height:132px; overflow-y:auto; padding:2px; }
+.cat-det-chip { font:inherit; font-size:12px; line-height:1.4; padding:5px 10px; border-radius:999px; background:#fff; border:1px solid var(--line); color:var(--ink); cursor:pointer; }
+.cat-det-chip:hover { border-color:var(--dogger-red); color:var(--dogger-red); }
+@media (max-width:520px) { .cat-det-facts { grid-template-columns:1fr; } }
 .cat-new-form .row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
 .cat-new-form label { display:block; font-size:11.5px; font-weight:700; color:var(--ink-muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em; }
 .cat-inactivos summary { cursor:pointer; font-weight:600; font-size:13.5px; color:var(--ink-muted); }
@@ -4572,7 +4580,7 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 /* Scroll suave en tablas con overflow */
 .table-scroll {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
+    overscroll-behavior: auto;
 }
 
 /* Imágenes y iframes: renderizar de forma aislada */
@@ -5343,9 +5351,48 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
     margin: 0;
     accent-color: var(--dogger-red);
 }
-.login-forgot-link {
-    font-size: 12px;
+/* Modo Observador: entrada al panel en solo lectura desde el login. */
+.login-modo-observador {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 2px;
+    padding: 10px 12px;
+    background: #F7F4F1;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color .15s ease, background .15s ease;
+}
+.login-modo-observador:hover { background: #FFF9F7; border-color: rgba(214,43,31,.3); }
+.login-modo-observador.has-error { border-color: var(--dogger-red); background: #FFF3F1; }
+.login-modo-observador input[type="checkbox"] {
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--dogger-red);
+    cursor: pointer;
+}
+.login-modo-ico {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    border-radius: 9px;
+    background: #fff;
+    border: 1px solid var(--line);
     color: var(--dogger-red);
+}
+.login-modo-txt { display: flex; flex-direction: column; line-height: 1.35; }
+.login-modo-txt strong { font-size: 12.5px; color: var(--ink); }
+.login-modo-txt small { font-size: 11px; color: var(--ink-muted); }
+.login-modo-observador:has(input:checked) { border-color: var(--dogger-red); background: #FFF3F1; }
+
+.login-forgot-link {
+    font-size: 12px;    color: var(--dogger-red);
     font-weight: 600;
     white-space: nowrap;
     text-decoration: none;
@@ -5959,7 +6006,6 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 /* =====================================================================
    Módulo del observador: puntos asignados, lista y monitoreo
    ===================================================================== */
-.obs-page .page-head-titles h2 { margin: 0 0 4px; }
 .obs-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .obs-tabs {
@@ -6045,11 +6091,77 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .obs-tarjeta-nombre { font-size: 14.5px; font-weight: 700; padding-right: 22px; }
 .obs-tarjeta-dato { font-size: 12.5px; color: var(--ink-muted); }
 .obs-tarjeta-alerta { font-size: 11.5px; font-weight: 700; color: var(--dogger-red); }
+/* Barra de reparto por estado dentro de la tarjeta de zona. */
+.obs-bar { display: flex; gap: 2px; height: 6px; margin-top: 8px; border-radius: 999px; overflow: hidden; background: #F1EDE6; }
+.obs-bar-seg { display: block; min-width: 0; }
+.obs-bar-verde { background: #2F7D4F; }
+.obs-bar-amarillo { background: #D9A436; }
+.obs-bar-rojo { background: var(--dogger-red); }
+.obs-bar-vacio { background: transparent; }
+/* Tecnicos asignados a un usuario: se ven seis y el resto con scroll. */
+.obs-tecnicos {
+  max-height: 132px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  margin: 0;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: #C9C0B2 transparent;
+}
+.obs-tecnicos::-webkit-scrollbar { width: 6px; }
+.obs-tecnicos::-webkit-scrollbar-track { background: transparent; }
+.obs-tecnicos::-webkit-scrollbar-thumb { background: #C9C0B2; border-radius: 999px; }
+.obs-tecnicos li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 1px 0;
+}
+.obs-tecnicos li + li { border-top: 1px dotted var(--line); }
+/* Tabla de resultados: seis filas a la vista y el resto con scroll.
+   El alto lo calcula dogger.js midiendo la fila real de cada tabla, asi que
+   --alto-filas se deja como respaldo para cuando el script no corre. */
+.tabla-scroll-seis {
+  max-height: var(--alto-filas, 372px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #C9C0B2 transparent;
+}
+.tabla-scroll-seis::-webkit-scrollbar { width: 8px; }
+.tabla-scroll-seis::-webkit-scrollbar-track { background: transparent; }
+.tabla-scroll-seis::-webkit-scrollbar-thumb { background: #C9C0B2; border-radius: 999px; }
+.tabla-scroll-seis thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    box-shadow: 0 1px 0 var(--line);
+}
+.obs-tecnico-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.obs-tecnico-c { flex: none; color: var(--ink-muted); font-size: 11.5px; white-space: nowrap; }
+/* Accesos directos del panel. */
+.obs-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 26px; }
+.obs-quick-btn {
+    display: flex; align-items: center; gap: 11px;
+    padding: 12px 14px; background: #fff;
+    border: 1px solid var(--line); border-radius: 12px;
+    text-decoration: none; color: inherit;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.obs-quick-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(23,20,18,.10); }
+.obs-quick-btn > .icon { width: 19px; height: 19px; flex: none; color: var(--dogger-red); }
+.obs-quick-btn span { min-width: 0; }
+.obs-quick-btn strong { display: block; font-size: 13.5px; }
+.obs-quick-btn small { display: block; font-size: 11.5px; color: var(--ink-muted); }
 .obs-estado-verde { border-left-color: #2F7D4F; }
 .obs-estado-amarillo { border-left-color: #D9A436; }
 .obs-estado-rojo { border-left-color: var(--dogger-red); }
 
-.obs-tabla-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
+.obs-tabla-wrap { overflow: auto; overscroll-behavior: auto; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
 .obs-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
 .obs-tabla th, .obs-tabla td { padding: 11px 13px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .obs-tabla thead th {
@@ -6102,6 +6214,9 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
     border: 1px solid var(--line); border-radius: 10px;
     background: #fff; font-size: 13px;
 }
+/* Filtros de la vista de usuarios. */
+.obs-filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 22px; }
+.obs-filtros .obs-buscador-campo { flex: 1 1 240px; }
 
 .obs-resultados { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .obs-resultado {
@@ -6136,6 +6251,7 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .obs-fila-txt small { display: block; font-size: 11.5px; color: var(--ink-muted); }
 .obs-fila-dato { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 .obs-fila-quitar { margin-left: 4px; }
+.obs-fila .muted { font-size: 11.5px; }
 
 .obs-vacio {
     display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -6204,7 +6320,7 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 }
 
 @media print {
-    .manual-toc, .page-head .btn, .topbar, .brand-header, .nav-principal, .site-footer { display:none !important; }
+    .manual-toc, .page-head .btn, .topbar, .brand-header, .sidebar, .site-footer { display:none !important; }
     .manual-layout { grid-template-columns:1fr; }
     .manual-seccion { break-inside:avoid; box-shadow:none; border-color:#ddd; }
 }
@@ -6234,3 +6350,449 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .toast-notif .toast-body span { font-size:12.2px; color:var(--ink-muted); line-height:1.45; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .toast-notif .toast-body a { align-self:flex-start; margin-top:5px; font-size:12px; font-weight:800; color:var(--dogger-red); text-decoration:none; }
 .toast-notif .toast-body a:hover { text-decoration:underline; }
+
+/* =====================================================================
+   Sidebar lateral — navegación principal del sistema
+   Reemplaza la barra horizontal: fijo a la izquierda, plegable a iconos
+   y cajón deslizante en pantallas pequeñas.
+   ===================================================================== */
+
+/* ---- Paleta del menú lateral ----
+   Se elige en Perfil › Navegación. "dogger" es el color de siempre; las demás
+   paletas solo cambian el acento. Un color personalizado se aplica con una
+   variable en línea sobre <html>, por eso tiene prioridad sobre la paleta. */
+:root {
+  --sb-accent: #D62B1F;
+  /* El color elegido se muestra tal cual: el menú y el encabezado toman ese
+     tono, sin velo por encima ni mezcla con negro. */
+  --sb-bg: var(--sb-accent);
+}
+html[data-navpalette="dogger"]    { --sb-accent: #D62B1F; }
+html[data-navpalette="azul"]      { --sb-accent: #1F6FD6; }
+html[data-navpalette="indigo"]    { --sb-accent: #4B4BC4; }
+html[data-navpalette="esmeralda"] { --sb-accent: #0F8A5F; }
+html[data-navpalette="ambar"]     { --sb-accent: #B4740A; }
+html[data-navpalette="rosa"]      { --sb-accent: #C02A6B; }
+
+/* El margen del contenido solo existe si la página trae sidebar; el portal
+   y las páginas públicas reescriben el bloque header y no lo tienen. */
+body:has(> .sidebar) { padding-left: 272px; }
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 272px;
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  background: var(--sb-bg);
+  color: #EFE9E1;
+  border-right: 1px solid rgba(255, 255, 255, .12);
+}
+
+/* ---- Cabecera: marca + botón de plegar ---- */
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 12px 15px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+.sidebar-brand { display: flex; align-items: center; gap: 11px; min-width: 0; flex: 1; }
+.sidebar-logo {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  object-fit: contain;
+  padding: 5px;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+}
+.sidebar-brand-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.sidebar-brand-txt strong {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-toggle {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .05);
+  color: rgba(239, 233, 225, .75);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.sidebar-toggle:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.sidebar-toggle .icon { width: 15px; height: 15px; transition: transform .2s ease; }
+html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
+
+/* ---- Secciones y enlaces ---- */
+.sidebar-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 12px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .18) transparent;
+}
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .18); border-radius: 999px; }
+.sidebar-group + .sidebar-group { margin-top: 16px; }
+.sidebar-group-title {
+  margin: 0 0 6px;
+  padding: 0 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: rgba(239, 233, 225, .4);
+}
+.sidebar-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: rgba(239, 233, 225, .76);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: background .15s ease, color .15s ease;
+}
+.sidebar-link + .sidebar-link { margin-top: 2px; }
+.sidebar-link:hover { background: rgba(255, 255, 255, .06); color: #fff; }
+.sidebar-link.is-active {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--sb-accent) 30%, transparent),
+    color-mix(in srgb, var(--sb-accent) 5%, transparent));
+  color: #fff;
+}
+.sidebar-link.is-active::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sb-accent);
+}
+.sidebar-ico {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sidebar-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-count {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--sb-accent);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .45);
+  font-size: 10.5px;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.sidebar-count[data-nivel="bajo"] { background: #2F7D4F; }
+
+/* ---- Barra superior: título de la página y acciones ---- */
+/* La barra es opaca: antes tenía un desenfoque de fondo que, al desplazar la
+   página, dejaba una franja translúcida bajo el encabezado. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--dogger-paper);
+  border-bottom: 1px solid var(--line);
+}
+/* La cabecera pública no usa dos filas: su .header-row se transparenta para
+   que el marcado antiguo se conserve tal cual. */
+.brand-header > .header-row { display: contents; }
+.topbar > .header-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 66px;
+  padding: 10px 24px;
+}
+/* Todas las vistas de la aplicación ponen título y subtítulo, así que esta fila
+   ya nunca queda vacía. */
+
+/* ---- Encabezado superior: acceso del usuario, badge de cuenta y campana ---- */
+.topbar-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 24px;
+  /* El mismo color del menú, sin velo: el encabezado se ve natural. */
+  background: var(--sb-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
+}
+.topbar-account { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+/* Encabezado oscuro: la tarjeta se recorta un poco más para que el avatar
+   y el nombre destaquen sobre el fondo del sidebar. */
+.topbar .user-chip { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .18); }
+.topbar .user-chip:hover { background: rgba(255, 255, 255, .17); border-color: rgba(255, 255, 255, .3); }
+.topbar .user-chip small { color: rgba(239, 233, 225, .6); }
+.topbar .user-chip-chevron { stroke: rgba(239, 233, 225, .65); }
+.topbar-titles { min-width: 0; }
+.topbar-titles h1 {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+/* Símbolo del título: al pasar el mouse por el título (o con el teclado, al
+   llegar con Tab) explica para qué sirve la vista. */
+.title-hint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  margin-left: 7px;
+  vertical-align: 2px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--dogger-cream);
+  color: var(--ink-muted);
+  cursor: help;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.title-hint > .icon { width: 11px; height: 11px; }
+.title-hint:hover, .title-hint:focus-visible { border-color: var(--dogger-red); color: var(--dogger-red); }
+.topbar-titles h1:hover .title-hint,
+.brand-titles h1:hover .title-hint,
+.title-hint:focus-visible { opacity: 1; }
+.title-hint-bubble {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  z-index: 95;
+  width: max-content;
+  max-width: 290px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--dogger-paper);
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity .15s ease, transform .15s ease, visibility .15s;
+  pointer-events: none;
+}
+.topbar-titles h1:hover .title-hint-bubble,
+.brand-titles h1:hover .title-hint-bubble,
+.title-hint:focus-visible .title-hint-bubble { opacity: 1; visibility: visible; transform: none; }
+.topbar .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+/* El botón del menú vive en la banda de color, así que se pinta claro. */
+.topbar-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .10);
+  cursor: pointer;
+}
+.topbar-burger:hover { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .18); }
+.topbar-burger .nav-toggle-bar { display: block; width: 18px; height: 2px; margin: 0 auto; border-radius: 2px; background: #fff; }
+.topbar-burger.is-active { border-color: rgba(255, 255, 255, .55); }
+.topbar-burger.is-active .nav-toggle-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.topbar-burger.is-active .nav-toggle-bar:nth-child(2) { opacity: 0; }
+.topbar-burger.is-active .nav-toggle-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* La página ya no está debajo de una barra fija, así no hace falta el offset. */
+body:has(> .sidebar) { scroll-padding-top: 80px; }
+
+/* ---- Modo plegado: una barra de solo iconos ----
+   El botón de desplegar deja de flotar (se montaba encima del logo) y los
+   rótulos se ocultan sin desaparecer del árbol de accesibilidad. */
+html[data-navcompact="1"] body:has(> .sidebar) { padding-left: 84px; }
+html[data-navcompact="1"] .sidebar { width: 84px; }
+
+html[data-navcompact="1"] .sidebar-top {
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 10px;
+}
+html[data-navcompact="1"] .sidebar-brand { justify-content: center; flex: none; }
+html[data-navcompact="1"] .sidebar-brand-txt { display: none; }
+html[data-navcompact="1"] .sidebar-toggle { position: static; }
+
+/* El texto del grupo se sustituye por una línea divisoria. */
+html[data-navcompact="1"] .sidebar-group-title { display: none; }
+html[data-navcompact="1"] .sidebar-group + .sidebar-group {
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, .09);
+}
+html[data-navcompact="1"] .sidebar-nav { padding: 10px 8px 18px; }
+
+html[data-navcompact="1"] .sidebar-link {
+  justify-content: center;
+  height: 42px;
+  padding: 0;
+  border-radius: 11px;
+}
+html[data-navcompact="1"] .sidebar-ico { display: block; }
+/* El rótulo se oculta sin display: none para que el enlace conserve su
+   nombre accesible en los lectores de pantalla. */
+html[data-navcompact="1"] .sidebar-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+html[data-navcompact="1"] .sidebar-link.is-active::before { left: -8px; }
+/* El contador se ancla a la esquina del icono. */
+html[data-navcompact="1"] .sidebar-count {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  margin-left: 2px;
+  min-width: 16px;
+  padding: 1px 4px;
+  font-size: 9px;
+}
+
+/* Rótulo flotante del enlace, creado desde JS fuera del menú desplazable. */
+.sidebar-tip {
+  position: fixed;
+  z-index: 200;
+  max-width: 240px;
+  padding: 7px 11px;
+  border-radius: 9px;
+  background: #14100E;
+  border: 1px solid rgba(255, 255, 255, .12);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .45);
+  pointer-events: none;
+}
+.sidebar-tip[hidden] { display: none; }
+
+/* ---- Cajón deslizante en pantallas pequeñas ---- */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 94;
+  background: rgba(20, 16, 14, .55);
+  backdrop-filter: blur(2px);
+}
+.sidebar-backdrop[hidden] { display: none; }
+
+@media (max-width: 1080px) {
+  body:has(> .sidebar) { padding-left: 0; }
+  .sidebar {
+    width: 272px;
+    transform: translateX(-100%);
+    transition: transform .24s ease;
+    box-shadow: none;
+  }
+  .sidebar.is-open { transform: none; box-shadow: 0 0 70px rgba(0, 0, 0, .5); }
+  .topbar-burger { display: flex; }
+  .topbar-top { padding: 6px 16px; }
+  .topbar > .header-row { padding: 10px 16px; }
+  /* En el cajón siempre va completo: el ancho completo es lo cómodo al navegar,
+     así que aquí se deshace una por una las reglas del modo plegado. */
+  html[data-navcompact="1"] body:has(> .sidebar) { padding-left: 0; }
+  html[data-navcompact="1"] .sidebar { width: 272px; }
+  html[data-navcompact="1"] .sidebar-top { padding: 15px 12px 15px 16px; flex-direction: row; }
+  html[data-navcompact="1"] .sidebar-brand { justify-content: flex-start; flex: 1; }
+  html[data-navcompact="1"] .sidebar-brand-txt { display: flex; }
+  html[data-navcompact="1"] .sidebar-group-title { display: block; }
+  html[data-navcompact="1"] .sidebar-group + .sidebar-group { margin-top: 16px; padding-top: 0; border-top: 0; }
+  html[data-navcompact="1"] .sidebar-nav { padding: 12px 12px 20px; }
+  html[data-navcompact="1"] .sidebar-link { justify-content: flex-start; height: auto; padding: 10px 12px; }
+  html[data-navcompact="1"] .sidebar-link.is-active::before { left: -12px; }
+  html[data-navcompact="1"] .sidebar-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+  html[data-navcompact="1"] .sidebar-count {
+    position: static;
+    margin-left: auto;
+    min-width: 22px;
+    padding: 2px 7px;
+    font-size: 10.5px;
+  }
+  html[data-navcompact="1"] .sidebar-toggle { position: static; }
+}
+
+@media (max-width: 560px) {
+  /* El padding vive en la fila del título, no en el contenedor del encabezado. */
+  .topbar { gap: 0; }
+  .topbar > .header-row { min-height: 58px; padding: 8px 14px; gap: 10px; }
+  .topbar-titles h1 { font-size: 16.5px; }
+}
+
+/* En pantallas estrechas el encabezado superior se queda con lo imprescindible:
+   el logo, la inicial del rol, la campana y el avatar. */
+@media (max-width: 720px) {
+  .topbar-account { gap: 8px; }
+  .topbar .user-chip-text { display: none; }
+  .topbar .user-chip { padding: 4px; }
+  .topbar .user-chip-chevron { display: none; }
+}

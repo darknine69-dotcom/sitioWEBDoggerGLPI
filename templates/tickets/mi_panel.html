@@ -2,8 +2,8 @@
 
 {% block title %}Dogger · Mi panel corporativo{% endblock %}
 {% block body_class %}admin-shell mi-panel-shell{% endblock %}
-{% block header_eyebrow %}Dogger · Centro de servicio{% endblock %}
 {% block header_title %}Mis solicitudes{% endblock %}
+{% block header_desc %}Tus solicitudes, su avance y la actividad reciente.{% endblock %}
 
 {% block extra_css %}
 {% load static %}
@@ -74,7 +74,7 @@
             {% endif %}
         </form>
 
-        <div class="tickets-table-wrap">
+        <div class="tickets-table-wrap tabla-scroll-seis" data-filas="6">
             <table class="tickets-table data-table cards-mobile">
                 <thead>
                     <tr>
@@ -107,7 +107,7 @@
                         <td class="td-cat" data-label="Categoría">
                             {% if ticket.categoria %}<span class="cat-chip">{{ ticket.categoria.nombre }}</span>{% else %}<span class="muted">—</span>{% endif %}
                         </td>
-                        <td class="td-state" data-label="Estado">{% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display %}</td>
+                        <td class="td-state" data-label="Estado">{% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display resuelto=ticket.fue_resuelto cerrado=ticket.esta_cerrado %}</td>
                         <td class="td-prio" data-label="Prioridad"><span class="meta-pill meta-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span></td>
                         <td class="td-ans" data-label="ANS">{% include "tickets/_ans_time.html" with t=ticket %}</td>
                         <td class="td-date" data-label="Fecha">{{ ticket.fecha_creacion|date:"d/m/Y" }}</td>
@@ -258,5 +258,3 @@
 {% load static %}
 <script src="{% static 'js/mi-panel-corp.js' %}?v=20260914"></script>
 {% endblock %}
-
-{% block footer %}{% include "tickets/_redes.html" %}{% endblock %}

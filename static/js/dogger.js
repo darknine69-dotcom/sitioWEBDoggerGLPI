@@ -171,15 +171,6 @@
         });
     });
 
-    /* ---- Botón volver ---- */
-    document.querySelectorAll(".back-btn[data-back]").forEach(function (btn) {
-        btn.addEventListener("click", function (e) {
-            e.preventDefault();
-            if (window.history.length > 1) { window.history.back(); }
-            else { window.location.href = btn.getAttribute("href") || "/"; }
-        });
-    });
-
     /* ---- Mapa del footer: cambiar punto ---- */
     document.querySelectorAll("[data-maps-src]").forEach(function (btn) {
         btn.addEventListener("click", function () {
@@ -193,26 +184,106 @@
         });
     });
 
-    /* ---- Hamburger menu toggle (mobile) ---- */
-    var navToggle = document.getElementById("navToggle");
-    var navList = document.getElementById("navList");
-    if (navToggle && navList) {
-        navToggle.addEventListener("click", function () {
-            var expanded = navToggle.getAttribute("aria-expanded") === "true";
-            navToggle.setAttribute("aria-expanded", String(!expanded));
-            navList.classList.toggle("nav-open");
-            navToggle.classList.toggle("is-active");
-        });
-        navList.querySelectorAll(".nav-link").forEach(function (link) {
-            link.addEventListener("click", function () {
-                // El botón de un submenú solo lo abre: no cierra el menú lateral.
-                if (link.hasAttribute("data-submenu")) return;
-                navToggle.setAttribute("aria-expanded", "false");
-                navList.classList.remove("nav-open");
-                navToggle.classList.remove("is-active");
+    /* ---- Símbolo del título: el texto que la vista tenía debajo ---- */
+    (function () {
+        var hint = document.querySelector(".title-hint");
+        if (!hint) return;
+        var bubble = hint.querySelector(".title-hint-bubble");
+        var txt = bubble ? (bubble.textContent || "").replace(/\s+/g, " ").trim() : "";
+        /* Sin texto que explicar, el símbolo no se muestra. */
+        if (!txt) { hint.remove(); return; }
+    })();
+
+    /* ---- Sidebar lateral: plegar a iconos y cajón en móvil ---- */
+    (function () {
+        var side = document.getElementById("sidebar");
+        if (!side) return;
+        var burger = document.getElementById("sidebarBurger");
+        var backdrop = document.getElementById("sidebarBackdrop");
+        var plegar = document.getElementById("sidebarCollapse");
+
+        /* Plegado: se guarda igual que la preferencia de "navegación compacta"
+           de Ajustes, así que los dos sitios controlan lo mismo. */
+        function plegarA(mini) {
+            document.documentElement.setAttribute("data-navcompact", mini ? "1" : "0");
+            try { localStorage.setItem("dogger:pv:navcompact", mini ? "1" : "0"); } catch (e) {}
+            if (plegar) {
+                plegar.setAttribute("aria-label", mini ? "Expandir el menú" : "Contraer el menú");
+                plegar.title = mini ? "Expandir el menú" : "Contraer el menú";
+            }
+        }
+        if (plegar) {
+            plegar.addEventListener("click", function () {
+                plegarA(document.documentElement.getAttribute("data-navcompact") !== "1");
             });
+        }
+
+        function abrir(abrir) {
+            side.classList.toggle("is-open", abrir);
+            if (burger) {
+                burger.classList.toggle("is-active", abrir);
+                burger.setAttribute("aria-expanded", String(abrir));
+            }
+            if (backdrop) backdrop.hidden = !abrir;
+            document.body.classList.toggle("sidebar-abierto", abrir);
+        }
+        if (burger) {
+            burger.addEventListener("click", function () {
+                abrir(!side.classList.contains("is-open"));
+            });
+        }
+        if (backdrop) backdrop.addEventListener("click", function () { abrir(false); });
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape") abrir(false);
         });
-    }
+        // Al navegar dentro del cajón se cierra, para no tapar la página nueva.
+        side.querySelectorAll(".sidebar-link").forEach(function (link) {
+            link.addEventListener("click", function () { abrir(false); });
+        });
+        // Si la ventana crece y deja de ser móvil, el cajón se olvida.
+        window.addEventListener("resize", function () {
+            if (window.innerWidth > 1080) abrir(false);
+        });
+
+        /* Aviso con el nombre del enlace al pasar el ratón por un icono.
+           Va pegado al body y posicionado con fixed porque el menú es la
+           zona desplazable: dentro de él el rótulo se recortaba. */
+        var tip = document.createElement("div");
+        tip.className = "sidebar-tip";
+        tip.setAttribute("role", "tooltip");
+        tip.hidden = true;
+        document.body.appendChild(tip);
+
+        function plegado() {
+            return document.documentElement.getAttribute("data-navcompact") === "1"
+                && window.innerWidth > 1080;
+        }
+        function mostrarTip(link) {
+            var texto = link.getAttribute("data-title");
+            if (!texto) return;
+            tip.textContent = texto;
+            tip.hidden = false;
+            var r = link.getBoundingClientRect();
+            var alto = tip.offsetHeight;
+            var arriba = r.top + (r.height / 2) - (alto / 2);
+            tip.style.left = (r.right + 10) + "px";
+            tip.style.top = Math.max(8, Math.min(arriba, window.innerHeight - alto - 8)) + "px";
+        }
+        function ocultarTip() { tip.hidden = true; }
+
+        side.querySelectorAll(".sidebar-link").forEach(function (link) {
+            link.addEventListener("mouseenter", function () { if (plegado()) mostrarTip(link); });
+            link.addEventListener("focus", function () { if (plegado()) mostrarTip(link); });
+            link.addEventListener("mouseleave", ocultarTip);
+            link.addEventListener("blur", ocultarTip);
+        });
+        side.addEventListener("scroll", ocultarTip, { passive: true });
+        if (plegar) plegar.addEventListener("click", ocultarTip);
+        window.addEventListener("resize", ocultarTip);
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape") ocultarTip();
+        });
+    })();
 
     /* ---- Nombre de archivos seleccionados + preview de imagen ---- */
     document.querySelectorAll('input[type="file"][multiple], input[type="file"]').forEach(function (input) {
@@ -928,8 +999,60 @@
         });
     }
 
+
+    /* ---- Tablas con scroll: exactamente N filas a la vista ----
+       Cada tabla se ve densa, asi que una altura fija deja 4 filas en una y
+       8 en otra. Se mide la fila real y se limita el alto a la del encabezado
+       mas N filas: siempre se ven las mismas N, ni mas ni menos. */
+    function ajustarFilas(wrap) {
+        var tabla = wrap.querySelector("table");
+        if (!tabla) return;
+        var thead = wrap.querySelector("thead");
+        var filas = wrap.querySelectorAll("tbody tr");
+        if (!filas.length) { wrap.style.removeProperty("--alto-filas"); return; }
+        var n = parseInt(wrap.getAttribute("data-filas"), 10) || 6;
+        // Se promedian las primeras n filas para que una fila alta
+        // no empuje la altura de toda la tabla.
+        var muestra = Array.prototype.slice.call(filas, 0, n);
+        var suma = 0;
+        muestra.forEach(function (f) { suma += f.offsetHeight; });
+        var alto = (suma / muestra.length) * n + (thead ? thead.offsetHeight : 0);
+        wrap.style.setProperty("--alto-filas", Math.ceil(alto) + "px");
+    }
+
+    function ajustarTablas() {
+        var wraps = document.querySelectorAll("[data-filas]");
+        wraps.forEach(ajustarFilas);
+        // Se vuelve a medir cuando cambian las filas: al abrir la ficha de un
+        // usuario se inserta una fila y el alto volveria a quedar corto.
+        wraps.forEach(function (wrap) {
+            var cuerpo = wrap.querySelector("tbody");
+            if (!cuerpo || cuerpo.dataset.observado) return;
+            cuerpo.dataset.observado = "1";
+            new MutationObserver(function () {
+                clearTimeout(cuerpo._t);
+                cuerpo._t = setTimeout(ajustarFilas, 80);
+            }).observe(cuerpo, { childList: true });
+        });
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", ajustarTablas);
+    } else {
+        ajustarTablas();
+    }
+    window.addEventListener("load", ajustarTablas);
+    var pending;
+    window.addEventListener("resize", function () {
+        clearTimeout(pending);
+        pending = setTimeout(ajustarTablas, 150);
+    });
+
     /* ---- Arranque del refresco automático ---- */
     if (URL_API) {
+        // Al entrar, lo que ya se está viendo pasa a leído: el contador se
+        // queda en 0 en vez de quedar activo hasta que alguien abra la campana.
+        // Los avisos siguen en la lista, solo dejan de contar como pendientes.
+        pedir(baseDe("data-url-todas"));
         // El intervalo es corto para que el contador no se sienta viejo.
         setInterval(refrescar, 12000);
         // Al volver a la pestaña se consulta de inmediato.

@@ -4,8 +4,8 @@
 {% block title %}Dogger · Panel Técnico{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_tecnico %}is-active{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Panel Técnico{% endblock %}
+{% block header_desc %}Gestiona la cola de solicitudes, tus tickets asignados y la respuesta al solicitante.{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -416,13 +416,6 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 
 {% block content %}
 <main class="page">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:portal' %}" title="Volver al inicio"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Panel Técnico</h2>
-            <p>Gestiona la cola de solicitudes, tus tickets asignados y la respuesta al solicitante.</p>
-        </div>
-    </div>
 
     <div class="tabs-bar">
         <a class="tab-pill {% if vista == 'panel' %}active{% endif %}" href="?vista=panel"><svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel</a>
@@ -497,7 +490,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
     </form>
 
     <div class="table-card">
-        <div class="table-scroll">
+        <div class="table-scroll tabla-scroll-seis" data-filas="6">
             <table class="data-table cards-mobile" id="tablaSolicitudes">
                 <thead>
                     <tr>
@@ -547,7 +540,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                             {% endif %}
                         </td>
                         <td data-label="Estado">
-                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}
                         </td>
                         <td data-label="Acciones" class="cell-actions">
                             <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}">Ver</a>
@@ -872,7 +865,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         <td data-label="Grupo">
                             {% if t.categoria %}{{ t.categoria.grupo }}{% else %}<span class="sin-asignar">—</span>{% endif %}
                         </td>
-                        <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}</td>
+                        <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
                         <td data-label="Vencimiento">
                             {% with info=t.info_ans %}
                             {% if info.0 %}
@@ -924,7 +917,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
            data-tecnico-pk="{{ t.tecnico_asignado_id|default:'' }}">
             <div class="corp-card-head">
                 <span class="table-code">{{ t.codigo }}</span>
-                {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display %}
+                {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}
             </div>
             <strong class="corp-card-title">{{ t.titulo }}</strong>
             {% with combinadas=t.combinadas %}{% if combinadas %}
@@ -1257,4 +1250,4 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 {% if not ticket %}
 <script src="{% static 'js/panel-lote.js' %}?v=1"></script>
 {% endif %}
-{% endblock %}
+{% endblock %}

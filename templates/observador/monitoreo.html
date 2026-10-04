@@ -2,16 +2,12 @@
 
 {% block title %}Dogger · Monitoreo{% endblock %}
 {% block body_class %}observador-shell{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Observación{% endblock %}
+{% block header_desc %}Estado de lo que agregaste a tu lista. Desde aquí puedes exportar o imprimir.{% endblock %}
 
 {% block content %}
 <main class="page obs-page">
     <div class="page-head">
-        <div class="page-head-titles">
-            <h2>Monitoreo</h2>
-            <p>Estado de lo que agregaste a tu lista. Desde aquí puedes exportar o imprimir.</p>
-        </div>
         <div class="obs-head-actions">
             <a href="{% url 'tickets:obs_exportar' %}" class="btn btn-outline btn-sm">
                 <svg class="icon"><use href="#i-download"/></svg> Exportar

@@ -1,4 +1,4 @@
-{% load static %}
+{% load static %}{% load asset %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -19,11 +19,17 @@
         root.setAttribute('data-contrast', g('dogger:pv:contrast') || 'normal');
         root.setAttribute('data-navcompact', g('dogger:pv:navcompact') === '1' ? '1' : '0');
         root.setAttribute('data-navicons', g('dogger:pv:navicons') === '0' ? '0' : '1');
+        /* Color del menú lateral: la paleta elegida o, si hay uno, el color
+           personalizado. Se aplica aquí para que no se vea el color anterior. */
+        var paleta = g('dogger:pv:navpalette');
+        var color = g('dogger:pv:navcolor');
+        if (paleta) root.setAttribute('data-navpalette', paleta);
+        if (color && /^#[0-9a-f]{6}$/i.test(color)) root.style.setProperty('--sb-accent', color);
     })();
     </script>
-    <link rel="stylesheet" href="{% static 'css/dogger-theme.css' %}?v=20260929">
-    <link rel="stylesheet" href="{% static 'css/theme-modes.css' %}?v=20260929">
-    <script defer src="{% static 'js/dogger.js' %}?v=20260929"></script>
+    <link rel="stylesheet" href="{% asset 'css/dogger-theme.css' %}">
+    <link rel="stylesheet" href="{% asset 'css/theme-modes.css' %}">
+    <script defer src="{% asset 'js/dogger.js' %}"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}"
@@ -93,207 +99,287 @@
     <symbol id="i-headset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
     <symbol id="i-printer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
-    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
 </svg>
-    {% block header %}
-    <header class="brand-header">
+{% block header %}
+    {% load dogger_nav %}
+
+    {% if request.user.is_authenticated %}
+    {% comment %}
+    Navegación del sistema: sidebar lateral + barra superior de contexto.
+    Las páginas públicas reescriben este bloque y conservan la portada.
+    {% endcomment %}
+
+    <aside class="sidebar" id="sidebar" aria-label="Menú principal">
+        <div class="sidebar-top">
+            <a href="{% url 'tickets:portal' %}" class="sidebar-brand">
+                <img class="sidebar-logo" src="{% static 'images/dogger-logo.png' %}" alt="Dogger">
+                <span class="sidebar-brand-txt">
+                    <strong>Mesa de Ayuda TI</strong>
+                </span>
+            </a>
+            <button type="button" class="sidebar-toggle" id="sidebarCollapse"
+                    aria-label="Contraer el menú" title="Contraer el menú">
+                <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebarNav" aria-label="Secciones">
+            {% comment %}El estado activo sale del nombre de la URL: cada sección
+            ya no declara su propio bloque de navegación.{% endcomment %}
+
+            {% if request.user.rol == 'usuario' %}
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Mi mesa</p>
+                <a href="{% url 'tickets:mi_panel' %}"
+                   class="sidebar-link{% nav_active 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %}"
+                   {% nav_current 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %} data-title="Mi panel">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-home"/></svg>
+                    <span class="sidebar-label">Mi panel</span>
+                    {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                </a>
+                <a href="{% url 'tickets:crear_ticket' %}" class="sidebar-link{% nav_active 'crear_ticket' %}"{% nav_current 'crear_ticket' %} data-title="Reportar incidencia">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-plus"/></svg>
+                    <span class="sidebar-label">Reportar incidencia</span>
+                </a>
+                <a href="{% url 'tickets:categorias_publico' %}" class="sidebar-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %} data-title="Categoría">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
+                    <span class="sidebar-label">Categoría</span>
+                </a>
+            </div>
+            {% endif %}
+
+            {% if request.user.rol == 'tecnico' %}
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Trabajo</p>
+                <a href="{% url 'tickets:panel_tecnico' %}" class="sidebar-link{% nav_active 'panel_tecnico' 'mis_tickets' 'panel_tecnico_lote' %}"{% nav_current 'panel_tecnico' %} data-title="Panel">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-grid"/></svg>
+                    <span class="sidebar-label">Panel</span>
+                    {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                </a>
+                <a href="{% url 'tickets:sin_asignar' %}" class="sidebar-link{% nav_active 'sin_asignar' %}"{% nav_current 'sin_asignar' %} data-title="Bandeja sin asignar">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-inbox"/></svg>
+                    <span class="sidebar-label">Sin asignar</span>
+                    {% if sin_asignar_total %}<span class="sidebar-count" data-nivel="alto">{{ sin_asignar_total }}</span>{% endif %}
+                    {% if sin_asignar_total %}<span class="nav-count-sr">{{ sin_asignar_total }} tickets sin técnico asignado</span>{% endif %}
+                </a>
+                <a href="{% url 'tickets:lista' %}" class="sidebar-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %} data-title="Tickets">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-ticket"/></svg>
+                    <span class="sidebar-label">Tickets</span>
+                    {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
+                </a>
+            </div>
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Agenda</p>
+                <a href="{% url 'programador:panel_programador' %}" class="sidebar-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %} data-title="Calendario">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-calendar"/></svg>
+                    <span class="sidebar-label">Calendario</span>
+                </a>
+            </div>
+            {% endif %}
+
+            {% if request.user.rol == 'admin' %}
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Operación</p>
+                <a href="{% url 'tickets:dashboard' %}" class="sidebar-link{% nav_active 'dashboard' %}"{% nav_current 'dashboard' %} data-title="Panel">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-grid"/></svg>
+                    <span class="sidebar-label">Panel</span>
+                    {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                </a>
+                <a href="{% url 'tickets:lista' %}" class="sidebar-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %} data-title="Tickets">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-ticket"/></svg>
+                    <span class="sidebar-label">Tickets</span>
+                    {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
+                </a>
+                <a href="{% url 'tickets:sin_asignar' %}" class="sidebar-link{% nav_active 'sin_asignar' %}"{% nav_current 'sin_asignar' %} data-title="Bandeja sin asignar">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-inbox"/></svg>
+                    <span class="sidebar-label">Sin asignar</span>
+                    {% if sin_asignar_total %}<span class="sidebar-count" data-nivel="alto">{{ sin_asignar_total }}</span>{% endif %}
+                    {% if sin_asignar_total %}<span class="nav-count-sr">{{ sin_asignar_total }} tickets sin técnico asignado</span>{% endif %}
+                </a>
+            </div>
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Análisis</p>
+                <a href="{% url 'tickets:reportes' %}" class="sidebar-link{% nav_active 'reportes' %}"{% nav_current 'reportes' %} data-title="Reportes">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-chart"/></svg>
+                    <span class="sidebar-label">Reportes</span>
+                </a>
+            </div>
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Administración</p>
+                <a href="{% url 'tickets:usuarios' %}" class="sidebar-link{% nav_active 'usuarios' %}"{% nav_current 'usuarios' %} data-title="Usuarios y roles">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-users"/></svg>
+                    <span class="sidebar-label">Usuarios y roles</span>
+                </a>
+                <a href="{% url 'tickets:categorias_arbol' %}" class="sidebar-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %} data-title="Categorías">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
+                    <span class="sidebar-label">Categorías</span>
+                </a>
+                <a href="{% url 'tickets:monitoreo_admin' %}" class="sidebar-link{% nav_active 'monitoreo_admin' %}"{% nav_current 'monitoreo_admin' %} data-title="Monitoreo">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-eye"/></svg>
+                    <span class="sidebar-label">Monitoreo</span>
+                </a>
+                <a href="{% url 'tickets:papelera' %}" class="sidebar-link{% nav_active 'papelera' %}"{% nav_current 'papelera' %} data-title="Papelera">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-trash"/></svg>
+                    <span class="sidebar-label">Papelera</span>
+                    {% if papelera_total %}<span class="sidebar-count" data-nivel="bajo">{{ papelera_total }}</span>{% endif %}
+                    {% if papelera_total %}<span class="nav-count-sr">{{ papelera_total }} tickets en la papelera</span>{% endif %}
+                </a>
+            </div>
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Agenda</p>
+                <a href="{% url 'programador:panel_programador' %}" class="sidebar-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %} data-title="Calendario">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-calendar"/></svg>
+                    <span class="sidebar-label">Calendario</span>
+                </a>
+            </div>
+            {% endif %}
+
+            {% if request.user.rol == 'observador' %}
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Observación</p>
+                <a href="{% url 'tickets:obs_panel' %}" class="sidebar-link{% nav_active 'obs_panel' %}"{% nav_current 'obs_panel' %} data-title="Panel">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-eye"/></svg>
+                    <span class="sidebar-label">Panel</span>
+                    {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets en tus zonas</span>{% endif %}
+                </a>
+                <a href="{% url 'tickets:obs_usuarios' %}" class="sidebar-link{% nav_active 'obs_usuarios' %}"{% nav_current 'obs_usuarios' %} data-title="Usuarios">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-user"/></svg>
+                    <span class="sidebar-label">Usuarios</span>
+                </a>
+                <a href="{% url 'tickets:obs_buscar' %}" class="sidebar-link{% nav_active 'obs_buscar' %}"{% nav_current 'obs_buscar' %} data-title="Buscar y agregar">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-search"/></svg>
+                    <span class="sidebar-label">Buscar y agregar</span>
+                </a>
+                <a href="{% url 'tickets:obs_mi_lista' %}" class="sidebar-link{% nav_active 'obs_mi_lista' %}"{% nav_current 'obs_mi_lista' %} data-title="Mi lista">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-layers"/></svg>
+                    <span class="sidebar-label">Mi lista</span>
+                    {% if menu_mios %}<span class="sidebar-count" data-nivel="bajo">{{ menu_mios }}</span>{% endif %}
+                    {% if menu_mios %}<span class="nav-count-sr">{{ menu_mios }} elementos en tu lista</span>{% endif %}
+                </a>
+                <a href="{% url 'tickets:obs_monitoreo' %}" class="sidebar-link{% nav_active 'obs_monitoreo' %}"{% nav_current 'obs_monitoreo' %} data-title="Monitoreo">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-check-circle"/></svg>
+                    <span class="sidebar-label">Monitoreo</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="sidebar-group">
+                <p class="sidebar-group-title">Ayuda</p>
+                <a href="{% url 'tickets:faq' %}" class="sidebar-link{% nav_active 'faq' %}"{% nav_current 'faq' %} data-title="Preguntas frecuentes">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-help"/></svg>
+                    <span class="sidebar-label">Preguntas frecuentes</span>
+                </a>
+                <a href="{% url 'tickets:consultar' %}" class="sidebar-link{% nav_active 'consultar' %}"{% nav_current 'consultar' %} data-title="Consultar ticket HD">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-headset"/></svg>
+                    <span class="sidebar-label">Consultar ticket HD</span>
+                </a>
+            </div>
+        </nav>
+
+    </aside>
+
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
+    {% endif %}
+
+    {% comment %}Una sola cabecera para todos: cambia de aspecto segun haya sesion,
+    pero los bloques de titulo se escriben una unica vez.{% endcomment %}
+    <header class="{% if request.user.is_authenticated %}topbar{% else %}brand-header{% endif %}">
+        {% if request.user.is_authenticated %}
+        {% comment %}Encabezado superior: va POR ENCIMA del título de la vista y
+        sostiene el acceso del usuario y la campana.{% endcomment %}
+        <div class="topbar-top">
+            {% comment %}El botón del menú vive en la banda de color: así las
+            vistas sin título pueden colapsar su fila sin quedarse sin acceso al
+            menú en el móvil.{% endcomment %}
+            <button type="button" class="topbar-burger" id="sidebarBurger" aria-label="Abrir menú" aria-expanded="false">
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+            </button>
+            <div class="topbar-account">
+            {% include "notificaciones/_campana.html" %}
+            <div class="user-chip-wrap">
+                <button type="button" class="user-chip" data-rol="{{ request.user.rol }}" id="userChipToggle" aria-expanded="false" aria-haspopup="true">
+                    {% if request.user.avatar %}
+                    <img src="{{ request.user.avatar.url }}" alt="" class="user-avatar-img">
+                    {% else %}
+                    <span class="user-avatar">{{ request.user.initials }}</span>
+                    {% endif %}
+                    <span class="user-chip-text">{{ request.user.nombre }} <small>· {{ request.user.get_rol_display }}</small></span>
+                    <svg class="user-chip-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="user-dropdown" id="userDropdown" role="menu">
+                    <div class="user-dropdown-header">
+                        {% if request.user.avatar %}
+                        <img src="{{ request.user.avatar.url }}" alt="" class="user-dropdown-avatar">
+                        {% else %}
+                        <div class="user-dropdown-avatar-placeholder">{{ request.user.initials }}</div>
+                        {% endif %}
+                        <div>
+                            <strong>{{ request.user.nombre }}</strong>
+                            <small>{{ request.user.email }}</small>
+                        </div>
+                    </div>
+                    <a href="{% url 'accounts:perfil' %}" class="user-dropdown-item" role="menuitem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Mi perfil
+                    </a>
+                    <a href="{% url 'accounts:ajustes' %}" class="user-dropdown-item" role="menuitem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00.33 1.82 1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                        Ajustes de cuenta
+                    </a>
+                    <a href="{% url 'tickets:consultar' %}" class="user-dropdown-item" role="menuitem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Consultar ticket HD
+                    </a>
+                    <div class="user-dropdown-divider"></div>
+                    <form method="post" action="{% url 'accounts:logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="user-dropdown-item danger" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            Cerrar sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="header-row">
+        {% if not request.user.is_authenticated %}
         <div class="brand-id">
             <a href="{% url 'tickets:portal' %}" class="brand-link" aria-label="Inicio">
                 <img class="logo-badge" src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" />
             </a>
-            <div class="brand-titles">
-                <p class="eyebrow">{% block header_eyebrow %}Dogger · Mesa de Ayuda{% endblock %}</p>
-                <h1>{% block header_title %}Mesa de Ayuda TI{% endblock %}</h1>
-            </div>
+        {% endif %}
+        <div class="{% if request.user.is_authenticated %}topbar-titles{% else %}brand-titles{% endif %}">
+            {% comment %}El símbolo del título explica la vista: al pasar el mouse
+            por el título, o al llegar con Tab, muestra en una burbuja el texto
+            que tenía debajo. Cada vista lo escribe en header_desc; si no lo
+            escribe, dogger.js quita el símbolo.{% endcomment %}
+            <h1>{% block header_title %}Mesa de Ayuda TI{% endblock %}<span class="title-hint" tabindex="0"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span class="title-hint-bubble">{% block header_desc %}{% endblock %}</span></span></h1>
         </div>
+        {% if not request.user.is_authenticated %}</div>{% endif %}
         <div class="header-actions">
-            {% if not request.user.is_authenticated %}
+            {% if request.user.is_authenticated %}
+            {% if request.user.rol == 'usuario' %}
+            <a class="btn btn-accent btn-sm" href="{% url 'tickets:exportar_mis_tickets' %}"><svg class="icon"><use href="#i-download"/></svg> Exportar mis tickets</a>
+            {% endif %}
+            {% else %}
             <a href="{% url 'accounts:login_usuario' %}" class="btn btn-header btn-sm">Ingresar</a>
             <a href="{% url 'accounts:login_staff' %}" class="btn btn-outline-light btn-sm">Acceso personal TIC</a>
             {% endif %}
             {% block header_actions %}{% endblock %}
         </div>
-    </header>
-
-    <nav class="main-nav" aria-label="Navegación principal">
-        <div class="main-nav-inner">
-            <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
-                <span class="nav-toggle-bar"></span>
-                <span class="nav-toggle-bar"></span>
-                <span class="nav-toggle-bar"></span>
-            </button>
-            <ul class="nav-list" id="navList">
-                {% load dogger_nav %}
-
-                {# Estado activo automático: cada plantilla ya no declara su bloque de navegación. #}
-
-                {% if request.user.is_authenticated and request.user.rol == 'usuario' %}
-                <li>
-                    <a href="{% url 'tickets:mi_panel' %}" class="nav-link{% nav_active 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %}"{% nav_current 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %}>
-                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-home"/></svg> Mi panel
-                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:crear_ticket' %}" class="nav-link{% nav_active 'crear_ticket' %}"{% nav_current 'crear_ticket' %}">
-                        {% if menu_respondidos %}<span class="nav-count" data-nivel="bajo">{{ menu_respondidos }}</span>{% endif %}
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-plus"/></svg> Reportar incidencia
-                        {% if menu_respondidos %}<span class="nav-count-sr">{{ menu_respondidos }} tickets con respuesta por revisar</span>{% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:categorias_publico' %}" class="nav-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %}>
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-folder"/></svg> ¿Qué categoría es?
-                    </a>
-                </li>
-                {% endif %}
-
-                {% if request.user.rol == 'tecnico' %}
-                <li>
-                    <a href="{% url 'tickets:panel_tecnico' %}" class="nav-link{% nav_active 'panel_tecnico' 'mis_tickets' 'panel_tecnico_lote' %}"{% nav_current 'panel_tecnico' %}>
-                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-grid"/></svg> Panel
-                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:sin_asignar' %}" class="nav-link{% nav_active 'sin_asignar' %}"{% nav_current 'sin_asignar' %}>
-                        {% if sin_asignar_total %}<span class="nav-count" data-nivel="alto">{{ sin_asignar_total }}</span>{% endif %}
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-inbox"/></svg> Bandeja sin asignar
-                        {% if sin_asignar_total %}<span class="nav-count-sr">{{ sin_asignar_total }} tickets sin técnico asignado</span>{% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:lista' %}" class="nav-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %}>
-                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-ticket"/></svg> Tickets
-                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'programador:panel_programador' %}" class="nav-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %}>
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-calendar"/></svg> Calendario
-                    </a>
-                </li>
-                {% endif %}
-
-                {% if request.user.rol == 'admin' %}
-                <li>
-                    <a href="{% url 'tickets:dashboard' %}" class="nav-link{% nav_active 'dashboard' %}"{% nav_current 'dashboard' %}>
-                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-grid"/></svg> Panel
-                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:lista' %}" class="nav-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %}>
-                        {% if menu_total %}<span class="nav-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-ticket"/></svg> Tickets
-                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:reportes' %}" class="nav-link{% nav_active 'reportes' %}"{% nav_current 'reportes' %}>
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-chart"/></svg> Reportes
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'programador:panel_programador' %}" class="nav-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %}>
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-calendar"/></svg> Calendario
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:usuarios' %}" class="nav-link{% nav_active 'usuarios' %}"{% nav_current 'usuarios' %}>
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-users"/></svg> Usuarios y roles
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:categorias_arbol' %}" class="nav-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %}>
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-folder"/></svg> Categorías
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
-            <div class="nav-side">
-                {% if request.user.is_authenticated and request.user.rol == 'usuario' %}
-                <a class="btn btn-accent btn-sm" href="{% url 'tickets:exportar_mis_tickets' %}"><svg class="icon"><use href="#i-download"/></svg> Exportar mis tickets</a>
-                {% endif %}
-                {% if request.user.is_authenticated %}
-                {% include "notificaciones/_campana.html" %}
-                <div class="user-chip-wrap">
-                    <button type="button" class="user-chip" data-rol="{{ request.user.rol }}" id="userChipToggle" aria-expanded="false" aria-haspopup="true">
-                        {% if request.user.avatar %}
-                        <img src="{{ request.user.avatar.url }}" alt="" class="user-avatar-img">
-                        {% else %}
-                        <span class="user-avatar">{{ request.user.initials }}</span>
-                        {% endif %}
-                        <span class="user-chip-text">{{ request.user.nombre }} <small>· {{ request.user.get_rol_display }}</small></span>
-                        <svg class="user-chip-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    <div class="user-dropdown" id="userDropdown" role="menu">
-                        <div class="user-dropdown-header">
-                            {% if request.user.avatar %}
-                            <img src="{{ request.user.avatar.url }}" alt="" class="user-dropdown-avatar">
-                            {% else %}
-                            <div class="user-dropdown-avatar-placeholder">{{ request.user.initials }}</div>
-                            {% endif %}
-                            <div>
-                                <strong>{{ request.user.nombre }}</strong>
-                                <small>{{ request.user.email }}</small>
-                            </div>
-                        </div>
-                        <a href="{% url 'accounts:ajustes' %}" class="user-dropdown-item" role="menuitem">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                            Ajustes de cuenta
-                        </a>
-                        <a href="{% url 'tickets:consultar' %}" class="user-dropdown-item" role="menuitem">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            Consultar ticket HD
-                        </a>
-                {% if request.user.rol == 'observador' %}
-                <li>
-                    <a href="{% url 'tickets:obs_panel' %}" class="nav-link{% nav_active 'obs_panel' 'obs_monitoreo' 'obs_mi_lista' 'obs_buscar' %}"{% nav_current 'obs_panel' 'obs_monitoreo' 'obs_mi_lista' 'obs_buscar' %}">
-                        {% if menu_total %}<span class="nav-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-eye"/></svg> Observación
-                        {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:obs_buscar' %}" class="nav-link{% nav_active 'obs_buscar' %}"{% nav_current 'obs_buscar' %}">
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-search"/></svg> Buscar y agregar
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'tickets:obs_monitoreo' %}" class="nav-link{% nav_active 'obs_monitoreo' 'obs_mi_lista' %}"{% nav_current 'obs_monitoreo' 'obs_mi_lista' %}">
-                        {% if menu_mios %}<span class="nav-count" data-nivel="bajo">{{ menu_mios }}</span>{% endif %}
-                        <svg class="nav-icon" aria-hidden="true"><use href="#i-check-circle"/></svg> Monitoreo
-                        {% if menu_mios %}<span class="nav-count-sr">{{ menu_mios }} elementos en tu lista</span>{% endif %}
-                    </a>
-                </li>
-                {% endif %}
-
-                {% if request.user.rol == 'admin' %}
-                        <a href="{% url 'tickets:papelera' %}" class="user-dropdown-item{% nav_active 'papelera' %}" role="menuitem"{% nav_current 'papelera' %}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-                            Papelera
-                            {% if papelera_total %}<span class="user-dropdown-badge">{{ papelera_total }}</span>{% endif %}
-                        </a>
-                        {% endif %}
-                        <div class="user-dropdown-divider"></div>
-                        <form method="post" action="{% url 'accounts:logout' %}">
-                            {% csrf_token %}
-                            <button type="submit" class="user-dropdown-item danger" role="menuitem">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                                Cerrar sesión
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
         </div>
-    </nav>
+    </header>
     {% endblock %}
 
     {% if messages %}
@@ -573,8 +659,10 @@
     {% endwith %}
     {% endif %}
 
-    {# ---- Tour guiado: se muestra una vez por cuenta y se puede repetir
-       o apagar desde Ajustes -> Ayuda y tour. ---- #}
+    {% comment %}
+        Tour guiado: se muestra una vez por cuenta y se puede repetir o apagar
+        desde Ajustes -> Ayuda y tour.
+    {% endcomment %}
     {% if request.user.is_authenticated and request.user.tour_habilitado and not request.user.tour_visto %}
     <div class="tour-overlay" id="tourOverlay" hidden>
         <div class="tour-bubble" id="tourBubble" role="dialog" aria-modal="true" aria-labelledby="tourTitulo">
@@ -604,7 +692,7 @@
               texto: "Desde la barra superior llegas a tu panel, al calendario y a los ajustes." },
             { sel: "#idNotifBell, .notif-bell", titulo: "La campana te avisa",
               texto: "Se refresca sola: no hace falta recargar para enterarte de lo nuevo." },
-            { sel: ".nav-principal", titulo: "Tu menu con lo pendiente",
+            { sel: ".sidebar", titulo: "Tu menu con lo pendiente",
               texto: "Cada entrada trae un numero con lo que falta por revisar. El punto de color indica si tu cuenta esta conectada." }
         ];
         var POR_ROL = {
@@ -615,14 +703,14 @@
                   texto: "Esta pagina te dice donde reportar cada tipo de problema, con ejemplos." }
             ],
             tecnico: [
-                { sel: "[href*='panel-tecnico'], [href*='sin-asignar']", titulo: "Tu trabajo",
+                { sel: "[href*='/panel/tecnico/'], [href*='/panel/sin-asignar/']", titulo: "Tu trabajo",
                   texto: "Panel con lo asignado y Sin asignar con lo que esta esperando dueño." }
             ],
             admin: [
                 { sel: "[href*='panel-usuarios'], [href*='/panel/usuarios/']", titulo: "Tus cuentas",
                   texto: "El punto de color de cada fila se actualiza solo: ves quien esta conectado." },
                 { sel: "[href*='categorias']", titulo: "Categorias",
-                  texto: "Puedes asignar varios tecnicos a cada una y escribir ejemplos para el usuario." }
+                  texto: "Aqui se crea el listado de categorias con el que reportan los usuarios." }
             ],
             observador: [
                 { sel: "[href*='obs-panel'], [href*='/observador/']", titulo: "Tu observacion",
@@ -680,7 +768,10 @@
             var left = Math.min(Math.max(16, r.left + r.width / 2 - bw / 2), w - bw - 16);
             bubble.style.top = top + "px";
             bubble.style.left = left + "px";
-            var foco = bubble.querySelector(".tour-foco");
+            // El marco vive en el overlay (no dentro del bubble), asi que
+            // se busca con overlay: si se busca en el bubble nunca aparece
+            // y el tour se queda sin senalar nada.
+            var foco = overlay.querySelector(".tour-foco");
             if (foco) {
                 foco.style.top = r.top + "px";
                 foco.style.left = r.left + "px";
