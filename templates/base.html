@@ -295,6 +295,14 @@
         {% comment %}Encabezado superior: va POR ENCIMA del título de la vista y
         sostiene el acceso del usuario y la campana.{% endcomment %}
         <div class="topbar-top">
+            {% comment %}El botón del menú vive en la banda de color: así las
+            vistas sin título pueden colapsar su fila sin quedarse sin acceso al
+            menú en el móvil.{% endcomment %}
+            <button type="button" class="topbar-burger" id="sidebarBurger" aria-label="Abrir menú" aria-expanded="false">
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+            </button>
             <div class="topbar-account">
             {% include "notificaciones/_campana.html" %}
             <div class="user-chip-wrap">
@@ -345,21 +353,18 @@
         </div>
         {% endif %}
         <div class="header-row">
-        {% if request.user.is_authenticated %}
-        <button type="button" class="topbar-burger" id="sidebarBurger" aria-label="Abrir menú" aria-expanded="false">
-            <span class="nav-toggle-bar"></span>
-            <span class="nav-toggle-bar"></span>
-            <span class="nav-toggle-bar"></span>
-        </button>
-        {% else %}
+        {% if not request.user.is_authenticated %}
         <div class="brand-id">
             <a href="{% url 'tickets:portal' %}" class="brand-link" aria-label="Inicio">
                 <img class="logo-badge" src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" />
             </a>
         {% endif %}
         <div class="{% if request.user.is_authenticated %}topbar-titles{% else %}brand-titles{% endif %}">
-            <p class="eyebrow">{% block header_eyebrow %}Dogger · Mesa de Ayuda{% endblock %}</p>
-            <h1>{% block header_title %}Mesa de Ayuda TI{% endblock %}</h1>
+            {% comment %}El símbolo del título explica la vista: al pasar el mouse
+            por el título, o al llegar con Tab, muestra en una burbuja el texto
+            que tenía debajo. Cada vista lo escribe en header_desc; si no lo
+            escribe, dogger.js quita el símbolo.{% endcomment %}
+            <h1>{% block header_title %}Mesa de Ayuda TI{% endblock %}<span class="title-hint" tabindex="0"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span class="title-hint-bubble">{% block header_desc %}{% endblock %}</span></span></h1>
         </div>
         {% if not request.user.is_authenticated %}</div>{% endif %}
         <div class="header-actions">

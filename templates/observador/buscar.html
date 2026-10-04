@@ -2,17 +2,11 @@
 
 {% block title %}Dogger · Buscar{% endblock %}
 {% block body_class %}observador-shell{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Observación{% endblock %}
+{% block header_desc %}Localiza una persona o un punto de tus zonas y guárdalo en tu panel personal.{% endblock %}
 
 {% block content %}
 <main class="page obs-page">
-    <div class="page-head">
-        <div class="page-head-titles">
-            <h2>Buscar y agregar a mi lista</h2>
-            <p>Localiza una persona o un punto de tus zonas y guárdalo en tu panel personal.</p>
-        </div>
-    </div>
 
     {% include "observador/_menu.html" with activa="buscar" %}
 

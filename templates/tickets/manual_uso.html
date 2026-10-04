@@ -1,18 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Manual de uso{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Manual de uso{% endblock %}
+{% block header_desc %}Los pasos de la plataforma en el orden en que los vas a usar, separados por rol. Puedes volver cuando quieras desde Tus ajustes.{% endblock %}
 
 {% block content %}
 <main class="wrap">
     <div class="page-head">
-        <div>
-            <p class="panel-sub">
-                Los pasos de la plataforma en el orden en que los vas a usar,
-                separados por rol. Puedes volver cuando quieras desde
-                <a href="{% url 'accounts:ajustes' %}#ayuda">Tus ajustes</a>.
-            </p>
-        </div>
         <button type="button" class="btn btn-outline btn-sm" onclick="window.print()">
             <svg class="icon icon-sm"><use href="#i-printer"/></svg> Imprimir
         </button>

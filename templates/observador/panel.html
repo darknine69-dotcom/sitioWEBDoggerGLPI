@@ -3,16 +3,12 @@
 
 {% block title %}Dogger · Observador{% endblock %}
 {% block body_class %}observador-shell{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Observación{% endblock %}
+{% block header_desc %}Solo se muestran los puntos que tiene asignados. No puede crear ni editar tickets.{% endblock %}
 
 {% block content %}
 <main class="page obs-page">
     <div class="page-head">
-        <div class="page-head-titles">
-            <h2>Puntos y zonas asignadas</h2>
-            <p>Solo se muestran los puntos que tiene asignados. No puede crear ni editar tickets.</p>
-        </div>
         <div class="obs-head-actions">
             <a href="{% url 'tickets:obs_exportar' %}" class="btn btn-outline btn-sm">
                 <svg class="icon"><use href="#i-download"/></svg> Exportar

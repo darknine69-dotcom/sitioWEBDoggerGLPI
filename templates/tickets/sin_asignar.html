@@ -2,14 +2,12 @@
 
 {% block title %}Dogger · Sin asignar{% endblock %}
 {% block body_class %}admin-shell sinAsignar-page{% endblock %}
-{% block header_eyebrow %}{% endblock %}
-{% block header_title %}{% endblock %}
+{% block header_title %}Sin asignar{% endblock %}
+{% block header_desc %}{% if es_admin %}Asigna cada solicitud al técnico que la atenderá y gestiona su ciclo de vida.{% else %}Toma las solicitudes que no tienen técnico y gestiona su ciclo de vida.{% endif %}{% endblock %}
 
 {% block extra_css %}
 <style>
 .sinAsignar-page .brand-titles { display: none; }
-.sa-head-l h2 { margin: 0; font-size: 20px; }
-.sa-head-l p { margin: 2px 0 0; color: var(--ink-muted); font-size: 13px; }
 .sa-pill { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; padding: 6px 14px; border-radius: 999px; background: rgba(217,164,54,.10); border: 1px solid rgba(217,164,54,.35); color: #B7791F; font-size: 12px; font-weight: 800; }
 .sa-pill .icon { width: 13px; height: 13px; }
 .table-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
@@ -47,12 +45,7 @@
 {% block content %}
 <main class="page">
     <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:lista' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles sa-head-l">
-            <h2>Solicitudes sin asignar</h2>
-            <p>{% if es_admin %}Asigna cada solicitud al técnico que la atenderá y gestiona su ciclo de vida.{% else %}Toma las solicitudes que no tienen técnico y gestiona su ciclo de vida.{% endif %}</p>
-            <span class="sa-pill"><svg class="icon"><use href="#i-inbox"/></svg> {{ pendientes }} pendiente{{ pendientes|pluralize }}</span>
-        </div>
+        <span class="sa-pill"><svg class="icon"><use href="#i-inbox"/></svg> {{ pendientes }} pendiente{{ pendientes|pluralize }}</span>
     </div>
 
     <div class="table-card">

@@ -4,8 +4,8 @@
 {% block title %}Dogger · Panel Técnico{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_tecnico %}is-active{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Panel Técnico{% endblock %}
+{% block header_desc %}Gestiona la cola de solicitudes, tus tickets asignados y la respuesta al solicitante.{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -416,13 +416,6 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 
 {% block content %}
 <main class="page">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:portal' %}" title="Volver al inicio"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Panel Técnico</h2>
-            <p>Gestiona la cola de solicitudes, tus tickets asignados y la respuesta al solicitante.</p>
-        </div>
-    </div>
 
     <div class="tabs-bar">
         <a class="tab-pill {% if vista == 'panel' %}active{% endif %}" href="?vista=panel"><svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel</a>

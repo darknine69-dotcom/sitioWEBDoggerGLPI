@@ -171,15 +171,6 @@
         });
     });
 
-    /* ---- Botón volver ---- */
-    document.querySelectorAll(".back-btn[data-back]").forEach(function (btn) {
-        btn.addEventListener("click", function (e) {
-            e.preventDefault();
-            if (window.history.length > 1) { window.history.back(); }
-            else { window.location.href = btn.getAttribute("href") || "/"; }
-        });
-    });
-
     /* ---- Mapa del footer: cambiar punto ---- */
     document.querySelectorAll("[data-maps-src]").forEach(function (btn) {
         btn.addEventListener("click", function () {
@@ -192,6 +183,16 @@
             btn.classList.add("active");
         });
     });
+
+    /* ---- Símbolo del título: el texto que la vista tenía debajo ---- */
+    (function () {
+        var hint = document.querySelector(".title-hint");
+        if (!hint) return;
+        var bubble = hint.querySelector(".title-hint-bubble");
+        var txt = bubble ? (bubble.textContent || "").replace(/\s+/g, " ").trim() : "";
+        /* Sin texto que explicar, el símbolo no se muestra. */
+        if (!txt) { hint.remove(); return; }
+    })();
 
     /* ---- Sidebar lateral: plegar a iconos y cajón en móvil ---- */
     (function () {

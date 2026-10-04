@@ -3,8 +3,8 @@
 {% block title %}Dogger · {% if es_admin %}Gestión de Tickets{% else %}Mis tickets{% endif %}{% endblock %}
 {% block body_class %}admin-shell lista-page{% endblock %}
 {% block nav_tickets %}is-active{% endblock %}
-{% block header_eyebrow %}{% endblock %}
-{% block header_title %}{% endblock %}
+{% block header_title %}Tickets{% endblock %}
+{% block header_desc %}{% if es_admin %}Filtra, busca y gestiona todas las solicitudes del helpdesk.{% else %}Tus tickets asignados · responde desde el panel técnico.{% endif %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -151,14 +151,6 @@
 
 {% block content %}
 <main class="page">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% if es_admin %}{% url 'tickets:dashboard' %}{% else %}{% url 'tickets:panel_tecnico' %}{% endif %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>{% if es_admin %}Tickets{% else %}Mis tickets{% endif %}</h2>
-            <p>{% if es_admin %}Filtra, busca y gestiona todas las solicitudes del helpdesk.{% else %}Tus tickets asignados · responde desde el panel técnico.{% endif %}</p>
-        </div>
-    </div>
-
     <div class="tickets-stats">
         <a class="stat-chip is-abiertas {% if filtro_estado == 'abierto' %}is-active{% endif %}" href="?estado=abierto" title="Solo solicitudes abiertas (pendientes de atención)">
             <span class="stat-ico"><svg class="icon"><use href="#i-alert"/></svg></span>

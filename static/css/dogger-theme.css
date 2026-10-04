@@ -607,7 +607,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ---- Layout profesional del formulario de soporte ---- */
-.ticket-form-head { margin-bottom: 0; }
 .ticket-form-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
@@ -3280,31 +3279,15 @@ select:focus-visible, textarea:focus-visible {
 @keyframes ticketOkFadeOut { to { opacity: 0; } }
 @keyframes ticketOkBoxOut { to { opacity: 0; transform: translateY(12px) scale(.94); } }
 
-/* ---- Botón volver + encabezado de página ---- */
+/* ---- Encabezado de página ----
+   El título y su explicación viven ahora en la barra superior; aquí solo queda
+   lo que la vista aporta aparte: distintivos, filtros o acciones. */
 .page-head {
     display: flex;
     align-items: center;
     gap: 14px;
     margin: 22px 0 6px;
 }
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: #fff;
-    border: 1px solid var(--line);
-    color: var(--ink-muted);
-    font-size: 16px;
-    cursor: pointer;
-    transition: all .15s ease;
-    flex-shrink: 0;
-}
-.back-btn:hover { color: var(--dogger-red); border-color: var(--dogger-red); transform: translateX(-2px); }
-.page-head-titles h2 { margin: 0; font-size: 21px; }
-.page-head-titles p { margin: 2px 0 0; color: var(--ink-muted); font-size: 12.5px; }
 
 /* ---- Toolbar de filtros para tablas ---- */
 .table-toolbar {
@@ -6023,7 +6006,6 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 /* =====================================================================
    Módulo del observador: puntos asignados, lista y monitoreo
    ===================================================================== */
-.obs-page .page-head-titles h2 { margin: 0 0 4px; }
 .obs-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .obs-tabs {
@@ -6381,14 +6363,11 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
    variable en línea sobre <html>, por eso tiene prioridad sobre la paleta. */
 :root {
   --sb-accent: #D62B1F;
-  /* El color elegido se aplica tal cual: el menú empieza en ese color y se
-     oscurece hacia abajo mezclándose con negro, no al revés. */
-  --sb-bg-1: var(--sb-accent);
-  --sb-bg-2: color-mix(in srgb, var(--sb-accent) 58%, #000);
-  /* Velo fijo encima del color: mantiene legible el texto blanco aunque se
-     elija un tono claro, sin apagarlo. */
-  --sb-scrim: linear-gradient(rgba(0, 0, 0, .20), rgba(0, 0, 0, .34));
+  /* El color elegido se muestra tal cual: el menú y el encabezado toman ese
+     tono, sin velo por encima ni mezcla con negro. */
+  --sb-bg: var(--sb-accent);
 }
+html[data-navpalette="dogger"]    { --sb-accent: #D62B1F; }
 html[data-navpalette="azul"]      { --sb-accent: #1F6FD6; }
 html[data-navpalette="indigo"]    { --sb-accent: #4B4BC4; }
 html[data-navpalette="esmeralda"] { --sb-accent: #0F8A5F; }
@@ -6408,7 +6387,7 @@ body:has(> .sidebar) { padding-left: 272px; }
   z-index: 95;
   display: flex;
   flex-direction: column;
-  background: var(--sb-scrim), linear-gradient(180deg, var(--sb-bg-1) 0%, var(--sb-bg-2) 100%);
+  background: var(--sb-bg);
   color: #EFE9E1;
   border-right: 1px solid rgba(255, 255, 255, .12);
 }
@@ -6539,6 +6518,8 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
 .sidebar-count[data-nivel="bajo"] { background: #2F7D4F; }
 
 /* ---- Barra superior: título de la página y acciones ---- */
+/* La barra es opaca: antes tenía un desenfoque de fondo que, al desplazar la
+   página, dejaba una franja translúcida bajo el encabezado. */
 .topbar {
   position: sticky;
   top: 0;
@@ -6546,8 +6527,7 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  background: color-mix(in srgb, var(--dogger-paper) 92%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--dogger-paper);
   border-bottom: 1px solid var(--line);
 }
 /* La cabecera pública no usa dos filas: su .header-row se transparenta para
@@ -6561,6 +6541,8 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   min-height: 66px;
   padding: 10px 24px;
 }
+/* Todas las vistas de la aplicación ponen título y subtítulo, así que esta fila
+   ya nunca queda vacía. */
 
 /* ---- Encabezado superior: acceso del usuario, badge de cuenta y campana ---- */
 .topbar-top {
@@ -6568,8 +6550,8 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   align-items: center;
   gap: 12px;
   padding: 7px 24px;
-  /* Mismo fondo que el sidebar: el encabezado y el menú se leen como una pieza. */
-  background: var(--sb-scrim), linear-gradient(180deg, var(--sb-bg-1) 0%, var(--sb-bg-2) 100%);
+  /* El mismo color del menú, sin velo: el encabezado se ve natural. */
+  background: var(--sb-bg);
   border-bottom: 1px solid rgba(255, 255, 255, .12);
 }
 .topbar-account { display: flex; align-items: center; gap: 10px; margin-left: auto; }
@@ -6580,15 +6562,6 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
 .topbar .user-chip small { color: rgba(239, 233, 225, .6); }
 .topbar .user-chip-chevron { stroke: rgba(239, 233, 225, .65); }
 .topbar-titles { min-width: 0; }
-.topbar-titles .eyebrow {
-    margin: 0;
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-}
-.topbar-titles .eyebrow:empty { display: none; }
 .topbar-titles h1 {
   margin: 2px 0 0;
   font-family: var(--font-display);
@@ -6597,7 +6570,63 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   line-height: 1.2;
   color: var(--ink);
 }
+
+/* Símbolo del título: al pasar el mouse por el título (o con el teclado, al
+   llegar con Tab) explica para qué sirve la vista. */
+.title-hint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  margin-left: 7px;
+  vertical-align: 2px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--dogger-cream);
+  color: var(--ink-muted);
+  cursor: help;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.title-hint > .icon { width: 11px; height: 11px; }
+.title-hint:hover, .title-hint:focus-visible { border-color: var(--dogger-red); color: var(--dogger-red); }
+.topbar-titles h1:hover .title-hint,
+.brand-titles h1:hover .title-hint,
+.title-hint:focus-visible { opacity: 1; }
+.title-hint-bubble {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  z-index: 95;
+  width: max-content;
+  max-width: 290px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--dogger-paper);
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity .15s ease, transform .15s ease, visibility .15s;
+  pointer-events: none;
+}
+.topbar-titles h1:hover .title-hint-bubble,
+.brand-titles h1:hover .title-hint-bubble,
+.title-hint:focus-visible .title-hint-bubble { opacity: 1; visibility: visible; transform: none; }
 .topbar .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+/* El botón del menú vive en la banda de color, así que se pinta claro. */
 .topbar-burger {
   display: none;
   flex-direction: column;
@@ -6607,14 +6636,14 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
   height: 40px;
   flex: none;
   padding: 0;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, .28);
   border-radius: 11px;
-  background: var(--dogger-paper);
+  background: rgba(255, 255, 255, .10);
   cursor: pointer;
 }
-.topbar-burger:hover { border-color: var(--dogger-red); }
-.topbar-burger .nav-toggle-bar { display: block; width: 18px; height: 2px; margin: 0 auto; border-radius: 2px; background: var(--ink); }
-.topbar-burger.is-active { border-color: var(--dogger-red); }
+.topbar-burger:hover { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .18); }
+.topbar-burger .nav-toggle-bar { display: block; width: 18px; height: 2px; margin: 0 auto; border-radius: 2px; background: #fff; }
+.topbar-burger.is-active { border-color: rgba(255, 255, 255, .55); }
 .topbar-burger.is-active .nav-toggle-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .topbar-burger.is-active .nav-toggle-bar:nth-child(2) { opacity: 0; }
 .topbar-burger.is-active .nav-toggle-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
@@ -6757,7 +6786,6 @@ html[data-navcompact="1"] .sidebar-count {
   .topbar { gap: 0; }
   .topbar > .header-row { min-height: 58px; padding: 8px 14px; gap: 10px; }
   .topbar-titles h1 { font-size: 16.5px; }
-  .topbar-titles .eyebrow { font-size: 10px; }
 }
 
 /* En pantallas estrechas el encabezado superior se queda con lo imprescindible:

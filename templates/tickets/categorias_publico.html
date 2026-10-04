@@ -1,17 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Categorías de solicitudes{% endblock %}
-{% block header_eyebrow %}{% endblock %}
 {% block header_title %}Categorías{% endblock %}
+{% block header_desc %}Toca una categoría para ver qué cubre, a quién le llega y cuánto tarda la respuesta. Elige la que mejor describa tu problema.{% endblock %}
 
 {% block content %}
 <main class="wrap">
     <div class="page-head">
-        <div>
-            <p class="panel-sub">
-                Toca una categoría para ver qué cubre, a quién le llega y cuánto tarda la
-                respuesta. Elige la que mejor describa tu problema.
-            </p>
-        </div>
         <a href="{% url 'tickets:crear_ticket' %}" class="btn btn-primary btn-sm">
             <svg class="icon"><use href="#i-plus"/></svg> Crear solicitud
         </a>

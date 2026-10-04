@@ -3,8 +3,8 @@
 {% block title %}Dogger · Usuarios y técnicos{% endblock %}
 {% block body_class %}admin-shell usuarios-page{% endblock %}
 {% block nav_usuarios %}is-active{% endblock %}
-{% block header_eyebrow %}Dogger · Administración{% endblock %}
 {% block header_title %}Usuarios y técnicos{% endblock %}
+{% block header_desc %}Usuarios finales y técnicos (importados o creados en GLPI) con actividad en tiempo real.{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -146,14 +146,9 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 {% block content %}
 <main class="page">
     <div class="page-head">
-        <a class="back-btn" data-back href="{% url 'tickets:dashboard' %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Cuentas del sistema</h2>
-            <p>Usuarios finales y técnicos (importados o creados en GLPI) con actividad en tiempo real.</p>
-            <div class="live-head-badge">
-                <span class="live-head-item is-new"><span class="live-dot"></span> {{ n_nuevos }} nuevo{{ n_nuevos|pluralize }} esta semana</span>
-                <span class="live-head-item"><span class="dot-on"></span> {{ n_en_linea }} en línea ahora</span>
-            </div>
+        <div class="live-head-badge">
+            <span class="live-head-item is-new"><span class="live-dot"></span> {{ n_nuevos }} nuevo{{ n_nuevos|pluralize }} esta semana</span>
+            <span class="live-head-item"><span class="dot-on"></span> {{ n_en_linea }} en línea ahora</span>
         </div>
     </div>
 

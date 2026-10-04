@@ -3,19 +3,19 @@
 
 {% block title %}Dogger · Mi perfil{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
-{% block header_eyebrow %}Dogger · Mi cuenta{% endblock %}
 {% block header_title %}Mi perfil{% endblock %}
+{% block header_desc %}Tus datos, tu rol y cómo se ve la plataforma.{% endblock %}
 
 {% block extra_css %}
 <style>
 /* ============ Perfil corporativo Dogger ============ */
 .profile-page { max-width: 1080px; }
+/* El título y la explicación ya están en el encabezado; aquí solo queda la
+   acción de cerrar sesión, alineada a la derecha. */
 .profile-top {
-    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+    display: flex; align-items: center; justify-content: flex-end; gap: 16px;
     margin-bottom: 22px; flex-wrap: wrap;
 }
-.profile-title { margin: 0; font-size: 22px; color: #111; letter-spacing: -.02em; }
-.profile-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-muted); }
 .profile-logout { display: inline-flex; align-items: center; gap: 7px; }
 .profile-logout .icon { width: 15px; height: 15px; }
 
@@ -29,9 +29,11 @@
 
 /* ---- Columna de identidad ---- */
 .profile-ident { text-align: center; position: sticky; top: 78px; }
+/* La foto es una caja de bloque: si no, comparte línea con el badge y la
+   columna deja de estar centrada. */
 .profile-avatar {
     width: 88px; height: 88px; margin: 4px auto 14px; border-radius: 50%;
-    display: inline-flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     background: var(--dogger-yellow); color: var(--dogger-black);
     font-family: var(--font-display); font-weight: 800; font-size: 30px; letter-spacing: .02em;
     overflow: hidden; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--line), 0 8px 20px rgba(23,20,18,.12);
@@ -39,7 +41,12 @@
 .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .profile-ident h3 { margin: 10px 0 2px; font-size: 19px; color: #111; letter-spacing: -.02em; }
 .profile-email { margin: 0; font-size: 13px; color: var(--ink-muted); overflow-wrap: anywhere; }
-.badge-role-perfil { margin-top: 12px; }
+/* El badge también es una caja de bloque para que su margen superior empuje
+   el nombre hacia abajo y no se monte encima de la foto. */
+.badge-role-perfil {
+    display: flex; align-items: center; justify-content: center;
+    width: fit-content; margin: 12px auto 0;
+}
 
 .profile-facts { margin: 18px 0 0; padding: 0; list-style: none; text-align: left; }
 .profile-facts > div {
@@ -191,10 +198,6 @@
 {% block content %}
 <main class="page page-corporate profile-page">
     <div class="profile-top">
-        <div>
-            <h2 class="profile-title">Mi perfil</h2>
-            <p class="profile-sub">Gestiona tu cuenta, personaliza la visualización y accede a la configuración clave.</p>
-        </div>
         <form method="post" action="{% url 'accounts:logout' %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline btn-sm profile-logout" title="Cerrar sesión">
@@ -496,6 +499,10 @@
     var pinColor = document.getElementById("prefNavColor");
     var hexColor = document.getElementById("prefNavColorHex");
     var quitarColor = document.getElementById("prefNavColorClear");
+    /* El color de cada paleta se toma de los propios botones, así el valor por
+       defecto nunca depende de una lista repetida en el JavaScript. */
+    var COLORES = {};
+    paletas.forEach(function (b) { COLORES[b.getAttribute("data-palette")] = b.getAttribute("data-color"); });
 
     function marcarPaleta(nombre) {
         paletas.forEach(function (b) {
@@ -504,59 +511,59 @@
             b.setAttribute("aria-checked", on ? "true" : "false");
         });
     }
-    function borrarColorGuardado() {
-        try { localStorage.removeItem("dogger:pv:navcolor"); } catch (e) {}
-    }
     function mostrarColor(hexa) {
         pinColor.value = hexa;
         hexColor.textContent = hexa.toUpperCase();
     }
-    function elegirPaleta(boton) {
-        var nombre = boton.getAttribute("data-palette");
-        root.setAttribute("data-navpalette", nombre);
-        root.style.removeProperty("--sb-accent");
-        borrarColorGuardado();
-        s("dogger:pv:navpalette", nombre);
-        mostrarColor(boton.getAttribute("data-color"));
-        marcarPaleta(nombre);
+    function quitarGuardado(clave) {
+        try { localStorage.removeItem(clave); } catch (e) {}
+    }
+    /* Un solo sitio decide el color: siempre se escribe el color resultante en
+       la variable de <html>, sin depender de que la hoja de estilo la resuelva,
+       y los controles quedan mostrando lo que se ve. "Quitar" pasa por aquí, así
+       el menú y los controles nunca se contradicen. Sin color propio siempre
+       queda una paleta, y si no se reconoce se usa la de Dogger. */
+    function aplicarColor(paleta, hexa) {
+        var color = hexa || COLORES[paleta] || COLORES["dogger"];
+        root.style.setProperty("--sb-accent", color);
+        if (paleta) {
+            root.setAttribute("data-navpalette", paleta);
+            s("dogger:pv:navpalette", paleta);
+        } else {
+            root.removeAttribute("data-navpalette");
+            quitarGuardado("dogger:pv:navpalette");
+        }
+        if (hexa) {
+            s("dogger:pv:navcolor", hexa);
+        } else {
+            quitarGuardado("dogger:pv:navcolor");
+        }
+        mostrarColor(color);
+        marcarPaleta(hexa ? "" : paleta);
+    }
+    function paletaActual() {
+        var actual = root.getAttribute("data-navpalette");
+        return Object.prototype.hasOwnProperty.call(COLORES, actual) ? actual : "dogger";
+    }
+
+    paletas.forEach(function (b) {
+        b.addEventListener("click", function () {
+            aplicarColor(b.getAttribute("data-palette"), "");
+            saved();
+        });
+    });
+    pinColor.addEventListener("input", function () { aplicarColor("", pinColor.value); });
+    pinColor.addEventListener("change", function () { aplicarColor("", pinColor.value); saved(); });
+    quitarColor.addEventListener("click", function () {
+        aplicarColor(paletaActual(), "");
         saved();
-    }
-    function ponerColorPropio(hexa) {
-        root.style.setProperty("--sb-accent", hexa);
-        borrarColorGuardado();
-        try { localStorage.removeItem("dogger:pv:navpalette"); } catch (e) {}
-        s("dogger:pv:navcolor", hexa);
-        mostrarColor(hexa);
-        marcarPaleta("");
-    }
+    });
 
     /* El script de la cabecera ya aplicó el color guardado: aquí solo se
        refleja en los controles y se deja el estado inicial listo. */
-    var paletaGuardada = g("dogger:pv:navpalette");
     var colorGuardado = g("dogger:pv:navcolor");
-    if (colorGuardado && /^#[0-9a-f]{6}$/i.test(colorGuardado)) {
-        mostrarColor(colorGuardado);
-        marcarPaleta("");
-    } else {
-        var inicial = paletaGuardada || "dogger";
-        marcarPaleta(inicial);
-        paletas.forEach(function (b) {
-            if (b.getAttribute("data-palette") === inicial) mostrarColor(b.getAttribute("data-color"));
-        });
-    }
-    paletas.forEach(function (b) {
-        b.addEventListener("click", function () { elegirPaleta(b); });
-    });
-    pinColor.addEventListener("input", function () { ponerColorPropio(pinColor.value); });
-    pinColor.addEventListener("change", function () { ponerColorPropio(pinColor.value); saved(); });
-    quitarColor.addEventListener("click", function () {
-        root.style.removeProperty("--sb-accent");
-        borrarColorGuardado();
-        var actual = root.getAttribute("data-navpalette") || "dogger";
-        if (actual) s("dogger:pv:navpalette", actual);
-        marcarPaleta(actual);
-        saved();
-    });
+    aplicarColor(paletaActual(),
+        colorGuardado && /^#[0-9a-f]{6}$/i.test(colorGuardado) ? colorGuardado : "");
 
     // Pestañas
     var tabs = Array.prototype.slice.call(document.querySelectorAll("#profileTabs button"));

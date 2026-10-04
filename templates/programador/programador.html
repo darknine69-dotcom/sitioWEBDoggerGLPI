@@ -4,8 +4,8 @@
 {% block title %}Dogger · Programador{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_programador %}is-active{% endblock %}
-{% block header_eyebrow %}Dogger · Programación y disponibilidad{% endblock %}
 {% block header_title %}Programador{% endblock %}
+{% block header_desc %}Programa tareas, solicitudes, recordatorios y anuncios; gestiona la disponibilidad de los técnicos.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% asset 'css/programador.css' %}">
@@ -24,14 +24,8 @@
       data-url-disp="{% url 'programador:disponibilidad' %}"
       data-url-festivo="{% url 'programador:festivo' %}"
       data-url-detalle="{% url 'tickets:detalle' 0 %}">
-    <div class="page-head">
-        <a class="back-btn" data-back href="{% if request.user.rol == 'admin' %}{% url 'tickets:dashboard' %}{% else %}{% url 'tickets:panel_tecnico' %}{% endif %}" title="Volver"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
-        <div class="page-head-titles">
-            <h2>Programador</h2>
-            <p>Programa tareas, solicitudes, recordatorios y anuncios; gestiona la disponibilidad de los técnicos.</p>
-        </div>
-        <div hidden>{% csrf_token %}</div>
-    </div>
+    {# El JavaScript de la página necesita el token para sus envíos por fetch. #}
+    <div hidden>{% csrf_token %}</div>
 
     {# ---- Filtros superiores ---- #}
     <div class="prog-filters">
