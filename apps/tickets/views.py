@@ -40,6 +40,7 @@ RANGOS_MIS = [
 ]
 
 from apps.accounts.models import Usuario
+from apps.accounts.routing import landing_por_rol
 from .decorators import (
     admin_required,
     sin_observador,
@@ -2075,13 +2076,11 @@ def politica_privacidad(request):
 
 
 def portal(request):
+    # Quien ya entró no ve el portal: lo manda a su panel. El destino lo
+    # decide `landing_por_rol`, el mismo que usa el login, para que ninguna
+    # cuenta aterrice en una vista que su rol no puede abrir.
     if request.user.is_authenticated:
-        rol = getattr(request.user, "rol", "")
-        if rol == Usuario.Rol.TECNICO:
-            return redirect("tickets:panel_tecnico")
-        if rol == Usuario.Rol.USUARIO:
-            return redirect("tickets:mi_panel")
-        return redirect("tickets:dashboard")
+        return redirect(landing_por_rol(request.user))
 
     if request.method == "POST":
         form = TicketForm(request.POST, request.FILES)

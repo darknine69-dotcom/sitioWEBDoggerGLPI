@@ -10,6 +10,8 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.routing import landing_por_rol
+
 from .models import Notificacion
 
 ICONO_POR_TIPO = {
@@ -73,7 +75,7 @@ def bienvenida(usuario):
         f"¡Bienvenido a Dogger, {nombre_corto(usuario)}!",
         "Tu mesa de ayuda TI ya está lista. Reporta una incidencia y sigue su "
         "estado con el código HD.",
-        url=reverse("tickets:mi_panel") if usuario.rol == "usuario" else reverse("tickets:dashboard"),
+        url=landing_por_rol(usuario),
         clave=f"bienvenida:{usuario.pk}",
     )
 
