@@ -292,7 +292,7 @@ class MonitoreoObservadorDetalleTest(TestCase):
         ):
             self.assertIn(texto, html)
 
-    def test_zonas_a_cargo_con_modal_y_fichas(self):
+    def test_zonas_a_cargo_bajan_a_las_zonas(self):
         from apps.tickets.models import ZonaObservador
 
         self._ticket("ana@x.com")
@@ -302,18 +302,13 @@ class MonitoreoObservadorDetalleTest(TestCase):
         elemento.zona = zona
         elemento.save()
         respuesta = self.client.get(reverse("tickets:obs_monitoreo"))
-        zonas_modal = respuesta.context["zonas_modal"]
-        self.assertEqual(len(zonas_modal), 1)
-        self.assertEqual(zonas_modal[0]["zona"].nombre, "Norte")
-        self.assertEqual(len(zonas_modal[0]["miembros"]), 1)
         html = respuesta.content.decode()
         self.assertIn("Zonas a cargo", html)
-        self.assertIn("modalZonas", html)
-        self.assertIn("btnZonasCargo", html)
+        self.assertIn('href="#zonas-monitoreo"', html)
+        self.assertIn('id="zonas-monitoreo"', html)
+        self.assertNotIn("modalZonas", html)
+        # La cuenta principal lleva a su ficha.
         self.assertIn("/observador/usuarios/?q=ana%40x.com", html)
-        self.assertIn(
-            reverse("tickets:obs_zona_detalle", args=[zona.pk]), html
-        )
 
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""

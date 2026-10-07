@@ -729,30 +729,6 @@ def _contexto_monitoreo(usuario):
         f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
     grupos = _grupos_por_zona(filas)
     total_tickets = sum(f["total"] for f in filas)
-    zonas_modal = []
-    for g in grupos:
-        if g["zona"] is None:
-            continue
-        zonas_modal.append(
-            {
-                "zona": g["zona"],
-                "miembros": [
-                    {
-                        "nombre": f["nombre"],
-                        "email": f["email"],
-                        "total": f["total"],
-                        "abiertos": f["abiertos"],
-                        "tecnico": f["tecnico"],
-                    }
-                    for f in g["filas"]
-                ],
-                "abiertos": g["abiertos"],
-            }
-        )
-    en_modal = {z["zona"].pk for z in zonas_modal}
-    for z in ZonaObservador.objects.filter(observador=usuario).order_by("nombre"):
-        if z.pk not in en_modal:
-            zonas_modal.append({"zona": z, "miembros": [], "abiertos": 0})
     top_tecnicos = {}
     for f in filas:
         for t in f.get("tecnicos", []):
@@ -783,7 +759,6 @@ def _contexto_monitoreo(usuario):
         ),
         "top_tecnicos": top_tecnicos,
         "dona": dona,
-        "zonas_modal": zonas_modal,
         "max_zona_tickets": max(
             [g["total_tickets"] for g in grupos] + [0]
         ),

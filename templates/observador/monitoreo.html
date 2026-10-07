@@ -42,14 +42,14 @@
     </div>
 
     <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
-        <button type="button" class="dash-stat dash-hov-zonas" id="btnZonasCargo" title="Ver cuántos usuarios hay en cada zona">
+        <a class="dash-stat dash-hov-zonas" href="#zonas-monitoreo" title="Bajar a ver cuántos usuarios hay en cada zona">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Zonas a cargo</span>
                 <span class="dash-stat-value">{{ total_zonas|default:0 }}</span>
                 <span class="dash-stat-hint">clic para ver usuarios</span>
             </span>
-        </button>
+        </a>
         <div class="dash-stat dash-hov-total">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
             <span class="dash-stat-body">
@@ -189,54 +189,9 @@
         </div>
     </div>
 
+    <section id="zonas-monitoreo">
     {% include "observador/_grupos_monitoreo.html" %}
+    </section>
     {% include "observador/_fab.html" %}
-
-    <div class="modal-overlay" id="modalZonas">
-        <div class="modal-box modal-box-wide" role="dialog" aria-label="Zonas a cargo">
-            <div class="modal-head">
-                <h3>Zonas a cargo · {{ total_zonas|default:0 }}</h3>
-                <button type="button" class="modal-close" data-cerrar>&times;</button>
-            </div>
-            <div class="modal-body">
-                {% for z in zonas_modal %}
-                <div class="obs-zona-head" style="border:1px solid var(--line);border-radius:12px;margin-bottom:10px">
-                    <span class="obs-zona-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
-                    <div class="obs-zona-tit">
-                        <strong><a href="{% url 'tickets:obs_zona_detalle' z.zona.pk %}">{{ z.zona.nombre }}</a></strong>
-                        <small>{{ z.miembros|length }} usuario{{ z.miembros|length|pluralize }} · {{ z.abiertos }} abiertos</small>
-                    </div>
-                </div>
-                {% for m in z.miembros %}
-                <div class="mon-miembro">
-                    <span class="obs-avatar">{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
-                    <div class="mon-m-id">
-                        <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ m.email|urlencode }}" title="Abrir su ficha">{{ m.nombre }}</a></strong>
-                        <small>{{ m.email|default:"—" }} · {{ m.total }} tickets · técnico {{ m.tecnico|default:"—" }}</small>
-                    </div>
-                    {% if m.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ m.abiertos }}</span>{% endif %}
-                </div>
-                {% empty %}
-                <p class="muted" style="margin:0 0 10px 46px">Sin usuarios todavía.</p>
-                {% endfor %}
-                {% empty %}
-                <p class="muted">Todavía no tienes zonas a cargo. Créalas desde Zonas.</p>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    <script>
-    (function () {
-        var btn = document.getElementById("btnZonasCargo");
-        var modal = document.getElementById("modalZonas");
-        if (!btn || !modal) return;
-        function abrir() { modal.classList.add("open"); }
-        function cerrar() { modal.classList.remove("open"); }
-        btn.addEventListener("click", abrir);
-        modal.querySelector("[data-cerrar]").addEventListener("click", cerrar);
-        modal.addEventListener("click", function (e) { if (e.target === modal) cerrar(); });
-        document.addEventListener("keydown", function (e) { if (e.key === "Escape") cerrar(); });
-    })();
-    </script>
 </main>
 {% endblock %}

@@ -25,10 +25,10 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
     <article class="obs-miembro">
         <div class="obs-miembro-top">
             <span class="obs-avatar">{{ f.nombre|default:"?"|slice:":1"|upper }}</span>
-            <div class="obs-miembro-id">
-                <strong>{{ f.nombre }}</strong>
-                <small>{{ f.email|default:"Sin correo" }}{% if f.detalle %} · {{ f.detalle }}{% endif %}</small>
-            </div>
+                <div class="obs-miembro-id">
+                    <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ f.email|urlencode }}" title="Abrir su ficha">{{ f.nombre }}</a></strong>
+                    <small>{{ f.email|default:"Sin correo" }}{% if f.detalle %} · {{ f.detalle }}{% endif %}</small>
+                </div>
             <span class="obs-pill obs-pill-{{ f.estado }}" style="margin-left:auto"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
         </div>
         <div class="obs-miembro-grid">
