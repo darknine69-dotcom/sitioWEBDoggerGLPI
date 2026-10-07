@@ -16,8 +16,6 @@
         </div>
     </div>
 
-    {% include "observador/_menu.html" with activa="zonas" %}
-
     <div class="obs-bloque">
         <h3 class="obs-bloque-titulo">Crear zona</h3>
         <form method="post" class="obs-filtros">
@@ -110,5 +108,6 @@
         <p class="obs-tarjeta-dato">No hay personas sin zona: todo lo de tu lista ya está agrupado.</p>
         {% endif %}
     </div>
+    {% include "observador/_fab.html" %}
 </main>
 {% endblock %}

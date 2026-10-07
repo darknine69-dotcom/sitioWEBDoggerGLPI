@@ -18,8 +18,6 @@
         </div>
     </div>
 
-    {% include "observador/_menu.html" with activa="monitoreo" total_mi_lista=total %}
-
     <div class="obs-resumen">
         <div class="obs-kpi"><span class="obs-kpi-n">{{ total }}</span><span class="obs-kpi-l">En seguimiento</span></div>
         <div class="obs-kpi obs-kpi-verde">
@@ -39,5 +37,6 @@
     </div>
 
     {% include "observador/_grupos_monitoreo.html" %}
+    {% include "observador/_fab.html" %}
 </main>
 {% endblock %}

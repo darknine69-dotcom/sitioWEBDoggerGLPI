@@ -19,8 +19,6 @@
         </div>
     </div>
 
-    {% include "observador/_menu.html" with activa="zonas" %}
-
     {% if filas %}
         {% for f in filas %}
         <div class="obs-bloque">
@@ -75,5 +73,6 @@
         <a href="{% url 'tickets:obs_zonas' %}" class="btn btn-sm">Ir a Zonas</a>
     </div>
     {% endif %}
+    {% include "observador/_fab.html" %}
 </main>
 {% endblock %}

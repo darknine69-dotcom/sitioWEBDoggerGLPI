@@ -8,8 +8,6 @@
 {% block content %}
 <main class="page obs-page">
 
-    {% include "observador/_menu.html" with activa="buscar" %}
-
     <form method="get" class="obs-buscador" action="{% url 'tickets:obs_buscar' %}">
         <div class="obs-buscador-campo">
             <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
@@ -115,5 +113,6 @@
         <p>Tus puntos asignados: {{ puntos|join:", "|default:"ninguno todavía" }}.</p>
     </div>
     {% endif %}
+    {% include "observador/_fab.html" %}
 </main>
 {% endblock %}

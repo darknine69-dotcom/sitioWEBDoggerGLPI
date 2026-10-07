@@ -15,8 +15,6 @@
         </div>
     </div>
 
-    {% include "observador/_menu.html" with activa="lista" total_mi_lista=total %}
-
     {% if filas %}
     <p class="panel-sub" style="margin-bottom:14px">
         Agregá a quien quieras seguir. Acá ves qué técnico tiene el caso y qué tanto
@@ -104,5 +102,6 @@
         <a href="{% url 'tickets:obs_buscar' %}" class="btn btn-sm">Buscar</a>
     </div>
     {% endif %}
+    {% include "observador/_fab.html" %}
 </main>
 {% endblock %}

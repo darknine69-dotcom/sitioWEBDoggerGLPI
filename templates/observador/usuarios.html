@@ -19,8 +19,6 @@
         </div>
     </div>
 
-    {% include "observador/_menu.html" with activa="usuarios" %}
-
     <form method="get" class="obs-filtros">
         <div class="obs-buscador-campo">
             <svg class="icon"><use href="#i-search"/></svg>
@@ -160,5 +158,6 @@
         <a href="{% url 'tickets:obs_usuarios' %}" class="btn btn-sm btn-outline">Limpiar filtros</a>
     </div>
     {% endif %}
+    {% include "observador/_fab.html" %}
 </main>
 {% endblock %}
