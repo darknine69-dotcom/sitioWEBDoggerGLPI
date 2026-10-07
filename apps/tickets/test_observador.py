@@ -267,6 +267,18 @@ class ObservadorListaTest(TestCase):
         self.assertNotIn("Puntos asignados", html)
         self.assertNotIn('sidebar-label">Panel', html)
         self.assertIn('sidebar-label">Monitoreo', html)
+        self.assertNotIn('sidebar-label">Buscar y agregar', html)
+
+    def test_usuarios_y_lista_sin_botones_duplicados(self):
+        html_usuarios = self.client.get(
+            reverse("tickets:obs_usuarios")
+        ).content.decode()
+        self.assertNotIn("Imprimir", html_usuarios)
+        self.assertNotIn("obs_buscar", html_usuarios)
+        html_lista = self.client.get(
+            reverse("tickets:obs_mi_lista")
+        ).content.decode()
+        self.assertNotIn("Agregar más", html_lista)
 
     def test_entrada_del_observador_es_monitoreo(self):
         from apps.accounts.routing import landing_por_rol

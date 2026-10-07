@@ -249,10 +249,6 @@
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-user"/></svg>
                     <span class="sidebar-label">Usuarios</span>
                 </a>
-                <a href="{% url 'tickets:obs_buscar' %}" class="sidebar-link{% nav_active 'obs_buscar' %}"{% nav_current 'obs_buscar' %} data-title="Buscar y agregar">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-search"/></svg>
-                    <span class="sidebar-label">Buscar y agregar</span>
-                </a>
                 <a href="{% url 'tickets:obs_mi_lista' %}" class="sidebar-link{% nav_active 'obs_mi_lista' %}"{% nav_current 'obs_mi_lista' %} data-title="Mi lista">
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-layers"/></svg>
                     <span class="sidebar-label">Mi lista</span>
@@ -789,10 +785,10 @@
                   texto: "Aqui se crea el listado de categorias con el que reportan los usuarios." }
             ],
             observador: [
-                { sel: "[href*='obs-panel'], [href*='/observador/']", titulo: "Tu observacion",
+                { sel: "[href*='obs-monitoreo'], [href*='/observador/monitoreo/']", titulo: "Tu monitoreo",
                   texto: "Solo ves los puntos que tienes asignados, en modo lectura." },
-                { sel: "[href*='obs-buscar'], [href*='/observador/buscar/']", titulo: "Buscar y agregar",
-                  texto: "Encuentra a alguien por nombre o correo y agregalo a tu lista para monitorearlo." }
+                { sel: "[href*='obs-usuarios'], [href*='/observador/usuarios/']", titulo: "Usuarios y búsqueda",
+                  texto: "Encuentra a alguien por nombre, correo o ubicación y velo con sus tickets y su técnico." }
             ]
         };
         var pasos = COMUN.concat(POR_ROL[ROL] || []);

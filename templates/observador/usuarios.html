@@ -8,16 +8,6 @@
 
 {% block content %}
 <main class="page obs-page">
-    <div class="page-head">
-        <div class="obs-head-actions">
-            <a href="{% url 'tickets:obs_buscar' %}" class="btn btn-outline btn-sm">
-                <svg class="icon"><use href="#i-search"/></svg> Buscar y agregar
-            </a>
-            <button type="button" class="btn btn-outline btn-sm" onclick="window.print()">
-                <svg class="icon"><use href="#i-printer"/></svg> Imprimir
-            </button>
-        </div>
-    </div>
 
     <form method="get" class="obs-filtros">
         <div class="obs-buscador-campo">
