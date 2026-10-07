@@ -276,7 +276,21 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertEqual(grupos[0]["filas"][0]["tecnico"], "Tec")
         html = respuesta.content.decode()
         self.assertIn("Técnico a cargo", html)
-        self.assertIn("Avance global", html)
+        self.assertIn("resuelto global", html)
+
+    def test_monitoreo_es_tablero_con_graficos_y_tablas(self):
+        self._ticket("ana@x.com")
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        respuesta = self.client.get(reverse("tickets:obs_monitoreo"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context["top_tecnicos"], [("Tec", 1)])
+        self.assertEqual(len(respuesta.context["dona"]), 3)
+        html = respuesta.content.decode()
+        for texto in (
+            "En seguimiento", "Carga por zona", "Técnicos que atienden",
+            "Resumen por zona", "Estado de tu lista", "obs-dona-svg",
+        ):
+            self.assertIn(texto, html)
 
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""

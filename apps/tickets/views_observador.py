@@ -729,6 +729,22 @@ def _contexto_monitoreo(usuario):
         f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
     grupos = _grupos_por_zona(filas)
     total_tickets = sum(f["total"] for f in filas)
+    top_tecnicos = {}
+    for f in filas:
+        for t in f.get("tecnicos", []):
+            top_tecnicos[t["nombre"]] = top_tecnicos.get(t["nombre"], 0) + t["tickets"]
+    top_tecnicos = sorted(
+        top_tecnicos.items(), key=lambda kv: (-kv[1], kv[0])
+    )[:6]
+    base = len(filas) or 1
+    pct_v = round(100.0 * conteo[ESTADO_VERDE] / base, 1)
+    pct_a = round(100.0 * conteo[ESTADO_AMARILLO] / base, 1)
+    pct_r = round(100.0 * conteo[ESTADO_ROJO] / base, 1)
+    dona = [
+        {"color": "#2F7D4F", "pct": pct_v, "offset": 25.0},
+        {"color": "#D9A436", "pct": pct_a, "offset": 25.0 - pct_v},
+        {"color": "#D62B1F", "pct": pct_r, "offset": 25.0 - pct_v - pct_a},
+    ]
     return {
         "filas": filas,
         "conteo": conteo,
@@ -741,6 +757,12 @@ def _contexto_monitoreo(usuario):
             int(round(100.0 * sum(f["cerrados_total"] for f in filas) / total_tickets))
             if total_tickets else 0
         ),
+        "top_tecnicos": top_tecnicos,
+        "dona": dona,
+        "max_zona_tickets": max(
+            [g["total_tickets"] for g in grupos] + [0]
+        ),
+        "max_tec_tickets": max([n for _, n in top_tecnicos] + [0]),
     }
 
 

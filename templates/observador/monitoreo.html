@@ -3,7 +3,24 @@
 {% block title %}Dogger · Monitoreo{% endblock %}
 {% block body_class %}observador-shell{% endblock %}
 {% block header_title %}Observación{% endblock %}
-{% block header_desc %}Tu lista agrupada por zonas: quién está en cada una, sus tickets, su avance y las últimas respuestas de los técnicos.{% endblock %}
+{% block header_desc %}Tablero de tu lista: indicadores, gráficos por zona y técnico, y el detalle cuenta por cuenta.{% endblock %}
+
+{% block extra_css %}
+<style>
+.obs-barra { display: flex; align-items: center; gap: 8px; margin: 7px 0; font-size: 12px; }
+.obs-barra-n { flex: none; width: 130px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.obs-barra-track { flex: 1; height: 12px; border-radius: 999px; background: #F1EDE6; overflow: hidden; display: flex; }
+.obs-barra-fill { display: block; height: 100%; border-radius: 999px; background: #4F46E5; min-width: 3px; }
+.obs-barra-fill.f-abiertos { background: #F97316; }
+.obs-barra-fill.f-tec { background: #1D4ED8; }
+.obs-barra-v { flex: none; width: 34px; text-align: right; font-weight: 800; font-family: var(--font-mono); }
+.obs-dona { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.obs-dona-svg { width: 130px; height: 130px; flex: none; }
+.obs-dona-leyenda { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.obs-dona-leyenda li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.obs-dona-leyenda b { margin-left: auto; font-family: var(--font-mono); }
+</style>
+{% endblock %}
 
 {% block content %}
 <main class="page obs-page">
@@ -18,22 +35,152 @@
         </div>
     </div>
 
-    <div class="obs-resumen">
-        <div class="obs-kpi"><span class="obs-kpi-n">{{ total }}</span><span class="obs-kpi-l">En seguimiento</span></div>
-        <div class="obs-kpi obs-kpi-verde">
-            <span class="obs-kpi-n">{{ conteo.verde }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-verde"></span> Activos</span>
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
+        <div class="dash-stat dash-hov-usuarios">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-user"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">En seguimiento</span>
+                <span class="dash-stat-value">{{ total }}</span>
+                <span class="dash-stat-hint">cuentas en tu lista</span>
+            </span>
         </div>
-        <div class="obs-kpi obs-kpi-amarillo">
-            <span class="obs-kpi-n">{{ conteo.amarillo }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-amarillo"></span> Pendientes</span>
+        <div class="dash-stat dash-hov-total">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Tickets</span>
+                <span class="dash-stat-value">{{ total_tickets }}</span>
+                <span class="dash-stat-hint">de tu lista</span>
+            </span>
         </div>
-        <div class="obs-kpi obs-kpi-rojo">
-            <span class="obs-kpi-n">{{ conteo.rojo }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-rojo"></span> Incidencias</span>
+        <div class="dash-stat dash-hov-abiertos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Abiertos</span>
+                <span class="dash-stat-value st-abiertos">{{ total_abiertos }}</span>
+                <span class="dash-stat-hint">por atender</span>
+            </span>
         </div>
-        <div class="obs-kpi"><span class="obs-kpi-n">{{ total_zonas|default:0 }}</span><span class="obs-kpi-l">Zonas creadas</span></div>
-        <div class="obs-kpi"><span class="obs-kpi-n">{{ avance_global|default:0 }}%</span><span class="obs-kpi-l">Avance global</span></div>
+        <div class="dash-stat dash-hov-resueltos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Avance</span>
+                <span class="dash-stat-value st-resueltos">{{ avance_global }}%</span>
+                <span class="dash-stat-hint">resuelto global</span>
+            </span>
+        </div>
+        <div class="dash-stat dash-hov-zonas">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Zonas</span>
+                <span class="dash-stat-value">{{ total_zonas|default:0 }}</span>
+                <span class="dash-stat-hint">creadas por ti</span>
+            </span>
+        </div>
+        <div class="dash-stat dash-hov-vencidos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Incidencias</span>
+                <span class="dash-stat-value st-vencidos">{{ conteo.rojo }}</span>
+                <span class="dash-stat-hint">en alerta</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-chart"/></svg></span>
+                <h3>Estado de tu lista</h3>
+            </div>
+            <div class="obs-dona">
+                <svg class="obs-dona-svg" viewBox="0 0 42 42" role="img" aria-label="Reparto por estado">
+                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="#F1EDE6" stroke-width="6"/>
+                    {% for s in dona %}
+                    {% if s.pct %}
+                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="{{ s.color }}" stroke-width="6" pathLength="100" stroke-dasharray="{{ s.pct }} 100" stroke-dashoffset="{{ s.offset }}" stroke-linecap="butt"/>
+                    {% endif %}
+                    {% endfor %}
+                    <text x="21" y="21" text-anchor="middle" dominant-baseline="central" font-size="8" font-weight="800" fill="#1d1b16">{{ total }}</text>
+                </svg>
+                <ul class="obs-dona-leyenda">
+                    <li><span class="obs-dot obs-dot-verde"></span> Activos <b>{{ conteo.verde }}</b></li>
+                    <li><span class="obs-dot obs-dot-amarillo"></span> Pendientes <b>{{ conteo.amarillo }}</b></li>
+                    <li><span class="obs-dot obs-dot-rojo"></span> Incidencias <b>{{ conteo.rojo }}</b></li>
+                </ul>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+                <h3>Carga por zona</h3>
+            </div>
+            {% for g in grupos %}
+            <div class="obs-barra">
+                <span class="obs-barra-n">{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</span>
+                <span class="obs-barra-track"><span class="obs-barra-fill" style="width: {% if max_zona_tickets %}{% widthratio g.total_tickets max_zona_tickets 100 %}{% else %}0{% endif %}%;"></span></span>
+                <span class="obs-barra-v">{{ g.total_tickets }}</span>
+            </div>
+            <div class="obs-barra">
+                <span class="obs-barra-n"></span>
+                <span class="obs-barra-track"><span class="obs-barra-fill f-abiertos" style="width: {% if max_zona_tickets %}{% widthratio g.abiertos max_zona_tickets 100 %}{% else %}0{% endif %}%;"></span></span>
+                <span class="obs-barra-v">{{ g.abiertos }}</span>
+            </div>
+            {% empty %}
+            <p class="chart-empty">Sin zonas todavía.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                <h3>Técnicos que atienden</h3>
+            </div>
+            {% for nombre, n in top_tecnicos %}
+            <div class="obs-barra">
+                <span class="obs-barra-n">{{ nombre }}</span>
+                <span class="obs-barra-track"><span class="obs-barra-fill f-tec" style="width: {% if max_tec_tickets %}{% widthratio n max_tec_tickets 100 %}{% else %}0{% endif %}%;"></span></span>
+                <span class="obs-barra-v">{{ n }}</span>
+            </div>
+            {% empty %}
+            <p class="chart-empty">Nadie atendiendo todavía.</p>
+            {% endfor %}
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
+                <h3>Resumen por zona</h3>
+            </div>
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Zona</th>
+                            <th class="num">Cuentas</th>
+                            <th class="num">Tickets</th>
+                            <th class="num">Abiertos</th>
+                            <th class="num">Avance</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for g in grupos %}
+                        <tr>
+                            <td><strong>{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</strong></td>
+                            <td class="num">{{ g.filas|length }}</td>
+                            <td class="num">{{ g.total_tickets }}</td>
+                            <td class="num">{{ g.abiertos }}</td>
+                            <td class="num">{{ g.avance }}%</td>
+                            <td><span class="obs-pill obs-pill-{{ g.estado }}">{{ g.estado|capfirst }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr class="table-empty"><td colspan="6">Sin zonas todavía.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     {% include "observador/_grupos_monitoreo.html" %}
