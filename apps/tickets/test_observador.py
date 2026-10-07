@@ -245,6 +245,23 @@ class ObservadorListaTest(TestCase):
         self.assertEqual(ana[0]["tecnico"], "Tec")
         self.assertIn("Tec", respuesta.content.decode())
 
+    def test_panel_es_el_monitoreo_por_zonas(self):
+        from apps.tickets.models import ZonaObservador
+
+        ticket = self._ticket("Ana", "Zona Uno", email="ana@x.com")
+        self._agregar("ana@x.com")
+        zona = ZonaObservador.objects.create(observador=self.observador, nombre="Norte")
+        elemento = ElementoMiLista.objects.get(observador=self.observador)
+        elemento.zona = zona
+        elemento.save()
+        respuesta = self.client.get(reverse("tickets:obs_panel"))
+        self.assertEqual(len(respuesta.context["grupos"]), 1)
+        html = respuesta.content.decode()
+        self.assertIn("Monitoreo por zonas", html)
+        self.assertIn("Norte", html)
+        self.assertIn("Técnico a cargo", html)
+        self.assertIn(ticket.codigo, html)
+
 
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

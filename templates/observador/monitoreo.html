@@ -5,52 +5,6 @@
 {% block header_title %}Observación{% endblock %}
 {% block header_desc %}Tu lista agrupada por zonas: quién está en cada una, sus tickets, su avance y las últimas respuestas de los técnicos.{% endblock %}
 
-{% block extra_css %}
-<style>
-/* Monitoreo del observador: zonas con su gente y su detalle completo. */
-.obs-avance { display: flex; align-items: center; gap: 8px; min-width: 140px; flex: 1; }
-.obs-avance-bar { flex: 1; height: 8px; border-radius: 999px; background: #F1EDE6; overflow: hidden; }
-.obs-avance-bar span { display: block; height: 100%; border-radius: 999px; background: #2F7D4F; }
-.obs-avance-num { font-size: 12px; font-weight: 800; color: #2F7D4F; white-space: nowrap; }
-.obs-zona-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 18px; overflow: hidden; }
-.obs-zona-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px; background: #FBFAF7; border-bottom: 1px solid var(--line); }
-.obs-zona-ico { width: 36px; height: 36px; border-radius: 10px; flex: none; display: inline-flex; align-items: center; justify-content: center; background: #F1EDE6; color: var(--dogger-red); }
-.obs-zona-ico .icon { width: 18px; height: 18px; }
-.obs-zona-tit { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.obs-zona-tit strong { font-size: 15px; }
-.obs-zona-tit small { font-size: 11.5px; color: var(--ink-muted); }
-.obs-zona-stats { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-left: auto; font-size: 12px; color: var(--ink-muted); }
-.obs-zona-stats b { color: #1d1b16; font-family: var(--font-mono); }
-.obs-miembro { padding: 14px 16px; border-bottom: 1px dashed var(--line); }
-.obs-miembro:last-child { border-bottom: 0; }
-.obs-miembro-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.obs-avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: #EEE9DB; color: #6B6259; font-weight: 800; font-size: 14px; }
-.obs-miembro-id { display: flex; flex-direction: column; min-width: 0; }
-.obs-miembro-id strong { font-size: 13.5px; }
-.obs-miembro-id small { font-size: 11.5px; color: var(--ink-muted); }
-.obs-miembro-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
-.obs-dato { background: #FBFAF7; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; }
-.obs-dato span { display: block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
-.obs-dato b { font-size: 16px; font-family: var(--font-mono); }
-.obs-dato small { display: block; font-size: 11px; color: var(--ink-muted); margin-top: 2px; }
-.obs-tecnicos { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.obs-tec { font-size: 10.5px; font-weight: 700; background: #EFF3FF; color: #1D4ED8; border-radius: 999px; padding: 1px 8px; }
-.obs-tickets { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-.obs-ticket { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; font-family: var(--font-mono); border-radius: 999px; padding: 2px 9px; border: 1px solid var(--line); background: #fff; }
-.obs-ticket::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8A8478; }
-.obs-ticket.t-abierto::before { background: #F97316; }
-.obs-ticket.t-en-progreso::before { background: #CA8A04; }
-.obs-ticket.t-resuelto::before, .obs-ticket.t-cerrado::before { background: #059669; }
-.obs-ticket small { font-family: inherit; font-weight: 600; color: var(--ink-muted); }
-.obs-resp { margin-top: 10px; border-left: 3px solid #E5DCCF; padding: 6px 10px; font-size: 12px; color: var(--ink); background: #FDFCF9; border-radius: 0 8px 8px 0; }
-.obs-resp + .obs-resp { margin-top: 6px; }
-.obs-resp-meta { font-size: 11px; color: var(--ink-muted); font-weight: 700; }
-.obs-resp-meta b { color: #1D4ED8; }
-.obs-resp-txt { display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 720px) { .obs-miembro-grid { grid-template-columns: repeat(2, 1fr); } }
-</style>
-{% endblock %}
-
 {% block content %}
 <main class="page obs-page">
     <div class="page-head">
@@ -84,69 +38,6 @@
         <div class="obs-kpi"><span class="obs-kpi-n">{{ avance_global|default:0 }}%</span><span class="obs-kpi-l">Avance global</span></div>
     </div>
 
-    {% if grupos %}
-    {% for g in grupos %}
-    <section class="obs-zona-card">
-        <div class="obs-zona-head">
-            <span class="obs-zona-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
-            <div class="obs-zona-tit">
-                <strong>{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</strong>
-                <small>
-                    {% if g.zona %}Creada por ti{% if g.zona.creado_en %} el {{ g.zona.creado_en|date:"d/m/Y" }}{% endif %}
-                    {% else %}Personas de tu lista que aún no están en ninguna zona{% endif %}
-                    · {{ g.filas|length }} cuenta{{ g.filas|length|pluralize }}
-                </small>
-            </div>
-            <span class="obs-pill obs-pill-{{ g.estado }}"><span class="obs-dot obs-dot-{{ g.estado }}"></span>{{ g.estado|capfirst }}</span>
-            <div class="obs-zona-stats">
-                <span><b>{{ g.total_tickets }}</b> tickets</span>
-                <span><b>{{ g.abiertos }}</b> abiertos</span>
-                <span class="obs-avance"><span class="obs-avance-bar"><span style="width: {{ g.avance }}%"></span></span><span class="obs-avance-num">{{ g.avance }}%</span></span>
-            </div>
-        </div>
-        {% for f in g.filas %}
-        <article class="obs-miembro">
-            <div class="obs-miembro-top">
-                <span class="obs-avatar">{{ f.nombre|default:"?"|slice:":1"|upper }}</span>
-                <div class="obs-miembro-id">
-                    <strong>{{ f.nombre }}</strong>
-                    <small>{{ f.email|default:"Sin correo" }}{% if f.detalle %} · {{ f.detalle }}{% endif %}</small>
-                </div>
-                <span class="obs-pill obs-pill-{{ f.estado }}" style="margin-left:auto"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
-            </div>
-            <div class="obs-miembro-grid">
-                <div class="obs-dato"><span>Tickets</span><b>{{ f.total }}</b><small>{{ f.abiertos }} abiertos · {{ f.cerrados_total }} resueltos</small></div>
-                <div class="obs-dato"><span>Avance</span><b>{{ f.avance }}%</b><small>falta {{ f.falta }}%</small></div>
-                <div class="obs-dato"><span>Técnico a cargo</span><b style="font-size:13px;font-family:inherit">{{ f.tecnico|default:"—" }}</b>{% if f.tecnicos %}<span class="obs-tecnicos">{% for t in f.tecnicos %}<span class="obs-tec">{{ t.nombre }} ({{ t.tickets }})</span>{% endfor %}</span>{% endif %}</div>
-                <div class="obs-dato"><span>Tipo</span><b style="font-size:13px;font-family:inherit">{% if f.es_punto %}Punto{% else %}Cuenta{% endif %}</b><small>{{ f.tickets|length }} en la muestra</small></div>
-            </div>
-            {% if f.tickets %}
-            <div class="obs-tickets">
-                {% for t in f.tickets|slice:":6" %}
-                <span class="obs-ticket t-{{ t.estado }}" title="{{ t.get_estado_display }} · {{ t.fecha_creacion|date:'d/m/Y H:i' }}">{{ t.codigo }} <small>{{ t.get_estado_display }}</small></span>
-                {% endfor %}
-            </div>
-            {% endif %}
-            {% for r in f.respuestas %}
-            <div class="obs-resp">
-                <span class="obs-resp-meta"><b>{% if r.usuario %}{{ r.usuario.nombre|default:r.usuario.email }}{% else %}{{ r.autor_nombre|default:"Soporte" }}{% endif %}</b> respondió en {{ r.ticket.codigo }} · {{ r.fecha|date:"d/m/Y H:i" }}</span>
-                <span class="obs-resp-txt">{{ r.comentario|truncatechars:140 }}</span>
-            </div>
-            {% endfor %}
-        </article>
-        {% endfor %}
-    </section>
-    {% endfor %}
-    {% else %}
-    <div class="obs-vacio">
-        <span class="obs-vacio-icon"><svg class="icon"><use href="#i-eye"/></svg></span>
-        <strong>No hay nada que monitorear todavía</strong>
-        <p>Agrega personas o puntos a tu lista para ver aquí su estado, agrupados por tus zonas y con las respuestas de los técnicos.</p>
-        <p style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-            <a href="{% url 'tickets:obs_buscar' %}" class="btn btn-sm">Buscar y agregar</a>
-            <a href="{% url 'tickets:obs_zonas' %}" class="btn btn-outline btn-sm">Crear una zona</a>
-        </p>
-    </div>
-    {% endif %}
+    {% include "observador/_grupos_monitoreo.html" %}
 </main>
 {% endblock %}

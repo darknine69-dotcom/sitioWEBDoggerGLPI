@@ -299,6 +299,9 @@ def panel_observador(request):
     lista_personas.sort(key=lambda f: (-f["abiertos"], f["nombre"] or ""))
 
     total_tickets = visibles.count()
+    # El panel es el monitoreo: los mismos grupos por zona con el detalle
+    # completo de usuarios, tickets, técnicos y respuestas.
+    grupos = _contexto_monitoreo(usuario)["grupos"]
     # Buscar y agregar integrado al panel: encuentra cuentas por nombre,
     # correo o ubicación para agregarlas a la lista sin salir de aquí.
     q_busc = (request.GET.get("q_busc") or "").strip()
@@ -343,6 +346,7 @@ def panel_observador(request):
             "sin_puntos": not tarjetas,
             "q_busc": q_busc,
             "busqueda": busqueda,
+            "grupos": grupos,
         },
     )
 
@@ -698,6 +702,16 @@ def monitorear_observador(request):
     muestre el detalle completo y no solo una tabla plana.
     """
     usuario = request.user
+    contexto = _contexto_monitoreo(usuario)
+    return render(request, "observador/monitoreo.html", contexto)
+
+
+def _contexto_monitoreo(usuario):
+    """Filas, grupos por zona y totales de la lista del observador.
+
+    Lo comparten el Monitoreo y el Panel: el panel es el monitoreo, con
+    el detalle completo de usuarios, tickets y técnicos por zona.
+    """
     elementos = (
         ElementoMiLista.objects.filter(observador=usuario)
         .select_related("usuario", "punto", "zona")
@@ -715,25 +729,19 @@ def monitorear_observador(request):
         f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
     grupos = _grupos_por_zona(filas)
     total_tickets = sum(f["total"] for f in filas)
-    total_abiertos = sum(f["abiertos"] for f in filas)
-    avance_global = (
-        int(round(100.0 * sum(f["cerrados_total"] for f in filas) / total_tickets))
-        if total_tickets else 0
-    )
-    return render(
-        request,
-        "observador/monitoreo.html",
-        {
-            "filas": filas,
-            "conteo": conteo,
-            "total": len(filas),
-            "grupos": grupos,
-            "total_zonas": sum(1 for g in grupos if g["zona"] is not None),
-            "total_tickets": total_tickets,
-            "total_abiertos": total_abiertos,
-            "avance_global": avance_global,
-        },
-    )
+    return {
+        "filas": filas,
+        "conteo": conteo,
+        "total": len(filas),
+        "grupos": grupos,
+        "total_zonas": sum(1 for g in grupos if g["zona"] is not None),
+        "total_tickets": total_tickets,
+        "total_abiertos": sum(f["abiertos"] for f in filas),
+        "avance_global": (
+            int(round(100.0 * sum(f["cerrados_total"] for f in filas) / total_tickets))
+            if total_tickets else 0
+        ),
+    }
 
 
 def _grupos_por_zona(filas):

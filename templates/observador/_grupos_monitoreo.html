@@ -1,0 +1,67 @@
+{% comment %}Grupos de monitoreo por zona, con el detalle completo de cada cuenta:
+sus tickets, su avance, sus técnicos y las últimas respuestas.
+Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto.{% endcomment %}
+{% if grupos %}
+{% for g in grupos %}
+<section class="obs-zona-card">
+    <div class="obs-zona-head">
+        <span class="obs-zona-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+        <div class="obs-zona-tit">
+            <strong>{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</strong>
+            <small>
+                {% if g.zona %}Creada por ti{% if g.zona.creado_en %} el {{ g.zona.creado_en|date:"d/m/Y" }}{% endif %}
+                {% else %}Personas de tu lista que aún no están en ninguna zona{% endif %}
+                · {{ g.filas|length }} cuenta{{ g.filas|length|pluralize }}
+            </small>
+        </div>
+        <span class="obs-pill obs-pill-{{ g.estado }}"><span class="obs-dot obs-dot-{{ g.estado }}"></span>{{ g.estado|capfirst }}</span>
+        <div class="obs-zona-stats">
+            <span><b>{{ g.total_tickets }}</b> tickets</span>
+            <span><b>{{ g.abiertos }}</b> abiertos</span>
+            <span class="obs-avance"><span class="obs-avance-bar"><span style="width: {{ g.avance }}%"></span></span><span class="obs-avance-num">{{ g.avance }}%</span></span>
+        </div>
+    </div>
+    {% for f in g.filas %}
+    <article class="obs-miembro">
+        <div class="obs-miembro-top">
+            <span class="obs-avatar">{{ f.nombre|default:"?"|slice:":1"|upper }}</span>
+            <div class="obs-miembro-id">
+                <strong>{{ f.nombre }}</strong>
+                <small>{{ f.email|default:"Sin correo" }}{% if f.detalle %} · {{ f.detalle }}{% endif %}</small>
+            </div>
+            <span class="obs-pill obs-pill-{{ f.estado }}" style="margin-left:auto"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
+        </div>
+        <div class="obs-miembro-grid">
+            <div class="obs-dato"><span>Tickets</span><b>{{ f.total }}</b><small>{{ f.abiertos }} abiertos · {{ f.cerrados_total }} resueltos</small></div>
+            <div class="obs-dato"><span>Avance</span><b>{{ f.avance }}%</b><small>falta {{ f.falta }}%</small></div>
+            <div class="obs-dato"><span>Técnico a cargo</span><b style="font-size:13px;font-family:inherit">{{ f.tecnico|default:"—" }}</b>{% if f.tecnicos %}<span class="obs-tecnicos">{% for t in f.tecnicos %}<span class="obs-tec">{{ t.nombre }} ({{ t.tickets }})</span>{% endfor %}</span>{% endif %}</div>
+            <div class="obs-dato"><span>Tipo</span><b style="font-size:13px;font-family:inherit">{% if f.es_punto %}Punto{% else %}Cuenta{% endif %}</b><small>{{ f.tickets|length }} en la muestra</small></div>
+        </div>
+        {% if f.tickets %}
+        <div class="obs-tickets">
+            {% for t in f.tickets|slice:":6" %}
+            <span class="obs-ticket t-{{ t.estado }}" title="{{ t.get_estado_display }} · {{ t.fecha_creacion|date:'d/m/Y H:i' }}">{{ t.codigo }} <small>{{ t.get_estado_display }}</small></span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% for r in f.respuestas %}
+        <div class="obs-resp">
+            <span class="obs-resp-meta"><b>{% if r.usuario %}{{ r.usuario.nombre|default:r.usuario.email }}{% else %}{{ r.autor_nombre|default:"Soporte" }}{% endif %}</b> respondió en {{ r.ticket.codigo }} · {{ r.fecha|date:"d/m/Y H:i" }}</span>
+            <span class="obs-resp-txt">{{ r.comentario|truncatechars:140 }}</span>
+        </div>
+        {% endfor %}
+    </article>
+    {% endfor %}
+</section>
+{% endfor %}
+{% else %}
+<div class="obs-vacio">
+    <span class="obs-vacio-icon"><svg class="icon"><use href="#i-eye"/></svg></span>
+    <strong>No hay nada que monitorear todavía</strong>
+    <p>Agrega personas o puntos a tu lista para ver aquí su estado, agrupados por tus zonas y con las respuestas de los técnicos.</p>
+    <p style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <a href="{% url 'tickets:obs_buscar' %}" class="btn btn-sm">Buscar y agregar</a>
+        <a href="{% url 'tickets:obs_zonas' %}" class="btn btn-outline btn-sm">Crear una zona</a>
+    </p>
+</div>
+{% endif %}

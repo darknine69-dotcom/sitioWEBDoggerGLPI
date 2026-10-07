@@ -134,24 +134,9 @@
     </div>
 
     <section class="obs-bloque">
-        <h3 class="obs-bloque-titulo">Zonas bajo observación</h3>
-        <div class="obs-tarjetas corp-anim">
-            {% for t in tarjetas %}
-            <a class="obs-tarjeta obs-estado-{{ t.estado }}" href="{% url 'tickets:obs_buscar' %}?q={{ t.punto|urlencode }}&tipo=punto">
-                <span class="obs-tarjeta-estado"><span class="obs-dot obs-dot-{{ t.estado }}"></span></span>
-                <strong class="obs-tarjeta-nombre">{{ t.punto }}</strong>
-                <span class="obs-tarjeta-dato">{{ t.total }} ticket{{ t.total|pluralize:"s" }}</span>
-                <span class="obs-bar" role="img" aria-label="Reparto por estado">
-                    <span class="obs-bar-seg obs-bar-verde" style="flex:{{ t.verde }}"></span>
-                    <span class="obs-bar-seg obs-bar-amarillo" style="flex:{{ t.amarillo }}"></span>
-                    <span class="obs-bar-seg obs-bar-rojo" style="flex:{{ t.rojo }}"></span>
-                </span>
-                {% if t.sin_tecnico %}
-                <span class="obs-tarjeta-alerta">{{ t.sin_tecnico }} sin técnico</span>
-                {% endif %}
-            </a>
-            {% endfor %}
-        </div>
+        <h3 class="obs-bloque-titulo">Monitoreo por zonas</h3>
+        <p class="muted" style="margin:0 0 12px;font-size:12.5px">El detalle de tu lista: usuarios, sus tickets, sus técnicos y las últimas respuestas, agrupados por zona.</p>
+        {% include "observador/_grupos_monitoreo.html" %}
     </section>
 
     <section class="obs-bloque">
