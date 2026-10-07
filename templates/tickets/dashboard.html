@@ -5,10 +5,19 @@
 {% block nav_dashboard %}is-active{% endblock %}
 {% block header_title %}Panel Administrador{% endblock %}
 {% block header_desc %}Carga de los técnicos, el ANS y las últimas solicitudes.{% endblock %}
+{% block header_actions %}
+<span class="head-live" title="La tabla de recientes se actualiza en vivo">
+    <svg class="icon icon-xs"><use href="#i-clock"/></svg>
+    {% now "l d/m/Y" %} · <span class="badge-envivo"><span class="punto-vivo" aria-hidden="true"></span>En vivo</span>
+    <a href="#" class="dash-refresh" onclick="event.preventDefault(); window.location.reload();" title="Actualizar">
+        <svg class="icon icon-sm"><use href="#i-refresh"/></svg>
+    </a>
+</span>
+{% endblock %}
 
 {% block extra_css %}
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260923">
+{% load static asset %}
+<link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 <style>
 .chart-empty { color: var(--ink-muted); font-size: 13px; }
 .dash-select { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-muted); }
@@ -83,6 +92,12 @@
 .pivot-pop-pill.gr-cerrado { background: #EEE9DB; color: #6B6259; }
 .pivot-pop-mas { text-align: center; font-size: 11px; color: var(--ink-muted); padding: 4px 0; }
 .pivot-pop-vacio { font-size: 12px; color: var(--ink-muted); text-align: center; padding: 8px 0; }
+/* En vivo del encabezado: fecha + pastilla en la misma fila del título. */
+.head-live { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-muted); white-space: nowrap; }
+.head-live .icon-xs { flex: none; }
+.head-live .badge-envivo { margin-left: 0; }
+.head-live .dash-refresh { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; color: var(--dogger-red); }
+.head-live .dash-refresh:hover { background: rgba(214,43,31,.1); }
 @media (max-width: 480px) {
     .pivot-pop { width: 250px; }
 }
@@ -212,17 +227,8 @@
 {% block content %}
 <main class="page page-corporate">
     <section class="dash-hero">
-        <div class="dash-hero-kicker">
-            <span class="dash-hero-meta">
-                <svg class="icon icon-xs"><use href="#i-clock"/></svg>
-                {% now "l d/m/Y" %} · en vivo
-                <a href="#" class="dash-refresh" onclick="event.preventDefault(); window.location.reload();" title="Actualizar">
-                    <svg class="icon icon-sm"><use href="#i-refresh"/></svg>
-                </a>
-            </span>
-        </div>
         <div class="dash-stat-row dash-stat-row--mesas">
-            <a class="dash-stat" href="{% url 'tickets:lista' %}">
+            <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Total tickets</span>
@@ -230,7 +236,7 @@
                     <span class="dash-stat-hint">incluye cerrados</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=abierto">
+            <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?estado=abierto">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Abiertos</span>
@@ -238,7 +244,7 @@
                     <span class="dash-stat-hint">en espera de atención</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=en-progreso">
+            <a class="dash-stat dash-hov-progreso" href="{% url 'tickets:lista' %}?estado=en-progreso">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">En progreso</span>
@@ -246,7 +252,7 @@
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=resuelto">
+            <a class="dash-stat dash-hov-resueltos" href="{% url 'tickets:lista' %}?estado=resuelto">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltos</span>
@@ -254,7 +260,7 @@
                     <span class="dash-stat-hint">{{ stats.cerrados|default:0 }} cerrados</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:usuarios' %}">
+            <a class="dash-stat dash-hov-tecnicos" href="{% url 'tickets:usuarios' %}">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-users"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Técnicos</span>
@@ -262,7 +268,7 @@
                     <span class="dash-stat-hint">medir su carga</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:usuarios' %}">
+            <a class="dash-stat dash-hov-usuarios" href="{% url 'tickets:usuarios' %}">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-user"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Usuarios</span>

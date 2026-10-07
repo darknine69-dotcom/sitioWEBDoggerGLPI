@@ -77,7 +77,7 @@ class PestanasPanelTest(TestCase):
         html = self.client.get(reverse("tickets:panel_tecnico")).content.decode()
         clases = set(re.findall(r"dash-hov-[a-z]+", html))
         self.assertEqual(
-            clases, {"dash-hov-abiertos", "dash-hov-progreso", "dash-hov-resueltos"}
+            clases, {"dash-hov-total", "dash-hov-abiertos", "dash-hov-progreso", "dash-hov-resueltos"}
         )
         with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
             css = f.read()

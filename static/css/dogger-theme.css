@@ -3574,12 +3574,26 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 .dash-stat .dash-stat-value.st-sla-no { color: #C6281E; }
 .dash-stat-hint { font-size: 11.5px; color: #8A8478; font-weight: 600; overflow-wrap: anywhere; }
 /* Cada tarjeta toma el color de su indicador al pasar el mouse. */
-a.dash-hov-abiertos:hover { border-color: #C6281E; background: rgba(198,40,30,.05); }
-a.dash-hov-abiertos:hover .dash-stat-icon { background: #C6281E; color: #fff; }
-a.dash-hov-progreso:hover { border-color: #C2410C; background: rgba(194,65,12,.06); }
-a.dash-hov-progreso:hover .dash-stat-icon { background: #C2410C; color: #fff; }
-a.dash-hov-resueltos:hover { border-color: #16A34A; background: rgba(22,163,74,.07); }
-a.dash-hov-resueltos:hover .dash-stat-icon { background: #16A34A; color: #fff; }
+a.dash-hov-total:hover { border-color: #374151; background: rgba(55,65,81,.06); }
+a.dash-hov-total:hover .dash-stat-icon { background: #374151; color: #fff; }
+a.dash-hov-abiertos:hover { border-color: #F97316; background: rgba(249,115,22,.08); }
+a.dash-hov-abiertos:hover .dash-stat-icon { background: #F97316; color: #fff; }
+a.dash-hov-progreso:hover { border-color: #CA8A04; background: rgba(202,138,4,.1); }
+a.dash-hov-progreso:hover .dash-stat-icon { background: #CA8A04; color: #fff; }
+a.dash-hov-resueltos:hover { border-color: #059669; background: rgba(5,150,105,.08); }
+a.dash-hov-resueltos:hover .dash-stat-icon { background: #059669; color: #fff; }
+a.dash-hov-tecnicos:hover { border-color: #4F46E5; background: rgba(79,70,229,.07); }
+a.dash-hov-tecnicos:hover .dash-stat-icon { background: #4F46E5; color: #fff; }
+a.dash-hov-usuarios:hover { border-color: var(--dogger-red); background: rgba(214,43,31,.05); }
+a.dash-hov-usuarios:hover .dash-stat-icon { background: var(--dogger-red); color: #fff; }
+a.dash-hov-cerrados:hover { border-color: #374151; background: rgba(55,65,81,.06); }
+a.dash-hov-cerrados:hover .dash-stat-icon { background: #374151; color: #fff; }
+a.dash-hov-vencidos:hover { border-color: #DC2626; background: rgba(220,38,38,.07); }
+a.dash-hov-vencidos:hover .dash-stat-icon { background: #DC2626; color: #fff; }
+a.dash-hov-sla-ok:hover { border-color: #059669; background: rgba(5,150,105,.08); }
+a.dash-hov-sla-ok:hover .dash-stat-icon { background: #059669; color: #fff; }
+a.dash-hov-sla-no:hover { border-color: #F97316; background: rgba(249,115,22,.08); }
+a.dash-hov-sla-no:hover .dash-stat-icon { background: #F97316; color: #fff; }
 /* Aire entre las pestañas y los indicadores del panel técnico. */
 .dash-stat-row--tec { margin-top: 14px; }
 

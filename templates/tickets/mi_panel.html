@@ -7,7 +7,7 @@
 
 {% block extra_css %}
 {% load static asset %}
-<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260923">
+<link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 {% endblock %}
 
 {% block header_actions %}{% endblock %}
@@ -32,19 +32,19 @@
         </div>
 
         <div class="corp-kpis">
-            <a class="corp-kpi" href="?">
+            <a class="corp-kpi corp-hov-total" href="?">
                 <span class="corp-kpi-num corp-kpi-total">{{ stats.total|default:0 }}</span>
                 <span class="corp-kpi-label">Solicitudes</span>
             </a>
-            <a class="corp-kpi" href="?estado=abierto">
+            <a class="corp-kpi corp-hov-abiertos" href="?estado=abierto">
                 <span class="corp-kpi-num corp-kpi-red">{{ stats.abiertos|default:0 }}</span>
                 <span class="corp-kpi-label">Abiertas</span>
             </a>
-            <a class="corp-kpi" href="?estado=en-progreso">
+            <a class="corp-kpi corp-hov-progreso" href="?estado=en-progreso">
                 <span class="corp-kpi-num corp-kpi-yellow">{{ stats.en_progreso|default:0 }}</span>
                 <span class="corp-kpi-label">En progreso</span>
             </a>
-            <a class="corp-kpi" href="?estado=resuelto">
+            <a class="corp-kpi corp-hov-resueltos" href="?estado=resuelto">
                 <span class="corp-kpi-num corp-kpi-green">{{ stats.resueltos|default:0 }}</span>
                 <span class="corp-kpi-label">Resueltas</span>
             </a>

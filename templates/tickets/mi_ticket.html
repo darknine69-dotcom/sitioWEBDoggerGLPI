@@ -6,8 +6,8 @@
 {% block header_desc %}Descripción, avance e historial de la solicitud.{% endblock %}
 
 {% block extra_css %}
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260923">
+{% load static asset %}
+<link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 {% endblock %}
 
 {% block content %}
