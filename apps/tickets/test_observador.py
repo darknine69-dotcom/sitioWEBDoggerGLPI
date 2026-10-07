@@ -190,6 +190,32 @@ class ObservadorListaTest(TestCase):
             },
         )
 
+    def test_panel_sin_duplicados_y_con_buscador(self):
+        html = self.client.get(reverse("tickets:obs_panel")).content.decode()
+        self.assertNotIn("obs_usuarios", html)
+        self.assertNotIn("Imprimir", html)
+        self.assertNotIn("Exportar", html)
+        self.assertIn("Buscar y agregar", html)
+        self.assertIn("fabObs", html)
+
+    def test_buscador_del_panel_agrega_a_la_lista(self):
+        Usuario.objects.create_user(
+            email="nueva@x.com", password="x", nombre="Nueva",
+            rol=Usuario.Rol.USUARIO,
+        )
+        respuesta = self.client.get(
+            reverse("tickets:obs_panel"), {"q_busc": "nueva"}
+        )
+        self.assertContains(respuesta, "nueva@x.com")
+        self.client.post(
+            reverse("tickets:obs_agregar"), {"email": "nueva@x.com"}
+        )
+        self.assertTrue(
+            ElementoMiLista.objects.filter(
+                observador=self.observador, usuario_email="nueva@x.com"
+            ).exists()
+        )
+
 
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

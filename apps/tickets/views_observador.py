@@ -103,25 +103,25 @@ def _resumen_por_punto(usuario):
     ahora = timezone.now()
     consulta = _visible_a_observador(usuario, Ticket.objects.all())
     por_punto = {}
+    for clave in puntos:
+        # La zona asignada existe aunque todavía no tenga tickets.
+        por_punto[clave] = {
+            "punto": clave,
+            "total": 0,
+            "estado": ESTADO_VERDE,
+            "sin_tecnico": 0,
+            "verde": 0,
+            "rojo": 0,
+            "amarillo": 0,
+            "abiertos": 0,
+        }
     for t in consulta.select_related("tecnico_asignado").only(
         "solicitante_punto", "estado", "prioridad", "codigo", "tecnico_asignado__nombre"
     ):
         clave = (t.solicitante_punto or "").strip()
         if clave not in puntos:
             continue
-        fila = por_punto.setdefault(
-            clave,
-            {
-                "punto": clave,
-                "total": 0,
-                "estado": ESTADO_VERDE,
-                "sin_tecnico": 0,
-                "verde": 0,
-                "rojo": 0,
-                "amarillo": 0,
-                "abiertos": 0,
-            },
-        )
+        fila = por_punto[clave]
         fila["total"] += 1
         estado = _estado_de(t, ahora)
         fila[estado] += 1
@@ -264,6 +264,30 @@ def panel_observador(request):
     lista_personas.sort(key=lambda f: (-f["abiertos"], f["nombre"] or ""))
 
     total_tickets = visibles.count()
+    # Buscar y agregar integrado al panel: encuentra cuentas por nombre,
+    # correo o ubicación para agregarlas a la lista sin salir de aquí.
+    q_busc = (request.GET.get("q_busc") or "").strip()
+    busqueda = []
+    if q_busc:
+        ya = {
+            (e.usuario_email or "").strip().lower()
+            for e in ElementoMiLista.objects.filter(observador=usuario)
+            if (e.usuario_email or "").strip()
+        }
+        for u in Usuario.objects.filter(activo=True, is_active=True).filter(
+            Q(nombre__icontains=q_busc) | Q(email__icontains=q_busc)
+            | Q(ubicacion__icontains=q_busc)
+        ).order_by("nombre")[:12]:
+            correo = (u.email or "").strip().lower()
+            busqueda.append(
+                {
+                    "nombre": u.nombre or u.email,
+                    "email": correo,
+                    "rol": u.get_rol_display(),
+                    "ubicacion": u.ubicacion or "—",
+                    "ya_agregado": correo in ya,
+                }
+            )
     return render(
         request,
         "observador/panel.html",
@@ -282,6 +306,8 @@ def panel_observador(request):
             ),
             "conteo": _contar_por_estado(visibles),
             "sin_puntos": not tarjetas,
+            "q_busc": q_busc,
+            "busqueda": busqueda,
         },
     )
 
