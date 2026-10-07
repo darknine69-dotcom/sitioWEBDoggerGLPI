@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import (
     Categoria,
     ElementoMiLista,
+    MonitoreoAuditoria,
     Ticket,
     TicketAdjunto,
     TicketComentario,
@@ -61,3 +62,11 @@ class ElementoMiListaAdmin(admin.ModelAdmin):
     list_filter = ("tipo", "zona")
     search_fields = ("usuario_email", "observador__email")
     readonly_fields = ("creado_en",)
+
+
+@admin.register(MonitoreoAuditoria)
+class MonitoreoAuditoriaAdmin(admin.ModelAdmin):
+    list_display = ("fecha", "accion", "zona_nombre", "actor", "observador")
+    list_filter = ("accion",)
+    search_fields = ("zona_nombre", "detalle", "actor__email", "observador__email")
+    readonly_fields = ("fecha",)

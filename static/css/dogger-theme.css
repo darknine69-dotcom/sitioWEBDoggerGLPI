@@ -1,7 +1,7 @@
 /* =====================================================================
    DOGGER HELPDESK — SISTEMA DE DISEÑO v2
    ===================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Lato:wght@400;700;900&family=Inter:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
     --dogger-red:        #D62B1F;
@@ -28,6 +28,7 @@
 
     --font-display: 'Montserrat', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     --font-body: 'Lato', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --font-corp: 'Inter', 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 
     --radius: 14px;
@@ -3147,6 +3148,30 @@ select:focus-visible, textarea:focus-visible {
 .toast-error   { --toast-c: #DC2626; }
 .toast-warning { --toast-c: #D97706; }
 .toast-info    { --toast-c: #2563EB; }
+
+/* ---- Botón flotante (FAB) corporativo: acciones rápidas abajo a la derecha.
+   El principal abre el menú hacia arriba; cada acción lleva su etiqueta. */
+.corp-fab { position: fixed; right: 20px; bottom: 22px; z-index: 9000; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.corp-fab-btn { width: 56px; height: 56px; border-radius: 50%; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; background: var(--dogger-red); color: #fff; box-shadow: 0 8px 24px rgba(214,43,31,.4); transition: transform .18s ease, background .18s ease, box-shadow .18s ease; }
+.corp-fab-btn:hover { transform: scale(1.06); background: var(--dogger-red-dark); }
+.corp-fab-btn .icon { width: 24px; height: 24px; transition: transform .2s ease; }
+.corp-fab[data-open] .corp-fab-btn .icon { transform: rotate(45deg); }
+.corp-fab-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
+.corp-fab[data-open] .corp-fab-menu { opacity: 1; transform: none; pointer-events: auto; }
+.corp-fab-item { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; box-shadow: var(--shadow-pop); transition: transform .15s ease, border-color .15s ease; white-space: nowrap; }
+.corp-fab-item:hover { transform: translateX(-3px); border-color: var(--dogger-red); }
+.corp-fab-item .icon { width: 16px; height: 16px; color: var(--dogger-red); }
+
+/* ---- Entrada suave del tablero: las tarjetas aparecen en cascada. ---- */
+@keyframes corpUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.corp-anim > * { animation: corpUp .4s ease both; }
+.corp-anim > *:nth-child(2) { animation-delay: .05s; }
+.corp-anim > *:nth-child(3) { animation-delay: .1s; }
+.corp-anim > *:nth-child(4) { animation-delay: .15s; }
+.corp-anim > *:nth-child(5) { animation-delay: .2s; }
+.corp-anim > *:nth-child(6) { animation-delay: .25s; }
+.mon-sup-card, .obs-zona-card, .obs-tarjeta { transition: transform .16s ease, box-shadow .16s ease; }
+.mon-sup-card:hover, .obs-zona-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 
 /* ---- Modal de confirmación personalizado (reemplaza confirm nativo) ---- */
 .confirm-overlay {

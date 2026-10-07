@@ -17,11 +17,23 @@ from apps.accounts.models import Usuario
 from .decorators import admin_required
 from .models import (
     ElementoMiLista,
+    MonitoreoAuditoria,
     ObservadorPunto,
     Punto,
     Ticket,
     ZonaObservador,
 )
+
+
+def _auditar(actor, accion, observador=None, zona_nombre="", detalle=""):
+    """Deja constancia de un cambio del monitoreo para el registro visible."""
+    return MonitoreoAuditoria.objects.create(
+        actor=actor if getattr(actor, "pk", None) else None,
+        observador=observador if getattr(observador, "pk", None) else None,
+        zona_nombre=(zona_nombre or "")[:80],
+        accion=accion,
+        detalle=(detalle or "")[:200],
+    )
 
 
 def _zonas_de(observador):
@@ -142,6 +154,9 @@ def monitoreo_admin(request):
             "zona_elegida": zona_elegida,
             "total": len(filas),
             "zonas_creadas": creadas,
+            "auditoria": list(
+                MonitoreoAuditoria.objects.select_related("actor", "observador")[:20]
+            ),
             "dash": {
                 "supervisores": len(creadas),
                 "zonas": sum(len(b["zonas"]) for b in creadas),
@@ -273,6 +288,10 @@ def monitoreo_agregar(request):
             "punto": punto,
         },
     )
+    _auditar(
+        request.user, MonitoreoAuditoria.AGREGAR_LISTA, observador,
+        nombre_zona, correo,
+    )
 
     # La zona tambien queda asignada al observador para que pueda verla.
     if punto is not None:
@@ -289,9 +308,15 @@ def monitoreo_quitar(request, pk):
         return redirect(reverse("tickets:monitoreo_admin"))
     observador_id = request.POST.get("observador") or ""
     volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
-    ElementoMiLista.objects.filter(
+    borrados, _ = ElementoMiLista.objects.filter(
         pk=pk, observador__pk=observador_id if observador_id.isdigit() else 0
     ).delete()
+    if borrados:
+        _auditar(
+            request.user, MonitoreoAuditoria.QUITAR_LISTA,
+            Usuario.objects.filter(pk=observador_id).first() if observador_id.isdigit() else None,
+            "", f"elemento {pk}",
+        )
     return redirect(volver)
 
 
@@ -305,8 +330,14 @@ def monitoreo_zona_miembro_quitar(request, pk):
     elemento = ElementoMiLista.objects.filter(pk=pk).select_related("zona").first()
     if elemento is None or elemento.zona_id is None:
         return redirect(volver)
+    nombre_zona = elemento.zona.nombre if elemento.zona else ""
+    supervisor = elemento.observador
     elemento.zona = None
     elemento.save(update_fields=["zona"])
+    _auditar(
+        request.user, MonitoreoAuditoria.QUITAR_MIEMBRO, supervisor,
+        nombre_zona, (elemento.usuario_email or ""),
+    )
     return redirect(volver)
 
 
@@ -317,7 +348,45 @@ def monitoreo_zona_eliminar(request, pk):
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
     volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
-    ZonaObservador.objects.filter(pk=pk).delete()
+    zona = ZonaObservador.objects.select_related("observador").filter(pk=pk).first()
+    if zona is not None:
+        _auditar(
+            request.user, MonitoreoAuditoria.ELIMINAR_ZONA, zona.observador,
+            zona.nombre, f"{zona.elementos.count()} cuentas",
+        )
+        zona.delete()
+    return redirect(volver)
+
+
+@admin_required
+@login_required
+def monitoreo_zona_renombrar(request, pk):
+    """Renombra una zona desde el panel del administrador."""
+    if request.method != "POST":
+        return redirect(reverse("tickets:monitoreo_admin"))
+    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    zona = ZonaObservador.objects.select_related("observador").filter(pk=pk).first()
+    if zona is None:
+        return redirect(volver)
+    nombre = (request.POST.get("nombre") or "").strip()[:80]
+    if not nombre:
+        messages.error(request, "El nombre nuevo no puede quedar vacío.")
+        return redirect(volver)
+    if ZonaObservador.objects.filter(
+        observador=zona.observador, nombre__iexact=nombre
+    ).exclude(pk=zona.pk).exists():
+        messages.error(
+            request, f"{zona.observador.nombre} ya tiene una zona llamada «{nombre}»."
+        )
+        return redirect(volver)
+    anterior = zona.nombre
+    zona.nombre = nombre
+    zona.save(update_fields=["nombre"])
+    _auditar(
+        request.user, MonitoreoAuditoria.RENOMBRAR_ZONA, zona.observador,
+        nombre, f"antes: {anterior}",
+    )
+    messages.success(request, f"Zona «{anterior}» ahora se llama «{nombre}».")
     return redirect(volver)
 
 
@@ -347,6 +416,7 @@ def monitoreo_zona_crear(request):
         )
         return redirect(volver)
     ZonaObservador.objects.create(observador=observador, nombre=nombre)
+    _auditar(request.user, MonitoreoAuditoria.CREAR_ZONA, observador, nombre, "")
     messages.success(
         request, f"Zona «{nombre}» creada para {observador.nombre}."
     )
@@ -379,6 +449,10 @@ def monitoreo_zona_miembro_agregar(request, pk):
     if not creado and elemento.zona_id != zona.pk:
         elemento.zona = zona
         elemento.save(update_fields=["zona"])
+    _auditar(
+        request.user, MonitoreoAuditoria.AGREGAR_MIEMBRO, zona.observador,
+        zona.nombre, correo,
+    )
     messages.success(request, f"{correo} quedó en la zona «{zona.nombre}».")
     return redirect(volver)
 
@@ -458,6 +532,14 @@ def monitoreo_zonas(request):
 
     if accion == "quitar":
         ObservadorPunto.objects.filter(observador=observador, punto=punto).delete()
+        _auditar(
+            request.user, MonitoreoAuditoria.QUITAR_PUNTO, observador,
+            nombre_zona, "",
+        )
     else:
         ObservadorPunto.objects.get_or_create(observador=observador, punto=punto)
+        _auditar(
+            request.user, MonitoreoAuditoria.ASIGNAR_PUNTO, observador,
+            nombre_zona, "",
+        )
     return redirect(volver)

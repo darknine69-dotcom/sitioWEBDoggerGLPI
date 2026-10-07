@@ -32,7 +32,7 @@
     </div>
     {% else %}
 
-    <div class="obs-resumen">
+    <div class="obs-resumen corp-anim">
         <div class="obs-kpi">
             <span class="obs-kpi-n">{{ total_tickets }}</span>
             <span class="obs-kpi-l">Tickets en tus puntos</span>
@@ -59,7 +59,7 @@
         </div>
     </div>
 
-    <div class="obs-quick">
+    <div class="obs-quick corp-anim">
         <a href="{% url 'tickets:obs_usuarios' %}" class="obs-quick-btn">
             <svg class="icon"><use href="#i-users"/></svg>
             <span><strong>Ver usuarios</strong><small>Quiénes están en mis zonas</small></span>
@@ -80,7 +80,7 @@
 
     <section class="obs-bloque">
         <h3 class="obs-bloque-titulo">Zonas bajo observación</h3>
-        <div class="obs-tarjetas">
+        <div class="obs-tarjetas corp-anim">
             {% for t in tarjetas %}
             <a class="obs-tarjeta obs-estado-{{ t.estado }}" href="{% url 'tickets:obs_buscar' %}?q={{ t.punto|urlencode }}&tipo=punto">
                 <span class="obs-tarjeta-estado"><span class="obs-dot obs-dot-{{ t.estado }}"></span></span>

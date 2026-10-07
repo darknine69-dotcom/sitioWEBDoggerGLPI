@@ -61,6 +61,7 @@ urlpatterns = [
     path("panel/monitoreo/zona/<int:pk>/agregar/", views_monitoreo.monitoreo_zona_miembro_agregar, name="monitoreo_zona_miembro_agregar"),
     path("panel/monitoreo/cuenta/<int:pk>/", views_monitoreo.monitoreo_cuenta_detalle, name="monitoreo_cuenta_detalle"),
     path("panel/monitoreo/zona/<int:pk>/eliminar/", views_monitoreo.monitoreo_zona_eliminar, name="monitoreo_zona_eliminar"),
+    path("panel/monitoreo/zona/<int:pk>/renombrar/", views_monitoreo.monitoreo_zona_renombrar, name="monitoreo_zona_renombrar"),
     path("panel/usuarios/estado.json", views.usuarios_estado_api, name="usuarios_estado"),
     path("panel/usuarios/guardar/", views.usuario_guardar, name="usuario_guardar"),
     path("panel/usuarios/<int:pk>/ficha/", views.usuario_ficha_api, name="usuario_ficha"),

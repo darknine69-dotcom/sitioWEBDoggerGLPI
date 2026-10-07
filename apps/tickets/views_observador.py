@@ -24,12 +24,14 @@ from apps.accounts.models import Usuario
 
 from .models import (
     ElementoMiLista,
+    MonitoreoAuditoria,
     ObservadorPunto,
     Punto,
     Ticket,
     TicketComentario,
     ZonaObservador,
 )
+from .views_monitoreo import _auditar
 
 # Estados que el observador monitorea: verde activo, rojo incidencia, amarillo pendiente.
 ESTADO_VERDE = "verde"
@@ -759,16 +761,45 @@ def zonas_observador(request):
     usuario = request.user
     error = ""
     if request.method == "POST":
-        nombre = (request.POST.get("nombre") or "").strip()[:80]
-        if not nombre:
-            error = "Ponle un nombre a la zona para crearla."
-        elif ZonaObservador.objects.filter(
-            observador=usuario, nombre__iexact=nombre
-        ).exists():
-            error = "Ya tienes una zona con ese nombre."
+        zona_id = (request.POST.get("zona_id") or "").strip()
+        if zona_id:
+            nuevo = (request.POST.get("nuevo_nombre") or "").strip()[:80]
+            try:
+                zona = ZonaObservador.objects.get(
+                    pk=int(zona_id), observador=usuario
+                )
+            except (ZonaObservador.DoesNotExist, ValueError, TypeError):
+                raise Http404
+            if not nuevo:
+                error = "El nombre nuevo no puede quedar vacío."
+            elif ZonaObservador.objects.filter(
+                observador=usuario, nombre__iexact=nuevo
+            ).exclude(pk=zona.pk).exists():
+                error = "Ya tienes una zona con ese nombre."
+            else:
+                anterior = zona.nombre
+                zona.nombre = nuevo
+                zona.save(update_fields=["nombre"])
+                _auditar(
+                    usuario, MonitoreoAuditoria.RENOMBRAR_ZONA, usuario,
+                    nuevo, f"antes: {anterior}",
+                )
+                return redirect("tickets:obs_zonas")
+            nombre = ""
         else:
-            zona = ZonaObservador.objects.create(observador=usuario, nombre=nombre)
-            return redirect("tickets:obs_zona_detalle", pk=zona.pk)
+            nombre = (request.POST.get("nombre") or "").strip()[:80]
+            if not nombre:
+                error = "Ponle un nombre a la zona para crearla."
+            elif ZonaObservador.objects.filter(
+                observador=usuario, nombre__iexact=nombre
+            ).exists():
+                error = "Ya tienes una zona con ese nombre."
+            else:
+                zona = ZonaObservador.objects.create(observador=usuario, nombre=nombre)
+                _auditar(
+                    usuario, MonitoreoAuditoria.CREAR_ZONA, usuario, nombre, "",
+                )
+                return redirect("tickets:obs_zona_detalle", pk=zona.pk)
     resumen = _resumen_por_correo(usuario)
     zonas = list(
         ZonaObservador.objects.filter(observador=usuario).prefetch_related("elementos")
@@ -891,7 +922,17 @@ def zona_miembro_asignar(request):
             )
         except (ZonaObservador.DoesNotExist, ValueError, TypeError):
             raise Http404
+        _auditar(
+            usuario, MonitoreoAuditoria.AGREGAR_MIEMBRO, usuario,
+            elemento.zona.nombre, (elemento.usuario_email or ""),
+        )
     else:
+        if elemento.zona_id:
+            _auditar(
+                usuario, MonitoreoAuditoria.QUITAR_MIEMBRO, usuario,
+                (elemento.zona.nombre if elemento.zona else ""),
+                (elemento.usuario_email or ""),
+            )
         elemento.zona = None
     elemento.save(update_fields=["zona"])
     return redirect(request.POST.get("volver") or reverse("tickets:obs_zonas"))
@@ -906,5 +947,9 @@ def zona_eliminar(request, pk):
         zona = ZonaObservador.objects.get(pk=pk, observador=request.user)
     except ZonaObservador.DoesNotExist:
         raise Http404
+    _auditar(
+        request.user, MonitoreoAuditoria.ELIMINAR_ZONA, request.user,
+        zona.nombre, "",
+    )
     zona.delete()
     return redirect("tickets:obs_zonas")

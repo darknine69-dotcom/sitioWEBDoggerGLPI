@@ -175,6 +175,67 @@ class MonitoreoZonasAdminTest(TestCase):
             ).status_code, 404,
         )
 
+    def test_renombrar_zona(self):
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_renombrar", args=[self.zona.pk]),
+            {"nombre": "Centro"},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.zona.refresh_from_db()
+        self.assertEqual(self.zona.nombre, "Centro")
+
+    def test_renombrar_zona_no_duplica(self):
+        ZonaObservador.objects.create(observador=self.obs, nombre="Sur")
+        self.client.post(
+            reverse("tickets:monitoreo_zona_renombrar", args=[self.zona.pk]),
+            {"nombre": "sur"},
+        )
+        self.zona.refresh_from_db()
+        self.assertEqual(self.zona.nombre, "Norte")
+
+    def test_auditoria_registra_cambios_y_se_ve(self):
+        from apps.tickets.models import MonitoreoAuditoria
+
+        self.client.post(
+            reverse("tickets:monitoreo_zona_crear"),
+            {"observador": self.obs.pk, "nombre": "Sur"},
+        )
+        self.client.post(
+            reverse("tickets:monitoreo_zona_miembro_agregar", args=[self.zona.pk]),
+            {"email": "nuevo@x.com"},
+        )
+        acciones = set(
+            MonitoreoAuditoria.objects.values_list("accion", flat=True)
+        )
+        self.assertIn("crear_zona", acciones)
+        self.assertIn("agregar_miembro", acciones)
+        html = self.client.get(reverse("tickets:monitoreo_admin")).content.decode()
+        self.assertIn("Registro de auditoría", html)
+        self.assertIn("Sur", html)
+
+    def test_fab_en_admin_y_supervisor(self):
+        html_admin = self.client.get(
+            reverse("tickets:monitoreo_admin")
+        ).content.decode()
+        self.assertIn("fabMonitoreo", html_admin)
+        self.assertIn("Generar reporte", html_admin)
+        self.client.force_login(self.obs)
+        html_obs = self.client.get(
+            reverse("tickets:obs_zonas")
+        ).content.decode()
+        self.assertIn("fabObs", html_obs)
+        self.assertIn("Tickets de mis zonas", html_obs)
+
+    def test_supervisor_renombra_su_zona(self):
+        self.client.force_login(self.obs)
+        respuesta = self.client.post(
+            reverse("tickets:obs_zonas"),
+            {"zona_id": self.zona.pk, "nuevo_nombre": "Centro"},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.zona.refresh_from_db()
+        self.assertEqual(self.zona.nombre, "Centro")
+
 
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

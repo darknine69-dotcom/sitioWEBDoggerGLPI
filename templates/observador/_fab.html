@@ -1,0 +1,27 @@
+{% comment %}FAB del supervisor: tickets de su zona y reporte, con el mismo lenguaje del admin.{% endcomment %}
+<style>
+.obs-page { font-family: var(--font-corp); }
+.obs-bloque, .obs-tarjeta, .obs-zona-card, .mon-sup-card { animation: corpUp .4s ease both; }
+</style>
+<div class="corp-fab" id="fabObs">
+    <div class="corp-fab-menu">
+        <a class="corp-fab-item" href="{% url 'tickets:obs_panel' %}"><svg class="icon"><use href="#i-eye"/></svg> Tickets de mis zonas</a>
+        <a class="corp-fab-item" href="{% url 'tickets:obs_mi_lista' %}"><svg class="icon"><use href="#i-layers"/></svg> Mi lista</a>
+        <a class="corp-fab-item" href="{% url 'tickets:obs_exportar' %}"><svg class="icon"><use href="#i-download"/></svg> Generar reporte</a>
+    </div>
+    <button type="button" class="corp-fab-btn" aria-label="Acciones rápidas" aria-expanded="false">
+        <svg class="icon"><use href="#i-plus"/></svg>
+    </button>
+</div>
+<script>
+(function () {
+    var fab = document.getElementById("fabObs");
+    if (!fab) return;
+    var btn = fab.querySelector(".corp-fab-btn");
+    btn.addEventListener("click", function () {
+        var abierto = fab.hasAttribute("data-open");
+        if (abierto) { fab.removeAttribute("data-open"); btn.setAttribute("aria-expanded", "false"); }
+        else { fab.setAttribute("data-open", ""); btn.setAttribute("aria-expanded", "true"); }
+    });
+})();
+</script>

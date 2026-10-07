@@ -981,3 +981,72 @@ class ElementoMiLista(models.Model):
         if self.usuario_id and self.punto_id:
             return f"{self.observador} → {self.usuario} @ {self.punto}"
         return f"{self.observador} → {self.usuario or self.punto}"
+
+
+class MonitoreoAuditoria(models.Model):
+    """Registro de cambios del monitoreo corporativo.
+
+    Cada vez que el administrador (o el propio supervisor) crea, renombra
+    o elimina una zona, o mete/saca cuentas y puntos, queda aquí quién lo
+    hizo, sobre qué supervisor/zona y cuándo. Es lo que alimenta el
+    registro visible del tablero del administrador.
+    """
+
+    CREAR_ZONA = "crear_zona"
+    RENOMBRAR_ZONA = "renombrar_zona"
+    ELIMINAR_ZONA = "eliminar_zona"
+    AGREGAR_MIEMBRO = "agregar_miembro"
+    QUITAR_MIEMBRO = "quitar_miembro"
+    ASIGNAR_PUNTO = "asignar_punto"
+    QUITAR_PUNTO = "quitar_punto"
+    AGREGAR_LISTA = "agregar_lista"
+    QUITAR_LISTA = "quitar_lista"
+    ACCION_CHOICES = (
+        (CREAR_ZONA, "Zona creada"),
+        (RENOMBRAR_ZONA, "Zona renombrada"),
+        (ELIMINAR_ZONA, "Zona eliminada"),
+        (AGREGAR_MIEMBRO, "Cuenta agregada a zona"),
+        (QUITAR_MIEMBRO, "Cuenta sacada de zona"),
+        (ASIGNAR_PUNTO, "Punto asignado"),
+        (QUITAR_PUNTO, "Punto quitado"),
+        (AGREGAR_LISTA, "Cuenta agregada a la lista"),
+        (QUITAR_LISTA, "Cuenta sacada de la lista"),
+    )
+
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        db_column="ActorId",
+        verbose_name="Quién lo hizo",
+    )
+    observador = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        db_column="ObservadorId",
+        verbose_name="Supervisor afectado",
+    )
+    zona_nombre = models.CharField(
+        "Zona", max_length=80, blank=True, default="", db_column="Zona"
+    )
+    accion = models.CharField(
+        "Acción", max_length=20, choices=ACCION_CHOICES, db_column="Accion"
+    )
+    detalle = models.CharField(
+        "Detalle", max_length=200, blank=True, default="", db_column="Detalle"
+    )
+    fecha = models.DateTimeField(auto_now_add=True, db_column="Fecha")
+
+    class Meta:
+        db_table = "MonitoreoAuditoria"
+        verbose_name = "Auditoría de monitoreo"
+        verbose_name_plural = "Auditoría de monitoreo"
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        return f"{self.get_accion_display()} · {self.zona_nombre}"
