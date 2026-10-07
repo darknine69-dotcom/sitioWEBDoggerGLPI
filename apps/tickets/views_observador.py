@@ -624,22 +624,106 @@ def quitar_mi_lista(request, pk):
 
 @solo_observador
 def monitorear_observador(request):
-    """Monitoreo: la lista con sus indicadores y las acciones de reporte."""
+    """Monitoreo: la lista con sus indicadores y las acciones de reporte.
+
+    Agrupa a las personas por zona (con su supervisor, sus cuentas, sus
+    tickets y las últimas respuestas de los técnicos) para que la vista
+    muestre el detalle completo y no solo una tabla plana.
+    """
     usuario = request.user
     elementos = (
         ElementoMiLista.objects.filter(observador=usuario)
-        .select_related("usuario", "punto")
+        .select_related("usuario", "punto", "zona")
         .order_by("-creado_en")
     )
     filas = _filas_de_mi_lista(usuario, elementos)
     conteo = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
     for f in filas:
         conteo[f["estado"]] += 1
+    puntos = puntos_del_observador(usuario)
+    respuestas = _respuestas_por_correo(
+        puntos, [f["email"] for f in filas if f["email"]], limite=2
+    )
+    for f in filas:
+        f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
+    grupos = _grupos_por_zona(filas)
+    total_tickets = sum(f["total"] for f in filas)
+    total_abiertos = sum(f["abiertos"] for f in filas)
+    avance_global = (
+        int(round(100.0 * sum(f["cerrados_total"] for f in filas) / total_tickets))
+        if total_tickets else 0
+    )
     return render(
         request,
         "observador/monitoreo.html",
-        {"filas": filas, "conteo": conteo, "total": len(filas)},
+        {
+            "filas": filas,
+            "conteo": conteo,
+            "total": len(filas),
+            "grupos": grupos,
+            "total_zonas": sum(1 for g in grupos if g["zona"] is not None),
+            "total_tickets": total_tickets,
+            "total_abiertos": total_abiertos,
+            "avance_global": avance_global,
+        },
     )
+
+
+def _grupos_por_zona(filas):
+    """Agrupa las filas por zona, con sus totales y su estado global."""
+    grupos = []
+    por_zona = {}
+    for f in filas:
+        zona = (f["elemento"].zona if f["elemento"] else None)
+        clave = zona.pk if zona else 0
+        if clave not in por_zona:
+            por_zona[clave] = {"zona": zona, "filas": []}
+        por_zona[clave]["filas"].append(f)
+    orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
+    for clave in sorted(por_zona, key=lambda c: (c == 0, c)):
+        grupo = por_zona[clave]
+        grupo["abiertos"] = sum(f["abiertos"] for f in grupo["filas"])
+        grupo["total_tickets"] = sum(f["total"] for f in grupo["filas"])
+        grupo["cerrados"] = sum(f["cerrados_total"] for f in grupo["filas"])
+        grupo["avance"] = (
+            int(round(100.0 * grupo["cerrados"] / grupo["total_tickets"]))
+            if grupo["total_tickets"] else 0
+        )
+        grupo["estado"] = ESTADO_VERDE
+        for f in grupo["filas"]:
+            if orden[f["estado"]] > orden[grupo["estado"]]:
+                grupo["estado"] = f["estado"]
+        grupos.append(grupo)
+    return grupos
+
+
+def _respuestas_por_correo(puntos, correos, limite=2):
+    """Últimas respuestas visibles de técnicos/admins, por correo.
+
+    Una sola consulta para todos los miembros: sin puntos asignados no se
+    ve nada, igual que en el resto del módulo.
+    """
+    correos = {(c or "").strip().lower() for c in correos if (c or "").strip()}
+    if not correos or not puntos:
+        return {}
+    comentarios = (
+        TicketComentario.objects.filter(
+            ticket__solicitante_punto__in=puntos,
+            es_interno=False,
+            usuario__rol__in=[Usuario.Rol.TECNICO, Usuario.Rol.ADMIN],
+        )
+        .select_related("ticket", "usuario")
+        .order_by("-fecha")
+    )
+    por_correo = {}
+    for c in comentarios:
+        correo = (c.ticket.solicitante_email or "").strip().lower()
+        if correo not in correos:
+            continue
+        lista = por_correo.setdefault(correo, [])
+        if len(lista) < limite:
+            lista.append(c)
+    return por_correo
 
 
 @solo_observador

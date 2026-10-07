@@ -1,0 +1,152 @@
+"""Monitoreo por zonas: el admin ve y administra lo que creó cada supervisor."""
+
+from django.contrib.auth import get_user_model
+from django.test import TestCase, override_settings
+from django.urls import reverse
+
+from apps.accounts.models import Usuario
+from apps.tickets.models import (
+    ElementoMiLista,
+    ObservadorPunto,
+    Punto,
+    Ticket,
+    ZonaObservador,
+)
+
+
+@override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
+class MonitoreoZonasAdminTest(TestCase):
+    def setUp(self):
+        self.admin = Usuario.objects.create_user(
+            email="admin@x.com", password="x", nombre="Admin", rol=Usuario.Rol.ADMIN
+        )
+        self.obs = Usuario.objects.create_user(
+            email="obs@x.com", password="x", nombre="Sup", rol=Usuario.Rol.OBSERVADOR
+        )
+        self.tec = Usuario.objects.create_user(
+            email="tec@x.com", password="x", nombre="Tec", rol=Usuario.Rol.TECNICO
+        )
+        self.cuenta = Usuario.objects.create_user(
+            email="ana@x.com", password="x", nombre="Ana",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        self.punto = Punto.objects.create(nombre="Zona Uno")
+        ObservadorPunto.objects.create(observador=self.obs, punto=self.punto)
+        self.zona = ZonaObservador.objects.create(
+            observador=self.obs, nombre="Norte"
+        )
+        self.elemento = ElementoMiLista.objects.create(
+            observador=self.obs, tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario=self.cuenta, usuario_email="ana@x.com", zona=self.zona,
+        )
+        Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com", solicitante_punto="Zona Uno",
+            tecnico_asignado=self.tec,
+        )
+        self.client.force_login(self.admin)
+
+    def test_ve_zonas_agrupadas_por_supervisor(self):
+        respuesta = self.client.get(reverse("tickets:monitoreo_admin"))
+        self.assertEqual(respuesta.status_code, 200)
+        bloques = respuesta.context["zonas_creadas"]
+        self.assertEqual(len(bloques), 1)
+        self.assertEqual(bloques[0]["supervisor"].email, "obs@x.com")
+        self.assertEqual(bloques[0]["zonas"][0]["zona"].nombre, "Norte")
+        miembro = bloques[0]["zonas"][0]["miembros"][0]
+        self.assertEqual(miembro["email"], "ana@x.com")
+        self.assertEqual(miembro["abiertos"], 1)
+        self.assertEqual(miembro["tecnico"], "Tec")
+        html = respuesta.content.decode()
+        self.assertIn("Zonas creadas por los observadores", html)
+        self.assertIn("Supervisor a cargo", html)
+        self.assertIn("ana@x.com", html)
+
+    def test_sin_zonas_muestra_aviso(self):
+        self.zona.delete()
+        html = self.client.get(reverse("tickets:monitoreo_admin")).content.decode()
+        self.assertIn("Ningún observador ha creado zonas todavía", html)
+
+    def test_sacar_cuenta_de_la_zona(self):
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_miembro_quitar", args=[self.elemento.pk]),
+            {"volver": reverse("tickets:monitoreo_admin")},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.elemento.refresh_from_db()
+        self.assertIsNone(self.elemento.zona)
+        # La cuenta sigue en la lista del observador.
+        self.assertTrue(
+            ElementoMiLista.objects.filter(pk=self.elemento.pk).exists()
+        )
+
+    def test_eliminar_zona_no_borra_la_gente(self):
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_eliminar", args=[self.zona.pk]),
+            {"volver": reverse("tickets:monitoreo_admin")},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertFalse(ZonaObservador.objects.filter(pk=self.zona.pk).exists())
+        self.assertTrue(
+            ElementoMiLista.objects.filter(pk=self.elemento.pk).exists()
+        )
+
+    def test_no_admin_no_administra(self):
+        self.client.force_login(self.cuenta)
+        self.assertEqual(
+            self.client.post(
+                reverse("tickets:monitoreo_zona_eliminar", args=[self.zona.pk])
+            ).status_code, 403,
+        )
+        self.assertEqual(
+            self.client.post(
+                reverse(
+                    "tickets:monitoreo_zona_miembro_quitar", args=[self.elemento.pk]
+                )
+            ).status_code, 403,
+        )
+
+
+@override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
+class MonitoreoObservadorDetalleTest(TestCase):
+    def setUp(self):
+        self.obs = Usuario.objects.create_user(
+            email="obs@x.com", password="x", nombre="Obs", rol=Usuario.Rol.OBSERVADOR
+        )
+        self.tec = Usuario.objects.create_user(
+            email="tec@x.com", password="x", nombre="Tec", rol=Usuario.Rol.TECNICO
+        )
+        punto = Punto.objects.create(nombre="Zona Uno")
+        ObservadorPunto.objects.create(observador=self.obs, punto=punto)
+        self.client.force_login(self.obs)
+
+    def _ticket(self, email, punto="Zona Uno", estado=None):
+        return Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email=email, solicitante_punto=punto,
+            estado=estado or Ticket.Estado.ABIERTO, tecnico_asignado=self.tec,
+        )
+
+    def test_agrupa_por_zona_con_detalle(self):
+        from apps.tickets.models import ZonaObservador
+        self._ticket("ana@x.com")
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        zona = ZonaObservador.objects.create(observador=self.obs, nombre="Norte")
+        elemento = ElementoMiLista.objects.get(observador=self.obs)
+        elemento.zona = zona
+        elemento.save()
+        respuesta = self.client.get(reverse("tickets:obs_monitoreo"))
+        self.assertEqual(respuesta.status_code, 200)
+        grupos = respuesta.context["grupos"]
+        self.assertEqual(len(grupos), 1)
+        self.assertEqual(grupos[0]["zona"].nombre, "Norte")
+        self.assertEqual(grupos[0]["filas"][0]["tecnico"], "Tec")
+        html = respuesta.content.decode()
+        self.assertIn("Técnico a cargo", html)
+        self.assertIn("Avance global", html)

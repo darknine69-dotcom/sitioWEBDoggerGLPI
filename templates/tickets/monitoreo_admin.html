@@ -128,6 +128,83 @@
             <button type="submit" name="accion" value="quitar" class="btn btn-outline btn-sm">Quitar zona</button>
         </form>
     </div>
+
+    <div class="panel" style="margin-top:18px">
+        <h3 class="cat-det-bloque" style="font-size:14px;margin-bottom:4px">Zonas creadas por los observadores</h3>
+        <p class="panel-sub">Lo que cada supervisor armó en su panel: sus zonas, las cuentas que metió en cada una y su estado. Desde aquí se administra: se saca una cuenta de la zona o se elimina la zona (la gente no se borra).</p>
+        {% if zonas_creadas %}
+        {% for bloque in zonas_creadas %}
+        <div class="table-card" style="margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line)">
+                <span style="width:32px;height:32px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;background:#EEE9DB;color:#6B6259;font-weight:800;font-size:13px">{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
+                <div style="min-width:0">
+                    <strong>{{ bloque.supervisor.nombre }}</strong>
+                    <small class="muted"> · {{ bloque.supervisor.email }} · Supervisor a cargo</small>
+                </div>
+                <span style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap">
+                    {% for p in bloque.puntos %}<span class="chip chip-soft">{{ p }}</span>{% empty %}<em class="muted">sin puntos asignados</em>{% endfor %}
+                </span>
+            </div>
+            {% for z in bloque.zonas %}
+            <div style="padding:12px 14px;border-bottom:1px solid var(--line)">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                    <svg class="icon icon-sm"><use href="#i-map-pin"/></svg>
+                    <strong>{{ z.zona.nombre }}</strong>
+                    <small class="muted">creada el {{ z.zona.creado_en|date:"d/m/Y" }} · {{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }} · {{ z.abiertos }} abierto{{ z.abiertos|pluralize }}</small>
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_eliminar' z.zona.pk %}" style="margin-left:auto" onsubmit="return confirm('¿Eliminar la zona {{ z.zona.nombre|escapejs }}? Su gente queda en la lista, sin zona.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-outline btn-sm">Eliminar zona</button>
+                    </form>
+                </div>
+                {% if z.miembros %}
+                <div class="table-scroll">
+                    <table class="obs-tabla">
+                        <thead>
+                            <tr>
+                                <th>Cuenta</th>
+                                <th>Correo</th>
+                                <th>Rol</th>
+                                <th>Ubicación</th>
+                                <th class="num">Tickets</th>
+                                <th class="num">Abiertos</th>
+                                <th>Técnico</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in z.miembros %}
+                            <tr>
+                                <td><strong>{{ m.nombre }}</strong></td>
+                                <td>{{ m.email|default:"—" }}</td>
+                                <td>{{ m.rol }}</td>
+                                <td>{{ m.ubicacion }}</td>
+                                <td class="num">{{ m.total }}</td>
+                                <td class="num">{% if m.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ m.abiertos }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+                                <td>{{ m.tecnico }}</td>
+                                <td class="obs-acciones">
+                                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_quitar' m.elemento_id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                                        <button type="submit" class="btn btn-outline btn-sm" title="Sacar de la zona (queda en la lista)">Sacar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="muted" style="margin:0">Zona vacía: todavía no tiene cuentas dentro.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="panel-sub">Ningún observador ha creado zonas todavía. Aparecen aquí en cuanto armen la primera desde su panel.</p>
+        {% endif %}
+    </div>
     {% endif %}
 </main>
 {% endblock %}
