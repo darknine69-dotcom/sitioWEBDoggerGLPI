@@ -216,6 +216,35 @@ class ObservadorListaTest(TestCase):
             ).exists()
         )
 
+    def test_cuenta_creada_se_ve_aunque_no_tenga_tickets(self):
+        Usuario.objects.create_user(
+            email="nueva@x.com", password="x", nombre="Nueva",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        respuesta = self.client.get(reverse("tickets:obs_panel"))
+        filas = respuesta.context["personas"]
+        nueva = [f for f in filas if f["email"] == "nueva@x.com"]
+        self.assertEqual(len(nueva), 1)
+        self.assertEqual(nueva[0]["total"], 0)
+        self.assertIn("sin tickets aún", respuesta.content.decode())
+
+    def test_panel_muestra_el_tecnico_de_cada_cuenta(self):
+        tec = Usuario.objects.create_user(
+            email="tec@x.com", password="x", nombre="Tec",
+            rol=Usuario.Rol.TECNICO,
+        )
+        Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com", solicitante_punto="Zona Uno",
+            tecnico_asignado=tec,
+        )
+        respuesta = self.client.get(reverse("tickets:obs_panel"))
+        ana = [
+            f for f in respuesta.context["personas"] if f["email"] == "ana@x.com"
+        ]
+        self.assertEqual(ana[0]["tecnico"], "Tec")
+        self.assertIn("Tec", respuesta.content.decode())
+
 
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

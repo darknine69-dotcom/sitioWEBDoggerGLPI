@@ -261,6 +261,41 @@ def panel_observador(request):
     for fila in personas.values():
         fila["puntos"] = sorted(fila["puntos"])
         lista_personas.append(fila)
+
+    # Cuentas de la aplicación en sus puntos, aunque no tengan tickets:
+    # lo que el admin crea (o asigna de ubicación) se ve aquí de una vez,
+    # con sus números en cero hasta que levanten su primer ticket.
+    nombres_puntos = puntos_del_observador(usuario)
+    resumen = _resumen_por_correo(usuario)
+    if nombres_puntos:
+        vistos = {f["email"] for f in lista_personas if f["email"]}
+        for u in Usuario.objects.filter(
+            activo=True, is_active=True, ubicacion__in=nombres_puntos
+        ).order_by("nombre"):
+            correo = (u.email or "").strip().lower()
+            if not correo or correo in vistos:
+                continue
+            vistos.add(correo)
+            r = resumen.get(correo, {})
+            lista_personas.append(
+                {
+                    "email": correo,
+                    "nombre": u.nombre or correo,
+                    "rol": u.get_rol_display(),
+                    "puntos": [u.ubicacion],
+                    "total": r.get("total", 0),
+                    "abiertos": r.get("abiertos", 0),
+                    "tecnico": r.get("tecnico_principal", ""),
+                    "estado": r.get("estado", ESTADO_VERDE),
+                    "sin_tickets": True,
+                }
+            )
+    for fila in lista_personas:
+        fila.setdefault("rol", "")
+        if not fila.get("tecnico") and fila["email"]:
+            fila["tecnico"] = resumen.get(fila["email"], {}).get(
+                "tecnico_principal", ""
+            )
     lista_personas.sort(key=lambda f: (-f["abiertos"], f["nombre"] or ""))
 
     total_tickets = visibles.count()

@@ -162,6 +162,7 @@
                     <tr>
                         <th>Persona</th>
                         <th>Puntos</th>
+                        <th>Técnico</th>
                         <th class="num">Abiertos</th>
                         <th class="num">Totales</th>
                         <th>Estado</th>
@@ -172,12 +173,13 @@
                     {% for p in personas %}
                     <tr>
                         <td>
-                            <strong>{{ p.nombre|default:"Sin nombre" }}</strong>
-                            {% if p.email %}<small>{{ p.email }}</small>{% endif %}
+                            <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ p.email|urlencode }}">{{ p.nombre|default:"Sin nombre" }}</a></strong>
+                            {% if p.email %}<small>{{ p.email }}{% if p.rol %} · {{ p.rol }}{% endif %}{% if p.sin_tickets %} · sin tickets aún{% endif %}</small>{% endif %}
                         </td>
                         <td class="obs-puntos">
                             {% for punto in p.puntos %}<span class="chip chip-soft">{{ punto }}</span>{% empty %}<span class="muted">—</span>{% endfor %}
                         </td>
+                        <td>{{ p.tecnico|default:"—" }}</td>
                         <td class="num">{{ p.abiertos }}</td>
                         <td class="num">{{ p.total }}</td>
                         <td><span class="obs-pill obs-pill-{{ p.estado }}"><span class="obs-dot obs-dot-{{ p.estado }}"></span>{{ p.estado|capfirst }}</span></td>
@@ -191,7 +193,7 @@
                         </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="6" class="obs-sin-datos">Todavía no hay tickets en tus puntos.</td></tr>
+                    <tr><td colspan="7" class="obs-sin-datos">Todavía no hay tickets en tus puntos.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
