@@ -3449,6 +3449,10 @@ a.page-pill:hover { border-color: var(--dogger-red); color: var(--dogger-red); }
 }
 .modal-head h3 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 9px; min-width: 0; }
 .modal-head h3 .icon { color: var(--dogger-red); flex: 0 0 auto; }
+.modal-box-wide { max-width: 720px; }
+/* Tarjeta-indicador como botón: abre el modal sin parecer formulario. */
+button.dash-stat { font: inherit; text-align: left; cursor: pointer; width: 100%; color: inherit; }
+button.dash-stat:focus-visible { outline: 2px solid var(--dogger-red); outline-offset: 2px; }
 .modal-close {
     border: 0;
     background: var(--dogger-cream);

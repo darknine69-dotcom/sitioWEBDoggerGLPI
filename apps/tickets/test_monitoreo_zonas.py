@@ -287,10 +287,33 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertEqual(len(respuesta.context["dona"]), 3)
         html = respuesta.content.decode()
         for texto in (
-            "En seguimiento", "Carga por zona", "Técnicos que atienden",
+            "Zonas a cargo", "Carga por zona", "Técnicos que atienden",
             "Resumen por zona", "Estado de tu lista", "obs-dona-svg",
         ):
             self.assertIn(texto, html)
+
+    def test_zonas_a_cargo_con_modal_y_fichas(self):
+        from apps.tickets.models import ZonaObservador
+
+        self._ticket("ana@x.com")
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        zona = ZonaObservador.objects.create(observador=self.obs, nombre="Norte")
+        elemento = ElementoMiLista.objects.get(observador=self.obs)
+        elemento.zona = zona
+        elemento.save()
+        respuesta = self.client.get(reverse("tickets:obs_monitoreo"))
+        zonas_modal = respuesta.context["zonas_modal"]
+        self.assertEqual(len(zonas_modal), 1)
+        self.assertEqual(zonas_modal[0]["zona"].nombre, "Norte")
+        self.assertEqual(len(zonas_modal[0]["miembros"]), 1)
+        html = respuesta.content.decode()
+        self.assertIn("Zonas a cargo", html)
+        self.assertIn("modalZonas", html)
+        self.assertIn("btnZonasCargo", html)
+        self.assertIn("/observador/usuarios/?q=ana%40x.com", html)
+        self.assertIn(
+            reverse("tickets:obs_zona_detalle", args=[zona.pk]), html
+        )
 
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""
