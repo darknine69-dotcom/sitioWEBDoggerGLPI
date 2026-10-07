@@ -3614,6 +3614,8 @@ a.dash-hov-tecnicos:hover { border-color: #4F46E5; background: rgba(79,70,229,.0
 a.dash-hov-tecnicos:hover .dash-stat-icon { background: #4F46E5; color: #fff; }
 a.dash-hov-usuarios:hover { border-color: var(--dogger-red); background: rgba(214,43,31,.05); }
 a.dash-hov-usuarios:hover .dash-stat-icon { background: var(--dogger-red); color: #fff; }
+a.dash-hov-zonas:hover { border-color: #7C3AED; background: rgba(124,58,237,.07); }
+a.dash-hov-zonas:hover .dash-stat-icon { background: #7C3AED; color: #fff; }
 a.dash-hov-cerrados:hover { border-color: #374151; background: rgba(55,65,81,.06); }
 a.dash-hov-cerrados:hover .dash-stat-icon { background: #374151; color: #fff; }
 a.dash-hov-vencidos:hover { border-color: #DC2626; background: rgba(220,38,38,.07); }
@@ -3624,6 +3626,9 @@ a.dash-hov-sla-no:hover { border-color: #F97316; background: rgba(249,115,22,.08
 a.dash-hov-sla-no:hover .dash-stat-icon { background: #F97316; color: #fff; }
 /* Aire entre las pestañas y los indicadores del panel técnico. */
 .dash-stat-row--tec { margin-top: 14px; }
+/* Rejilla de 6 indicadores: la usan el admin y el supervisor en sus tableros. */
+.dash-stat-row--mesas { grid-template-columns: repeat(6, 1fr); }
+@media (max-width: 1180px) { .dash-stat-row--mesas { grid-template-columns: repeat(3, 1fr); } }
 
 @media (max-width: 960px) {
     .dash-stat-row { grid-template-columns: repeat(2, 1fr); }

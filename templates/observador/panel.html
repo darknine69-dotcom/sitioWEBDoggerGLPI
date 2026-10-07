@@ -32,31 +32,55 @@
     </div>
     {% else %}
 
-    <div class="obs-resumen corp-anim">
-        <div class="obs-kpi">
-            <span class="obs-kpi-n">{{ total_tickets }}</span>
-            <span class="obs-kpi-l">Tickets en tus puntos</span>
-        </div>
-        <div class="obs-kpi obs-kpi-verde">
-            <span class="obs-kpi-n">{{ conteo.verde }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-verde"></span> Activos</span>
-        </div>
-        <div class="obs-kpi obs-kpi-amarillo">
-            <span class="obs-kpi-n">{{ conteo.amarillo }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-amarillo"></span> Pendientes</span>
-        </div>
-        <div class="obs-kpi obs-kpi-rojo">
-            <span class="obs-kpi-n">{{ conteo.rojo }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-rojo"></span> Incidencias</span>
-        </div>
-        <div class="obs-kpi">
-            <span class="obs-kpi-n">{{ total_personas }}</span>
-            <span class="obs-kpi-l"><svg class="icon icon-sm"><use href="#i-user"/></svg> Personas</span>
-        </div>
-        <div class="obs-kpi">
-            <span class="obs-kpi-n">{{ total_zonas }}</span>
-            <span class="obs-kpi-l"><svg class="icon icon-sm"><use href="#i-map-pin"/></svg> Zonas</span>
-        </div>
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:18px">
+        <a class="dash-stat dash-hov-usuarios" href="{% url 'tickets:obs_usuarios' %}">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Usuarios</span>
+                <span class="dash-stat-value">{{ total_personas }}</span>
+                <span class="dash-stat-hint">en tus puntos</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-total" href="{% url 'tickets:obs_monitoreo' %}">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Tickets</span>
+                <span class="dash-stat-value">{{ total_tickets }}</span>
+                <span class="dash-stat-hint">en tus puntos</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:obs_usuarios' %}?estado=activos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Abiertos</span>
+                <span class="dash-stat-value st-abiertos">{{ abiertos|default:0 }}</span>
+                <span class="dash-stat-hint">por atender</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-vencidos" href="{% url 'tickets:obs_usuarios' %}?estado=alerta">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Incidencias</span>
+                <span class="dash-stat-value st-vencidos">{{ personas_en_alerta }}</span>
+                <span class="dash-stat-hint">personas con alerta</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-zonas" href="{% url 'tickets:obs_zonas' %}">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Zonas</span>
+                <span class="dash-stat-value">{{ total_zonas }}</span>
+                <span class="dash-stat-hint">bajo observación</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-progreso" href="{% url 'tickets:obs_mi_lista' %}">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Mi lista</span>
+                <span class="dash-stat-value st-progreso">{{ mi_lista_total|default:0 }}</span>
+                <span class="dash-stat-hint">en seguimiento</span>
+            </span>
+        </a>
     </div>
 
     <div class="obs-quick corp-anim">

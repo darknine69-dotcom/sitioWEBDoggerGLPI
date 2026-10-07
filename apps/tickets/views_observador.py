@@ -273,6 +273,10 @@ def panel_observador(request):
             "total_tickets": total_tickets,
             "total_personas": len(lista_personas),
             "total_zonas": len(tarjetas),
+            "abiertos": visibles.filter(estado__in=_ACTIVOS).count(),
+            "mi_lista_total": ElementoMiLista.objects.filter(
+                observador=usuario
+            ).count(),
             "personas_en_alerta": sum(
                 1 for f in lista_personas if f["estado"] == ESTADO_ROJO
             ),

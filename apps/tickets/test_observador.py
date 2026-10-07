@@ -170,6 +170,26 @@ class ObservadorListaTest(TestCase):
         self.assertEqual(respuesta.context["total"], 1)
         self.assertEqual(respuesta.context["total_sin_filtro"], 2)
 
+    def test_panel_es_tablero_con_indicadores_propios(self):
+        import re
+
+        self._ticket("Ana", "Zona Uno", email="ana@x.com")
+        self._agregar("ana@x.com")
+        respuesta = self.client.get(reverse("tickets:obs_panel"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context["total_personas"], 1)
+        self.assertEqual(respuesta.context["total_tickets"], 1)
+        self.assertEqual(respuesta.context["abiertos"], 1)
+        self.assertEqual(respuesta.context["mi_lista_total"], 1)
+        clases = set(re.findall(r"dash-hov-[a-z]+", respuesta.content.decode()))
+        self.assertEqual(
+            clases,
+            {
+                "dash-hov-usuarios", "dash-hov-total", "dash-hov-abiertos",
+                "dash-hov-vencidos", "dash-hov-zonas", "dash-hov-progreso",
+            },
+        )
+
 
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
