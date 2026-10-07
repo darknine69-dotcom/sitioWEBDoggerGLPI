@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import (
     StaffLoginView,
+    descargar_manual,
+    ver_manual,
     StaffLogoutView,
     UserLoginView,
     UserRegisterView,
@@ -28,6 +30,8 @@ urlpatterns = [
     path("registro/", UserRegisterView.as_view(), name="registro"),
     path("logout/", StaffLogoutView.as_view(), name="logout"),
     path("ajustes/", ajustes_cuenta, name="ajustes"),
+    path("manual/descargar/", descargar_manual, name="descargar_manual"),
+    path("manual/", ver_manual, name="ver_manual"),
     path("ajustes/configuracion-pagina/", configuracion_pagina, name="configuracion_pagina"),
     path("perfil/", perfil_usuario, name="perfil"),
     path("tour/preferencia/", tour_preferencia, name="tour_preferencia"),

@@ -56,7 +56,10 @@
         {% for grupo in arbol %}
         <div class="cat-group-card collapsed">
             <div class="cat-group-head" title="Click para plegar/desplegar">
-                <span class="cat-group-title">{{ grupo.grupo }}</span>
+                <span class="cat-group-title">
+                    {{ grupo.grupo }}
+                    {% if grupo.cubre %}<span class="cat-group-cubre">{{ grupo.cubre }}</span>{% endif %}
+                </span>
                 <span class="cat-count-badge">{{ grupo.subcategorias|length }} subcat. · {{ grupo.total }} ticket{{ grupo.total|pluralize }}</span>
                 <button type="button" class="cat-toggle" aria-expanded="false" aria-label="Desplegar {{ grupo.grupo }}" title="Desplegar/plegar grupo">
                     <svg class="icon"><use href="#i-chevron-down"/></svg>
@@ -68,6 +71,7 @@
                     <tr>
                         <td class="cat-sub-name">
                             {{ sub.nombre }}
+                            {% if sub.cubre %}<span class="cat-sub-cubre">{{ sub.cubre }}</span>{% endif %}
                             {% if sub.glpi_category_id %}<span class="meta-pill meta-glpi ml-6">GLPI #{{ sub.glpi_category_id }}</span>{% endif %}
                             <span class="meta-pill meta-{{ sub.prioridad_default }} ml-6">{{ sub.get_prioridad_default_display }}</span>
                             <span class="meta-pill ml-6">ANS {{ sub.ans_horas }}h</span>

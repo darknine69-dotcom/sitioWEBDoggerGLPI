@@ -95,7 +95,7 @@ class TicketForm(forms.ModelForm):
         widgets = {
             "titulo": forms.TextInput(
                 attrs={
-                    "placeholder": "Ej: POS-FE no imprime / SIESA Access lento",
+                    "placeholder": "Ej: no imprime la factura / SIESA Access lento",
                     "maxlength": 150,
                     "required": "required",
                     "title": "Es obligatorio escribir un título.",
@@ -126,6 +126,12 @@ class TicketForm(forms.ModelForm):
         if not permitir_modo:
             self.fields.pop("modo")
             self._modo_fijo = Ticket.Modo.WEB
+        else:
+            # La plantilla no dibuja este campo, asi que nunca viaja en el POST.
+            # Si se dejara obligatorio, todo alta desde el panel devolveria
+            # "Este campo es obligatorio" sin que el usuario pueda corregirlo.
+            self.fields["modo"].required = False
+            self.fields["modo"].initial = Ticket.Modo.WEB
 
     def clean_adjuntos(self):
         files = self.cleaned_data.get("adjuntos") or []
@@ -146,6 +152,8 @@ class TicketForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        if "modo" in cleaned:
+            cleaned["modo"] = cleaned.get("modo") or Ticket.Modo.WEB
         if not cleaned.get("categoria"):
             sugerida = sugerir_categoria(
                 titulo=cleaned.get("titulo", ""),
@@ -196,7 +204,7 @@ class CategoriaForm(forms.ModelForm):
             "grupo": forms.TextInput(
                 attrs={"list": "lista-grupos", "placeholder": "Ej: SIESA ERP"}
             ),
-            "nombre": forms.TextInput(attrs={"placeholder": "Ej: POS-FE"}),
+            "nombre": forms.TextInput(attrs={"placeholder": "Ej: Facturación electrónica"}),
         }
 
     def __init__(self, *args, **kwargs):

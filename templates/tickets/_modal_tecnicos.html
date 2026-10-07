@@ -1,0 +1,31 @@
+{% comment %}
+Modal de técnicos activos, el de Mi panel: se abre con el botón de la barra
+superior y lista quién está en la mesa.
+
+La lista en sí vive en _lista_tecnicos.html, que el detalle de un ticket
+incluye directamente en la página (sin modal) y con `voto_ticket`.
+{% endcomment %}
+<div class="modal-overlay" id="modalTecnicos">
+    <div class="modal-box modal-box-wide modal-box-tecnicos">
+        <div class="modal-head">
+            <div class="modal-head-titles">
+                <h3>Técnicos activos</h3>
+                <p class="modal-note">
+                    {% if voto_ticket %}
+                    {% if ticket.fue_resuelto %}
+                    Califica el trabajo de {{ nombre_tecnico_ticket }} en este ticket ya resuelto.
+                    {% else %}
+                    Califica cómo va llevando {{ nombre_tecnico_ticket }} este ticket.
+                    {% endif %}
+                    {% else %}
+                    Quién está en la mesa, qué tan disponible está y cómo lo están calificando.
+                    {% endif %}
+                </p>
+            </div>
+            <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="modal-body">
+            {% include "tickets/_lista_tecnicos.html" %}
+        </div>
+    </div>
+</div>

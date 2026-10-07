@@ -23,7 +23,8 @@
       data-url-completado="{% url 'programador:completado' %}"
       data-url-disp="{% url 'programador:disponibilidad' %}"
       data-url-festivo="{% url 'programador:festivo' %}"
-      data-url-detalle="{% url 'tickets:detalle' 0 %}">
+      data-url-detalle="{% url 'tickets:detalle' 0 %}"
+      data-destacado="{{ destacado|default:'' }}">
     {# El JavaScript de la página necesita el token para sus envíos por fetch. #}
     <div hidden>{% csrf_token %}</div>
 

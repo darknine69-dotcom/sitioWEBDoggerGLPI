@@ -229,8 +229,11 @@ a { color: inherit; text-decoration: none; }
 .page {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 34px 24px 60px;
+    padding: 20px 24px 60px;
 }
+/* El contenido arranca pegado al encabezado del título: el primer bloque
+   no suma su propio margen al relleno de la página. */
+.page > :first-child { margin-top: 0; }
 
 .portal-page {
     display: flex;
@@ -1621,43 +1624,30 @@ a { color: inherit; text-decoration: none; }
     /* el espacio de abajo evita que el aviso de copyright pise el formulario */
     padding: 24px 24px 74px;
 }
-/* ---- Fondo de las pantallas de acceso: motivo Dogger (franja diagonal en
-       degradado + resplandor de marca), con los bordes apenas ondulados ---- */
-.login-deco { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-.login-deco > span { position: absolute; display: block; }
-
-.login-deco .glow {
-    top: -300px; right: -240px; width: 820px; height: 820px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,199,44,.26) 0%, rgba(255,138,60,.11) 36%, transparent 66%);
-}
-.login-deco .sombra {
-    left: -260px; bottom: -320px; width: 620px; height: 620px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(60,4,2,.55) 0%, transparent 70%);
-}
-.login-deco .puntos {
-    top: 0; right: 0; width: 40%; height: 52%;
-    background-image: radial-gradient(rgba(255,246,240,.14) 1.5px, transparent 1.6px);
-    background-size: 24px 24px;
-    -webkit-mask-image: linear-gradient(210deg, #000 0%, rgba(0,0,0,.5) 46%, transparent 80%);
-    mask-image: linear-gradient(210deg, #000 0%, rgba(0,0,0,.5) 46%, transparent 80%);
-}
-/* franja roja: degradado de marca y borde ondulado suave */
-.login-deco .franja-roja {
-    top: -26%; right: -10%; width: 50%; height: 158%;
+/* ---- Fondo de las pantallas de acceso: las tres franjas diagonales
+       del diseño original. El negro es la franja más ancha —todo el lienzo
+       es negro—, la roja va en el centro al 85% y la amarilla, la más
+       estrecha, cae más a la derecha. ---- */
+.login-screen::before {
+    content: "";
+    position: absolute;
+    width: 60%;
+    height: 220%;
+    background: var(--dogger-red);
+    right: -10%;
+    top: -60%;
     transform: rotate(18deg);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='260' viewBox='0 0 140 260' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23C1121F' stop-opacity='0'/%3E%3Cstop offset='.38' stop-color='%23C1121F' stop-opacity='.95'/%3E%3Cstop offset='1' stop-color='%237E130C' stop-opacity='.92'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0,86 C34,24 106,148 140,66 L140,190 C106,272 34,148 0,210 Z' fill='url(%23g)'/%3E%3C/svg%3E");
-    background-size: 100% 260px; background-repeat: repeat-y;
+    opacity: .85;
 }
-/* filete amarillo de acento, más fino */
-.login-deco .franja-amarilla {
-    top: -26%; right: 33%; width: 9%; height: 158%;
+.login-screen::after {
+    content: "";
+    position: absolute;
+    width: 12%;
+    height: 220%;
+    background: var(--dogger-yellow);
+    right: 24%;
+    top: -60%;
     transform: rotate(18deg);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='260' viewBox='0 0 50 260' preserveAspectRatio='none'%3E%3Cpath d='M0,96 C13,52 38,140 50,88 L50,178 C38,230 13,142 0,186 Z' fill='%23FFC72C' fill-opacity='.92'/%3E%3C/svg%3E");
-    background-size: 100% 260px; background-repeat: repeat-y;
-}
-@media (max-width: 620px) {
-    .login-deco .puntos { display: none; }
-    .login-deco .franja-roja { width: 66%; }
 }
 
 /* Aviso de copyright al pie de las pantallas de acceso */
@@ -3583,6 +3573,15 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 .dash-stat .dash-stat-value.st-sla-ok { color: #16A34A; }
 .dash-stat .dash-stat-value.st-sla-no { color: #C6281E; }
 .dash-stat-hint { font-size: 11.5px; color: #8A8478; font-weight: 600; overflow-wrap: anywhere; }
+/* Cada tarjeta toma el color de su indicador al pasar el mouse. */
+a.dash-hov-abiertos:hover { border-color: #C6281E; background: rgba(198,40,30,.05); }
+a.dash-hov-abiertos:hover .dash-stat-icon { background: #C6281E; color: #fff; }
+a.dash-hov-progreso:hover { border-color: #C2410C; background: rgba(194,65,12,.06); }
+a.dash-hov-progreso:hover .dash-stat-icon { background: #C2410C; color: #fff; }
+a.dash-hov-resueltos:hover { border-color: #16A34A; background: rgba(22,163,74,.07); }
+a.dash-hov-resueltos:hover .dash-stat-icon { background: #16A34A; color: #fff; }
+/* Aire entre las pestañas y los indicadores del panel técnico. */
+.dash-stat-row--tec { margin-top: 14px; }
 
 @media (max-width: 960px) {
     .dash-stat-row { grid-template-columns: repeat(2, 1fr); }
@@ -3646,6 +3645,23 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 .cat-sub-table td { padding:8px 16px; border-top:1px dashed var(--line); vertical-align:middle; }
 .cat-sub-table tr:first-child td { border-top:0; }
 .cat-sub-name { font-weight:600; }
+/* La linea de "que cubre" va debajo del nombre, con el mismo tono apagado
+   que usa el resto de metadatos de la tabla. */
+.cat-sub-cubre {
+    display: block;
+    margin-top: 3px;
+    font-weight: 400;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--ink-muted);
+}
+.cat-group-cubre {
+    display: block;
+    margin-top: 2px;
+    font-weight: 400;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+}
 .cat-actions { display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
 .mini-btn {
     display:inline-flex; align-items:center; gap:5px;
@@ -3697,12 +3713,121 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 
 @media (max-width:900px) { .cat-new-extra { grid-template-columns:1fr; } }
 
-/* ---- Categorías explicadas para el usuario ---- */
+/* ---- Categorías explicadas para el usuario ----
+   Cada grupo tiene su color para que de un vistazo se sepa de qué se trata;
+   se toma del nombre con [data-grupo*="..."], sin meter lógica en la vista. */
 .cat-publico-busca { display:flex; align-items:center; gap:12px; margin:18px 0 6px; }
 .cat-publico-busca input { flex:1; font:inherit; font-size:14px; padding:11px 15px; border:1px solid var(--line); border-radius:999px; background:#fff; }
 .cat-publico-busca input:focus { outline:2px solid var(--dogger-red); outline-offset:1px; border-color:transparent; }
 .cat-busca-msg { font-size:12.5px; color:var(--ink-muted); white-space:nowrap; }
 .cat-publico-vacio { margin:22px 0; font-size:13.5px; color:var(--ink-muted); text-align:center; }
+
+.cat-resumen {
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    margin:0 0 4px; padding:14px 18px;
+    background:linear-gradient(120deg,#FFF9F1 0%,#FFFFFF 62%);
+    border:1px solid var(--line); border-left:4px solid var(--dogger-yellow);
+    border-radius:var(--radius); box-shadow:var(--shadow-card);
+}
+.cat-resumen-item { display:flex; align-items:baseline; gap:6px; }
+.cat-resumen-n { font-size:26px; font-weight:800; line-height:1; color:var(--dogger-red); letter-spacing:-.02em; }
+.cat-resumen-t { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-muted); }
+.cat-resumen-pie { margin:0 0 0 auto; font-size:12.5px; color:var(--ink-muted); max-width:44ch; }
+
+.cat-publico { display:grid; gap:16px; }
+
+/* La lista no se estira de lado a lado: los textos de "qué cubre" se leen
+   comodos en una columna y la vista respira como las de categorías del
+   administrador y el técnico (mismo contenedor .page, misma separación). */
+.cat-resumen,
+.cat-publico-busca,
+.cat-publico,
+.cat-inactivos,
+.cat-publico-vacio { max-width:940px; }
+
+.cat-sign { display:inline-block; color:var(--dogger-red); transition:transform .18s ease; flex-shrink:0; }
+.cat-grupo {
+    --grp:#64748B;
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow-card); overflow:hidden;
+    transition:box-shadow .16s ease, border-color .16s ease;
+}
+.cat-grupo:hover { border-color:#D8CDBA; box-shadow:0 4px 8px rgba(23,20,18,.08), 0 16px 36px rgba(23,20,18,.10); }
+.cat-grupo[data-grupo*="siesa"] { --grp:#1D4ED8; }
+.cat-grupo[data-grupo*="web"] { --grp:#0E7490; }
+.cat-grupo[data-grupo*="cloud"] { --grp:#4F46E5; }
+.cat-grupo[data-grupo*="punto"] { --grp:#D62B1F; }
+.cat-grupo[data-grupo*="endpoint"] { --grp:#0369A1; }
+.cat-grupo[data-grupo*="infra"] { --grp:#7C3AED; }
+.cat-grupo[data-grupo*="integrac"] { --grp:#BE185D; }
+.cat-grupo[data-grupo*="soporte"] { --grp:#0F766E; }
+.cat-grupo[data-grupo*="admin"] { --grp:#B45309; }
+
+.cat-grupo-head {
+    display:flex; align-items:center; gap:12px; margin:0;
+    padding:13px 16px; cursor:pointer;
+    font-size:14.5px; font-weight:700; color:var(--ink);
+    background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(0,0,0,0));
+    border-left:4px solid var(--grp);
+    transition:background .14s ease;
+}
+.cat-grupo-head:hover { background:#FAF7F1; }
+.cat-grupo-head:focus-visible { outline:2px solid var(--grp); outline-offset:-2px; }
+.cat-grupo-icono {
+    display:grid; place-items:center; width:32px; height:32px; flex-shrink:0;
+    border-radius:9px; color:#fff;
+    background:var(--grp); box-shadow:0 2px 6px rgba(23,20,18,.18);
+}
+.cat-grupo-txt { display:block; min-width:0; }
+.cat-grupo-nom { display:block; }
+.cat-grupo-cubre { display:block; font-size:12px; font-weight:500; color:var(--ink-muted); margin-top:1px; }
+.cat-grupo-cuenta {
+    margin-left:auto; flex-shrink:0;
+    font-size:11px; font-weight:700; letter-spacing:.03em; color:#fff;
+    background:var(--grp); border-radius:999px; padding:3px 10px;
+}
+.cat-grupo-sign { margin-left:2px; color:var(--grp); }
+.cat-grupo.is-abierto .cat-grupo-sign,
+.cat-item.is-abierto .cat-item-sign { transform:rotate(45deg); }
+
+.cat-grupo-lista { list-style:none; margin:0; padding:0 16px 6px; border-top:1px solid #F3EDE2; }
+.cat-grupo.collapsed .cat-grupo-lista { display:none; }
+.cat-grupo.collapsed .cat-grupo-cubre { display:none; }
+
+.cat-item { border-bottom:1px solid #F5F0E7; }
+.cat-item:last-child { border-bottom:0; }
+.cat-item-head { display:flex; align-items:center; gap:9px; padding:9px 8px; cursor:pointer; border-radius:9px; }
+.cat-item-head:hover { background:#FBF8F3; }
+.cat-item-head:focus-visible { outline:2px solid var(--grp); outline-offset:-2px; }
+.cat-item.is-abierto .cat-item-head { background:#F6F3ED; }
+.cat-item-punto { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:var(--pillc, #94A3B8); box-shadow:0 0 0 3px var(--pillbg, rgba(148,163,184,.2)); }
+.cat-item-nom { font-size:13.5px; font-weight:700; color:var(--ink); }
+.cat-item-head:hover .cat-item-nom { color:var(--dogger-red); }
+.cat-item-ans { margin-left:auto; font-size:12px; font-weight:700; color:var(--ink-muted); white-space:nowrap; }
+.cat-item-sign { color:var(--grp); }
+.cat-item-cubre { margin:0 8px 9px 25px; font-size:12.5px; color:var(--ink-muted); }
+.cat-item-detalle {
+    margin:0 8px 12px 25px; padding:11px 13px;
+    background:#FBFCFE; border:1px solid var(--line); border-left:3px solid var(--grp);
+    border-radius:10px;
+}
+.cat-item-datos {
+    list-style:none; margin:0 0 11px; padding:0;
+    display:flex; flex-wrap:wrap; gap:8px 22px; font-size:12.5px;
+}
+.cat-item-datos li { display:flex; align-items:baseline; gap:6px; }
+.cat-item-datos span { color:var(--ink-muted); }
+.cat-item-datos strong { font-weight:700; color:var(--ink); }
+
+@media (max-width: 640px) {
+    .cat-resumen { gap:10px; padding:12px 14px; }
+    .cat-resumen-pie { margin-left:0; max-width:none; }
+    .cat-resumen-n { font-size:22px; }
+    .cat-grupo-head { padding:11px 13px; gap:9px; }
+    .cat-grupo-cuenta { display:none; }
+    .cat-grupo-lista { padding:0 12px 5px; }
+    .cat-item-detalle, .cat-item-cubre { margin-left:16px; }
+}
 /* Fila clicable: al tocarla se abre el detalle de la categoría. */
 .cat-sub-table .cat-fila { cursor:pointer; transition:background .12s ease; }
 .cat-sub-table .cat-fila:hover { background:#FFF9F7; }
@@ -4540,7 +4665,10 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
     contain: layout style;
 }
 
-/* GPU-accelerar transiciones frecuentes */
+/* GPU-accelerar transiciones frecuentes.
+   .toast y .modal-overlay quedan fuera a proposito: usan backdrop-filter y al
+   promoverlos a capa propia el navegador pinta el velo negro en vez del
+   desenfoque (la ventana se ve negra y no se lee nada). */
 .fcard,
 .step-card,
 .btn,
@@ -4548,8 +4676,6 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 .tab-pill,
 .mini-btn,
 .nav-link,
-.toast,
-.modal-overlay,
 .nav-toggle-bar {
     will-change: transform, opacity;
 }
@@ -4967,6 +5093,79 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
 .notif-item:last-child { border-bottom: none; }
 .notif-info strong { display: block; font-size: 14px; color: var(--ink); }
 .notif-info small { display: block; font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+
+/* ---- Manual de uso: botones y vista previa dentro de los ajustes ---- */
+.manual-acciones {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.manual-preview {
+    width: min(1040px, calc(100vw - 28px));
+    height: min(88vh, 860px);
+    max-width: none;
+    max-height: none;
+    margin: auto;
+    padding: 0;
+    border: 1px solid rgba(15, 23, 42, .12);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--ink);
+    box-shadow: 0 26px 60px rgba(15, 23, 42, .26);
+    overflow: hidden;
+}
+.manual-preview::backdrop { background: rgba(23, 20, 18, .5); }
+.manual-preview[open] { display: flex; flex-direction: column; }
+
+.manual-preview-cab {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+}
+.manual-preview-cab h4 { margin: 0; font-size: 15px; }
+
+.manual-preview-x {
+    border: 0;
+    background: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--ink-muted);
+    padding: 0 4px;
+}
+.manual-preview-x:hover { color: var(--ink); }
+
+.manual-preview-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    border: 0;
+    background: #fff;
+}
+
+.manual-preview-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 16px;
+    border-top: 1px solid var(--line);
+    background: #FAF8F4;
+}
+.manual-preview-pie small { color: var(--ink-muted); }
+.manual-preview-pie > div { display: flex; gap: 8px; }
+
+@media (max-width: 720px) {
+    .manual-acciones { justify-content: flex-start; }
+    .manual-preview { height: 92vh; }
+    .manual-preview-pie { justify-content: center; }
+}
 
 .toggle-switch {
     position: relative;
@@ -5716,6 +5915,61 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .cat-auto-hint svg { color: #15803D; flex-shrink: 0; }
 .cat-auto-hint .btn { margin-left: auto; }
 
+/* ---- Submenú "qué cubre cada categoría" ----
+   Sin caja ni sombra: solo el texto del apartado Categoría, con una cruz al
+   inicio de cada línea. El ancho lo manda el campo, no la rejilla del formulario. */
+.cat-cubre { margin: 7px 0 0; max-width: 440px; }
+.cat-cubre-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: 0; padding: 2px 0; font: inherit; cursor: pointer;
+    font-size: 12.5px; font-weight: 600; color: var(--ink-soft, #475569);
+}
+.cat-cubre-toggle:hover { color: #1D4ED8; }
+.cat-cubre-toggle:focus-visible { outline: 2px solid #1D4ED8; outline-offset: 3px; border-radius: 4px; }
+.cat-cubre-sign { color: #1D4ED8; flex-shrink: 0; transition: transform .16s ease; }
+.cat-cubre.is-abierto .cat-cubre-sign { transform: rotate(45deg); }
+.cat-cubre-conteo { color: var(--ink-muted, #64748B); font-weight: 500; }
+.cat-cubre-conteo::before { content: "· "; }
+
+.cat-cubre-panel {
+    margin-top: 4px; max-height: 250px; overflow-y: auto;
+    padding-left: 9px; border-left: 2px solid #E2E8F0;
+}
+.cat-cubre-actual {
+    margin: 4px 0 8px; font-size: 12px; color: var(--ink-soft, #475569);
+}
+.cat-cubre-actual span {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: #15803D;
+}
+.cat-cubre-grupo-nom {
+    margin: 10px 0 3px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--ink-muted, #64748B);
+}
+.cat-cubre-grupo:first-child .cat-cubre-grupo-nom { margin-top: 0; }
+.cat-cubre-item {
+    display: block; width: 100%; text-align: left; font: inherit; cursor: pointer;
+    background: none; border: 0; border-bottom: 1px solid #F1F5F9;
+    padding: 5px 4px 5px 0; color: var(--ink);
+}
+.cat-cubre-item::before {
+    content: "+"; display: inline-block; width: 15px;
+    color: #1D4ED8; font-weight: 700; font-size: 13px; vertical-align: -1px;
+}
+.cat-cubre-item:hover { background: #F8FAFC; }
+.cat-cubre-item:hover::before { color: #15803D; }
+.cat-cubre-item.is-elegida { background: #F1F5FB; }
+.cat-cubre-item.is-elegida::before { content: "✓"; color: #15803D; }
+.cat-cubre-nombre { font-size: 13px; font-weight: 600; }
+.cat-cubre-linea { display: block; font-size: 11.5px; color: var(--ink-soft, #475569); }
+.cat-cubre-claves { display: block; font-size: 11px; color: var(--ink-muted, #64748B); }
+.cat-cubre-pie { margin: 9px 0 0; font-size: 11.5px; color: var(--ink-muted, #64748B); }
+@media (max-width: 640px) {
+    .cat-cubre { max-width: none; }
+    .cat-cubre-panel { max-height: 210px; }
+}
+
+
 /* ---- Tabla -> tarjetas en móvil ---- */
 @media (max-width: 640px) {
     table.data-table.cards-mobile { display: block; width: 100%; border-radius: 0; box-shadow: none; }
@@ -5773,6 +6027,17 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 }
 .notif-badge.is-empty { display: none; }
 
+/* La lista se despliega desde la campana: se ve de dónde sale. */
+.notif-panel.open { animation: notifBajar 180ms ease-out; }
+
+@keyframes notifBajar {
+    from { opacity: 0; transform: translateY(-8px) scale(.98); }
+    to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .notif-panel.open { animation: none; }
+}
+
 .notif-panel {
     position: absolute;
     top: calc(100% + 12px); right: 0;
@@ -5795,6 +6060,13 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
     padding: 12px 14px;
     background: var(--dogger-black);
     color: #fff;
+}
+/* El encabezado de la campana sigue el color personalizado de la página:
+   paleta elegida (data-navpalette) o color propio (style inline). Sin
+   personalizar, sigue negro. */
+html[data-navpalette] .notif-head,
+html[style*="--sb-accent"] .notif-head {
+    background: var(--sb-accent);
 }
 .notif-head strong { font-family: var(--font-display); font-size: 13.5px; letter-spacing: .02em; }
 .notif-head-actions { display: flex; align-items: center; gap: 10px; }
@@ -5871,107 +6143,124 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
 .notif-empty-icon { color: #2F7D4F; margin-bottom: 4px; }
 .notif-empty-icon .icon { width: 26px; height: 26px; }
 
-/* ---- Ventana emergente del aviso nuevo ---- */
-.notif-popup-overlay {
-    position: fixed; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
-    background: rgba(23,20,18,.55);
-    backdrop-filter: blur(2px);
+/* ---- Ventana emergente del aviso nuevo ----
+   Va como <dialog> nativo: sin backdrop-filter (Chrome lo pintaba negro) y
+   con fondo claro, sin cabecera oscura. */
+.notif-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    width: min(360px, calc(100vw - 32px));
+    max-width: none;
+    /* Alto según el contenido, con tope: compacta, ya no un cuadrado grande. */
+    height: auto;
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    padding: 26px 26px 22px;
+    border: 1px solid rgba(15, 23, 42, .10);
+    border-radius: 18px;
+    background: #FFFFFF;
+    color: var(--ink);
+    box-shadow: 0 26px 60px rgba(15, 23, 42, .22);
+    overflow: visible;
     z-index: 9500;
 }
-.notif-popup {
-    position: relative;
-    width: 100%; max-width: 380px;
-    padding: 0 24px 20px;
-    text-align: center;
-    background: var(--dogger-cream, #fff);
-    border-radius: 18px;
-    box-shadow: 0 24px 60px rgba(0,0,0,.35);
-    animation: notifPopupIn .22s ease-out;
-    overflow: hidden;
-}
+.notif-popup::backdrop { background: rgba(23, 20, 18, .45); }
+.notif-popup[open] { animation: notifPopupIn .2s ease-out; }
 @keyframes notifPopupIn {
-    from { opacity: 0; transform: translateY(14px) scale(.97); }
-    to { opacity: 1; transform: none; }
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)) scale(.97); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
 }
-/* Encabezado de la emergente: franja oscura con el título en blanco. */
-.notif-popup-head {
-    display: block;
-    margin: 0 -24px 16px;
-    padding: 20px 24px 18px;
-    background: linear-gradient(180deg, #23201D, #17140F);
-    border-radius: 0;
+
+/* Todo el contenido va centrado: icono, rotulo, titulo, mensaje y botones. */
+.notif-popup-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    margin: 0;
+    text-align: center;
 }
-.notif-popup-head::after {
-    content: "";
-    display: block;
-    height: 4px;
-    margin: -18px -24px 0;
-    background: var(--dogger-yellow);
-}
-.notif-popup-ticket_cerrado .notif-popup-head::after { background: #2F7D4F; }
-.notif-popup-ticket_nuevo .notif-popup-head::after { background: var(--dogger-red); }
-.notif-popup-evento .notif-popup-head::after { background: #2563EB; }
-.notif-popup-ticket_recordatorio .notif-popup-head::after { background: #F2A900; }
-.notif-popup-ticket_cerrado { border-top-color: #2F7D4F; }
-.notif-popup-ticket_editado { border-top-color: #1D4ED8; }
-.notif-popup-ticket_nuevo { border-top-color: var(--dogger-red); }
-.notif-popup-evento { border-top-color: #2563EB; }
-.notif-popup-ticket_recordatorio { border-top-color: #F2A900; }
+
+/* Encabezado: solo icono y titulo sobre el fondo claro. */
+.notif-popup-head { display: block; margin: 0 0 10px; }
+.notif-popup-head::after { content: none; }
 
 .notif-popup-icon {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 60px; height: 60px; margin-bottom: 12px;
+    width: 46px; height: 46px; margin-bottom: 10px;
     border-radius: 50%;
-    background: rgba(255,199,44,.18);
-    color: #9A6B00;
+    background: rgba(255, 199, 44, .22);
+    color: #8A6100;
 }
-.notif-popup-icon .icon { width: 30px; height: 30px; }
-.notif-popup-head .notif-popup-icon {
-    background: rgba(255,255,255,.12);
-    color: #FFFFFF;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.22);
-}
-.notif-popup-ticket_nuevo .notif-popup-icon { background: rgba(214,43,31,.12); color: var(--dogger-red); }
-.notif-popup-ticket_cerrado .notif-popup-icon { background: rgba(47,125,79,.14); color: #2F7D4F; }
-.notif-popup-ticket_editado .notif-popup-icon { background: rgba(29,78,216,.12); color: #1D4ED8; }
-.notif-popup-evento .notif-popup-icon { background: rgba(37,99,235,.12); color: #2563EB; }
+.notif-popup-icon .icon { width: 24px; height: 24px; }
+.notif-popup-ticket_nuevo .notif-popup-icon { background: rgba(214, 43, 31, .12); color: var(--dogger-red); }
+.notif-popup-ticket_cerrado .notif-popup-icon { background: rgba(47, 125, 79, .14); color: #2F7D4F; }
+.notif-popup-ticket_editado .notif-popup-icon { background: rgba(29, 78, 216, .12); color: #1D4ED8; }
+.notif-popup-evento .notif-popup-icon { background: rgba(37, 99, 235, .12); color: #2563EB; }
 
+.notif-popup-kicker {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 11.5px; font-weight: 700;
+    letter-spacing: .10em; text-transform: uppercase;
+    color: #A79E93;
+}
 .notif-popup-title {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 18px; line-height: 1.3;
-    color: #FFFFFF;
+    font-size: 19px; line-height: 1.3;
+    color: var(--ink);
 }
-.notif-popup-head .notif-popup-title { color: #FFFFFF; }
-.notif-popup-text { margin: 0 0 18px; font-size: 13.5px; line-height: 1.55; color: var(--ink-muted); }
-.notif-popup-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-/* El botón "Ver" va centrado y destacado, es la acción principal. */
+.notif-popup-text {
+    margin: 8px 0 18px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--ink-muted);
+    text-align: center;
+    max-width: 34ch;
+}
+.notif-popup-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+/* "Ver" es la accion principal: highlighted. "OK" solo cierra el aviso. */
+.notif-popup-actions .btn {
+    flex: 1 1 140px;
+    min-height: 42px;
+    padding: 0 16px;
+    font-size: 14.5px;
+    justify-content: center;
+}
 .notif-popup-actions .notif-popup-ver {
-    min-width: 132px;
     justify-content: center;
     font-weight: 700;
 }
-.notif-popup-actions > *:first-child { margin-inline: auto; }
+.notif-popup-actions .notif-popup-ok { min-width: 0; font-weight: 600; }
 .notif-popup-faltan { color: var(--dogger-red); font-weight: 600; }
-.notif-popup-foot { display: block; margin-top: 14px; font-size: 11px; color: #9C938A; }
+.notif-popup-foot { display: block; margin-top: 14px; text-align: center; font-size: 12px; color: #9C938A; }
 .notif-popup-x {
-    position: absolute; top: 8px; right: 10px;
-    z-index: 2;
-    width: 26px; height: 26px; border: 0; border-radius: 50%;
-    background: rgba(255,255,255,.14); color: #FFFFFF;
-    font-size: 17px; line-height: 1; cursor: pointer;
+    position: absolute; top: 10px; right: 12px;
+    width: 28px; height: 28px; padding: 0;
+    border: 0; border-radius: 50%;
+    background: rgba(15, 23, 42, .06); color: #64748B;
+    font-size: 18px; line-height: 1; cursor: pointer;
 }
-.notif-popup-x:hover { background: var(--dogger-red); color: #fff; }
+.notif-popup-x:hover { background: rgba(15, 23, 42, .12); color: #1E293B; }
 
 @media (max-width: 900px) {
     .notif-panel { position: fixed; top: 68px; right: 12px; left: 12px; width: auto; max-width: none; }
 }
 @media (max-width: 560px) {
     .notif-bell { width: 34px; height: 34px; }
-    .notif-popup { max-width: 100%; padding: 22px 18px 18px; }
-    .notif-popup-icon { width: 52px; height: 52px; }
+    .notif-popup {
+        max-width: 100%;
+        height: auto;
+        min-height: min(440px, calc(100vh - 40px));
+        padding: 24px 18px 18px;
+    }
+    .notif-popup-title { font-size: 19px; }
+    .notif-popup-actions .btn { flex: 1 1 0; }
 }
 
 /* =====================================================================
@@ -6452,6 +6741,15 @@ html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
 .sidebar-nav::-webkit-scrollbar { width: 6px; }
 .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .18); border-radius: 999px; }
 .sidebar-group + .sidebar-group { margin-top: 16px; }
+/* Calificación del técnico al pie del lateral. */
+.sidebar-foot { margin-top: 18px; padding: 12px 12px 4px; border-top: 1px solid rgba(255,255,255,.1); }
+.side-calif { display: flex; flex-direction: column; gap: 6px; padding: 0 12px; }
+.side-calif-num { font-size: 22px; font-weight: 800; color: #fff; line-height: 1; }
+.side-calif-bar { display: block; height: 7px; border-radius: 999px; background: rgba(255,255,255,.14); overflow: hidden; }
+.side-calif-bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2E7D32, #66BB6A); }
+.side-calif small { font-size: 11.5px; color: rgba(239,233,225,.6); }
+.side-calif-vacia { display: block; padding: 0 12px; font-size: 11.5px; color: rgba(239,233,225,.6); }
+html[data-navcompact="1"] .sidebar-foot { display: none; }
 .sidebar-group-title {
   margin: 0 0 6px;
   padding: 0 12px;
@@ -6795,4 +7093,222 @@ html[data-navcompact="1"] .sidebar-count {
   .topbar .user-chip-text { display: none; }
   .topbar .user-chip { padding: 4px; }
   .topbar .user-chip-chevron { display: none; }
-}
+}
+/* =====================================================================
+   Técnicos activos: modal de Mi panel + tarjeta de calificación del
+   panel del técnico (pulgares arriba / abajo).
+   ===================================================================== */
+
+/* Botón que abre el modal, en la franja roja del saludo */
+.corp-hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.corp-hero-actions .btn {
+    background: rgba(255,255,255,.94);
+    color: #7E130C;
+    border-color: rgba(126,19,12,.22);
+    box-shadow: 0 2px 0 rgba(126,19,12,.18), 0 8px 18px rgba(126,19,12,.14);
+}
+.corp-hero-actions .btn:hover { background: #fff; transform: translateY(-1px); }
+.tec-btn-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px;
+    background: #7E130C; color: #FFF3E0; font-size: 12px; font-weight: 800;
+    font-family: var(--font-mono);
+}
+
+/* Lista de técnicos */
+.modal-head-titles { min-width: 0; }
+.modal-head-titles .modal-note { margin: 3px 0 0; font-size: 12.5px; color: var(--ink-muted); }
+.modal-box-tecnicos .modal-body { padding: 16px 20px 22px; }
+.tec-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+.tec-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 13px;
+    padding: 13px 15px;
+    border: 1px solid #E8DCC8;
+    border-left: 4px solid var(--dogger-red);
+    border-radius: 13px;
+    background: linear-gradient(180deg, #FFFDF8 0%, #FFF7EC 100%);
+    box-shadow: 0 2px 0 rgba(33,33,33,.05), 0 6px 14px rgba(126,19,12,.06);
+}
+.tec-avatar {
+    position: relative;
+    width: 46px; height: 46px; flex: none;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(140deg, #7E130C 0%, #D62B1F 100%);
+    color: #FFF3E0; font-weight: 800; font-size: 15px;
+    font-family: var(--font-mono);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.55);
+    overflow: visible;
+}
+.tec-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.tec-avatar.is-online::after {
+    content: ""; position: absolute; right: -1px; bottom: -1px;
+    width: 13px; height: 13px; border-radius: 50%;
+    background: #2E7D32; border: 2px solid #FFFDF8;
+}
+.tec-datos { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tec-nombre { font-size: 15px; color: var(--ink); }
+.tec-estado { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 12.5px; font-weight: 700; }
+.tec-estado small { font-weight: 500; color: var(--ink-muted); }
+.tec-estado-disponible { color: #2E7D32; }
+.tec-estado-ocupado { color: #B26A00; }
+.tec-estado-saturado { color: var(--dogger-red); }
+.tec-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-muted); }
+.tec-meta span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.tec-meta .icon { color: #B9A88C; }
+
+/* Pulgares */
+.tec-voto { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.tec-voto-conteo { display: inline-flex; gap: 7px; }
+.tec-pulgar {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 11px;
+    border: 1.5px solid #E8DCC8;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink-muted);
+    font-size: 13px; font-weight: 800; font-family: var(--font-mono);
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease, color .12s ease;
+}
+.tec-pulgar:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(33,33,33,.12); }
+.tec-pulgar.up.is-on { background: #E8F5E9; border-color: #2E7D32; color: #1B5E20; box-shadow: 0 2px 0 rgba(27,94,32,.25); }
+.tec-pulgar.down.is-on { background: #FDECEA; border-color: var(--dogger-red); color: #7E130C; box-shadow: 0 2px 0 rgba(126,19,12,.22); }
+.tec-pulgar:disabled { opacity: .5; cursor: not-allowed; }
+.tec-voto-aviso { font-size: 11px; color: var(--ink-muted); }
+
+/* Tarjeta de calificación dentro del panel del técnico */
+.mi-gusta-card {
+    margin-top: 16px;
+    padding: 15px 18px;
+    border: 1px solid #E8DCC8;
+    border-radius: 15px;
+    background: linear-gradient(180deg, #FFFDF8 0%, #FFF6E8 100%);
+    box-shadow: 0 2px 0 rgba(33,33,33,.05), 0 8px 18px rgba(126,19,12,.06);
+}
+.mi-gusta-head { display: flex; align-items: center; gap: 11px; }
+.mi-gusta-ic {
+    width: 36px; height: 36px; flex: none; border-radius: 11px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(140deg, #7E130C, #D62B1F); color: #FFF3E0;
+    box-shadow: 0 2px 0 rgba(126,19,12,.28);
+}
+.mi-gusta-head strong { display: block; font-size: 14.5px; color: var(--ink); }
+.mi-gusta-head small { color: var(--ink-muted); font-size: 12px; }
+.mi-gusta-body { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.mi-gusta-num {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border-radius: 10px; border: 1.5px solid #E8DCC8;
+    background: #fff; font-weight: 800; font-family: var(--font-mono); font-size: 15px;
+}
+.mi-gusta-num.up { color: #1B5E20; border-color: #B6D7BA; background: #F1F8F2; }
+.mi-gusta-num.down { color: #7E130C; border-color: #E9B8B2; background: #FDF1EF; }
+.mi-gusta-bar { flex: 1; min-width: 130px; height: 9px; border-radius: 999px; background: #EFE3D0; overflow: hidden; }
+.mi-gusta-bar-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2E7D32, #66BB6A); }
+.mi-gusta-pct { font-size: 12.5px; color: var(--ink-muted); font-weight: 600; }
+.mi-gusta-pct.is-empty { font-weight: 500; }
+
+/* ---- Barra de aprobación por tickets resueltos (modal desde el detalle) ----
+   Mismo aspecto que la del panel del técnico, pero dentro de la tarjeta del
+   modal, y con la lista de técnicos que se califica en el ticket abierto. */
+.tec-barra {
+    display: block; width: 100%; height: 7px; margin-top: 7px;
+    border-radius: 999px; background: #EFE3D0; overflow: hidden;
+}
+.tec-barra .mi-gusta-bar-fill { height: 100%; }
+.tec-barra.is-vacia .mi-gusta-bar-fill { background: #D8CDB8; }
+.tec-barra-pct { font-size: 11.5px; color: var(--ink-muted); }
+.dash-panel-tecnicos { margin-top: 16px; }
+.dash-panel-tecnicos .dash-panel-head { margin-bottom: 2px; }
+.dash-panel-tecnicos .tec-btn-count { margin-left: auto; }
+.dash-calificar-nota { margin: 0 0 10px; font-size: 11.5px; line-height: 1.45; }
+/* La lista va en la página, no en un modal: filas cortas con la foto del
+   perfil, el estado y la barra, sin correo ni teléfono. */
+.tec-lista.es-directa { gap: 0; border-top: 1px dashed #EDE8E0; }
+.tec-lista.es-directa .tec-card {
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    padding: 8px 0;
+    border: 0;
+    border-bottom: 1px dashed #EDE8E0;
+    border-radius: 0;
+    background: none;
+}
+.tec-lista.es-directa .tec-card:last-child { border-bottom: 0; }
+.tec-lista.es-directa .tec-card:hover { background: #FFF9EE; }
+.tec-lista.es-directa .tec-avatar { width: 38px; height: 38px; font-size: 13px; }
+.tec-lista.es-directa .tec-avatar.is-online::after { width: 10px; height: 10px; }
+.tec-lista.es-directa .tec-datos { gap: 2px; }
+.tec-lista.es-directa .tec-nombre { font-size: 13.5px; }
+.tec-lista.es-directa .tec-estado { font-size: 11.5px; gap: 6px; }
+/* Correo, teléfono y ubicación solo hacen ruido en una fila corta. */
+.tec-lista.es-directa .tec-meta { display: none; }
+.tec-lista.es-directa .tec-barra { height: 5px; margin-top: 5px; }
+.tec-lista.es-directa .tec-barra-pct { font-size: 11px; }
+.tec-lista.es-directa .tec-pulgar { padding: 5px 8px; font-size: 12px; gap: 4px; }
+.tec-lista.es-directa .tec-voto-conteo { gap: 5px; }
+/* Con mas de 3 tecnicos la lista no crece: se ven unas 3 filas y el resto
+   queda a mano con la barra de desplazamiento. */
+.tec-lista.es-directa.tiene-scroll {
+    max-height: 168px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #C9BFB0 transparent;
+    padding-right: 6px;
+}
+.tec-lista.es-directa.tiene-scroll::-webkit-scrollbar { width: 6px; }
+.tec-lista.es-directa.tiene-scroll::-webkit-scrollbar-thumb {
+    background: #C9BFB0;
+    border-radius: 6px;
+}
+.tec-scroll-pista {
+    margin: 8px 0 0;
+    font-size: 11px;
+    color: #8A7F6F;
+    text-align: center;
+}
+/* Si un voto falla se dice; antes esta nota quedaba oculta en la lista
+   compacta y el boton parecia no hacer nada. */
+.tec-lista.es-directa .tec-voto-aviso {
+    display: block;
+    max-width: 170px;
+    margin-top: 3px;
+    font-size: 10.5px;
+    line-height: 1.3;
+    text-align: right;
+    color: #B42318;
+}
+
+.dash-panel-tecnicos { margin-top: 16px; }
+.dash-panel-tecnicos .dash-panel-head { margin-bottom: 2px; }
+.dash-panel-tecnicos .tec-btn-count { margin-left: auto; }
+.dash-calificar-nota { margin: 0 0 10px; font-size: 11.5px; line-height: 1.45; }
+
+@media (max-width: 560px) {
+    .tec-card { grid-template-columns: auto 1fr; }
+    .tec-voto { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+}
+
+/* Aviso de migracion pendiente en Ajustes. */
+.settings-warning {
+    display: flex; flex-direction: column; gap: 4px;
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(196, 138, 30, .45);
+    border-left: 3px solid var(--brand-gold, #C48A1E);
+    border-radius: var(--radius-md, 12px);
+    background: rgba(196, 138, 30, .10);
+    color: var(--text, #2A2724);
+    font-size: 14px;
+    line-height: 1.45;
+}
+.settings-warning code {
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, .06);
+    font-size: 13px;
+}

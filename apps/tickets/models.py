@@ -320,27 +320,54 @@ class Ticket(models.Model):
           - abiertos/en progreso: tiempo restante para el límite (o vencido).
           - resuelto/cerrado: tiempo tomado en resolverse.
         """
+        estado, texto, detalle, _limite, _aviso = self.datos_ans
+        return (estado, texto, detalle)
+
+    @property
+    def datos_ans(self):
+        """
+        Lo mismo que `info_ans`, y además las dos fechas que el cronómetro del
+        navegador necesita para seguir corriendo sin recargar la página:
+
+          limite: segundos epoch del vencimiento del ANS.
+          aviso:  segundos epoch a partir del cual el ANS pasa a "por vencer".
+
+        Los dos los decide aquí el servidor con la misma regla para todos, así
+        la etiqueta y el cronómetro nunca se contradicen.
+        """
         if self.estado in (self.Estado.RESUELTO, self.Estado.CERRADO):
             if self.fecha_cierre and self.fecha_creacion:
                 duracion = self.fecha_cierre - self.fecha_creacion
-                return ("resuelto", f"Resuelto en {formatear_duracion(duracion)}", None)
-            return ("resuelto", "Resuelto", None)
+                return ("resuelto", f"Resuelto en {formatear_duracion(duracion)}", None, None, None)
+            return ("resuelto", "Resuelto", None, None, None)
         if not self.fecha_creacion or not self.ans_horas:
-            return (None, "Sin ANS", None)
+            return (None, "Sin ANS", None, None, None)
         ahora = timezone.now()
         limite = self.fecha_limite_ans
         detalle = f"Límite {limite:%d/%m %H:%M} · ANS {self.ans_horas}h · {self.get_prioridad_display()}"
+        limite_ts = int(limite.timestamp())
         if ahora >= limite:
             return (
                 "vencido",
                 f"ANS vencido {formatear_duracion(ahora - limite)}",
                 detalle,
+                limite_ts,
+                limite_ts,
             )
         restante = limite - ahora
         total = limite - self.fecha_creacion
         margen = total * 0.25
+        # "Por vencer" arranca con el margen o con las dos horas últimas,
+        # lo que ocurra más tarde; ese momento es el que el reloj repite.
+        aviso_dt = max(limite - margen, limite - timedelta(hours=2))
         estado = "por-vencer" if (restante <= margen or restante <= timedelta(hours=2)) else "ok"
-        return (estado, f"Faltan {formatear_duracion(restante)}", detalle)
+        return (
+            estado,
+            f"Faltan {formatear_duracion(restante)}",
+            detalle,
+            limite_ts,
+            int(aviso_dt.timestamp()),
+        )
 
     @classmethod
     def estadisticas(cls):
@@ -576,6 +603,11 @@ class ConfigSitio(models.Model):
     facebook_url = models.CharField(
         "URL de Facebook", max_length=250, blank=True, default=""
     )
+    panel_mostrar_actividad_glpi = models.BooleanField(
+        "Mostrar actividad de GLPI en los paneles",
+        default=True,
+        help_text="Si está apagada, el bloque «Actividad reciente GLPI» no aparece en el panel de nadie.",
+    )
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -597,6 +629,146 @@ class ConfigSitio(models.Model):
 
     def __str__(self):
         return "Configuración de la página"
+
+
+class CalificacionTecnico(models.Model):
+    """Pulgar arriba o abajo de un usuario hacia un técnico.
+
+    Hay dos alcances:
+
+    * General (`ticket` vacío): el voto al técnico como persona, el que se
+      hace desde el modal de Mi panel. Cada persona vota una sola vez a cada
+      técnico, así el contador no se infla voteando muchas veces.
+    * Por ticket (`ticket` puesto): la opinión sobre un ticket concreto ya
+      resuelto, la que se hace desde el detalle del ticket. Una persona puede
+      opinar en tickets distintos, porque cada ticket es un trabajo distinto.
+
+    En los dos casos, volver a votar lo mismo quita el voto y cambiar de
+    opinión lo reemplaza.
+    """
+
+    class Valor(models.IntegerChoices):
+        ME_GUSTA = 1, "Me gusta"
+        NO_ME_GUSTA = -1, "No me gusta"
+
+    tecnico = models.ForeignKey(
+        "accounts.Usuario",
+        on_delete=models.CASCADE,
+        related_name="calificaciones_recibidas",
+        verbose_name="Técnico",
+    )
+    usuario = models.ForeignKey(
+        "accounts.Usuario",
+        on_delete=models.CASCADE,
+        related_name="calificaciones_hechas",
+        verbose_name="Calificado por",
+    )
+    ticket = models.ForeignKey(
+        "tickets.Ticket",
+        on_delete=models.CASCADE,
+        related_name="calificaciones_tecnicos",
+        null=True,
+        blank=True,
+        verbose_name="Ticket",
+        help_text="Vacío cuando el voto es al técnico en general, no a un ticket.",
+    )
+    valor = models.SmallIntegerField("Voto", choices=Valor.choices)
+    fecha = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "CalificacionesTecnicos"
+        verbose_name = "Calificación de técnico"
+        verbose_name_plural = "Calificaciones de técnicos"
+        ordering = ["-fecha"]
+        constraints = [
+            # Una sola opinión por persona y técnico, y una sola por ticket.
+            # En SQL Server (que es la base de producción) los nulos se
+            # consideran iguales en un índice único, así que esta misma regla
+            # también deja un solo voto general por persona y técnico.
+            models.UniqueConstraint(
+                fields=["tecnico", "usuario", "ticket"],
+                name="uq_calificacion_tecnico_usuario_ticket",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.usuario} → {self.tecnico}: {self.get_valor_display()}"
+
+    @classmethod
+    def registrar(cls, tecnico, usuario, valor, ticket=None):
+        """Guarda el voto: alterna entre me gusta / no me gusta / neutro.
+
+        Con `ticket` se vota ese trabajo; sin él, al técnico en general. Los
+        dos alcances no se pisan: votar el ticket no borra el voto general.
+        """
+        filtro = {"tecnico": tecnico, "usuario": usuario}
+        if ticket is None:
+            filtro["ticket__isnull"] = True
+        else:
+            filtro["ticket"] = ticket
+        existente = cls.objects.filter(**filtro).first()
+        if existente is None:
+            if valor == 0:
+                return 0
+            return cls.objects.create(
+                tecnico=tecnico, usuario=usuario, ticket=ticket, valor=valor
+            ).valor
+        if existente.valor == valor or valor == 0:
+            existente.delete()
+            return 0
+        existente.valor = valor
+        existente.save(update_fields=["valor", "fecha"])
+        return valor
+
+    @classmethod
+    def conteos(cls, tecnico, usuario=None, ticket=None):
+        """Me gusta / no me gusta / mi voto, en el alcance pedido.
+
+        Sin `ticket` cuenta los votos generales; con `ticket`, los de ese
+        ticket. El panel del técnico (sin argumentos de usuario) suma los dos
+        alcances, que es lo que la gente espera ver en su contador.
+        """
+        qs = cls.objects.filter(tecnico=tecnico)
+        if ticket is None:
+            qs = qs.filter(ticket__isnull=True)
+        else:
+            qs = qs.filter(ticket=ticket)
+        if usuario is not None:
+            qs = qs.filter(usuario=usuario)
+        me_gusta = qs.filter(valor=cls.Valor.ME_GUSTA).count()
+        no_me_gusta = qs.filter(valor=cls.Valor.NO_ME_GUSTA).count()
+        mi_voto = 0
+        if usuario is not None:
+            mi_voto = qs.filter(usuario=usuario).values_list("valor", flat=True).first() or 0
+        return {
+            "me_gusta": me_gusta,
+            "no_me_gusta": no_me_gusta,
+            "total_votos": me_gusta + no_me_gusta,
+            "mi_voto": mi_voto,
+        }
+
+    @classmethod
+    def aprobacion_por_resueltos(cls, tecnico):
+        """Barra de aprobación: votos atados a tickets ya resueltos.
+
+        Solo cuentan los trabajos cerrados, que es lo que la persona califica
+        de verdad; el voto general al técnico no se mezcla aquí para que la
+        barra no se mueva con opiniones que no son de un ticket.
+        """
+        qs = cls.objects.filter(tecnico=tecnico, ticket__isnull=False).filter(
+            Q(ticket__estado=Ticket.Estado.RESUELTO)
+            | Q(ticket__estado=Ticket.Estado.CERRADO)
+            | Q(ticket__fecha_resolucion__isnull=False)
+        )
+        me_gusta = qs.filter(valor=cls.Valor.ME_GUSTA).count()
+        no_me_gusta = qs.filter(valor=cls.Valor.NO_ME_GUSTA).count()
+        total = me_gusta + no_me_gusta
+        return {
+            "me_gusta": me_gusta,
+            "no_me_gusta": no_me_gusta,
+            "total": total,
+            "porcentaje": round(me_gusta * 100 / total) if total else 0,
+        }
 
 
 # =====================================================================
@@ -687,6 +859,38 @@ class ObservadorPunto(models.Model):
         return f"{self.observador} → {self.punto}"
 
 
+class ZonaObservador(models.Model):
+    """Zona propia del observador para agrupar a las personas que sigue.
+
+    No es un punto operativo (esos los asigna el administrador con
+    ObservadorPunto): es una carpeta con nombre —"Sede norte", "Clientes
+    VIP"— donde el observador agrupa elementos de su lista para seguirles
+    los tickets y las respuestas de los técnicos.
+    """
+
+    observador = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="zonas_observador",
+        db_column="ObservadorId",
+        verbose_name="Observador",
+    )
+    nombre = models.CharField(
+        "Nombre de la zona", max_length=80, db_column="Nombre"
+    )
+    creado_en = models.DateTimeField(auto_now_add=True, db_column="CreadoEn")
+
+    class Meta:
+        db_table = "ZonasObservador"
+        verbose_name = "Zona del observador"
+        verbose_name_plural = "Zonas de los observadores"
+        unique_together = [("observador", "nombre")]
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return f"{self.observador} · {self.nombre}"
+
+
 class ElementoMiLista(models.Model):
     """Elemento que el observador agregó a su panel personal.
 
@@ -736,6 +940,16 @@ class ElementoMiLista(models.Model):
         related_name="+",
         db_column="PuntoId",
         verbose_name="Punto o zona",
+    )
+    zona = models.ForeignKey(
+        ZonaObservador,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="elementos",
+        db_column="ZonaObservadorId",
+        verbose_name="Zona del observador",
+        help_text="Carpeta propia del observador para agrupar a quien sigue.",
     )
     nota = models.CharField("Nota", max_length=200, blank=True, default="", db_column="Nota")
     creado_en = models.DateTimeField(auto_now_add=True, db_column="CreadoEn")

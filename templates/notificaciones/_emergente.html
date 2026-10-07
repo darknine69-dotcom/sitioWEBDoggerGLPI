@@ -1,23 +1,31 @@
-{% comment %}Ventana emergente: aviso nuevo con icono alusivo. Solo aparece una vez por aviso.{% endcomment %}
+{% comment %}Ventana emergente: aviso nuevo. Se muestra con <dialog> nativo para que
+Escape y el boton de cerrar funcionen aunque el JS no llegue a cargarse.
+Va centrada en pantalla, con el aviso en grande y dos botones: OK para
+cerrarlo y Ver para ir directo al ticket o a la vista relacionada.{% endcomment %}
 {% if request.user.is_authenticated and notif_emergente %}
-<div class="notif-popup-overlay" id="notifPopup"
-     data-id="{{ notif_emergente.pk }}"
-     data-url="{{ notif_emergente.url }}"
-     role="dialog" aria-modal="true" aria-labelledby="notifPopupTitle">
-    <div class="notif-popup notif-popup-{{ notif_emergente.tipo }}">
-        <button type="button" class="notif-popup-x" data-notif-cerrar aria-label="Cerrar">&times;</button>
+<dialog class="notif-popup notif-popup-{{ notif_emergente.tipo }}" id="notifPopup"
+        data-id="{{ notif_emergente.pk }}"
+        data-url="{{ notif_emergente.url|default:'#' }}"
+        aria-labelledby="notifPopupTitle">
+    <form method="dialog" class="notif-popup-form">
+        <button class="notif-popup-x" aria-label="Cerrar">&times;</button>
         <span class="notif-popup-head">
             <span class="notif-popup-icon" aria-hidden="true">
                 <svg class="icon"><use href="#{{ notif_emergente.icono|default:'i-bell' }}"/></svg>
             </span>
+            <span class="notif-popup-kicker">Notificación</span>
             <h3 class="notif-popup-title" id="notifPopupTitle">{{ notif_emergente.titulo }}</h3>
         </span>
         <p class="notif-popup-text">{{ notif_emergente.mensaje }}</p>
         <div class="notif-popup-actions">
-            <a class="btn btn-accent btn-sm notif-popup-ver" href="{{ notif_emergente.url|default:'#' }}" data-notif-cerrar>Ver</a>
-            <button type="button" class="btn btn-ghost btn-sm" data-notif-cerrar>Ahora no</button>
+            {% if notif_emergente.url %}
+            <a class="btn btn-accent notif-popup-ver" href="{{ notif_emergente.url }}" data-notif-cerrar>
+                Ver
+                <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg>
+            </a>
+            {% endif %}
+            <button class="btn btn-ghost notif-popup-ok" data-notif-cerrar>OK</button>
         </div>
-        <small class="notif-popup-foot">También lo verás en la campana de notificaciones.</small>
-    </div>
-</div>
+    </form>
+</dialog>
 {% endif %}

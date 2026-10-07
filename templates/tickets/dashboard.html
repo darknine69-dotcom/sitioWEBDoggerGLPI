@@ -23,6 +23,10 @@
 .pivot-table tbody tr:hover { background: var(--dogger-cream); }
 .pivot-table .pivot-lead { font-weight: 600; }
 .pivot-table .badge-vencido { display: inline-block; min-width: 22px; text-align: center; background: rgba(214,43,31,.12); border-radius: 999px; padding: 1px 7px; font-weight: 800; color: var(--dogger-red); }
+/* La tabla de recientes se alimenta en tiempo real: el botón lo dice. */
+.badge-envivo { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; padding: 2px 9px 2px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; background: rgba(214,43,31,.12); color: var(--dogger-red); }
+.badge-envivo .punto-vivo { width: 7px; height: 7px; border-radius: 50%; background: var(--dogger-red); animation: pulso-vivo 1.6s ease-in-out infinite; }
+@keyframes pulso-vivo { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.75); } }
 .pivot-table .pivot-total-row td { border-top: 2px solid var(--line); background: #FFF6E8; }
 .pivot-table .pivot-total-row td:first-child { font-weight: 800; font-family: var(--font-display); }
 
@@ -329,7 +333,7 @@
             <div class="dashboard-panel-title">
                 <svg class="icon icon-sm"><use href="#i-ticket"/></svg>
                 <h2>Últimos pedidos registrados</h2>
-                <a href="{% url 'tickets:lista' %}" class="btn btn-outline btn-sm">Ver todos</a>
+                <a href="{% url 'tickets:lista' %}" class="btn btn-outline btn-sm">Ver todos <span class="badge-envivo"><span class="punto-vivo" aria-hidden="true"></span>En vivo</span></a>
             </div>
             <div class="table-card">
                 <div class="table-scroll">
@@ -396,6 +400,7 @@
         </div>
 
         <aside class="dashboard-bottom-side">
+            {% if DOGGER.panel_mostrar_actividad_glpi %}
             <article class="dashboard-card">
                 <div class="glpi-head">
                     <h3><svg class="icon icon-sm"><use href="#i-refresh"/></svg> Actividad GLPI</h3>
@@ -403,6 +408,8 @@
                 </div>
                 {% include "tickets/_glpi_activity.html" with eventos_glpi=eventos_glpi use_descripcion=True ticket_url="tickets:detalle" empty_text="Sin eventos recientes de GLPI todavía." %}
             </article>
+            {% endif %}
+
         </aside>
     </div>
 </main>

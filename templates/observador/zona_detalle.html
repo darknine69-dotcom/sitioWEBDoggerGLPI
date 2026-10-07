@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dogger · Zona {{ zona.nombre }}{% endblock %}
+{% block body_class %}observador-shell{% endblock %}
+{% block header_title %}Zona {{ zona.nombre }}{% endblock %}
+{% block header_desc %}Seguimiento de su gente: tickets y respuestas de los técnicos.{% endblock %}
+
+{% block content %}
+<main class="page obs-page">
+    <div class="page-head">
+        <div class="obs-head-actions">
+            <a href="{% url 'tickets:obs_zonas' %}" class="btn btn-outline btn-sm">
+                <svg class="icon"><use href="#i-arrow-left"/></svg> Zonas
+            </a>
+            <button type="button" class="btn btn-outline btn-sm" onclick="window.print()">
+                <svg class="icon"><use href="#i-printer"/></svg> Imprimir
+            </button>
+        </div>
+    </div>
+
+    {% include "observador/_menu.html" with activa="zonas" %}
+
+    {% if filas %}
+        {% for f in filas %}
+        <div class="obs-bloque">
+            <h3 class="obs-bloque-titulo">
+                {{ f.nombre }}
+                <small class="obs-tarjeta-dato">{{ f.email }}</small>
+            </h3>
+            <p>
+                <span class="obs-pill obs-pill-{{ f.estado }}">
+                    <span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}
+                </span>
+                <span class="obs-tarjeta-dato">
+                    {{ f.total }} ticket{{ f.total|pluralize }} · {{ f.abiertos }} abierto{{ f.abiertos|pluralize }} · {{ f.avance }}% resuelto
+                </span>
+            </p>
+            {% if f.total %}
+            <span class="obs-bar" role="img" aria-label="Avance {{ f.avance }} por ciento">
+                <span class="obs-bar-seg obs-bar-verde" style="flex:{{ f.avance }}"></span>
+                <span class="obs-bar-seg obs-bar-vacio" style="flex:{{ f.falta }}"></span>
+            </span>
+            {% endif %}
+            <h4 class="obs-bloque-titulo">Respuestas de los técnicos</h4>
+            {% if f.respuestas %}
+            <ul class="obs-resultados">
+                {% for r in f.respuestas %}
+                <li class="obs-resultado">
+                    <span class="obs-resultado-ic"><svg class="icon"><use href="#i-message"/></svg></span>
+                    <span class="obs-resultado-txt">
+                        <strong>{{ r.usuario.nombre|default:r.autor_nombre }} · {{ r.ticket.codigo }} · {{ r.fecha|date:"d/m/Y H:i" }}</strong>
+                        <small>{{ r.comentario|truncatechars:140 }}</small>
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="obs-tarjeta-dato">Sin respuestas visibles de técnicos todavía.</p>
+            {% endif %}
+            <form method="post" action="{% url 'tickets:obs_zona_miembro' %}">
+                {% csrf_token %}
+                <input type="hidden" name="elemento" value="{{ f.elemento.pk }}">
+                <input type="hidden" name="zona" value="">
+                <input type="hidden" name="volver" value="{% url 'tickets:obs_zona_detalle' zona.pk %}">
+                <button type="submit" class="btn btn-sm btn-ghost">Sacar de la zona</button>
+            </form>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="obs-vacio">
+        <span class="obs-vacio-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
+        <strong>Zona vacía</strong>
+        <p>Asigna aquí a personas de tu lista desde la pantalla de Zonas para seguirlas.</p>
+        <a href="{% url 'tickets:obs_zonas' %}" class="btn btn-sm">Ir a Zonas</a>
+    </div>
+    {% endif %}
+</main>
+{% endblock %}

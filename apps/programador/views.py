@@ -37,6 +37,9 @@ def panel_programador(request):
         set(Categoria.objects.exclude(grupo="").values_list("grupo", flat=True))
         | set(CalendarioEvento.objects.exclude(grupo="").values_list("grupo", flat=True))
     )
+    # Evento a destacar: llega desde la notificación ("Ver") para abrir directo
+    # la ficha de esa fecha en vez de dejar al técnico buscando en el calendario.
+    destacado = request.GET.get("ev", "")
     year, month = request.GET.get("anio"), request.GET.get("mes")
     hoy = dt.date.today()
     if year and month:
@@ -55,6 +58,7 @@ def panel_programador(request):
         request,
         "programador/programador.html",
         {
+            "destacado": destacado,
             "tecnicos": tecnicos,
             "sitios": sitios,
             "grupos": grupos,
@@ -299,4 +303,4 @@ def programador_festivo(request):
     if not nombre:
         return JsonResponse({"error": "Indica el nombre del festivo"}, status=400)
     Festivo.objects.update_or_create(fecha=fecha, defaults={"nombre": nombre[:100]})
-    return JsonResponse({"ok": True})
+    return JsonResponse({"ok": True})

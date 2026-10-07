@@ -20,11 +20,11 @@
             <div><b>ID GLPI</b><span>{{ u.glpi_user_id|default:"—" }}</span></div>
             <div><b>Estado</b><span>{% if u.activo %}Activa{% else %}Inactiva{% endif %}</span></div>
             <div><b>Correo</b><span>{{ u.email }}</span></div>
-            <div><b>Teléfono</b><span>{{ u.telefono|default:"—" }}</span></div>
+            <div><b>Teléfono</b><span>{{ u.telefono|default:"Sin número" }}</span></div>
             <div><b>Ubicación</b><span>{{ u.ubicacion|default:"—" }}</span></div>
             {% if u.ficha.punto %}<div><b>Punto usu.</b><span>{{ u.ficha.punto }}</span></div>{% endif %}
             <div><b>Registrado</b><span>{{ u.ficha.registrado|date:"d/m/Y H:i" }}</span></div>
-            <div><b>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.last_login %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}</span></div>
+            <div><b>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.ficha.ultimo_acceso %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}</span></div>
         </div>
     </div>
     <div class="ue-box">

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Dogger · Ajustes de cuenta{% endblock %}
+{% block title %}Dogger · Mi perfil{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
-{% block header_title %}Ajustes de cuenta{% endblock %}
-{% block header_desc %}Administra tu perfil, contraseña y notificaciones.{% endblock %}
+{% block header_title %}Mi perfil{% endblock %}
+{% block header_desc %}Tu cuenta, tu contraseña y cómo te avisamos.{% endblock %}
 
 {% block content %}
 <main class="page">
@@ -17,21 +17,21 @@
                     {% if request.user.avatar %}
                     <img src="{{ request.user.avatar.url }}" alt="{{ request.user.nombre }}" class="settings-avatar-img">
                     {% else %}
-                    <div class="settings-avatar-placeholder">{{ request.user.initials }}</div>
+                    <div class="settings-avatar-placeholder">{{ request.user.iniciales }}</div>
                     {% endif %}
                 </div>
                 <h3>{{ request.user.nombre }}</h3>
                 <p>{{ request.user.email }}</p>
                 <span class="badge-role {{ request.user.rol }}">{{ request.user.get_rol_display }}</span>
                 <a href="{% url 'accounts:perfil' %}" class="settings-profile-link">
-                    <svg class="icon icon-sm"><use href="#i-user"/></svg> Ver mi perfil
+                    <svg class="icon icon-sm"><use href="#i-settings"/></svg> Ajustes de la cuenta
                 </a>
             </div>
 
             <nav class="settings-nav">
                 <a href="#perfil" class="settings-nav-link active" data-settings-tab="perfil">
                     <svg class="icon icon-sm"><use href="#i-user"/></svg>
-                    Perfil
+                    Datos
                 </a>
                 <a href="#password" class="settings-nav-link" data-settings-tab="password">
                     <svg class="icon icon-sm"><use href="#i-lock"/></svg>
@@ -75,7 +75,7 @@
                             {% if request.user.avatar %}
                             <img src="{{ request.user.avatar.url }}" alt="" class="settings-avatar-img" id="avatar-preview">
                             {% else %}
-                            <div class="settings-avatar-placeholder lg" id="avatar-preview">{{ request.user.initials }}</div>
+                            <div class="settings-avatar-placeholder lg" id="avatar-preview">{{ request.user.iniciales }}</div>
                             {% endif %}
                         </div>
                         <label class="btn btn-outline btn-sm" for="id_avatar">
@@ -179,12 +179,48 @@
                     <div class="notif-item">
                         <div class="notif-info">
                             <strong>Manual de uso</strong>
-                            <small>Todos los pasos de la plataforma, por rol y en el mismo orden en que los vas a usar.</small>
+                            <small>
+                                {% if manual_disponible %}
+                                    Toca «Vista previa» para leer el documento aquí mismo, o bájalo en Word
+                                    ({{ manual_archivo }}).
+                                {% else %}
+                                    Todos los pasos de la plataforma, por rol y en el mismo orden en que los vas a usar.
+                                {% endif %}
+                            </small>
                         </div>
-                        <a href="{% url 'tickets:manual_uso' %}" class="btn btn-outline btn-sm">
-                            <svg class="icon icon-sm"><use href="#i-book"/></svg> Abrir manual
-                        </a>
+                        <div class="manual-acciones">
+                            {% if manual_disponible %}
+                            <button type="button" class="btn btn-outline btn-sm" data-manual-vista-previa>
+                                <svg class="icon icon-sm"><use href="#i-book"/></svg> Vista previa
+                            </button>
+                            <a href="{% url 'accounts:descargar_manual' %}" class="btn btn-accent btn-sm">
+                                <svg class="icon icon-sm"><use href="#i-download"/></svg> Descargar Word
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
+                    {% if manual_disponible %}
+                    <dialog class="manual-preview" id="manualPreview"
+                            aria-labelledby="manualPreviewTitulo">
+                        <div class="manual-preview-cab">
+                            <h4 id="manualPreviewTitulo">Manual de uso</h4>
+                            <button type="button" class="manual-preview-x" data-manual-cerrar
+                                    aria-label="Cerrar">&times;</button>
+                        </div>
+                        <iframe class="manual-preview-frame" title="Vista previa del manual de uso"
+                                src="{% url 'accounts:ver_manual' %}"
+                                loading="lazy"></iframe>
+                        <div class="manual-preview-pie">
+                            <small>El documento completo de tu rol, con los pantallazos y las indicaciones. Usa la rueda del mouse para ir cambiando de página.</small>
+                            <div>
+                                <a href="{% url 'accounts:descargar_manual' %}" class="btn btn-accent btn-sm">
+                                    <svg class="icon icon-sm"><use href="#i-download"/></svg> Descargar Word
+                                </a>
+                                <button type="button" class="btn btn-ghost btn-sm" data-manual-cerrar>Cerrar</button>
+                            </div>
+                        </div>
+                    </dialog>
+                    {% endif %}
                     <div class="notif-item">
                         <div class="notif-info">
                             <strong>Tour guiado</strong>
@@ -287,6 +323,38 @@
                     </div>
                     {% endif %}
 
+                    {% comment %}El interruptor tambien vive aqui: la pestana GLPI es donde
+                    se busca, y no hay que ir a "Pagina" a encontrarlo.{% endcomment %}
+                    {% if request.user.rol == 'admin' %}
+                    <div class="settings-panel-header">
+                        <h3>Actividad de GLPI en los paneles</h3>
+                        <p>Enciende o apaga, para todo el mundo, el bloque «Actividad reciente GLPI» que aparece en «Mi panel» y en el dashboard.</p>
+                    </div>
+                    <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="ajustes_actividad_glpi" value="1">
+                        <input type="hidden" name="panel_mostrar_actividad_glpi" value="0">
+                        <input type="hidden" name="volver" value="glpi">
+                        {% if config_sitio_sin_migracion %}
+                        <div class="settings-warning">
+                            <strong>Falta aplicar una migración.</strong>
+                            <span>Ejecuta <code>python manage.py migrate</code> en el servidor: hasta entonces el interruptor no surte efecto.</span>
+                        </div>
+                        {% endif %}
+                        <div class="notif-item">
+                            <div class="notif-info">
+                                <strong>Mostrar actividad de GLPI</strong>
+                                <small>Al desactivarla desaparece de todas las pantallas. Los datos de GLPI no se tocan.</small>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="panel_mostrar_actividad_glpi" value="1" onchange="this.form.submit()"
+                                       {% if config_sitio.panel_mostrar_actividad_glpi %}checked{% endif %}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </form>
+                    {% endif %}
+
                     <div class="settings-panel-header">
                         <h3>Eliminación de tickets</h3>
                         <p>Decide si al borrar un ticket también se elimina del sistema GLPI.</p>
@@ -317,10 +385,42 @@
             <section id="pagina" class="settings-panel" data-settings-panel="pagina">
                 <div class="settings-panel-header">
                     <h3>Configuración de la página</h3>
-                    <p>Controla qué botones de redes sociales se muestran en las vistas de los usuarios y edita sus enlaces.</p>
+                    <p>Controla qué se muestra en toda la página: el bloque de actividad de GLPI de los paneles y los botones de redes sociales con sus enlaces.</p>
                 </div>
                 <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form">
                     {% csrf_token %}
+                    {# Marca de que viene este formulario + valor por defecto del interruptor. #}
+                    <input type="hidden" name="ajustes_pagina" value="1">
+                    <input type="hidden" name="ajustes_actividad_glpi" value="1">
+                    <input type="hidden" name="panel_mostrar_actividad_glpi" value="0">
+                    <input type="hidden" name="volver" value="pagina">
+
+                    <div class="settings-panel-header">
+                        <h3>Panel de los usuarios</h3>
+                        <p>Un ajuste general: cuando está apagado, nadie ve el bloque «Actividad reciente GLPI».</p>
+                    </div>
+                    {% if config_sitio_sin_migracion %}
+                    <div class="settings-warning">
+                        <strong>Falta aplicar una migración en la base de datos.</strong>
+                        <span>Por eso el interruptor de GLPI no hace nada todavía. Ejecuta <code>python manage.py migrate</code> en el servidor y recarga esta página.</span>
+                    </div>
+                    {% endif %}
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>Mostrar actividad de GLPI</strong>
+                            <small>En «Mi panel» y en el dashboard aparece la lista de eventos de GLPI (cambios de estado, seguimientos). Al desactivarla desaparece de todas las pantallas, sin tocar los datos.</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="panel_mostrar_actividad_glpi" value="1" onchange="this.form.submit()"
+                                   {% if config_sitio.panel_mostrar_actividad_glpi %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-panel-header">
+                        <h3>Redes sociales</h3>
+                        <p>Si la URL está vacía, el botón no se muestra.</p>
+                    </div>
                     <div class="notif-item">
                         <div class="notif-info">
                             <strong>Mostrar sección de redes</strong>
@@ -432,4 +532,36 @@
         </div>
     </div>
 </main>
-{% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Vista previa del manual: se abre dentro de los ajustes, sin salir de la
+   pagina, con el manual del rol ya cargado en el marco. */
+(function () {
+    "use strict";
+    var dlg = document.getElementById("manualPreview");
+    if (!dlg) { return; }
+
+    var abrir = document.querySelector("[data-manual-vista-previa]");
+    if (abrir) {
+        abrir.addEventListener("click", function () {
+            if (typeof dlg.showModal === "function") {
+                try { dlg.showModal(); return; } catch (e) { dlg.setAttribute("open", ""); return; }
+            }
+            dlg.setAttribute("open", "");
+        });
+    }
+    dlg.querySelectorAll("[data-manual-cerrar]").forEach(function (b) {
+        b.addEventListener("click", function () {
+            if (typeof dlg.close === "function") { dlg.close(); } else { dlg.removeAttribute("open"); }
+        });
+    });
+    dlg.addEventListener("click", function (ev) {
+        if (ev.target === dlg) {
+            if (typeof dlg.close === "function") { dlg.close(); } else { dlg.removeAttribute("open"); }
+        }
+    });
+})();
+</script>
+{% endblock %}

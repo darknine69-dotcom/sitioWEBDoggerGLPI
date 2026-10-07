@@ -121,8 +121,23 @@
                 renderCalendario();
                 renderMatrix();
                 renderListas();
+                abrir_destacado();
             })
             .catch(function () { toast("Error al cargar los datos", false); });
+    }
+
+    /* ---------- aviso que llega con el evento a destacar ----------
+       La notificación "Ver" abre /programador/?anio=..&mes=..&ev=PK: aquí se
+       abre la ficha de ese evento para que no haya que buscarlo a mano. */
+    function abrir_destacado() {
+        var pk = app.getAttribute("data-destacado");
+        if (!pk) { return; }
+        var encontrado = (data.eventos || []).filter(function (x) {
+            return String(x.id) === String(pk);
+        })[0];
+        if (!encontrado) { return; }
+        app.removeAttribute("data-destacado");
+        abrirModalDetalle(encontrado, encontrado.fecha);
     }
 
     /* ---------- calendario ---------- */
@@ -779,4 +794,4 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
     }
     bind();
     load();
-})();
+})();

@@ -4,6 +4,26 @@ from django.conf import settings
 ESTADOS_ACTIVOS = ("abierto", "en-progreso")
 
 
+def _tipos_por_revisar(rol):
+    """Avisos que cuentan en el morrito del menú para cada rol.
+
+    Al usuario no le cuenta como "por revisar" el aviso de confirmación de su
+    propia solicitud (el que aparece al crearla): lo que le interesa es lo que
+    le llega del personal o lo que tiene pendiente de mirar.
+    """
+    from apps.notificaciones.models import Notificacion
+
+    if rol == "usuario":
+        return (
+            Notificacion.Tipo.BIENVENIDA,
+            Notificacion.Tipo.TICKET_CERRADO,
+            Notificacion.Tipo.TICKET_EDITADO,
+            Notificacion.Tipo.EVENTO,
+            Notificacion.Tipo.TICKET_RECORDATORIO,
+        )
+    return tuple(Notificacion.Tipo.values)
+
+
 def dogger_config(request):
     """Expone settings.DOGGER combinado con la configuración de la página
     editable desde el panel (apps.tickets.models.ConfigSitio).
@@ -29,6 +49,7 @@ def dogger_config(request):
             "instagram": cfg.instagram_url,
             "facebook_activo": cfg.facebook_activo,
             "facebook": cfg.facebook_url,
+            "panel_mostrar_actividad_glpi": cfg.panel_mostrar_actividad_glpi,
         })
     except Exception:
         # Si la tabla aún no existe (antes de migrar), se mantiene lo de settings.
@@ -36,18 +57,43 @@ def dogger_config(request):
     return {
         "DOGGER": d,
         **_contador_papelera(request),
+        **_contador_mi_papelera(request),
         **_contador_sin_asignar(request),
         **_contadores_menu(request),
     }
 
 
+def _contador_mi_papelera(request):
+    """Cuántas solicitudes canceladas tiene el usuario en su propia papelera.
+
+    Solo para el rol usuario: el staff usa la papelera general, que ya tiene
+    su contador en el menú de administración.
+    """
+    usuario = getattr(request, "user", None)
+    if usuario is None or not usuario.is_authenticated:
+        return {"mi_papelera_total": 0}
+    if getattr(usuario, "rol", None) != "usuario" or not getattr(usuario, "activo", False):
+        return {"mi_papelera_total": 0}
+    match = getattr(request, "resolver_match", None)
+    if match is not None and match.url_name == "mi_papelera":
+        return {}
+    try:
+        from apps.tickets.models import Ticket
+
+        total = Ticket.en_papelera().filter(solicitante_email=usuario.email).count()
+    except Exception:
+        # Antes de aplicar la migración la columna no existe.
+        return {"mi_papelera_total": 0}
+    return {"mi_papelera_total": total}
+
+
 def _contadores_menu(request):
     """Conteos de lo que falta por revisar, uno por entrada del menú.
 
-    Cada rol ve lo que le corresponde: el técnico cuenta sus tickets
-    asignados, el administrador los abiertos de toda la mesa más los
-    urgentes, y el usuario los suyos propios. El contexto se completa con
-    ceros para que la plantilla pueda preguntar siempre por la misma clave.
+    Ya no son cuentas cerradas de la base de datos sino de lo que cada persona
+    tiene *sin mirar*: cuando ocurre un evento (un ticket nuevo, una respuesta,
+    una edición) el morrito aparece y en cuanto se entra a esa pantalla se
+    limpia. Así el número nunca queda congelado ni mintiendo.
     """
     vacio = {
         "menu_total": 0,
@@ -60,53 +106,88 @@ def _contadores_menu(request):
         return vacio
 
     rol = getattr(usuario, "rol", None)
+    if rol == "observador":
+        # El observador no tiene campana de avisos: se queda con la cuenta real
+        # de los tickets de sus puntos.
+        try:
+            from apps.tickets.models import Ticket
+
+            base = _tickets_de_puntos_del_observador(usuario, dict(estado__in=ESTADOS_ACTIVOS))
+            return {
+                "menu_total": base.count(),
+                "menu_mios": ElementoMiLista.objects.filter(observador=usuario).count(),
+                "menu_urgentes": base.filter(prioridad=Ticket.Prioridad.URGENTE).count(),
+                "menu_respondidos": 0,
+            }
+        except Exception:
+            return vacio
+
     try:
-        from apps.tickets.models import Ticket
+        from apps.notificaciones import services as avisos
+        from apps.notificaciones.models import Notificacion
 
-        activos = dict(estado__in=ESTADOS_ACTIVOS)
-        urgente = Ticket.Prioridad.URGENTE
-
-        if rol == "tecnico":
-            base = Ticket.objects.filter(tecnico_asignado=usuario, **activos)
-            mios = base
-            total = base
-            extra = {}
-        elif rol == "admin":
-            base = Ticket.objects.filter(**activos)
-            mios = base.filter(tecnico_asignado__isnull=True)
-            total = base
-            extra = {}
-        elif rol == "observador":
-            # El observador solo mira los puntos que tiene asignados.
-            base = _tickets_de_puntos_del_observador(usuario, activos)
-            mios = ElementoMiLista.objects.filter(observador=usuario)
-            total = base
-            extra = {"menu_mios": mios.count()}
-        else:
-            # El usuario solo ve lo suyo: lo que tiene abierto y lo que ya le
-            # respondieron (resuelto o cerrado) y todavia no ha revisado.
-            base = Ticket.objects.filter(solicitante_email=usuario.email, **activos)
-            mios = base
-            total = base
-            extra = {}
+        tipos = _tipos_por_revisar(rol)
+        sin_asignar = _sin_revisar_sin_asignar(usuario)
+        total = avisos.sin_revisar(usuario, tipos=tipos)
+        urgentes = avisos.sin_revisar(usuario, tipos=tipos, clave_prefijo="rec:urgentes")
 
         respondidos = 0
-        if rol not in ("tecnico", "observador"):
-            respondidos = Ticket.objects.filter(
-                solicitante_email=usuario.email,
-                estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO],
+        if rol == "usuario":
+            # Lo que el personal ya le respondió y sigue sin abrir.
+            respondidos = Notificacion.objects.filter(
+                usuario=usuario,
+                leida=False,
+                tipo__in=[Notificacion.Tipo.TICKET_CERRADO, Notificacion.Tipo.TICKET_EDITADO],
+            ).count()
+        elif rol == "admin":
+            respondidos = Notificacion.objects.filter(
+                usuario=usuario,
+                leida=False,
+                tipo=Notificacion.Tipo.TICKET_NUEVO,
             ).count()
 
+        if rol == "tecnico":
+            mios = sin_asignar
+        elif rol == "admin":
+            mios = sin_asignar
+        else:
+            mios = total
+
         return {
-            "menu_total": total.count(),
-            "menu_mios": mios.count(),
-            "menu_urgentes": base.filter(prioridad=urgente).count(),
+            "menu_total": total,
+            "menu_mios": mios,
+            "menu_urgentes": urgentes,
             "menu_respondidos": respondidos,
-            **extra,
         }
     except Exception:
         # Antes de migrar, o si la tabla aun no existe, el menú va sin conteos.
         return vacio
+
+
+def _sin_revisar_sin_asignar(usuario):
+    """Avisos sin revisar que apuntan a la bandeja de "sin asignar".
+
+    Cuenta los del recordatorio diario y los de los tickets que entraron sin
+    técnico: ambas cosas se aclaran al abrir la bandeja.
+    """
+    from django.db.models import Q
+
+    from apps.notificaciones import services as avisos
+    from apps.notificaciones.models import Notificacion
+
+    return Notificacion.objects.filter(
+        usuario_id=usuario.pk,
+        leida=False,
+        tipo__in=list(_tipos_por_revisar(getattr(usuario, "rol", None))),
+    ).filter(
+        Q(url=_url_sin_asignar()) | Q(clave__startswith="rec:sin-asignar")
+    ).count()
+
+
+def _url_sin_asignar():
+    from django.urls import reverse
+
+    return reverse("tickets:sin_asignar")
 
 
 def _tickets_de_puntos_del_observador(usuario, activos_extra):
@@ -124,7 +205,7 @@ def _tickets_de_puntos_del_observador(usuario, activos_extra):
 
 
 def _contador_sin_asignar(request):
-    """Tickets abiertos sin técnico, para el contador de la navbar del personal."""
+    """Solicitudes sin técnico que el personal todavía no ha revisado."""
     usuario = getattr(request, "user", None)
     if usuario is None or not usuario.is_authenticated:
         return {"sin_asignar_total": 0}
@@ -134,17 +215,10 @@ def _contador_sin_asignar(request):
     if match is not None and match.url_name == "sin_asignar":
         return {}
     try:
-        from apps.tickets.models import Ticket
-
-        total = (
-            Ticket.objects.filter(
-                estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
-                tecnico_asignado__isnull=True,
-            ).count()
-        )
+        total = _sin_revisar_sin_asignar(usuario)
     except Exception:
         return {"sin_asignar_total": 0}
-    return {"sin_asignar_total": total}
+    return {"sin_asignar_total": max(total, 0)}
 
 
 def _contador_papelera(request):
@@ -169,3 +243,24 @@ def _contador_papelera(request):
         # Antes de aplicar la migración la columna no existe.
         return {"papelera_total": 0}
     return {"papelera_total": total}
+
+
+
+def calificacion_lateral(request):
+    """Calificación del técnico para el pie del menú lateral.
+
+    Solo técnicos: dos conteos por página. Si la tabla aún no existe
+    (antes de migrar), no se muestra nada.
+    """
+    vacio = {"calif_lateral": None}
+    usuario = getattr(request, "user", None)
+    if usuario is None or not getattr(usuario, "is_authenticated", False):
+        return vacio
+    if getattr(usuario, "rol", None) != "tecnico":
+        return vacio
+    try:
+        from apps.tickets.views import _calificacion_de
+
+        return {"calif_lateral": _calificacion_de(usuario)}
+    except Exception:
+        return vacio

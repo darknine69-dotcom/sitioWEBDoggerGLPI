@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% comment %}
+Papelera del usuario: sus propias solicitudes eliminadas. Es el mismo
+concepto que la del administrador, pero acá cada quien solo ve lo suyo y
+restaura lo que canceló sin pedirle ayuda a nadie.
+{% endcomment %}
+
+{% block title %}Dogger · Mi papelera{% endblock %}
+{% block body_class %}mi-panel-shell mi-papelera-page{% endblock %}
+{% block header_title %}Mi papelera{% endblock %}
+{% block header_desc %}Solicitudes que cancelaste y todavía puedes recuperar.{% endblock %}
+
+{% block extra_css %}
+{% include "tickets/_papelera_css.html" %}
+{% endblock %}
+
+{% block content %}
+<main class="page page-corporate pap-page">
+    <section class="pap-hero">
+        <span class="pap-hero-icon"><svg class="icon"><use href="#i-trash"/></svg></span>
+        <div class="pap-hero-text">
+            <strong>{{ total }}</strong>
+            <span>solicitud{{ total|pluralize }} cancelada{{ total|pluralize:"s" }}</span>
+        </div>
+        <a href="{% url 'tickets:mi_panel' %}" class="btn btn-outline">
+            <svg class="icon icon-sm"><use href="#i-arrow-left"/></svg> Volver a mis solicitudes
+        </a>
+    </section>
+
+    <p class="pap-note">
+        <svg class="icon"><use href="#i-info"/></svg>
+        <span>Lo que está aquí <strong>no cuenta</strong> en el contador de abiertas, ni en los reportes ni en la sincronización con GLPI. Puedes <strong>recuperar</strong> la solicitud cuando la necesites; "Borrar" sí es definitivo.</span>
+    </p>
+
+    <form class="pap-search" method="get" action="{% url 'tickets:mi_papelera' %}">
+        <svg class="icon pap-search-icon"><use href="#i-search"/></svg>
+        <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código o título…"
+               aria-label="Buscar en mi papelera">
+        <button type="submit" class="btn btn-primary">Buscar</button>
+        {% if q %}<a class="link-clear" href="{% url 'tickets:mi_papelera' %}">✕ Limpiar</a>{% endif %}
+    </form>
+
+{% if tickets %}
+    {% include "tickets/_papelera_lista.html" with pap_solicitante=0 %}
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination-bar">
+        <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} en tu papelera</span>
+        <div class="pagination-links">
+            {% if page_obj.has_previous %}
+            <a class="page-pill" href="?{% if q %}q={{ q|urlencode }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">‹ Anterior</a>
+            {% else %}
+            <span class="page-pill disabled">‹ Anterior</span>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a class="page-pill" href="?{% if q %}q={{ q|urlencode }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Siguiente ›</a>
+            {% else %}
+            <span class="page-pill disabled">Siguiente ›</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+{% else %}
+    <div class="pap-empty">
+        <span class="pap-empty-icon"><svg class="icon"><use href="#i-trash"/></svg></span>
+        <strong>{% if q %}No hay resultados para "{{ q }}"{% else %}Tu papelera está vacía{% endif %}</strong>
+        <p>{% if q %}Prueba con otro código o título, o <a href="{% url 'tickets:mi_papelera' %}">ver todo</a>.{% else %}Cuando canceles una solicitud aparecerá aquí y podrás recuperarla cuando la necesites.{% endif %}</p>
+        {% if not q %}
+        <a href="{% url 'tickets:mi_panel' %}" class="btn btn-outline">
+            <svg class="icon icon-sm"><use href="#i-arrow-left"/></svg> Ir a mis solicitudes
+        </a>
+        {% endif %}
+    </div>
+{% endif %}
+</main>
+{% include "tickets/_papelera_js.html" %}
+{% endblock %}

@@ -74,7 +74,6 @@
 .tec-item-title { font-weight: 600; font-size: 14px; margin: 4px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .tec-item-sub { font-size: 12px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 10px; }
 .tec-item-ans { font-size: 12px; margin-top: 6px; font-weight: 600; }
-.ans-countdown { display: block; font-size: 11px; font-weight: 700; margin-top: 2px; white-space: nowrap; }
 .tec-ans-ok { color: var(--state-resuelto); }
 .tec-ans-por-vencer { color: #B7791F; }
 .tec-ans-vencido { color: var(--dogger-red); }
@@ -421,6 +420,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
         <a class="tab-pill {% if vista == 'panel' %}active{% endif %}" href="?vista=panel"><svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel</a>
         <a class="tab-pill {% if vista == 'cola' %}active{% endif %}" href="?vista=cola"><svg class="icon icon-sm"><use href="#i-layers"/></svg> Cola de solicitudes <span>{{ cola_count }}</span></a>
         <a class="tab-pill {% if vista == 'mis' %}active{% endif %}" href="?vista=mis"><svg class="icon icon-sm"><use href="#i-message"/></svg> Mis solicitudes <span>{{ mis_count|default:0 }}</span></a>
+        <a class="tab-pill {% if vista == 'sin' %}active{% endif %}" href="?vista=sin"><svg class="icon icon-sm"><use href="#i-inbox"/></svg> Sin asignar <span>{{ sin_count|default:0 }}</span></a>
     </div>
 
     {% if vista == 'panel' %}
@@ -435,7 +435,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                     <span class="dash-stat-hint">de cualquier estado</span>
                 </span>
             </a>
-            <a class="dash-stat" href="?vista=mis&amp;estado=abierto&amp;rango=" title="Tus solicitudes recién creadas, pendientes de atención">
+            <a class="dash-stat dash-hov-abiertos" href="?vista=mis&amp;estado=abierto&amp;rango=" title="Tus solicitudes recién creadas, pendientes de atención">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Abiertos</span>
@@ -443,7 +443,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                     <span class="dash-stat-hint">en espera de atención</span>
                 </span>
             </a>
-            <a class="dash-stat" href="?vista=mis&amp;estado=en-progreso&amp;rango=" title="Tus solicitudes que ya estás atendiendo">
+            <a class="dash-stat dash-hov-progreso" href="?vista=mis&amp;estado=en-progreso&amp;rango=" title="Tus solicitudes que ya estás atendiendo">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">En progreso</span>
@@ -451,7 +451,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
-            <a class="dash-stat" href="?vista=mis&amp;estado=resuelto&amp;rango=" title="Tus solicitudes ya resueltas">
+            <a class="dash-stat dash-hov-resueltos" href="?vista=mis&amp;estado=resuelto&amp;rango=" title="Tus solicitudes ya resueltas">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltos</span>
@@ -510,23 +510,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
                         <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
                         <td data-label="Vencimiento">
-                            {% with info=t.info_ans %}
-                            {% if info.0 %}
-                            <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
-                                {% if info.0 == 'vencido' %}
-                                <svg class="icon icon-sm"><use href="#i-alert"/></svg>
-                                {% elif info.0 == 'resuelto' %}
-                                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-                                {% else %}
-                                <svg class="icon icon-sm"><use href="#i-clock"/></svg>
-                                {% endif %}
-                                {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
-                            </span>
-                            {% if t.fecha_limite_ans and info.0 != 'resuelto' %}
-                            <em class="ans-countdown ans-{{ info.0 }}" data-ans-count data-limit="{{ t.fecha_limite_ans|date:'U' }}" data-estado="{{ info.0 }}"></em>
-                            {% endif %}
-                            {% endif %}
-                            {% endwith %}
+                            {% include "tickets/_ans_time.html" with t=t %}
                         </td>
                         <td data-label="Técnico">
                             {% if t.tecnico_asignado_id %}
@@ -544,8 +528,9 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         </td>
                         <td data-label="Acciones" class="cell-actions">
                             <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}">Ver</a>
-                            {% if not t.tecnico_asignado_id %}
-                            <form method="post" action="{% url 'tickets:panel_tecnico_tomar' t.pk %}" class="inline-form" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}?');">
+                            {% comment %}Tomar sale en los que no son míos: sin asignar o de otro técnico que no puede atenderlo.{% endcomment %}
+                            {% if t.tecnico_asignado_id != request.user.pk %}
+                            <form method="post" action="{% url 'tickets:panel_tecnico_tomar' t.pk %}" class="inline-form" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}{% if t.tecnico_asignado_id %} (ahora lo tiene {{ t.tecnico_asignado.nombre }}){% endif %}?');">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-progress">Tomar</button>
                             </form>
@@ -585,6 +570,75 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
         {% endif %}
     </div>
 
+    {% elif vista == 'sin' %}
+
+    <div class="section-head">
+        <div>
+            <div class="section-title">
+                <span class="section-ic"><svg class="icon"><use href="#i-inbox"/></svg></span>
+                <span>Sin asignar</span>
+            </div>
+            <p>Solicitudes abiertas sin técnico. Tómalas para atenderlas.</p>
+        </div>
+        <span class="section-count">{{ sin_count }} sin técnico</span>
+    </div>
+
+    <div class="table-card">
+        <div class="table-scroll tabla-scroll-seis" data-filas="6">
+            <table class="data-table cards-mobile" id="tablaSinAsignar">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Solicitante</th>
+                        <th>Prioridad</th>
+                        <th>Vencimiento</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in sin_solicitudes %}
+                    <tr class="tr-{{ t.prioridad }}">
+                        <td data-label="Código"><span class="table-code">{{ t.codigo }}</span>{% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}</td>
+                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
+                        <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
+                        <td data-label="Vencimiento">
+                            {% include "tickets/_ans_time.html" with t=t %}
+                        </td>
+                        <td data-label="Estado">
+                            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}
+                        </td>
+                        <td data-label="Acciones" class="cell-actions">
+                            <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}">Ver</a>
+                            {% if t.tecnico_asignado_id != request.user.pk %}
+                            <form method="post" action="{% url 'tickets:panel_tecnico_tomar' t.pk %}" class="inline-form" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-progress">Tomar</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="table-empty"><td colspan="6">No hay solicitudes sin asignar.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if sin_page.paginator.num_pages > 1 %}
+        <div class="pagination-bar">
+            <span class="pagination-info">Página {{ sin_page.number }} de {{ sin_page.paginator.num_pages }} — {{ sin_page.paginator.count }} resultados</span>
+            <div class="pagination-links">
+                {% if sin_page.has_previous %}
+                <a class="page-pill" href="?{{ querystring_sin }}&page_sin={{ sin_page.previous_page_number }}">‹ Anterior</a>
+                {% endif %}
+                {% if sin_page.has_next %}
+                <a class="page-pill" href="?{{ querystring_sin }}&page_sin={{ sin_page.next_page_number }}">Siguiente ›</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
     {% else %}
 
     {% if ticket %}
@@ -613,8 +667,8 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         {% if t.solicitante_punto %}<span>· {{ t.solicitante_punto }}</span>{% endif %}
                         <span>· {{ t.get_prioridad_display }}</span>
                     </div>
-{% with ans=t.info_ans %}
-{% if ans.2 %}<div class="tec-item-ans tec-ans-{{ ans.0 }}"{% if t.fecha_limite_ans and ans.0 != 'resuelto' %} data-ans-count data-limit="{{ t.fecha_limite_ans|date:'U' }}" data-estado="{{ ans.0 }}"{% endif %}>{{ ans.1 }}</div>{% endif %}
+{% with ans=t.datos_ans %}
+{% if ans.0 %}<div class="tec-item-ans tec-ans-{{ ans.0 }}"{% if ans.3 %} data-ans-live data-ans-limit="{{ ans.3 }}" data-ans-aviso="{{ ans.4 }}"{% endif %}><span data-ans-txt>{{ ans.1 }}</span></div>{% endif %}
 {% endwith %}
                 </a>
                 {% endfor %}
@@ -867,23 +921,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         </td>
                         <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
                         <td data-label="Vencimiento">
-                            {% with info=t.info_ans %}
-                            {% if info.0 %}
-                            <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
-                                {% if info.0 == 'vencido' %}
-                                <svg class="icon icon-sm"><use href="#i-alert"/></svg>
-                                {% elif info.0 == 'resuelto' %}
-                                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-                                {% else %}
-                                <svg class="icon icon-sm"><use href="#i-clock"/></svg>
-                                {% endif %}
-                                {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"M d, Y h:i A" }}{% else %}{{ info.1 }}{% endif %}
-                            </span>
-                            {% if t.fecha_limite_ans and info.0 != 'resuelto' %}
-                            <em class="ans-countdown ans-{{ info.0 }}" data-ans-count data-limit="{{ t.fecha_limite_ans|date:'U' }}" data-estado="{{ info.0 }}"></em>
-                            {% endif %}
-                            {% endif %}
-                            {% endwith %}
+                            {% include "tickets/_ans_time.html" with t=t %}
                         </td>
                         <td data-label="Creado">{{ t.fecha_creacion|date:"M d, Y h:i A" }}</td>
                     </tr>
@@ -936,11 +974,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                 {% if t.tecnico_asignado_id %}{{ t.tecnico_asignado.nombre }}{% else %}Sin asignar{% endif %}
             </span>
             <span class="corp-card-foot">
-                {% with info=t.info_ans %}
-                {% if info.0 == 'vencido' %}<span class="ans-time ans-vencido">Vencida · {{ t.fecha_limite_ans|date:"M d, Y" }}</span>
-                {% elif info.0 == 'resuelto' %}<span class="ans-time ans-resuelto">Resuelta</span>
-                {% else %}<span class="ans-time">Vence {{ t.fecha_limite_ans|date:"M d, Y" }}</span>{% endif %}
-                {% endwith %}
+                {% include "tickets/_ans_time.html" with t=t %}
             </span>
         </a>
         {% empty %}
@@ -1080,33 +1114,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
         b.addEventListener("click", function () { crSetView(b.getAttribute("data-view"), true); });
     });
 
-    /* Contador en vivo del ANS: actualiza el texto cada segundo. */
-    var ELS = Array.prototype.slice.call(document.querySelectorAll('[data-ans-count]'));
-    if (!ELS.length) return;
-    function partes(secs) {
-        var abs = Math.abs(secs);
-        var d = Math.floor(abs / 86400);
-        var h = Math.floor((abs % 86400) / 3600);
-        var m = Math.floor((abs % 3600) / 60);
-        var s = Math.floor(abs % 60);
-        if (d > 0) return d + 'd ' + h + 'h';
-        if (h > 0) return h + 'h ' + m + 'm';
-        if (m > 0) return m + 'm ' + s + 's';
-        return s + 's';
-    }
-    function tick() {
-        var now = Date.now();
-        ELS.forEach(function (el) {
-            var lim = parseInt(el.dataset.limit, 10) * 1000;
-            if (!lim) return;
-            var dif = Math.round((lim - now) / 1000);
-            el.classList.remove('ans-ok', 'ans-por-vencer', 'ans-vencido');
-            el.classList.add(dif <= 0 ? 'ans-vencido' : ('ans-' + (el.dataset.estado || 'ok')));
-            el.textContent = (dif <= 0 ? 'Vencido hace ' : 'Faltan ') + partes(dif);
-        });
-    }
-    tick();
-    setInterval(tick, 1000);
+    /* El cronómetro del ANS lo lleva dogger.js, igual en todas las vistas. */
 })();
 </script>
 <script>
@@ -1250,4 +1258,4 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 {% if not ticket %}
 <script src="{% static 'js/panel-lote.js' %}?v=1"></script>
 {% endif %}
-{% endblock %}
+{% endblock %}

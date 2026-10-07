@@ -261,16 +261,7 @@
                 </div>
                 <div class="ty-card-foot">
                     {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}
-                    {% with info=t.info_ans %}
-                    {% if info.0 %}
-                    <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
-                        {% if info.0 == 'vencido' %}<svg class="icon icon-sm"><use href="#i-alert"/></svg>
-                        {% elif info.0 == 'resuelto' %}<svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-                        {% else %}<svg class="icon icon-sm"><use href="#i-clock"/></svg>{% endif %}
-                        {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
-                    </span>
-                    {% endif %}
-                    {% endwith %}
+                    {% include "tickets/_ans_time.html" with t=t %}
                     <span class="ty-date">{{ t.fecha_creacion|date:"d/m/Y" }}</span>
                     <div class="ty-actions">
                         <a class="btn btn-sm btn-outline actions-icon" title="Ver ticket" href="{% url 'tickets:detalle' t.pk %}"><svg class="icon icon-sm"><use href="#i-eye"/></svg></a>
@@ -536,4 +527,4 @@
     });
 })();
 </script>
-{% endblock %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% comment %}
+Submenú de "qué cubre" dentro del apartado Categoría. Sin cajas ni modales: solo
+el texto con una cruz (+) al inicio de cada categoría. Al tocar el encabezado se
+abre y al tocar una línea se elige esa categoría. Se arma con el mismo JSON del
+sugeridor, así que nunca queda desactualizado respecto al catálogo.
+
+OJO: esto va en comment, no en el comentario de una sola línea. Ese solo
+funciona en una línea: si salta de línea, el motor lo toma como texto y el
+comentario aparece pintado en la página.
+{% endcomment %}
+<div class="cat-cubre" id="cat-cubre">
+    <button type="button" class="cat-cubre-toggle" id="cat-cubre-toggle" aria-expanded="false" aria-controls="cat-cubre-panel">
+        <svg class="icon icon-sm cat-cubre-sign" aria-hidden="true"><use href="#i-plus"/></svg>
+        <span class="cat-cubre-toggle-txt">Qué cubre cada categoría</span>
+        <span class="cat-cubre-conteo" id="cat-cubre-conteo"></span>
+    </button>
+
+    <div class="cat-cubre-panel" id="cat-cubre-panel" hidden>
+        <p class="cat-cubre-actual" id="cat-cubre-actual" hidden></p>
+        <div class="cat-cubre-lista" id="cat-cubre-lista"></div>
+        <p class="cat-cubre-pie">Elige la más específica. Las que empiezan por “Otros” son el último recurso cuando no sabes en qué módulo está el problema.</p>
+    </div>
+</div>

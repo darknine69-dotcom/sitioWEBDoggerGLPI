@@ -57,6 +57,7 @@ from .forms import (
     TicketForm,
     UsuarioPanelForm,
 )
+from .context_processors import _tipos_por_revisar
 from .models import Categoria, GlpiEvento, Ticket, TicketAdjunto, TicketComentario, TicketVinculo
 from .notifications import notificar_comentario, notificar_ticket_actualizado, notificar_ticket_creado
 from .sla import horas_por_prioridad, orden_prioridad_annotation
@@ -70,7 +71,8 @@ from .services.glpi_client import (
     sync_followup_to_glpi,
     sync_ticket_to_glpi,
 )
-from .sugerencia_categoria import claves_para_json
+from .sugerencia_categoria import claves_para_json, que_cubre, que_cubre_grupo
+from .services.tecnicos import mapeados_del_tecnico, puede_calificar
 
 
 # Opciones del selector "Filas". El 6 es el predeterminado en todas las vistas.
@@ -750,6 +752,35 @@ def _key_fecha(fecha):
     return fecha.date() if hasattr(fecha, "date") else fecha
 
 
+def _calificacion_de(tecnico):
+    """Resumen de los pulgares que ha recibido un técnico.
+
+    Va en su propio panel para que vea cómo lo está calificando la gente:
+    cuántos "me gusta", cuántos "no me gusta" y el balance.
+    """
+    from apps.tickets.models import CalificacionTecnico
+
+    me_gusta, no_me_gusta = 0, 0
+    try:
+        me_gusta = CalificacionTecnico.objects.filter(
+            tecnico=tecnico, valor=CalificacionTecnico.Valor.ME_GUSTA
+        ).count()
+        no_me_gusta = CalificacionTecnico.objects.filter(
+            tecnico=tecnico, valor=CalificacionTecnico.Valor.NO_ME_GUSTA
+        ).count()
+    except Exception:
+        pass
+    total = me_gusta + no_me_gusta
+    return {
+        "me_gusta": me_gusta,
+        "no_me_gusta": no_me_gusta,
+        "total": total,
+        "balance": me_gusta - no_me_gusta,
+        "porcentaje": round(me_gusta * 100 / total) if total else None,
+    }
+
+
+
 def _build_dashboard_context(request, tickets):
     chart_context = _build_chart_context(tickets)
     eventos_qs = GlpiEvento.objects.select_related("ticket").order_by("-fecha")
@@ -1144,11 +1175,18 @@ def exportar_tickets_admin(request):
 
 @staff_required
 def categorias_arbol(request):
+    arbol = Categoria.arbol()
+    # Cada subcategoria lleva su línea de "qué cubre" para que el
+    # administrador vea, en la misma vista, qué se reporta en cada una.
+    for grupo in arbol:
+        grupo["cubre"] = que_cubre_grupo(grupo["grupo"])
+        for sub in grupo["subcategorias"]:
+            sub.cubre = que_cubre(sub.grupo, sub.nombre)
     return render(
         request,
         "tickets/categorias.html",
         {
-            "arbol": Categoria.arbol(),
+            "arbol": arbol,
             "inactivos": Categoria.objects.filter(activo=False).order_by("grupo", "nombre"),
             "grupos_existentes": (
                 Categoria.objects.order_by("grupo")
@@ -1327,19 +1365,10 @@ def usuarios_lista(request):
     def _tipo_label(v):
         return dict(CalendarioEvento.Tipo.choices).get(v, v)
 
-    def _acceso_label(dt, ref):
+    def _acceso_label(dt):
         if not dt:
             return "Nunca"
-        seg = (ref - dt).total_seconds()
-        if seg < 60:
-            return "recientemente"
-        minutos = int(seg // 60)
-        if minutos < 60:
-            return f"hace {minutos} min"
-        horas, m = divmod(minutos, 60)
-        if seg < 86400:
-            return f"hace {horas} h {m} min"
-        return dt.strftime("%d/%m/%Y")
+        return timezone.localtime(dt).strftime("%d/%m/%Y %H:%M")
 
     hoy = date.today()
     ahora = timezone.now()
@@ -1419,7 +1448,7 @@ def usuarios_lista(request):
         # Indicador junto al nombre: verde = conectado ahora mismo,
         # amarillo = activo pero sin conexión, rojo = inactivo.
         u.ficha.update(_indicador_cuenta(u, ahora))
-        u.ficha["acceso_label"] = _acceso_label(u.ficha["ultimo_acceso"], ahora)
+        u.ficha["acceso_label"] = _acceso_label(u.ficha["ultimo_acceso"])
         if u.rol in ("tecnico", "admin"):
             alertas = [
                 {
@@ -1558,7 +1587,12 @@ def usuarios_lista(request):
             "rol_choices": UsuarioPanelForm.ROL_CHOICES,
             "hoy": date.today(),
             "n_nuevos": User.objects.filter(fecha_creacion__gte=hace_7d).count(),
-            "n_en_linea": User.objects.filter(last_login__gte=hace_10min).count(),
+            # En línea es en vivo (latido o login reciente), igual que el
+            # punto de cada fila: solo last_login quedaba rancio a los minutos.
+            "n_en_linea": User.objects.filter(
+                Q(ultima_actividad__gte=hace_10min)
+                | Q(last_login__gte=hace_10min)
+            ).count(),
         },
     )
 
@@ -1605,19 +1639,10 @@ def _ficha_usuario(u):
     fin_eventos = hoy + timedelta(days=14)
     email = (u.email or "").lower()
 
-    def _acceso_label(dt, ref):
+    def _acceso_label(dt):
         if not dt:
             return "Nunca"
-        seg = (ref - dt).total_seconds()
-        if seg < 60:
-            return "recientemente"
-        minutos = int(seg // 60)
-        if minutos < 60:
-            return f"hace {minutos} min"
-        horas, m = divmod(minutos, 60)
-        if seg < 86400:
-            return f"hace {horas} h {m} min"
-        return dt.strftime("%d/%m/%Y")
+        return timezone.localtime(dt).strftime("%d/%m/%Y %H:%M")
 
     stats = {}
     punto = ""
@@ -1654,12 +1679,13 @@ def _ficha_usuario(u):
         if cuentas:
             punto = cuentas.most_common(1)[0][0]
 
+    marca = u.ultima_actividad or u.last_login
     ficha = {
         "stats": stats,
         "punto": punto,
         "es_nuevo": bool(u.fecha_creacion and u.fecha_creacion >= hace_7d),
-        "en_linea": bool(u.last_login and u.last_login >= hace_10min),
-        "ultimo_acceso": u.last_login,
+        "en_linea": bool(marca and marca >= hace_10min),
+        "ultimo_acceso": marca,
         "registrado": u.fecha_creacion,
         "permisos": {
             "es_staff": u.is_staff,
@@ -1672,7 +1698,7 @@ def _ficha_usuario(u):
 
     ultimo_login = u.ultima_actividad or u.last_login
     ficha.update(_indicador_cuenta(u, ahora))
-    ficha["acceso_label"] = _acceso_label(ultimo_login, ahora)
+    ficha["acceso_label"] = _acceso_label(ultimo_login)
 
     if u.rol in ("tecnico", "admin"):
         disp = list(
@@ -2142,6 +2168,18 @@ def consultar_ticket(request):
     )
 
 
+def _sin_revisar(usuario):
+    """Cuántos avisos tiene este usuario sin mirar (el número del morrito)."""
+    try:
+        from apps.notificaciones import services as avisos
+
+        return avisos.sin_revisar(
+            usuario, tipos=_tipos_por_revisar(getattr(usuario, "rol", None))
+        )
+    except Exception:
+        return 0
+
+
 @user_required
 def mi_panel(request):
     initial = {
@@ -2225,11 +2263,95 @@ def mi_panel(request):
             "q": q_filtro,
             "estados": Ticket.Estado.choices,
             "stats": stats,
+            # Lo mismo que cuenta el morrito del menú: lo que tiene sin mirar.
+            # Al entrar a Mi panel ya queda revisado, así que el número baja
+            # a cero y solo vuelve a subir cuando pase algo.
+            "pendientes": _sin_revisar(request.user),
             "form": form,
             "per_page": pp_mp,
             "cat_sugerencias_json": json.dumps(claves_para_json(), ensure_ascii=False),
+            "puede_calificar_tecnicos": puede_calificar(request.user),
+            "tecnicos_activos": mapeados_del_tecnico(request.user),
             **dashboard_context,
         },
+    )
+
+
+@login_required
+@require_POST
+def calificar_tecnico(request, pk):
+    """Pulgar arriba / abajo a un técnico, desde Mi panel o desde un ticket.
+
+    Dos alcances, según si llega `ticket`:
+
+    * Sin ticket: el voto al técnico en general (modal de Mi panel). Votar lo
+      mismo dos veces quita el voto; cambiar de opinión lo reemplaza.
+    * Con ticket: la opinión sobre el trabajo de ese técnico en ese ticket.
+      Solo puede votar quien lo abrió, y el voto queda atado al ticket para
+      que la barra cuente el trabajo y no a la persona suelta. Vale también
+      con el ticket abierto, mientras tenga técnico asignado.
+
+    Responde JSON con el voto propio y los contadores ya actualizados.
+    """
+    from apps.tickets.models import CalificacionTecnico
+    from apps.tickets.services.tecnicos import puede_calificar
+
+    if not puede_calificar(request.user):
+        return JsonResponse(
+            {"ok": False, "detalle": "Tu rol no puede calificar técnicos."}, status=403
+        )
+
+    tecnico = get_object_or_404(
+        Usuario, pk=pk, rol=Usuario.Rol.TECNICO, activo=True, is_active=True
+    )
+    try:
+        valor = int(request.POST.get("valor", 0))
+    except (TypeError, ValueError):
+        valor = 0
+    if valor not in (CalificacionTecnico.Valor.ME_GUSTA, CalificacionTecnico.Valor.NO_ME_GUSTA):
+        valor = 0
+
+    ticket = None
+    if request.POST.get("ticket"):
+        ticket = get_object_or_404(
+            Ticket, pk=request.POST.get("ticket"), solicitante_email=request.user.email
+        )
+        if not ticket.tecnico_asignado_id:
+            return JsonResponse(
+                {
+                    "ok": False,
+                    "detalle": "Este ticket todavía no tiene técnico asignado.",
+                },
+                status=400,
+            )
+
+    CalificacionTecnico.registrar(tecnico, request.user, valor, ticket=ticket)
+
+    if ticket is not None:
+        # El contador que se pinta es el de ese ticket; la barra es la de todo
+        # lo que el técnico tiene resuelto.
+        conteos = CalificacionTecnico.conteos(tecnico, request.user, ticket)
+        return JsonResponse(
+            {
+                "ok": True,
+                "pk": tecnico.pk,
+                "ticket": ticket.pk,
+                "mi_voto": conteos["mi_voto"],
+                "me_gusta": conteos["me_gusta"],
+                "no_me_gusta": conteos["no_me_gusta"],
+                "barra": CalificacionTecnico.aprobacion_por_resueltos(tecnico),
+            }
+        )
+
+    conteos = CalificacionTecnico.conteos(tecnico, request.user)
+    return JsonResponse(
+        {
+            "ok": True,
+            "pk": tecnico.pk,
+            "mi_voto": conteos["mi_voto"],
+            "me_gusta": conteos["me_gusta"],
+            "no_me_gusta": conteos["no_me_gusta"],
+        }
     )
 
 
@@ -2245,6 +2367,12 @@ def crear_ticket(request):
         "solicitante_nombre": request.user.nombre,
         "solicitante_email": request.user.email,
     }
+    # Desde la vista de categorías se llega con ?categoria=<id>: si la categoría
+    # existe y está activa, queda elegida de una vez.
+    if request.method == "GET" and request.GET.get("categoria"):
+        elegida = Categoria.objects.filter(pk=request.GET["categoria"], activo=True).first()
+        if elegida:
+            initial["categoria"] = elegida.pk
     form = TicketForm(request.POST or None, request.FILES or None, initial=initial, permitir_modo=not es_usuario_final)
     if request.method == "POST" and form.is_valid():
         ticket = form.save(commit=False)
@@ -2278,7 +2406,7 @@ def crear_ticket(request):
             "prioridad": ticket.prioridad,
             "prioridad_label": ticket.get_prioridad_display(),
             "tecnico_nombre": ticket.tecnico_asignado.nombre if ticket.tecnico_asignado_id else "",
-            "tecnico_iniciales": ticket.tecnico_asignado.initials if ticket.tecnico_asignado_id else "",
+            "tecnico_iniciales": ticket.tecnico_asignado.iniciales if ticket.tecnico_asignado_id else "",
         }
         messages.success(request, f"Ticket creado: {ticket.codigo}")
         return redirect("tickets:crear_ticket")
@@ -2366,6 +2494,16 @@ def mi_ticket(request, pk):
         solicitante_email=request.user.email,
     )
     timeline = _timeline_ticket(ticket)
+
+    # Botón de calificar técnicos: se muestra siempre que el ticket tenga un
+    # técnico asignado (también mientras sigue abierto), y el voto queda
+    # atado a este ticket. Es el mismo modal de Mi panel, pero acá cada tarjeta
+    # trae la barra de aprobación por tickets resueltos.
+    from apps.tickets.services.tecnicos import mapeados_del_tecnico, puede_calificar
+
+    puede = puede_calificar(request.user) and bool(ticket.tecnico_asignado_id)
+    tecnicos = mapeados_del_tecnico(request.user, ticket) if puede else []
+
     return render(
         request,
         "tickets/mi_ticket.html",
@@ -2376,6 +2514,12 @@ def mi_ticket(request, pk):
             "comentario_form": ComentarioForm(),
             "usuario": request.user,
             "share_text": f"Ticket {ticket.codigo} — {ticket.titulo} ({ticket.get_estado_display()})",
+            "puede_calificar_tecnicos": puede,
+            "tecnicos_activos": tecnicos,
+            "voto_ticket": puede,
+            "nombre_tecnico_ticket": (
+                ticket.tecnico_asignado.nombre if puede and ticket.tecnico_asignado else ""
+            ),
         },
     )
 
@@ -2805,7 +2949,7 @@ def sin_asignar(request):
             "tecnicos": tecnicos,
             "per_page": pp_mp,
             "querystring": _params_sin_page(request),
-            "pendientes": base.count(),
+            "pendientes": _sin_revisar(request.user),
         },
     )
 
@@ -3095,7 +3239,23 @@ def cambiar_estado(request, pk):
     return redirect(next_url)
 
 
-@staff_required
+def _es_dueno(ticket, user):
+    """El ticket le pertenece a la persona que lo reportó."""
+    return bool(getattr(user, "email", None)) and ticket.solicitante_email == user.email
+
+
+def _puede_gestionar_papelera(request, ticket):
+    """Staff (admin/técnico) o el propio solicitante pueden restaurar/purgar.
+
+    Antes solo el administrador podía tocar la papelera, así que un usuario
+    que cancelaba una solicitud se quedaba sin poder recuperarla.
+    """
+    if getattr(request.user, "es_staff_helpdesk", False):
+        return True
+    return _es_dueno(ticket, request.user)
+
+
+@login_required
 @require_POST
 def eliminar_ticket(request, pk):
     """Borrado lógico: el ticket va a la papelera y se puede restaurar.
@@ -3103,8 +3263,13 @@ def eliminar_ticket(request, pk):
     Ya no se borra en duro ni se tocan los adjuntos: la purga definitiva
     vive en la papelera (`purgar_ticket`), que sí elimina en GLPI si está
     configurado. Así "eliminar" deja de ser irreversible.
+
+    El solicitante también puede cancelar el suyo: antes le salía un 403 y
+    desde Mi panel no había forma de deshacerlo.
     """
     ticket = get_object_or_404(Ticket, pk=pk)
+    if not _puede_gestionar_papelera(request, ticket):
+        raise PermissionDenied("Solo puedes eliminar tus propias solicitudes.")
     codigo = ticket.codigo
     had_glpi = bool(ticket.glpi_id)
     ticket.mandar_a_la_papelera(request.user)
@@ -3116,6 +3281,42 @@ def eliminar_ticket(request, pk):
     if not next_url.startswith("/"):
         next_url = "tickets:lista"
     return redirect(next_url)
+
+
+@user_required
+def mi_papelera(request):
+    """Papelera del solicitante: solo sus propias solicitudes eliminadas.
+
+    Es el mismo criterio de la papelera del administrador (borrado lógico,
+    restaurable, sin contar en el panel), pero acotada a lo suyo para que
+    pueda recuperar sin pedirle permiso a nadie.
+    """
+    q = request.GET.get("q", "").strip()
+    base = (
+        Ticket.en_papelera()
+        .filter(solicitante_email=request.user.email)
+        .select_related("tecnico_asignado", "categoria")
+        .order_by("-eliminado_en")
+    )
+    if q:
+        # Búsqueda por palabras separadas: cada término debe coincidir.
+        for palabra in q.split():
+            base = base.filter(
+                Q(codigo__icontains=palabra) | Q(titulo__icontains=palabra)
+            )
+    total = base.count()
+    page_obj = _paginar(base, request, per_page_default=10)
+    return render(
+        request,
+        "tickets/mi_papelera.html",
+        {
+            "page_obj": page_obj,
+            "tickets": page_obj.object_list,
+            "total": total,
+            "mi_papelera_total": total,  # el context processor lo omite en esta vista
+            "q": q,
+        },
+    )
 
 
 @admin_required
@@ -3152,11 +3353,18 @@ def papelera(request):
     )
 
 
-@admin_required
+@login_required
 @require_POST
 def restaurar_ticket(request, pk):
-    """Saca el ticket de la papelera y lo devuelve a la operación."""
+    """Saca el ticket de la papelera y lo devuelve a la operación.
+
+    Lo puede hacer el staff o el solicitante del ticket: si uno se arrepiente
+    de cancelar una solicitud, no tiene que esperar a que un administrador se
+    lo restaure.
+    """
     ticket = get_object_or_404(Ticket.en_papelera(), pk=pk)
+    if not _puede_gestionar_papelera(request, ticket):
+        raise PermissionDenied("Solo puedes restaurar tus propias solicitudes.")
     codigo = ticket.codigo
     ticket.restaurar()
     messages.success(request, f"Ticket {codigo} restaurado.")
@@ -3166,13 +3374,16 @@ def restaurar_ticket(request, pk):
     return redirect(next_url)
 
 
-@admin_required
+@login_required
 @require_POST
 def purgar_ticket(request, pk):
     """Elimina DEFINITIVAMENTE el ticket. Irreversible: por eso vive en la papelera."""
     ticket = get_object_or_404(Ticket.en_papelera(), pk=pk)
+    if not _puede_gestionar_papelera(request, ticket):
+        raise PermissionDenied("Solo puedes eliminar definitivamente tus propias solicitudes.")
     codigo = ticket.codigo
     glpi_id = ticket.glpi_id
+    es_dueno = not getattr(request.user, "es_staff_helpdesk", False)
     borrar_en_glpi = bool(getattr(request.user, "borrar_glpi_al_eliminar", False))
     aviso_glpi = None
     if borrar_en_glpi and glpi_id:
@@ -3192,7 +3403,12 @@ def purgar_ticket(request, pk):
             adj.archivo.delete(save=False)
     ticket.delete()
     mensaje = f"Ticket {codigo} eliminado definitivamente."
-    if borrar_en_glpi:
+    if es_dueno:
+        # El interruptor "borrar también en GLPI" es del staff: el solicitante
+        # borra su copia de Dogger y el ticket sigue existiendo en GLPI.
+        if glpi_id:
+            mensaje += " El registro de GLPI se conserva."
+    elif borrar_en_glpi:
         if glpi_id:
             mensaje += " También se eliminó en GLPI." if not aviso_glpi else f" GLPI local (no se sincronizó: {aviso_glpi})."
         else:
@@ -3416,20 +3632,52 @@ def mi_ticket_cerrar_ajax(request, pk):
 @user_required
 @require_POST
 def mi_ticket_eliminar_ajax(request, pk):
-    """Renunciar/cancelar el propio ticket del usuario (solo mientras esté abierto).
+    """Renunciar/cancelar el propio ticket del usuario.
 
-    También es borrado lógico: si el usuario se equivoca, el admin lo restaura
-    desde la papelera. Antes `ticket.delete()` lo borraba sin vuelta atrás.
+    Es borrado lógico: si el usuario se equivoca, lo restaura él mismo desde
+    su papelera (Mi panel → Papelera). Antes solo se podía cancelar con el
+    ticket abierto, así que una solicitud "en progreso" o ya resuelta se
+    quedaba sin forma de quitarla de la lista.
+
+    Al cancelar se avisa enseguida al técnico asignado (y a la bandeja si
+    estaba sin técnico), para que no siga trabajando en una solicitud que ya
+    no existe y para que su contador de la bandeja también lo note.
+
+    Antes `ticket.delete()` lo borraba sin vuelta atrás.
     """
     ticket = _mi_ticket_del_usuario(request, pk)
-    if ticket.estado != ticket.Estado.ABIERTO:
-        return JsonResponse(
-            {"ok": False, "error": "Solo puedes eliminar tu solicitud mientras esté abierta."},
-            status=400,
-        )
     codigo = ticket.codigo
+    tecnico = ticket.tecnico_asignado
     ticket.mandar_a_la_papelera(request.user)
-    return JsonResponse({"ok": True, "codigo": codigo, "papelera": True})
+
+    # La solicitud se cancela de inmediato del lado del técnico.
+    try:
+        notificar_ticket_actualizado(
+            ticket,
+            "cancelado por el solicitante",
+            f"El solicitante cancelo {codigo}. Ya no hay nada que atender.",
+            actor=request.user,
+        )
+        if tecnico is not None:
+            from apps.notificaciones.models import Notificacion
+            from apps.notificaciones import services as avisos
+
+            avisos.crear(
+                tecnico,
+                Notificacion.Tipo.TICKET_EDITADO,
+                f"{codigo} fue cancelado por quien lo pidio",
+                "El solicitante retiro su solicitud: ya no hay nada que atender.",
+                url=reverse("tickets:detalle", args=[ticket.pk]),
+                icono="i-ban",
+                clave=f"ticket:{ticket.pk}:cancelado:{tecnico.pk}",
+            )
+    except Exception:
+        # Un aviso que falla nunca debe impedir la cancelación.
+        pass
+
+    return JsonResponse(
+        {"ok": True, "codigo": codigo, "papelera": True, "estado": ticket.estado}
+    )
 
 
 @user_required
@@ -3555,6 +3803,7 @@ def panel_tecnico(request):
         param="page_sol",
     )
 
+
     page_obj = _paginar(
         qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
             "_prioridad_orden", "-fecha_creacion"
@@ -3580,6 +3829,29 @@ def panel_tecnico(request):
             ticket = None
 
     vista = request.GET.get("vista", "").strip() or ("mis" if ticket_pk else "panel")
+
+    # Bandeja "Sin asignar" (pestaña del panel): abiertas sin técnico.
+    sin_qs = (
+        Ticket.objects.select_related("categoria", "tecnico_asignado")
+        .filter(
+            estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
+            tecnico_asignado__isnull=True,
+        )
+        .annotate(_prioridad_orden=orden_prioridad_annotation())
+        .order_by("_prioridad_orden", "-fecha_creacion")
+    )
+    sin_count = sin_qs.count()
+    sin_page = (
+        _paginar(
+            sin_qs,
+            request,
+            per_page_param="per_page_sin",
+            per_page_default=pp_sol,
+            param="page_sin",
+        )
+        if vista == "sin"
+        else None
+    )
 
     # Módulo corporativo "Mis solicitudes abiertas" (solo cuando no hay chat abierto)
     abiertas = []
@@ -3722,6 +3994,9 @@ def panel_tecnico(request):
 
     tickets = _adjuntar_solicitantes(page_obj.object_list)
     solicitudes = _adjuntar_solicitantes(solicitudes_page.object_list)
+    sin_solicitudes = (
+        _adjuntar_solicitantes(sin_page.object_list) if sin_page is not None else []
+    )
 
     return render(
         request,
@@ -3732,6 +4007,10 @@ def panel_tecnico(request):
             "solicitudes": solicitudes,
             "solicitudes_page": solicitudes_page,
             "cola_count": solicitudes_page.paginator.count,
+            "sin_solicitudes": sin_solicitudes,
+            "sin_page": sin_page,
+            "sin_count": sin_count,
+            "querystring_sin": _params_sin_page(request, "page_sin"),
             "vista": vista,
             "querystring": _params_sin_page(request),
             "querystring_cola": _params_sin_page(request, "page_sol"),
@@ -3776,35 +4055,47 @@ def panel_tecnico(request):
 @staff_required
 @require_POST
 def panel_tecnico_tomar(request, pk):
-    """Asigna (toma) un ticket sin técnico a quien lo solicita."""
+    """Toma un ticket: sin asignar o de otro técnico que no puede atenderlo.
+
+    Si ya lo tiene el que lo pide, no se hace nada. Si lo tiene otro
+    técnico, se reasigna y se dice a quién se le quitó.
+    """
     ticket = get_object_or_404(
         Ticket.objects.select_related("tecnico_asignado"),
         pk=pk,
     )
+    anterior = None
     if ticket.tecnico_asignado_id:
-        messages.warning(
-            request,
-            f"El ticket {ticket.codigo} ya está asignado a "
-            f"{ticket.tecnico_asignado.nombre if ticket.tecnico_asignado else 'otro técnico'}.",
+        if ticket.tecnico_asignado_id == request.user.pk:
+            messages.info(
+                request, f"El ticket {ticket.codigo} ya está asignado a ti."
+            )
+            return redirect("tickets:panel_tecnico")
+        anterior = (
+            ticket.tecnico_asignado.nombre
+            if ticket.tecnico_asignado else "otro técnico"
         )
-        return redirect("tickets:panel_tecnico")
 
     ticket.tecnico_asignado = request.user
     ticket.asignacion_automatica = False
     ticket.save(update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"])
+    tomado = (
+        f"Ticket {ticket.codigo} tomado (antes lo tenía {anterior})."
+        if anterior else f"Ticket {ticket.codigo} tomado."
+    )
 
     if request.user.glpi_user_id:
         try:
             if sync_asignacion_to_glpi(ticket):
-                messages.success(request, f"Ticket {ticket.codigo} tomado (también en GLPI).")
+                messages.success(request, tomado + " (también en GLPI).")
             else:
-                messages.success(request, f"Ticket {ticket.codigo} tomado.")
+                messages.success(request, tomado)
         except GlpiError as exc:
-            messages.warning(request, f"Ticket {ticket.codigo} tomado localmente; no se reflejó en GLPI: {exc}")
+            messages.warning(request, f"{tomado} No se reflejó en GLPI: {exc}")
     else:
         messages.success(
             request,
-            f"Ticket {ticket.codigo} tomado. Configura tu 'ID usuario GLPI' en Admin para reflejarlo allá.",
+            f"{tomado} Configura tu 'ID usuario GLPI' en Admin para reflejarlo allá.",
         )
     return redirect("tickets:panel_tecnico")
 
@@ -4093,12 +4384,6 @@ def panel_tecnico_chat_ajax(request, pk):
 # Manual de uso y categorías explicativas
 # =====================================================================
 @login_required
-def manual_uso(request):
-    """Manual de uso del aplicativo, abierto desde la configuración de cuenta."""
-    return render(request, "tickets/manual_uso.html", {"rol": getattr(request.user, "rol", "")})
-
-
-@login_required
 def categorias_publico(request):
     """Categorías explicadas para el usuario: qué hace cada una y cuándo usarla.
 
@@ -4107,8 +4392,20 @@ def categorias_publico(request):
     """
     arbol = Categoria.arbol()
     inactivas = list(Categoria.objects.filter(activo=False).order_by("grupo", "nombre"))
+    # La línea de "qué cubre" vive en el código, no en la base: se arma aquí
+    # para que la vista muestre siempre el mismo texto que ve el sugeridor.
+    for grupo in arbol:
+        grupo["cubre"] = que_cubre_grupo(grupo["grupo"])
+        for sub in grupo["subcategorias"]:
+            sub.cubre = que_cubre(sub.grupo, sub.nombre)
+            sub.clave_crear = f"{reverse('tickets:crear_ticket')}?categoria={sub.pk}"
     return render(
         request,
         "tickets/categorias_publico.html",
-        {"arbol": arbol, "inactivas": inactivas},
+        {
+            "arbol": arbol,
+            "inactivas": inactivas,
+            "total_categorias": sum(len(g["subcategorias"]) for g in arbol),
+            "total_grupos": len(arbol),
+        },
     )

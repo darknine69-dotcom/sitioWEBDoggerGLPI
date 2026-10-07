@@ -7,252 +7,36 @@
 {% block header_desc %}Tickets eliminados que todavía puedes recuperar.{% endblock %}
 
 {% block extra_css %}
-<style>
-/* ---------- Cabecera ---------- */
-.pap-hero {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin: 22px 0 14px;
-}
-.pap-hero-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    flex: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #FEF3F2, #FBE4E2);
-    border: 1px solid rgba(161,27,18,.14);
-    color: var(--dogger-red);
-}
-.pap-hero-icon .icon { width: 20px; height: 20px; }
-.pap-hero-count {
-    margin-left: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 7px 14px;
-    border-radius: 999px;
-    background: #fff;
-    border: 1px solid var(--line);
-    font-size: 12.5px;
-    font-weight: 700;
-    color: var(--ink);
-    white-space: nowrap;
-}
-.pap-hero-count b { color: var(--dogger-red); font-size: 14px; }
-
-/* ---------- Aviso informativo ---------- */
-.pap-note {
-    display: flex; gap: 10px; align-items: flex-start;
-    margin: 0 0 16px; padding: 12px 15px;
-    background: rgba(249,115,22,.09); border: 1px solid rgba(249,115,22,.28);
-    border-radius: 12px; font-size: 12.5px; line-height: 1.5; color: #9A4A0B;
-}
-.pap-note .icon { width: 16px; height: 16px; flex: none; margin-top: 1px; }
-
-/* ---------- Buscador ---------- */
-.pap-search {
-    display: flex; gap: 8px; align-items: center;
-    margin-bottom: 14px;
-    background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 6px;
-}
-.pap-search .pap-search-icon { width: 16px; height: 16px; color: var(--ink-muted); flex: none; margin-left: 6px; }
-.pap-search input[type="search"] {
-    flex: 1 1 auto; min-width: 0; padding: 8px 4px;
-    border: 0; background: transparent; font: inherit; font-size: 13px; color: var(--ink);
-}
-.pap-search input[type="search"]:focus { outline: none; }
-.pap-search:focus-within { border-color: rgba(159,133,98,.55); box-shadow: 0 0 0 3px rgba(159,133,98,.14); }
-
-/* ---------- Tabla ---------- */
-.pap-table {
-    width: 100%; border-collapse: separate; border-spacing: 0;
-    background: #fff; border: 1px solid var(--line);
-    border-radius: 14px; overflow: hidden;
-}
-.pap-table th {
-    text-align: left; padding: 11px 16px; font-size: 11px; font-weight: 800;
-    text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted);
-    background: #FBF8F3; border-bottom: 1px solid var(--line); white-space: nowrap;
-}
-.pap-table td { padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 13px; vertical-align: middle; }
-.pap-table tbody tr:last-child td { border-bottom: 0; }
-.pap-table tbody tr:hover { background: #FDFBF7; }
-
-.pap-code {
-    display: inline-block; font-weight: 800; color: var(--dogger-red);
-    text-decoration: none; font-size: 12px; letter-spacing: .02em;
-    background: rgba(161,27,18,.07); border-radius: 6px; padding: 2px 7px; margin-bottom: 4px;
-}
-.pap-code:hover { background: rgba(161,27,18,.13); }
-.pap-titulo { display: block; font-weight: 600; color: var(--ink); max-width: 320px; line-height: 1.35; }
-.pap-sub { display: block; margin-top: 2px; font-size: 11.5px; color: var(--ink-muted); font-weight: 500; }
-.pap-actions { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; }
-.pap-actions form { display: inline; }
-.pap-date { white-space: nowrap; color: var(--ink-muted); font-size: 12px; }
-
-/* Etiqueta de móvil (oculta en escritorio) */
-.pap-mtag { display: none; }
-
-/* ---------- Estado vacío ---------- */
-.pap-empty {
-    text-align: center; padding: 64px 24px;
-    background: #fff; border: 1px dashed var(--line); border-radius: 16px;
-}
-.pap-empty-icon {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 56px; height: 56px; border-radius: 16px;
-    background: #F8F5F0; color: #C9BFAE; margin-bottom: 4px;
-}
-.pap-empty-icon .icon { width: 26px; height: 26px; }
-.pap-empty p { margin: 14px 0 5px; font-weight: 800; font-size: 15px; color: var(--ink); }
-.pap-empty small { color: var(--ink-muted); font-size: 12.5px; display: block; max-width: 320px; margin: 0 auto; line-height: 1.5; }
-
-/* ---------- Móvil: tarjetas ---------- */
-@media (max-width: 860px) {
-    .pap-hero { flex-wrap: wrap; gap: 10px; margin: 16px 0 12px; }
-    .pap-hero-count { margin-left: 0; width: 100%; justify-content: center; }
-
-    .pap-table thead { display: none; }
-    .pap-table, .pap-table tbody, .pap-table tr, .pap-table td { display: block; width: 100%; }
-    .pap-table { border: 0; background: transparent; border-radius: 0; }
-    /* minmax(0,1fr): si no, la columna implicita se dimensiona al contenido y la
-       tarjeta se sale de la pantalla en vez de encogerse. */
-    .pap-table tbody { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-
-    .pap-table tr {
-        background: #fff;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 13px 14px;
-        position: relative;
-        min-width: 0;
-    }
-    .pap-table tbody tr:hover { background: #fff; }
-    .pap-table td {
-        border: 0; padding: 0;
-        display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 10px;
-        align-items: baseline;
-        font-size: 12.5px;
-    }
-    .pap-table td + td { margin-top: 7px; }
-    .pap-table td::before {
-        content: attr(data-label);
-        font-size: 10.5px; font-weight: 800; letter-spacing: .05em;
-        text-transform: uppercase; color: var(--ink-muted);
-    }
-    .pap-table td:first-child {
-        display: block; padding-bottom: 9px; margin-bottom: 9px;
-        border-bottom: 1px dashed var(--line);
-    }
-    .pap-table td:first-child::before { display: none; }
-    .pap-titulo { max-width: none; }
-    .pap-date { white-space: normal; }
-
-    .pap-actions {
-        justify-content: stretch; margin-top: 12px; padding-top: 11px;
-        border-top: 1px solid var(--line); gap: 8px;
-    }
-    .pap-actions form { flex: 1 1 0; }
-    .pap-actions .btn { width: 100%; justify-content: center; padding: 10px 12px; }
-
-    .pap-search { flex-wrap: wrap; }
-    .pap-search input[type="search"] { width: 100%; flex: 1 1 100%; }
-    .pap-search .btn { flex: 1 1 auto; justify-content: center; }
-}
-
-/* ---------- Pantallas muy estrechas ---------- */
-@media (max-width: 400px) {
-    .pap-hero-icon { width: 36px; height: 36px; }
-    .pap-table tr { padding: 12px; }
-    .pap-table td { grid-template-columns: 78px minmax(0, 1fr); gap: 8px; }
-    /* Los dos botones se apilan para que quepan en la tarjeta. */
-    .pap-actions { flex-direction: column; }
-    .pap-actions form { width: 100%; }
-    .pap-note { padding: 11px 12px; }
-}
-</style>
+{% include "tickets/_papelera_css.html" %}
 {% endblock %}
 
 {% block content %}
-<main class="page">
-    <div class="pap-hero">
+<main class="page pap-page">
+    <section class="pap-hero">
         <span class="pap-hero-icon"><svg class="icon"><use href="#i-trash"/></svg></span>
-        <span class="pap-hero-count">
-            <b>{{ total }}</b> ticket{{ total|pluralize }} eliminado{{ total|pluralize:"s,os" }}
-        </span>
-    </div>
+        <div class="pap-hero-text">
+            <strong>{{ total }}</strong>
+            <span>ticket{{ total|pluralize }} eliminado{{ total|pluralize:"s,os" }}</span>
+        </div>
+    </section>
 
-    <div class="pap-note">
-        <svg class="icon"><use href="#i-alert"/></svg>
-        <span>Los tickets aquí borrados <strong>no cuentan</strong> en el dashboard, los reportes ni la sincronización con GLPI. Puedes restaurarlos; "Eliminar definitivamente" sí es irreversible.</span>
-    </div>
+    <p class="pap-note">
+        <svg class="icon"><use href="#i-info"/></svg>
+        <span>Los tickets que están aquí <strong>no cuentan</strong> en el dashboard, los reportes ni la sincronización con GLPI. Puedes restaurarlos; "Borrar" sí es irreversible.</span>
+    </p>
 
     <form class="pap-search" method="get" action="{% url 'tickets:papelera' %}">
         <svg class="icon pap-search-icon"><use href="#i-search"/></svg>
         <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código, título o solicitante…"
                aria-label="Buscar en la papelera">
-        <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+        <button type="submit" class="btn btn-primary">Buscar</button>
         {% if q %}<a class="link-clear" href="{% url 'tickets:papelera' %}">✕ Limpiar</a>{% endif %}
     </form>
 
 {% if tickets %}
-    <table class="pap-table">
-        <thead>
-            <tr>
-                <th>Ticket</th>
-                <th>Solicitante</th>
-                <th>Técnico</th>
-                <th>Estado</th>
-                <th>Eliminado</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for t in tickets %}
-            <tr>
-                <td data-label="Ticket">
-                    <a class="pap-code" href="{{ t.get_absolute_url }}">{{ t.codigo }}</a>
-                    <span class="pap-titulo">{{ t.titulo }}</span>
-                </td>
-                <td data-label="Solicitante">
-                    {{ t.solicitante_nombre|default:t.solicitante_email }}
-                    <span class="pap-sub">{{ t.solicitante_email }}</span>
-                </td>
-                <td data-label="Técnico">{% if t.tecnico_asignado %}{{ t.tecnico_asignado.nombre }}{% else %}<span class="pap-sub">Sin asignar</span>{% endif %}</td>
-                <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
-                <td data-label="Eliminado" class="pap-date">
-                    {{ t.eliminado_en|date:"d/m/Y H:i" }}
-                    <span class="pap-sub">por {{ t.eliminado_por.nombre|default:"sistema" }}</span>
-                </td>
-                <td data-label="Acciones">
-                    <div class="pap-actions">
-                        <form method="post" action="{% url 'tickets:restaurar' t.pk %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                            <button type="submit" class="btn btn-sm btn-outline" title="Restaurar el ticket">
-                                <svg class="icon icon-sm"><use href="#i-refresh"/></svg> Restaurar
-                            </button>
-                        </form>
-                        <form method="post" action="{% url 'tickets:purgar' t.pk %}"
-                              data-confirm="¿Eliminar DEFINITIVAMENTE {{ t.codigo }}? No se podrá recuperar.">
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                            <button type="submit" class="btn btn-sm btn-danger" title="Eliminar definitivamente">
-                                <svg class="icon icon-sm"><use href="#i-trash"/></svg> Borrar
-                            </button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% include "tickets/_papelera_lista.html" with pap_solicitante=1 %}
 
-    {% if page_obj.paginator.count > 10 %}
+    {% if page_obj.paginator.num_pages > 1 %}
     <div class="pagination-bar">
         <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} en la papelera</span>
         <div class="pagination-links">
@@ -273,31 +57,11 @@
 {% else %}
     <div class="pap-empty">
         <span class="pap-empty-icon"><svg class="icon"><use href="#i-trash"/></svg></span>
-        <p>La papelera está vacía</p>
-        <small>Cuando elimines una solicitud aparecerá aquí y podrás recuperarla cuando la necesites.</small>
+        <strong>{% if q %}No hay resultados para "{{ q }}"{% else %}La papelera está vacía{% endif %}</strong>
+        <p>{% if q %}Prueba con otro código, título o solicitante, o <a href="{% url 'tickets:papelera' %}">ver todo</a>.{% else %}No hay ningún ticket eliminado. Cuando borres uno aparecerá aquí y podrás recuperarlo si fue por error.{% endif %}</p>
     </div>
 {% endif %}
 </main>
+{% include "tickets/_papelera_js.html" %}
 {% endblock %}
 
-{% block extra_js %}
-<script>
-(function () {
-    // Confirmación para el borrado definitivo (usa el modal global del tema).
-    document.addEventListener("submit", function (ev) {
-        var form = ev.target;
-        var texto = form.getAttribute && form.getAttribute("data-confirm");
-        if (!texto || form.dataset.confirmado === "1") return;
-        ev.preventDefault();
-        if (window.DoggerConfirma) {
-            window.DoggerConfirma(texto, function () {
-                form.dataset.confirmado = "1";
-                form.submit();
-            }, "Eliminar");
-        } else if (window.confirm(texto)) {
-            form.submit();
-        }
-    });
-})();
-</script>
-{% endblock %}

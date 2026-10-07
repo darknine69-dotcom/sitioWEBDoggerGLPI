@@ -42,6 +42,75 @@ def crear(usuario, tipo, titulo, mensaje, url="", icono="", clave=""):
     )
 
 
+# Tipos de aviso que cuentan como "algo por revisar" en los contadores.
+TIPOS_TRABAJO = (
+    Notificacion.Tipo.BIENVENIDA,
+    Notificacion.Tipo.TICKET_NUEVO,
+    Notificacion.Tipo.TICKET_EDITADO,
+    Notificacion.Tipo.TICKET_CERRADO,
+    Notificacion.Tipo.TICKET_RECORDATORIO,
+    Notificacion.Tipo.EVENTO,
+)
+
+
+# ------------------------------------------------- contadores "sin revisar"
+def _filtro_pendientes(usuario, tipos=None, claves=None, clave_prefijo="", url=""):
+    """Consulta con los avisos que el usuario todavía no ha revisado."""
+    q = Notificacion.objects.filter(usuario_id=usuario.pk, leida=False)
+    if tipos is not None:
+        q = q.filter(tipo__in=list(tipos))
+    if claves:
+        q = q.filter(clave__in=list(claves))
+    if clave_prefijo:
+        q = q.filter(clave__startswith=clave_prefijo)
+    if url:
+        q = q.filter(url=url)
+    return q
+
+
+def sin_revisar(usuario, tipos=None, claves=None, clave_prefijo="", url=""):
+    """Cuántos avisos sin revisar tiene el usuario (el número del contador)."""
+    if usuario is None or not getattr(usuario, "pk", None):
+        return 0
+    return _filtro_pendientes(usuario, tipos, claves, clave_prefijo, url).count()
+
+
+def marcar_revisadas(usuario, tipos=None, claves=None, clave_prefijo="", url=""):
+    """Pasa a leídos los avisos indicados: el contador baja a cero.
+
+    También quedan como "mostrados" para que la ventana emergente no vuelva a
+    saltar con un aviso que el usuario ya revisó en su pantalla.
+    """
+    if usuario is None or not getattr(usuario, "pk", None):
+        return 0
+    ahora = timezone.now()
+    return _filtro_pendientes(usuario, tipos, claves, clave_prefijo, url).update(
+        leida=True, leida_en=ahora, mostrada_en=ahora
+    )
+
+
+def revisar_la_vista(usuario, url_name, url_actual=""):
+    """Al entrar a una vista, sus avisos dejan de contar.
+
+    Así el contador aparece cuando ocurre el evento (un ticket nuevo, una
+    respuesta, una edición) y desaparece en cuanto la persona entra a mirar
+    esa pantalla: la campana y los morritos del menú quedan de acuerdo.
+    """
+    if usuario is None or not getattr(usuario, "pk", None) or not url_name:
+        return 0
+    if url_name in (
+        "mi_panel", "mi_papelera", "mi_editar", "mi_responder",
+        "sin_asignar", "panel_tecnico", "mis_tickets",
+        "lista", "dashboard", "usuarios", "papelera",
+    ):
+        return marcar_revisadas(usuario, tipos=TIPOS_TRABAJO)
+    if url_name in ("detalle", "mi_ticket"):
+        # Al abrir un ticket solo se quitan los avisos que hablan de ese
+        # ticket, para no borrar el resto del trabajo pendiente.
+        return marcar_revisadas(usuario, tipos=TIPOS_TRABAJO, url=url_actual or "")
+    return 0
+
+
 def no_leidas(usuario):
     if usuario is None or not getattr(usuario, "is_authenticated", False):
         return 0
@@ -312,22 +381,48 @@ def recordatorios(usuario, forzar=False):
         from apps.tickets.models import Ticket
 
         abiertos = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
-        asignados = Ticket.objects.filter(
-            tecnico_asignado_id=usuario.pk, estado__in=abiertos
-        ).count()
-        nuevas.append(
-            sincronizar(
-                usuario,
-                f"rec:asignados:{hoy}",
-                Notificacion.Tipo.TICKET_RECORDATORIO,
-                f"Tienes {asignados} ticket{'s' if asignados > 1 else ''} activo"
-                f"{'s' if asignados > 1 else ''}" if asignados else "",
-                "Revisa el estado de tus solicitudes asignadas."
-                if asignados
-                else "",
-                url=reverse("tickets:panel_tecnico"),
+        es_admin = usuario.rol == User.Rol.ADMIN
+        plural = lambda n: "s" if n != 1 else ""
+
+        if es_admin:
+            # El administrador no es el dueño de los tickets: lo que se le
+            # avisa es lo que entró a la mesa de ayuda, no "lo tuyo".
+            registrados = Ticket.objects.filter(estado__in=abiertos).count()
+            nuevas.append(
+                sincronizar(
+                    usuario,
+                    f"rec:registrados:{hoy}",
+                    Notificacion.Tipo.TICKET_RECORDATORIO,
+                    f"Se han registrado {registrados} ticket{plural(registrados)} "
+                    f"activo{plural(registrados)}" if registrados else "",
+                    "La mesa de ayuda tiene solicitudes en curso."
+                    if registrados else "",
+                    # Con la página completa: al dar "Ver" salen todos los
+                    # tickets recientes en "Últimos pedidos registrados".
+                    url=reverse("tickets:dashboard") + "?per_page_recientes=0",
+                )
             )
-        )
+            # El recordatorio de "asignados" es del técnico, no del admin.
+            sincronizar(
+                usuario, f"rec:asignados:{hoy}",
+                Notificacion.Tipo.TICKET_RECORDATORIO, "", "",
+            )
+        else:
+            asignados = Ticket.objects.filter(
+                tecnico_asignado_id=usuario.pk, estado__in=abiertos
+            ).count()
+            nuevas.append(
+                sincronizar(
+                    usuario,
+                    f"rec:asignados:{hoy}",
+                    Notificacion.Tipo.TICKET_RECORDATORIO,
+                    f"Tienes {asignados} ticket{'s' if asignados > 1 else ''} activo"
+                    f"{'s' if asignados > 1 else ''}" if asignados else "",
+                    "Revisa el estado de tus solicitudes asignadas."
+                    if asignados else "",
+                    url=reverse("tickets:panel_tecnico"),
+                )
+            )
 
         sin_asignar = Ticket.objects.filter(
             estado__in=abiertos, tecnico_asignado__isnull=True
@@ -340,8 +435,7 @@ def recordatorios(usuario, forzar=False):
                 f"{sin_asignar} ticket{'s' if sin_asignar > 1 else ''} pendiente"
                 f"{'s' if sin_asignar > 1 else ''} de asignar" if sin_asignar else "",
                 "Hay solicitudes en la bandeja esperando un técnico."
-                if sin_asignar
-                else "",
+                if sin_asignar else "",
                 url=reverse("tickets:sin_asignar"),
             )
         )
@@ -355,12 +449,10 @@ def recordatorios(usuario, forzar=False):
                 usuario,
                 f"rec:urgentes:{hoy}",
                 Notificacion.Tipo.TICKET_RECORDATORIO,
-                f"{urgentes} ticket{'s' if urgentes > 1 else ''} de prioridad alta u urgente"
-                if urgentes
-                else "",
+                f"{urgentes} ticket{'s' if urgentes > 1 else ''} de prioridad alta o urgente"
+                if urgentes else "",
                 "Atiende primero los casos con mayor impacto."
-                if urgentes
-                else "",
+                if urgentes else "",
                 url=reverse("tickets:sin_asignar"),
             )
         )
@@ -425,7 +517,13 @@ def _recordatorio_eventos(usuario, hoy):
                 f"{evento.get_tipo_display()}: {evento.titulo}",
                 f"Programado para {when}"
                 + (f" a las {evento.hora.strftime('%H:%M')}" if evento.hora else ""),
-                url=reverse("programador:panel_programador"),
+                # Enlace directo: el mes del evento y el evento destacado, para
+                # que "Ver" caiga en la fecha exacta y no en el mes equivocado.
+                url=(
+                    f"{reverse('programador:panel_programador')}"
+                    f"?anio={evento.fecha.year}&mes={evento.fecha.month}"
+                    f"&ev={evento.pk}"
+                ),
             )
         )
 

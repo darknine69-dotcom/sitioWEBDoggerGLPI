@@ -4,7 +4,7 @@
         {% if u and u.avatar %}
         <img src="{{ u.avatar.url }}" alt="" loading="lazy">
         {% elif u %}
-        {{ u.initials }}
+        {{ u.iniciales }}
         {% else %}
         {{ t.solicitante_nombre|slice:":2"|upper }}
         {% endif %}

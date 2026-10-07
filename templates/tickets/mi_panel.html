@@ -6,7 +6,7 @@
 {% block header_desc %}Tus solicitudes, su avance y la actividad reciente.{% endblock %}
 
 {% block extra_css %}
-{% load static %}
+{% load static asset %}
 <link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260923">
 {% endblock %}
 
@@ -22,6 +22,12 @@
                 <span class="corp-kicker"><span class="corp-dot"></span> Mesa de Ayuda Dogger</span>
                 <h2>{{ saludo }}, {{ usuario.nombre|default:request.user.nombre }}.</h2>
                 <p>Gestiona tus solicitudes de soporte, consulta sus respuestas y levanta nuevos pedidos desde un solo lugar.</p>
+            </div>
+            <div class="corp-hero-actions">
+                <button type="button" class="btn btn-ghost" data-open-modal="#modalTecnicos">
+                    <svg class="icon icon-sm"><use href="#i-headset"/></svg> Técnicos activos
+                    <span class="tec-btn-count">{{ tecnicos_activos|length }}</span>
+                </button>
             </div>
         </div>
 
@@ -55,7 +61,7 @@
                     <p class="corp-sub">Historial completo de tus pedidos. Usa las acciones de cada fila para ver respuestas, editar o cerrar.</p>
                 </div>
             </div>
-            <span class="corp-badge">{{ tickets|length }} solicitada(s)</span>
+            <span class="corp-badge">{{ tickets|length }} solicitud{{ tickets|length|pluralize:"es" }}{% if pendientes %} · {{ pendientes }} por mirar{% endif %}</span>
         </div>
 
         <form method="get" class="table-toolbar toolbar-corp">
@@ -189,6 +195,7 @@
             </div>
         </section>
 
+        {% if DOGGER.panel_mostrar_actividad_glpi %}
         <!-- ===== Actividad reciente GLPI + mini chat ===== -->
         <section class="corp-card corp-activity-panel">
             <div class="corp-card-head">
@@ -248,13 +255,21 @@
                 </form>
             </div>
         </section>
+        {% endif %}
+
     </div>
 </main>
+
+{% include "tickets/_modal_tecnicos.html" %}
 
 <script type="application/json" id="dogger-cat-keywords">{{ cat_sugerencias_json|safe }}</script>
 {% endblock %}
 
 {% block extra_js %}
-{% load static %}
-<script src="{% static 'js/mi-panel-corp.js' %}?v=20260914"></script>
+{% load static asset %}
+{% comment %}Con {% asset %} la versión sale del archivo, así un cambio en el
+   JavaScript no se queda en la caché del navegador (los pulgares).
+{% endcomment %}
+<script src="{% asset 'js/mi-panel-corp.js' %}"></script>
+<script src="{% asset 'js/voto-tecnicos.js' %}"></script>
 {% endblock %}

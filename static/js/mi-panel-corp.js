@@ -274,13 +274,13 @@
             '<div class="confirm-box">' +
             '<p>' + (esCerrar
                 ? '¿Confirmas que deseas cerrar la solicitud <strong>' + esc(codigo) + '</strong>?'
-                : '¿Seguro que deseas <strong>cancelar</strong> la solicitud <strong>' + esc(codigo) + '</strong>?') + '</p>' +
+                : '¿Seguro que deseas <strong>cancelar</strong> la solicitud <strong>' + esc(codigo) + '</strong>? Se podrá recuperar desde tu papelera.') + '</p>' +
             '<p class="modal-note">' + (esCerrar
                 ? "Al cerrarla no podrás editarla; el historial se conserva."
-                : "Se mueve a la papelera y deja de contar en el dashboard. Si te equivocaste, un administrador puede restaurarla. Solo se puede cancelar mientras la solicitud está abierta.") + '</p>' +
+                : "Se mueve a tu papelera y deja de contar en el contador de abiertas. Si te equivocaste, la restauras tú mismo desde Papelera.") + '</p>' +
             '<p id="confirm-error" class="form-error-line" hidden></p>' +
             '<div class="modal-actions">' +
-            '<button type="button" class="btn btn-cancel btn-sm" id="btn-confirm-yes">' + (esCerrar ? "Sí, cerrar" : "Sí, cancelar") + '</button>' +
+            '<button type="button" class="btn btn-cancel btn-sm" id="btn-confirm-yes">' + (esCerrar ? "Sí, cerrar" : "Sí, mover a la papelera") + '</button>' +
             '<button type="button" class="btn btn-outline btn-sm" id="btn-confirm-no">No, cancelar</button>' +
             '</div></div>';
         var yesBtn = document.getElementById("btn-confirm-yes");

@@ -1,0 +1,33 @@
+{% comment %}
+Confirmación de la papelera. Se aplica a cualquier formulario con
+`data-confirm`, `data-confirm-titulo`, `data-confirm-icono` y
+`data-confirm-nota`: el recuadro es el mismo que usa "Cancelar solicitud",
+con su icono, su título y la nota de qué va a pasar. Si ese modal global no
+está disponible, cae al confirm del navegador.
+
+Vive aquí para no repetirlo en la papelera del administrador y la del usuario.
+{% endcomment %}
+<script>
+(function () {
+    document.addEventListener("submit", function (ev) {
+        var form = ev.target;
+        var texto = form.getAttribute && form.getAttribute("data-confirm");
+        if (!texto || form.dataset.confirmado === "1") { return; }
+        ev.preventDefault();
+        var opciones = {
+            titulo: form.getAttribute("data-confirm-titulo") || "¿Confirmar acción?",
+            icono: form.getAttribute("data-confirm-icono") || "#i-trash",
+            nota: form.getAttribute("data-confirm-nota") || ""
+        };
+        var continuar = function () {
+            form.dataset.confirmado = "1";
+            form.submit();
+        };
+        if (window.DoggerConfirma) {
+            window.DoggerConfirma(texto, continuar, null, opciones);
+        } else if (window.confirm(texto)) {
+            continuar();
+        }
+    });
+})();
+</script>

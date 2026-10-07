@@ -1,62 +1,77 @@
 {% extends "base.html" %}
 {% block title %}Categorías de solicitudes{% endblock %}
+{% block nav_mi_panel %}{% endblock %}
 {% block header_title %}Categorías{% endblock %}
-{% block header_desc %}Toca una categoría para ver qué cubre, a quién le llega y cuánto tarda la respuesta. Elige la que mejor describa tu problema.{% endblock %}
+{% block header_desc %}Estas son las {{ total_categorias }} categorías en {{ total_grupos }} grupos. Cada una dice qué cubre, para que elijas la que mejor describa tu problema.{% endblock %}
 
 {% block content %}
-<main class="wrap">
-    <div class="page-head">
-        <a href="{% url 'tickets:crear_ticket' %}" class="btn btn-primary btn-sm">
-            <svg class="icon"><use href="#i-plus"/></svg> Crear solicitud
-        </a>
-    </div>
-
+<main class="page">
     {% if arbol %}
+        <div class="cat-resumen">
+            <div class="cat-resumen-item">
+                <span class="cat-resumen-n">{{ total_categorias }}</span>
+                <span class="cat-resumen-t">categorías</span>
+            </div>
+            <div class="cat-resumen-item">
+                <span class="cat-resumen-n">{{ total_grupos }}</span>
+                <span class="cat-resumen-t">grupos</span>
+            </div>
+            <p class="cat-resumen-pie">
+                Cada una trae su prioridad y su tiempo de respuesta. Abre un grupo con el
+                <span class="cat-sign">+</span> y mira qué cubre antes de reportar.
+            </p>
+        </div>
+
         <div class="cat-publico-busca">
             <svg class="icon"><use href="#i-search"/></svg>
-            <input type="search" id="catBusca" placeholder="Buscar una categoría o un grupo…"
+            <input type="search" id="catBusca" placeholder="Buscar categoría, grupo o problema (factura, caja, red…)"
                    aria-label="Buscar categoría" autocomplete="off">
             <span class="cat-busca-msg" id="catBuscaMsg"></span>
         </div>
 
-        <div class="cats-manager">
+        <div class="cat-publico">
             {% for grupo in arbol %}
-            <div class="cat-group-card collapsed" data-busca="{{ grupo.grupo|lower }}">
-                <div class="cat-group-head" data-toggle>
-                    <span class="cat-group-title">{{ grupo.grupo }}</span>
-                    <span class="cat-count-badge">{{ grupo.subcategorias|length }} categoría{{ grupo.subcategorias|length|pluralize }}</span>
-                    <button type="button" class="cat-toggle" aria-expanded="false"
-                            aria-label="Desplegar {{ grupo.grupo }}" title="Desplegar/plegar grupo">
-                        <svg class="icon"><use href="#i-chevron-down"/></svg>
-                    </button>
-                </div>
-                <table class="cat-sub-table">
-                    <tbody>
-                        {% for sub in grupo.subcategorias %}
-                        <tr class="cat-fila" data-cat
-                            data-nombre="{{ sub.nombre|escapejs }}"
-                            data-grupo="{{ sub.grupo|escapejs }}"
-                            data-prio="{{ sub.get_prioridad_default_display|escapejs }}"
-                            data-ans="{{ sub.ans_horas }}"
-                            data-tec="{% if sub.tecnico_default %}{{ sub.tecnico_default.nombre|escapejs }}{% endif %}"
-                            data-hermanas="{{ grupo.subcategorias|join:', ' }}"
-                            tabindex="0" role="button"
-                            aria-label="Ver qué cubre {{ sub.nombre }}">
-                            <td class="cat-sub-name">
-                                {{ sub.nombre }}
-                                <span class="meta-pill meta-{{ sub.prioridad_default }} ml-6">{{ sub.get_prioridad_default_display }}</span>
-                                <span class="meta-pill ml-6">ANS {{ sub.ans_horas }}h</span>
-                                {% if sub.tecnico_default %}<span class="file-chip ml-6"><svg class="icon icon-sm"><use href="#i-wrench"/></svg> {{ sub.tecnico_default.nombre }}</span>{% endif %}
-                            </td>
-                            <td class="cat-count-cell">{{ sub.tickets_count }} solicitud{{ sub.tickets_count|pluralize }}</td>
-                            <td class="cat-actions-cell">
-                                <span class="cat-ver-mas"><svg class="icon icon-sm"><use href="#i-eye"/></svg> Ver</span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <section class="cat-grupo collapsed" data-grupo="{{ grupo.grupo|lower }}" data-busca="{{ grupo.grupo|lower }}">
+                <h3 class="cat-grupo-head" data-toggle tabindex="0" role="button"
+                    aria-label="Desplegar {{ grupo.grupo }}" aria-expanded="false">
+                    <span class="cat-grupo-icono" aria-hidden="true">
+                        <svg class="icon"><use href="#i-folder"/></svg>
+                    </span>
+                    <span class="cat-grupo-txt">
+                        <span class="cat-grupo-nom">{{ grupo.grupo }}</span>
+                        {% if grupo.cubre %}<span class="cat-grupo-cubre">{{ grupo.cubre }}</span>{% endif %}
+                    </span>
+                    <span class="cat-grupo-cuenta">{{ grupo.subcategorias|length }} cat.</span>
+                    <svg class="icon cat-sign cat-grupo-sign" aria-hidden="true"><use href="#i-plus"/></svg>
+                </h3>
+
+                <ul class="cat-grupo-lista">
+                    {% for sub in grupo.subcategorias %}
+                    <li class="cat-item">
+                        <div class="cat-item-head" data-toggle tabindex="0" role="button"
+                             aria-expanded="false" aria-label="Ver detalles de {{ sub.nombre }}">
+                            <svg class="icon icon-sm cat-sign cat-item-sign" aria-hidden="true"><use href="#i-plus"/></svg>
+                            <span class="cat-item-punto meta-{{ sub.prioridad_default }}" aria-hidden="true"></span>
+                            <span class="cat-item-nom">{{ sub.nombre }}</span>
+                            <span class="meta-pill meta-{{ sub.prioridad_default }}">{{ sub.get_prioridad_default_display }}</span>
+                            <span class="cat-item-ans">{{ sub.ans_horas }} h</span>
+                        </div>
+                        {% if sub.cubre %}<p class="cat-item-cubre">{{ sub.cubre }}</p>{% endif %}
+
+                        <div class="cat-item-detalle" hidden>
+                            <ul class="cat-item-datos">
+                                <li><span>Respuesta</span><strong>{{ sub.ans_horas }} h</strong></li>
+                                <li><span>La atiende</span><strong>{% if sub.tecnico_default %}{{ sub.tecnico_default.nombre }}{% else %}Equipo de soporte{% endif %}</strong></li>
+                                <li><span>Ya reportado</span><strong>{{ sub.tickets_count }} solicitud{{ sub.tickets_count|pluralize }}</strong></li>
+                            </ul>
+                            <a class="btn btn-accent btn-sm" href="{{ sub.clave_crear }}">
+                                <svg class="icon icon-sm"><use href="#i-ticket"/></svg> Crear solicitud aquí
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
             {% endfor %}
         </div>
 
@@ -79,138 +94,68 @@
 {% endblock %}
 
 {% block extra_js %}
-{# Detalle de la categoría: qué cubre, a quién le llega y qué Hermanas hay. #}
-<div class="modal-overlay" id="catDetalle" role="dialog" aria-modal="true" aria-labelledby="catDetalleTitulo" hidden>
-    <div class="modal-box cat-modal">
-        <div class="modal-head">
-            <svg class="icon"><use href="#i-folder"/></svg>
-            <h3 id="catDetalleTitulo">Categoría</h3>
-            <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
-        </div>
-        <div class="modal-body">
-            <p class="cat-det-grupo" id="catDetalleGrupo"></p>
-            <ul class="cat-det-facts">
-                <li>
-                    <span class="cat-det-facts-l">Prioridad</span>
-                    <strong class="cat-det-facts-v" id="catDetallePrio"></strong>
-                </li>
-                <li>
-                    <span class="cat-det-facts-l">Respuesta</span>
-                    <strong class="cat-det-facts-v" id="catDetalleAns"></strong>
-                </li>
-                <li>
-                    <span class="cat-det-facts-l">La atiende</span>
-                    <strong class="cat-det-facts-v" id="catDetalleTec"></strong>
-                </li>
-            </ul>
-            <div class="cat-det-bloque">
-                <h4>Otras del mismo grupo</h4>
-                <div class="cat-det-chips" id="catDetalleHermanas"></div>
-            </div>
-        </div>
-        <div class="corp-modal-actions">
-            <a href="{% url 'tickets:crear_ticket' %}" class="btn btn-accent btn-sm" id="catDetalleIr">
-                <svg class="icon"><use href="#i-check"/></svg> Crear solicitud aquí
-            </a>
-            <button type="button" class="btn btn-outline btn-sm modal-close-cancel">Cerrar</button>
-        </div>
-    </div>
-</div>
-
 <script>
 (function () {
-    var overlay = document.getElementById("catDetalle");
-    if (!overlay) { return; }
     var $ = function (id) { return document.getElementById(id); };
 
-    function chip(texto) {
-        var b = document.createElement("button");
-        b.type = "button";
-        b.className = "cat-det-chip";
-        b.textContent = texto;
-        b.dataset.chip = texto;
-        return b;
-    }
+    /* Abrir y cerrar: los grupos y, dentro de ellos, cada categoría. El "+" del
+       encabezado gira a "×" para que se vea qué está abierto. */
+    document.querySelectorAll("[data-toggle]").forEach(function (cabeza) {
+        var zona = cabeza.closest(".cat-grupo, .cat-item");
 
-    function abrir(fila) {
-        var d = fila.dataset;
-        $("catDetalleTitulo").textContent = d.nombre;
-        $("catDetalleGrupo").textContent = d.grupo;
-        $("catDetallePrio").textContent = d.prio;
-        $("catDetalleAns").textContent = d.ans + " h";
-        $("catDetalleTec").textContent = d.tec || "Equipo de soporte";
+        function abrir() {
+            var abierto;
+            if (zona.classList.contains("cat-item")) {
+                var detalle = zona.querySelector(".cat-item-detalle");
+                abierto = detalle.hidden;
+                detalle.hidden = !abierto;
+            } else {
+                // El grupo arranca plegado: si está en "collapsed", toca abrirlo.
+                abierto = zona.classList.contains("collapsed");
+                zona.classList.toggle("collapsed", !abierto);
+            }
+            zona.classList.toggle("is-abierto", abierto);
+            cabeza.setAttribute("aria-expanded", String(abierto));
+        }
 
-        var lista = $("catDetalleHermanas");
-        lista.textContent = "";
-        var hermanas = (d.hermanas || d.nombre).split(",");
-        hermanas.forEach(function (x) {
-            var t = x.trim();
-            if (t) { lista.appendChild(chip(t)); }
+        cabeza.addEventListener("click", function (ev) {
+            if (ev.target.closest("a, button, input")) { return; }
+            abrir();
         });
-
-        overlay.hidden = false;
-        overlay.classList.add("open");
-    }
-
-    function cerrar() { overlay.classList.remove("open"); }
-
-    document.querySelectorAll("[data-cat]").forEach(function (fila) {
-        fila.addEventListener("click", function () { abrir(fila); });
-        fila.addEventListener("keydown", function (e) {
-            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(fila); }
+        cabeza.addEventListener("keydown", function (ev) {
+            if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); abrir(); }
         });
     });
 
-    // Una hermana del grupo se abre sin cerrar el modal.
-    $("catDetalleHermanas").addEventListener("click", function (e) {
-        var b = e.target.closest("[data-chip]");
-        if (!b) { return; }
-        var destino = null;
-        document.querySelectorAll("[data-cat]").forEach(function (f) {
-            if (f.dataset.nombre === b.dataset.chip) { destino = f; }
-        });
-        if (destino) { abrir(destino); }
-    });
-
-    overlay.addEventListener("click", function (e) {
-        if (e.target === overlay || e.target.closest(".modal-close, .modal-close-cancel")) { cerrar(); }
-    });
-    document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape" && !overlay.hidden) { cerrar(); }
-    });
-
-    // Plegar y desplegar cada grupo, igual que en la vista del administrador.
-    document.querySelectorAll("[data-toggle]").forEach(function (head) {
-        head.addEventListener("click", function (e) {
-            if (e.target.closest("a, button, input")) { return; }
-            var card = head.closest(".cat-group-card");
-            var btn = head.querySelector(".cat-toggle");
-            var abierto = card.classList.toggle("collapsed");
-            btn.setAttribute("aria-expanded", String(!abierto));
-        });
-    });
-
-    // Buscador: filtra por grupo y por nombre de categoría.
+    /* Buscador: filtra por grupo y por categoría, y abre lo que coincide. */
     var busca = $("catBusca");
-    var cards = Array.prototype.slice.call(document.querySelectorAll(".cat-group-card"));
+    var grupos = Array.prototype.slice.call(document.querySelectorAll(".cat-grupo"));
     busca.addEventListener("input", function () {
         var q = this.value.trim().toLowerCase();
         var visibles = 0;
-        cards.forEach(function (card) {
+        grupos.forEach(function (grupo) {
             var coincide = !q ||
-                card.dataset.busca.indexOf(q) !== -1 ||
-                Array.prototype.some.call(card.querySelectorAll("[data-cat]"), function (f) {
-                    return f.dataset.nombre.toLowerCase().indexOf(q) !== -1;
+                grupo.dataset.busca.indexOf(q) !== -1 ||
+                Array.prototype.some.call(grupo.querySelectorAll(".cat-item-nom"), function (n) {
+                    return n.textContent.toLowerCase().indexOf(q) !== -1;
+                }) ||
+                Array.prototype.some.call(grupo.querySelectorAll(".cat-item-cubre"), function (n) {
+                    return n.textContent.toLowerCase().indexOf(q) !== -1;
                 });
-            card.hidden = !coincide;
+            grupo.hidden = !coincide;
             if (coincide) {
                 visibles++;
-                if (q) { card.classList.remove("collapsed"); }
+                if (q && grupo.classList.contains("collapsed")) {
+                    grupo.classList.remove("collapsed");
+                    grupo.classList.add("is-abierto");
+                    var cabeza = grupo.querySelector(".cat-grupo-head");
+                    if (cabeza) { cabeza.setAttribute("aria-expanded", "true"); }
+                }
             }
         });
         $("catSinResultados").hidden = visibles > 0;
-        $("catBuscaMsg").textContent = visibles === 1 ? "1 grupo" : (visibles + " grupos");
+        $("catBuscaMsg").textContent = visibles ? (visibles === 1 ? "1 grupo" : visibles + " grupos") : "";
     });
 })();
 </script>
-{% endblock %}
+{% endblock %}

@@ -1,24 +1,15 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Dogger · Mi perfil{% endblock %}
+{% block title %}Dogger · Ajustes de cuenta{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
-{% block header_title %}Mi perfil{% endblock %}
-{% block header_desc %}Tus datos, tu rol y cómo se ve la plataforma.{% endblock %}
+{% block header_title %}Ajustes de cuenta{% endblock %}
+{% block header_desc %}Cómo se ve la plataforma y qué te avisamos: aquí están tus preferencias.{% endblock %}
 
 {% block extra_css %}
 <style>
 /* ============ Perfil corporativo Dogger ============ */
 .profile-page { max-width: 1080px; }
-/* El título y la explicación ya están en el encabezado; aquí solo queda la
-   acción de cerrar sesión, alineada a la derecha. */
-.profile-top {
-    display: flex; align-items: center; justify-content: flex-end; gap: 16px;
-    margin-bottom: 22px; flex-wrap: wrap;
-}
-.profile-logout { display: inline-flex; align-items: center; gap: 7px; }
-.profile-logout .icon { width: 15px; height: 15px; }
-
 .profile-grid {
     display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start;
 }
@@ -190,22 +181,12 @@
 }
 @media (max-width: 520px) {
     .prof-mode-grid { grid-template-columns: 1fr; }
-    .profile-top { align-items: flex-start; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="page page-corporate profile-page">
-    <div class="profile-top">
-        <form method="post" action="{% url 'accounts:logout' %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline btn-sm profile-logout" title="Cerrar sesión">
-                <svg class="icon"><use href="#i-logout"/></svg> Cerrar sesión
-            </button>
-        </form>
-    </div>
-
     <div class="profile-grid">
         <!-- ==== Identidad ==== -->
         <aside class="profile-card profile-ident">
@@ -213,7 +194,7 @@
                 {% if request.user.avatar %}
                 <img src="{{ request.user.avatar.url }}" alt="{{ request.user.nombre }}">
                 {% else %}
-                {{ request.user.initials }}
+                {{ request.user.iniciales }}
                 {% endif %}
             </div>
             <span class="badge-role badge-role-perfil {{ request.user.rol }}">{{ request.user.get_rol_display }}</span>
@@ -577,4 +558,4 @@
     });
 })();
 </script>
-{% endblock %}
+{% endblock %}

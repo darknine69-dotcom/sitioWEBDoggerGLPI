@@ -22,7 +22,14 @@ from django.utils import timezone
 
 from apps.accounts.models import Usuario
 
-from .models import ElementoMiLista, ObservadorPunto, Punto, Ticket
+from .models import (
+    ElementoMiLista,
+    ObservadorPunto,
+    Punto,
+    Ticket,
+    TicketComentario,
+    ZonaObservador,
+)
 
 # Estados que el observador monitorea: verde activo, rojo incidencia, amarillo pendiente.
 ESTADO_VERDE = "verde"
@@ -140,8 +147,10 @@ def _resumen_por_correo(usuario):
         return resumen.setdefault(
             correo,
             {
+                "nombre": "",
                 "total": 0,
                 "abiertos": 0,
+                "urgentes": 0,
                 "resueltos": 0,
                 "cerrados": 0,
                 "en_progreso": 0,
@@ -154,14 +163,19 @@ def _resumen_por_correo(usuario):
 
     for t in _visible_a_observador(usuario, Ticket.objects.all()).select_related(
         "tecnico_asignado"
-    ):
+    ).order_by("fecha_creacion"):
         correo = (t.solicitante_email or "").strip().lower()
         if not correo:
             continue
         f = fila(correo)
+        if t.solicitante_nombre:
+            # Al ordenarse por fecha, queda el nombre del ticket más nuevo.
+            f["nombre"] = t.solicitante_nombre.strip()
         f["total"] += 1
         if t.estado in _ACTIVOS:
             f["abiertos"] += 1
+        if t.prioridad == _URGENTE and t.estado in _ACTIVOS:
+            f["urgentes"] += 1
         if t.estado == Ticket.Estado.RESUELTO:
             f["resueltos"] += 1
         elif t.estado == Ticket.Estado.CERRADO:
@@ -369,12 +383,12 @@ def buscar_observador(request):
 
 @solo_observador
 def usuarios_observador(request):
-    """Tabla de usuarios de la aplicación, con el avance de sus tickets.
+    """Tabla de las personas que el observador tiene a la vista.
 
-    Sale del mismo sitio que la vista del administrador, así que el observador
-    ve exactamente las cuentas que existen. Lo que se acota son los números:
-    los tickets que se cuentan son solo los de sus zonas, con su técnico y su
-    avance de resolución.
+    Salen las que levantaron tickets en sus zonas y las que ya están en su
+    lista personal, no todas las cuentas de la organización: así el
+    observador no ve a nadie de fuera de sus puntos. Los números son de esos
+    mismos tickets, con su técnico y su avance de resolución.
     """
     usuario = request.user
     q = (request.GET.get("q") or "").strip()
@@ -389,46 +403,60 @@ def usuarios_observador(request):
         if (e.usuario_email or "").strip()
     }
     resumen = _resumen_por_correo(usuario)
-
-    cuentas = Usuario.objects.filter(activo=True, is_active=True)
-    if rol:
-        cuentas = cuentas.filter(rol=rol)
-    if q:
-        cuentas = cuentas.filter(
-            Q(nombre__icontains=q) | Q(email__icontains=q)
-            | Q(ubicacion__icontains=q)
-        )
+    cuentas = {
+        (u.email or "").strip().lower(): u
+        for u in Usuario.objects.filter(activo=True, is_active=True)
+    }
 
     filas = []
-    for u in cuentas.order_by("nombre"):
-        correo = (u.email or "").strip().lower()
+    for correo in sorted(set(resumen) | ya_en_lista):
         r = resumen.get(correo, {})
+        u = cuentas.get(correo)
+        puntos = r.get("puntos", [])
         filas.append(
             {
                 "obj": u,
-                "nombre": u.nombre or u.email,
+                "nombre": (u.nombre if u else "") or r.get("nombre") or correo,
                 "email": correo,
-                "rol": u.get_rol_display(),
-                "ubicacion": u.ubicacion or "—",
+                "rol": u.get_rol_display() if u else "Sin cuenta",
+                "rol_crudo": u.rol if u else "",
+                "ubicacion": (
+                    (u.ubicacion if u else "")
+                    or (puntos[0] if puntos else "")
+                    or "—"
+                ),
                 "tecnico": r.get("tecnico_principal", ""),
                 "tecnicos": r.get("tecnicos", []),
                 "total": r.get("total", 0),
                 "abiertos": r.get("abiertos", 0),
+                "urgentes": r.get("urgentes", 0),
                 "cerrados_total": r.get("cerrados_total", 0),
                 "avance": r.get("avance", 0),
                 "falta": 100 - r.get("avance", 0),
                 "estado": r.get("estado", ESTADO_VERDE),
                 "ya_agregado": correo in ya_en_lista,
-                "puntos": r.get("puntos", []),
+                "puntos": puntos,
             }
         )
 
     total_sin_filtro = len(filas)
 
+    if rol:
+        filas = [f for f in filas if f["rol_crudo"] == rol]
+    if q:
+        buscar = q.lower()
+        filas = [
+            f for f in filas
+            if buscar in f["nombre"].lower()
+            or buscar in f["email"].lower()
+            or buscar in f["ubicacion"].lower()
+        ]
     if punto:
         filas = [f for f in filas if punto in (f["ubicacion"], *(f["puntos"] or []))]
     if estado == "activos":
         filas = [f for f in filas if f["abiertos"] > 0]
+    elif estado == "alerta":
+        filas = [f for f in filas if f["urgentes"] > 0]
     elif estado == "agregados":
         filas = [f for f in filas if f["ya_agregado"]]
     elif estado == "pendientes":
@@ -633,3 +661,166 @@ def exportar_observador(request):
     for f in filas:
         escritura.writerow([f["nombre"], f["detalle"], f["estado"], f["abiertos"], f["total"]])
     return respuesta
+
+
+# ------------------------------------------------------------------- zonas
+@solo_observador
+def zonas_observador(request):
+    """Zonas propias del observador: carpetas con nombre para agrupar gente.
+
+    Aquí se crean las zonas y se reparte entre ellas a las personas de Mi
+    lista. Cada zona resume cuánta gente tiene y cuántos tickets abiertos
+    suman, y lleva a su detalle para el seguimiento.
+    """
+    usuario = request.user
+    error = ""
+    if request.method == "POST":
+        nombre = (request.POST.get("nombre") or "").strip()[:80]
+        if not nombre:
+            error = "Ponle un nombre a la zona para crearla."
+        elif ZonaObservador.objects.filter(
+            observador=usuario, nombre__iexact=nombre
+        ).exists():
+            error = "Ya tienes una zona con ese nombre."
+        else:
+            zona = ZonaObservador.objects.create(observador=usuario, nombre=nombre)
+            return redirect("tickets:obs_zona_detalle", pk=zona.pk)
+    resumen = _resumen_por_correo(usuario)
+    zonas = list(
+        ZonaObservador.objects.filter(observador=usuario).prefetch_related("elementos")
+    )
+    tarjetas = []
+    for zona in zonas:
+        miembros = [
+            e for e in zona.elementos.all()
+            if e.tipo == ElementoMiLista.TIPO_USUARIO
+        ]
+        abiertos = sum(
+            resumen.get((e.usuario_email or "").strip().lower(), {}).get("abiertos", 0)
+            for e in miembros
+        )
+        tarjetas.append({"zona": zona, "personas": len(miembros), "abiertos": abiertos})
+    sin_zona = (
+        ElementoMiLista.objects.filter(
+            observador=usuario,
+            zona__isnull=True,
+            tipo=ElementoMiLista.TIPO_USUARIO,
+        )
+        .select_related("usuario")
+        .order_by("usuario_email")
+    )
+    return render(
+        request,
+        "observador/zonas.html",
+        {
+            "tarjetas": tarjetas,
+            "zonas": zonas,
+            "sin_zona": sin_zona,
+            "error": error,
+        },
+    )
+
+
+@solo_observador
+def zona_detalle_observador(request, pk):
+    """Seguimiento por zona: su gente, sus tickets y las respuestas.
+
+    Cada persona trae sus números (acotados a los puntos del observador,
+    como en el resto del módulo) y las últimas respuestas que le dieron
+    los técnicos a sus tickets.
+    """
+    usuario = request.user
+    try:
+        zona = ZonaObservador.objects.get(pk=pk, observador=usuario)
+    except ZonaObservador.DoesNotExist:
+        raise Http404
+    resumen = _resumen_por_correo(usuario)
+    puntos = puntos_del_observador(usuario)
+    miembros = (
+        zona.elementos.filter(tipo=ElementoMiLista.TIPO_USUARIO)
+        .select_related("usuario")
+        .order_by("usuario_email")
+    )
+    filas = []
+    for e in miembros:
+        correo = (e.usuario_email or "").strip().lower()
+        r = resumen.get(correo, {})
+        filas.append(
+            {
+                "elemento": e,
+                "nombre": (
+                    (e.usuario.nombre if e.usuario else "") or correo
+                ),
+                "email": correo,
+                "total": r.get("total", 0),
+                "abiertos": r.get("abiertos", 0),
+                "avance": r.get("avance", 0),
+                "falta": 100 - r.get("avance", 0),
+                "cerrados_total": r.get("cerrados_total", 0),
+                "estado": r.get("estado", ESTADO_VERDE),
+                "respuestas": _respuestas_de_tecnicos(puntos, correo),
+            }
+        )
+    return render(
+        request, "observador/zona_detalle.html", {"zona": zona, "filas": filas}
+    )
+
+
+def _respuestas_de_tecnicos(puntos, correo, limite=3):
+    """Últimas respuestas del personal a los tickets de la persona.
+
+    Solo respuestas visibles (no internas) de técnicos o administradores,
+    acotadas a los puntos del observador: sin puntos asignados no se ve
+    nada, igual que en el resto del módulo.
+    """
+    if not correo or not puntos:
+        return []
+    return list(
+        TicketComentario.objects.filter(
+            ticket__solicitante_email__iexact=correo,
+            ticket__solicitante_punto__in=puntos,
+            es_interno=False,
+            usuario__rol__in=[Usuario.Rol.TECNICO, Usuario.Rol.ADMIN],
+        )
+        .select_related("ticket", "usuario")
+        .order_by("-fecha")[:limite]
+    )
+
+
+@solo_observador
+def zona_miembro_asignar(request):
+    """Mete o saca un elemento de Mi lista en una zona (solo POST)."""
+    if request.method != "POST":
+        raise Http404
+    usuario = request.user
+    try:
+        elemento = ElementoMiLista.objects.get(
+            pk=request.POST.get("elemento"), observador=usuario
+        )
+    except (ElementoMiLista.DoesNotExist, ValueError, TypeError):
+        raise Http404
+    zona_id = (request.POST.get("zona") or "").strip()
+    if zona_id:
+        try:
+            elemento.zona = ZonaObservador.objects.get(
+                pk=int(zona_id), observador=usuario
+            )
+        except (ZonaObservador.DoesNotExist, ValueError, TypeError):
+            raise Http404
+    else:
+        elemento.zona = None
+    elemento.save(update_fields=["zona"])
+    return redirect(request.POST.get("volver") or reverse("tickets:obs_zonas"))
+
+
+@solo_observador
+def zona_eliminar(request, pk):
+    """Borra una zona propia: su gente queda sin zona, no se borra."""
+    if request.method != "POST":
+        raise Http404
+    try:
+        zona = ZonaObservador.objects.get(pk=pk, observador=request.user)
+    except ZonaObservador.DoesNotExist:
+        raise Http404
+    zona.delete()
+    return redirect("tickets:obs_zonas")

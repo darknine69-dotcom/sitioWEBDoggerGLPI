@@ -15,14 +15,20 @@ register = template.Library()
 
 
 def _ruta_absoluta(ruta):
-    """Busca el archivo en STATIC_ROOT y luego en STATICFILES_DIRS."""
+    """Busca el archivo en STATICFILES_DIRS y luego en STATIC_ROOT.
+
+    El fuente va primero a proposito: la copia de STATIC_ROOT la genera
+    collectstatic y conserva la fecha de la copia, no la de la ultima
+    edicion. Si se midiera esa, el ?v= se quedaria pegado al momento del
+    collectstatic y el navegador seguiria usando la version vieja.
+    """
     relativa = str(ruta).lstrip("/")
     candidatas = []
+    for carpeta in getattr(settings, "STATICFILES_DIRS", []) or []:
+        candidatas.append(os.path.join(str(carpeta), relativa))
     static_root = getattr(settings, "STATIC_ROOT", None)
     if static_root:
         candidatas.append(os.path.join(str(static_root), relativa))
-    for carpeta in getattr(settings, "STATICFILES_DIRS", []) or []:
-        candidatas.append(os.path.join(str(carpeta), relativa))
     return next((c for c in candidatas if os.path.isfile(c)), None)
 
 

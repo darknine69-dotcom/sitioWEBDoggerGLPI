@@ -1,0 +1,225 @@
+<style>
+/* =====================================================================
+   Papelera: encabezado, buscador, tarjetas y estado vacío.
+
+   Es la misma vista para el administrador (tickets de toda la mesa) y para
+   el usuario (solo lo suyo), así que todo vive aquí y las dos páginas se
+   ven igual. El texto va deliberadamente más grande que en el resto del
+   panel: son pocas filas y hay que leerlas bien.
+   ===================================================================== */
+
+.pap-page { font-size: 15px; }
+
+/* --------------------------------------------------------- encabezado */
+.pap-hero {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    border: 1px solid var(--line, #E7E2DB);
+    border-left: 4px solid var(--dogger-red, #D62B1F);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FBF9F7 100%);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+}
+.pap-hero-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 46px; height: 46px; flex: 0 0 auto;
+    border-radius: 12px;
+    background: rgba(214, 43, 31, .10);
+    color: var(--dogger-red, #D62B1F);
+}
+.pap-hero-icon .icon { width: 22px; height: 22px; }
+.pap-hero-text { display: flex; align-items: baseline; gap: 10px; flex: 1 1 auto; min-width: 0; }
+.pap-hero-text strong {
+    font-family: var(--font-display);
+    font-size: 30px; line-height: 1;
+    color: var(--ink);
+}
+.pap-hero-text span { font-size: 15px; color: var(--ink-muted); }
+
+/* ------------------------------------------------------- nota al pie */
+.pap-note {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin: 0 0 18px;
+    padding: 13px 16px;
+    border: 1px solid rgba(255, 199, 44, .45);
+    border-radius: 12px;
+    background: rgba(255, 199, 44, .12);
+    font-size: 14px; line-height: 1.55;
+    color: #6B5410;
+}
+.pap-note .icon { width: 18px; height: 18px; flex: 0 0 auto; margin-top: 1px; color: #8A6100; }
+.pap-note strong { color: #4A3A08; }
+
+/* --------------------------------------------------------- buscador */
+.pap-search {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 18px;
+}
+.pap-search-icon {
+    position: absolute;
+    width: 18px; height: 18px;
+    margin-left: 14px;
+    color: #9C938A;
+    pointer-events: none;
+}
+.pap-search input[type="search"] {
+    flex: 1 1 auto;
+    min-height: 44px;
+    padding: 0 14px 0 42px;
+    font-size: 14.5px;
+    border: 1px solid var(--line, #E7E2DB);
+    border-radius: 10px;
+    background: #FFFFFF;
+    color: var(--ink);
+}
+.pap-search input[type="search"]:focus {
+    outline: none;
+    border-color: var(--dogger-red, #D62B1F);
+    box-shadow: 0 0 0 3px rgba(214, 43, 31, .12);
+}
+.pap-search .btn { min-height: 44px; padding: 0 20px; font-size: 14.5px; }
+.link-clear {
+    font-size: 13.5px; color: var(--ink-muted); text-decoration: none;
+    white-space: nowrap;
+}
+.link-clear:hover { color: var(--dogger-red, #D62B1F); text-decoration: underline; }
+
+/* ------------------------------------------------------- tarjetas */
+.pap-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 16px;
+    margin: 0 0 22px;
+    padding: 0;
+    list-style: none;
+}
+.pap-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px 20px 16px;
+    border: 1px solid var(--line, #E7E2DB);
+    border-radius: 14px;
+    background: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.pap-card:hover {
+    border-color: rgba(214, 43, 31, .35);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, .08);
+    transform: translateY(-1px);
+}
+
+.pap-card-top {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.pap-code {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: 13.5px; font-weight: 700;
+    letter-spacing: .02em;
+    color: var(--ink);
+}
+.pap-code .icon { width: 15px; height: 15px; color: var(--dogger-red, #D62B1F); }
+.pap-code a { color: inherit; text-decoration: none; }
+.pap-code a:hover { color: var(--dogger-red, #D62B1F); text-decoration: underline; }
+.pap-when {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-left: auto;
+    font-size: 12.5px;
+    color: #9C938A;
+}
+.pap-when .icon { width: 14px; height: 14px; }
+
+.pap-card-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 16.5px;
+    line-height: 1.4;
+    color: var(--ink);
+}
+.pap-card-title a { color: inherit; text-decoration: none; }
+.pap-card-title a:hover { color: var(--dogger-red, #D62B1F); text-decoration: underline; }
+
+.pap-card-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px 16px;
+    margin: 0;
+    padding: 12px 0 0;
+    border-top: 1px dashed var(--line, #E7E2DB);
+}
+.pap-meta-item dt {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: #A79E93;
+}
+.pap-meta-item dd {
+    margin: 3px 0 0;
+    font-size: 14px;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+}
+.pap-meta-item dd small {
+    display: block; width: 100%;
+    font-size: 12.5px;
+    color: #9C938A;
+    overflow-wrap: anywhere;
+}
+.pap-meta-avatar {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; flex: 0 0 auto;
+    border-radius: 50%;
+    background: rgba(29, 78, 216, .12);
+    color: #1D4ED8;
+    font-size: 12px; font-weight: 700;
+}
+.pap-meta-avatar-tec { background: rgba(37, 99, 235, .12); color: #2563EB; }
+.pap-meta-none { color: #9C938A; font-style: italic; }
+
+.pap-card-actions {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: auto;
+    padding-top: 4px;
+}
+.pap-card-actions form { margin: 0; }
+.pap-card-actions .btn {
+    min-height: 40px;
+    padding: 0 16px;
+    font-size: 14px;
+}
+
+/* ---------------------------------------------------- estado vacío */
+.pap-empty {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 54px 24px;
+    border: 1px dashed var(--line, #E7E2DB);
+    border-radius: 14px;
+    background: #FCFBF9;
+    text-align: center;
+}
+.pap-empty-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 54px; height: 54px; margin-bottom: 4px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, .05);
+    color: #A79E93;
+}
+.pap-empty-icon .icon { width: 24px; height: 24px; }
+.pap-empty strong { font-family: var(--font-display); font-size: 17px; color: var(--ink); }
+.pap-empty p { margin: 0; max-width: 46ch; font-size: 14.5px; line-height: 1.6; color: var(--ink-muted); }
+.pap-empty a { color: var(--dogger-red, #D62B1F); }
+.pap-empty .btn { margin-top: 10px; }
+
+/* ------------------------------------------------------- adaptable */
+@media (max-width: 720px) {
+    .pap-cards { grid-template-columns: 1fr; }
+    .pap-hero-text { flex-direction: column; gap: 2px; align-items: flex-start; }
+    .pap-search { flex-wrap: wrap; }
+    .pap-search input[type="search"] { flex: 1 1 100%; }
+}
+</style>

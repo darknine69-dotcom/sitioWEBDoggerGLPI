@@ -79,16 +79,7 @@
                         <td>{% include "tickets/_solicitante_cell.html" with t=t %}</td>
                         <td><span class="ty-prio ty-prio-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span></td>
                         <td>
-                            {% with info=t.info_ans %}
-                            {% if info.0 %}
-                            <span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
-                                {% if info.0 == 'vencido' %}<svg class="icon icon-sm"><use href="#i-alert"/></svg>
-                                {% elif info.0 == 'resuelto' %}<svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-                                {% else %}<svg class="icon icon-sm"><use href="#i-clock"/></svg>{% endif %}
-                                {% if t.fecha_limite_ans and info.0 != 'resuelto' %}{{ t.fecha_limite_ans|date:"d/m H:i" }}{% else %}{{ info.1 }}{% endif %}
-                            </span>
-                            {% else %}<span class="sin-asignar">—</span>{% endif %}
-                            {% endwith %}
+                            {% if t.info_ans.0 %}{% include "tickets/_ans_time.html" with t=t %}{% else %}<span class="sin-asignar">—</span>{% endif %}
                         </td>
                         <td>{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
                         <td><span class="ty-date">{{ t.fecha_creacion|date:"d/m/Y" }}</span></td>
@@ -328,4 +319,4 @@
     window.addEventListener('resize', function () { if (menuEl) posicionar(); });
 })();
 </script>
-{% endblock %}
+{% endblock %}

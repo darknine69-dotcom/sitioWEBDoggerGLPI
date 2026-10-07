@@ -48,11 +48,17 @@ html[data-theme="dark"] .usuarios-page .table-card .table-scroll::-webkit-scroll
 .live-head-item.is-new { border-color: rgba(217,164,54,.4); color: #8a6116; background: #FFF7E6; }
 .live-head-item.is-new .live-dot { background: #C99A2E; }
 
-/* Estado de cuenta: punto junto al nombre */
-.ue-dot-w { display: inline-flex; align-items: center; margin-left: 8px; vertical-align: middle; }
+/* Estado de cuenta: punto verde al principio del nombre */
+.ue-dot-w { display: inline-flex; align-items: center; margin-right: 8px; vertical-align: middle; }
 .ue-dot-w.is-hidden { display: none; }
 .ue-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #9AA0A6; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
 .ue-dot.green { background: #2F7D4F; }
+/* Estado Activa/Inactiva de la tabla */
+.ue-estado { display: inline-block; font-weight: 800; font-size: 12px; border-radius: 999px; padding: 2px 10px; }
+.ue-estado.ok { background: rgba(47,125,79,.13); color: #2F7D4F; }
+.ue-estado.no { background: rgba(214,43,31,.1); color: var(--dogger-red); }
+/* Botón GLPI compacto y cuadradito */
+.mini-btn.sq { padding: 6px 9px; border-radius: 9px; border-width: 1.5px; }
 /* Activo pero sin conexion */
 .ue-dot.yellow { background: #EAB308; }
 .ue-dot.red { background: #D62B1F; }
@@ -211,7 +217,6 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                         title="Clic en la fila para ver la ficha">
                         <td data-label="Nombre">
                             <span class="ue-name-line">
-                                <strong>{{ u.nombre }}</strong>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
                                 {% if u.activo %}
                                 <span class="ue-dot-w{% if u.ficha.dot == 'red' %} is-hidden{% endif %}" id="ue-dot-{{ u.pk }}" data-uid="{{ u.pk }}"
                                       data-estado="{{ u.ficha.dot }}"
@@ -224,6 +229,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                                     <span class="ue-dot red"></span>
                                 </span>
                                 {% endif %}
+                                <strong>{{ u.nombre }}</strong>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
                             </span>
                             {% if u.ficha.es_nuevo %}<span class="ue-badge ue-nuevo">▸ Recién registrado</span>{% endif %}
                             {% if u.glpi_perfil %}
@@ -245,7 +251,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                         </td>
                         <td data-label="Correo">{{ u.email }}</td>
                         <td data-label="Contacto">
-                            {{ u.telefono|default:"—" }}{% if u.telefono %}<svg class="icon icon-sm" style="width:12px;height:12px;margin-left:5px"><use href="#i-phone"/></svg>{% endif %}
+                            {{ u.telefono|default:"Sin número" }}{% if u.telefono %}<svg class="icon icon-sm" style="width:12px;height:12px;margin-left:5px"><use href="#i-phone"/></svg>{% endif %}
                             {% if u.ubicacion %}<small class="ue-ubi">Punto: {{ u.ubicacion }}</small>
                             {% elif u.ficha.punto %}<small class="ue-ubi">Punto habitual: {{ u.ficha.punto }}</small>{% endif %}
                         </td>
@@ -262,15 +268,15 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                                 <form method="post" action="{% url 'tickets:usuario_crear_glpi' u.pk %}" class="inline-form"
                                       onsubmit="return confirm('¿Crear a {{ u.nombre|escapejs }} en GLPI?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="mini-btn ok" title="Publicar esta cuenta en GLPI"><svg class="icon icon-sm"><use href="#i-cloud-upload"/></svg> Crear en GLPI</button>
+                                    <button type="submit" class="mini-btn sq ok" title="Publicar esta cuenta en GLPI"><svg class="icon icon-sm"><use href="#i-cloud-upload"/></svg> Crear en GLPI</button>
                                 </form>
                             {% else %}
                             <span class="hint">—</span>
                             {% endif %}
                         </td>
                         <td data-label="Estado">
-                            {% if u.activo %}Activa
-                            {% else %}Inactiva{% endif %}
+                            {% if u.activo %}<span class="ue-estado ok">Activa</span>
+                            {% else %}<span class="ue-estado no">Inactiva</span>{% endif %}
                         </td>
                         <td data-label="Tickets">
                             {% if u.rol == 'usuario' %}
@@ -281,7 +287,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                         </td>
                         <td data-label="Último acceso">
                             <span class="ue-acceso" id="ue-access-{{ u.pk }}">
-                                {% if u.last_login %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}
+                                {% if u.ficha.ultimo_acceso %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}
                             </span>
                         </td>
                         <td data-label="Acciones" class="cell-actions">
@@ -688,12 +694,11 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 
     /* ---- Tiempo real: refrescar cada 25 s el estado de las cuentas ---- */
     function accesoLabel(iso) {
+        if (!iso) return 'Nunca';
         var d = new Date(iso);
-        var min = Math.max(0, (Date.now() - d.getTime()) / 60000);
-        if (min < 1) return 'recientemente';
-        if (min < 60) return 'hace ' + Math.floor(min) + ' min';
-        if (min < 1440) return 'hace ' + Math.floor(min / 60) + ' h ' + Math.floor(min % 60) + ' min';
-        return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
+        function p(n) { return ('0' + n).slice(-2); }
+        return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() +
+               ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
     }
     var uidSet = {};
     document.querySelectorAll('[data-uid]').forEach(function (el) {
@@ -744,4 +749,4 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     }
 })();
 </script>
-{% endblock %}
+{% endblock %}

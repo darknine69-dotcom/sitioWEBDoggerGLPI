@@ -4,7 +4,7 @@
 {% block title %}Dogger · Usuarios{% endblock %}
 {% block body_class %}observador-shell{% endblock %}
 {% block header_title %}Usuarios{% endblock %}
-{% block header_desc %}Las mismas cuentas que ve el administrador. Los números son solo de tus zonas.{% endblock %}
+{% block header_desc %}Personas con tickets en tus zonas y las que ya están en tu lista.{% endblock %}
 
 {% block content %}
 <main class="page obs-page">
@@ -43,6 +43,7 @@
         <select name="estado" class="obs-buscador-tipo" aria-label="Filtrar por estado">
             <option value="">Todos</option>
             <option value="activos"{% if estado_sel == 'activos' %} selected{% endif %}>Con tickets abiertos</option>
+            <option value="alerta"{% if estado_sel == 'alerta' %} selected{% endif %}>Con alerta urgente</option>
             <option value="resueltos"{% if estado_sel == 'resueltos' %} selected{% endif %}>Todo resuelto</option>
             <option value="agregados"{% if estado_sel == 'agregados' %} selected{% endif %}>En mi lista</option>
             <option value="pendientes"{% if estado_sel == 'pendientes' %} selected{% endif %}>Fuera de mi lista</option>
@@ -64,7 +65,7 @@
         <div class="obs-kpi">
             <span class="obs-kpi-n">{{ total }}</span>
             <span class="obs-kpi-l">
-                {% if q or rol_sel or punto_sel or estado_sel %}de {{ total_sin_filtro }} cuentas{% else %}Cuentas{% endif %}
+                {% if q or rol_sel or punto_sel or estado_sel %}de {{ total_sin_filtro }} personas{% else %}Personas{% endif %}
             </span>
         </div>
         <div class="obs-kpi obs-kpi-verde">

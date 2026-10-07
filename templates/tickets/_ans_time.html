@@ -1,14 +1,18 @@
-{% with info=t.info_ans %}
+{% comment %}
+Contador de ANS de un ticket. Un solo lugar para todas las vistas, con el
+cronómetro en vivo: `data-ans-limit` y `data-ans-aviso` son segundos epoch que
+el JavaScript de dogger.js usa para seguir contando sin recargar la página.
+`data-ans-estado` es el estado con el que se pintó la etiqueta al cargar.
+{% endcomment %}
+{% with info=t.datos_ans %}
 {% if info.0 %}
-<span class="ans-time ans-{{ info.0 }}"{% if info.2 %} title="{{ info.2 }}"{% endif %}>
-    {% if info.0 == 'vencido' %}
-    <svg class="icon icon-sm"><use href="#i-alert"/></svg>
-    {% elif info.0 == 'resuelto' %}
-    <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-    {% else %}
-    <svg class="icon icon-sm"><use href="#i-clock"/></svg>
-    {% endif %}
-    {{ info.1 }}
+<span class="ans-time ans-{{ info.0 }}"
+      {% if info.2 %} title="{{ info.2 }}"{% endif %}
+      {% if info.3 %} data-ans-live data-ans-limit="{{ info.3 }}" data-ans-aviso="{{ info.4 }}" data-ans-estado="ok"{% endif %}>
+    {% if info.0 == 'vencido' %}<svg class="icon icon-sm"><use href="#i-alert"/></svg>
+    {% elif info.0 == 'resuelto' %}<svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+    {% else %}<svg class="icon icon-sm"><use href="#i-clock"/></svg>{% endif %}
+    <span data-ans-txt>{{ info.1 }}</span>
 </span>
 {% endif %}
 {% endwith %}
