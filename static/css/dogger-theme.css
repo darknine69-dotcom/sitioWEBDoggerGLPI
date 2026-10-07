@@ -2992,16 +2992,19 @@ select:focus-visible, textarea:focus-visible {
     font-size: 12.5px;
 }
 
-/* ---- Toast de notificación (ventanita compacta, encima de la lupa) ---- */
+/* ---- Toast de eventos (ventanita bajo el usuario, arriba a la derecha) ----
+   Los avisos de lo que pasa en la app (comentario publicado, estado
+   cambiado) bajan desde el encabezado, junto al usuario, en vez de salir
+   abajo. Vale para los mensajes del servidor y los avisos en vivo del JS. */
 .toast-stack {
     position: fixed;
-    bottom: 104px;
+    top: 76px;
     right: 18px;
     z-index: 10000;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 300px;
+    width: 320px;
     max-width: calc(100vw - 40px);
     pointer-events: none;
 }
@@ -3035,7 +3038,7 @@ select:focus-visible, textarea:focus-visible {
     pointer-events: none;
 }
 @keyframes toastIn {
-    from { opacity: 0; transform: translateY(16px) scale(.96); }
+    from { opacity: 0; transform: translateY(-14px) scale(.96); }
     to   { opacity: 1; transform: none; }
 }
 
@@ -3135,7 +3138,7 @@ select:focus-visible, textarea:focus-visible {
 @keyframes toastOut {
     to {
         opacity: 0;
-        transform: translateY(10px) scale(.96);
+        transform: translateY(-10px) scale(.96);
         max-height: 0; margin-bottom: -10px; padding-top: 0; padding-bottom: 0;
     }
 }

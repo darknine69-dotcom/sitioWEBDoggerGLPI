@@ -124,6 +124,7 @@ def monitoreo_admin(request):
         filas = [f for f in filas if f["abiertos"] > 0]
 
     zona_elegida = zona or (zonas[0] if zonas else "")
+    creadas = _zonas_creadas_por_observador()
     return render(
         request,
         "tickets/monitoreo_admin.html",
@@ -139,7 +140,17 @@ def monitoreo_admin(request):
             "zonas": zonas,
             "zona_elegida": zona_elegida,
             "total": len(filas),
-            "zonas_creadas": _zonas_creadas_por_observador(),
+            "zonas_creadas": creadas,
+            "dash": {
+                "supervisores": len(creadas),
+                "zonas": sum(len(b["zonas"]) for b in creadas),
+                "cuentas": sum(
+                    len(z["miembros"]) for b in creadas for z in b["zonas"]
+                ),
+                "abiertos": sum(
+                    z["abiertos"] for b in creadas for z in b["zonas"]
+                ),
+            },
         },
     )
 

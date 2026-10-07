@@ -64,6 +64,11 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn("Zonas creadas por los observadores", html)
         self.assertIn("Supervisor a cargo", html)
         self.assertIn("ana@x.com", html)
+        dash = respuesta.context["dash"]
+        self.assertEqual(dash["supervisores"], 1)
+        self.assertEqual(dash["zonas"], 1)
+        self.assertEqual(dash["cuentas"], 1)
+        self.assertEqual(dash["abiertos"], 1)
 
     def test_sin_zonas_muestra_aviso(self):
         self.zona.delete()
@@ -150,3 +155,13 @@ class MonitoreoObservadorDetalleTest(TestCase):
         html = respuesta.content.decode()
         self.assertIn("Técnico a cargo", html)
         self.assertIn("Avance global", html)
+
+    def test_avisos_bajan_desde_el_usuario(self):
+        """Los toasts de eventos salen junto al usuario, no abajo."""
+        from django.contrib.staticfiles import finders
+
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        pila = css.split(".toast-stack")[1].split("}")[0]
+        self.assertIn("top:", pila)
+        self.assertNotIn("bottom:", pila)
