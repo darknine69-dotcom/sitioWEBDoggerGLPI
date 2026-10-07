@@ -181,12 +181,34 @@
                     </div>
                 </dl>
             </section>
+
+            {% if puede_calificar_tecnicos and nombre_tecnico_ticket %}
+            <section class="dash-panel dash-panel-tecnicos">
+                <header class="dash-panel-head">
+                    <span class="dash-panel-icon"><svg class="icon"><use href="#i-headset"/></svg></span>
+                    <h2>Técnicos activos</h2>
+                    <span class="tec-btn-count">{{ tecnicos_activos|length }}</span>
+                </header>
+                <p class="dash-muted dash-calificar-nota">
+                    {% if ticket.fue_resuelto %}
+                    {{ nombre_tecnico_ticket }} resolvió este ticket{% if ticket.fecha_resolucion %} el {{ ticket.fecha_resolucion|date:"d/m/Y" }}{% endif %}.
+                    {% else %}
+                    {{ nombre_tecnico_ticket }} tiene este ticket asignado y sigue con él.
+                    {% endif %}
+                    Tu voto queda guardado en este ticket.
+                </p>
+                {% include "tickets/_lista_tecnicos.html" with lista_directa=True %}
+            </section>
+            {% endif %}
         </aside>
     </div>
 </main>
+
 {% endblock %}
 
 {% block extra_js %}
+{% load static asset %}
+<script src="{% asset 'js/voto-tecnicos.js' %}"></script>
 <script>
 (function () {
     var tl = document.getElementById("corp-timeline");

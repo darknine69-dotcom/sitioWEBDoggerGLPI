@@ -1,6 +1,7 @@
 <div class="form-group {% if field.name in span2_fields|default:'' %}span-2{% endif %}">
     <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="req-star" aria-hidden="true">*</span>{% endif %}</label>
     {{ field }}
+    {% if field.name == 'categoria' %}{% include "tickets/_cat_que_cubre.html" %}{% endif %}
     {% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
     {% if field.errors %}<div class="field-error">{{ field.errors|join:", " }}</div>{% endif %}
 </div>

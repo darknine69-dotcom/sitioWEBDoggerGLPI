@@ -62,6 +62,11 @@ INSTALLED_APPS = [
     "apps.notificaciones",
 ]
 
+# La vista previa del manual se muestra dentro de un iframe de los ajustes.
+# "DENY" (que es el valor por defecto de Django) la deja siempre en blanco,
+# asi que se permite solo el mismo sitio: nadie mas puede embebernos.
+X_FRAME_OPTIONS = os.getenv("DJANGO_X_FRAME_OPTIONS", "SAMEORIGIN")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -85,8 +90,9 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "apps.tickets.context_processors.dogger_config",
                 "apps.notificaciones.context_processors.notificaciones",
+                "apps.tickets.context_processors.dogger_config",
+                "apps.tickets.context_processors.calificacion_lateral",
             ],
         },
     },
@@ -346,7 +352,7 @@ DOGGER_INFRA = {
     "direccion": "Calle 39 sur 26-09, Envigado, Antioquia, Colombia",
     "telefono": "57(604)3333232",
     "sistemas_clave": [
-        "SIESA ERP (Comercial, Manufactura, Financiero, POS-FE)",
+        "SIESA ERP (ventas, producción, contabilidad, facturación electrónica)",
         "SIESA Web (Nómina, Autogestión, SiesaAccess)",
         "SIESA CLOUD-ERP",
         "Correo (CORREOS HUGE / Servidor de Correos)",

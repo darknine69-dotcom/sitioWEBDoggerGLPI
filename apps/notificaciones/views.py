@@ -83,6 +83,7 @@ def api(request):
                     "url": n.url or "",
                     "nueva": not n.leida,
                     "sin_mostrar": n.mostrada_en is None,
+                    "fecha": timezone.localtime(n.creada_en).strftime("%d/%m/%Y %H:%M"),
                 }
                 for n in services.lista(request.user, limite=15)
             ],

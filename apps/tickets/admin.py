@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Categoria, Ticket, TicketAdjunto, TicketComentario
+from .models import (
+    Categoria,
+    ElementoMiLista,
+    Ticket,
+    TicketAdjunto,
+    TicketComentario,
+    ZonaObservador,
+)
 
 
 @admin.register(Categoria)
@@ -38,3 +45,19 @@ class TicketAdmin(admin.ModelAdmin):
 @admin.register(TicketAdjunto)
 class TicketAdjuntoAdmin(admin.ModelAdmin):
     list_display = ("nombre_original", "ticket", "mime_type", "tamano_bytes", "fecha_subida")
+
+
+@admin.register(ZonaObservador)
+class ZonaObservadorAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "observador", "creado_en")
+    list_filter = ("observador",)
+    search_fields = ("nombre", "observador__email", "observador__nombre")
+    readonly_fields = ("creado_en",)
+
+
+@admin.register(ElementoMiLista)
+class ElementoMiListaAdmin(admin.ModelAdmin):
+    list_display = ("observador", "tipo", "usuario_email", "punto", "zona", "creado_en")
+    list_filter = ("tipo", "zona")
+    search_fields = ("usuario_email", "observador__email")
+    readonly_fields = ("creado_en",)

@@ -12,7 +12,7 @@
         <div class="panel ticket-form-panel">
             <form method="post" enctype="multipart/form-data" class="user-ticket-form form-grid">
                 {% csrf_token %}
-                <h3 class="form-section-title"><span class="form-section-num">1</span> Información del problema</h3>
+                <h3 class="form-section-title"><span class="form-section-num">1</span> Información del ticket</h3>
                 {% for field in form %}
                 {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
                 {% if field.name == 'categoria' %}
@@ -23,7 +23,7 @@
                 <p id="cat-auto-hint" class="cat-auto-hint span-2" hidden>
                     <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
                     <span>Categoría asignada automáticamente según tu descripción: <strong id="cat-auto-name"></strong>. Si prefieres otra, puedes cambiarla.</span>
-                    <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Cambiar categoría</button>
+                    <button type="button" class="btn btn-outline btn-sm" data-suggest-focus>Cambiar categoría</button>
                 </p>
                 <div id="cat-suggest" class="cat-suggest span-2" hidden>
                     <svg class="icon icon-sm"><use href="#i-help"/></svg>

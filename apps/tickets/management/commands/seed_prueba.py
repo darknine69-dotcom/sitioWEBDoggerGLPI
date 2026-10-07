@@ -41,7 +41,7 @@ TICKETS_PRUEBA = [
     # Andrés Felipe Moreno - 2 tickets
     {
         "solicitante": "andres.moreno@dogger.com.co",
-        "titulo": "POS-FE no imprime facturas en Caja 5",
+        "titulo": "En el POS de la Caja 5 no imprime las facturas",
         "descripcion": "La impresora del punto de venta Caja 5 (Envigado) no responde al intentar imprimir facturas electrónicas. El error muestra 'Puerto COM no disponible'. Ya se verificó el cable y la impresora enciende normalmente.",
         "punto": "Envigado · Caja 5",
         "cat_grupo": "Puntos de venta",

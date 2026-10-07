@@ -43,7 +43,6 @@
 .landing-nav ~ .portal-page { padding-top: 0; }
 .landing-nav ~ .portal-page .landing-hero { padding-top: 122px; }
 
-
 /* ---- Anclas: la barra fija no debe tapar la sección a la que saltas ---- */
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
@@ -102,9 +101,6 @@ html { scroll-behavior: smooth; }
     .ln-links.is-open { display: flex; }
     .ln-links > a { padding: 11px 12px; }
 }
-
-
-
 
 /* ---- Preguntas frecuentes: ver más y envío de preguntas ---- */
 .lp-faq-foot { display: flex; justify-content: center; margin-top: 18px; }
@@ -263,173 +259,6 @@ html[data-theme="dark"] .lp-pregunta-campo textarea::placeholder { color: #9A886
 @media (prefers-reduced-motion: reduce) {
     .hd-glow { animation: none; }
 }
-@media (max-width: 980px) {
-    .hd-dots { width: 55%; height: 42%; opacity: .75; }
-    .hd-ring-a { width: 420px; height: 420px; right: -190px; }
-    .hd-ring-b { width: 280px; height: 280px; right: -110px; }
-    .hd-slash-b { display: none; }
-}
-@media (max-width: 560px) {
-    .hd-ring-a, .hd-ring-b, .hd-dots { display: none; }
-    .hd-glow { width: 380px; height: 380px; right: -160px; }
-}
-
-/* ---- Hero: jerarquía título → subtítulo → texto → botones ---- */
-.landing-h1 {
-    font-size: clamp(30px, 4.6vw, 54px) !important;
-    line-height: 1.06; letter-spacing: -.02em;
-    margin: 0 0 14px !important;
-    color: #FFF6F0;
-    text-wrap: balance;
-}
-.landing-h1-dot { color: var(--dogger-yellow); font-weight: 400; }
-.landing-lead {
-    font-family: var(--font-display);
-    font-size: clamp(18px, 2.1vw, 25px);
-    font-weight: 700; line-height: 1.3;
-    color: var(--dogger-yellow);
-    margin: 0 0 12px; max-width: 30ch;
-    text-wrap: balance;
-}
-.landing-cta {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
-    gap: 14px; margin: 28px 0 0;
-}
-.landing-cta .btn { min-width: 232px; justify-content: center; }
-.btn-lg { padding: 14px 26px; font-size: 16px; font-weight: 800; border-radius: 999px; }
-.btn-lg .icon { width: 19px; height: 19px; }
-.btn-rojo {
-    background: #B3121B; color: #fff;
-    border: 2px solid rgba(255,255,255,.72);
-    box-shadow: 0 6px 18px rgba(90,6,4,.35);
-}
-.btn-rojo:hover:not(:disabled) { background: #D0121F; border-color: #fff; }
-.btn-rojo:focus-visible { outline: 3px solid var(--dogger-yellow); outline-offset: 2px; }
-.landing-cta .btn-accent:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-@media (max-width: 720px) {
-    .landing-cta { gap: 10px; margin-top: 22px; }
-    .landing-cta .btn { min-width: 0; width: 100%; }
-    .btn-lg { padding: 13px 20px; font-size: 15.5px; }
-}
-
-/* ---- Títulos de sección más grandes (conservando el diseño) ---- */
-.features-section > .features-title,
-.features-section .features-intro .features-title { font-size: clamp(25px, 2.9vw, 33px); line-height: 1.18; }
-.features-section > .section-kicker,
-.features-section .features-intro .section-kicker { font-size: 12px; letter-spacing: .17em; }
-@media (max-width: 720px) {
-    .features-section > .features-title,
-    .features-section .features-intro .features-title { font-size: 23px; }
-}
-
-/* ---- Campos nuevos: aviso, ANS, contacto y consulta de código ---- */
-.lp-notice {
-    display: flex; align-items: flex-start; gap: 12px;
-    max-width: 1180px; margin: 22px auto 0; padding: 14px 18px;
-    background: #FFF8E6; border: 1px solid #F2D89A; border-left: 5px solid #B07A00;
-    border-radius: 12px; color: #4A3A10; font-size: 14px; line-height: 1.5;
-}
-.lp-notice .icon { color: #B07A00; margin-top: 2px; }
-.lp-notice strong { display: block; margin-bottom: 2px; }
-
-.lp-ans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: start; }
-/* el detalle se despliega a lo ancho de la fila para que no comprima a las demás */
-.lp-ans-item { grid-column: span 1; }
-.lp-ans-item[open] { grid-column: 1 / -1; }
-.lp-ans-item[open] > summary {
-    display: grid; grid-template-columns: auto 1fr; grid-template-areas: "badge hours" "badge name";
-    justify-items: start; text-align: left; column-gap: 18px; row-gap: 2px;
-    padding: 18px 20px;
-}
-.lp-ans-item[open] > summary .lp-ans-badge { grid-area: badge; align-self: center; margin: 0; }
-.lp-ans-item[open] > summary .lp-ans-hours { grid-area: hours; margin: 0; justify-content: flex-start; }
-.lp-ans-item[open] > summary .lp-ans-name { grid-area: name; margin: 0; }
-.lp-ans-item[open] .lp-ans-detail {
-    border-radius: var(--radius); border-top: 1px solid var(--ans-color);
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; align-items: start;
-}
-.lp-ans-item[open] .lp-ans-detail h3 { grid-column: 1 / -1; }
-.lp-ans-item[open] .lp-ans-detail p { grid-column: 1; }
-.lp-ans-item[open] .lp-ans-detail ul { grid-column: 1; }
-.lp-ans-item[open] .lp-ans-detail .lp-ans-ok { grid-column: 2; grid-row: 2 / span 2; margin: 0; align-self: start; }
-.lp-ans-item[open] .lp-ans-bar { grid-column: 2; grid-row: 4; align-self: center; }
-.lp-ans-item { position: relative; }
-.lp-ans-item.p-urgente { --ans-color: #C1121F; --ans-soft: #FDECEC; --ans-ink: #7E130C; }
-.lp-ans-item.p-alta    { --ans-color: #E0621F; --ans-soft: #FDF0E7; --ans-ink: #7A3A0C; }
-.lp-ans-item.p-media   { --ans-color: #E8A317; --ans-soft: #FDF5E2; --ans-ink: #6E5106; }
-.lp-ans-item.p-baja    { --ans-color: #4E8C4A; --ans-soft: #EFF6EE; --ans-ink: #2F5B2C; }
-
-/* Tarjeta compacta: el número manda y todo lo demás se despliega al hacer clic */
-.lp-ans-item > summary {
-    list-style: none; cursor: pointer; position: relative; user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    display: flex; flex-direction: column; align-items: center; text-align: center;
-    background: var(--dogger-paper); border: 1px solid var(--line);
-    border-top: 5px solid var(--ans-color, #B9B0A6);
-    border-radius: var(--radius); padding: 18px 16px 16px;
-    box-shadow: var(--shadow-card);
-    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-}
-.lp-ans-item > summary::-webkit-details-marker { display: none; }
-.lp-ans-item > summary:hover {
-    transform: translateY(-3px); box-shadow: 0 14px 28px rgba(126,19,12,.14);
-    border-color: var(--ans-color, #B9B0A6);
-}
-.lp-ans-item > summary:focus-visible {
-    outline: 3px solid rgba(214,43,31,.35); outline-offset: 3px;
-}
-.lp-ans-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 11px; border-radius: 999px;
-    font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-    color: #fff; background: var(--ans-color, #B9B0A6);
-}
-.lp-ans-badge .icon { width: 13px; height: 13px; }
-.lp-ans-hours {
-    font-family: var(--font-display); font-size: 40px; font-weight: 800; line-height: 1;
-    color: var(--dogger-red); margin: 10px 0 4px;
-    display: flex; align-items: baseline; justify-content: center; gap: 2px;
-}
-.lp-ans-hours span { font-size: 19px; font-weight: 700; color: var(--ink-muted); }
-.lp-ans-name { font-weight: 800; font-size: 15px; margin: 0; }
-.lp-ans-item[open] > summary { border-color: var(--ans-color, #B9B0A6); }
-
-/* Detalle desplegado: qué significa ese tiempo */
-.lp-ans-detail {
-    display: block; margin-top: 10px; padding: 15px 16px 16px;
-    background: var(--ans-soft, var(--dogger-cream));
-    border: 1px solid var(--ans-color, #B9B0A6);
-    border-top: 0;
-    border-radius: 0 0 var(--radius) var(--radius);
-    box-shadow: var(--shadow-card);
-    animation: lp-ans-open .22s ease;
-}
-@keyframes lp-ans-open { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-.lp-ans-detail { padding: 20px 24px 22px; }
-.lp-ans-detail h3 {
-    margin: 0 0 10px; font-family: var(--font-display); font-size: 19px;
-    font-weight: 800; color: var(--ans-ink, var(--ink)); letter-spacing: .01em; line-height: 1.3;
-}
-.lp-ans-detail p { margin: 0 0 12px; font-size: 16.5px; line-height: 1.68; color: var(--ink); }
-.lp-ans-detail p strong { color: var(--ans-ink, var(--dogger-red)); }
-.lp-ans-detail ul { margin: 0 0 12px; padding-left: 20px; font-size: 16px; line-height: 1.68; color: var(--ink); }
-.lp-ans-detail li { margin-bottom: 7px; }
-.lp-ans-detail li::marker { color: var(--ans-color, #B9B0A6); }
-.lp-ans-detail .lp-ans-ok {
-    display: flex; align-items: flex-start; gap: 9px; margin: 0;
-    padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.75);
-    font-size: 15px; font-weight: 700; line-height: 1.55; color: var(--ans-ink, var(--ink));
-}
-.lp-ans-detail .lp-ans-ok .icon { width: 17px; height: 17px; flex: 0 0 auto; margin-top: 2px; }
-.lp-ans-bar { width: 100%; height: 6px; margin-top: 12px; border-radius: 999px; background: rgba(0,0,0,.08); overflow: hidden; }
-.lp-ans-bar i { display: block; height: 100%; border-radius: 999px; background: var(--ans-color, #B9B0A6); }
-.lp-ans-foot {
-    display: flex; align-items: center; gap: 10px; margin-top: 18px;
-    padding: 14px 18px; border-radius: 14px;
-    background: #FFF8E6; border: 1px solid #F2D89A; border-left: 5px solid #B07A00;
-    color: #4A3A10; font-size: 14px; line-height: 1.5;
-}
-.lp-ans-foot .icon { color: #B07A00; flex: 0 0 auto; }
 
 /* Preguntas frecuentes dentro de la portada */
 .lp-faq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
@@ -566,40 +395,9 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
     border: 0; border-radius: 999px; cursor: pointer;
     background: #FFF7F2; color: var(--dogger-red);
     transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
-}
-.lp-lookup-btn svg { width: 16px; height: 16px; }
-.lp-lookup-btn:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.20); }
-.lp-lookup-btn:active { transform: translateY(0); }
-
-@media (max-width: 980px) {
-    .lp-ans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .lp-contact { grid-template-columns: 1fr; }
-    .lp-faq { grid-template-columns: 1fr; }
-}
-@media (max-width: 980px) {
-    .lp-ans { grid-template-columns: 1fr; }
-    .lp-ans-item[open] .lp-ans-detail { grid-template-columns: 1fr; }
-    .lp-ans-item[open] .lp-ans-detail p,
-    .lp-ans-item[open] .lp-ans-detail ul,
-    .lp-ans-item[open] .lp-ans-detail .lp-ans-ok,
-    .lp-ans-item[open] .lp-ans-bar { grid-column: 1; grid-row: auto; }
-}
-@media (max-width: 720px) {
-    .lp-ans-detail { padding: 16px 18px 18px; }
-    .lp-ans-detail h3 { font-size: 17px; }
-    .lp-ans-detail p { font-size: 15px; }
-    .lp-ans-detail ul { font-size: 14.5px; }
-    .lp-ans-detail .lp-ans-ok { font-size: 14px; }
-    .lp-ans-item[open] > summary {
-        display: flex; text-align: center; justify-items: center; align-items: center; padding: 18px 16px;
-    }
-    .lp-ans-item[open] > summary .lp-ans-hours,
-    .lp-ans-item[open] > summary .lp-ans-name { justify-content: center; }
     .features-section .panel-sub { font-size: 14.5px; margin: 8px auto 20px; }
     .landing-nav { padding: 10px 16px; }
-    .landing-nav ~ .portal-page .landing-hero { padding-top: 96px; }
-    .lp-ans { grid-template-columns: 1fr; }
-    .lp-horario li { flex-wrap: wrap; }
+        .lp-horario li { flex-wrap: wrap; }
     .lp-horario .hp-nota { margin-left: 0; text-align: left; width: 100%; }
     .lp-lookup-row { flex-direction: column; }
 }
@@ -683,7 +481,7 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
                 <h1 class="landing-h1">Mesa de Ayuda TI <span class="landing-h1-dot">&middot;</span> Dogger</h1>
                 <p class="landing-lead">¿Algún problema con tu equipo o sistemas?</p>
                 <p class="landing-sub">
-                    Centraliza tus solicitudes de soporte: POS-FE, SIESA, correos, impresoras y más.
+                    Centraliza tus solicitudes de soporte: Siesa, facturación electrónica, correos, impresoras y más.
                     Recibe un código <strong>HD-XXXX</strong> y haz seguimiento hasta la solución.
                 </p>
                 <div class="contact-row landing-cta">
@@ -697,7 +495,7 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
                 <h1 class="landing-h1">Mesa de Ayuda TI <span class="landing-h1-dot">&middot;</span> Dogger</h1>
                 <p class="landing-lead">¿Algún problema con tu equipo o sistemas?</p>
                 <p class="landing-sub">
-                    Centraliza tus solicitudes de soporte: POS-FE, SIESA, correos, impresoras y más.
+                    Centraliza tus solicitudes de soporte: Siesa, facturación electrónica, correos, impresoras y más.
                     Recibe un código <strong>HD-XXXX</strong> y haz seguimiento hasta la solución.
                 </p>
                 <div class="contact-row landing-cta">
@@ -791,105 +589,6 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
         </div>
     </section>
 
-    <!-- TIEMPOS DE ATENCIÓN (ANS) -->
-    <section id="compromisos" class="page features-section">
-        <p class="section-kicker">Tiempos comprometidos</p>
-        <h2 class="features-title">Cada categoría tiene un tiempo máximo de resolución (ANS)</h2>
-        <p class="panel-sub">Al reportar eliges la categoría del problema; con ella se define la prioridad y el tiempo que el equipo se compromete a cumplir.</p>
-        <div class="lp-ans">
-
-            <details class="lp-ans-item p-urgente">
-                <summary>
-                    <span class="lp-ans-badge"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg> Prioridad máxima</span>
-                    <p class="lp-ans-hours">2<span>h</span></p>
-                    <p class="lp-ans-name">Urgente</p>
-                </summary>
-                <div class="lp-ans-detail">
-                    <h3>El tiempo más corto: se atiende de inmediato</h3>
-                    <p>Son <strong>2 horas hábiles</strong> como máximo entre que reportas el problema y un técnico
-                    toma el caso y empieza a resolverlo. Es la prioridad para todo lo que detiene la venta.</p>
-                    <ul>
-                        <li>El ticket entra directamente a la cola de prioridad máxima.</li>
-                        <li>No espera turno: se asigna al técnico disponible en ese momento.</li>
-                        <li>Si el caso no se resuelve en 2 horas, el ticket escala automáticamente.</li>
-                    </ul>
-                    <p class="lp-ans-ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
-                    Ejemplos: la caja no abre, no hay facturación, no hay señal de red.</p>
-                    <span class="lp-ans-bar" aria-hidden="true"><i style="width:4%"></i></span>
-                </div>
-            </details>
-
-            <details class="lp-ans-item p-alta">
-                <summary>
-                    <span class="lp-ans-badge"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg> Alta</span>
-                    <p class="lp-ans-hours">8<span>h</span></p>
-                    <p class="lp-ans-name">Alta</p>
-                </summary>
-                <div class="lp-ans-detail">
-                    <h3>El punto sigue operando, pero con serias limitaciones</h3>
-                    <p>Son <strong>8 horas hábiles</strong> como máximo. El ticket entra después de los urgentes,
-                    pero antes que el resto, y se atiende el mismo día hábil.</p>
-                    <ul>
-                        <li>Se agenda dentro de la jornada laboral del punto.</li>
-                        <li>Si necesitas el punto activo ya, escálalo a Urgente desde el reporte.</li>
-                        <li>El tiempo se pausa si el técnico necesita datos o piezas de tu lado.</li>
-                    </ul>
-                    <p class="lp-ans-ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
-                    Ejemplos: una impresora falla y solo se factura a mano, una terminal va lenta.</p>
-                    <span class="lp-ans-bar" aria-hidden="true"><i style="width:17%"></i></span>
-                </div>
-            </details>
-
-            <details class="lp-ans-item p-media">
-                <summary>
-                    <span class="lp-ans-badge"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg> Media</span>
-                    <p class="lp-ans-hours">12<span>h</span></p>
-                    <p class="lp-ans-name">Media</p>
-                </summary>
-                <div class="lp-ans-detail">
-                    <h3>Afectación parcial: algo falla, el resto funciona</h3>
-                    <p>Son <strong>12 horas hábiles</strong> como máximo. El ticket se atiende ese mismo día
-                    hábil, pero puede resolverse en menos si el técnico encuentra la causa rápido.</p>
-                    <ul>
-                        <li>Se toma en el orden en que llega, después de las prioridades altas.</li>
-                        <li>Puedes seguir operando con normalidad mientras se resuelve.</li>
-                        <li>No se escalate solo: si sube de impacto, cambia la prioridad desde el ticket.</li>
-                    </ul>
-                    <p class="lp-ans-ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
-                    Ejemplos: falla una sección del reporte, un módulo carga lento, avisos de inventario.</p>
-                    <span class="lp-ans-bar" aria-hidden="true"><i style="width:25%"></i></span>
-                </div>
-            </details>
-
-            <details class="lp-ans-item p-baja">
-                <summary>
-                    <span class="lp-ans-badge"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> Baja</span>
-                    <p class="lp-ans-hours">48<span>h</span></p>
-                    <p class="lp-ans-name">Baja</p>
-                </summary>
-                <div class="lp-ans-detail">
-                    <h3>Sin impacto en la venta: se puede esperar</h3>
-                    <p>Son <strong>48 horas hábiles</strong> como máximo, equivalente a dos días hábiles.
-                    El ticket entra al final de la cola y se planifica con calma.</p>
-                    <ul>
-                        <li>Se agrupa con otros casos parecidos para resolverlos de una vez.</li>
-                        <li>Puedes adjuntar capturas o archivos cuando tengas tiempo.</li>
-                        <li>No afecta la operación: nadie queda esperando en el punto.</li>
-                    </ul>
-                    <p class="lp-ans-ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
-                    Ejemplos: solicitud de un equipo nuevo, cambios de configuración, mejoras sugeridas.</p>
-                    <span class="lp-ans-bar" aria-hidden="true"><i style="width:100%"></i></span>
-                </div>
-            </details>
-
-        </div>
-        <p class="lp-ans-foot">
-            <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
-            <span>El tiempo se cuenta en <strong>horas hábiles</strong> desde que el ticket entra a la cola de la mesa de ayuda
-            y se pausa mientras dependemos de información tuya o de un tercero.</span>
-        </p>
-    </section>
-
     <!-- CÓMO FUNCIONA -->
     <section id="como-funciona" class="steps-section">
         <div class="landing-hero-deco" aria-hidden="true">
@@ -969,7 +668,6 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
             <a class="btn btn-outline" href="{% url 'accounts:login_staff' %}"><svg class="icon"><use href="#i-lock"/></svg> Acceso personal TIC</a>
         </div>
     </section>
-
 
     <!-- PREGUNTAS FRECUENTES (dentro de la portada: el menú no se sale de la página) -->
     <section id="preguntas" class="page features-section">

@@ -37,7 +37,7 @@
                 <span class="notif-text">
                     <a class="notif-link" href="{{ n.url|default:'#' }}">{{ n.titulo }}</a>
                     <span class="notif-msg">{{ n.mensaje }}</span>
-                    <small class="notif-time">{{ n.creada_en|timesince }} atrás</small>
+                    <small class="notif-time">{{ n.creada_en|date:"d/m/Y H:i" }}</small>
                 </span>
                 <button type="button" class="notif-x" data-notif-quitar="{{ n.pk }}"
                         aria-label="Quitar notificación" title="Quitar">&times;</button>

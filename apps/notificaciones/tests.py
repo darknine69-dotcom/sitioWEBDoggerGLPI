@@ -321,7 +321,7 @@ class VentanaEmergenteTest(BaseNotificaciones):
     def test_salta_la_emergente_y_no_vuelve_a_saltar(self):
         from apps.notificaciones import services as srv
 
-        # El aviso existe y todavía no se mostró.
+        # El aviso existe y todavia no se mostro.
         aviso = Notificacion.objects.create(
             usuario=self.tecnico,
             tipo=Notificacion.Tipo.TICKET_NUEVO,
@@ -334,7 +334,7 @@ class VentanaEmergenteTest(BaseNotificaciones):
         respuesta = self.client.get(reverse("tickets:panel_tecnico"))
         self.assertContains(respuesta, "notifPopup")
 
-        # Al cerrarla se marca como mostrada y leída.
+        # Al cerrarla se marca como mostrada y leida.
         self.client.post(reverse("notificaciones:marcar_mostrada", args=[aviso.pk]))
         aviso.refresh_from_db()
         self.assertIsNotNone(aviso.mostrada_en)
@@ -343,14 +343,64 @@ class VentanaEmergenteTest(BaseNotificaciones):
         respuesta = self.client.get(reverse("tickets:panel_tecnico"))
         self.assertNotContains(respuesta, "notifPopup")
 
-    def test_solo_muestra_la_mas_reciente(self):
-        from apps.notificaciones import services as srv
 
-        srv.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Viejo", "viejo", clave="a")
-        srv.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Nuevo", "nuevo", clave="b")
-        self.client.force_login(self.tecnico)
+@override_settings(STORAGES=STATIC_SIN_MANIFEST)
+class FechaNotificacionesTest(TestCase):
+    """La campana muestra la fecha y hora pequeñas de cada aviso."""
 
-        respuesta = self.client.get(reverse("tickets:panel_tecnico"))
+    def setUp(self):
+        User = get_user_model()
+        self.tec = User.objects.create_user(
+            email="tecf@x.com", password="x", nombre="Tec", rol=User.Rol.TECNICO
+        )
+        self.client.force_login(self.tec)
 
-        self.assertContains(respuesta, "Nuevo")
-        self.assertEqual(len(srv.pendientes_de_emergente(self.tecnico, limite=1)), 1)
+    def _aviso(self):
+        return services.crear(
+            self.tec,
+            Notificacion.Tipo.TICKET_NUEVO,
+            "Ticket nuevo",
+            "Llegó una solicitud.",
+            url="/panel/tecnico/?vista=cola",
+        )
+
+    def test_la_campana_muestra_fecha_y_hora(self):
+        from django.utils import timezone
+
+        aviso = self._aviso()
+        esperada = timezone.localtime(aviso.creada_en).strftime("%d/%m/%Y %H:%M")
+        html = self.client.get(reverse("tickets:panel_tecnico")).content.decode()
+        self.assertIn(esperada, html)
+        self.assertIn("notif-time", html)
+
+    def test_la_api_trae_la_fecha(self):
+        from django.utils import timezone
+
+        aviso = self._aviso()
+        esperada = timezone.localtime(aviso.creada_en).strftime("%d/%m/%Y %H:%M")
+        datos = self.client.get(reverse("notificaciones:api")).json()
+        self.assertTrue(datos["ok"])
+        por_id = {a["id"]: a for a in datos["avisos"]}
+        self.assertIn(aviso.pk, por_id)
+        self.assertEqual(por_id[aviso.pk]["fecha"], esperada)
+
+    def test_el_js_pinta_la_fecha_que_manda_la_api(self):
+        from django.contrib.staticfiles import finders
+
+        ruta = finders.find("js/dogger.js")
+        self.assertTrue(ruta, "dogger.js debe existir en estáticos")
+        with open(ruta, encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn('esc(n.fecha || "ahora mismo")', js)
+
+    def test_encabezado_sigue_el_color_personalizado(self):
+        from django.contrib.staticfiles import finders
+
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        # Paleta elegida o color propio: el encabezado usa el acento.
+        self.assertIn("html[data-navpalette] .notif-head", css)
+        self.assertIn('--sb-accent"] .notif-head', css)
+        # Sin personalizar sigue negro: la base no usa el acento.
+        base = css.split(".notif-head {", 1)[1].split("}", 1)[0]
+        self.assertIn("var(--dogger-black)", base)

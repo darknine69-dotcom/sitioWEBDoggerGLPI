@@ -1,0 +1,89 @@
+{% comment %}
+Lista de la papelera, compartida por la del administrador y la del usuario.
+Cada solicitud es una tarjeta con su código, su estado, los datos que
+importan y las dos acciones: restaurar o borrar definitivamente.
+
+Se espera:
+- `tickets`: la página de objetos (con `pap_solicitante` para mostrar o no
+  la columna del solicitante en la vista del administrador).
+{% endcomment %}
+<ul class="pap-cards">
+    {% for t in tickets %}
+    <li class="pap-card">
+        <div class="pap-card-top">
+            <span class="pap-code">
+                <svg class="icon icon-sm"><use href="#i-ticket"/></svg>
+                {% if pap_solicitante %}<a href="{{ t.get_absolute_url }}">{{ t.codigo }}</a>{% else %}{{ t.codigo }}{% endif %}
+            </span>
+            {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}
+            <span class="pap-when">
+                <svg class="icon icon-sm"><use href="#i-clock"/></svg>
+                Eliminada el {{ t.eliminado_en|date:"d/m/Y · H:i" }}
+            </span>
+        </div>
+
+        <p class="pap-card-title">{% if pap_solicitante %}<a href="{{ t.get_absolute_url }}">{{ t.titulo }}</a>{% else %}{{ t.titulo }}{% endif %}</p>
+
+        <dl class="pap-card-meta">
+            {% if pap_solicitante %}
+            <div class="pap-meta-item">
+                <dt>Solicitante</dt>
+                <dd>
+                    <span class="pap-meta-avatar">{{ t.solicitante_nombre|slice:":1"|upper }}</span>
+                    {{ t.solicitante_nombre|default:t.solicitante_email }}
+                    <small>{{ t.solicitante_email }}</small>
+                </dd>
+            </div>
+            {% endif %}
+            <div class="pap-meta-item">
+                <dt>Técnico</dt>
+                <dd>
+                    {% if t.tecnico_asignado %}
+                        <span class="pap-meta-avatar pap-meta-avatar-tec">{{ t.tecnico_asignado.nombre|slice:":1"|upper }}</span>
+                        {{ t.tecnico_asignado.nombre }}
+                    {% else %}
+                        <span class="pap-meta-none">Sin técnico asignado</span>
+                    {% endif %}
+                </dd>
+            </div>
+            <div class="pap-meta-item">
+                <dt>Creada</dt>
+                <dd>{{ t.fecha_creacion|date:"d/m/Y" }}</dd>
+            </div>
+            {% if pap_solicitante %}
+            <div class="pap-meta-item">
+                <dt>Punto</dt>
+                <dd>{{ t.solicitante_punto|default:"—" }}</dd>
+            </div>
+            {% endif %}
+        </dl>
+
+        <div class="pap-card-actions">
+            <form method="post" action="{% url 'tickets:restaurar' t.pk %}"
+                  data-confirm="{% if pap_solicitante %}¿Recuperar el ticket {{ t.codigo }}? Vuelve a tus solicitudes abiertas.{% else %}¿Recuperar la solicitud {{ t.codigo }}? Vuelve a aparecer en tus solicitudes.{% endif %}"
+                  data-confirm-titulo="{% if pap_solicitante %}Restaurar ticket{% else %}Recuperar solicitud{% endif %} · {{ t.codigo }}"
+                  data-confirm-icono="#i-refresh"
+                  data-confirm-nota="Vuelve a contar en tus solicitudes abiertas y se le avisa al técnico asignado.">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-outline">
+                    <svg class="icon icon-sm"><use href="#i-refresh"/></svg>
+                    {% if pap_solicitante %}Restaurar ticket{% else %}Recuperar solicitud{% endif %}
+                </button>
+            </form>
+            <form method="post" action="{% url 'tickets:purgar' t.pk %}"
+                  data-confirm="{% if pap_solicitante %}¿Eliminar DEFINITIVAMENTE el ticket {{ t.codigo }}? No se podrá recuperar.{% else %}¿Eliminar DEFINITIVAMENTE la solicitud {{ t.codigo }}? No se podrá recuperar.{% endif %}"
+                  data-confirm-titulo="Eliminar definitivamente · {{ t.codigo }}"
+                  data-confirm-icono="#i-trash"
+                  data-confirm-nota="Desaparece del sistema y también de GLPI. No hay forma de recuperarlo después.">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-danger-ghost">
+                    <svg class="icon icon-sm"><use href="#i-trash"/></svg>
+                    Borrar
+                </button>
+            </form>
+        </div>
+    </li>
+    {% endfor %}
+</ul>

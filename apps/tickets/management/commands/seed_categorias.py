@@ -6,11 +6,13 @@ from apps.tickets.sla import horas_por_prioridad
 # (grupo, nombre, prioridad_ans)
 CATEGORIAS = [
     # SIESA
-    ("SIESA ERP", "Comercial", "alta"),
-    ("SIESA ERP", "Manufactura", "alta"),
-    ("SIESA ERP", "Financiero", "alta"),
-    ("SIESA ERP", "POS-FE", "urgente"),
-    ("SIESA ERP", "Biable", "media"),
+    ("SIESA ERP", "Ventas y pedidos", "alta"),
+    ("SIESA ERP", "Producción y bodega", "alta"),
+    ("SIESA ERP", "Contabilidad y pagos", "alta"),
+    ("SIESA ERP", "Facturación electrónica", "urgente"),
+    ("SIESA ERP", "Reportes y tableros", "media"),
+    # Comodin: cuando el reporte es del Siesa pero no se sabe el modulo.
+    ("SIESA ERP", "Otros problemas de Siesa", "media"),
     ("SIESA Web", "Nomina Web", "media"),
     ("SIESA Web", "Autogestion", "media"),
     ("SIESA Web", "SiesaAccess", "media"),
@@ -20,6 +22,9 @@ CATEGORIAS = [
     ("Puntos de venta", "POS Software", "urgente"),
     ("Puntos de venta", "Cajon Monedero", "media"),
     ("Puntos de venta", "Impresoras", "alta"),
+    ("Puntos de venta", "POS Inventario y Precios", "alta"),
+    ("Puntos de venta", "POS Lectores y Balanzas", "media"),
+    ("Puntos de venta", "POS Sincronizacion y Datos", "alta"),
     ("Endpoints", "PC / Laptop", "media"),
     ("Endpoints", "Perifericos", "baja"),
     # Infraestructura de red y servidores (diagrama)
@@ -42,6 +47,13 @@ CATEGORIAS = [
     ("Soporte TI", "Software", "media"),
     ("Soporte TI", "Correo", "media"),
     ("Soporte TI", "Red", "media"),
+    ("Soporte TI", "Instalacion de Software", "media"),
+    ("Soporte TI", "Actualizaciones y Parches", "baja"),
+    ("Soporte TI", "Impresoras y Escaneres", "media"),
+    ("Soporte TI", "Navegador y Aplicaciones Web", "media"),
+    ("Soporte TI", "Microsoft 365 / Office", "media"),
+    # Comodin: cuando el reporte no encaja en ninguna categoria de soporte.
+    ("Soporte TI", "Otros problemas", "baja"),
     ("Administrativo TI", "Creacion Usuario", "baja"),
     ("Administrativo TI", "Permisos", "baja"),
     ("Administrativo TI", "Accesos", "media"),
@@ -50,7 +62,7 @@ CATEGORIAS = [
 
 
 class Command(BaseCommand):
-    help = "Carga categorias Dogger alineadas a infraestructura STATU QUO + SIESA"
+    help = "Carga categorias Dogger alineadas a infraestructura STATU QUO + SIESA, POS y soporte TI"
 
     def handle(self, *args, **options):
         creadas = 0

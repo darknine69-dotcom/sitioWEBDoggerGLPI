@@ -5,12 +5,13 @@ from django.conf import settings
 from django.contrib import messages
 from django.utils import timezone
 from django.core.mail import send_mail
-from django.http import Http404, JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import redirect, render, reverse
 from django.views import View
 from django.views.decorators.http import require_POST
 from datetime import timedelta
 import logging
+import os
 
 from .forms import (
     CambiarPasswordForzadoForm,
@@ -159,12 +160,83 @@ def ajustes_cuenta(request):
         "form": form,
         "glpi_enabled": glpi_enabled,
         "glpi_base_url": _glpi_base_url(),
+        # Manual de uso: la vista previa y el archivo de Word del rol.
+        "manual_disponible": archivo_manual(user.rol) is not None,
+        "manual_archivo": nombre_manual(user.rol),
     }
     if user.rol == "admin":
         from apps.tickets.models import ConfigSitio
 
         ctx["config_sitio"] = ConfigSitio.cargar()
+        # Si falta la migracion, el interruptor de GLPI no tendria efecto: se
+        # avisa en vez de dejar al administrador creyendo que si lo guardo.
+        try:
+            ConfigSitio.objects.only("panel_mostrar_actividad_glpi").exists()
+            ctx["config_sitio_sin_migracion"] = False
+        except Exception:
+            ctx["config_sitio"] = None
+            ctx["config_sitio_sin_migracion"] = True
     return render(request, "accounts/ajustes.html", ctx)
+
+
+# Un archivo del manual por rol. Se guardan en apps/accounts/documentos/.
+# El observador ve el manual del tecnico: su sesion es de solo lectura y
+# trabaja sobre las mismas listas y fichas.
+MANUALES_POR_ROL = {
+    "admin": "manual-administrador.docx",
+    "tecnico": "manual-tecnico.docx",
+    "observador": "manual-tecnico.docx",
+    "usuario": "manual-usuario.docx",
+}
+
+
+def archivo_manual(rol, extension="docx"):
+    """Ruta del manual del rol, o None si no esta el archivo.
+
+    El .docx es el original que se edita; el .pdf es esa misma maqueta con
+    las capturas al dia, y es lo que se muestra en pantalla.
+    """
+    nombre = MANUALES_POR_ROL.get(rol or "", MANUALES_POR_ROL["usuario"])
+    base, _ = os.path.splitext(nombre)
+    ruta = os.path.join(os.path.dirname(__file__), "documentos", base + "." + extension)
+    return ruta if os.path.isfile(ruta) else None
+
+
+def nombre_manual(rol, extension="docx"):
+    base = os.path.splitext(MANUALES_POR_ROL.get(rol or "", MANUALES_POR_ROL["usuario"]))[0]
+    return base + "." + extension
+
+
+@login_required
+def descargar_manual(request):
+    """Descarga el manual de uso que corresponde al rol de la cuenta."""
+    ruta = archivo_manual(getattr(request.user, "rol", ""))
+    if not ruta:
+        raise Http404("El manual de este rol todavia no esta disponible.")
+    respuesta = FileResponse(
+        open(ruta, "rb"),
+        as_attachment=True,
+        filename=nombre_manual(getattr(request.user, "rol", "")),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    return respuesta
+
+
+@login_required
+def ver_manual(request):
+    """Muestra el manual en pantalla: el PDF con la maqueta y las capturas.
+
+    Se abre dentro del marco de la vista previa de los ajustes, asi que va
+    en linea (no como descarga) y sin cache para que el cambio se vea ya.
+    """
+    ruta = archivo_manual(getattr(request.user, "rol", ""), "pdf")
+    if not ruta:
+        raise Http404("El manual de este rol todavia no esta disponible.")
+    respuesta = FileResponse(open(ruta, "rb"), content_type="application/pdf")
+    respuesta["Content-Disposition"] = 'inline; filename="%s"' % nombre_manual(
+        getattr(request.user, "rol", ""), "pdf")
+    respuesta["Cache-Control"] = "no-store"
+    return respuesta
 
 
 @login_required
@@ -527,24 +599,34 @@ def configuracion_pagina(request):
     def _bool(name, default=False):
         return request.POST.get(name) in ("1", "on", "true", "True")
 
-    cfg.pagina_mostrar_redes = _bool("pagina_mostrar_redes", True)
-    cfg.correo_activo = _bool("correo_activo", True)
-    cfg.correo_soporte = request.POST.get("correo_soporte", "").strip()
-    cfg.whatsapp_activo = _bool("whatsapp_activo", True)
-    cfg.whatsapp_numero = request.POST.get("whatsapp_numero", "").strip()
-    cfg.tiktok_activo = _bool("tiktok_activo", True)
-    cfg.tiktok_url = request.POST.get("tiktok_url", "").strip()
-    cfg.instagram_activo = _bool("instagram_activo", True)
-    cfg.instagram_url = request.POST.get("instagram_url", "").strip()
-    cfg.facebook_activo = _bool("facebook_activo", True)
-    cfg.facebook_url = request.POST.get("facebook_url", "").strip()
+    # La pestaña "GLPI" manda su propio formulario, que solo trae el
+    # interruptor. Si se guardaran aquí los campos de redes y correo, cada
+    # toque al interruptor vaciaría los enlaces que el administrador ya habia
+    # configurado, asi que solo se tocan cuando viene el formulario completo.
+    if request.POST.get("ajustes_pagina") == "1":
+        cfg.pagina_mostrar_redes = _bool("pagina_mostrar_redes", True)
+        cfg.correo_activo = _bool("correo_activo", True)
+        cfg.correo_soporte = request.POST.get("correo_soporte", "").strip()
+        cfg.whatsapp_activo = _bool("whatsapp_activo", True)
+        cfg.whatsapp_numero = request.POST.get("whatsapp_numero", "").strip()
+        cfg.tiktok_activo = _bool("tiktok_activo", True)
+        cfg.tiktok_url = request.POST.get("tiktok_url", "").strip()
+        cfg.instagram_activo = _bool("instagram_activo", True)
+        cfg.instagram_url = request.POST.get("instagram_url", "").strip()
+        cfg.facebook_activo = _bool("facebook_activo", True)
+        cfg.facebook_url = request.POST.get("facebook_url", "").strip()
+    # Interruptor con acción inmediata: si viene el checkbox apagado no se
+    # toca, porque el navegador no envía el campo unchecked. Por eso el
+    # formulario se guarda con JavaScript antes de enviarlo.
+    if "panel_mostrar_actividad_glpi" in request.POST or "ajustes_actividad_glpi" in request.POST:
+        cfg.panel_mostrar_actividad_glpi = _bool("panel_mostrar_actividad_glpi", True)
     try:
         cfg.full_clean(validate_unique=False)
     except Exception:
         pass
     cfg.save()
     messages.success(request, "Configuración de la página actualizada.")
-    return redirect(reverse("accounts:ajustes") + "#pagina")
+    return redirect(reverse("accounts:ajustes") + "#" + request.POST.get("volver", "pagina"))
 
 
 # =====================================================================

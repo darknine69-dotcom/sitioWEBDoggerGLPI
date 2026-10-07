@@ -1,0 +1,70 @@
+{% comment %}
+Lista de técnicos activos con su voto, sobre `tecnicos_activos`.
+
+Va sola en el detalle de un ticket o dentro del modal de Mi panel. Con
+`lista_directa` salen filas cortas, con foto del perfil, sin datos de contacto
+y con scroll si son más de tres.
+{% endcomment %}
+            {% if tecnicos_activos %}
+            <ul class="tec-lista{% if lista_directa %} es-directa{% endif %}{% if lista_directa and tecnicos_activos|length > 3 %} tiene-scroll{% endif %}" id="tec-lista" data-calificar="{% url 'tickets:calificar_tecnico' 0 %}"
+                {% if voto_ticket %}data-ticket="{{ ticket.pk }}"{% endif %}>
+                {% for tec in tecnicos_activos %}
+                <li class="tec-card" data-tec-pk="{{ tec.pk }}">
+                    <span class="tec-avatar {% if tec.en_linea %}is-online{% endif %}">
+                        {% if tec.avatar %}<img src="{{ tec.avatar }}" alt="Foto de {{ tec.nombre }}" loading="lazy">{% else %}{{ tec.iniciales }}{% endif %}
+                    </span>
+
+                    <div class="tec-datos">
+                        <strong class="tec-nombre">{{ tec.nombre }}</strong>
+                        <span class="tec-estado tec-estado-{{ tec.estado }}">
+                            {{ tec.estado_etiqueta }}<small>{{ tec.estado_detalle }}</small>
+                        </span>
+                        <span class="tec-meta">
+                            <span title="Correo"><svg class="icon icon-sm"><use href="#i-mail"/></svg>{{ tec.email }}</span>
+                            {% if tec.ubicacion %}<span title="Ubicación"><svg class="icon icon-sm"><use href="#i-map-pin"/></svg>{{ tec.ubicacion }}</span>{% endif %}
+                            {% if tec.telefono %}<span title="Teléfono"><svg class="icon icon-sm"><use href="#i-phone"/></svg>{{ tec.telefono }}</span>{% endif %}
+                            <span title="Tickets resueltos"><svg class="icon icon-sm"><use href="#i-check-circle"/></svg>{{ tec.resueltos }} resuelto{{ tec.resueltos|pluralize:"s" }}</span>
+                        </span>
+
+                        {% if voto_ticket and tec.barra %}
+                        <span class="tec-barra {% if not tec.barra.total %}is-vacia{% endif %}"
+                              data-barra
+                              title="{{ tec.barra.porcentaje }}% de aprobación en {{ tec.barra.total }} ticket{{ tec.barra.total|pluralize:"s" }} resuelto{{ tec.barra.total|pluralize:"s" }}">
+                            <span class="mi-gusta-bar-fill" data-barra-fill style="width: {{ tec.barra.porcentaje }}%"></span>
+                        </span>
+                        <span class="tec-barra-pct" data-barra-pct>
+                            {% if tec.barra.total %}
+                            {{ tec.barra.porcentaje }}% de aprobación · {{ tec.barra.me_gusta }} de {{ tec.barra.total }} ticket{{ tec.barra.total|pluralize:"s" }} resuelto{{ tec.barra.total|pluralize:"s" }}
+                            {% else %}
+                            Todavía sin votos en tickets resueltos.
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="tec-voto">
+                        <span class="tec-voto-conteo">
+                            <button type="button" class="tec-pulgar up {% if tec.voto_mostrar == 1 %}is-on{% endif %}"
+                                    data-valor="1" data-tec="{{ tec.pk }}" title="Me gusta" {% if not puede_calificar_tecnicos %}disabled{% endif %}>
+                                <svg class="icon icon-sm"><use href="#i-thumb-up"/></svg>
+                                <span data-rol="up">{{ tec.conteo_up }}</span>
+                            </button>
+                            <button type="button" class="tec-pulgar down {% if tec.voto_mostrar == -1 %}is-on{% endif %}"
+                                    data-valor="-1" data-tec="{{ tec.pk }}" title="No me gusta" {% if not puede_calificar_tecnicos %}disabled{% endif %}>
+                                <svg class="icon icon-sm"><use href="#i-thumb-down"/></svg>
+                                <span data-rol="down">{{ tec.conteo_down }}</span>
+                            </button>
+                        </span>
+                        {% if not puede_calificar_tecnicos %}
+                        <small class="tec-voto-aviso">Tu rol no califica</small>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% if lista_directa and tecnicos_activos|length > 3 %}
+            <p class="tec-scroll-pista">Desliza para ver los {{ tecnicos_activos|length }} técnicos</p>
+            {% endif %}
+            {% else %}
+            <p class="empty-hint">Ahora mismo no hay técnicos activos en el sistema.</p>
+            {% endif %}

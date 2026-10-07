@@ -9,10 +9,6 @@
 </head>
 <body>
 <div class="login-screen">
-    <div class="login-deco" aria-hidden="true">
-        <span class="glow"></span><span class="sombra"></span><span class="puntos"></span>
-        <span class="franja-roja"></span><span class="franja-amarilla"></span>
-    </div>
     <div class="login-card">
         <img class="logo-badge" src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" />
         <p class="eyebrow">Dogger · Premium Quality</p>
@@ -53,7 +49,9 @@
             </div>
             <label class="login-modo-observador{% if form.modo_observador.errors %} has-error{% endif %}">
                 {{ form.modo_observador }}
-                <span class="login-modo-ico"><svg class="icon icon-sm"><use href="#i-eye"/></svg></span>
+                <span class="login-modo-ico">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </span>
                 <span class="login-modo-txt">
                     <strong>Modo Observador</strong>
                     <small>Entra al panel de observación, en modo lectura.</small>

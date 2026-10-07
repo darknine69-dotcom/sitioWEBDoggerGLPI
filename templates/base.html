@@ -7,6 +7,7 @@
     <title>{% block title %}Dogger · Mesa de Ayuda{% endblock %}</title>
     <meta name="description" content="{% block meta_description %}Mesa de Ayuda TI de Productos Alimenticios Dogger S.A.S.: reporta y sigue las incidencias de tecnología de todas las sedes, con código HD, tiempos de atención comprometidos (ANS) e integración con GLPI.{% endblock %}">
     <meta name="theme-color" content="#A11B12">
+    <meta name="csrfmiddlewaretoken" content="{{ csrf_token }}">
     <link rel="icon" href="{% static 'images/dogger-logo.svg' %}" type="image/svg+xml">
     <script>
     (function(){
@@ -97,6 +98,8 @@
     <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
     <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
     <symbol id="i-headset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></symbol>
+    <symbol id="i-thumb-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v11"/><path d="M15 5.9l-1 4.1h5.8a2 2 0 011.9 2.6l-2.3 8A2 2 0 0117.5 22H4a2 2 0 01-2-2v-8a2 2 0 012-2h2.8a2 2 0 001.8-1.1L12 2a3.1 3.1 0 013 3.9z"/></symbol>
+    <symbol id="i-thumb-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(180 12 12)"><path d="M7 10v11"/><path d="M15 5.9l-1 4.1h5.8a2 2 0 011.9 2.6l-2.3 8A2 2 0 0117.5 22H4a2 2 0 01-2-2v-8a2 2 0 012-2h2.8a2 2 0 001.8-1.1L12 2a3.1 3.1 0 013 3.9z"/></g></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
     <symbol id="i-printer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
 </svg>
@@ -136,7 +139,7 @@
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-home"/></svg>
                     <span class="sidebar-label">Mi panel</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
-                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} por revisar</span>{% endif %}
                 </a>
                 <a href="{% url 'tickets:crear_ticket' %}" class="sidebar-link{% nav_active 'crear_ticket' %}"{% nav_current 'crear_ticket' %} data-title="Reportar incidencia">
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-plus"/></svg>
@@ -145,6 +148,12 @@
                 <a href="{% url 'tickets:categorias_publico' %}" class="sidebar-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %} data-title="Categoría">
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
                     <span class="sidebar-label">Categoría</span>
+                </a>
+                <a href="{% url 'tickets:mi_papelera' %}" class="sidebar-link{% nav_active 'mi_papelera' %}"{% nav_current 'mi_papelera' %} data-title="Papelera">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-trash"/></svg>
+                    <span class="sidebar-label">Papelera</span>
+                    {% if mi_papelera_total %}<span class="sidebar-count" data-nivel="bajo">{{ mi_papelera_total }}</span>{% endif %}
+                    {% if mi_papelera_total %}<span class="nav-count-sr">{{ mi_papelera_total }} solicitudes canceladas por ti, recuperables</span>{% endif %}
                 </a>
             </div>
             {% endif %}
@@ -156,19 +165,13 @@
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-grid"/></svg>
                     <span class="sidebar-label">Panel</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
-                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
-                </a>
-                <a href="{% url 'tickets:sin_asignar' %}" class="sidebar-link{% nav_active 'sin_asignar' %}"{% nav_current 'sin_asignar' %} data-title="Bandeja sin asignar">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-inbox"/></svg>
-                    <span class="sidebar-label">Sin asignar</span>
-                    {% if sin_asignar_total %}<span class="sidebar-count" data-nivel="alto">{{ sin_asignar_total }}</span>{% endif %}
-                    {% if sin_asignar_total %}<span class="nav-count-sr">{{ sin_asignar_total }} tickets sin técnico asignado</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} por revisar</span>{% endif %}
                 </a>
                 <a href="{% url 'tickets:lista' %}" class="sidebar-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %} data-title="Tickets">
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-ticket"/></svg>
                     <span class="sidebar-label">Tickets</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
-                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} avisos por ver</span>{% endif %}
                 </a>
             </div>
             <div class="sidebar-group">
@@ -187,19 +190,13 @@
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-grid"/></svg>
                     <span class="sidebar-label">Panel</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
-                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets por revisar</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} por revisar</span>{% endif %}
                 </a>
                 <a href="{% url 'tickets:lista' %}" class="sidebar-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %} data-title="Tickets">
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-ticket"/></svg>
                     <span class="sidebar-label">Tickets</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
-                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets abiertos</span>{% endif %}
-                </a>
-                <a href="{% url 'tickets:sin_asignar' %}" class="sidebar-link{% nav_active 'sin_asignar' %}"{% nav_current 'sin_asignar' %} data-title="Bandeja sin asignar">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-inbox"/></svg>
-                    <span class="sidebar-label">Sin asignar</span>
-                    {% if sin_asignar_total %}<span class="sidebar-count" data-nivel="alto">{{ sin_asignar_total }}</span>{% endif %}
-                    {% if sin_asignar_total %}<span class="nav-count-sr">{{ sin_asignar_total }} tickets sin técnico asignado</span>{% endif %}
+                    {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} avisos por ver</span>{% endif %}
                 </a>
             </div>
             <div class="sidebar-group">
@@ -211,9 +208,9 @@
             </div>
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Administración</p>
-                <a href="{% url 'tickets:usuarios' %}" class="sidebar-link{% nav_active 'usuarios' %}"{% nav_current 'usuarios' %} data-title="Usuarios y roles">
+                <a href="{% url 'tickets:usuarios' %}" class="sidebar-link{% nav_active 'usuarios' %}"{% nav_current 'usuarios' %} data-title="Accesos">
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-users"/></svg>
-                    <span class="sidebar-label">Usuarios y roles</span>
+                    <span class="sidebar-label">Accesos</span>
                 </a>
                 <a href="{% url 'tickets:categorias_arbol' %}" class="sidebar-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %} data-title="Categorías">
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
@@ -280,6 +277,20 @@
                     <span class="sidebar-label">Consultar ticket HD</span>
                 </a>
             </div>
+            {% if request.user.rol == 'tecnico' %}
+            <div class="sidebar-foot">
+                <p class="sidebar-group-title">Tu calificación</p>
+                {% if calif_lateral.total %}
+                <div class="side-calif">
+                    <strong class="side-calif-num">{{ calif_lateral.porcentaje }}%</strong>
+                    <span class="side-calif-bar" role="img" aria-label="{{ calif_lateral.porcentaje }}% de aprobación"><span style="width: {{ calif_lateral.porcentaje }}%"></span></span>
+                    <small>{{ calif_lateral.porcentaje }}% de aprobación · {{ calif_lateral.total }} voto{{ calif_lateral.total|pluralize:"s" }}</small>
+                </div>
+                {% else %}
+                <small class="side-calif-vacia">Todavía no hay votos. Cuando un usuario te califique, aparecerá aquí.</small>
+                {% endif %}
+            </div>
+            {% endif %}
         </nav>
 
     </aside>
@@ -310,7 +321,7 @@
                     {% if request.user.avatar %}
                     <img src="{{ request.user.avatar.url }}" alt="" class="user-avatar-img">
                     {% else %}
-                    <span class="user-avatar">{{ request.user.initials }}</span>
+                    <span class="user-avatar">{{ request.user.iniciales }}</span>
                     {% endif %}
                     <span class="user-chip-text">{{ request.user.nombre }} <small>· {{ request.user.get_rol_display }}</small></span>
                     <svg class="user-chip-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -320,18 +331,18 @@
                         {% if request.user.avatar %}
                         <img src="{{ request.user.avatar.url }}" alt="" class="user-dropdown-avatar">
                         {% else %}
-                        <div class="user-dropdown-avatar-placeholder">{{ request.user.initials }}</div>
+                        <div class="user-dropdown-avatar-placeholder">{{ request.user.iniciales }}</div>
                         {% endif %}
                         <div>
                             <strong>{{ request.user.nombre }}</strong>
                             <small>{{ request.user.email }}</small>
                         </div>
                     </div>
-                    <a href="{% url 'accounts:perfil' %}" class="user-dropdown-item" role="menuitem">
+                    <a href="{% url 'accounts:ajustes' %}" class="user-dropdown-item" role="menuitem">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         Mi perfil
                     </a>
-                    <a href="{% url 'accounts:ajustes' %}" class="user-dropdown-item" role="menuitem">
+                    <a href="{% url 'accounts:perfil' %}" class="user-dropdown-item" role="menuitem">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00.33 1.82 1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                         Ajustes de cuenta
                     </a>
@@ -416,6 +427,71 @@
     </div>
 
     {% block footer %}
+    {% if request.user.is_authenticated %}
+    {% comment %}
+    Pie compacto para quien ya está trabajando en la plataforma: una sola
+    franja con la marca y los enlaces útiles, sin mapa ni columnas.
+    {% endcomment %}
+        {% comment %}
+    Sin los mapas de las sedes: el personal ya entra a la aplicación y aquí solo
+    van la marca, la ayuda y el mismo cierre de siempre.
+    {% endcomment %}
+    <footer class="brand-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="footer-kicker">Mesa de ayuda TI</span>
+                <div class="footer-brand-body">
+                    <img src="{% static 'images/dogger-logo.png' %}" alt="" class="footer-logo">
+                    <div class="footer-brand-text">
+                        <h3>{{ DOGGER.nombre_completo|default:"Productos Alimenticios Dogger S.A.S." }}</h3>
+                        <p>{{ DOGGER.direccion_detalle|default:DOGGER.direccion }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-info">
+                <p class="footer-kicker">Soporte</p>
+                <a href="{% url 'tickets:consultar' %}"><svg class="icon icon-sm"><use href="#i-search"/></svg> Consultar ticket</a>
+                <a href="{% url 'tickets:faq' %}"><svg class="icon icon-sm"><use href="#i-help"/></svg> Preguntas frecuentes</a>
+                {% if DOGGER.correo_activo and DOGGER.correo_soporte %}
+                <a href="mailto:{{ DOGGER.correo_soporte }}"><svg class="icon icon-sm"><use href="#i-mail"/></svg> Escribir a soporte</a>
+                {% endif %}
+            </div>
+            {% if DOGGER.pagina_mostrar_redes %}
+            <div class="footer-socials">
+                <p class="footer-kicker">Redes</p>
+                <div class="footer-social-row">
+                    {% if DOGGER.correo_activo and DOGGER.correo_soporte %}
+                    <a href="mailto:{{ DOGGER.correo_soporte }}" title="Correo: {{ DOGGER.correo_soporte }}">
+                        <svg class="icon"><use href="#i-mail"/></svg>
+                    </a>
+                    {% endif %}
+                    {% if DOGGER.whatsapp_activo and DOGGER.whatsapp_soporte %}
+                    <a href="https://wa.me/57{{ DOGGER.whatsapp_soporte }}" target="_blank" rel="noopener" title="WhatsApp">
+                        <svg class="icon"><use href="#i-whatsapp"/></svg>
+                    </a>
+                    {% endif %}
+                    {% if DOGGER.tiktok_activo and DOGGER.tiktok %}
+                    <a href="{{ DOGGER.tiktok }}" target="_blank" rel="noopener" title="TikTok">
+                        <svg class="icon"><use href="#i-tiktok"/></svg>
+                    </a>
+                    {% endif %}
+                    {% if DOGGER.instagram_activo and DOGGER.instagram %}
+                    <a href="{{ DOGGER.instagram }}" target="_blank" rel="noopener" title="Instagram">
+                        <svg class="icon"><use href="#i-instagram"/></svg>
+                    </a>
+                    {% endif %}
+                    {% if DOGGER.facebook_activo and DOGGER.facebook %}
+                    <a href="{{ DOGGER.facebook }}" target="_blank" rel="noopener" title="Facebook">
+                        <svg class="icon"><use href="#i-facebook"/></svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <p class="footer-copy">Copyright © 2026 Dogger | Powered by Dogger</p>
+    </footer>
+    {% else %}
     <footer class="brand-footer">
         {% if DOGGER.puntos %}
         <div class="footer-maps">
@@ -505,8 +581,9 @@
             </div>
             {% endif %}
         </div>
-        <p class="footer-copy">Copyright © 2026 Dogger | Powered by Dogger</p>
+        <p class="footer-copy">Copyright © 2026 Dogger | Mesa de ayuda TI</p>
     </footer>
+    {% endif %}
     {% endblock %}
 
     <!-- Modal pequeño: cambio de contraseña forzado (tras validar el código de reset) -->
@@ -569,11 +646,14 @@
     <!-- Modal de confirmación (reemplaza el confirm del navegador) -->
     <div class="confirm-overlay" id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
         <div class="confirm-box">
-            <span class="confirm-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            {% comment %}Icono y título los define quien llama: así la papelera
+            muestra el mismo recuadro que "Cancelar solicitud".{% endcomment %}
+            <span class="confirm-icon"><svg class="icon"><use href="#confirm-icon-use" id="confirm-icon-use"/></svg></span>
             <h3 id="confirm-title">¿Confirmar acción?</h3>
             <p class="confirm-msg" id="confirm-msg"></p>
+            <p class="modal-note" id="confirm-note" hidden></p>
             <div class="confirm-actions">
-                <button type="button" class="btn btn-cancel" id="confirm-cancel">Cancelar</button>
+                <button type="button" class="btn btn-cancel" id="confirm-cancel">No, cancelar</button>
                 <button type="button" class="btn btn-danger" id="confirm-ok">Sí, continuar</button>
             </div>
         </div>
