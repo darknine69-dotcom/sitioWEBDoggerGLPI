@@ -262,6 +262,20 @@ class ObservadorListaTest(TestCase):
         self.assertIn("Técnico a cargo", html)
         self.assertIn(ticket.codigo, html)
 
+    def test_menu_lateral_sin_panel_y_monitoreo_primero(self):
+        html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
+        self.assertNotIn("Puntos asignados", html)
+        self.assertNotIn('sidebar-label">Panel', html)
+        self.assertIn('sidebar-label">Monitoreo', html)
+
+    def test_entrada_del_observador_es_monitoreo(self):
+        from apps.accounts.routing import landing_por_rol
+
+        self.assertEqual(
+            landing_por_rol(self.observador),
+            reverse("tickets:obs_monitoreo"),
+        )
+
 
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

@@ -239,9 +239,9 @@
             {% if request.user.rol == 'observador' %}
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Observación</p>
-                <a href="{% url 'tickets:obs_panel' %}" class="sidebar-link{% nav_active 'obs_panel' %}"{% nav_current 'obs_panel' %} data-title="Panel">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-eye"/></svg>
-                    <span class="sidebar-label">Panel</span>
+                <a href="{% url 'tickets:obs_monitoreo' %}" class="sidebar-link{% nav_active 'obs_monitoreo' %}"{% nav_current 'obs_monitoreo' %} data-title="Monitoreo">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-check-circle"/></svg>
+                    <span class="sidebar-label">Monitoreo</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets en tus zonas</span>{% endif %}
                 </a>
@@ -258,10 +258,6 @@
                     <span class="sidebar-label">Mi lista</span>
                     {% if menu_mios %}<span class="sidebar-count" data-nivel="bajo">{{ menu_mios }}</span>{% endif %}
                     {% if menu_mios %}<span class="nav-count-sr">{{ menu_mios }} elementos en tu lista</span>{% endif %}
-                </a>
-                <a href="{% url 'tickets:obs_monitoreo' %}" class="sidebar-link{% nav_active 'obs_monitoreo' %}"{% nav_current 'obs_monitoreo' %} data-title="Monitoreo">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-check-circle"/></svg>
-                    <span class="sidebar-label">Monitoreo</span>
                 </a>
             </div>
             {% endif %}

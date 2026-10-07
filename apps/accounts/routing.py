@@ -15,7 +15,7 @@ _VISTA_POR_ROL = {
     "admin": "tickets:dashboard",
     "tecnico": "tickets:panel_tecnico",
     "usuario": "tickets:mi_panel",
-    "observador": "tickets:obs_panel",
+    "observador": "tickets:obs_monitoreo",
 }
 
 # Vista de reserva: `accounts:perfil` solo pide iniciar sesión, así que
