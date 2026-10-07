@@ -114,6 +114,67 @@ class MonitoreoZonasAdminTest(TestCase):
             ).status_code, 403,
         )
 
+    def test_crear_zona_para_supervisor(self):
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_crear"),
+            {"observador": self.obs.pk, "nombre": "Sur"},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(
+            ZonaObservador.objects.filter(
+                observador=self.obs, nombre="Sur"
+            ).exists()
+        )
+
+    def test_crear_zona_exige_nombre_y_no_duplica(self):
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_crear"),
+            {"observador": self.obs.pk, "nombre": "  "},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(ZonaObservador.objects.filter(observador=self.obs).count(), 1)
+        self.client.post(
+            reverse("tickets:monitoreo_zona_crear"),
+            {"observador": self.obs.pk, "nombre": "norte"},
+        )
+        self.assertEqual(ZonaObservador.objects.filter(observador=self.obs).count(), 1)
+
+    def test_asignar_cuenta_a_la_zona(self):
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_miembro_agregar", args=[self.zona.pk]),
+            {"email": "nuevo@x.com"},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        nuevo = ElementoMiLista.objects.get(
+            observador=self.obs, usuario_email="nuevo@x.com"
+        )
+        self.assertEqual(nuevo.zona_id, self.zona.pk)
+
+    def test_ficha_cuenta_con_todo_el_detalle(self):
+        from apps.tickets.models import TicketAdjunto, TicketComentario
+
+        ticket = Ticket.objects.get(solicitante_email="ana@x.com")
+        TicketComentario.objects.create(
+            ticket=ticket, usuario=self.tec, comentario="Ya voy en camino"
+        )
+        respuesta = self.client.get(
+            reverse("tickets:monitoreo_cuenta_detalle", args=[self.elemento.pk])
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context["total"], 1)
+        self.assertEqual(respuesta.context["tecnicos"], [("Tec", 1)])
+        html = respuesta.content.decode()
+        self.assertIn(ticket.codigo, html)
+        self.assertIn("Ya voy en camino", html)
+        self.assertIn("Tec", html)
+
+    def test_ficha_cuenta_inexistente_404(self):
+        self.assertEqual(
+            self.client.get(
+                reverse("tickets:monitoreo_cuenta_detalle", args=[999999])
+            ).status_code, 404,
+        )
+
 
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

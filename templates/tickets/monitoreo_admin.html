@@ -74,7 +74,24 @@
 
     <div class="panel" style="margin-bottom:18px">
         <h3 class="cat-det-bloque" style="font-size:14px;margin-bottom:4px">Zonas creadas por los observadores</h3>
-        <p class="panel-sub">Cada supervisor a cargo con sus zonas, las cuentas que metió en cada una y su estado. Se administra desde aquí: se saca una cuenta de la zona o se elimina la zona (la gente no se borra).</p>
+        <p class="panel-sub">Cada supervisor a cargo con sus zonas, las cuentas que metió en cada una y su estado. Se administra desde aquí: se crea la zona, se le asignan cuentas, se saca una cuenta o se elimina la zona (la gente no se borra). Dale clic al nombre de una cuenta para ver su ficha completa.</p>
+        <form method="post" action="{% url 'tickets:monitoreo_zona_crear' %}"
+              style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+            {% csrf_token %}
+            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+            <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-muted)">Supervisor
+                <select name="observador" class="obs-buscador-tipo" style="min-width:200px" required>
+                    <option value="">Elige…</option>
+                    {% for pk, nombre in observadores %}
+                    <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-muted)">Nueva zona
+                <input type="text" name="nombre" maxlength="80" placeholder="Ej.: Sede norte" class="obs-buscador-tipo" style="min-width:200px" required>
+            </label>
+            <button type="submit" class="btn btn-sm btn-accent"><svg class="icon icon-sm"><use href="#i-plus"/></svg> Crear zona</button>
+        </form>
         {% if zonas_creadas %}
         <div class="mon-sup-grid">
             {% for bloque in zonas_creadas %}
@@ -103,7 +120,7 @@
                     {% for m in z.miembros %}
                     <div class="mon-miembro">
                         <div class="mon-m-id">
-                            <strong>{{ m.nombre }}</strong>
+                            <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Ver ficha completa: tickets, técnicos, conversaciones e imágenes">{{ m.nombre }}</a></strong>
                             <small>{{ m.email|default:"—" }} · {{ m.rol }} · {{ m.tecnico }}</small>
                         </div>
                         {% if m.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ m.abiertos }}</span>{% endif %}
@@ -116,6 +133,13 @@
                     {% empty %}
                     <p class="muted" style="margin:0">Zona vacía: todavía no tiene cuentas dentro.</p>
                     {% endfor %}
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}"
+                          style="display:flex;gap:6px;margin-top:8px">
+                        {% csrf_token %}
+                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                        <input type="email" name="email" placeholder="correo@dogger.com.co" aria-label="Correo de la cuenta" class="obs-buscador-tipo" style="flex:1;min-width:0" required>
+                        <button type="submit" class="btn btn-sm">Asignar</button>
+                    </form>
                     <div class="mon-zona-foot">
                         <small class="muted">{{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }} en total</small>
                         <form method="post" action="{% url 'tickets:monitoreo_zona_eliminar' z.zona.pk %}" style="margin-left:auto" onsubmit="return confirm('¿Eliminar la zona {{ z.zona.nombre|escapejs }}? Su gente queda en la lista, sin zona.')">

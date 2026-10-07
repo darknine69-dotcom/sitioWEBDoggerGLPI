@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Ficha de cuenta en seguimiento{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block header_title %}Ficha de cuenta{% endblock %}
+{% block header_desc %}Todo lo de {{ cuenta.nombre|default:correo }}: sus tickets, quién los atendió, las conversaciones y las imágenes.{% endblock %}
+
+{% block extra_css %}
+<style>
+.mon-ficha-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 15px 17px; margin-bottom: 14px; }
+.mon-ficha-id { display: flex; flex-direction: column; min-width: 0; }
+.mon-ficha-id strong { font-size: 16px; }
+.mon-ficha-id small { font-size: 12px; color: var(--ink-muted); }
+.mon-ficha-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+@media (max-width: 720px) { .mon-ficha-stats { grid-template-columns: repeat(2, 1fr); } }
+.mon-ticket { background: #fff; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 14px; overflow: hidden; }
+.mon-ticket-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 15px; background: #FBFAF7; border-bottom: 1px solid var(--line); }
+.mon-ticket-head code { font-family: var(--font-mono); font-weight: 800; color: var(--dogger-red); }
+.mon-ticket-body { padding: 12px 15px; }
+.mon-conv { border-left: 3px solid #E5DCCF; padding: 7px 11px; margin-top: 8px; background: #FDFCF9; border-radius: 0 8px 8px 0; font-size: 12.5px; }
+.mon-conv-interno { border-left-color: #F97316; background: #FFF8F0; }
+.mon-conv-meta { font-size: 11px; color: var(--ink-muted); font-weight: 700; }
+.mon-conv-meta b { color: #1d1b16; }
+.mon-imgs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.mon-imgs a.image img { width: 120px; height: 90px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.mon-imgs a.file { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; text-decoration: none; color: var(--ink); }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="wrap">
+    <p style="margin-bottom:12px"><a href="{% url 'tickets:monitoreo_admin' %}" class="btn btn-outline btn-sm"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg> Volver al monitoreo</a></p>
+
+    <div class="mon-ficha-head">
+        <span style="width:44px;height:44px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;background:#EEE9DB;color:#6B6259;font-weight:800;font-size:18px">{{ cuenta.nombre|default:correo|slice:":1"|upper }}</span>
+        <div class="mon-ficha-id">
+            <strong>{{ cuenta.nombre|default:correo }}</strong>
+            <small>{{ correo }} · {% if cuenta %}{{ cuenta.get_rol_display }} · {{ cuenta.ubicacion|default:"sin ubicación" }}{% else %}Sin cuenta registrada{% endif %}</small>
+        </div>
+        <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+            {% if elemento.zona %}<span class="chip chip-soft">{{ elemento.zona.nombre }}</span>{% endif %}
+            <span class="chip chip-soft">Supervisor: {{ elemento.observador.nombre }}</span>
+        </span>
+    </div>
+
+    <div class="mon-ficha-stats">
+        <div class="dash-stat dash-hov-total">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Tickets creados</span><span class="dash-stat-value">{{ total }}</span></span>
+        </div>
+        <div class="dash-stat dash-hov-abiertos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Abiertos</span><span class="dash-stat-value st-abiertos">{{ abiertos }}</span></span>
+        </div>
+        <div class="dash-stat dash-hov-tecnicos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Técnicos</span><span class="dash-stat-value">{{ tecnicos|length }}</span><span class="dash-stat-hint">{% for n, c in tecnicos %}{{ n }}{% if not forloop.last %}, {% endif %}{% empty %}nadie aún{% endfor %}</span></span>
+        </div>
+        <div class="dash-stat dash-hov-resueltos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Resueltos</span><span class="dash-stat-value st-resueltos">{{ resueltos }}</span></span>
+        </div>
+    </div>
+
+    {% for t in tickets %}
+    <article class="mon-ticket">
+        <div class="mon-ticket-head">
+            <code>{{ t.codigo }}</code>
+            <strong>{{ t.titulo }}</strong>
+            <span class="obs-pill obs-pill-{% if t.estado == 'abierto' %}amarillo{% elif t.estado == 'en-progreso' %}amarillo{% elif t.estado == 'resuelto' %}verde{% else %}verde{% endif %}" style="margin-left:auto">{{ t.get_estado_display }}</span>
+        </div>
+        <div class="mon-ticket-body">
+            <small class="muted">Atendido por <b>{{ t.tecnico_asignado.nombre|default:"sin asignar" }}</b> · {{ t.get_prioridad_display }} · {{ t.fecha_creacion|date:"d/m/Y H:i" }} · <a href="{% url 'tickets:detalle' t.pk %}">Abrir ticket</a></small>
+            {% if t.comentarios.all %}
+            <div style="margin-top:8px">
+                {% for c in t.comentarios.all %}
+                <div class="mon-conv{% if c.es_interno %} mon-conv-interno{% endif %}">
+                    <span class="mon-conv-meta"><b>{% if c.usuario %}{{ c.usuario.nombre|default:c.usuario.email }}{% else %}{{ c.autor_nombre|default:"Soporte" }}{% endif %}</b> · {{ c.fecha|date:"d/m/Y H:i" }}{% if c.es_interno %} · interna{% endif %}</span><br>
+                    {{ c.comentario|linebreaksbr }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if t.adjuntos.all %}
+            <div class="mon-imgs">
+                {% for a in t.adjuntos.all %}
+                {% if a.es_imagen %}
+                <a class="image" href="{% url 'tickets:adjunto' a.pk %}" target="_blank" rel="noopener"><img src="{% url 'tickets:adjunto' a.pk %}" alt="{{ a.nombre_original }}" loading="lazy"></a>
+                {% else %}
+                <a class="file" href="{% url 'tickets:adjunto' a.pk %}" target="_blank" rel="noopener"><svg class="icon icon-sm"><use href="#i-file"/></svg>{{ a.nombre_original }}</a>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </article>
+    {% empty %}
+    <div class="panel"><p class="panel-sub">Esta cuenta todavía no ha creado tickets.</p></div>
+    {% endfor %}
+</main>
+{% endblock %}

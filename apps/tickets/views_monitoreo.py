@@ -6,6 +6,7 @@ activos, con filtros, y los guarda en la zona que le toca para que el
 observador los vea en su panel.
 """
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
@@ -318,6 +319,123 @@ def monitoreo_zona_eliminar(request, pk):
     volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
     ZonaObservador.objects.filter(pk=pk).delete()
     return redirect(volver)
+
+
+@admin_required
+@login_required
+def monitoreo_zona_crear(request):
+    """Crea una zona para un supervisor desde el panel del administrador."""
+    if request.method != "POST":
+        return redirect(reverse("tickets:monitoreo_admin"))
+    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    observador_id = request.POST.get("observador") or ""
+    nombre = (request.POST.get("nombre") or "").strip()[:80]
+    observador = Usuario.objects.filter(
+        pk=observador_id, rol=Usuario.Rol.OBSERVADOR
+    ).first() if observador_id.isdigit() else None
+    if observador is None:
+        messages.error(request, "Elige un supervisor válido para la zona.")
+        return redirect(volver)
+    if not nombre:
+        messages.error(request, "Ponle un nombre a la zona para crearla.")
+        return redirect(volver)
+    if ZonaObservador.objects.filter(
+        observador=observador, nombre__iexact=nombre
+    ).exists():
+        messages.error(
+            request, f"{observador.nombre} ya tiene una zona llamada «{nombre}»."
+        )
+        return redirect(volver)
+    ZonaObservador.objects.create(observador=observador, nombre=nombre)
+    messages.success(
+        request, f"Zona «{nombre}» creada para {observador.nombre}."
+    )
+    return redirect(volver)
+
+
+@admin_required
+@login_required
+def monitoreo_zona_miembro_agregar(request, pk):
+    """Mete una cuenta a la zona desde el panel del administrador."""
+    if request.method != "POST":
+        return redirect(reverse("tickets:monitoreo_admin"))
+    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    zona = ZonaObservador.objects.select_related("observador").filter(pk=pk).first()
+    if zona is None:
+        return redirect(volver)
+    correo = (request.POST.get("email") or "").strip().lower()
+    if not correo:
+        messages.error(request, "Escribe el correo de la cuenta para agregarla.")
+        return redirect(volver)
+    elemento, creado = ElementoMiLista.objects.get_or_create(
+        observador=zona.observador,
+        usuario_email=correo,
+        defaults={
+            "tipo": ElementoMiLista.TIPO_USUARIO,
+            "usuario": Usuario.objects.filter(email__iexact=correo).first(),
+            "zona": zona,
+        },
+    )
+    if not creado and elemento.zona_id != zona.pk:
+        elemento.zona = zona
+        elemento.save(update_fields=["zona"])
+    messages.success(request, f"{correo} quedó en la zona «{zona.nombre}».")
+    return redirect(volver)
+
+
+@admin_required
+def monitoreo_cuenta_detalle(request, pk):
+    """Ficha de una cuenta en seguimiento: tickets, técnicos y conversación.
+
+    Al darle clic a la tarjeta de la cuenta se abre todo: qué tickets ha
+    creado, qué técnico atendió cada uno, las conversaciones y las imágenes.
+    """
+    from django.http import Http404
+
+    elemento = (
+        ElementoMiLista.objects.filter(pk=pk)
+        .select_related("observador", "usuario", "punto", "zona")
+        .first()
+    )
+    if elemento is None:
+        raise Http404
+    correo = (elemento.usuario_email or "").strip().lower()
+    tickets = list(
+        Ticket.objects.filter(solicitante_email__iexact=correo)
+        .select_related("tecnico_asignado")
+        .prefetch_related("adjuntos", "comentarios__usuario")
+        .order_by("-fecha_creacion") if correo else []
+    )
+    estados = {}
+    for t in tickets:
+        estados[t.estado] = estados.get(t.estado, 0) + 1
+    tecnicos = {}
+    for t in tickets:
+        nombre = (
+            (t.tecnico_asignado.nombre if t.tecnico_asignado_id else "") or ""
+        ).strip()
+        if nombre:
+            tecnicos[nombre] = tecnicos.get(nombre, 0) + 1
+    return render(
+        request,
+        "tickets/monitoreo_cuenta.html",
+        {
+            "elemento": elemento,
+            "cuenta": elemento.usuario,
+            "correo": correo,
+            "tickets": tickets,
+            "total": len(tickets),
+            "abiertos": sum(
+                1 for t in tickets
+                if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
+            ),
+            "resueltos": sum(
+                1 for t in tickets
+                if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
+            ),
+            "tecnicos": sorted(tecnicos.items(), key=lambda kv: (-kv[1], kv[0])),
+        },
+    )
 
 
 @admin_required
