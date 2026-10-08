@@ -6601,6 +6601,7 @@ button.obs-miembro-top[aria-expanded="false"] .obs-zona-chev { transform: rotate
 .obs-resp-meta b { color: #1D4ED8; }
 .obs-resp-txt { display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 720px) { .obs-miembro-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .obs-miembro-nums .obs-avance { display: none; } }
 
 .obs-buscador { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
 .obs-buscador-campo {
