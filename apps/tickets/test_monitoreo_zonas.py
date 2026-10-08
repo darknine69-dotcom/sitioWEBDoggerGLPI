@@ -454,3 +454,32 @@ class MonitoreoObservadorDetalleTest(TestCase):
         ticket = self._ticket("otro@x.com", punto="Zona Ajena")
         respuesta = self.client.get(reverse("tickets:mi_ticket", args=[ticket.pk]))
         self.assertEqual(respuesta.status_code, 404)
+
+    def test_observador_se_une_a_la_conversacion(self):
+        from apps.tickets.models import TicketComentario
+
+        ticket = self._ticket("ana@x.com")
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        respuesta = self.client.post(
+            reverse("tickets:mi_responder_obs", args=[ticket.pk]),
+            {"comentario": "Quedo atento al avance"},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        comentario = TicketComentario.objects.get(
+            ticket=ticket, comentario="Quedo atento al avance"
+        )
+        self.assertEqual(comentario.usuario, self.obs)
+        self.assertFalse(comentario.es_interno)
+        html = self.client.get(
+            reverse("tickets:mi_ticket", args=[ticket.pk])
+        ).content.decode()
+        self.assertIn("chat-msg-observador", html)
+        self.assertIn("Quedo atento al avance", html)
+
+    def test_observador_no_responde_fuera_de_alcance(self):
+        ticket = self._ticket("otro@x.com", punto="Zona Ajena")
+        respuesta = self.client.post(
+            reverse("tickets:mi_responder_obs", args=[ticket.pk]),
+            {"comentario": "Hola"},
+        )
+        self.assertEqual(respuesta.status_code, 404)

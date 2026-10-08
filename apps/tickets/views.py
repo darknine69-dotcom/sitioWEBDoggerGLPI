@@ -2458,10 +2458,11 @@ def _timeline_ticket(ticket, include_internos=False):
             )
             continue
         es_usuario = bool(c.usuario_id and getattr(c.usuario, "rol", None) == "usuario")
+        es_observador = bool(c.usuario_id and getattr(c.usuario, "rol", None) == "observador")
         autor = c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda")
         items.append(
             {
-                "tipo": "usuario" if es_usuario else "soporte",
+                "tipo": "usuario" if es_usuario else ("observador" if es_observador else "soporte"),
                 "fecha": c.fecha,
                 "autor": autor,
                 "texto": c.comentario,
@@ -2551,6 +2552,7 @@ def mi_ticket(request, pk):
                 ticket.tecnico_asignado.nombre if puede and ticket.tecnico_asignado else ""
             ),
             "solo_lectura": solo_lectura,
+            "puede_responder": not solo_lectura or rol == "observador",
         },
     )
 
@@ -2594,6 +2596,53 @@ def responder_ticket(request, pk):
         descripcion=f"{ticket.codigo}: respuesta del solicitante registrada",
         payload_bruto={"usuario": request.user.email, "comentario": comentario},
     )
+    return redirect("tickets:mi_ticket", pk=pk)
+
+
+@login_required
+@require_POST
+def responder_ticket_obs(request, pk):
+    """El observador se une a la conversación del ticket.
+
+    Solo lectura en todo lo demás: esto solo guarda su mensaje (visible,
+    no interno) en tickets de sus puntos o de su lista, y avisa al
+    técnico y al solicitante como cualquier respuesta.
+    """
+    from .views_observador import puntos_del_observador
+
+    u = request.user
+    if getattr(u, "rol", None) != "observador":
+        raise PermissionDenied("Solo el observador usa esta vía.")
+    ticket = get_object_or_404(
+        Ticket.objects.select_related("categoria"), pk=pk
+    )
+    puntos = puntos_del_observador(u)
+    en_lista = bool(
+        ticket.solicitante_email
+        and ElementoMiLista.objects.filter(
+            observador=u, usuario_email__iexact=ticket.solicitante_email
+        ).exists()
+    )
+    if (ticket.solicitante_punto or "") not in puntos and not en_lista:
+        raise Http404
+    comentario = request.POST.get("comentario", "").strip()
+    if not comentario:
+        messages.error(request, "Escribe tu mensaje para participar.")
+        return redirect("tickets:mi_ticket", pk=pk)
+    TicketComentario.objects.create(
+        ticket=ticket,
+        usuario=u,
+        autor_nombre=u.nombre,
+        comentario=comentario,
+        es_interno=False,
+    )
+    notificar_comentario(ticket, u.nombre, comentario, actor=u)
+    if ticket.glpi_id:
+        try:
+            sync_followup_to_glpi(ticket, comentario)
+        except GlpiError:
+            pass
+    messages.success(request, "Tu mensaje quedó en la conversación.")
     return redirect("tickets:mi_ticket", pk=pk)
 
 

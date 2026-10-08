@@ -23,6 +23,7 @@ urlpatterns = [
     path("mi-panel/tickets/<int:pk>/editar/", views.editar_mi_ticket, name="mi_editar"),
     path("mi-panel/tickets/<int:pk>/reenviar-glpi/", views.reenviar_glpi, name="mi_reenviar_glpi"),
     path("mi-panel/tickets/<int:pk>/responder/", views.responder_ticket, name="mi_responder"),
+    path("mi-panel/tickets/<int:pk>/responder-obs/", views.responder_ticket_obs, name="mi_responder_obs"),
     path("mi-panel/api/tickets/<int:pk>/info/", views.mi_ticket_info_ajax, name="mi_api_info"),
     path("mi-panel/api/tickets/<int:pk>/editar/", views.mi_ticket_editar_ajax, name="mi_api_editar"),
     path("mi-panel/api/tickets/<int:pk>/cerrar/", views.mi_ticket_cerrar_ajax, name="mi_api_cerrar"),

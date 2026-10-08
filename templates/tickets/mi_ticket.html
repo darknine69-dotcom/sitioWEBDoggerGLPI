@@ -117,10 +117,10 @@
                             <h3>Actividad</h3>
                         </div>
                         {% include "tickets/_chat_thread.html" %}
-                        {% if not solo_lectura %}
-                        <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer chat-composer-compact">
+                        {% if puede_responder %}
+                        <form method="post" action="{% if solo_lectura %}{% url 'tickets:mi_responder_obs' ticket.pk %}{% else %}{% url 'tickets:mi_responder' ticket.pk %}{% endif %}" class="chat-composer chat-composer-compact">
                             {% csrf_token %}
-                            <textarea id="comentario" name="comentario" rows="1" aria-label="Escribe tu respuesta para la mesa de ayuda" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
+                            <textarea id="comentario" name="comentario" rows="1" aria-label="Escribe tu mensaje en la conversación" placeholder="{% if solo_lectura %}Únete a la conversación…{% else %}Escribe tu respuesta para la mesa de ayuda...{% endif %}"></textarea>
                             <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-send"/></svg> Enviar</button>
                         </form>
                         {% endif %}
