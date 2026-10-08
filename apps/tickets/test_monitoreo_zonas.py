@@ -350,6 +350,7 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("data-zona-toggle", html)
         self.assertIn("data-miembro-toggle", html)
         self.assertIn("obs-crate", html)
+        self.assertIn("obs-crate-global", html)
 
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""

@@ -6569,6 +6569,13 @@ button.obs-zona-head[aria-expanded="false"] { border-bottom: 0; }
 .obs-crate-seg b { font-family: var(--font-mono); font-size: 13px; color: #1d1b16; }
 .obs-crate-seg.s-abiertos b { color: #F97316; }
 .obs-crate-seg.s-resueltos b { color: #059669; }
+/* Contador global de la zona: oscuro y más grande, distinto al de usuarios. */
+.obs-crate-global { display: inline-flex; align-items: stretch; background: #241F1C; border: 1px solid #241F1C; border-radius: 10px; overflow: hidden; font-size: 12px; font-weight: 600; color: #C9BFAE; white-space: nowrap; box-shadow: 0 2px 8px rgba(23,20,18,.25); }
+.obs-crate-global .obs-crate-seg { padding: 5px 12px; }
+.obs-crate-global .obs-crate-seg + .obs-crate-seg { border-left: 1px solid rgba(255,255,255,.14); }
+.obs-crate-global .obs-crate-seg b { font-size: 15px; color: #fff; }
+.obs-crate-global .obs-crate-seg.s-abiertos b { color: #FB923C; }
+.obs-crate-global .obs-crate-seg.s-resueltos b { color: #34D399; }
 .obs-miembro { padding: 14px 16px; border-bottom: 1px dashed var(--line); }
 .obs-miembro:last-child { border-bottom: 0; }
 .obs-miembro-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
