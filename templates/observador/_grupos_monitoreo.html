@@ -16,9 +16,11 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
         </div>
         <span class="obs-pill obs-pill-{{ g.estado }}"><span class="obs-dot obs-dot-{{ g.estado }}"></span>{{ g.estado|capfirst }}</span>
         <div class="obs-zona-stats">
-            <span class="obs-mini"><b>{{ g.total_tickets }}</b> tickets</span>
-            <span class="obs-mini m-abiertos"><b>{{ g.abiertos }}</b> abiertos</span>
-            <span class="obs-mini m-resueltos"><b>{{ g.cerrados }}</b> resueltos</span>
+            <span class="obs-crate" title="Total global de la zona: suma de sus usuarios">
+                <span class="obs-crate-seg"><b>{{ g.total_tickets }}</b> tickets</span>
+                <span class="obs-crate-seg s-abiertos"><b>{{ g.abiertos }}</b> abiertos</span>
+                <span class="obs-crate-seg s-resueltos"><b>{{ g.cerrados }}</b> resueltos</span>
+            </span>
             <span class="obs-avance"><span class="obs-avance-bar"><span style="width: {{ g.avance }}%"></span></span><span class="obs-avance-num">{{ g.avance }}%</span></span>
         </div>
         <span class="obs-zona-chev" aria-hidden="true">▾</span>
@@ -34,9 +36,11 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
             </span>
             <span class="obs-pill obs-pill-{{ f.estado }}"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
             <span class="obs-miembro-nums">
-                <span class="obs-mini" title="{{ f.total }} tickets en total"><b>{{ f.total }}</b></span>
-                <span class="obs-mini m-abiertos" title="{{ f.abiertos }} abiertos"><b>{{ f.abiertos }}</b></span>
-                <span class="obs-mini m-resueltos" title="{{ f.cerrados_total }} resueltos"><b>{{ f.cerrados_total }}</b></span>
+                <span class="obs-crate" title="Contador propio de {{ f.nombre }}: {{ f.total }} tickets, {{ f.abiertos }} abiertos, {{ f.cerrados_total }} resueltos">
+                    <span class="obs-crate-seg"><b>{{ f.total }}</b></span>
+                    <span class="obs-crate-seg s-abiertos"><b>{{ f.abiertos }}</b></span>
+                    <span class="obs-crate-seg s-resueltos"><b>{{ f.cerrados_total }}</b></span>
+                </span>
             </span>
             <span class="obs-zona-chev" aria-hidden="true">▾</span>
         </button>
