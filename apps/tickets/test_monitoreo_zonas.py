@@ -326,16 +326,28 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertTrue(ana[0]["en_lista"])
         self.assertIn("Todos los usuarios", respuesta.content.decode())
 
-    def test_tickets_fuera_de_puntos_se_ven_como_pista(self):
+    def test_miembro_muestra_datos_reales_aunque_sean_de_otro_punto(self):
+        from apps.tickets.models import ZonaObservador
+
         Usuario.objects.create_user(
             email="ana@x.com", password="x", nombre="Ana",
             rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
         )
-        self._ticket("ana@x.com", punto="Zona Ajena")
+        ticket = self._ticket("ana@x.com", punto="Zona Ajena")
         self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        zona = ZonaObservador.objects.create(observador=self.obs, nombre="Azul")
+        elemento = ElementoMiLista.objects.get(observador=self.obs)
+        elemento.zona = zona
+        elemento.save()
         respuesta = self.client.get(reverse("tickets:obs_monitoreo"))
+        filas = respuesta.context["filas"]
+        self.assertEqual(len(filas), 1)
+        self.assertEqual(filas[0]["total"], 1)
+        self.assertEqual(filas[0]["abiertos"], 1)
+        self.assertEqual(filas[0]["tecnico"], "Tec")
         html = respuesta.content.decode()
-        self.assertIn("fuera de tus puntos asignados", html)
+        self.assertIn(ticket.codigo, html)
+        self.assertIn("data-zona-toggle", html)
 
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""

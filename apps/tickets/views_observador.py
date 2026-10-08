@@ -136,14 +136,23 @@ def _resumen_por_punto(usuario):
     return [por_punto[p] for p in puntos]
 
 
-def _resumen_por_correo(usuario):
+def _resumen_por_correo(usuario, global_scope=False):
     """Acumula, por correo, los tickets de las zonas del observador.
 
     De cada persona deja cuántos tickets lleva, cuántos se resolvieron y qué
     técnicos tiene asignados. Es lo que permite mostrar el avance de la
     resolución y quién está viendo el caso.
+
+    Con global_scope=True cuenta todos los tickets de cada correo, sin
+    importar el punto: se usa para la gente que ya está en la lista del
+    observador, a la que se le muestran sus datos reales.
     """
     resumen = {}
+    base = (
+        Ticket.objects.all()
+        if global_scope
+        else _visible_a_observador(usuario, Ticket.objects.all())
+    )
 
     def fila(correo):
         return resumen.setdefault(
@@ -163,7 +172,7 @@ def _resumen_por_correo(usuario):
             },
         )
 
-    for t in _visible_a_observador(usuario, Ticket.objects.all()).select_related(
+    for t in base.select_related(
         "tecnico_asignado"
     ).order_by("fecha_creacion"):
         correo = (t.solicitante_email or "").strip().lower()
@@ -588,12 +597,21 @@ def mi_lista_observador(request):
     )
 
 
-def _filas_de_mi_lista(usuario, elementos):
-    """Une cada elemento de la lista con el estado de sus tickets."""
+def _filas_de_mi_lista(usuario, elementos, global_scope=False):
+    """Une cada elemento de la lista con el estado de sus tickets.
+
+    Con global_scope=True se muestran los datos reales de cada cuenta
+    (todos sus tickets y técnicos), aunque caigan fuera de los puntos
+    asignados: es gente que el observador (o el admin) puso en su lista
+    para seguirla.
+    """
     puntos = puntos_del_observador(usuario)
-    visibles = _visible_a_observador(usuario, Ticket.objects.all())
+    if global_scope:
+        visibles = Ticket.objects.all()
+    else:
+        visibles = _visible_a_observador(usuario, Ticket.objects.all())
     ahora = timezone.now()
-    resumen = _resumen_por_correo(usuario)
+    resumen = _resumen_por_correo(usuario, global_scope=global_scope)
     filas = []
     for e in elementos:
         correo = (e.usuario_email or "").strip().lower()
@@ -656,7 +674,9 @@ def _filas_de_mi_lista(usuario, elementos):
         ):
             fuera[(fila["solicitante_email"] or "").strip().lower()] = fila["n"]
     for f in filas:
-        f["fuera_puntos"] = fuera.get((f["email"] or "").strip().lower(), 0)
+        f["fuera_puntos"] = 0 if global_scope else fuera.get(
+            (f["email"] or "").strip().lower(), 0
+        )
     return filas
 
 
@@ -784,13 +804,14 @@ def _contexto_monitoreo(usuario):
         .select_related("usuario", "punto", "zona")
         .order_by("-creado_en")
     )
-    filas = _filas_de_mi_lista(usuario, elementos)
+    filas = _filas_de_mi_lista(usuario, elementos, global_scope=True)
     conteo = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
     for f in filas:
         conteo[f["estado"]] += 1
     puntos = puntos_del_observador(usuario)
     respuestas = _respuestas_por_correo(
-        puntos, [f["email"] for f in filas if f["email"]], limite=2
+        puntos, [f["email"] for f in filas if f["email"]], limite=2,
+        global_scope=True,
     )
     for f in filas:
         f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
@@ -869,23 +890,24 @@ def _grupos_por_zona(filas):
     return grupos
 
 
-def _respuestas_por_correo(puntos, correos, limite=2):
+def _respuestas_por_correo(puntos, correos, limite=2, global_scope=False):
     """Últimas respuestas visibles de técnicos/admins, por correo.
 
     Una sola consulta para todos los miembros: sin puntos asignados no se
-    ve nada, igual que en el resto del módulo.
+    ve nada, igual que en el resto del módulo. Con global_scope=True trae
+    las respuestas reales aunque sean de otros puntos (gente de la lista).
     """
     correos = {(c or "").strip().lower() for c in correos if (c or "").strip()}
-    if not correos or not puntos:
+    if not correos or (not puntos and not global_scope):
         return {}
+    consulta = TicketComentario.objects.filter(
+        es_interno=False,
+        usuario__rol__in=[Usuario.Rol.TECNICO, Usuario.Rol.ADMIN],
+    )
+    if not global_scope:
+        consulta = consulta.filter(ticket__solicitante_punto__in=puntos)
     comentarios = (
-        TicketComentario.objects.filter(
-            ticket__solicitante_punto__in=puntos,
-            es_interno=False,
-            usuario__rol__in=[Usuario.Rol.TECNICO, Usuario.Rol.ADMIN],
-        )
-        .select_related("ticket", "usuario")
-        .order_by("-fecha")
+        consulta.select_related("ticket", "usuario").order_by("-fecha")
     )
     por_correo = {}
     for c in comentarios:
