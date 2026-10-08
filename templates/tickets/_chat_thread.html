@@ -26,6 +26,7 @@
             <div class="chat-meta">
                 <span class="chat-avatar">{{ item.autor|slice:":1"|upper }}</span>
                 <strong>{{ item.autor }}</strong>
+                {% if item.insignia %}<span class="chat-badge chat-badge-{{ item.tipo }}">{{ item.insignia }}</span>{% endif %}
                 <span class="chat-meta-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
             </div>
             <div class="chat-bubble">{{ item.texto }}</div>

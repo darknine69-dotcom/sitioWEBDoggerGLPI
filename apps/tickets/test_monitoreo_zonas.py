@@ -476,6 +476,26 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("chat-msg-observador", html)
         self.assertIn("Quedo atento al avance", html)
 
+    def test_chat_muestra_badge_de_tecnico_y_observador(self):
+        from apps.tickets.models import TicketComentario
+
+        ticket = self._ticket("ana@x.com")
+        TicketComentario.objects.create(
+            ticket=ticket, usuario=self.tec, comentario="Ya voy en camino"
+        )
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        self.client.post(
+            reverse("tickets:mi_responder_obs", args=[ticket.pk]),
+            {"comentario": "Quedo atento"},
+        )
+        html = self.client.get(
+            reverse("tickets:mi_ticket", args=[ticket.pk])
+        ).content.decode()
+        self.assertIn("chat-badge-observador", html)
+        self.assertIn("Observador", html)
+        self.assertIn("chat-badge-soporte", html)
+        self.assertIn("Técnico", html)
+
     def test_observador_no_responde_fuera_de_alcance(self):
         ticket = self._ticket("otro@x.com", punto="Zona Ajena")
         respuesta = self.client.post(

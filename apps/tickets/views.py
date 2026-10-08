@@ -2460,12 +2460,23 @@ def _timeline_ticket(ticket, include_internos=False):
         es_usuario = bool(c.usuario_id and getattr(c.usuario, "rol", None) == "usuario")
         es_observador = bool(c.usuario_id and getattr(c.usuario, "rol", None) == "observador")
         autor = c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda")
+        if es_usuario:
+            insignia = "Usuario"
+        elif es_observador:
+            insignia = "Observador"
+        elif c.usuario_id:
+            insignia = {"tecnico": "Técnico", "admin": "Admin"}.get(
+                getattr(c.usuario, "rol", ""), "Soporte"
+            )
+        else:
+            insignia = "Mesa de ayuda"
         items.append(
             {
                 "tipo": "usuario" if es_usuario else ("observador" if es_observador else "soporte"),
                 "fecha": c.fecha,
                 "autor": autor,
                 "texto": c.comentario,
+                "insignia": insignia,
             }
         )
     for ev in ticket.eventos_glpi.all():
