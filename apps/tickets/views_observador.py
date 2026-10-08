@@ -755,9 +755,16 @@ def _actividad_reciente(filas, limite=8):
         for t in f.get("tickets", []):
             if t.pk not in vistos:
                 vistos[t.pk] = t
-    tickets = sorted(
+    recientes = sorted(
         vistos.values(), key=lambda t: t.fecha_creacion, reverse=True
     )[:limite]
+    frescos = {
+        t.pk: t
+        for t in Ticket.objects.filter(
+            pk__in=[t.pk for t in recientes]
+        ).select_related("tecnico_asignado")
+    }
+    tickets = [frescos[t.pk] for t in recientes if t.pk in frescos]
     respuestas = sorted(
         (r for f in filas for r in f.get("respuestas", [])),
         key=lambda r: r.fecha,

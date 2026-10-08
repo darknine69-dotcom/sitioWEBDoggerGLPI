@@ -19,6 +19,24 @@
 .obs-dona-leyenda { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
 .obs-dona-leyenda li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .obs-dona-leyenda b { margin-left: auto; font-family: var(--font-mono); }
+/* Actividad reciente: tarjetas semafóricas y respuestas con avatar. */
+.act-ticket { display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid var(--line); border-left: 4px solid #8A8478; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(23,20,18,.05); transition: transform .15s ease, box-shadow .15s ease; animation: corpUp .4s ease both; font-family: var(--font-corp); }
+.act-ticket:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+.act-ticket.st-abierto { border-left-color: #D62B1F; }
+.act-ticket.st-en-progreso { border-left-color: #CA8A04; }
+.act-ticket.st-resuelto, .act-ticket.st-cerrado { border-left-color: #059669; }
+.act-ticket-top { display: flex; align-items: center; gap: 8px; }
+.act-ticket-id { font-weight: 800; font-size: 13px; font-family: var(--font-mono); color: var(--dogger-red); }
+.act-ticket-desc { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-ticket-meta { font-size: 11.5px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.act-ticket-fecha { font-size: 11px; color: #8A8478; margin-left: auto; white-space: nowrap; }
+.act-resp { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); animation: corpUp .4s ease both; font-family: var(--font-corp); }
+.act-resp:last-child { border-bottom: 0; }
+.act-resp-body { flex: 1; min-width: 0; background: #FDFCF9; border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; box-shadow: 0 1px 3px rgba(23,20,18,.04); }
+.act-resp-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+.act-resp-head strong { font-size: 12.5px; }
+.act-resp-fecha { font-size: 11px; color: #8A8478; margin-left: auto; white-space: nowrap; }
+.act-resp-txt { font-size: 12.5px; color: var(--ink); }
 .mon-miembro { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed #F1EDE6; font-size: 12.5px; }
 .mon-miembro:last-child { border-bottom: 0; }
 .mon-miembro .mon-m-id { min-width: 0; flex: 1; }
@@ -202,12 +220,19 @@
                 <h3>Tickets recientes</h3>
             </div>
             {% for t in actividad.tickets %}
-            <div class="mon-miembro">
-                <div class="mon-m-id">
-                    <strong><span class="obs-ticket t-{{ t.estado }}">{{ t.codigo }}</span> {{ t.titulo|truncatechars:60 }}</strong>
-                    <small>{{ t.solicitante_nombre }} · {{ t.get_estado_display }} · {{ t.fecha_creacion|date:"d/m/Y H:i" }}</small>
+            <article class="act-ticket st-{{ t.estado }}">
+                <div class="act-ticket-top">
+                    <span class="act-ticket-id">{{ t.codigo }}</span>
+                    <span class="obs-pill obs-pill-{% if t.estado == 'abierto' %}rojo{% elif t.estado == 'en-progreso' %}amarillo{% else %}verde{% endif %}">{{ t.get_estado_display }}</span>
+                    <span class="act-ticket-fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</span>
                 </div>
-            </div>
+                <span class="act-ticket-desc">{{ t.titulo }}</span>
+                <span class="act-ticket-meta">
+                    <span>{{ t.solicitante_nombre }}</span>
+                    <span>Técnico: {{ t.tecnico_asignado.nombre|default:"sin asignar" }}</span>
+                </span>
+                <span><a href="{% url 'tickets:consultar' %}?codigo={{ t.codigo }}" class="btn btn-outline btn-sm">Ver detalle</a></span>
+            </article>
             {% empty %}
             <p class="chart-empty">Sin tickets todavía.</p>
             {% endfor %}
@@ -218,9 +243,15 @@
                 <h3>Últimas respuestas</h3>
             </div>
             {% for r in actividad.respuestas %}
-            <div class="obs-resp">
-                <span class="obs-resp-meta"><b>{% if r.usuario %}{{ r.usuario.nombre|default:r.usuario.email }}{% else %}{{ r.autor_nombre|default:"Soporte" }}{% endif %}</b> en {{ r.ticket.codigo }} · {{ r.fecha|date:"d/m/Y H:i" }}</span>
-                <span class="obs-resp-txt">{{ r.comentario|truncatechars:140 }}</span>
+            <div class="act-resp">
+                <span class="obs-avatar">{% if r.usuario %}{{ r.usuario.nombre|default:r.usuario.email|slice:":1"|upper }}{% else %}{{ r.autor_nombre|default:"S"|slice:":1"|upper }}{% endif %}</span>
+                <div class="act-resp-body">
+                    <div class="act-resp-head">
+                        <strong>{% if r.usuario %}{{ r.usuario.nombre|default:r.usuario.email }}{% else %}{{ r.autor_nombre|default:"Soporte" }}{% endif %}</strong>
+                        <span class="act-resp-fecha">{{ r.fecha|date:"d/m/Y H:i" }} · {{ r.ticket.codigo }}</span>
+                    </div>
+                    <span class="act-resp-txt">{{ r.comentario|truncatechars:160 }}</span>
+                </div>
             </div>
             {% empty %}
             <p class="chart-empty">Sin respuestas todavía.</p>

@@ -354,6 +354,9 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("obs-crate-global", html)
         self.assertIn("Tickets recientes", html)
         self.assertIn("Últimas respuestas", html)
+        self.assertIn("act-ticket st-abierto", html)
+        self.assertIn("Ver detalle", html)
+        self.assertIn("act-resp-body", html)
 
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""
