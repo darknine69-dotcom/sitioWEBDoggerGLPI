@@ -626,7 +626,9 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
             )
         elif e.punto_id:
             consulta = visibles.filter(solicitante_punto=e.punto.nombre)
-        tickets = list(consulta.order_by("-fecha_creacion")[:60])
+        tickets = list(
+            consulta.select_related("tecnico_asignado").order_by("-fecha_creacion")[:60]
+        )
         estado = ESTADO_VERDE
         orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
         for t in tickets:
@@ -773,6 +775,40 @@ def _actividad_reciente(filas, limite=8):
     return {"tickets": tickets, "respuestas": respuestas}
 
 
+def _tecnicos_para_presionar(filas):
+    """Técnicos con carga abierta, en orden de prioridad.
+
+    Primero los que tienen urgentes abiertos, luego por abiertos. Cada uno
+    trae sus tickets para presionarlos ticket por ticket.
+    """
+    por_tec = {}
+    for f in filas:
+        for t in f.get("tickets", []):
+            if t.estado not in _ACTIVOS or not t.tecnico_asignado_id:
+                continue
+            tec = t.tecnico_asignado
+            entrada = por_tec.setdefault(
+                tec.pk, {"tecnico": tec, "tickets": [], "urgentes": 0}
+            )
+            if t.pk not in {x.pk for x in entrada["tickets"]}:
+                entrada["tickets"].append(t)
+                if t.prioridad == _URGENTE:
+                    entrada["urgentes"] += 1
+    for entrada in por_tec.values():
+        entrada["tickets"].sort(
+            key=lambda t: (
+                t.prioridad != _URGENTE,
+                t.fecha_creacion,
+            )
+        )
+    return sorted(
+        por_tec.values(),
+        key=lambda e: (
+            -e["urgentes"], -len(e["tickets"]), e["tecnico"].nombre or ""
+        ),
+    )
+
+
 def _tabla_todos_usuarios(usuario, resumen):
     """Todas las cuentas del aplicativo, con acciones para este rol.
 
@@ -884,6 +920,7 @@ def _contexto_monitoreo(usuario):
         "todos_usuarios": todos_usuarios,
         "zonas_obs": zonas_obs,
         "actividad": _actividad_reciente(filas),
+        "presionar": _tecnicos_para_presionar(filas),
         "max_zona_tickets": max(
             [g["total_tickets"] for g in grupos] + [0]
         ),
@@ -951,6 +988,51 @@ def _respuestas_por_correo(puntos, correos, limite=2, global_scope=False):
         if len(lista) < limite:
             lista.append(c)
     return por_correo
+
+
+@solo_observador
+def presionar_tecnico(request, pk):
+    """El observador le escribe al técnico para que resuelva rápido.
+
+    Guarda el mensaje en el hilo del ticket (visible, no interno) y le
+    avisa al técnico por campana y correo. Solo tickets de sus puntos o
+    de cuentas de su lista.
+    """
+    from django.contrib import messages
+
+    from .notifications import notificar_comentario
+
+    if request.method != "POST":
+        raise Http404
+    usuario = request.user
+    volver = request.POST.get("volver") or reverse("tickets:obs_monitoreo")
+    mensaje = (request.POST.get("mensaje") or "").strip()[:500]
+    if not mensaje:
+        messages.error(request, "Escribe el mensaje para el técnico.")
+        return redirect(volver)
+    try:
+        ticket = Ticket.objects.select_related("tecnico_asignado").get(pk=pk)
+    except (Ticket.DoesNotExist, ValueError, TypeError):
+        raise Http404
+    puntos = puntos_del_observador(usuario)
+    en_lista = bool(
+        ticket.solicitante_email
+        and ElementoMiLista.objects.filter(
+            observador=usuario, usuario_email__iexact=ticket.solicitante_email
+        ).exists()
+    )
+    if (ticket.solicitante_punto or "") not in puntos and not en_lista:
+        raise Http404
+    TicketComentario.objects.create(
+        ticket=ticket,
+        usuario=usuario,
+        autor_nombre=usuario.nombre,
+        comentario=mensaje,
+        es_interno=False,
+    )
+    notificar_comentario(ticket, usuario.nombre, mensaje, actor=usuario)
+    messages.success(request, f"Mensaje enviado al técnico del {ticket.codigo}.")
+    return redirect(volver)
 
 
 @solo_observador

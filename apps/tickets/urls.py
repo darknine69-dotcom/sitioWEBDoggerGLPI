@@ -81,6 +81,7 @@ urlpatterns = [
     path("observador/mi-lista/<int:pk>/quitar/", views_observador.quitar_mi_lista, name="obs_quitar"),
     path("observador/monitoreo/", views_observador.monitorear_observador, name="obs_monitoreo"),
     path("observador/exportar/", views_observador.exportar_observador, name="obs_exportar"),
+    path("observador/presionar/<int:pk>/", views_observador.presionar_tecnico, name="obs_presionar"),
     path("observador/zonas/", views_observador.zonas_observador, name="obs_zonas"),
     path("observador/zonas/<int:pk>/", views_observador.zona_detalle_observador, name="obs_zona_detalle"),
     path("observador/zonas/miembro/", views_observador.zona_miembro_asignar, name="obs_zona_miembro"),

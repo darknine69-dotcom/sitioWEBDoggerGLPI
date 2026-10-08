@@ -361,6 +361,8 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("act-ticket st-abierto", html)
         self.assertIn("detalles ›", html)
         self.assertIn("act-resp-body", html)
+        self.assertIn("Presionar al técnico", html)
+        self.assertIn("act-nudge", html)
         self.assertIn('id="actBuscar"', html)
         self.assertIn('id="actLista"', html)
 
@@ -384,6 +386,46 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn(ticket.codigo, html)
         self.assertNotIn("mi_responder", html)
         self.assertNotIn("Editar ticket", html)
+
+    def test_presionar_tecnico_envia_mensaje_y_avisa(self):
+        from apps.tickets.models import TicketComentario
+        from apps.notificaciones.models import Notificacion
+
+        ticket = self._ticket("ana@x.com")
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        respuesta = self.client.post(
+            reverse("tickets:obs_presionar", args=[ticket.pk]),
+            {"mensaje": "Por favor resolver rápido",
+             "volver": reverse("tickets:obs_monitoreo")},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(
+            TicketComentario.objects.filter(
+                ticket=ticket, comentario="Por favor resolver rápido",
+                usuario=self.obs, es_interno=False,
+            ).exists()
+        )
+        self.assertTrue(
+            Notificacion.objects.filter(usuario=self.tec).exists()
+        )
+
+    def test_presionar_fuera_de_alcance_da_404(self):
+        ticket = self._ticket("otro@x.com", punto="Zona Ajena")
+        respuesta = self.client.post(
+            reverse("tickets:obs_presionar", args=[ticket.pk]),
+            {"mensaje": "Hola"},
+        )
+        self.assertEqual(respuesta.status_code, 404)
+
+    def test_presionar_sin_mensaje_avisa(self):
+        ticket = self._ticket("ana@x.com")
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        respuesta = self.client.post(
+            reverse("tickets:obs_presionar", args=[ticket.pk]),
+            {"mensaje": "  ", "volver": reverse("tickets:obs_monitoreo")},
+            follow=True,
+        )
+        self.assertContains(respuesta, "Escribe el mensaje")
 
     def test_ficha_fuera_de_alcance_da_404(self):
         ticket = self._ticket("otro@x.com", punto="Zona Ajena")
