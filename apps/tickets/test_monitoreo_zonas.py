@@ -398,6 +398,7 @@ class MonitoreoObservadorDetalleTest(TestCase):
         html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
         self.assertIn("Ya voy en camino", html)
         self.assertNotIn("Pronto recibirá atención", html)
+        self.assertIn("obs-resp-lista", html)
 
     def test_detalles_abre_la_ficha_del_ticket_en_lectura(self):
         ticket = self._ticket("ana@x.com")

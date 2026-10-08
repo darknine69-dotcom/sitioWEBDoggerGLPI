@@ -59,12 +59,16 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
             {% endfor %}
         </div>
         {% endif %}
+        {% if f.respuestas %}
+        <div class="obs-resp-lista">
         {% for r in f.respuestas %}
         <div class="obs-resp">
             <span class="obs-resp-meta"><b>{% if r.usuario %}{{ r.usuario.nombre|default:r.usuario.email }}{% else %}{{ r.autor_nombre|default:"Soporte" }}{% endif %}</b> respondió en {{ r.ticket.codigo }} · {{ r.fecha|date:"d/m/Y H:i" }}</span>
             <span class="obs-resp-txt">{{ r.comentario|truncatechars:140 }}</span>
         </div>
         {% endfor %}
+        </div>
+        {% endif %}
         </div>
     </article>
     {% endfor %}

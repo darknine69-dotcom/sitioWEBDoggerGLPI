@@ -6638,6 +6638,13 @@ button.obs-miembro-top[aria-expanded="false"] .obs-zona-chev { transform: rotate
 .obs-resp-meta { font-size: 11px; color: var(--ink-muted); font-weight: 700; }
 .obs-resp-meta b { color: #1D4ED8; }
 .obs-resp-txt { display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Respuestas con scroll oculto: no alargan la tarjeta; la barra sale al hover. */
+.obs-resp-lista { max-height: 148px; overflow-y: auto; scrollbar-width: none; }
+.obs-resp-lista::-webkit-scrollbar { width: 0; }
+.obs-resp-lista:hover { scrollbar-width: thin; }
+.obs-resp-lista:hover::-webkit-scrollbar { width: 6px; }
+.obs-resp-lista:hover::-webkit-scrollbar-track { background: transparent; }
+.obs-resp-lista:hover::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
 @media (max-width: 720px) { .obs-miembro-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .obs-miembro-nums .obs-avance { display: none; } }
 
