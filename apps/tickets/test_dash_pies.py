@@ -399,10 +399,23 @@ class FiltroResueltasTest(SmokeTestCase):
 
         html = self._listado(Ticket.Estado.RESUELTO)
         esperado = Ticket.objects.filter(fecha_resolucion__isnull=False).count()
-        chip = re.search(r'stat-n">(\d+)</span><span class="stat-l">Resueltas', html)
-        self.assertIsNotNone(chip, "no se encontro el chip de resueltas")
+        chip = re.search(r'dash-stat-value st-resueltos">(\d+)</span>', html)
+        self.assertIsNotNone(chip, "no se encontro la tarjeta de resueltas")
         self.assertEqual(int(chip.group(1)), esperado)
         self.assertEqual(esperado, 1)
+
+    def test_indicadores_con_diseno_del_panel(self):
+        import re
+
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+        html = self.client.get(reverse("tickets:lista")).content.decode()
+        clases = set(re.findall(r"dash-hov-[a-z-]+", html))
+        for esperada in (
+            "dash-hov-total", "dash-hov-abiertos", "dash-hov-progreso",
+            "dash-hov-resueltos", "dash-hov-cerrados", "dash-hov-sla-no",
+        ):
+            self.assertIn(esperada, clases)
+        self.assertNotIn("stat-chip", html)
 
     def test_en_resueltas_salen_los_dos_distintivos(self):
         # Al resolverse queda cerrado, así que lleva "Resuelto" y "Cerrado".

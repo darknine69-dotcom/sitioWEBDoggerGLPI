@@ -2966,6 +2966,7 @@ def lista_tickets(request):
 
     scope_qs = Ticket.objects.all() if es_admin else qs
     stats = scope_qs.aggregate(
+        total=Count("pk"),
         abiertas=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
         progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
         # El chip cuenta lo mismo que el filtro "Resueltas": los que tienen

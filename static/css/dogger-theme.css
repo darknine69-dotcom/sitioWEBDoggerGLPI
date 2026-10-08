@@ -3628,6 +3628,19 @@ a.dash-hov-sla-ok:hover { border-color: #059669; background: rgba(5,150,105,.08)
 a.dash-hov-sla-ok:hover .dash-stat-icon { background: #059669; color: #fff; }
 a.dash-hov-sla-no:hover { border-color: #F97316; background: rgba(249,115,22,.08); }
 a.dash-hov-sla-no:hover .dash-stat-icon { background: #F97316; color: #fff; }
+/* Tarjeta activa (filtro aplicado): borde del color de su indicador. */
+a.dash-stat.is-active { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+a.dash-hov-total.is-active { border-color: #374151; }
+a.dash-hov-abiertos.is-active { border-color: #F97316; }
+a.dash-hov-progreso.is-active { border-color: #CA8A04; }
+a.dash-hov-resueltos.is-active { border-color: #059669; }
+a.dash-hov-cerrados.is-active { border-color: #374151; }
+a.dash-hov-vencidos.is-active { border-color: #DC2626; }
+a.dash-hov-sla-ok.is-active { border-color: #059669; }
+a.dash-hov-sla-no.is-active { border-color: #F97316; }
+a.dash-hov-tecnicos.is-active { border-color: #4F46E5; }
+a.dash-hov-usuarios.is-active { border-color: var(--dogger-red); }
+a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 /* Aire entre las pestañas y los indicadores del panel técnico. */
 .dash-stat-row--tec { margin-top: 14px; }
 /* Rejilla de 6 indicadores: la usan el admin y el supervisor en sus tableros. */
