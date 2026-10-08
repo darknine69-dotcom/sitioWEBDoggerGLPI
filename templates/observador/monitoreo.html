@@ -20,7 +20,7 @@
 .obs-dona-leyenda li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .obs-dona-leyenda b { margin-left: auto; font-family: var(--font-mono); }
 /* Actividad reciente: tarjetas semafóricas y respuestas con avatar. */
-.act-ticket { display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid var(--line); border-left: 4px solid #8A8478; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(23,20,18,.05); transition: transform .15s ease, box-shadow .15s ease; animation: corpUp .4s ease both; font-family: var(--font-corp); }
+.act-ticket { display: flex; flex-direction: column; gap: 4px; background: #fff; border: 1px solid var(--line); border-left: 4px solid #8A8478; border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(23,20,18,.05); transition: transform .15s ease, box-shadow .15s ease; animation: corpUp .4s ease both; font-family: var(--font-corp); }
 .act-ticket:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .act-ticket.st-abierto { border-left-color: #D62B1F; }
 .act-ticket.st-en-progreso { border-left-color: #CA8A04; }
@@ -30,6 +30,8 @@
 .act-ticket-desc { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .act-ticket-meta { font-size: 11.5px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .act-ticket-fecha { font-size: 11px; color: #8A8478; margin-left: auto; white-space: nowrap; }
+.act-ticket-detalle { align-self: flex-end; font-size: 11.5px; font-weight: 700; color: var(--dogger-red); text-decoration: none; }
+.act-ticket-detalle:hover { text-decoration: underline; }
 .act-resp { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); animation: corpUp .4s ease both; font-family: var(--font-corp); }
 .act-resp:last-child { border-bottom: 0; }
 .act-resp-body { flex: 1; min-width: 0; background: #FDFCF9; border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; box-shadow: 0 1px 3px rgba(23,20,18,.04); }
@@ -231,7 +233,7 @@
                     <span>{{ t.solicitante_nombre }}</span>
                     <span>Técnico: {{ t.tecnico_asignado.nombre|default:"sin asignar" }}</span>
                 </span>
-                <span><a href="{% url 'tickets:consultar' %}?codigo={{ t.codigo }}" class="btn btn-outline btn-sm">Ver detalle</a></span>
+                <a class="act-ticket-detalle" href="{% url 'tickets:mi_ticket' t.pk %}">detalles ›</a>
             </article>
             {% empty %}
             <p class="chart-empty">Sin tickets todavía.</p>

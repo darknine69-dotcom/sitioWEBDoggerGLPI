@@ -355,7 +355,7 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("Tickets recientes", html)
         self.assertIn("Últimas respuestas", html)
         self.assertIn("act-ticket st-abierto", html)
-        self.assertIn("Ver detalle", html)
+        self.assertIn("detalles ›", html)
         self.assertIn("act-resp-body", html)
 
     def test_avisos_bajan_desde_el_usuario(self):
@@ -367,3 +367,19 @@ class MonitoreoObservadorDetalleTest(TestCase):
         pila = css.split(".toast-stack")[1].split("}")[0]
         self.assertIn("top:", pila)
         self.assertNotIn("bottom:", pila)
+
+    def test_detalles_abre_la_ficha_del_ticket_en_lectura(self):
+        ticket = self._ticket("ana@x.com")
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        respuesta = self.client.get(reverse("tickets:mi_ticket", args=[ticket.pk]))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["solo_lectura"])
+        html = respuesta.content.decode()
+        self.assertIn(ticket.codigo, html)
+        self.assertNotIn("mi_responder", html)
+        self.assertNotIn("Editar ticket", html)
+
+    def test_ficha_fuera_de_alcance_da_404(self):
+        ticket = self._ticket("otro@x.com", punto="Zona Ajena")
+        respuesta = self.client.get(reverse("tickets:mi_ticket", args=[ticket.pk]))
+        self.assertEqual(respuesta.status_code, 404)

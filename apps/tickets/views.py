@@ -58,7 +58,7 @@ from .forms import (
     UsuarioPanelForm,
 )
 from .context_processors import _tipos_por_revisar
-from .models import Categoria, GlpiEvento, Ticket, TicketAdjunto, TicketComentario, TicketVinculo
+from .models import Categoria, ElementoMiLista, GlpiEvento, Ticket, TicketAdjunto, TicketComentario, TicketVinculo
 from .notifications import notificar_comentario, notificar_ticket_actualizado, notificar_ticket_creado
 from .sla import horas_por_prioridad, orden_prioridad_annotation
 from .services.glpi_client import (
@@ -2482,17 +2482,47 @@ def _timeline_ticket(ticket, include_internos=False):
     return items
 
 
-@user_required
+@login_required
 def mi_ticket(request, pk):
-    ticket = get_object_or_404(
-        Ticket.objects.select_related("categoria").prefetch_related(
-            "comentarios",
-            "eventos_glpi",
-            "adjuntos",
-        ),
-        pk=pk,
-        solicitante_email=request.user.email,
-    )
+    u = request.user
+    rol = getattr(u, "rol", None)
+    if rol == "usuario":
+        ticket = get_object_or_404(
+            Ticket.objects.select_related("categoria").prefetch_related(
+                "comentarios",
+                "eventos_glpi",
+                "adjuntos",
+            ),
+            pk=pk,
+            solicitante_email=u.email,
+        )
+        solo_lectura = False
+    elif rol == "observador":
+        # El observador abre la misma ficha del ticket, en solo lectura:
+        # sin responder, sin editar y sin calificar. Solo tickets de sus
+        # puntos o de cuentas de su lista.
+        from .views_observador import puntos_del_observador
+
+        ticket = get_object_or_404(
+            Ticket.objects.select_related("categoria").prefetch_related(
+                "comentarios",
+                "eventos_glpi",
+                "adjuntos",
+            ),
+            pk=pk,
+        )
+        puntos = puntos_del_observador(u)
+        en_lista = bool(
+            ticket.solicitante_email
+            and ElementoMiLista.objects.filter(
+                observador=u, usuario_email__iexact=ticket.solicitante_email
+            ).exists()
+        )
+        if (ticket.solicitante_punto or "") not in puntos and not en_lista:
+            raise Http404
+        solo_lectura = True
+    else:
+        raise PermissionDenied("Solo puedes ver tus propias solicitudes.")
     timeline = _timeline_ticket(ticket)
 
     # Botón de calificar técnicos: se muestra siempre que el ticket tenga un
@@ -2520,6 +2550,7 @@ def mi_ticket(request, pk):
             "nombre_tecnico_ticket": (
                 ticket.tecnico_asignado.nombre if puede and ticket.tecnico_asignado else ""
             ),
+            "solo_lectura": solo_lectura,
         },
     )
 
