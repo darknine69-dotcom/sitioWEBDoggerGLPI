@@ -878,7 +878,7 @@ def _contexto_monitoreo(usuario):
         conteo[f["estado"]] += 1
     puntos = puntos_del_observador(usuario)
     respuestas = _respuestas_por_correo(
-        puntos, [f["email"] for f in filas if f["email"]], limite=2,
+        puntos, [f["email"] for f in filas if f["email"]], limite=10,
         global_scope=True,
     )
     for f in filas:

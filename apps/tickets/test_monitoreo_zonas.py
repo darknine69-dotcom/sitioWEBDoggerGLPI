@@ -400,6 +400,24 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertNotIn("Pronto recibirá atención", html)
         self.assertIn("obs-resp-lista", html)
 
+    def test_respuestas_muestran_tres_y_resto_con_scroll(self):
+        from apps.tickets.models import TicketComentario, ZonaObservador
+
+        ticket = self._ticket("ana@x.com")
+        for i in range(5):
+            TicketComentario.objects.create(
+                ticket=ticket, usuario=self.tec, comentario=f"Avance {i}"
+            )
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        zona = ZonaObservador.objects.create(observador=self.obs, nombre="Norte")
+        elemento = ElementoMiLista.objects.get(observador=self.obs)
+        elemento.zona = zona
+        elemento.save()
+        html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
+        for i in range(5):
+            self.assertIn(f"Avance {i}", html)
+        self.assertIn("obs-resp-lista", html)
+
     def test_detalles_abre_la_ficha_del_ticket_en_lectura(self):
         ticket = self._ticket("ana@x.com")
         self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
