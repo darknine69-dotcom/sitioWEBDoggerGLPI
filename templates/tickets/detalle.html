@@ -223,17 +223,22 @@
             </section>
 
             <section class="corp-subsection">
-                <div class="corp-notif-inline-head">
+                <div class="corp-subsection-head">
                     <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
-                    <strong>Actividad</strong>
-                    <button type="button" class="corp-notif-btn" id="corp-notif-toggle" aria-expanded="false"
-                            title="Ver seguimientos de esta solicitud">
-                        <svg class="icon"><use href="#i-bell"/></svg>
-                    </button>
+                    <h3>Actividad</h3>
                 </div>
-                <div class="corp-notif-body" id="corp-notif-body" hidden>
+                <div class="chat-scroll">
                     {% include "tickets/_chat_thread.html" %}
                 </div>
+                <form method="post" class="corp-comment-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="comentario">
+                    <div class="form-group">{{ comentario_form.comentario }}</div>
+                    <div class="form-group-check">
+                        <label>{{ comentario_form.es_interno }} Comentario interno (solo staff)</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Agregar seguimiento</button>
+                </form>
             </section>
 
             <section class="corp-subsection">
@@ -291,19 +296,6 @@
                 </div>
             </section>
 
-            <form method="post" class="corp-comment-form corp-subsection">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="comentario">
-                <div class="corp-subsection-head">
-                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-plus"/></svg></span>
-                    <h3>Agregar seguimiento</h3>
-                </div>
-                <div class="form-group">{{ comentario_form.comentario }}</div>
-                <div class="form-group-check">
-                    <label>{{ comentario_form.es_interno }} Comentario interno (solo staff)</label>
-                </div>
-                <button type="submit" class="btn btn-primary btn-sm">Agregar seguimiento</button>
-            </form>
         </div>
 
         <aside class="ticket-side-col">
@@ -394,18 +386,6 @@
 
 {% block extra_js %}
 <script>
-(function () {
-    var btn = document.getElementById("corp-notif-toggle");
-    var body = document.getElementById("corp-notif-body");
-    if (!btn || !body) return;
-    btn.addEventListener("click", function () {
-        var open = body.hidden;
-        body.hidden = !open;
-        btn.setAttribute("aria-expanded", open ? "true" : "false");
-        btn.classList.toggle("is-open", open);
-    });
-})();
-
 (function () {
     var tl = document.getElementById("corp-timeline");
     if (!tl) return;

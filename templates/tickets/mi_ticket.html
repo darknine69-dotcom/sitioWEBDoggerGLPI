@@ -116,7 +116,9 @@
                             <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
                             <h3>Actividad</h3>
                         </div>
+                        <div class="chat-scroll">
                         {% include "tickets/_chat_thread.html" %}
+                        </div>
                         {% if puede_responder %}
                         <form method="post" action="{% if solo_lectura %}{% url 'tickets:mi_responder_obs' ticket.pk %}{% else %}{% url 'tickets:mi_responder' ticket.pk %}{% endif %}" class="chat-composer chat-composer-compact">
                             {% csrf_token %}

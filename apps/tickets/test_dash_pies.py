@@ -453,3 +453,13 @@ class FiltroResueltasTest(SmokeTestCase):
         html = self._listado(Ticket.Estado.ABIERTO)
         self.assertNotIn("{#", html)
         self.assertNotIn("#}", html)
+
+    def test_detalle_con_actividad_abierta_y_seguimiento_unido(self):
+        ticket = self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+        html = self.client.get(
+            reverse("tickets:detalle", args=[ticket.pk])
+        ).content.decode()
+        self.assertIn("chat-scroll", html)
+        self.assertIn("Agregar seguimiento", html)
+        self.assertIn('name="action" value="comentario"', html)
+        self.assertNotIn("corp-notif-toggle", html)
