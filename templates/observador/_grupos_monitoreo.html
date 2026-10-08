@@ -25,14 +25,17 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
     <div id="zg-{{ forloop.counter }}">
     {% for f in g.filas %}
     <article class="obs-miembro">
-        <div class="obs-miembro-top">
+        <button type="button" class="obs-miembro-top obs-miembro-toggle" data-miembro-toggle="zgm-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" aria-expanded="false" title="Desplegar el detalle de {{ f.nombre }}">
             <span class="obs-avatar">{{ f.nombre|default:"?"|slice:":1"|upper }}</span>
-                <div class="obs-miembro-id">
-                    <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ f.email|urlencode }}" title="Abrir su ficha">{{ f.nombre }}</a></strong>
-                    <small>{{ f.email|default:"Sin correo" }}{% if f.detalle %} · {{ f.detalle }}{% endif %}</small>
-                </div>
-            <span class="obs-pill obs-pill-{{ f.estado }}" style="margin-left:auto"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
-        </div>
+            <span class="obs-miembro-id">
+                <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ f.email|urlencode }}" title="Abrir su ficha" data-stop>{{ f.nombre }}</a></strong>
+                <small>{{ f.email|default:"Sin correo" }}{% if f.detalle %} · {{ f.detalle }}{% endif %}</small>
+            </span>
+            <span class="obs-pill obs-pill-{{ f.estado }}"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
+            <span class="obs-miembro-nums"><b>{{ f.total }}</b> tickets · <b>{{ f.abiertos }}</b> abiertos</span>
+            <span class="obs-zona-chev" aria-hidden="true">▾</span>
+        </button>
+        <div id="zgm-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" hidden>
         <div class="obs-miembro-grid">
             <div class="obs-dato"><span>Tickets</span><b>{{ f.total }}</b><small>{{ f.abiertos }} abiertos · {{ f.cerrados_total }} resueltos{% if f.fuera_puntos %} · +{{ f.fuera_puntos }} fuera de tus puntos asignados{% endif %}</small></div>
             <div class="obs-dato"><span>Avance</span><b>{{ f.avance }}%</b><small>falta {{ f.falta }}%</small></div>
@@ -52,6 +55,7 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
             <span class="obs-resp-txt">{{ r.comentario|truncatechars:140 }}</span>
         </div>
         {% endfor %}
+        </div>
     </article>
     {% endfor %}
     </div>
@@ -59,9 +63,12 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
 {% endfor %}
 <script>
 (function () {
-    document.querySelectorAll("[data-zona-toggle]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-            var body = document.getElementById(btn.getAttribute("data-zona-toggle"));
+    document.querySelectorAll("[data-zona-toggle], [data-miembro-toggle]").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+            if (e.target.closest("a")) return;
+            var body = document.getElementById(
+                btn.getAttribute("data-zona-toggle") || btn.getAttribute("data-miembro-toggle")
+            );
             if (!body) return;
             var abierto = btn.getAttribute("aria-expanded") !== "false";
             btn.setAttribute("aria-expanded", abierto ? "false" : "true");

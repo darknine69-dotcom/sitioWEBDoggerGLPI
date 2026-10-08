@@ -348,6 +348,7 @@ class MonitoreoObservadorDetalleTest(TestCase):
         html = respuesta.content.decode()
         self.assertIn(ticket.codigo, html)
         self.assertIn("data-zona-toggle", html)
+        self.assertIn("data-miembro-toggle", html)
 
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""
