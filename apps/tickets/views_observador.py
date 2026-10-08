@@ -14,7 +14,7 @@ aunque manipule la URL no llega a ver zonas ajenas.
 import csv
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -642,6 +642,21 @@ def _filas_de_mi_lista(usuario, elementos):
                 "es_punto": bool(e.punto_id and not e.usuario_id),
             }
         )
+    # Tickets de esas mismas cuentas que caen fuera de los puntos asignados:
+    # explican los ceros (el dato existe, pero no es de sus zonas). Una sola
+    # consulta para todas las filas.
+    correos = [f["email"].strip().lower() for f in filas if (f["email"] or "").strip()]
+    fuera = {}
+    if correos:
+        consulta_fuera = Ticket.objects.filter(solicitante_email__in=correos)
+        if puntos:
+            consulta_fuera = consulta_fuera.exclude(solicitante_punto__in=puntos)
+        for fila in consulta_fuera.values("solicitante_email").annotate(
+            n=Count("pk")
+        ):
+            fuera[(fila["solicitante_email"] or "").strip().lower()] = fila["n"]
+    for f in filas:
+        f["fuera_puntos"] = fuera.get((f["email"] or "").strip().lower(), 0)
     return filas
 
 
@@ -706,6 +721,58 @@ def monitorear_observador(request):
     return render(request, "observador/monitoreo.html", contexto)
 
 
+def _tabla_todos_usuarios(usuario, resumen):
+    """Todas las cuentas del aplicativo, con acciones para este rol.
+
+    El observador ve cada cuenta con sus números (acotados a sus puntos),
+    su zona si ya está en su lista, y puede verla, agregarla/quitarla y
+    meterla a una zona sin salir de aquí.
+    """
+    elementos = {
+        (e.usuario_email or "").strip().lower(): e
+        for e in ElementoMiLista.objects.filter(observador=usuario).select_related(
+            "zona"
+        )
+    }
+    zonas = list(
+        ZonaObservador.objects.filter(observador=usuario).order_by("nombre")
+    )
+    puntos = puntos_del_observador(usuario)
+    cuentas = list(
+        Usuario.objects.filter(activo=True, is_active=True).order_by("nombre")
+    )
+    fuera = {}
+    correos = [(u.email or "").strip().lower() for u in cuentas]
+    correos = [c for c in correos if c]
+    if correos:
+        consulta = Ticket.objects.filter(solicitante_email__in=correos)
+        if puntos:
+            consulta = consulta.exclude(solicitante_punto__in=puntos)
+        for fila in consulta.values("solicitante_email").annotate(n=Count("pk")):
+            fuera[(fila["solicitante_email"] or "").strip().lower()] = fila["n"]
+    filas = []
+    for u in cuentas:
+        correo = (u.email or "").strip().lower()
+        e = elementos.get(correo)
+        r = resumen.get(correo, {})
+        filas.append(
+            {
+                "nombre": u.nombre or u.email,
+                "email": correo,
+                "rol": u.get_rol_display(),
+                "ubicacion": u.ubicacion or "—",
+                "en_lista": e is not None,
+                "elemento_id": e.pk if e else None,
+                "zona": e.zona if e else None,
+                "total": r.get("total", 0),
+                "abiertos": r.get("abiertos", 0),
+                "tecnico": r.get("tecnico_principal", ""),
+                "fuera_puntos": fuera.get(correo, 0),
+            }
+        )
+    return filas, zonas
+
+
 def _contexto_monitoreo(usuario):
     """Filas, grupos por zona y totales de la lista del observador.
 
@@ -729,6 +796,8 @@ def _contexto_monitoreo(usuario):
         f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
     grupos = _grupos_por_zona(filas)
     total_tickets = sum(f["total"] for f in filas)
+    resumen = _resumen_por_correo(usuario)
+    todos_usuarios, zonas_obs = _tabla_todos_usuarios(usuario, resumen)
     top_tecnicos = {}
     for f in filas:
         for t in f.get("tecnicos", []):
@@ -759,6 +828,8 @@ def _contexto_monitoreo(usuario):
         ),
         "top_tecnicos": top_tecnicos,
         "dona": dona,
+        "todos_usuarios": todos_usuarios,
+        "zonas_obs": zonas_obs,
         "max_zona_tickets": max(
             [g["total_tickets"] for g in grupos] + [0]
         ),
@@ -772,12 +843,16 @@ def _grupos_por_zona(filas):
     por_zona = {}
     for f in filas:
         zona = (f["elemento"].zona if f["elemento"] else None)
-        clave = zona.pk if zona else 0
+        if zona is None:
+            # Sin zona no se muestra como grupo: esas cuentas salen en la
+            # tabla de todos los usuarios, donde se les asigna su zona.
+            continue
+        clave = zona.pk
         if clave not in por_zona:
             por_zona[clave] = {"zona": zona, "filas": []}
         por_zona[clave]["filas"].append(f)
     orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
-    for clave in sorted(por_zona, key=lambda c: (c == 0, c)):
+    for clave in sorted(por_zona):
         grupo = por_zona[clave]
         grupo["abiertos"] = sum(f["abiertos"] for f in grupo["filas"])
         grupo["total_tickets"] = sum(f["total"] for f in grupo["filas"])

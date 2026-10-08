@@ -310,6 +310,33 @@ class MonitoreoObservadorDetalleTest(TestCase):
         # La cuenta principal lleva a su ficha.
         self.assertIn("/observador/usuarios/?q=ana%40x.com", html)
 
+    def test_sin_zona_no_es_grupo_y_sale_en_todos(self):
+        Usuario.objects.create_user(
+            email="ana@x.com", password="x", nombre="Ana",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        self._ticket("ana@x.com")
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        respuesta = self.client.get(reverse("tickets:obs_monitoreo"))
+        self.assertEqual(respuesta.context["grupos"], [])
+        self.assertNotIn("<strong>Sin zona</strong>", respuesta.content.decode())
+        todos = respuesta.context["todos_usuarios"]
+        ana = [u for u in todos if u["email"] == "ana@x.com"]
+        self.assertEqual(len(ana), 1)
+        self.assertTrue(ana[0]["en_lista"])
+        self.assertIn("Todos los usuarios", respuesta.content.decode())
+
+    def test_tickets_fuera_de_puntos_se_ven_como_pista(self):
+        Usuario.objects.create_user(
+            email="ana@x.com", password="x", nombre="Ana",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        self._ticket("ana@x.com", punto="Zona Ajena")
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        respuesta = self.client.get(reverse("tickets:obs_monitoreo"))
+        html = respuesta.content.decode()
+        self.assertIn("fuera de tus puntos asignados", html)
+
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""
         from django.contrib.staticfiles import finders
