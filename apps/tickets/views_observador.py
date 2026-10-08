@@ -744,6 +744,28 @@ def monitorear_observador(request):
     return render(request, "observador/monitoreo.html", contexto)
 
 
+def _actividad_reciente(filas, limite=8):
+    """Lo último que pasó en la lista: tickets nuevos y respuestas.
+
+    Junta los tickets recientes de todos los miembros y las últimas
+    respuestas de los técnicos, ordenados por fecha.
+    """
+    vistos = {}
+    for f in filas:
+        for t in f.get("tickets", []):
+            if t.pk not in vistos:
+                vistos[t.pk] = t
+    tickets = sorted(
+        vistos.values(), key=lambda t: t.fecha_creacion, reverse=True
+    )[:limite]
+    respuestas = sorted(
+        (r for f in filas for r in f.get("respuestas", [])),
+        key=lambda r: r.fecha,
+        reverse=True,
+    )[:5]
+    return {"tickets": tickets, "respuestas": respuestas}
+
+
 def _tabla_todos_usuarios(usuario, resumen):
     """Todas las cuentas del aplicativo, con acciones para este rol.
 
@@ -854,6 +876,7 @@ def _contexto_monitoreo(usuario):
         "dona": dona,
         "todos_usuarios": todos_usuarios,
         "zonas_obs": zonas_obs,
+        "actividad": _actividad_reciente(filas),
         "max_zona_tickets": max(
             [g["total_tickets"] for g in grupos] + [0]
         ),

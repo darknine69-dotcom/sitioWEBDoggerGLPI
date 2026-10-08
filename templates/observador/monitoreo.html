@@ -173,7 +173,7 @@
                     <tbody>
                         {% for g in grupos %}
                         <tr>
-                            <td><strong>{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</strong></td>
+                            <td><strong>{{ g.zona.nombre }}</strong></td>
                             <td class="num">{{ g.filas|length }}</td>
                             <td class="num">{{ g.total_tickets }}</td>
                             <td class="num">{{ g.abiertos }}</td>
@@ -193,7 +193,41 @@
     {% include "observador/_grupos_monitoreo.html" %}
     </section>
 
-    {% include "observador/_tabla_usuarios_total.html" %}
+    <section class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Actividad reciente</h3>
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <h3>Tickets recientes</h3>
+            </div>
+            {% for t in actividad.tickets %}
+            <div class="mon-miembro">
+                <div class="mon-m-id">
+                    <strong><span class="obs-ticket t-{{ t.estado }}">{{ t.codigo }}</span> {{ t.titulo|truncatechars:60 }}</strong>
+                    <small>{{ t.solicitante_nombre }} · {{ t.get_estado_display }} · {{ t.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                </div>
+            </div>
+            {% empty %}
+            <p class="chart-empty">Sin tickets todavía.</p>
+            {% endfor %}
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-message"/></svg></span>
+                <h3>Últimas respuestas</h3>
+            </div>
+            {% for r in actividad.respuestas %}
+            <div class="obs-resp">
+                <span class="obs-resp-meta"><b>{% if r.usuario %}{{ r.usuario.nombre|default:r.usuario.email }}{% else %}{{ r.autor_nombre|default:"Soporte" }}{% endif %}</b> en {{ r.ticket.codigo }} · {{ r.fecha|date:"d/m/Y H:i" }}</span>
+                <span class="obs-resp-txt">{{ r.comentario|truncatechars:140 }}</span>
+            </div>
+            {% empty %}
+            <p class="chart-empty">Sin respuestas todavía.</p>
+            {% endfor %}
+        </div>
+    </div>
+    </section>
     {% include "observador/_fab.html" %}
 </main>
 {% endblock %}

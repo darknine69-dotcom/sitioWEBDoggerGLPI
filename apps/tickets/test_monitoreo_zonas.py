@@ -324,7 +324,8 @@ class MonitoreoObservadorDetalleTest(TestCase):
         ana = [u for u in todos if u["email"] == "ana@x.com"]
         self.assertEqual(len(ana), 1)
         self.assertTrue(ana[0]["en_lista"])
-        self.assertIn("Todos los usuarios", respuesta.content.decode())
+        self.assertIn("Actividad reciente", respuesta.content.decode())
+        self.assertNotIn("Todos los usuarios", respuesta.content.decode())
 
     def test_miembro_muestra_datos_reales_aunque_sean_de_otro_punto(self):
         from apps.tickets.models import ZonaObservador
@@ -351,6 +352,8 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("data-miembro-toggle", html)
         self.assertIn("obs-crate", html)
         self.assertIn("obs-crate-global", html)
+        self.assertIn("Tickets recientes", html)
+        self.assertIn("Últimas respuestas", html)
 
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""
