@@ -39,6 +39,17 @@
 .act-resp-head strong { font-size: 12.5px; }
 .act-resp-fecha { font-size: 11px; color: #8A8478; margin-left: auto; white-space: nowrap; }
 .act-resp-txt { font-size: 12.5px; color: var(--ink); }
+/* Buscador + lista con scroll de 5 resultados (barra solo al hover). */
+.act-buscador { display: flex; gap: 6px; margin-bottom: 8px; }
+.act-buscador input { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
+.act-buscador input:focus { outline: none; border-color: var(--dogger-red); }
+.act-lista { max-height: 472px; overflow-y: auto; scrollbar-width: none; padding-right: 2px; }
+.act-lista::-webkit-scrollbar { width: 0; }
+.act-lista:hover { scrollbar-width: thin; }
+.act-lista:hover::-webkit-scrollbar { width: 6px; }
+.act-lista:hover::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+.act-lista:hover::-webkit-scrollbar-track { background: transparent; }
+.act-vacio { display: none; font-size: 12.5px; color: var(--ink-muted); text-align: center; padding: 12px 0; }
 .mon-miembro { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed #F1EDE6; font-size: 12.5px; }
 .mon-miembro:last-child { border-bottom: 0; }
 .mon-miembro .mon-m-id { min-width: 0; flex: 1; }
@@ -221,6 +232,10 @@
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 <h3>Tickets recientes</h3>
             </div>
+            <div class="act-buscador">
+                <input type="search" id="actBuscar" placeholder="Buscar por código, título o usuario…" aria-label="Buscar en tickets recientes">
+            </div>
+            <div class="act-lista" id="actLista">
             {% for t in actividad.tickets %}
             <article class="act-ticket st-{{ t.estado }}">
                 <div class="act-ticket-top">
@@ -238,6 +253,8 @@
             {% empty %}
             <p class="chart-empty">Sin tickets todavía.</p>
             {% endfor %}
+            </div>
+            <p class="act-vacio" id="actVacio">Sin resultados para esa búsqueda.</p>
         </div>
         <div class="chart-card">
             <div class="chart-card-head">
@@ -262,5 +279,23 @@
     </div>
     </section>
     {% include "observador/_fab.html" %}
+    <script>
+    (function () {
+        var campo = document.getElementById("actBuscar");
+        var lista = document.getElementById("actLista");
+        var vacio = document.getElementById("actVacio");
+        if (!campo || !lista) return;
+        campo.addEventListener("input", function () {
+            var q = campo.value.trim().toLowerCase();
+            var visibles = 0;
+            lista.querySelectorAll(".act-ticket").forEach(function (card) {
+                var ok = !q || (card.textContent || "").toLowerCase().includes(q);
+                card.style.display = ok ? "" : "none";
+                if (ok) visibles += 1;
+            });
+            if (vacio) vacio.style.display = visibles ? "none" : "block";
+        });
+    })();
+    </script>
 </main>
 {% endblock %}

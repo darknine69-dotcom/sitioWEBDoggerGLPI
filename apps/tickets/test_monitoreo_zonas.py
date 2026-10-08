@@ -357,6 +357,8 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("act-ticket st-abierto", html)
         self.assertIn("detalles ›", html)
         self.assertIn("act-resp-body", html)
+        self.assertIn('id="actBuscar"', html)
+        self.assertIn('id="actLista"', html)
 
     def test_avisos_bajan_desde_el_usuario(self):
         """Los toasts de eventos salen junto al usuario, no abajo."""
