@@ -193,76 +193,7 @@
     {% include "observador/_grupos_monitoreo.html" %}
     </section>
 
-    <div class="chart-card" style="margin-bottom:16px">
-        <div class="chart-card-head">
-            <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
-            <h3>Todos los usuarios</h3>
-        </div>
-        <div class="table-scroll">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Cuenta</th>
-                        <th>Rol</th>
-                        <th>Ubicación</th>
-                        <th class="num">Tickets</th>
-                        <th class="num">Abiertos</th>
-                        <th>Técnico</th>
-                        <th>Zona</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in todos_usuarios %}
-                    <tr>
-                        <td>
-                            <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ u.email|urlencode }}">{{ u.nombre }}</a></strong><br>
-                            <small class="muted">{{ u.email }}</small>
-                        </td>
-                        <td>{{ u.rol }}</td>
-                        <td>{{ u.ubicacion }}</td>
-                        <td class="num">{{ u.total }}</td>
-                        <td class="num">{{ u.abiertos }}{% if u.fuera_puntos %} <small class="muted" title="Tickets suyos fuera de tus puntos asignados">+{{ u.fuera_puntos }} fuera</small>{% endif %}</td>
-                        <td>{{ u.tecnico|default:"—" }}</td>
-                        <td>{{ u.zona.nombre|default:"—" }}</td>
-                        <td>
-                            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                                {% if u.en_lista %}
-                                <form method="post" action="{% url 'tickets:obs_zona_miembro' %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="elemento" value="{{ u.elemento_id }}">
-                                    <input type="hidden" name="volver" value="{% url 'tickets:obs_monitoreo' %}">
-                                    <select name="zona" class="obs-buscador-tipo" aria-label="Zona para {{ u.email }}">
-                                        <option value="">Sin zona</option>
-                                        {% for z in zonas_obs %}
-                                        <option value="{{ z.pk }}"{% if u.zona and u.zona.pk == z.pk %} selected{% endif %}>{{ z.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit" class="btn btn-sm btn-outline">Asignar</button>
-                                </form>
-                                <form method="post" action="{% url 'tickets:obs_quitar' u.elemento_id %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="volver" value="{% url 'tickets:obs_monitoreo' %}">
-                                    <button type="submit" class="btn btn-sm btn-ghost">Quitar</button>
-                                </form>
-                                {% else %}
-                                <form method="post" action="{% url 'tickets:obs_agregar' %}">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="email" value="{{ u.email }}">
-                                    <input type="hidden" name="volver" value="{% url 'tickets:obs_monitoreo' %}">
-                                    <button type="submit" class="btn btn-sm">Agregar</button>
-                                </form>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr class="table-empty"><td colspan="8">No hay cuentas activas.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+    {% include "observador/_tabla_usuarios_total.html" %}
     {% include "observador/_fab.html" %}
 </main>
 {% endblock %}

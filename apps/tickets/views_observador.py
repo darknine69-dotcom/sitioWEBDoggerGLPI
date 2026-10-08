@@ -559,6 +559,7 @@ def usuarios_observador(request):
     for f in filas:
         conteo[f["estado"]] += 1
 
+    todos_usuarios, zonas_obs = _tabla_todos_usuarios(usuario, resumen)
     return render(
         request,
         "observador/usuarios.html",
@@ -573,6 +574,8 @@ def usuarios_observador(request):
             "estado_sel": estado,
             "orden_sel": orden if orden in ("nombre", "abiertos", "tickets", "avance") else "nombre",
             "puntos": puntos_del_observador(usuario),
+            "todos_usuarios": todos_usuarios,
+            "zonas_obs": zonas_obs,
         },
     )
 

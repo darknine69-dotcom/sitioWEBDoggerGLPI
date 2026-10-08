@@ -148,6 +148,7 @@
         <a href="{% url 'tickets:obs_usuarios' %}" class="btn btn-sm btn-outline">Limpiar filtros</a>
     </div>
     {% endif %}
+    {% include "observador/_tabla_usuarios_total.html" %}
     {% include "observador/_fab.html" %}
 </main>
 {% endblock %}

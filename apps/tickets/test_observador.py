@@ -170,6 +170,22 @@ class ObservadorListaTest(TestCase):
         self.assertEqual(respuesta.context["total"], 1)
         self.assertEqual(respuesta.context["total_sin_filtro"], 2)
 
+    def test_usuarios_trae_tabla_total_para_meter_a_zona(self):
+        Usuario.objects.create_user(
+            email="nueva@x.com", password="x", nombre="Nueva",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        respuesta = self.client.get(reverse("tickets:obs_usuarios"))
+        self.assertEqual(respuesta.status_code, 200)
+        todos = respuesta.context["todos_usuarios"]
+        self.assertTrue(any(u["email"] == "nueva@x.com" for u in todos))
+        html = respuesta.content.decode()
+        self.assertIn("Todos los usuarios", html)
+        self.assertIn("Agregar", html)
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "nueva@x.com"})
+        html = self.client.get(reverse("tickets:obs_usuarios")).content.decode()
+        self.assertIn("Asignar", html)
+
     def test_panel_es_tablero_con_indicadores_propios(self):
         import re
 
