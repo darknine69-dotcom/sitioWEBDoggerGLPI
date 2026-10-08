@@ -37,13 +37,6 @@
 .act-ticket-fecha { font-size: 11px; color: #8A8478; margin-left: auto; white-space: nowrap; }
 .act-ticket-detalle { align-self: flex-end; font-size: 11.5px; font-weight: 700; color: var(--dogger-red); text-decoration: none; }
 .act-ticket-detalle:hover { text-decoration: underline; }
-.act-resp { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--line); animation: corpUp .4s ease both; font-family: var(--font-corp); }
-.act-resp:last-child { border-bottom: 0; }
-.act-resp-body { flex: 1; min-width: 0; background: #FDFCF9; border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; box-shadow: 0 1px 3px rgba(23,20,18,.04); }
-.act-resp-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
-.act-resp-head strong { font-size: 12.5px; }
-.act-resp-fecha { font-size: 11px; color: #8A8478; margin-left: auto; white-space: nowrap; }
-.act-resp-txt { font-size: 12.5px; color: var(--ink); }
 /* Presionar al técnico: cuadrito de mensaje por ticket. */
 .act-presionar { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
 .act-presionar-tit { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
@@ -267,25 +260,10 @@
         </div>
         <div class="chart-card">
             <div class="chart-card-head">
-                <span class="chart-head-icon"><svg class="icon"><use href="#i-message"/></svg></span>
-                <h3>Últimas respuestas</h3>
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-send"/></svg></span>
+                <h3>Presionar al técnico</h3>
             </div>
-            {% for r in actividad.respuestas %}
-            <div class="act-resp">
-                <span class="obs-avatar">{% if r.usuario %}{{ r.usuario.nombre|default:r.usuario.email|slice:":1"|upper }}{% else %}{{ r.autor_nombre|default:"S"|slice:":1"|upper }}{% endif %}</span>
-                <div class="act-resp-body">
-                    <div class="act-resp-head">
-                        <strong>{% if r.usuario %}{{ r.usuario.nombre|default:r.usuario.email }}{% else %}{{ r.autor_nombre|default:"Soporte" }}{% endif %}</strong>
-                        <span class="act-resp-fecha">{{ r.fecha|date:"d/m/Y H:i" }} · {{ r.ticket.codigo }}</span>
-                    </div>
-                    <span class="act-resp-txt">{{ r.comentario|truncatechars:160 }}</span>
-                </div>
-            </div>
-            {% empty %}
-            <p class="chart-empty">Sin respuestas todavía.</p>
-            {% endfor %}
-            <div class="act-presionar">
-                <h4 class="act-presionar-tit">Presionar al técnico</h4>
+            <div class="act-presionar" style="margin-top:0;border-top:0;padding-top:0">
                 {% for e in presionar %}
                 <div class="act-tec">
                     <div class="act-tec-head">

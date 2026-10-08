@@ -353,14 +353,14 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("obs-crate", html)
         self.assertIn("obs-crate-global", html)
         self.assertIn("Tickets recientes", html)
-        self.assertIn("Últimas respuestas", html)
+        self.assertNotIn("Últimas respuestas", html)
+        self.assertIn("Presionar al técnico", html)
         self.assertIn("obs-leyenda-item", html)
         self.assertIn("Todo resuelto, sin pendientes", html)
         self.assertIn("Exportar datos", html)
         self.assertNotIn("Imprimir", html)
         self.assertIn("act-ticket st-abierto", html)
         self.assertIn("detalles ›", html)
-        self.assertIn("act-resp-body", html)
         self.assertIn("Presionar al técnico", html)
         self.assertIn("act-nudge", html)
         self.assertIn('id="actBuscar"', html)
@@ -377,7 +377,7 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertNotIn("bottom:", pila)
 
     def test_respuestas_de_admin_no_salen_en_ultimas(self):
-        from apps.tickets.models import TicketComentario
+        from apps.tickets.models import TicketComentario, ZonaObservador
 
         admin = Usuario.objects.create_user(
             email="admin@x.com", password="x", nombre="Blandon",
@@ -391,6 +391,10 @@ class MonitoreoObservadorDetalleTest(TestCase):
             ticket=ticket, usuario=self.tec, comentario="Ya voy en camino"
         )
         self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        zona = ZonaObservador.objects.create(observador=self.obs, nombre="Norte")
+        elemento = ElementoMiLista.objects.get(observador=self.obs)
+        elemento.zona = zona
+        elemento.save()
         html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
         self.assertIn("Ya voy en camino", html)
         self.assertNotIn("Pronto recibirá atención", html)
