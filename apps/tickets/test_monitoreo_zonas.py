@@ -354,6 +354,8 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("obs-crate-global", html)
         self.assertIn("Tickets recientes", html)
         self.assertIn("Últimas respuestas", html)
+        self.assertIn("Exportar datos", html)
+        self.assertNotIn("Imprimir", html)
         self.assertIn("act-ticket st-abierto", html)
         self.assertIn("detalles ›", html)
         self.assertIn("act-resp-body", html)
