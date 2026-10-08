@@ -961,18 +961,20 @@ def _grupos_por_zona(filas):
 
 
 def _respuestas_por_correo(puntos, correos, limite=2, global_scope=False):
-    """Últimas respuestas visibles de técnicos/admins, por correo.
+    """Últimas respuestas de los técnicos, por correo.
 
     Una sola consulta para todos los miembros: sin puntos asignados no se
     ve nada, igual que en el resto del módulo. Con global_scope=True trae
     las respuestas reales aunque sean de otros puntos (gente de la lista).
+    Las de administradores no salen aquí: es el tablero del seguimiento
+    con los técnicos.
     """
     correos = {(c or "").strip().lower() for c in correos if (c or "").strip()}
     if not correos or (not puntos and not global_scope):
         return {}
     consulta = TicketComentario.objects.filter(
         es_interno=False,
-        usuario__rol__in=[Usuario.Rol.TECNICO, Usuario.Rol.ADMIN],
+        usuario__rol=Usuario.Rol.TECNICO,
     )
     if not global_scope:
         consulta = consulta.filter(ticket__solicitante_punto__in=puntos)

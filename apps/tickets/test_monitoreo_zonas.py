@@ -376,6 +376,25 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertIn("top:", pila)
         self.assertNotIn("bottom:", pila)
 
+    def test_respuestas_de_admin_no_salen_en_ultimas(self):
+        from apps.tickets.models import TicketComentario
+
+        admin = Usuario.objects.create_user(
+            email="admin@x.com", password="x", nombre="Blandon",
+            rol=Usuario.Rol.ADMIN,
+        )
+        ticket = self._ticket("ana@x.com")
+        TicketComentario.objects.create(
+            ticket=ticket, usuario=admin, comentario="Pronto recibirá atención"
+        )
+        TicketComentario.objects.create(
+            ticket=ticket, usuario=self.tec, comentario="Ya voy en camino"
+        )
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
+        self.assertIn("Ya voy en camino", html)
+        self.assertNotIn("Pronto recibirá atención", html)
+
     def test_detalles_abre_la_ficha_del_ticket_en_lectura(self):
         ticket = self._ticket("ana@x.com")
         self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
