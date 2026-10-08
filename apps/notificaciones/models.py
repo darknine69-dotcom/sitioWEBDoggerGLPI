@@ -33,6 +33,11 @@ class Notificacion(models.Model):
     icono = models.CharField(max_length=30, default="i-bell", db_column="Icono")
     url = models.CharField(max_length=255, blank=True, default="", db_column="Url")
     clave = models.CharField(max_length=140, blank=True, default="", db_column="Clave")
+    actor = models.CharField(
+        "Responsable", max_length=100, blank=True, default="",
+        db_column="Actor",
+        help_text="Quién generó el evento (vacío = sistema).",
+    )
     leida = models.BooleanField(default=False, db_column="Leida")
     mostrada_en = models.DateTimeField(null=True, blank=True, db_column="MostradaEn")
     leida_en = models.DateTimeField(null=True, blank=True, db_column="LeidaEn")

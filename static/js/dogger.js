@@ -967,6 +967,7 @@
             '<div class="toast-body">' +
             '<strong>' + esc(n.titulo) + '</strong>' +
             '<span>' + esc(n.mensaje || "") + '</span>' +
+            (n.actor ? '<small class="toast-actor">por ' + esc(n.actor) + '</small>' : "") +
             '<a href="' + esc(url) + '">Ver</a>' +
             '</div>' +
             '<button type="button" class="toast-close" aria-label="Cerrar">&times;</button>';
