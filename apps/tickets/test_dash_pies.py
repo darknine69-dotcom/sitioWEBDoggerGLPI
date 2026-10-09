@@ -478,3 +478,5 @@ class FiltroResueltasTest(SmokeTestCase):
             css = f.read()
         self.assertIn(".chart-card .dash-head-tools", css)
         self.assertIn("hover: none", css)
+        self.assertIn(".chart-head-icon {\n    width: 30px;", css)
+        self.assertIn("order: 2;", css)

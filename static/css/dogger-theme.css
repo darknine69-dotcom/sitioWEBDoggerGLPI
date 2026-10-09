@@ -2564,6 +2564,10 @@ select:focus-visible, textarea:focus-visible {
     font-size: 15px;
     font-weight: 800;
     color: var(--ink);
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+    order: 1;
 }
 .chart-head-icon {
     width: 30px;
@@ -2575,7 +2579,11 @@ select:focus-visible, textarea:focus-visible {
     justify-content: center;
     background: linear-gradient(135deg, rgba(214,43,31,.14), rgba(242,101,34,.08));
     color: var(--dogger-red-dark);
+    order: 2;
 }
+.chart-card-head .dash-head-tools { order: 3; }
+.chart-card-head > label.dash-select { order: 3; }
+.chart-card-head > a.btn { order: 3; }
 .chart-head-icon svg { width: 16px; height: 16px; }
 .chart-badge {
     font-family: var(--font-mono);
