@@ -111,6 +111,22 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         "Puede reabrir tickets", default=True,
         help_text="El técnico puede devolver un ticket a abierto.",
     )
+    puede_crear_tickets = models.BooleanField(
+        "Puede crear tickets", default=True,
+        help_text="Puede reportar nuevas solicitudes.",
+    )
+    puede_responder_chat = models.BooleanField(
+        "Puede responder en el chat", default=True,
+        help_text="Puede escribir en el chat de soporte.",
+    )
+    puede_presionar_tecnicos = models.BooleanField(
+        "Puede presionar técnicos", default=True,
+        help_text="El observador puede escribirles a los técnicos.",
+    )
+    atajos_rapidos = models.JSONField(
+        "Atajos rápidos", default=list, blank=True,
+        help_text="Claves del botón X de atajos. Vacío = los de su rol.",
+    )
 
     objects = UsuarioManager()
 

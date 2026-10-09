@@ -217,14 +217,14 @@ class MonitoreoZonasAdminTest(TestCase):
         html_admin = self.client.get(
             reverse("tickets:monitoreo_admin")
         ).content.decode()
-        self.assertIn("fabMonitoreo", html_admin)
-        self.assertIn("Generar reporte", html_admin)
+        self.assertIn("axFab", html_admin)
+        self.assertIn("Atajos rápidos", html_admin)
         self.client.force_login(self.obs)
         html_obs = self.client.get(
             reverse("tickets:obs_zonas")
         ).content.decode()
-        self.assertIn("fabObs", html_obs)
-        self.assertIn("Tickets de mis zonas", html_obs)
+        self.assertIn("axFab", html_obs)
+        self.assertIn("Chat de soporte", html_obs)
 
     def test_supervisor_renombra_su_zona(self):
         self.client.force_login(self.obs)

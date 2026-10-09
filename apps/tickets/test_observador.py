@@ -212,7 +212,7 @@ class ObservadorListaTest(TestCase):
         self.assertNotIn("Imprimir", html)
         self.assertNotIn("Exportar", html)
         self.assertIn("Buscar y agregar", html)
-        self.assertIn("fabObs", html)
+        self.assertIn("axFab", html)
 
     def test_buscador_del_panel_agrega_a_la_lista(self):
         Usuario.objects.create_user(

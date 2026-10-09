@@ -1441,6 +1441,12 @@ def usuarios_lista(request):
             "permisos": {
                 "es_staff": u.is_staff,
                 "borrar_glpi": u.borrar_glpi_al_eliminar,
+                "cerrar": u.puede_cerrar_tickets,
+                "eliminar": u.puede_eliminar_tickets,
+                "reabrir": u.puede_reabrir_tickets,
+                "crear": u.puede_crear_tickets,
+                "responder": u.puede_responder_chat,
+                "presionar": u.puede_presionar_tecnicos,
             },
             "disponibilidad": disp_por_tec.get(u.pk, []),
             "eventos": evts_por_tec.get(u.pk, [])[:6],
@@ -2373,6 +2379,9 @@ def crear_ticket(request):
     El staff puede crear en nombre de otro solicitante indicando sus datos.
     """
     es_usuario_final = request.user.rol == "usuario"
+    if es_usuario_final and not getattr(request.user, "puede_crear_tickets", False):
+        messages.error(request, "El administrador no te permite crear tickets.")
+        return redirect("tickets:mi_panel")
     initial = {
         "solicitante_nombre": request.user.nombre,
         "solicitante_email": request.user.email,
@@ -2634,6 +2643,9 @@ def responder_ticket_obs(request, pk):
     u = request.user
     if getattr(u, "rol", None) != "observador":
         raise PermissionDenied("Solo el observador usa esta vía.")
+    if not getattr(u, "puede_responder_chat", False):
+        messages.error(request, "El administrador no te permite chatear.")
+        return redirect("tickets:mi_ticket", pk=pk)
     ticket = get_object_or_404(
         Ticket.objects.select_related("categoria"), pk=pk
     )

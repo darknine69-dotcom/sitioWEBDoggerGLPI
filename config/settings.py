@@ -91,6 +91,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.notificaciones.context_processors.notificaciones",
+                "apps.accounts.context_processors.atajos",
                 "apps.tickets.context_processors.dogger_config",
                 "apps.tickets.context_processors.calificacion_lateral",
             ],

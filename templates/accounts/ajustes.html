@@ -37,6 +37,10 @@
                     <svg class="icon icon-sm"><use href="#i-lock"/></svg>
                     Contraseña
                 </a>
+                <a href="#atajos" class="settings-nav-link" data-settings-tab="atajos">
+                    <svg class="icon icon-sm"><use href="#i-x"/></svg>
+                    Atajos
+                </a>
                 <a href="#ayuda" class="settings-nav-link" data-settings-tab="ayuda">
                     <svg class="icon icon-sm"><use href="#i-book"/></svg>
                     Ayuda y tour
@@ -165,6 +169,32 @@
                     </div>
                     <div class="settings-actions">
                         <button type="submit" class="btn btn-primary">Actualizar contraseña</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ATAJOS -->
+            <section id="atajos" class="settings-panel" data-settings-panel="atajos">
+                <div class="settings-panel-header">
+                    <h3>Atajos rápidos</h3>
+                    <p>Elige qué trae el botón X flotante. Sin marcar nada, salen los de tu rol.</p>
+                </div>
+                <form method="post" action="{% url 'accounts:ajustes' %}#atajos" class="settings-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="guardar_atajos" value="1">
+                    {% for a in atajos_catalogo %}
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>{{ a.1 }}</strong>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="atajos" value="{{ a.0 }}"{% if a.0 in atajos_actuales %} checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                    <div class="settings-actions">
+                        <button type="submit" class="btn btn-primary">Guardar atajos</button>
                     </div>
                 </form>
             </section>
@@ -542,6 +572,9 @@
                                     <th>Cerrar</th>
                                     <th>Eliminar</th>
                                     <th>Reabrir</th>
+                                    <th>Crear</th>
+                                    <th>Chatear</th>
+                                    <th>Presionar</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -554,9 +587,12 @@
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_reabrir" value="1"{% if u.puede_reabrir_tickets %} checked{% endif %} aria-label="Reabrir para {{ u.email }}"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_crear" value="1"{% if u.puede_crear_tickets %} checked{% endif %} aria-label="Crear para {{ u.email }}"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_responder" value="1"{% if u.puede_responder_chat %} checked{% endif %} aria-label="Chatear para {{ u.email }}"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_presionar" value="1"{% if u.puede_presionar_tecnicos %} checked{% endif %} aria-label="Presionar para {{ u.email }}"></td>
                                 </tr>
                                 {% empty %}
-                                <tr><td colspan="4" class="obs-sin-datos">Sin cuentas.</td></tr>
+                                <tr><td colspan="7" class="obs-sin-datos">Sin cuentas.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>

@@ -143,12 +143,22 @@ def permisos_roles(request):
         return redirect(reverse("accounts:ajustes") + "#pagina")
     User = get_user_model()
     for u in User.objects.all():
-        marca = lambda campo: request.POST.get(f"perm_{u.pk}_{campo}") in ("1", "on", "true")
-        u.puede_cerrar_tickets = marca("cerrar")
-        u.puede_eliminar_tickets = marca("eliminar")
-        u.puede_reabrir_tickets = marca("reabrir")
+        for campo, llave in (
+            ("puede_cerrar_tickets", "cerrar"),
+            ("puede_eliminar_tickets", "eliminar"),
+            ("puede_reabrir_tickets", "reabrir"),
+            ("puede_crear_tickets", "crear"),
+            ("puede_responder_chat", "responder"),
+            ("puede_presionar_tecnicos", "presionar"),
+        ):
+            setattr(
+                u, campo,
+                request.POST.get(f"perm_{u.pk}_{llave}") in ("1", "on", "true"),
+            )
         u.save(update_fields=[
-            "puede_cerrar_tickets", "puede_eliminar_tickets", "puede_reabrir_tickets",
+            "puede_cerrar_tickets", "puede_eliminar_tickets",
+            "puede_reabrir_tickets", "puede_crear_tickets",
+            "puede_responder_chat", "puede_presionar_tecnicos",
         ])
     messages.success(request, "Permisos guardados.")
     return redirect(reverse("accounts:ajustes") + "#pagina")
@@ -158,6 +168,15 @@ def permisos_roles(request):
 def ajustes_cuenta(request):
     user = request.user
     glpi_enabled = _glpi_available() and bool(getattr(user, "glpi_user_id", None))
+
+    if request.method == "POST" and request.POST.get("guardar_atajos") == "1":
+        from .atajos import disponibles_para
+
+        validas = {e[0] for e in disponibles_para(user.rol)}
+        user.atajos_rapidos = [c for c in request.POST.getlist("atajos") if c in validas]
+        user.save(update_fields=["atajos_rapidos"])
+        messages.success(request, "Atajos actualizados.")
+        return redirect(reverse("accounts:ajustes") + "#atajos")
 
     if request.method == "POST":
         es_staff = bool(getattr(user, "es_staff_helpdesk", False))
@@ -191,6 +210,12 @@ def ajustes_cuenta(request):
         "manual_disponible": archivo_manual(user.rol) is not None,
         "manual_archivo": nombre_manual(user.rol),
     }
+    from .atajos import POR_ROL, disponibles_para
+
+    ctx["atajos_catalogo"] = disponibles_para(user.rol)
+    ctx["atajos_actuales"] = (
+        list(user.atajos_rapidos or []) or list(POR_ROL.get(user.rol, ()))
+    )
     if user.rol == "admin":
         from apps.tickets.models import ConfigSitio
 

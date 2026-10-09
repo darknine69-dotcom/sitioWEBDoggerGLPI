@@ -1,0 +1,46 @@
+{% comment %}Botón X de atajos rápidos: se configura en Ajustes de la cuenta.{% endcomment %}
+{% if request.user.is_authenticated and atajos_rapidos %}
+<div class="ax-fab" id="axFab">
+    <div class="ax-menu" id="axMenu">
+        {% for a in atajos_rapidos %}
+        {% if a.clave == "chat" %}
+        <button type="button" class="ax-item" data-ax-chat>
+            <svg class="icon"><use href="#{{ a.icono }}"/></svg> {{ a.etiqueta }}
+        </button>
+        {% else %}
+        <a class="ax-item" href="{{ a.url }}">
+            <svg class="icon"><use href="#{{ a.icono }}"/></svg> {{ a.etiqueta }}
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <button type="button" class="ax-btn" id="axBtn" aria-label="Atajos rápidos" aria-expanded="false">
+        <svg class="icon"><use href="#i-x"/></svg>
+    </button>
+</div>
+<script>
+(function () {
+    var fab = document.getElementById("axFab");
+    if (!fab) return;
+    var btn = document.getElementById("axBtn");
+    var menu = document.getElementById("axMenu");
+    btn.addEventListener("click", function () {
+        var abierto = fab.hasAttribute("data-open");
+        if (abierto) { fab.removeAttribute("data-open"); btn.setAttribute("aria-expanded", "false"); }
+        else { fab.setAttribute("data-open", ""); btn.setAttribute("aria-expanded", "true"); }
+    });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && fab.hasAttribute("data-open")) {
+            fab.removeAttribute("data-open"); btn.setAttribute("aria-expanded", "false");
+        }
+    });
+    menu.querySelectorAll("[data-ax-chat]").forEach(function (b) {
+        b.addEventListener("click", function () {
+            var sw = document.getElementById("swFab");
+            if (sw) { sw.click(); }
+            fab.removeAttribute("data-open"); btn.setAttribute("aria-expanded", "false");
+        });
+    });
+})();
+</script>
+{% endif %}

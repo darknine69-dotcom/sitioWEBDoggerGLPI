@@ -1012,6 +1012,9 @@ def presionar_tecnico(request, pk):
     if not mensaje:
         messages.error(request, "Escribe el mensaje para el técnico.")
         return redirect(volver)
+    if not getattr(usuario, "puede_presionar_tecnicos", False):
+        messages.error(request, "El administrador no te permite escribirles.")
+        return redirect(volver)
     try:
         ticket = Ticket.objects.select_related("tecnico_asignado").get(pk=pk)
     except (Ticket.DoesNotExist, ValueError, TypeError):

@@ -106,3 +106,71 @@ class PermisosRolesTest(TestCase):
         # usuario le sale solo cuando el técnico le escribe de verdad.
         self.assertIn("¡Hola! Gracias por escribirnos", js)
         self.assertNotIn("Mesa de ayuda · Soporte", js)
+
+    def test_crear_responder_y_presionar_exigen_permiso(self):
+        from apps.tickets.models import Ticket
+
+        ticket = Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com", tecnico_asignado=self.tec,
+        )
+        self.client.force_login(self.usuario)
+        for campo in ("puede_crear_tickets", "puede_responder_chat"):
+            setattr(self.usuario, campo, False)
+        self.usuario.save()
+        respuesta = self.client.get(reverse("tickets:crear_ticket"))
+        self.assertRedirects(respuesta, reverse("tickets:mi_panel"))
+        respuesta = self.client.post(
+            reverse("tickets:chat_responder", args=[ticket.pk]),
+            {"mensaje": "Hola"},
+        )
+        self.assertEqual(respuesta.status_code, 403)
+        obs = get_user_model().objects.create_user(
+            email="obs@x.com", password="x", nombre="Obs",
+            rol=get_user_model().Rol.OBSERVADOR,
+        )
+        obs.puede_presionar_tecnicos = False
+        obs.save()
+        self.client.force_login(obs)
+        respuesta = self.client.post(
+            reverse("tickets:obs_presionar", args=[ticket.pk]),
+            {"mensaje": "Hola", "volver": reverse("tickets:obs_monitoreo")},
+            follow=True,
+        )
+        self.assertContains(respuesta, "no te permite escribirles")
+
+    def test_ficha_muestra_permisos_y_whatsapp_obedece(self):
+        from apps.tickets.models import ConfigSitio, Ticket
+
+        self.client.force_login(self.admin)
+        html = self.client.get(
+            reverse("tickets:usuario_ficha", args=[self.usuario.pk])
+        ).content.decode()
+        for etiqueta in ("Cerrar", "Eliminar", "Reabrir", "Crear", "Chatear", "Presionar"):
+            self.assertIn(etiqueta, html)
+        cfg = ConfigSitio.cargar()
+        cfg.whatsapp_activo = False
+        cfg.save()
+        ticket = Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com",
+        )
+        self.client.force_login(self.usuario)
+        html = self.client.get(
+            reverse("tickets:mi_ticket", args=[ticket.pk])).content.decode()
+        self.assertNotIn("btn-whatsapp", html)
+
+    def test_atajos_se_configuran_en_ajustes(self):
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get(reverse("accounts:ajustes"))
+        self.assertContains(respuesta, "Atajos rápidos")
+        respuesta = self.client.post(
+            reverse("accounts:ajustes"),
+            {"guardar_atajos": "1", "atajos": ["consultar", "chat"]},
+        )
+        self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#atajos")
+        self.usuario.refresh_from_db()
+        self.assertEqual(self.usuario.atajos_rapidos, ["consultar", "chat"])
+        html = self.client.get(reverse("tickets:mi_panel")).content.decode()
+        self.assertIn("axFab", html)
+        self.assertIn("Consultar ticket", html)

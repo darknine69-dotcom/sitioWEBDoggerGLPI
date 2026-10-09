@@ -172,6 +172,13 @@ def chat_responder(request, pk):
     u = request.user
     if getattr(u, "rol", None) not in ("usuario", "tecnico", "admin", "observador"):
         return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    if getattr(u, "rol", None) != "admin" and not getattr(
+        u, "puede_responder_chat", False
+    ):
+        return JsonResponse(
+            {"ok": False, "error": "El administrador no te permite chatear."},
+            status=403,
+        )
     texto = (request.POST.get("mensaje") or "").strip()
     if not texto:
         return JsonResponse({"ok": False, "error": "Escribe tu mensaje."}, status=400)
