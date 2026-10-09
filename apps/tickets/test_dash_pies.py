@@ -128,8 +128,11 @@ class DashPiesTest(SmokeTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'id="wCatScope"')
         self.assertContains(resp, 'id="wPrioScope"')
-        self.assertContains(resp, 'id="wCatLabel"')
-        self.assertContains(resp, 'id="wPrioLabel"')
+        for titulo in ("Solicitudes por categoría",
+                       "Solicitudes por prioridad", "Solicitudes por período",
+                       "Solicitudes recibidas", "Solicitudes vencidas (ANS)"):
+            self.assertContains(resp, titulo)
+        self.assertContains(resp, 'id="pivotDimLabel"')
         self.assertContains(resp, 'id="wComp20"')
         # los tres desplegables ofrecen los seis ámbitos
         for valor in ("abiertas", "en_progreso", "resueltos", "cerrados", "eliminados", "todas"):
@@ -478,5 +481,4 @@ class FiltroResueltasTest(SmokeTestCase):
             css = f.read()
         self.assertIn(".chart-card .dash-head-tools", css)
         self.assertIn("hover: none", css)
-        self.assertIn(".chart-head-icon {\n    width: 30px;", css)
-        self.assertIn("order: 2;", css)
+        self.assertIn("justify-content: center;", css)
