@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, views_monitoreo, views_observador, webhooks
+from . import views, views_chat, views_monitoreo, views_observador, webhooks
 
 app_name = "tickets"
 
@@ -73,6 +73,10 @@ urlpatterns = [
     path("panel/usuarios/importar-glpi/", views.usuarios_importar_glpi, name="usuarios_importar_glpi"),
     path("panel/usuarios/importar/<int:glpi_id>/", views.usuario_importar_uno, name="usuario_importar_uno"),
     path("api/glpi/webhook/", webhooks.glpi_webhook, name="glpi_webhook"),
+    path("chat/api/tickets/", views_chat.chat_tickets, name="chat_tickets"),
+    path("chat/api/hilo/<int:pk>/", views_chat.chat_hilo, name="chat_hilo"),
+    path("chat/api/responder/<int:pk>/", views_chat.chat_responder, name="chat_responder"),
+    path("chat/api/adjuntar/<int:pk>/", views_chat.chat_adjuntar, name="chat_adjuntar"),
     # --- Módulo del observador ---
     path("observador/", views_observador.panel_observador, name="obs_panel"),
     path("observador/buscar/", views_observador.buscar_observador, name="obs_buscar"),

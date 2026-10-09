@@ -1,0 +1,230 @@
+"""Chat corporativo de soporte (técnico ↔ usuario).
+
+Ventana flotante estilo Tidio disponible para todos los roles: el hilo es
+el de un ticket (sus comentarios no internos y sus adjuntos) y escribir
+usa las mismas reglas de cada rol —el dueño responde, el staff gestiona
+y el observador participa en lo de sus zonas— con aviso al otro lado.
+"""
+import logging
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.views.decorators.http import require_GET, require_POST
+
+from apps.tickets.models import ElementoMiLista, Ticket, TicketAdjunto, TicketComentario
+from apps.tickets.notifications import notificar_comentario
+from apps.tickets.services.glpi_client import GlpiError, sync_followup_to_glpi
+
+logger = logging.getLogger(__name__)
+
+TIPOS_PERMITIDOS = (
+    "image/png", "image/jpeg", "image/gif", "image/webp",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/plain",
+)
+MAX_ADJUNTO_BYTES = 8 * 1024 * 1024
+
+
+def _puntos_de(usuario):
+    from apps.tickets.views_observador import puntos_del_observador
+
+    if getattr(usuario, "rol", None) != "observador":
+        return []
+    return puntos_del_observador(usuario)
+
+
+def _puede_ver_hilo(usuario, ticket):
+    """Dueño, staff u observador con el ticket en su alcance."""
+    if not getattr(usuario, "is_authenticated", False):
+        return False
+    rol = getattr(usuario, "rol", None)
+    if rol == "usuario":
+        return (ticket.solicitante_email or "").lower() == (usuario.email or "").lower()
+    if getattr(usuario, "es_staff_helpdesk", False):
+        return True
+    if rol == "observador":
+        if (ticket.solicitante_punto or "") in _puntos_de(usuario):
+            return True
+        return bool(
+            ticket.solicitante_email
+            and ElementoMiLista.objects.filter(
+                observador=usuario, usuario_email__iexact=ticket.solicitante_email
+            ).exists()
+        )
+    return False
+
+
+def _avatar_url(usuario):
+    try:
+        if usuario and getattr(usuario, "avatar", None):
+            return usuario.avatar.url
+    except Exception:  # noqa: BLE001 - sin foto no se rompe el hilo
+        pass
+    return ""
+
+
+def _insignia(usuario):
+    if not usuario:
+        return "Mesa de ayuda"
+    return {"usuario": "Usuario", "observador": "Observador",
+            "tecnico": "Técnico", "admin": "Admin"}.get(
+                getattr(usuario, "rol", ""), "Soporte")
+
+
+def _tickets_del_rol(usuario, limite=20):
+    rol = getattr(usuario, "rol", None)
+    qs = Ticket.objects.all().order_by("-fecha_creacion")
+    if rol == "usuario":
+        qs = qs.filter(solicitante_email__iexact=usuario.email or "")
+    elif rol == "tecnico":
+        qs = qs.filter(
+            Q(tecnico_asignado_id=usuario.pk)
+            | Q(estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
+                tecnico_asignado__isnull=True)
+        )
+    elif rol == "observador":
+        puntos = _puntos_de(usuario)
+        correos = list(
+            ElementoMiLista.objects.filter(observador=usuario)
+            .exclude(usuario_email="")
+            .values_list("usuario_email", flat=True)[:200]
+        )
+        filtro = Q()
+        if puntos:
+            filtro |= Q(solicitante_punto__in=puntos)
+        if correos:
+            filtro |= Q(solicitante_email__in=correos)
+        qs = qs.filter(filtro) if filtro else qs.none()
+    return qs[:limite]
+
+
+@login_required
+@require_GET
+def chat_tickets(request):
+    """Tickets con los que puede chatear quien pregunta."""
+    tickets = _tickets_del_rol(request.user)
+    return JsonResponse({
+        "ok": True,
+        "tickets": [
+            {"pk": t.pk, "codigo": t.codigo, "titulo": t.titulo,
+             "estado": t.estado, "estado_display": t.get_estado_display()}
+            for t in tickets
+        ],
+    })
+
+
+@login_required
+@require_GET
+def chat_hilo(request, pk):
+    """Hilo del ticket: mensajes no internos + adjuntos + foto de perfil."""
+    ticket = get_object_or_404(Ticket, pk=pk)
+    if not _puede_ver_hilo(request.user, ticket):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    try:
+        desde = int(request.GET.get("desde") or 0)
+    except (TypeError, ValueError):
+        desde = 0
+    comentarios = (
+        ticket.comentarios.filter(es_interno=False)
+        .select_related("usuario")
+        .order_by("fecha", "id")
+    )
+    if desde:
+        comentarios = comentarios.filter(pk__gt=desde)
+    mensajes = []
+    for c in comentarios[:200]:
+        mensajes.append({
+            "id": c.pk,
+            "autor": c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda"),
+            "insignia": _insignia(c.usuario) if c.usuario_id else "Mesa de ayuda",
+            "avatar": _avatar_url(c.usuario),
+            "texto": c.comentario,
+            "fecha": timezone.localtime(c.fecha).strftime("%d/%m/%Y %H:%M"),
+            "propio": bool(c.usuario_id and request.user.pk and c.usuario_id == request.user.pk),
+        })
+    adjuntos = [
+        {"id": a.pk, "nombre": a.nombre_original,
+         "url": a.archivo.url if a.archivo else "",
+         "es_imagen": a.es_imagen,
+         "fecha": timezone.localtime(a.fecha_subida).strftime("%d/%m/%Y %H:%M")}
+        for a in ticket.adjuntos.all().order_by("fecha_subida", "id")[:20]
+    ]
+    return JsonResponse({
+        "ok": True, "mensajes": mensajes, "adjuntos": adjuntos,
+        "ticket": {"pk": ticket.pk, "codigo": ticket.codigo, "titulo": ticket.titulo},
+    })
+
+
+@login_required
+@require_POST
+def chat_responder(request, pk):
+    """Escribe en el hilo con las reglas del rol y avisa al otro lado."""
+    ticket = get_object_or_404(Ticket, pk=pk)
+    if not _puede_ver_hilo(request.user, ticket):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    u = request.user
+    if getattr(u, "rol", None) not in ("usuario", "tecnico", "admin", "observador"):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    texto = (request.POST.get("mensaje") or "").strip()
+    if not texto:
+        return JsonResponse({"ok": False, "error": "Escribe tu mensaje."}, status=400)
+    if len(texto) > 2000:
+        return JsonResponse({"ok": False, "error": "Máximo 2000 caracteres."}, status=400)
+    comentario = TicketComentario.objects.create(
+        ticket=ticket, usuario=u, autor_nombre=u.nombre,
+        comentario=texto, es_interno=False,
+    )
+    notificar_comentario(ticket, u.nombre, texto, actor=u)
+    if ticket.glpi_id:
+        try:
+            sync_followup_to_glpi(ticket, texto)
+        except GlpiError:
+            logger.warning("Chat sin GLPI en %s", ticket.codigo)
+    return JsonResponse({
+        "ok": True,
+        "mensaje": {
+            "id": comentario.pk, "autor": u.nombre, "insignia": _insignia(u),
+            "avatar": _avatar_url(u), "texto": texto,
+            "fecha": timezone.localtime(comentario.fecha).strftime("%d/%m/%Y %H:%M"),
+            "propio": True,
+        },
+    })
+
+
+@login_required
+@require_POST
+def chat_adjuntar(request, pk):
+    """Sube imagen, PDF o documento al hilo (máx. 8 MB)."""
+    ticket = get_object_or_404(Ticket, pk=pk)
+    if not _puede_ver_hilo(request.user, ticket):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    archivo = request.FILES.get("archivo")
+    if not archivo:
+        return JsonResponse({"ok": False, "error": "Sin archivo."}, status=400)
+    if (archivo.content_type or "") not in TIPOS_PERMITIDOS:
+        return JsonResponse(
+            {"ok": False, "error": "Solo imágenes, PDF o documentos."}, status=400)
+    if archivo.size > MAX_ADJUNTO_BYTES:
+        return JsonResponse(
+            {"ok": False, "error": "Máximo 8 MB por archivo."}, status=400)
+    adjunto = TicketAdjunto.objects.create(
+        ticket=ticket, nombre_original=archivo.name[:255], archivo=archivo,
+        mime_type=archivo.content_type or "application/octet-stream",
+        tamano_bytes=archivo.size, subido_por=request.user.email,
+    )
+    return JsonResponse({
+        "ok": True,
+        "adjunto": {
+            "id": adjunto.pk, "nombre": adjunto.nombre_original,
+            "url": adjunto.archivo.url if adjunto.archivo else "",
+            "es_imagen": adjunto.es_imagen,
+            "fecha": timezone.localtime(adjunto.fecha_subida).strftime("%d/%m/%Y %H:%M"),
+        },
+    })
