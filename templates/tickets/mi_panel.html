@@ -125,11 +125,15 @@
                                 {% if ticket.estado == 'abierto' %}
                                 <button type="button" class="icon-btn" data-action="editar" data-pk="{{ ticket.pk }}" data-codigo="{{ ticket.codigo }}" title="Editar" {% if ticket.estado != 'abierto' %}disabled{% endif %}><svg class="icon"><use href="#i-edit"/></svg></button>
                                 {% endif %}
+                                {% if request.user.puede_cerrar_tickets %}
                                 {% if ticket.estado == 'abierto' or ticket.estado == 'en-progreso' %}
                                 <button type="button" class="icon-btn icon-btn-close" data-action="cerrar" data-pk="{{ ticket.pk }}" data-codigo="{{ ticket.codigo }}" title="Cerrar"><svg class="icon"><use href="#i-ban"/></svg></button>
                                 {% endif %}
-                                {% if ticket.estado == 'abierto' %}
+                                {% endif %}
+                                {% if request.user.puede_eliminar_tickets %}
+                                {% if not ticket.fue_resuelto or not ticket.esta_cerrado %}
                                 <button type="button" class="icon-btn icon-btn-del" data-action="eliminar" data-pk="{{ ticket.pk }}" data-codigo="{{ ticket.codigo }}" title="Eliminar"><svg class="icon"><use href="#i-trash"/></svg></button>
+                                {% endif %}
                                 {% endif %}
                             </div>
                         </td>

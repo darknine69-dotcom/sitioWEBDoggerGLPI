@@ -96,6 +96,22 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         help_text="Si está activo, al purgar de la papelera un ticket se eliminará también del sistema GLPI.",
     )
 
+    # Permisos que el administrador otorga por cuenta: el usuario puede
+    # cerrar y eliminar sus tickets, y el técnico puede reabrir. Activos
+    # por defecto para no cambiar el comportamiento actual.
+    puede_cerrar_tickets = models.BooleanField(
+        "Puede cerrar tickets", default=True,
+        help_text="El usuario puede cerrar sus propias solicitudes.",
+    )
+    puede_eliminar_tickets = models.BooleanField(
+        "Puede eliminar tickets", default=True,
+        help_text="El usuario puede mandar sus solicitudes a la papelera.",
+    )
+    puede_reabrir_tickets = models.BooleanField(
+        "Puede reabrir tickets", default=True,
+        help_text="El técnico puede devolver un ticket a abierto.",
+    )
+
     objects = UsuarioManager()
 
     USERNAME_FIELD = "email"

@@ -64,6 +64,13 @@
 .profile-tabs button svg { width: 15px; height: 15px; }
 .profile-tabs button:hover { color: var(--dogger-red); }
 .profile-tabs button.is-active { color: var(--dogger-red); border-bottom-color: var(--dogger-red); }
+.profile-tabs .profile-tab-link {
+    display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px;
+    border-bottom: 3px solid transparent; font-size: 13px; font-weight: 700;
+    color: var(--ink-muted); text-decoration: none;
+}
+.profile-tabs .profile-tab-link:hover { color: var(--dogger-red); }
+.profile-tabs .profile-tab-link svg { width: 15px; height: 15px; }
 
 /* ---- Paneles ---- */
 .profile-panel { display: none; }
@@ -221,6 +228,9 @@
                 <button type="button" data-tab="general"><svg class="icon-sm"><use href="#i-settings"/></svg> General</button>
                 <button type="button" data-tab="accesibilidad"><svg class="icon-sm"><use href="#i-help"/></svg> Accesibilidad</button>
                 <button type="button" data-tab="navegacion"><svg class="icon-sm"><use href="#i-layers"/></svg> Navegación</button>
+                {% if request.user.rol == 'admin' %}
+                <a class="profile-tab-link" href="{% url 'accounts:permisos' %}"><svg class="icon-sm"><use href="#i-shield"/></svg> Permisos</a>
+                {% endif %}
             </nav>
 
             <!-- Visualización -->

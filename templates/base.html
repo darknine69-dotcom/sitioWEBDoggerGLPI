@@ -342,6 +342,12 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         Consultar ticket HD
                     </a>
+                    {% if request.user.rol == 'admin' %}
+                    <a href="{% url 'accounts:permisos' %}" class="user-dropdown-item" role="menuitem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        Permisos
+                    </a>
+                    {% endif %}
                     <div class="user-dropdown-divider"></div>
                     <form method="post" action="{% url 'accounts:logout' %}">
                         {% csrf_token %}

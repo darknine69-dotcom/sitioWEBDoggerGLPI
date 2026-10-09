@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Permisos{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block header_title %}Permisos{% endblock %}
+{% block header_desc %}El administrador otorga: cerrar y eliminar (usuarios), reabrir (técnicos).{% endblock %}
+
+{% block content %}
+<main class="wrap">
+    <div class="panel">
+        <form method="get" class="cat-publico-busca" style="margin-bottom:14px">
+            <div class="cat-publico-busca-campo" style="flex:1 1 240px">
+                <svg class="icon"><use href="#i-search"/></svg>
+                <input type="search" name="q" value="{{ q }}" placeholder="Nombre o correo" aria-label="Buscar cuenta">
+            </div>
+            <select name="rol" class="obs-buscador-tipo" aria-label="Filtrar por rol">
+                <option value="">Todos los roles</option>
+                {% for val, etiqueta in roles %}
+                <option value="{{ val }}"{% if rol_sel == val %} selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm">Filtrar</button>
+        </form>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="table-scroll">
+                <table class="obs-tabla">
+                    <thead>
+                        <tr>
+                            <th>Cuenta</th>
+                            <th>Cerrar</th>
+                            <th>Eliminar</th>
+                            <th>Reabrir</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in filas %}
+                        <tr>
+                            <td>
+                                <strong>{{ u.nombre }}</strong>
+                                <small>{{ u.email }} · {{ u.get_rol_display }}</small>
+                            </td>
+                            <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}"></td>
+                            <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}"></td>
+                            <td><input type="checkbox" name="perm_{{ u.pk }}_reabrir" value="1"{% if u.puede_reabrir_tickets %} checked{% endif %} aria-label="Reabrir para {{ u.email }}"></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="obs-sin-datos">Sin cuentas.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p style="margin-top:12px">
+                <button type="submit" class="btn btn-primary btn-sm">Guardar permisos</button>
+            </p>
+        </form>
+    </div>
+</main>
+{% endblock %}

@@ -3314,6 +3314,12 @@ def cambiar_estado(request, pk):
     validos = {c[0] for c in Ticket.Estado.choices}
     if nuevo not in validos:
         messages.error(request, "Estado no valido.")
+    elif (
+        nuevo == Ticket.Estado.ABIERTO
+        and getattr(request.user, "rol", None) == "tecnico"
+        and not getattr(request.user, "puede_reabrir_tickets", False)
+    ):
+        messages.error(request, "El administrador no te permite reabrir tickets.")
     else:
         if nuevo == Ticket.Estado.RESUELTO:
             # Marcar resuelto cierra el ticket: queda registrado que se
@@ -3715,6 +3721,11 @@ def mi_ticket_editar_ajax(request, pk):
 @require_POST
 def mi_ticket_cerrar_ajax(request, pk):
     """Cerrar el ticket del usuario sin recargar la página."""
+    if not getattr(request.user, "puede_cerrar_tickets", False):
+        return JsonResponse(
+            {"ok": False, "error": "El administrador no te permite cerrar tickets."},
+            status=403,
+        )
     ticket = _mi_ticket_del_usuario(request, pk)
     if ticket.estado in (ticket.Estado.RESUELTO, ticket.Estado.CERRADO):
         return JsonResponse(
@@ -3747,6 +3758,11 @@ def mi_ticket_eliminar_ajax(request, pk):
 
     Antes `ticket.delete()` lo borraba sin vuelta atrás.
     """
+    if not getattr(request.user, "puede_eliminar_tickets", False):
+        return JsonResponse(
+            {"ok": False, "error": "El administrador no te permite eliminar tickets."},
+            status=403,
+        )
     ticket = _mi_ticket_del_usuario(request, pk)
     codigo = ticket.codigo
     tecnico = ticket.tecnico_asignado

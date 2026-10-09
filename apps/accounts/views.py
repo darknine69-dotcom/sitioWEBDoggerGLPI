@@ -1,8 +1,9 @@
-from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth import get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.conf import settings
 from django.contrib import messages
+from django.db.models import Q
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.http import FileResponse, Http404, JsonResponse
@@ -125,6 +126,43 @@ class StaffLogoutView(View):
     def get(self, request):
         logout(request)
         return redirect("tickets:portal")
+
+
+@login_required
+def permisos_roles(request):
+    """El admin otorga permisos: cerrar/eliminar (usuarios) y reabrir (técnicos).
+
+    Aparece en el menú de ajustes, sección Mi perfil: solo administradores.
+    """
+    from django.http import Http404
+
+    if request.user.rol != "admin":
+        raise Http404("Solo los administradores gestionan los permisos.")
+    User = get_user_model()
+    if request.method == "POST":
+        for u in User.objects.all():
+            marca = lambda campo: request.POST.get(f"perm_{u.pk}_{campo}") in ("1", "on", "true")
+            u.puede_cerrar_tickets = marca("cerrar")
+            u.puede_eliminar_tickets = marca("eliminar")
+            u.puede_reabrir_tickets = marca("reabrir")
+            u.save(update_fields=[
+                "puede_cerrar_tickets", "puede_eliminar_tickets", "puede_reabrir_tickets",
+            ])
+        messages.success(request, "Permisos guardados.")
+        volver = request.POST.get("volver") or reverse("accounts:permisos")
+        return redirect(volver)
+    q = (request.GET.get("q") or "").strip()
+    rol = (request.GET.get("rol") or "").strip()
+    usuarios = User.objects.all().order_by("nombre")
+    if rol:
+        usuarios = usuarios.filter(rol=rol)
+    if q:
+        usuarios = usuarios.filter(Q(nombre__icontains=q) | Q(email__icontains=q))
+    return render(
+        request, "accounts/permisos.html",
+        {"filas": usuarios, "q": q, "rol_sel": rol,
+         "roles": User.Rol.choices, "nav_perfil": "is-active"},
+    )
 
 
 @login_required
