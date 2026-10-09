@@ -3258,6 +3258,12 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .ax-item .icon { width: 16px; height: 16px; color: var(--dogger-red); }
 /* Módulo del observador con tipografía corporativa. */
 .obs-page { font-family: var(--font-corp); }
+/* Configuración compacta: filas de interruptor + campo en una línea. */
+.cfg-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.cfg-row:last-child { border-bottom: 0; }
+.cfg-row .cfg-label { flex: none; min-width: 150px; font-size: 13px; font-weight: 700; }
+.cfg-row input[type="text"], .cfg-row input[type="email"], .cfg-row input[type="url"] { flex: 1; min-width: 0; font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
+.cfg-row input:focus { outline: none; border-color: var(--dogger-red); }
 @media (max-width: 520px) {
     .sw-win { right: 8px; left: 8px; width: auto; bottom: 84px; height: 70vh; }
 }

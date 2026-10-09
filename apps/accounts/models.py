@@ -119,10 +119,6 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         "Puede responder en el chat", default=True,
         help_text="Puede escribir en el chat de soporte.",
     )
-    puede_presionar_tecnicos = models.BooleanField(
-        "Puede presionar técnicos", default=True,
-        help_text="El observador puede escribirles a los técnicos.",
-    )
     atajos_rapidos = models.JSONField(
         "Atajos rápidos", default=list, blank=True,
         help_text="Claves del botón X de atajos. Vacío = los de su rol.",

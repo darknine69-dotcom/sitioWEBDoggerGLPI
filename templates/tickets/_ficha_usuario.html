@@ -50,7 +50,6 @@
             <span class="perm-chip {% if not u.puede_reabrir_tickets %}off{% endif %}">Reabrir</span>
             <span class="perm-chip {% if not u.puede_crear_tickets %}off{% endif %}">Crear</span>
             <span class="perm-chip {% if not u.puede_responder_chat %}off{% endif %}">Chatear</span>
-            <span class="perm-chip {% if not u.puede_presionar_tecnicos %}off{% endif %}">Presionar</span>
         </div>
     </div>
     {% if u.rol == 'tecnico' or u.rol == 'admin' %}

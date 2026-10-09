@@ -1446,7 +1446,6 @@ def usuarios_lista(request):
                 "reabrir": u.puede_reabrir_tickets,
                 "crear": u.puede_crear_tickets,
                 "responder": u.puede_responder_chat,
-                "presionar": u.puede_presionar_tecnicos,
             },
             "disponibilidad": disp_por_tec.get(u.pk, []),
             "eventos": evts_por_tec.get(u.pk, [])[:6],

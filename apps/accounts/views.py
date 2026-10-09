@@ -149,7 +149,6 @@ def permisos_roles(request):
             ("puede_reabrir_tickets", "reabrir"),
             ("puede_crear_tickets", "crear"),
             ("puede_responder_chat", "responder"),
-            ("puede_presionar_tecnicos", "presionar"),
         ):
             setattr(
                 u, campo,
@@ -158,7 +157,7 @@ def permisos_roles(request):
         u.save(update_fields=[
             "puede_cerrar_tickets", "puede_eliminar_tickets",
             "puede_reabrir_tickets", "puede_crear_tickets",
-            "puede_responder_chat", "puede_presionar_tecnicos",
+            "puede_responder_chat",
         ])
     messages.success(request, "Permisos guardados.")
     return redirect(reverse("accounts:ajustes") + "#pagina")
@@ -168,15 +167,6 @@ def permisos_roles(request):
 def ajustes_cuenta(request):
     user = request.user
     glpi_enabled = _glpi_available() and bool(getattr(user, "glpi_user_id", None))
-
-    if request.method == "POST" and request.POST.get("guardar_atajos") == "1":
-        from .atajos import disponibles_para
-
-        validas = {e[0] for e in disponibles_para(user.rol)}
-        user.atajos_rapidos = [c for c in request.POST.getlist("atajos") if c in validas]
-        user.save(update_fields=["atajos_rapidos"])
-        messages.success(request, "Atajos actualizados.")
-        return redirect(reverse("accounts:ajustes") + "#atajos")
 
     if request.method == "POST":
         es_staff = bool(getattr(user, "es_staff_helpdesk", False))
@@ -210,12 +200,6 @@ def ajustes_cuenta(request):
         "manual_disponible": archivo_manual(user.rol) is not None,
         "manual_archivo": nombre_manual(user.rol),
     }
-    from .atajos import POR_ROL, disponibles_para
-
-    ctx["atajos_catalogo"] = disponibles_para(user.rol)
-    ctx["atajos_actuales"] = (
-        list(user.atajos_rapidos or []) or list(POR_ROL.get(user.rol, ()))
-    )
     if user.rol == "admin":
         from apps.tickets.models import ConfigSitio
 
@@ -228,9 +212,13 @@ def ajustes_cuenta(request):
         except Exception:
             ctx["config_sitio"] = None
             ctx["config_sitio_sin_migracion"] = True
-        ctx["cuentas_permisos"] = get_user_model().objects.all().order_by("nombre")
+        rol_perm = (request.GET.get("rol_perm") or "").strip()
+        cuentas = get_user_model().objects.all().order_by("nombre")
+        if rol_perm:
+            cuentas = cuentas.filter(rol=rol_perm)
+        ctx["cuentas_permisos"] = cuentas
+        ctx["rol_perm_sel"] = rol_perm
     return render(request, "accounts/ajustes.html", ctx)
-
 
 # Un archivo del manual por rol. Se guardan en apps/accounts/documentos/.
 # El observador ve el manual del tecnico: su sesion es de solo lectura y
