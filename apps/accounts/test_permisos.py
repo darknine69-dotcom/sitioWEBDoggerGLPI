@@ -34,15 +34,16 @@ class PermisosRolesTest(TestCase):
             self.client.get(reverse("accounts:permisos")).status_code, 404)
         self.client.force_login(self.admin)
         respuesta = self.client.get(reverse("accounts:permisos"))
+        self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#pagina")
+        respuesta = self.client.get(reverse("accounts:ajustes"))
         self.assertEqual(respuesta.status_code, 200)
-        self.assertContains(respuesta, "Cerrar")
-        self.assertContains(respuesta, "Página")
+        self.assertContains(respuesta, "Permisos por cuenta")
         html = self.client.get(reverse("tickets:dashboard")).content.decode()
-        self.assertIn('sidebar-label">Configuración', html)
+        self.assertNotIn('sidebar-label">Configuración', html)
         respuesta = self.client.post(reverse("accounts:permisos"), {
             f"perm_{self.usuario.pk}_cerrar": "1",
         })
-        self.assertEqual(respuesta.status_code, 302)
+        self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#pagina")
         self.usuario.refresh_from_db()
         self.assertTrue(self.usuario.puede_cerrar_tickets)
         self.assertFalse(self.usuario.puede_eliminar_tickets)
@@ -57,7 +58,7 @@ class PermisosRolesTest(TestCase):
             "correo_soporte": "nuevo@dogger.com.co",
             "siguiente": reverse("accounts:permisos"),
         })
-        self.assertRedirects(respuesta, reverse("accounts:permisos"))
+        self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#pagina")
         self.assertEqual(ConfigSitio.cargar().correo_soporte, "nuevo@dogger.com.co")
 
     def test_cerrar_y_eliminar_exigen_permiso(self):

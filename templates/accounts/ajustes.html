@@ -527,6 +527,44 @@
                         <button type="submit" class="btn btn-primary">Guardar configuración</button>
                     </div>
                 </form>
+
+                <div class="settings-panel-header">
+                    <h3>Permisos por cuenta</h3>
+                    <p>Cerrar y eliminar para usuarios, reabrir para técnicos.</p>
+                </div>
+                <form method="post" action="{% url 'accounts:permisos' %}" class="settings-form">
+                    {% csrf_token %}
+                    <div class="table-scroll">
+                        <table class="obs-tabla">
+                            <thead>
+                                <tr>
+                                    <th>Cuenta</th>
+                                    <th>Cerrar</th>
+                                    <th>Eliminar</th>
+                                    <th>Reabrir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in cuentas_permisos %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ u.nombre }}</strong>
+                                        <small>{{ u.email }} · {{ u.get_rol_display }}</small>
+                                    </td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_reabrir" value="1"{% if u.puede_reabrir_tickets %} checked{% endif %} aria-label="Reabrir para {{ u.email }}"></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="obs-sin-datos">Sin cuentas.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="settings-actions">
+                        <button type="submit" class="btn btn-primary">Guardar permisos</button>
+                    </div>
+                </form>
             </section>
             {% endif %}
         </div>

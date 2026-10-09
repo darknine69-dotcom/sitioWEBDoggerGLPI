@@ -226,10 +226,6 @@
                     {% if papelera_total %}<span class="sidebar-count" data-nivel="bajo">{{ papelera_total }}</span>{% endif %}
                     {% if papelera_total %}<span class="nav-count-sr">{{ papelera_total }} tickets en la papelera</span>{% endif %}
                 </a>
-                <a href="{% url 'accounts:permisos' %}" class="sidebar-link{% nav_active 'permisos' %}"{% nav_current 'permisos' %} data-title="Configuración">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-settings"/></svg>
-                    <span class="sidebar-label">Configuración</span>
-                </a>
             </div>
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Agenda</p>

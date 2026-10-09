@@ -130,52 +130,28 @@ class StaffLogoutView(View):
 
 @login_required
 def permisos_roles(request):
-    """Configuración de la página: permisos por cuenta y ajustes generales.
+    """Guarda los permisos por cuenta desde la sección Página de Ajustes.
 
-    El admin otorga permisos (cerrar/eliminar a usuarios, reabrir a
-    técnicos) y configura contacto, redes y GLPI. Vive en el menú lateral,
-    no en Mi cuenta.
+    Solo administradores. La vista vive en Ajustes (#pagina); el GET
+    redirige allá para no tener dos páginas de configuración.
     """
     from django.http import Http404
 
     if request.user.rol != "admin":
-        raise Http404("Solo los administradores gestionan la configuración.")
+        raise Http404("Solo los administradores gestionan los permisos.")
+    if request.method != "POST":
+        return redirect(reverse("accounts:ajustes") + "#pagina")
     User = get_user_model()
-    if request.method == "POST":
-        for u in User.objects.all():
-            marca = lambda campo: request.POST.get(f"perm_{u.pk}_{campo}") in ("1", "on", "true")
-            u.puede_cerrar_tickets = marca("cerrar")
-            u.puede_eliminar_tickets = marca("eliminar")
-            u.puede_reabrir_tickets = marca("reabrir")
-            u.save(update_fields=[
-                "puede_cerrar_tickets", "puede_eliminar_tickets", "puede_reabrir_tickets",
-            ])
-        messages.success(request, "Permisos guardados.")
-        volver = request.POST.get("volver") or reverse("accounts:permisos")
-        return redirect(volver)
-    q = (request.GET.get("q") or "").strip()
-    rol = (request.GET.get("rol") or "").strip()
-    usuarios = User.objects.all().order_by("nombre")
-    if rol:
-        usuarios = usuarios.filter(rol=rol)
-    if q:
-        usuarios = usuarios.filter(Q(nombre__icontains=q) | Q(email__icontains=q))
-    try:
-        from apps.tickets.models import ConfigSitio
-
-        ConfigSitio.objects.only("panel_mostrar_actividad_glpi").exists()
-        config_sitio = ConfigSitio.cargar()
-        config_sitio_sin_migracion = False
-    except Exception:
-        config_sitio = None
-        config_sitio_sin_migracion = True
-    return render(
-        request, "accounts/permisos.html",
-        {"filas": usuarios, "q": q, "rol_sel": rol,
-         "roles": User.Rol.choices, "nav_config": "is-active",
-         "config_sitio": config_sitio,
-         "config_sitio_sin_migracion": config_sitio_sin_migracion},
-    )
+    for u in User.objects.all():
+        marca = lambda campo: request.POST.get(f"perm_{u.pk}_{campo}") in ("1", "on", "true")
+        u.puede_cerrar_tickets = marca("cerrar")
+        u.puede_eliminar_tickets = marca("eliminar")
+        u.puede_reabrir_tickets = marca("reabrir")
+        u.save(update_fields=[
+            "puede_cerrar_tickets", "puede_eliminar_tickets", "puede_reabrir_tickets",
+        ])
+    messages.success(request, "Permisos guardados.")
+    return redirect(reverse("accounts:ajustes") + "#pagina")
 
 
 @login_required
@@ -227,6 +203,7 @@ def ajustes_cuenta(request):
         except Exception:
             ctx["config_sitio"] = None
             ctx["config_sitio_sin_migracion"] = True
+        ctx["cuentas_permisos"] = get_user_model().objects.all().order_by("nombre")
     return render(request, "accounts/ajustes.html", ctx)
 
 
