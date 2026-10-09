@@ -385,7 +385,6 @@
             <section id="pagina" class="settings-panel" data-settings-panel="pagina">
                 <div class="settings-panel-header">
                     <h3>Configuración de la página</h3>
-                    <p>Interruptores y enlaces de lo que se muestra.</p>
                 </div>
                 <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form">
                     {% csrf_token %}
@@ -433,10 +432,10 @@
                                value="{{ config_sitio.correo_soporte }}" maxlength="254" placeholder="sistemasbogota@dogger.com.co">
                     </div>
 
+                    <hr class="cfg-sep">
                     <div class="settings-panel-header">
                         <h3>Redes sociales</h3>
-                    </div>
-                    <div class="cfg-row">
+                    </div>                    <div class="cfg-row">
                         <label class="toggle-switch">
                             <input type="checkbox" name="pagina_mostrar_redes" value="1" onchange="this.form.submit()"
                                    {% if config_sitio.pagina_mostrar_redes %}checked{% endif %}>
@@ -487,9 +486,9 @@
 
                 </form>
 
+                <hr class="cfg-sep">
                 <div class="settings-panel-header">
                     <h3>Permisos por cuenta</h3>
-                    <p>Cerrar y eliminar para usuarios, reabrir para técnicos.</p>
                 </div>
                 <form method="get" action="{% url 'accounts:ajustes' %}#pagina" class="settings-form" style="margin-bottom:8px">
                     <div class="cfg-row">

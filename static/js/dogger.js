@@ -384,14 +384,23 @@
     });
 
     /* ---- Ajustes de cuenta: tabs + preview de avatar ---- */
+    var TITULOS_AJUSTES = {
+        perfil: "Mi perfil", password: "Contraseña", ayuda: "Ayuda y tour",
+        notificaciones: "Notificaciones", glpi: "GLPI", pagina: "Página"
+    };
+    function tituloAjustes(name) {
+        if (TITULOS_AJUSTES[name]) { document.title = "Dogger · " + TITULOS_AJUSTES[name]; }
+    }
     document.querySelectorAll("[data-settings-tab]").forEach(function (tab) {
         tab.addEventListener("click", function (e) {
             e.preventDefault();
             document.querySelectorAll("[data-settings-tab]").forEach(function (t) { t.classList.remove("active"); });
             document.querySelectorAll("[data-settings-panel]").forEach(function (p) { p.classList.remove("active"); });
             tab.classList.add("active");
-            var target = document.querySelector('[data-settings-panel="' + tab.getAttribute("data-settings-tab") + '"]');
+            var name = tab.getAttribute("data-settings-tab");
+            var target = document.querySelector('[data-settings-panel="' + name + '"]');
             if (target) target.classList.add("active");
+            tituloAjustes(name);
         });
     });
     function openSettingsPanel(name) {
@@ -402,6 +411,7 @@
         document.querySelectorAll("[data-settings-panel]").forEach(function (p) { p.classList.remove("active"); });
         tab.classList.add("active");
         panel.classList.add("active");
+        tituloAjustes(name);
         setTimeout(function () {
             if (panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 50);

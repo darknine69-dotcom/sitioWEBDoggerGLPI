@@ -169,6 +169,18 @@ class PermisosRolesTest(TestCase):
         self.assertIn("axFab", html)
         self.assertIn("Consultar ticket", html)
 
+    def test_encabezados_grises_y_titulos_por_pestana(self):
+        from django.contrib.staticfiles import finders
+
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertIn(
+            ".perm-lista .table-scroll table.obs-tabla thead th", css)
+        with open(finders.find("js/dogger.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn("TITULOS_AJUSTES", js)
+        self.assertIn("Contraseña", js)
+
     def test_redes_en_footer_y_teams_en_contacto(self):
         from apps.tickets.models import ConfigSitio
 
