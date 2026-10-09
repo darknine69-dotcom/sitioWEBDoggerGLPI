@@ -3271,7 +3271,7 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .perm-lista:hover::-webkit-scrollbar { width: 6px; }
 .perm-lista:hover::-webkit-scrollbar-track { background: transparent; }
 .perm-lista:hover::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
-.perm-lista thead th { position: sticky; top: 0; background: #FBFAF7; z-index: 1; }
+.perm-lista thead th { position: sticky; top: 0; background: #ECECEC; z-index: 1; }
 @media (max-width: 520px) {
     .sw-win { right: 8px; left: 8px; width: auto; bottom: 84px; height: 70vh; }
 }
@@ -6612,6 +6612,7 @@ html[style*="--sb-accent"] .notif-head {
     position: sticky;
     top: 0;
     z-index: 3;
+    background: #ECECEC;
     box-shadow: 0 1px 0 var(--line);
 }
 .obs-tecnico-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
