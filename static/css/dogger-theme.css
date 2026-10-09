@@ -3246,19 +3246,19 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .sw-empty { text-align: center; color: var(--ink-muted); font-size: 12.5px; margin: auto 0; }
 
 /* ---- Botón X de atajos rápidos (abajo a la izquierda). ---- */
-.ax-fab { position: fixed; left: 20px; bottom: 22px; z-index: 9300; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.ax-fab { position: fixed; right: 20px; bottom: 92px; z-index: 9300; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .ax-btn { width: 52px; height: 52px; border-radius: 50%; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; background: #241F1C; color: #fff; box-shadow: 0 8px 22px rgba(23,20,18,.4); transition: transform .18s ease; }
 .ax-btn:hover { transform: scale(1.06); }
 .ax-btn .icon { width: 22px; height: 22px; transition: transform .2s ease; }
 .ax-fab[data-open] .ax-btn .icon { transform: rotate(90deg); }
-.ax-menu { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
+.ax-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
 .ax-fab[data-open] .ax-menu { opacity: 1; transform: none; pointer-events: auto; }
 .ax-menu .ax-item { opacity: 0; transform: translateY(6px); transition: opacity .18s ease, transform .18s ease; }
 .ax-fab[data-open] .ax-menu .ax-item { opacity: 1; transform: none; }
 .ax-fab[data-open] .ax-menu .ax-item:nth-child(2) { transition-delay: .05s; }
 .ax-fab[data-open] .ax-menu .ax-item:nth-child(3) { transition-delay: .1s; }
 .ax-item { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; font-size: 13px; font-weight: 700; font-family: var(--font-corp); color: var(--ink); text-decoration: none; cursor: pointer; box-shadow: var(--shadow-pop); white-space: nowrap; transition: transform .15s ease, border-color .15s ease; }
-.ax-item:hover { transform: translateX(3px); border-color: var(--dogger-red); }
+.ax-item:hover { transform: translateX(-3px); border-color: var(--dogger-red); }
 .ax-item .icon { width: 16px; height: 16px; color: var(--dogger-red); }
 /* Módulo del observador con tipografía corporativa. */
 .obs-page { font-family: var(--font-corp); }
@@ -3269,6 +3269,11 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .cfg-row input[type="text"], .cfg-row input[type="email"], .cfg-row input[type="url"] { flex: 1; min-width: 0; font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
 .cfg-row input:focus { outline: none; border-color: var(--dogger-red); }
 .cfg-sep { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
+/* Tarjeta GLPI: estado y opciones en bloque elevado con letras cuidadas. */
+.glpi-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 6px 14px; margin-bottom: 14px; box-shadow: var(--shadow-card); }
+.glpi-pill { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; border-radius: 999px; padding: 2px 10px; }
+.glpi-pill.on { background: rgba(5,150,105,.12); color: #059669; }
+.glpi-pill.off { background: #F1EDE6; color: #8A8478; }
 /* Lista de permisos: 6 cuentas visibles, resto con scroll al hover. */
 .perm-lista { max-height: 342px; overflow-y: auto; scrollbar-width: none; border: 1px solid var(--line); border-radius: 10px; }
 .perm-lista::-webkit-scrollbar { width: 0; }

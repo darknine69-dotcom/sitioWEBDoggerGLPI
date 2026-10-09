@@ -164,14 +164,18 @@ class PermisosRolesTest(TestCase):
         self.assertNotIn("btn-whatsapp", html)
 
     def test_atajos_por_defecto_segun_rol(self):
-        for usuario, esperado in (
-            (self.usuario, ("Consultar ticket", "Nueva solicitud", "Mis solicitudes")),
+        for usuario, esperado, ausente in (
+            (self.usuario, ("Nueva solicitud", "Mis solicitudes"), ()),
         ):
             self.client.force_login(usuario)
             html = self.client.get(reverse("tickets:mi_panel")).content.decode()
             self.assertIn("axFab", html)
             for etiqueta in esperado:
                 self.assertIn(etiqueta, html)
+            for etiqueta in ausente:
+                self.assertNotIn(etiqueta, html)
+        html = self.client.get(reverse("tickets:mi_panel")).content.decode()
+        self.assertNotIn(">Consultar ticket<", html)
 
     def test_x_por_rol_tecnico_y_obs(self):
         tec = get_user_model().objects.create_user(
@@ -180,15 +184,16 @@ class PermisosRolesTest(TestCase):
         )
         self.client.force_login(tec)
         html = self.client.get(reverse("tickets:panel_tecnico")).content.decode()
-        for etiqueta in ("Consultar ticket", "Mis asignados", "Tickets"):
+        for etiqueta in ("Mis asignados", "Tickets"):
             self.assertIn(etiqueta, html)
+        self.assertNotIn(">Consultar ticket<", html)
         obs = get_user_model().objects.create_user(
             email="o@x.com", password="x", nombre="O",
             rol=get_user_model().Rol.OBSERVADOR,
         )
         self.client.force_login(obs)
         html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
-        for etiqueta in ("Consultar ticket", "Usuarios", "Todos"):
+        for etiqueta in ("Usuarios", "Todos"):
             self.assertIn(etiqueta, html)
 
     def test_encabezados_grises_y_titulos_por_pestana(self):

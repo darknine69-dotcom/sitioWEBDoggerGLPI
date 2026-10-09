@@ -2,9 +2,6 @@
 {% if request.user.is_authenticated %}
 <div class="ax-fab" id="axFab">
     <div class="ax-menu" id="axMenu">
-        <a class="ax-item" href="{% url 'tickets:consultar' %}">
-            <svg class="icon"><use href="#i-search"/></svg> Consultar ticket
-        </a>
         {% if request.user.rol == 'usuario' %}
         <a class="ax-item" href="{% url 'tickets:crear_ticket' %}">
             <svg class="icon"><use href="#i-plus"/></svg> Nueva solicitud
