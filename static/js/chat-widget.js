@@ -83,12 +83,13 @@
                     ultimoId = 0;
                     if (!d.mensajes.length && !d.adjuntos.length) {
                         hilo.innerHTML = '<p class="sw-empty">Cuéntanos en qué te ayudamos.</p>';
+                        // El saludo va en la caja del técnico como mensaje
+                        // inicial para enviar; al usuario le sale solo cuando
+                        // el técnico realmente le escribe.
+                        if ((urls.rol === "tecnico" || urls.rol === "admin") && !texto.value) {
+                            texto.value = "¡Hola! Gracias por escribirnos. Cuéntanos tu caso y un técnico te atiende enseguida.";
+                        }
                     }
-                    // Saludo predeterminado antes de chatear con el solicitante.
-                    hilo.insertAdjacentHTML("afterbegin",
-                        '<div class="sw-msg"><span class="sw-avatar">D</span>' +
-                        '<div class="sw-bubble"><span class="sw-bubble-n">Mesa de ayuda · Soporte</span>' +
-                        '<span class="sw-bubble-t">¡Hola! Gracias por escribirnos. Cuéntanos tu caso y un técnico te atiende enseguida.</span></div></div>');
                     (d.mensajes || []).forEach(function (m) {
                         hilo.insertAdjacentHTML("beforeend", mensajeHtml(m));
                         ultimoId = Math.max(ultimoId, m.id);

@@ -85,4 +85,7 @@ class PermisosRolesTest(TestCase):
 
         with open(finders.find("js/chat-widget.js"), encoding="utf-8") as f:
             js = f.read()
+        # Sin burbuja falsa: el saludo va en la caja del técnico y al
+        # usuario le sale solo cuando el técnico le escribe de verdad.
         self.assertIn("¡Hola! Gracias por escribirnos", js)
+        self.assertNotIn("Mesa de ayuda · Soporte", js)

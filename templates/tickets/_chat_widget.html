@@ -30,6 +30,7 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
 </section>
 <script>
 window.__SW_URLS__ = {
+    rol: "{{ request.user.rol }}",
     tickets: "{% url 'tickets:chat_tickets' %}",
     hilo: "{% url 'tickets:chat_hilo' 0 %}",
     responder: "{% url 'tickets:chat_responder' 0 %}",
