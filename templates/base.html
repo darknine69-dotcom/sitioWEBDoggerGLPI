@@ -607,15 +607,6 @@
         </div>
     </div>
     {% endif %}
-
-    {# Atajo de consulta: solo dentro del sistema, no en la portada. #}
-    {% if request.user.is_authenticated and request.resolver_match.url_name != 'portal' %}
-    <aside class="action-float" aria-label="Consultar código HD">
-        <a class="act-float-btn" href="{% url 'tickets:consultar' %}" title="Consultar por código HD">
-            <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
-            <span class="act-float-label">Consultar ticket HD</span>
-        </a>
-    </aside>
     {% endif %}
 
     <script>

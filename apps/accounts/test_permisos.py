@@ -164,18 +164,17 @@ class PermisosRolesTest(TestCase):
         self.assertNotIn("btn-whatsapp", html)
 
     def test_atajos_por_defecto_segun_rol(self):
-        for usuario, esperado, ausente in (
-            (self.usuario, ("Nueva solicitud", "Mis solicitudes"), ()),
+        for usuario, esperado in (
+            (self.usuario, ("Nueva solicitud", "Mis solicitudes")),
         ):
             self.client.force_login(usuario)
             html = self.client.get(reverse("tickets:mi_panel")).content.decode()
             self.assertIn("axFab", html)
             for etiqueta in esperado:
                 self.assertIn(etiqueta, html)
-            for etiqueta in ausente:
-                self.assertNotIn(etiqueta, html)
         html = self.client.get(reverse("tickets:mi_panel")).content.decode()
         self.assertNotIn(">Consultar ticket<", html)
+        self.assertNotIn("action-float", html)
 
     def test_x_por_rol_tecnico_y_obs(self):
         tec = get_user_model().objects.create_user(
