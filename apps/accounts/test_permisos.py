@@ -56,7 +56,7 @@ class PermisosRolesTest(TestCase):
             "ajustes_pagina": "1",
             "ajustes_actividad_glpi": "1",
             "correo_soporte": "nuevo@dogger.com.co",
-            "siguiente": reverse("accounts:permisos"),
+            "siguiente": reverse("accounts:ajustes") + "#pagina",
         })
         self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#pagina")
         self.assertEqual(ConfigSitio.cargar().correo_soporte, "nuevo@dogger.com.co")
