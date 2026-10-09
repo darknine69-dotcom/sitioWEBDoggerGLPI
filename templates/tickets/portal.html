@@ -658,6 +658,20 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
                         </a>
                     </span>
                 </div>
+                {% if DOGGER.teams_activo and DOGGER.teams %}
+                <div class="lp-contact-item">
+                    <span class="fcard-icon"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg></span>
+                    <span class="lp-contact-txt">
+                        <strong>Teams de soporte</strong>
+                        <a href="{{ DOGGER.teams }}" target="_blank" rel="noopener">Abrir Teams</a>
+                    </span>
+                    <span class="lp-contact-cta">
+                        <a class="btn btn-outline btn-sm" href="{{ DOGGER.teams }}" target="_blank" rel="noopener">
+                            <svg class="icon" aria-hidden="true"><use href="#i-share"/></svg> Abrir
+                        </a>
+                    </span>
+                </div>
+                {% endif %}
             </div>
         </div>
         <p class="panel-sub lp-note">

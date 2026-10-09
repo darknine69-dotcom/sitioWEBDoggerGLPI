@@ -474,6 +474,16 @@
                         <input type="url" name="tiktok_url" id="id_tiktok_url"
                                value="{{ config_sitio.tiktok_url }}" maxlength="250" placeholder="https://tiktok.com/…">
                     </div>
+                    <div class="cfg-row">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="teams_activo" value="1"
+                                   {% if config_sitio.teams_activo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="cfg-label">Teams</span>
+                        <input type="url" name="teams_url" id="id_teams_url"
+                               value="{{ config_sitio.teams_url }}" maxlength="250" placeholder="https://teams.microsoft.com/…">
+                    </div>
 
                     <div class="settings-actions">
                         <button type="submit" class="btn btn-primary">Guardar configuración</button>

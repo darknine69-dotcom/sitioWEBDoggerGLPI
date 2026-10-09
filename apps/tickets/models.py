@@ -603,6 +603,10 @@ class ConfigSitio(models.Model):
     facebook_url = models.CharField(
         "URL de Facebook", max_length=250, blank=True, default=""
     )
+    teams_activo = models.BooleanField("Mostrar botón de Teams", default=True)
+    teams_url = models.CharField(
+        "URL de Teams", max_length=250, blank=True, default=""
+    )
     panel_mostrar_actividad_glpi = models.BooleanField(
         "Mostrar actividad de GLPI en los paneles",
         default=True,

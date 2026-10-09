@@ -152,3 +152,29 @@ class PermisosRolesTest(TestCase):
         html = self.client.get(reverse("tickets:mi_panel")).content.decode()
         self.assertIn("axFab", html)
         self.assertIn("Consultar ticket", html)
+
+    def test_redes_en_footer_y_teams_en_contacto(self):
+        from apps.tickets.models import ConfigSitio
+
+        html = self.client.get(reverse("tickets:portal")).content.decode()
+        self.assertIn("web.facebook.com/DoggerColombia", html)
+        self.assertIn("instagram.com/dogger1996", html)
+        self.assertNotIn("Teams de soporte", html)
+        cfg = ConfigSitio.cargar()
+        cfg.teams_activo = True
+        cfg.teams_url = "https://teams.microsoft.com/l/chat/0/0"
+        cfg.save()
+        html = self.client.get(reverse("tickets:portal")).content.decode()
+        self.assertIn("Teams de soporte", html)
+        cfg.whatsapp_activo = False
+        cfg.save()
+        from apps.tickets.models import Ticket
+
+        ticket = Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com",
+        )
+        self.client.force_login(self.usuario)
+        html = self.client.get(
+            reverse("tickets:mi_ticket", args=[ticket.pk])).content.decode()
+        self.assertNotIn("btn-whatsapp", html)

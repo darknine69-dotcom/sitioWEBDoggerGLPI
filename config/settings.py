@@ -284,9 +284,17 @@ DOGGER = {
     # Ejemplo: "Mantenimiento programado de SIESA el sábado 3 de octubre, 6:00 p.m."
     "aviso_destacado": os.getenv("DOGGER_AVISO", ""),
     # Redes sociales (se muestran como iconos en el pie del portal).
+    "pagina_mostrar_redes": True,
+    "correo_activo": True,
+    "whatsapp_activo": True,
     "facebook": os.getenv("DOGGER_FACEBOOK", "https://web.facebook.com/DoggerColombia"),
+    "facebook_activo": True,
     "instagram": os.getenv("DOGGER_INSTAGRAM", "https://www.instagram.com/dogger1996"),
+    "instagram_activo": True,
     "tiktok": os.getenv("DOGGER_TIKTOK", ""),
+    "tiktok_activo": True,
+    "teams": os.getenv("DOGGER_TEAMS", ""),
+    "teams_activo": True,
     "max_adjuntos": 5,
     "max_adjunto_mb": 8,
     # Puntos Dogger activos (mostrados con mapa en el pie del portal).

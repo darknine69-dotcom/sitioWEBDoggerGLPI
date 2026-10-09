@@ -49,6 +49,8 @@ def dogger_config(request):
             "instagram": cfg.instagram_url,
             "facebook_activo": cfg.facebook_activo,
             "facebook": cfg.facebook_url,
+            "teams_activo": cfg.teams_activo,
+            "teams": cfg.teams_url,
             "panel_mostrar_actividad_glpi": cfg.panel_mostrar_actividad_glpi,
         })
     except Exception:

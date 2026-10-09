@@ -656,6 +656,8 @@ def configuracion_pagina(request):
         cfg.instagram_url = request.POST.get("instagram_url", "").strip()
         cfg.facebook_activo = _bool("facebook_activo", True)
         cfg.facebook_url = request.POST.get("facebook_url", "").strip()
+        cfg.teams_activo = _bool("teams_activo", True)
+        cfg.teams_url = request.POST.get("teams_url", "").strip()
     # Interruptor con acción inmediata: si viene el checkbox apagado no se
     # toca, porque el navegador no envía el campo unchecked. Por eso el
     # formulario se guarda con JavaScript antes de enviarlo.
