@@ -2220,7 +2220,16 @@ def mi_panel(request):
     total_qs = tickets_qs.count()
     estado_filtro = request.GET.get("estado", "").strip()
     q_filtro = request.GET.get("q", "").strip()
-    if estado_filtro:
+    if estado_filtro == Ticket.Estado.RESUELTO:
+        # En Mi panel "Resueltas" trae resueltas y cerradas: al marcar
+        # resuelto el ticket se cierra, y las cerradas directo también
+        # cuentan como terminadas para quien las pidió.
+        tickets_qs = tickets_qs.filter(
+            Q(fecha_resolucion__isnull=False)
+            | Q(estado=Ticket.Estado.RESUELTO)
+            | Q(estado=Ticket.Estado.CERRADO)
+        )
+    elif estado_filtro:
         tickets_qs = tickets_qs.filter(estado=estado_filtro)
     if q_filtro:
         tickets_qs = tickets_qs.filter(
@@ -2232,13 +2241,14 @@ def mi_panel(request):
         "total": total_qs,
         "abiertos": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.ABIERTO).count(),
         "en_progreso": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.EN_PROGRESO).count(),
-        # El KPI "Resueltas" enlaza al filtro de resueltas, así que cuenta lo
-        # mismo: los que tienen la marca de resolución, no las cerradas tal
-        # cual (una se puede cerrar sin haber pasado por "marcar resuelto").
+        # El KPI "Resueltas" enlaza al filtro de resueltas, así que cuenta
+        # lo mismo: con marca de resolución o cerradas.
         "resueltos": Ticket.objects.filter(
             solicitante_email=request.user.email
         ).filter(
-            Q(fecha_resolucion__isnull=False) | Q(estado=Ticket.Estado.RESUELTO)
+            Q(fecha_resolucion__isnull=False)
+            | Q(estado=Ticket.Estado.RESUELTO)
+            | Q(estado=Ticket.Estado.CERRADO)
         ).count(),
     }
     pp_mp = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
