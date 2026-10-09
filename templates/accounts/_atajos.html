@@ -1,20 +1,41 @@
-{% comment %}Botón X de atajos rápidos: se configura en Ajustes de la cuenta.{% endcomment %}
-{% if request.user.is_authenticated and atajos_rapidos %}
+{% comment %}Botón X de accesos rápidos: tres opciones según el rol, con despliegue animado.{% endcomment %}
+{% if request.user.is_authenticated %}
 <div class="ax-fab" id="axFab">
     <div class="ax-menu" id="axMenu">
-        {% for a in atajos_rapidos %}
-        {% if a.clave == "chat" %}
-        <button type="button" class="ax-item" data-ax-chat>
-            <svg class="icon"><use href="#{{ a.icono }}"/></svg> {{ a.etiqueta }}
-        </button>
-        {% else %}
-        <a class="ax-item" href="{{ a.url }}">
-            <svg class="icon"><use href="#{{ a.icono }}"/></svg> {{ a.etiqueta }}
+        <a class="ax-item" href="{% url 'tickets:consultar' %}">
+            <svg class="icon"><use href="#i-search"/></svg> Consultar ticket
+        </a>
+        {% if request.user.rol == 'usuario' %}
+        <a class="ax-item" href="{% url 'tickets:crear_ticket' %}">
+            <svg class="icon"><use href="#i-plus"/></svg> Nueva solicitud
+        </a>
+        <a class="ax-item" href="{% url 'tickets:mi_panel' %}">
+            <svg class="icon"><use href="#i-home"/></svg> Mis solicitudes
+        </a>
+        {% elif request.user.rol == 'tecnico' %}
+        <a class="ax-item" href="{% url 'tickets:panel_tecnico' %}">
+            <svg class="icon"><use href="#i-grid"/></svg> Mis asignados
+        </a>
+        <a class="ax-item" href="{% url 'tickets:lista' %}">
+            <svg class="icon"><use href="#i-ticket"/></svg> Tickets
+        </a>
+        {% elif request.user.rol == 'admin' %}
+        <a class="ax-item" href="{% url 'tickets:lista' %}">
+            <svg class="icon"><use href="#i-ticket"/></svg> Tickets
+        </a>
+        <a class="ax-item" href="{% url 'tickets:usuarios' %}">
+            <svg class="icon"><use href="#i-users"/></svg> Todos
+        </a>
+        {% elif request.user.rol == 'observador' %}
+        <a class="ax-item" href="{% url 'tickets:obs_usuarios' %}">
+            <svg class="icon"><use href="#i-user"/></svg> Usuarios
+        </a>
+        <a class="ax-item" href="{% url 'tickets:obs_mi_lista' %}">
+            <svg class="icon"><use href="#i-layers"/></svg> Todos
         </a>
         {% endif %}
-        {% endfor %}
     </div>
-    <button type="button" class="ax-btn" id="axBtn" aria-label="Atajos rápidos" aria-expanded="false">
+    <button type="button" class="ax-btn" id="axBtn" aria-label="Accesos rápidos" aria-expanded="false">
         <svg class="icon"><use href="#i-x"/></svg>
     </button>
 </div>
@@ -23,7 +44,6 @@
     var fab = document.getElementById("axFab");
     if (!fab) return;
     var btn = document.getElementById("axBtn");
-    var menu = document.getElementById("axMenu");
     btn.addEventListener("click", function () {
         var abierto = fab.hasAttribute("data-open");
         if (abierto) { fab.removeAttribute("data-open"); btn.setAttribute("aria-expanded", "false"); }
@@ -33,13 +53,6 @@
         if (e.key === "Escape" && fab.hasAttribute("data-open")) {
             fab.removeAttribute("data-open"); btn.setAttribute("aria-expanded", "false");
         }
-    });
-    menu.querySelectorAll("[data-ax-chat]").forEach(function (b) {
-        b.addEventListener("click", function () {
-            var sw = document.getElementById("swFab");
-            if (sw) { sw.click(); }
-            fab.removeAttribute("data-open"); btn.setAttribute("aria-expanded", "false");
-        });
     });
 })();
 </script>

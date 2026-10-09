@@ -300,26 +300,17 @@
             <section id="glpi" class="settings-panel" data-settings-panel="glpi">
                 <div class="settings-panel-header">
                     <h3>Sincronización GLPI</h3>
-                    <p>Estado de la conexión con el sistema GLPI de la empresa.</p>
                 </div>
                 <div class="settings-form">
-                    <div class="glpi-status-card">
-                        <div class="glpi-status-row">
-                            <span class="glpi-status-dot {% if glpi_enabled %}on{% else %}off{% endif %}"></span>
-                            <strong>GLPI: {% if glpi_enabled %}Activo{% else %}Desactivado{% endif %}</strong>
-                        </div>
-                        <p class="glpi-status-detail">
-                            {% if glpi_enabled %}
-                            Conectado a <code>{{ glpi_base_url }}</code>. La sincronización automática está habilitada.
-                            {% else %}
-                            GLPI está desactivado en el entorno actual (nube). Solo funciona en la red interna de Dogger.
-                            {% endif %}
-                        </p>
+                    <div class="cfg-row">
+                        <span class="glpi-status-dot {% if glpi_enabled %}on{% else %}off{% endif %}"></span>
+                        <span class="cfg-label">Estado: {% if glpi_enabled %}Activo{% else %}Desactivado{% endif %}</span>
+                        <small class="muted">{% if glpi_enabled %}{{ glpi_base_url }}{% else %}Solo red interna{% endif %}</small>
                     </div>
                     {% if request.user.glpi_user_id %}
-                    <div class="glpi-status-card">
-                        <strong>Tu perfil en GLPI</strong>
-                        <p class="glpi-status-detail">ID: <code>#{{ request.user.glpi_user_id }}</code></p>
+                    <div class="cfg-row">
+                        <span class="cfg-label">Tu ID GLPI</span>
+                        <code>#{{ request.user.glpi_user_id }}</code>
                     </div>
                     {% endif %}
 
@@ -327,8 +318,7 @@
                     se busca, y no hay que ir a "Pagina" a encontrarlo.{% endcomment %}
                     {% if request.user.rol == 'admin' %}
                     <div class="settings-panel-header">
-                        <h3>Actividad de GLPI en los paneles</h3>
-                        <p>Enciende o apaga, para todo el mundo, el bloque «Actividad reciente GLPI» que aparece en «Mi panel» y en el dashboard.</p>
+                        <h3>Actividad en paneles</h3>
                     </div>
                     <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form">
                         {% csrf_token %}
@@ -338,42 +328,32 @@
                         {% if config_sitio_sin_migracion %}
                         <div class="settings-warning">
                             <strong>Falta aplicar una migración.</strong>
-                            <span>Ejecuta <code>python manage.py migrate</code> en el servidor: hasta entonces el interruptor no surte efecto.</span>
+                            <span>Ejecuta <code>python manage.py migrate</code> en el servidor.</span>
                         </div>
                         {% endif %}
-                        <div class="notif-item">
-                            <div class="notif-info">
-                                <strong>Mostrar actividad de GLPI</strong>
-                                <small>Al desactivarla desaparece de todas las pantallas. Los datos de GLPI no se tocan.</small>
-                            </div>
+                        <div class="cfg-row">
                             <label class="toggle-switch">
                                 <input type="checkbox" name="panel_mostrar_actividad_glpi" value="1" onchange="this.form.submit()"
                                        {% if config_sitio.panel_mostrar_actividad_glpi %}checked{% endif %}>
                                 <span class="toggle-slider"></span>
                             </label>
+                            <span class="cfg-label">Mostrar actividad</span>
                         </div>
                     </form>
                     {% endif %}
 
                     <div class="settings-panel-header">
                         <h3>Eliminación de tickets</h3>
-                        <p>Decide si al borrar un ticket también se elimina del sistema GLPI.</p>
                     </div>
                     <form method="post" action="{% url 'accounts:ajustes' %}" class="settings-form">
                         {% csrf_token %}
-                        <div class="notif-item">
-                            <div class="notif-info">
-                                <strong>Borrar también en GLPI</strong>
-                                <small>Al eliminar, el ticket va a la papelera y se conserva en Dogger <strong>y en GLPI</strong>. Si este interruptor está activo, borrar definitivamente desde la papelera también lo elimina en GLPI.</small>
-                            </div>
+                        <div class="cfg-row">
                             <label class="toggle-switch">
-                                <input type="checkbox" name="borrar_glpi_al_eliminar" value="1"
+                                <input type="checkbox" name="borrar_glpi_al_eliminar" value="1" onchange="this.form.submit()"
                                        {% if request.user.borrar_glpi_al_eliminar %}checked{% endif %}>
                                 <span class="toggle-slider"></span>
                             </label>
-                        </div>
-                        <div class="settings-actions">
-                            <button type="submit" class="btn btn-primary">Guardar preferencia</button>
+                            <span class="cfg-label">Borrar también en GLPI</span>
                         </div>
                     </form>
                 </div>

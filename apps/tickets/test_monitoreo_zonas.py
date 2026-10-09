@@ -218,7 +218,7 @@ class MonitoreoZonasAdminTest(TestCase):
             reverse("tickets:monitoreo_admin")
         ).content.decode()
         self.assertIn("axFab", html_admin)
-        self.assertIn("Atajos rápidos", html_admin)
+        self.assertIn("Accesos rápidos", html_admin)
         self.client.force_login(self.obs)
         html_obs = self.client.get(
             reverse("tickets:obs_zonas")
