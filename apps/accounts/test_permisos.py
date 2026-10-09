@@ -167,6 +167,7 @@ class PermisosRolesTest(TestCase):
         html = self.client.get(reverse("tickets:portal")).content.decode()
         self.assertIn("Teams de soporte", html)
         cfg.whatsapp_activo = False
+        cfg.teams_activo = False
         cfg.save()
         from apps.tickets.models import Ticket
 
@@ -178,3 +179,16 @@ class PermisosRolesTest(TestCase):
         html = self.client.get(
             reverse("tickets:mi_ticket", args=[ticket.pk])).content.decode()
         self.assertNotIn("btn-whatsapp", html)
+        self.assertNotIn("btn-teams", html)
+
+    def test_glpi_bloque_obedece_al_interruptor(self):
+        from apps.tickets.models import ConfigSitio
+
+        self.client.force_login(self.admin)
+        html = self.client.get(reverse("tickets:dashboard")).content.decode()
+        self.assertIn("Actividad GLPI", html)
+        cfg = ConfigSitio.cargar()
+        cfg.panel_mostrar_actividad_glpi = False
+        cfg.save()
+        html = self.client.get(reverse("tickets:dashboard")).content.decode()
+        self.assertNotIn("Actividad GLPI", html)
