@@ -403,14 +403,14 @@
     // Menú de cambio de tipo
     // ------------------------------------------------------------------
     function prevSvg(tipo) {
-        var s = 'stroke="#212121" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"';
-        if (tipo === 'bar') return '<svg viewBox="0 0 20 14" class="csm-prev"><rect x="2" y="6" width="3.4" height="6" rx="1" fill="#212121"/><rect x="8.3" y="3" width="3.4" height="9" rx="1" fill="#212121"/><rect x="14.6" y="9" width="3.4" height="3" rx="1" fill="#212121"/></svg>';
-        if (tipo === 'line') return '<svg viewBox="0 0 20 14" class="csm-prev"><polyline points="1,12 6,8 10,10 15,4 19,2" ' + s + '/></svg>';
-        if (tipo === 'area') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M1,12 L6,8 L10,10 L15,4 L19,2 L19,12 Z" fill="#212121" opacity=".25"/><polyline points="1,12 6,8 10,10 15,4 19,2" ' + s + '/></svg>';
-        if (tipo === 'donut') return '<svg viewBox="0 0 20 14" class="csm-prev"><circle cx="10" cy="7" r="5.4" ' + s + ' stroke-dasharray="3 2.2 3.4 1.4"/><circle cx="10" cy="7" r="2" ' + s + '/></svg>';
-        if (tipo === 'pie') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M10 7 L10 1.8 A5.2 5.2 0 0 1 14.6 4.2 Z" fill="#212121"/><path d="M10 7 L14.6 4.2 A5.2 5.2 0 0 1 13 11.6 Z" fill="#212121" opacity=".55"/><path d="M10 7 L13 11.6 A5.2 5.2 0 0 1 6.6 11.8 Z" fill="#212121" opacity=".3"/></svg>';
-        if (tipo === 'funnel') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M4 1 H16 L13 6 H7 Z" fill="#212121" opacity=".9"/><path d="M6.4 7 H13.6 L12 12 H8 Z" fill="#212121" opacity=".5"/></svg>';
-        if (tipo === 'pyramid') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M7 1 H13 L15 6 H5 Z" fill="#212121" opacity=".45"/><path d="M5.6 7 H14.4 L16 12 H4 Z" fill="#212121" opacity=".85"/></svg>';
+        if (tipo === 'bar') return '<svg viewBox="0 0 20 14" class="csm-prev"><rect x="2" y="6" width="3.4" height="6" rx="1" fill="#D62B1F"/><rect x="8.3" y="3" width="3.4" height="9" rx="1" fill="#F26522"/><rect x="14.6" y="9" width="3.4" height="3" rx="1" fill="#FFC72C"/></svg>';
+        if (tipo === 'line') return '<svg viewBox="0 0 20 14" class="csm-prev"><polyline points="1,12 6,8 10,10 15,4 19,2" stroke="#2563EB" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        if (tipo === 'area') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M1,12 L6,8 L10,10 15,4 19,2 L19,12 Z" fill="#2F7D4F" opacity=".25"/><polyline points="1,12 6,8 10,10 15,4 19,2" stroke="#2F7D4F" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        if (tipo === 'donut') return '<svg viewBox="0 0 20 14" class="csm-prev"><circle cx="10" cy="7" r="5.4" fill="none" stroke="#D62B1F" stroke-width="2.4" stroke-dasharray="8 25"/><circle cx="10" cy="7" r="5.4" fill="none" stroke="#F2A900" stroke-width="2.4" stroke-dasharray="6 25" stroke-dashoffset="-8"/><circle cx="10" cy="7" r="5.4" fill="none" stroke="#2F7D4F" stroke-width="2.4" stroke-dasharray="11 25" stroke-dashoffset="-14"/></svg>';
+        if (tipo === 'pie') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M10 7 L10 1.8 A5.2 5.2 0 0 1 14.6 4.2 Z" fill="#D62B1F"/><path d="M10 7 L14.6 4.2 A5.2 5.2 0 0 1 13 11.6 Z" fill="#2563EB" opacity=".85"/><path d="M10 7 L13 11.6 A5.2 5.2 0 0 1 6.6 11.8 Z" fill="#2F7D4F" opacity=".85"/></svg>';
+        if (tipo === 'funnel') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M4 1 H16 L13 6 H7 Z" fill="#F26522" opacity=".9"/><path d="M6.4 7 H13.6 L12 12 H8 Z" fill="#F26522" opacity=".5"/></svg>';
+        if (tipo === 'pyramid') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M7 1 H13 L15 6 H5 Z" fill="#B7791F" opacity=".45"/><path d="M5.6 7 H14.4 L16 12 H4 Z" fill="#B7791F" opacity=".85"/></svg>';
+        var s = 'stroke="#212121" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round';
         return '<svg viewBox="0 0 20 14" class="csm-prev"><text x="10" y="11" text-anchor="middle" font-size="9" font-weight="bold" fill="#212121">123</text></svg>';
     }
 
@@ -432,6 +432,14 @@
         });
         wrap.appendChild(btn);
         wrap.appendChild(menu);
+        var refrescar = domEl('<button type="button" class="chart-refresh-btn" title="Recargar el gráfico"><svg class="icon"><use href="#i-refresh"/></svg></button>');
+        refrescar.setAttribute("aria-label", "Recargar el gráfico");
+        refrescar.addEventListener("click", function () {
+            refrescar.classList.add("is-girando");
+            render(card, widget);
+            setTimeout(function () { refrescar.classList.remove("is-girando"); }, 350);
+        });
+        wrap.appendChild(refrescar);
         function markActive() {
             var cur = estado[widget] || DEFAULT_TIPO[widget];
             Array.prototype.forEach.call(menu.querySelectorAll('button[data-type]'), function (b) {
@@ -643,10 +651,31 @@
     // Init
     // ------------------------------------------------------------------
     function init() {
-        var pivotSel = document.getElementById('pivotDim');
+        var pivotSel = document.getElementById("pivotDim");
         if (pivotSel) {
             renderPivot(pivotSel.value);
-            pivotSel.addEventListener('change', function () { renderPivot(pivotSel.value); });
+            pivotSel.addEventListener("change", function () { renderPivot(pivotSel.value); });
+            var pivotCard = pivotSel.closest(".chart-card");
+            if (pivotCard && pivotCard.querySelector(".chart-card-head")) {
+                var tools = pivotCard.querySelector(".dash-head-tools");
+                if (!tools) {
+                    tools = document.createElement("div");
+                    tools.className = "dash-head-tools";
+                    pivotCard.querySelector(".chart-card-head").appendChild(tools);
+                }
+                var ref = document.createElement("button");
+                ref.type = "button";
+                ref.className = "chart-refresh-btn";
+                ref.title = "Recargar la tabla";
+                ref.setAttribute("aria-label", "Recargar la tabla");
+                ref.innerHTML = '<svg class="icon"><use href="#i-refresh"/></svg>';
+                ref.addEventListener("click", function () {
+                    ref.classList.add("is-girando");
+                    renderPivot(pivotSel.value);
+                    setTimeout(function () { ref.classList.remove("is-girando"); }, 350);
+                });
+                tools.appendChild(ref);
+            }
         }
         buildPieLegends();
         Array.prototype.forEach.call(document.querySelectorAll('.chart-modal'), function (card) {

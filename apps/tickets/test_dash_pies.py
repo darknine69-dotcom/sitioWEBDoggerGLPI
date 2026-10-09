@@ -463,3 +463,18 @@ class FiltroResueltasTest(SmokeTestCase):
         self.assertIn("Agregar seguimiento", html)
         self.assertIn('name="action" value="comentario"', html)
         self.assertNotIn("corp-notif-toggle", html)
+
+    def test_graficos_con_titulos_hover_y_colores(self):
+        from django.contrib.staticfiles import finders
+
+        with open(finders.find("js/panel-dash.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn("chart-refresh-btn", js)
+        self.assertIn('Recargar el gráfico', js)
+        # Tipos en colores, no en gris.
+        self.assertIn('fill="#D62B1F"', js)
+        self.assertIn('stroke="#2563EB"', js)
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertIn(".chart-card .dash-head-tools", css)
+        self.assertIn("hover: none", css)
