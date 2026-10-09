@@ -142,7 +142,10 @@ def permisos_roles(request):
     if request.method != "POST":
         return redirect(reverse("accounts:ajustes") + "#pagina")
     User = get_user_model()
-    for u in User.objects.all():
+    vistos = {
+        int(pk) for pk in request.POST.getlist("uid") if str(pk).isdigit()
+    }
+    for u in User.objects.filter(pk__in=vistos):
         for campo, llave in (
             ("puede_cerrar_tickets", "cerrar"),
             ("puede_eliminar_tickets", "eliminar"),

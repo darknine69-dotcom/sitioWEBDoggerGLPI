@@ -428,6 +428,18 @@ class ActorResponsableTest(BaseNotificaciones):
         self.assertTrue(creadas)
         for n in creadas:
             self.assertEqual(n.actor, "Tecnico")
+            self.assertEqual(n.actor_rol, "Técnico")
+
+    def test_rol_en_popup_y_api(self):
+        from apps.notificaciones import services as srv
+
+        ticket = self._ticket()
+        srv.ticket_editado(ticket, self.tecnico, "Respondio: voy")
+        self.client.force_login(self.usuario)
+        datos = self.client.get(reverse("notificaciones:api")).json()
+        tecnico = [a for a in datos["avisos"] if a["actor"] == "Tecnico"]
+        self.assertTrue(tecnico)
+        self.assertEqual(tecnico[0]["actor_rol"], "Técnico")
 
     def test_api_y_campana_muestran_al_responsable(self):
         from apps.notificaciones import services as srv

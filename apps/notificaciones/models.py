@@ -38,6 +38,11 @@ class Notificacion(models.Model):
         db_column="Actor",
         help_text="Quién generó el evento (vacío = sistema).",
     )
+    actor_rol = models.CharField(
+        "Rol del responsable", max_length=20, blank=True, default="",
+        db_column="ActorRol",
+        help_text="De dónde viene el aviso: técnico, usuario, etc.",
+    )
     leida = models.BooleanField(default=False, db_column="Leida")
     mostrada_en = models.DateTimeField(null=True, blank=True, db_column="MostradaEn")
     leida_en = models.DateTimeField(null=True, blank=True, db_column="LeidaEn")

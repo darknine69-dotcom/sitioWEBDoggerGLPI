@@ -967,7 +967,8 @@
             '<div class="toast-body">' +
             '<strong>' + esc(n.titulo) + '</strong>' +
             '<span>' + esc(n.mensaje || "") + '</span>' +
-            (n.actor ? '<small class="toast-actor">por ' + esc(n.actor) + '</small>' : "") +
+            (n.actor ? '<small class="toast-actor">por ' + esc(n.actor) +
+                (n.actor_rol ? " · " + esc(n.actor_rol) : "") + "</small>" : "") +
             '<a href="' + esc(url) + '">Ver</a>' +
             '</div>' +
             '<button type="button" class="toast-close" aria-label="Cerrar">&times;</button>';
@@ -1035,7 +1036,10 @@
             '<span class="notif-text">' +
             '<a class="notif-link" href="' + esc(n.url || "#") + '">' + esc(n.titulo) + '</a>' +
             '<span class="notif-msg">' + esc(n.mensaje) + '</span>' +
-            '<small class="notif-time">' + esc(n.fecha || "ahora mismo") + '</small>' +
+            '<small class="notif-time">' +
+            (n.actor ? "por " + esc(n.actor) +
+                (n.actor_rol ? " · " + esc(n.actor_rol) : "") + " · " : "") +
+            esc(n.fecha || "ahora mismo") + '</small>' +
             '</span>' +
             '<button type="button" class="notif-x" data-notif-quitar="' + esc(n.id) + '" ' +
             'aria-label="Quitar notificación" title="Quitar">&times;</button>' +
@@ -1060,6 +1064,8 @@
             '<h3 class="notif-popup-title" id="notifPopVivaTitulo">' + esc(n.titulo) + '</h3>' +
             '</span>' +
             '<p class="notif-popup-text">' + esc(n.mensaje) + '</p>' +
+            (n.actor ? '<p class="notif-popup-actor">por ' + esc(n.actor) +
+                (n.actor_rol ? " · " + esc(n.actor_rol) : "") + "</p>" : "") +
             '<div class="notif-popup-actions">' +
             (n.url
                 ? '<a class="btn btn-accent notif-popup-ver" href="' + esc(n.url) + '" data-notif-cerrar>' +

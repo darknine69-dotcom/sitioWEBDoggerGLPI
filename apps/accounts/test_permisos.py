@@ -41,12 +41,28 @@ class PermisosRolesTest(TestCase):
         html = self.client.get(reverse("tickets:dashboard")).content.decode()
         self.assertNotIn('sidebar-label">Configuración', html)
         respuesta = self.client.post(reverse("accounts:permisos"), {
+            "uid": [str(self.admin.pk), str(self.usuario.pk)],
             f"perm_{self.usuario.pk}_cerrar": "1",
         })
         self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#pagina")
         self.usuario.refresh_from_db()
         self.assertTrue(self.usuario.puede_cerrar_tickets)
         self.assertFalse(self.usuario.puede_eliminar_tickets)
+
+    def test_guardar_no_toca_a_quien_no_se_ve(self):
+        otro = get_user_model().objects.create_user(
+            email="otro@x.com", password="x", nombre="Otro",
+            rol=get_user_model().Rol.USUARIO,
+        )
+        otro.puede_cerrar_tickets = False
+        otro.save()
+        self.client.force_login(self.admin)
+        self.client.post(reverse("accounts:permisos"), {
+            "uid": [str(self.usuario.pk)],
+            f"perm_{self.usuario.pk}_cerrar": "1",
+        })
+        otro.refresh_from_db()
+        self.assertFalse(otro.puede_cerrar_tickets)
 
     def test_guarda_pagina_general(self):
         from apps.tickets.models import ConfigSitio

@@ -526,6 +526,7 @@
                                     <td>
                                         <strong>{{ u.nombre }}</strong>
                                         <small>{{ u.email }} · {{ u.get_rol_display }}</small>
+                                        <input type="hidden" name="uid" value="{{ u.pk }}">
                                     </td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}"></td>

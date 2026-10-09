@@ -17,6 +17,9 @@ cerrarlo y Ver para ir directo al ticket o a la vista relacionada.{% endcomment 
             <h3 class="notif-popup-title" id="notifPopupTitle">{{ notif_emergente.titulo }}</h3>
         </span>
         <p class="notif-popup-text">{{ notif_emergente.mensaje }}</p>
+        {% if notif_emergente.actor %}
+        <p class="notif-popup-actor">por {{ notif_emergente.actor }}{% if notif_emergente.actor_rol %} · {{ notif_emergente.actor_rol }}{% endif %}</p>
+        {% endif %}
         <div class="notif-popup-actions">
             {% if notif_emergente.url %}
             <a class="btn btn-accent notif-popup-ver" href="{{ notif_emergente.url }}" data-notif-cerrar>
