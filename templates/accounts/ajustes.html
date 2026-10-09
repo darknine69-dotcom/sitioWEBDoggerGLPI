@@ -414,22 +414,22 @@
                     </div>
                     <div class="cfg-row">
                         <label class="toggle-switch">
-                            <input type="checkbox" name="whatsapp_activo" value="1"
+                            <input type="checkbox" name="whatsapp_activo" onchange="this.form.submit()" value="1"
                                    {% if config_sitio.whatsapp_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
                         <span class="cfg-label">WhatsApp</span>
-                        <input type="text" name="whatsapp_numero" id="id_whatsapp_numero"
+                        <input type="text" name="whatsapp_numero" onchange="this.form.submit()" id="id_whatsapp_numero"
                                value="{{ config_sitio.whatsapp_numero }}" maxlength="20" placeholder="3103716129">
                     </div>
                     <div class="cfg-row">
                         <label class="toggle-switch">
-                            <input type="checkbox" name="correo_activo" value="1"
+                            <input type="checkbox" name="correo_activo" onchange="this.form.submit()" value="1"
                                    {% if config_sitio.correo_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
                         <span class="cfg-label">Correo</span>
-                        <input type="email" name="correo_soporte" id="id_correo_soporte"
+                        <input type="email" name="correo_soporte" onchange="this.form.submit()" id="id_correo_soporte"
                                value="{{ config_sitio.correo_soporte }}" maxlength="254" placeholder="sistemasbogota@dogger.com.co">
                     </div>
 
@@ -446,32 +446,32 @@
                     </div>
                     <div class="cfg-row">
                         <label class="toggle-switch">
-                            <input type="checkbox" name="facebook_activo" value="1"
+                            <input type="checkbox" name="facebook_activo" onchange="this.form.submit()" value="1"
                                    {% if config_sitio.facebook_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
                         <span class="cfg-label">Facebook</span>
-                        <input type="url" name="facebook_url" id="id_facebook_url"
+                        <input type="url" name="facebook_url" onchange="this.form.submit()" id="id_facebook_url"
                                value="{{ config_sitio.facebook_url }}" maxlength="250" placeholder="https://facebook.com/…">
                     </div>
                     <div class="cfg-row">
                         <label class="toggle-switch">
-                            <input type="checkbox" name="instagram_activo" value="1"
+                            <input type="checkbox" name="instagram_activo" onchange="this.form.submit()" value="1"
                                    {% if config_sitio.instagram_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
                         <span class="cfg-label">Instagram</span>
-                        <input type="url" name="instagram_url" id="id_instagram_url"
+                        <input type="url" name="instagram_url" onchange="this.form.submit()" id="id_instagram_url"
                                value="{{ config_sitio.instagram_url }}" maxlength="250" placeholder="https://instagram.com/…">
                     </div>
                     <div class="cfg-row">
                         <label class="toggle-switch">
-                            <input type="checkbox" name="tiktok_activo" value="1"
+                            <input type="checkbox" name="tiktok_activo" onchange="this.form.submit()" value="1"
                                    {% if config_sitio.tiktok_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
                         <span class="cfg-label">TikTok</span>
-                        <input type="url" name="tiktok_url" id="id_tiktok_url"
+                        <input type="url" name="tiktok_url" onchange="this.form.submit()" id="id_tiktok_url"
                                value="{{ config_sitio.tiktok_url }}" maxlength="250" placeholder="https://tiktok.com/…">
                     </div>
                     <div class="cfg-row">
@@ -485,9 +485,6 @@
                                value="{{ config_sitio.teams_url }}" maxlength="250" placeholder="https://teams.microsoft.com/…">
                     </div>
 
-                    <div class="settings-actions">
-                        <button type="submit" class="btn btn-primary">Guardar configuración</button>
-                    </div>
                 </form>
 
                 <div class="settings-panel-header">
@@ -529,11 +526,11 @@
                                         <small>{{ u.email }} · {{ u.get_rol_display }}</small>
                                         <input type="hidden" name="uid" value="{{ u.pk }}">
                                     </td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}"></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}"></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_reabrir" value="1"{% if u.puede_reabrir_tickets %} checked{% endif %} aria-label="Reabrir para {{ u.email }}"></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_crear" value="1"{% if u.puede_crear_tickets %} checked{% endif %} aria-label="Crear para {{ u.email }}"></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_responder" value="1"{% if u.puede_responder_chat %} checked{% endif %} aria-label="Chatear para {{ u.email }}"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_reabrir" value="1"{% if u.puede_reabrir_tickets %} checked{% endif %} aria-label="Reabrir para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_crear" value="1"{% if u.puede_crear_tickets %} checked{% endif %} aria-label="Crear para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_responder" value="1"{% if u.puede_responder_chat %} checked{% endif %} aria-label="Chatear para {{ u.email }}" onchange="this.form.submit()"></td>
                                 </tr>
                                 {% empty %}
                                 <tr><td colspan="6" class="obs-sin-datos">Sin cuentas.</td></tr>
@@ -541,9 +538,6 @@
                             </tbody>
                         </table>
                     </div>
-                    </div>
-                    <div class="settings-actions">
-                        <button type="submit" class="btn btn-primary">Guardar permisos</button>
                     </div>
                 </form>
             </section>
