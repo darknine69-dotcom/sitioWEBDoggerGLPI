@@ -36,6 +36,9 @@ class PermisosRolesTest(TestCase):
         respuesta = self.client.get(reverse("accounts:permisos"))
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "Cerrar")
+        self.assertContains(respuesta, "Página")
+        html = self.client.get(reverse("tickets:dashboard")).content.decode()
+        self.assertIn('sidebar-label">Configuración', html)
         respuesta = self.client.post(reverse("accounts:permisos"), {
             f"perm_{self.usuario.pk}_cerrar": "1",
         })
@@ -43,6 +46,19 @@ class PermisosRolesTest(TestCase):
         self.usuario.refresh_from_db()
         self.assertTrue(self.usuario.puede_cerrar_tickets)
         self.assertFalse(self.usuario.puede_eliminar_tickets)
+
+    def test_guarda_pagina_general(self):
+        from apps.tickets.models import ConfigSitio
+
+        self.client.force_login(self.admin)
+        respuesta = self.client.post(reverse("accounts:configuracion_pagina"), {
+            "ajustes_pagina": "1",
+            "ajustes_actividad_glpi": "1",
+            "correo_soporte": "nuevo@dogger.com.co",
+            "siguiente": reverse("accounts:permisos"),
+        })
+        self.assertRedirects(respuesta, reverse("accounts:permisos"))
+        self.assertEqual(ConfigSitio.cargar().correo_soporte, "nuevo@dogger.com.co")
 
     def test_cerrar_y_eliminar_exigen_permiso(self):
         ticket = self._ticket()

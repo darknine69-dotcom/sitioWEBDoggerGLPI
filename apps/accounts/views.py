@@ -130,14 +130,16 @@ class StaffLogoutView(View):
 
 @login_required
 def permisos_roles(request):
-    """El admin otorga permisos: cerrar/eliminar (usuarios) y reabrir (técnicos).
+    """Configuración de la página: permisos por cuenta y ajustes generales.
 
-    Aparece en el menú de ajustes, sección Mi perfil: solo administradores.
+    El admin otorga permisos (cerrar/eliminar a usuarios, reabrir a
+    técnicos) y configura contacto, redes y GLPI. Vive en el menú lateral,
+    no en Mi cuenta.
     """
     from django.http import Http404
 
     if request.user.rol != "admin":
-        raise Http404("Solo los administradores gestionan los permisos.")
+        raise Http404("Solo los administradores gestionan la configuración.")
     User = get_user_model()
     if request.method == "POST":
         for u in User.objects.all():
@@ -158,10 +160,21 @@ def permisos_roles(request):
         usuarios = usuarios.filter(rol=rol)
     if q:
         usuarios = usuarios.filter(Q(nombre__icontains=q) | Q(email__icontains=q))
+    try:
+        from apps.tickets.models import ConfigSitio
+
+        ConfigSitio.objects.only("panel_mostrar_actividad_glpi").exists()
+        config_sitio = ConfigSitio.cargar()
+        config_sitio_sin_migracion = False
+    except Exception:
+        config_sitio = None
+        config_sitio_sin_migracion = True
     return render(
         request, "accounts/permisos.html",
         {"filas": usuarios, "q": q, "rol_sel": rol,
-         "roles": User.Rol.choices, "nav_perfil": "is-active"},
+         "roles": User.Rol.choices, "nav_config": "is-active",
+         "config_sitio": config_sitio,
+         "config_sitio_sin_migracion": config_sitio_sin_migracion},
     )
 
 
@@ -664,6 +677,9 @@ def configuracion_pagina(request):
         pass
     cfg.save()
     messages.success(request, "Configuración de la página actualizada.")
+    siguiente = (request.POST.get("siguiente") or "").strip()
+    if siguiente.startswith("/"):
+        return redirect(siguiente)
     return redirect(reverse("accounts:ajustes") + "#" + request.POST.get("volver", "pagina"))
 
 
