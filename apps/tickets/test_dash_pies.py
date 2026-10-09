@@ -418,11 +418,11 @@ class FiltroResueltasTest(SmokeTestCase):
         self.assertNotIn("stat-chip", html)
 
     def test_en_resueltas_salen_los_dos_distintivos(self):
-        # Al resolverse queda cerrado, así que lleva "Resuelto" y "Cerrado".
+        # En el filtro de resueltas sale solo "Resuelto" (ya no van pegados).
         self._ticket(Ticket.Estado.CERRADO, "ZK-Resuelta", resuelta=True)
         html = self._listado(Ticket.Estado.RESUELTO)
         self.assertEqual(html.count("status-pill status-resuelto"), 1)
-        self.assertEqual(html.count("status-pill status-cerrado"), 1)
+        self.assertNotIn("status-pill status-cerrado", html)
 
     def test_en_cerradas_solo_sale_el_distintivo_cerrado(self):
         # Aunque se haya resuelto, en el filtro de cerradas solo se ve
