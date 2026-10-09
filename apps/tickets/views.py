@@ -64,6 +64,8 @@ from .sla import horas_por_prioridad, orden_prioridad_annotation
 from .services.glpi_client import (
     GlpiClient,
     GlpiError,
+    configuracion_efectiva as configuracion_glpi,
+    esta_activo as esta_activo_glpi,
     sync_adjuntos_to_glpi,
     sync_asignacion_to_glpi,
     sync_edicion_to_glpi,
@@ -1321,7 +1323,7 @@ def usuarios_lista(request):
 
     # Auto-sincronización con GLPI al abrir el panel (sin pulsar botones).
     # Máximo una consulta cada 45 s salvo ?force_glpi=1.
-    if dj_settings.GLPI.get("enabled"):
+    if esta_activo_glpi():
         forzado = request.GET.get("force_glpi") == "1"
         ahora = time.time()
         ultima = request.session.get("_glpi_usuarios_sync", 0)
@@ -1479,7 +1481,7 @@ def usuarios_lista(request):
 
     # Búsqueda en vivo del perfil en GLPI (pestaña Técnicos con texto de búsqueda)
     perfiles_encontrados = 0
-    if tab == "tecnico" and q and dj_settings.GLPI.get("enabled"):
+    if tab == "tecnico" and q and esta_activo_glpi():
         client = GlpiClient()
         if client.available:
             try:
@@ -1529,8 +1531,8 @@ def usuarios_lista(request):
                 )
 
     glpi_base = ""
-    if dj_settings.GLPI.get("enabled"):
-        glpi_base = dj_settings.GLPI["base_url"].split("/apirest.php")[0].rstrip("/")
+    if esta_activo_glpi():
+        glpi_base = configuracion_glpi()["base_url"].split("/apirest.php")[0].rstrip("/")
 
     # Técnicos en GLPI que aún no están en el aplicativo:
     # en la pestaña Técnicos se muestran siempre (con búsqueda, solo coincidencias)

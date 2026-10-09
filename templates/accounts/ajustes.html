@@ -319,7 +319,44 @@
 
                     {% comment %}El interruptor tambien vive aqui: la pestana GLPI es donde
                     se busca, y no hay que ir a "Pagina" a encontrarlo.{% endcomment %}
-                    {% if request.user.rol == 'admin' %}
+                    {% if request.user.rol == 'admin' and glpi_panel %}
+                    <div class="settings-panel-header">
+                        <h3>Conexión con la web de GLPI</h3>
+                    </div>
+                    <div class="glpi-card">
+                    <form method="post" action="{% url 'accounts:configuracion_glpi' %}" class="settings-form">
+                        {% csrf_token %}
+                        <div class="cfg-row">
+                            <span class="cfg-label">Estado</span>
+                            <select name="modo" class="obs-buscador-tipo" aria-label="Estado de la conexión">
+                                <option value="auto"{% if glpi_panel.modo == 'auto' %} selected{% endif %}>Automático (.env)</option>
+                                <option value="on"{% if glpi_panel.modo == 'on' %} selected{% endif %}>Activado</option>
+                                <option value="off"{% if glpi_panel.modo == 'off' %} selected{% endif %}>Desactivado</option>
+                            </select>
+                            <small class="muted">Vigente: {% if glpi_panel.vigente %}sí{% else %}no{% endif %} ({{ glpi_panel.fuente.enabled }})</small>
+                        </div>
+                        <div class="cfg-row">
+                            <span class="cfg-label">URL base</span>
+                            <input type="url" name="base_url" value="" maxlength="250" placeholder="{{ glpi_panel.env_url }}">
+                        </div>
+                        <div class="cfg-row">
+                            <span class="cfg-label">App token</span>
+                            <input type="password" name="app_token" value="" maxlength="250" placeholder="{% if glpi_panel.tiene_app %}•••• guardado{% else %}vacío = .env{% endif %}" autocomplete="new-password">
+                        </div>
+                        <div class="cfg-row">
+                            <span class="cfg-label">User token</span>
+                            <input type="password" name="user_token" value="" maxlength="250" placeholder="{% if glpi_panel.tiene_user %}•••• guardado{% else %}vacío = .env{% endif %}" autocomplete="new-password">
+                        </div>
+                        <div class="cfg-row">
+                            <span class="cfg-label">Timeout (s)</span>
+                            <input type="number" name="timeout" value="" min="1" max="120" placeholder="{{ glpi_panel.env_timeout }}">
+                        </div>
+                        <div class="settings-actions" style="display:flex;gap:8px">
+                            <button type="submit" name="accion" value="guardar" class="btn btn-primary btn-sm">Guardar conexión</button>
+                            <button type="submit" name="accion" value="probar" class="btn btn-outline btn-sm">Probar conexión</button>
+                        </div>
+                    </form>
+                    </div>
                     <div class="settings-panel-header">
                         <h3>Actividad en paneles</h3>
                     </div>

@@ -28,6 +28,23 @@ class GlpiError(Exception):
     pass
 
 
+def configuracion_efectiva():
+    """Configuración GLPI efectiva: .env con ajustes del panel encima."""
+    base = dict(getattr(settings, "GLPI", {}) or {})
+    try:
+        from apps.tickets.models import ConfigSitio
+
+        base.update(ConfigSitio.glpi_efectivo()["config"])
+    except Exception:  # noqa: BLE001 - sin tabla vale el .env
+        pass
+    return base
+
+
+def esta_activo():
+    """True si la conexión GLPI efectiva está habilitada."""
+    return bool(configuracion_efectiva().get("enabled"))
+
+
 def normalizar_base_url(url: str) -> str:
     """
     Convierte URLs de la nueva API de GLPI 11 (/api.php/v1) a la API
@@ -50,8 +67,8 @@ def normalizar_base_url(url: str) -> str:
 class GlpiClient:
     """Sesión mínima: initSession → operaciones → killSession."""
 
-    def __init__(self):
-        cfg = getattr(settings, "GLPI", {}) or {}
+    def __init__(self, config=None):
+        cfg = dict(config or configuracion_efectiva())
         self.enabled = bool(cfg.get("enabled"))
         self.base_url = normalizar_base_url(cfg.get("base_url") or "")
         self.app_token = cfg.get("app_token") or ""

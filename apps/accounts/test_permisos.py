@@ -247,3 +247,37 @@ class PermisosRolesTest(TestCase):
         cfg.save()
         html = self.client.get(reverse("tickets:dashboard")).content.decode()
         self.assertNotIn("Actividad GLPI", html)
+
+    def test_glpi_conexion_desde_panel_y_env(self):
+        from apps.tickets.models import ConfigSitio
+        from apps.tickets.services.glpi_client import GlpiClient, esta_activo
+
+        self.client.force_login(self.usuario)
+        self.assertEqual(
+            self.client.post(reverse("accounts:configuracion_glpi"), {}).status_code,
+            404,
+        )
+        self.client.force_login(self.admin)
+        html = self.client.get(reverse("accounts:ajustes")).content.decode()
+        self.assertIn("Conexión con la web de GLPI", html)
+        respuesta = self.client.post(reverse("accounts:configuracion_glpi"), {
+            "modo": "on", "base_url": "http://glpi.local/apirest.php",
+            "app_token": "APP", "user_token": "USER", "timeout": "10",
+            "accion": "guardar",
+        })
+        self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#glpi")
+        cfg = ConfigSitio.cargar()
+        self.assertTrue(cfg.glpi_habilitado)
+        self.assertEqual(cfg.glpi_base_url, "http://glpi.local/apirest.php")
+        cliente = GlpiClient()
+        self.assertTrue(cliente.enabled)
+        self.assertTrue(esta_activo())
+        self.assertEqual(cliente.timeout, 10)
+
+    def test_glpi_probar_sin_datos_avisa(self):
+        self.client.force_login(self.admin)
+        respuesta = self.client.post(
+            reverse("accounts:configuracion_glpi"),
+            {"modo": "auto", "accion": "probar"}, follow=True,
+        )
+        self.assertContains(respuesta, "Faltan datos")

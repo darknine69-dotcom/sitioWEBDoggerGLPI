@@ -612,6 +612,27 @@ class ConfigSitio(models.Model):
         default=True,
         help_text="Si está apagada, el bloque «Actividad reciente GLPI» no aparece en el panel de nadie.",
     )
+    glpi_habilitado = models.BooleanField(
+        "GLPI habilitado",
+        null=True, blank=True, default=None,
+        help_text="Vacío = manda el .env (GLPI_ENABLED).",
+    )
+    glpi_base_url = models.CharField(
+        "URL base de GLPI", max_length=250, blank=True, default="",
+        help_text="Vacía = manda el .env (GLPI_BASE_URL).",
+    )
+    glpi_app_token = models.CharField(
+        "App token", max_length=250, blank=True, default="",
+        help_text="Vacío = manda el .env (GLPI_APP_TOKEN).",
+    )
+    glpi_user_token = models.CharField(
+        "User token", max_length=250, blank=True, default="",
+        help_text="Vacío = manda el .env (GLPI_USER_TOKEN).",
+    )
+    glpi_timeout = models.PositiveIntegerField(
+        "Timeout (s)", null=True, blank=True, default=None,
+        help_text="Vacío = manda el .env (GLPI_TIMEOUT).",
+    )
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -630,6 +651,39 @@ class ConfigSitio(models.Model):
             "instagram_url": D.get("instagram", ""),
             "facebook_url": D.get("facebook", ""),
         })[0]
+
+    @classmethod
+    def glpi_efectivo(cls):
+        """Conexión GLPI efectiva: el .env manda, el panel lo ajusta.
+
+        Cada campo vacío en el panel deja el valor del .env
+        (GLPI_ENABLED, GLPI_BASE_URL, GLPI_APP_TOKEN, GLPI_USER_TOKEN,
+        GLPI_TIMEOUT). Devuelve el dict más de dónde salió cada dato.
+        """
+        from django.conf import settings as dj_settings
+
+        base = dict(getattr(dj_settings, "GLPI", {}) or {})
+        fuente = {k: ".env" for k in
+                  ("enabled", "base_url", "app_token", "user_token", "timeout")}
+        try:
+            cfg = cls.objects.filter(pk=1).first()
+        except Exception:  # noqa: BLE001 - sin tabla vale el .env
+            cfg = None
+        if cfg is not None:
+            if cfg.glpi_habilitado is not None:
+                base["enabled"] = bool(cfg.glpi_habilitado)
+                fuente["enabled"] = "panel"
+            for campo, llave in (("glpi_base_url", "base_url"),
+                                 ("glpi_app_token", "app_token"),
+                                 ("glpi_user_token", "user_token")):
+                valor = (getattr(cfg, campo, "") or "").strip()
+                if valor:
+                    base[llave] = valor
+                    fuente[llave] = "panel"
+            if cfg.glpi_timeout:
+                base["timeout"] = int(cfg.glpi_timeout)
+                fuente["timeout"] = "panel"
+        return {"config": base, "fuente": fuente}
 
     def __str__(self):
         return "Configuración de la página"

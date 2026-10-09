@@ -129,6 +129,59 @@ class StaffLogoutView(View):
 
 
 @login_required
+@require_POST
+def configuracion_glpi(request):
+    """Guarda y prueba la conexión con la web de GLPI.
+
+    Solo administradores. Vacío = manda el .env (GLPI_*); con valores, el
+    panel manda. "Probar" abre sesión contra la API y la cierra.
+    """
+    if request.user.rol != "admin":
+        from django.http import Http404
+
+        raise Http404("Solo los administradores configuran GLPI.")
+    from apps.tickets.models import ConfigSitio
+
+    cfg = ConfigSitio.cargar()
+    modo = (request.POST.get("modo") or "auto").strip()
+    cfg.glpi_habilitado = {"on": True, "off": False}.get(modo)
+    base_url = (request.POST.get("base_url") or "").strip()
+    if base_url:
+        cfg.glpi_base_url = base_url[:250]
+    app_token = (request.POST.get("app_token") or "").strip()
+    if app_token:
+        cfg.glpi_app_token = app_token[:250]
+    user_token = (request.POST.get("user_token") or "").strip()
+    if user_token:
+        cfg.glpi_user_token = user_token[:250]
+    timeout = (request.POST.get("timeout") or "").strip()
+    cfg.glpi_timeout = int(timeout) if timeout.isdigit() else None
+    cfg.save()
+    if (request.POST.get("accion") or "guardar") == "probar":
+        from apps.tickets.services.glpi_client import GlpiClient, GlpiError
+
+        try:
+            cliente = GlpiClient()
+            if not cliente.available:
+                messages.warning(
+                    request, "Faltan datos: URL y los dos tokens para probar.")
+            else:
+                cliente.init_session()
+                try:
+                    cliente.kill_session()
+                except GlpiError:
+                    pass
+                messages.success(request, "Conexión con GLPI verificada.")
+        except GlpiError as exc:
+            messages.error(request, f"No se pudo conectar: {exc}")
+        except Exception:  # noqa: BLE001 - red caída no rompe ajustes
+            messages.error(request, "No se pudo conectar con la web de GLPI.")
+    else:
+        messages.success(request, "Conexión con GLPI actualizada.")
+    return redirect(reverse("accounts:ajustes") + "#glpi")
+
+
+@login_required
 def permisos_roles(request):
     """Guarda los permisos por cuenta desde la sección Página de Ajustes.
 
@@ -221,6 +274,25 @@ def ajustes_cuenta(request):
             cuentas = cuentas.filter(rol=rol_perm)
         ctx["cuentas_permisos"] = cuentas
         ctx["rol_perm_sel"] = rol_perm
+        from django.conf import settings as dj_settings
+
+        env = dict(getattr(dj_settings, "GLPI", {}) or {})
+        efectivo = ConfigSitio.glpi_efectivo()
+        panel = ctx["config_sitio"]
+        ctx["glpi_panel"] = None
+        if panel is not None:
+            ctx["glpi_panel"] = {
+                "modo": (
+                    "auto" if panel.glpi_habilitado is None
+                    else ("on" if panel.glpi_habilitado else "off")
+                ),
+                "vigente": bool(efectivo["config"].get("enabled")),
+                "fuente": efectivo["fuente"],
+                "env_url": env.get("base_url", ""),
+                "env_timeout": env.get("timeout", 30),
+                "tiene_app": bool((panel.glpi_app_token or "").strip()),
+                "tiene_user": bool((panel.glpi_user_token or "").strip()),
+            }
     return render(request, "accounts/ajustes.html", ctx)
 
 # Un archivo del manual por rol. Se guardan en apps/accounts/documentos/.
