@@ -3282,6 +3282,7 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .perm-lista:hover::-webkit-scrollbar-track { background: transparent; }
 .perm-lista:hover::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
 .perm-lista thead th { position: sticky; top: 0; z-index: 1; }
+.perm-lista .table-scroll { overflow: visible; }
 .perm-lista .table-scroll table.obs-tabla thead th { background: #ECECEC; }
 @media (max-width: 520px) {
     .sw-win { right: 8px; left: 8px; width: auto; bottom: 84px; height: 70vh; }
