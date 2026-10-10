@@ -788,12 +788,25 @@ def _calificacion_de(tecnico):
     except Exception:
         pass
     total = me_gusta + no_me_gusta
+    try:
+        resueltos = Ticket.objects.filter(tecnico_asignado=tecnico).filter(
+            Q(fecha_resolucion__isnull=False)
+            | Q(estado=Ticket.Estado.RESUELTO)
+            | Q(estado=Ticket.Estado.CERRADO)
+        ).count()
+    except Exception:
+        resueltos = 0
+    cobertura = min(100, round(total * 100 / resueltos)) if resueltos else None
     return {
         "me_gusta": me_gusta,
         "no_me_gusta": no_me_gusta,
         "total": total,
         "balance": me_gusta - no_me_gusta,
-        "porcentaje": round(me_gusta * 100 / total) if total else None,
+        "resueltos": resueltos,
+        "cobertura": cobertura,
+        # Alias histórico: la plantilla lateral lee "porcentaje" como cobertura
+        # (% de resueltos con voto), no como aprobación entre votos.
+        "porcentaje": cobertura,
     }
 
 

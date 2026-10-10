@@ -274,9 +274,9 @@
                 <p class="sidebar-group-title">Tu calificación</p>
                 {% if calif_lateral.total %}
                 <div class="side-calif">
-                    <strong class="side-calif-num">{{ calif_lateral.porcentaje }}%</strong>
-                    <span class="side-calif-bar" role="img" aria-label="{{ calif_lateral.porcentaje }}% de aprobación"><span style="width: {{ calif_lateral.porcentaje }}%"></span></span>
-                    <small>{{ calif_lateral.total }} voto{{ calif_lateral.total|pluralize:"s" }} · {{ calif_lateral.porcentaje }}%</small>
+                    <strong class="side-calif-num">{% if calif_lateral.porcentaje != None %}{{ calif_lateral.porcentaje }}%{% else %}—{% endif %}</strong>
+                    <span class="side-calif-bar" role="img" aria-label="{{ calif_lateral.total }} votos de {{ calif_lateral.resueltos }} resueltos"><span style="width: {{ calif_lateral.porcentaje|default:0 }}%"></span></span>
+                    <small>{{ calif_lateral.total }} voto{{ calif_lateral.total|pluralize:"s" }}{% if calif_lateral.porcentaje != None %} · {{ calif_lateral.porcentaje }}% de {{ calif_lateral.resueltos }} resueltos{% endif %}</small>
                 </div>
                 {% else %}
                 <small class="side-calif-vacia">Todavía no hay votos. Cuando un usuario te califique, aparecerá aquí.</small>

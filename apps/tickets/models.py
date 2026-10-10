@@ -821,11 +821,19 @@ class CalificacionTecnico(models.Model):
         me_gusta = qs.filter(valor=cls.Valor.ME_GUSTA).count()
         no_me_gusta = qs.filter(valor=cls.Valor.NO_ME_GUSTA).count()
         total = me_gusta + no_me_gusta
+        resueltos = Ticket.objects.filter(tecnico_asignado=tecnico).filter(
+            Q(fecha_resolucion__isnull=False)
+            | Q(estado=Ticket.Estado.RESUELTO)
+            | Q(estado=Ticket.Estado.CERRADO)
+        ).count()
         return {
             "me_gusta": me_gusta,
             "no_me_gusta": no_me_gusta,
             "total": total,
             "porcentaje": round(me_gusta * 100 / total) if total else 0,
+            "aprobacion": round(me_gusta * 100 / total) if total else 0,
+            "resueltos": resueltos,
+            "cobertura": min(100, round(total * 100 / resueltos)) if resueltos else None,
         }
 
 
