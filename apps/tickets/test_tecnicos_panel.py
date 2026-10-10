@@ -267,7 +267,7 @@ class CalificacionConPulgares(TestCase):
         html = self.client.get(reverse("tickets:panel_tecnico")).content.decode()
         self.assertIn("Tu calificación", html)
         # 2 de 3 votos: 67% de aprobación.
-        self.assertIn("67% de aprobación", html)
+        self.assertIn("3 votos · 67%", html)
 
     def test_sin_votos_el_panel_no_enseña_porcentaje(self):
         self.client.force_login(self.tecnico)

@@ -276,7 +276,7 @@
                 <div class="side-calif">
                     <strong class="side-calif-num">{{ calif_lateral.porcentaje }}%</strong>
                     <span class="side-calif-bar" role="img" aria-label="{{ calif_lateral.porcentaje }}% de aprobación"><span style="width: {{ calif_lateral.porcentaje }}%"></span></span>
-                    <small>{{ calif_lateral.porcentaje }}% de aprobación · {{ calif_lateral.total }} voto{{ calif_lateral.total|pluralize:"s" }}</small>
+                    <small>{{ calif_lateral.total }} voto{{ calif_lateral.total|pluralize:"s" }} · {{ calif_lateral.porcentaje }}%</small>
                 </div>
                 {% else %}
                 <small class="side-calif-vacia">Todavía no hay votos. Cuando un usuario te califique, aparecerá aquí.</small>

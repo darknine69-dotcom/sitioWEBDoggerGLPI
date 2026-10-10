@@ -34,7 +34,7 @@ y con scroll si son más de tres.
                         </span>
                         <span class="tec-barra-pct" data-barra-pct>
                             {% if tec.barra.total %}
-                            {{ tec.barra.porcentaje }}% de aprobación · {{ tec.barra.me_gusta }} de {{ tec.barra.total }} ticket{{ tec.barra.total|pluralize:"s" }} resuelto{{ tec.barra.total|pluralize:"s" }}
+                            {{ tec.me_gusta_ticket|add:tec.no_me_gusta_ticket }} votos · {{ tec.barra.porcentaje }}%
                             {% else %}
                             Todavía sin votos en tickets resueltos.
                             {% endif %}

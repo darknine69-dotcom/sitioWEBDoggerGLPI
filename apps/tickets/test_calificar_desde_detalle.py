@@ -262,7 +262,7 @@ class CalificarDesdeElDetalle(TestCase):
         self.assertIn(self.tecnico.nombre, html)
         self.assertIn(self.ayudante.nombre, html)
         self.assertIn("tec-barra", html)
-        self.assertIn("100% de aprobación", html)
+        self.assertIn("1 votos · 100%", html)
 
     def test_sin_votos_la_barra_dice_que_no_hay(self):
         ticket = self.resuelto()
