@@ -3826,7 +3826,7 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 .pivot-pop-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
 .pivot-pop-cats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .pivot-pop-cat { font-size: 10px; font-weight: 700; color: #6B6259; background: #FBFAF7; border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
-.pivot-pop-foot { margin-top: 6px; font-size: 10.5px; color: var(--ink-muted); text-align: right; }
+.pivot-pop-foot { margin-top: 6px; font-size: 9.5px; color: var(--ink-muted); text-align: right; }
 .pivot-pop-foot .ph-v { color: #D62B1F; }
 .pivot-pop-foot .ph-r { color: #B7791F; }
 .pivot-pop-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: #F1EDE6; }
