@@ -513,3 +513,4 @@ class FiltroResueltasTest(SmokeTestCase):
         self.assertIn(".pivot-pop {", css)
         self.assertIn("width: 248px", css)
         self.assertIn("font-family: var(--font-corp)", css)
+        self.assertIn("position: fixed", css)

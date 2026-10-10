@@ -598,19 +598,24 @@
         }
         pintar();
         card.appendChild(pop);
-        var cardRect = card.getBoundingClientRect();
         var acr = anchor.getBoundingClientRect();
         pop.style.visibility = 'hidden';
         var w = pop.offsetWidth;
         var h = pop.offsetHeight;
-        var x = acr.left - cardRect.left + 8;
-        var y = acr.top - cardRect.top - 2;
-        x = Math.max(6, Math.min(x, cardRect.width - w - 6));
-        y = Math.max(6, Math.min(y, Math.max(6, cardRect.height - h - 6)));
+        var x = Math.max(6, Math.min(acr.left + 8, window.innerWidth - w - 6));
+        var y = Math.max(6, Math.min(acr.top - 2, window.innerHeight - h - 6));
         pop.style.left = x + 'px';
         pop.style.top = y + 'px';
         pop.style.visibility = '';
         requestAnimationFrame(function () { pop.classList.add('is-in'); });
+        function cerrarScroll(e) {
+            if (!e.target.closest || !e.target.closest('#pivotPop')) {
+                var p = document.getElementById('pivotPop');
+                if (p) p.remove();
+                document.removeEventListener('scroll', cerrarScroll, true);
+            }
+        }
+        document.addEventListener('scroll', cerrarScroll, true);
         pop.querySelector('.pivot-pop-close').addEventListener('click', function (e) {
             e.stopPropagation();
             pop.remove();
