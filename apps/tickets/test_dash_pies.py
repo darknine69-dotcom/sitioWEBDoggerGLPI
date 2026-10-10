@@ -497,8 +497,5 @@ class FiltroResueltasTest(SmokeTestCase):
         self.assertIn("clave", filas[0])
         with open(finders.find("js/panel-dash.js"), encoding="utf-8") as f:
             js = f.read()
-        self.assertIn("renderPivotCards", js)
-        self.assertIn("PIVOT_METRICAS", js)
-        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
-            css = f.read()
-        self.assertIn(".pivot-tec", css)
+        self.assertNotIn("renderPivotCards", js)
+        self.assertIn("pivot-lead", js)
