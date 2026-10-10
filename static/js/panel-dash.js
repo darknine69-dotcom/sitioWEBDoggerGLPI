@@ -538,8 +538,7 @@
             f = mejor.key;
         }
         var activo = f;
-        var activas = r.abrir + r.espera;
-        var pct = activas ? Math.round(r.vencido / activas * 100) : 0;
+        var pct = r.total ? Math.round(r.vencido / r.total * 100) : 0;
         var ans = (r.vencido || r.riesgo) ? 'ANS: <strong class="ph-v">' + r.vencido + ' vencid' + (r.vencido === 1 ? 'a' : 'as') + '</strong> · <strong class="ph-r">' + r.riesgo + ' por vencer</strong>' : 'ANS ok';
         var base = card.getAttribute('data-detalle-url') || '';
         pop.innerHTML =
@@ -583,7 +582,7 @@
                 : '<div class="pivot-pop-vacio">Sin tickets en esta vista.</div>';
             elList.innerHTML = lista;
             var esAb = activo === 'abierto' || activo === 'en-progreso' || activo === 'vencido';
-            elFoot.innerHTML = ans + ' · ' + pct + '% de abiertas vencidas';
+            elFoot.innerHTML = ans + ' · ' + pct + '% vencidas del total';
             elFoot.style.display = esAb ? '' : 'none';
             elCats.innerHTML = (r.categorias || []).map(function (c) {
                 return '<span class="pivot-pop-cat">' + esc(c) + '</span>';

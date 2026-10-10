@@ -78,6 +78,12 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if DEBUG:
+    # En desarrollo WhiteNoise servía la copia vieja de staticfiles/ e
+    # ignoraba los cambios (el ?v= no le afecta): sin él, Django sirve
+    # directo del disco y siempre se ve lo último. En producción sigue.
+    MIDDLEWARE = [m for m in MIDDLEWARE if "whitenoise" not in m]
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
