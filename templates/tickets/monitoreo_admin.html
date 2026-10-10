@@ -8,79 +8,70 @@
 
 {% block extra_css %}
 <style>
-main.wrap { font-family: var(--font-corp); }
-/* Tablero de monitoreo: héroe, supervisores y zonas. */
-.mon-hero { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
-@media (max-width: 960px) { .mon-hero { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { .mon-hero { grid-template-columns: 1fr; } }
-.mon-sup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-bottom: 18px; }
-.mon-sup-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
-.mon-sup-head { display: flex; align-items: center; gap: 10px; padding: 13px 15px; background: #FBFAF7; border-bottom: 1px solid var(--line); }
-.mon-sup-id { display: flex; flex-direction: column; min-width: 0; }
-.mon-sup-id strong { font-size: 14px; }
-.mon-sup-id small { font-size: 11.5px; color: var(--ink-muted); }
-.mon-sup-puntos { display: flex; gap: 4px; flex-wrap: wrap; padding: 10px 15px 0; }
-.mon-zona { border-top: 1px dashed var(--line); padding: 11px 15px; }
-.mon-zona:first-of-type { border-top: 0; }
-.mon-zona-tit { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 8px; }
-.mon-zona-tit strong { font-size: 13.5px; }
-.mon-miembro { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed #F1EDE6; font-size: 12.5px; }
-.mon-miembro:last-child { border-bottom: 0; }
-.mon-miembro .mon-m-id { min-width: 0; flex: 1; }
-.mon-miembro .mon-m-id strong { display: block; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mon-miembro .mon-m-id small { color: var(--ink-muted); font-size: 11px; }
-.mon-zona-foot { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
-.mon-vacio { text-align: center; padding: 34px 16px; color: var(--ink-muted); }
-.mon-vacio .icon { width: 30px; height: 30px; }
+main.obs-page { font-family: var(--font-corp); }
+/* Formularios cortos dentro de las tarjetas de zona: misma línea, sin aire de más. */
+.obs-admin-form { display: flex; gap: 6px; margin: 10px 0 4px; }
+.obs-admin-form input { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
+.obs-admin-form input:focus { outline: none; border-color: var(--dogger-red); }
+.obs-admin-crear { margin-bottom: 18px; }
+.obs-admin-crear label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); }
+.obs-admin-foot { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.obs-sup-tit { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; }
+.obs-sup-tit:first-of-type { margin-top: 0; }
+.obs-sup-tit small { font-size: 11.5px; color: var(--ink-muted); }
 </style>
 {% endblock %}
 
 {% block content %}
-<main class="wrap">
+<main class="page obs-page">
 
-    <div class="mon-hero corp-anim">
-        <div class="dash-stat dash-hov-tecnicos">
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
+        <a class="dash-stat dash-hov-usuarios" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-eye"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Supervisores</span>
                 <span class="dash-stat-value">{{ dash.supervisores|default:0 }}</span>
                 <span class="dash-stat-hint">con zonas creadas</span>
             </span>
-        </div>
-        <div class="dash-stat dash-hov-total">
+        </a>
+        <a class="dash-stat dash-hov-zonas" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Zonas creadas</span>
                 <span class="dash-stat-value">{{ dash.zonas|default:0 }}</span>
                 <span class="dash-stat-hint">carpetas de seguimiento</span>
             </span>
-        </div>
-        <div class="dash-stat dash-hov-usuarios">
+        </a>
+        <a class="dash-stat dash-hov-total" href="#zonas" title="Bajar a las cuentas dentro de cada zona">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-user"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Cuentas en zonas</span>
                 <span class="dash-stat-value">{{ dash.cuentas|default:0 }}</span>
                 <span class="dash-stat-hint">personas vigiladas</span>
             </span>
-        </div>
-        <div class="dash-stat dash-hov-abiertos">
+        </a>
+        <a class="dash-stat dash-hov-abiertos" href="#agregar" title="Bajar a agregar cuentas al seguimiento">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Abiertos en zonas</span>
                 <span class="dash-stat-value st-abiertos">{{ dash.abiertos|default:0 }}</span>
                 <span class="dash-stat-hint">tickets por atender</span>
             </span>
-        </div>
+        </a>
     </div>
 
-    <div class="panel" style="margin-bottom:18px">
-        <h3 class="cat-det-bloque" style="font-size:14px;margin-bottom:4px">Zonas creadas por los observadores</h3>
-        <p class="panel-sub">Cada supervisor a cargo con sus zonas, las cuentas que metió en cada una y su estado. Se administra desde aquí: se crea la zona, se le asignan cuentas, se saca una cuenta o se elimina la zona (la gente no se borra). Dale clic al nombre de una cuenta para ver su ficha completa.</p>
-        <form method="post" action="{% url 'tickets:monitoreo_zona_crear' %}"
-              style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+    <section id="zonas" class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Zonas creadas por los observadores</h3>
+        <p class="obs-leyenda">
+            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-verde"></span> Al día<span class="obs-tip">Zona sin tickets abiertos</span></span>
+            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-amarillo"></span> Pendiente<span class="obs-tip">Zona con tickets abiertos o en progreso</span></span>
+            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-rojo"></span> Incidencia<span class="obs-tip">Zona con urgentes abiertos</span></span>
+        </p>
+        <p class="muted" style="margin:0 0 12px;font-size:12.5px">Cada supervisor a cargo con sus zonas, las cuentas que metió en cada una y su estado. Se administra desde aquí: se crea la zona, se le asignan cuentas, se saca una cuenta o se elimina la zona (la gente no se borra). Dale clic al nombre de una cuenta para ver su ficha completa.</p>
+        <form method="post" action="{% url 'tickets:monitoreo_zona_crear' %}" class="obs-filtros obs-admin-crear">
             {% csrf_token %}
             <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-            <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-muted)">Supervisor
+            <label>Supervisor
                 <select name="observador" class="obs-buscador-tipo" style="min-width:200px" required>
                     <option value="">Elige…</option>
                     {% for pk, nombre in observadores %}
@@ -88,148 +79,164 @@ main.wrap { font-family: var(--font-corp); }
                     {% endfor %}
                 </select>
             </label>
-            <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-muted)">Nueva zona
-                <input type="text" name="nombre" maxlength="80" placeholder="Ej.: Sede norte" class="obs-buscador-tipo" style="min-width:200px" required>
+            <label style="flex:1">Nueva zona
+                <input type="text" name="nombre" maxlength="80" placeholder="Ej.: Sede norte" class="obs-buscador-tipo" style="width:100%" required>
             </label>
-            <button type="submit" class="btn btn-sm btn-accent"><svg class="icon icon-sm"><use href="#i-plus"/></svg> Crear zona</button>
+            <button type="submit" class="btn btn-sm btn-accent" style="align-self:flex-end"><svg class="icon icon-sm"><use href="#i-plus"/></svg> Crear zona</button>
         </form>
         {% if zonas_creadas %}
-        <div class="mon-sup-grid corp-anim">
-            {% for bloque in zonas_creadas %}
-            <article class="mon-sup-card">
-                <div class="mon-sup-head">
-                    <span style="width:36px;height:36px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;background:#EEE9DB;color:#6B6259;font-weight:800;font-size:15px">{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
-                    <div class="mon-sup-id">
-                        <strong>{{ bloque.supervisor.nombre }}</strong>
-                        <small>{{ bloque.supervisor.email }} · Supervisor a cargo</small>
-                    </div>
+        {% for bloque in zonas_creadas %}
+        <div class="obs-sup-tit">
+            <span class="obs-avatar">{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
+            <div class="obs-miembro-id">
+                <strong>{{ bloque.supervisor.nombre }}</strong>
+                <small>{{ bloque.supervisor.email }} · Supervisor a cargo{% if bloque.puntos %} · {% for p in bloque.puntos %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</small>
+            </div>
+        </div>
+        {% for z in bloque.zonas %}
+        <section class="obs-zona-card">
+            <div class="obs-zona-head">
+                <span class="obs-zona-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+                <div class="obs-zona-tit">
+                    <strong>{{ z.zona.nombre }}</strong>
+                    <small>{{ z.zona.creado_en|date:"d/m/Y" }} · {{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }} · {{ bloque.supervisor.nombre }}</small>
                 </div>
-                {% if bloque.puntos %}
-                <div class="mon-sup-puntos">
-                    {% for p in bloque.puntos %}<span class="chip chip-soft">{{ p }}</span>{% endfor %}
+                {% if z.abiertos %}<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>{{ z.abiertos }} abiertos</span>
+                {% else %}<span class="obs-pill obs-pill-verde"><span class="obs-dot obs-dot-verde"></span>al día</span>{% endif %}
+                <div class="obs-zona-stats">
+                    <span class="obs-crate-global" title="Total de la zona: cuentas y abiertos">
+                        <span class="obs-crate-seg"><b>{{ z.miembros|length }}</b> cuentas</span>
+                        <span class="obs-crate-seg s-abiertos"><b>{{ z.abiertos }}</b> abiertos</span>
+                    </span>
                 </div>
-                {% endif %}
-                {% for z in bloque.zonas %}
-                <div class="mon-zona">
-                    <div class="mon-zona-tit">
-                        <svg class="icon icon-sm"><use href="#i-map-pin"/></svg>
-                        <strong>{{ z.zona.nombre }}</strong>
-                        <small class="muted">{{ z.zona.creado_en|date:"d/m/Y" }} · {{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }}</small>
-                        {% if z.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ z.abiertos }} abiertos</span>
-                        {% else %}<span class="obs-pill obs-pill-verde">al día</span>{% endif %}
-                    </div>
-                    <form method="post" action="{% url 'tickets:monitoreo_zona_renombrar' z.zona.pk %}"
-                          style="display:flex;gap:6px;margin-bottom:8px">
-                        {% csrf_token %}
-                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                        <input type="text" name="nombre" value="{{ z.zona.nombre }}" maxlength="80" aria-label="Renombrar zona {{ z.zona.nombre }}" class="obs-buscador-tipo" style="flex:1;min-width:0" required>
-                        <button type="submit" class="btn btn-outline btn-sm" title="Guardar el nombre nuevo">Renombrar</button>
-                    </form>
-                    {% for m in z.miembros %}
-                    <div class="mon-miembro">
-                        <div class="mon-m-id">
+            </div>
+            <div style="padding:4px 16px 14px">
+                <form method="post" action="{% url 'tickets:monitoreo_zona_renombrar' z.zona.pk %}" class="obs-admin-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                    <input type="text" name="nombre" value="{{ z.zona.nombre }}" maxlength="80" aria-label="Renombrar zona {{ z.zona.nombre }}" required>
+                    <button type="submit" class="btn btn-outline btn-sm" title="Guardar el nombre nuevo">Renombrar</button>
+                </form>
+                {% for m in z.miembros %}
+                <article class="obs-miembro">
+                    <div class="obs-miembro-top">
+                        <span class="obs-avatar">{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
+                        <span class="obs-miembro-id">
                             <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Ver ficha completa: tickets, técnicos, conversaciones e imágenes">{{ m.nombre }}</a></strong>
                             <small>{{ m.email|default:"—" }} · {{ m.rol }} · {{ m.tecnico }}</small>
-                        </div>
-                        {% if m.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ m.abiertos }}</span>{% endif %}
+                        </span>
+                        {% if m.abiertos %}<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>{{ m.abiertos }}</span>{% endif %}
+                        <span class="obs-miembro-nums">
+                            <span class="obs-crate" title="Tickets de {{ m.nombre }}: {{ m.total }} en total, {{ m.abiertos }} abiertos">
+                                <span class="obs-crate-seg"><b>{{ m.total }}</b> tickets</span>
+                                <span class="obs-crate-seg s-abiertos"><b>{{ m.abiertos }}</b> abiertos</span>
+                            </span>
+                        </span>
                         <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_quitar' m.elemento_id %}">
                             {% csrf_token %}
                             <input type="hidden" name="volver" value="{{ request.get_full_path }}">
                             <button type="submit" class="btn btn-outline btn-sm" title="Sacar de la zona (queda en la lista)">Sacar</button>
                         </form>
                     </div>
-                    {% empty %}
-                    <p class="muted" style="margin:0">Zona vacía: todavía no tiene cuentas dentro.</p>
-                    {% endfor %}
-                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}"
-                          style="display:flex;gap:6px;margin-top:8px">
+                </article>
+                {% empty %}
+                <p class="muted" style="margin:6px 0">Zona vacía: todavía no tiene cuentas dentro.</p>
+                {% endfor %}
+                <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                    <input type="email" name="email" placeholder="correo@dogger.com.co" aria-label="Correo de la cuenta" required>
+                    <button type="submit" class="btn btn-sm">Asignar</button>
+                </form>
+                <div class="obs-admin-foot">
+                    <small class="muted">{{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }} en total</small>
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_eliminar' z.zona.pk %}" style="margin-left:auto" onsubmit="return confirm('¿Eliminar la zona {{ z.zona.nombre|escapejs }}? Su gente queda en la lista, sin zona.')">
                         {% csrf_token %}
                         <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                        <input type="email" name="email" placeholder="correo@dogger.com.co" aria-label="Correo de la cuenta" class="obs-buscador-tipo" style="flex:1;min-width:0" required>
-                        <button type="submit" class="btn btn-sm">Asignar</button>
+                        <button type="submit" class="btn btn-outline btn-sm">Eliminar zona</button>
                     </form>
-                    <div class="mon-zona-foot">
-                        <small class="muted">{{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }} en total</small>
-                        <form method="post" action="{% url 'tickets:monitoreo_zona_eliminar' z.zona.pk %}" style="margin-left:auto" onsubmit="return confirm('¿Eliminar la zona {{ z.zona.nombre|escapejs }}? Su gente queda en la lista, sin zona.')">
-                            {% csrf_token %}
-                            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                            <button type="submit" class="btn btn-outline btn-sm">Eliminar zona</button>
-                        </form>
-                    </div>
                 </div>
-                {% endfor %}
-            </article>
-            {% endfor %}
-        </div>
+            </div>
+        </section>
+        {% endfor %}
+        {% endfor %}
         {% else %}
-        <div class="mon-vacio">
-            <svg class="icon"><use href="#i-map-pin"/></svg>
-            <p><strong>Ningún observador ha creado zonas todavía.</strong><br>Aparecen aquí en cuanto armen la primera desde su panel.</p>
+        <div class="obs-vacio">
+            <span class="obs-vacio-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <strong>Ningún observador ha creado zonas todavía.</strong>
+            <p>Aparecen aquí en cuanto armen la primera desde su panel.</p>
         </div>
         {% endif %}
-    </div>
+    </section>
 
     {% if not observadores %}
-    <div class="panel">
-        <p class="panel-sub">No hay observadores activos. Crea uno desde Usuarios y técnicos.</p>
+    <div class="chart-card">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+            <h3>Agregar cuentas al seguimiento</h3>
+        </div>
+        <p class="muted" style="margin:0">No hay observadores activos. Crea uno desde Usuarios y técnicos.</p>
     </div>
     {% else %}
 
-    <div class="panel">
-        <h3 class="cat-det-bloque" style="font-size:14px;margin-bottom:4px">Agregar cuentas al seguimiento</h3>
-        <p class="panel-sub">Elige un observador, mira los usuarios activos y guárdalos en la zona que le toca. El observador los ve de inmediato en su panel.</p>
-        <form method="get" class="cat-publico-busca" style="margin-bottom:18px">
-            <label for="f-obs" style="font-size:12px;font-weight:700">Supervisor</label>
-            <select name="observador" id="f-obs" class="obs-buscador-tipo" style="min-width:220px">
-                {% for pk, nombre in observadores %}
-                <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit" class="btn btn-sm">Cambiar</button>
-            <span class="muted" style="align-self:center">
-                Zonas asignadas:
-                {% if zonas %}{% for z in zonas %}<span class="chip chip-soft">{{ z }}</span>{% endfor %}
-                {% else %}<em>ninguna todavía</em>{% endif %}
-            </span>
-        </form>
-
-        <form method="get" class="cat-publico-busca" style="margin-bottom:18px;flex-wrap:wrap">
-            <input type="hidden" name="observador" value="{{ observador_id }}">
-            <div class="cat-publico-busca-campo" style="flex:1 1 240px">
-                <svg class="icon"><use href="#i-search"/></svg>
-                <input type="search" name="q" value="{{ q }}"
-                       placeholder="Nombre, correo o ubicación" aria-label="Buscar usuario">
+    <section id="agregar" class="obs-bloque">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+                <h3>Agregar cuentas al seguimiento</h3>
             </div>
-            <select name="rol" class="obs-buscador-tipo" aria-label="Filtrar por rol">
-                <option value="">Todos los roles</option>
-                <option value="usuario"{% if rol_sel == 'usuario' %} selected{% endif %}>Usuarios</option>
-                <option value="tecnico"{% if rol_sel == 'tecnico' %} selected{% endif %}>Técnicos</option>
-                <option value="admin"{% if rol_sel == 'admin' %} selected{% endif %}>Administradores</option>
-            </select>
-            <select name="zona" class="obs-buscador-tipo" aria-label="Filtrar por zona">
-                <option value="">Cualquier zona</option>
-                {% for z in zonas %}
-                <option value="{{ z }}"{% if zona_sel == z %} selected{% endif %}>{{ z }}</option>
-                {% endfor %}
-            </select>
-            <select name="estado" class="obs-buscador-tipo" aria-label="Filtrar por estado">
-                <option value="">Todos</option>
-                <option value="pendientes"{% if estado_sel == 'pendientes' %} selected{% endif %}>Sin agregar</option>
-                <option value="agregados"{% if estado_sel == 'agregados' %} selected{% endif %}>Ya agregados</option>
-                <option value="con_tickets"{% if estado_sel == 'con_tickets' %} selected{% endif %}>Con tickets abiertos</option>
-            </select>
-            <button type="submit" class="btn btn-sm">Filtrar</button>
-            <a href="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}" class="btn btn-outline btn-sm">Limpiar</a>
-        </form>
+            <p class="muted" style="margin:0 0 12px;font-size:12.5px">Elige un observador, mira los usuarios activos y guárdalos en la zona que le toca. El observador los ve de inmediato en su panel.</p>
+            <form method="get" class="obs-filtros">
+                <label for="f-obs" style="font-size:12px;font-weight:700">Supervisor</label>
+                <select name="observador" id="f-obs" class="obs-buscador-tipo" style="min-width:220px">
+                    {% for pk, nombre in observadores %}
+                    <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm">Cambiar</button>
+                <span class="muted" style="align-self:center">
+                    Zonas asignadas:
+                    {% if zonas %}{% for z in zonas %}<span class="chip chip-soft">{{ z }}</span>{% endfor %}
+                    {% else %}<em>ninguna todavía</em>{% endif %}
+                </span>
+            </form>
 
-        <p class="panel-sub">
-            {{ total }} usuario{{ total|pluralize }} activo{{ total|pluralize:"s, :" }}.
-            Se guarda en <strong>{{ zona_elegida|default:"la zona elegida" }}</strong> para
-            <strong>{{ observador.nombre }}</strong>.
-        </p>
+            <form method="get" class="obs-filtros">
+                <input type="hidden" name="observador" value="{{ observador_id }}">
+                <div class="obs-buscador-campo">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="search" name="q" value="{{ q }}"
+                           placeholder="Nombre, correo o ubicación" aria-label="Buscar usuario">
+                </div>
+                <select name="rol" class="obs-buscador-tipo" aria-label="Filtrar por rol">
+                    <option value="">Todos los roles</option>
+                    <option value="usuario"{% if rol_sel == 'usuario' %} selected{% endif %}>Usuarios</option>
+                    <option value="tecnico"{% if rol_sel == 'tecnico' %} selected{% endif %}>Técnicos</option>
+                    <option value="admin"{% if rol_sel == 'admin' %} selected{% endif %}>Administradores</option>
+                </select>
+                <select name="zona" class="obs-buscador-tipo" aria-label="Filtrar por zona">
+                    <option value="">Cualquier zona</option>
+                    {% for z in zonas %}
+                    <option value="{{ z }}"{% if zona_sel == z %} selected{% endif %}>{{ z }}</option>
+                    {% endfor %}
+                </select>
+                <select name="estado" class="obs-buscador-tipo" aria-label="Filtrar por estado">
+                    <option value="">Todos</option>
+                    <option value="pendientes"{% if estado_sel == 'pendientes' %} selected{% endif %}>Sin agregar</option>
+                    <option value="agregados"{% if estado_sel == 'agregados' %} selected{% endif %}>Ya agregados</option>
+                    <option value="con_tickets"{% if estado_sel == 'con_tickets' %} selected{% endif %}>Con tickets abiertos</option>
+                </select>
+                <button type="submit" class="btn btn-sm">Filtrar</button>
+                <a href="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}" class="btn btn-outline btn-sm">Limpiar</a>
+            </form>
 
-        <div class="table-card" style="margin-bottom:16px">
-            <div class="table-scroll">
+            <p class="muted" style="font-size:12.5px">
+                {{ total }} usuario{{ total|pluralize }} activo{{ total|pluralize:"s, :" }}.
+                Se guarda en <strong>{{ zona_elegida|default:"la zona elegida" }}</strong> para
+                <strong>{{ observador.nombre }}</strong>.
+            </p>
+
+            <div class="obs-tabla-wrap tabla-scroll-seis" style="margin-bottom:16px">
                 <table class="obs-tabla">
                     <thead>
                         <tr>
@@ -238,7 +245,7 @@ main.wrap { font-family: var(--font-corp); }
                             <th>Rol</th>
                             <th>Zona</th>
                             <th class="num">Abiertos</th>
-                            <th>Monitoreo</th>
+                            <th class="obs-acciones">Monitoreo</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -252,12 +259,12 @@ main.wrap { font-family: var(--font-corp); }
                                 {% if f.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ f.abiertos }}</span>
                                 {% else %}<span class="muted">0</span>{% endif %}
                             </td>
-                            <td>
+                            <td class="obs-acciones">
                                 {% if f.ya_agregado %}
                                 <span class="obs-pill obs-pill-verde">En la lista</span>
                                 {% else %}
                                 <form method="post" action="{% url 'tickets:monitoreo_agregar' %}"
-                                      style="display:flex;gap:6px;align-items:center">
+                                      style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
                                     {% csrf_token %}
                                     <input type="hidden" name="observador" value="{{ observador_id }}">
                                     <input type="hidden" name="email" value="{{ f.email }}">
@@ -275,56 +282,60 @@ main.wrap { font-family: var(--font-corp); }
                     </tbody>
                 </table>
             </div>
-        </div>
 
-        <h3 class="cat-det-bloque" style="font-size:14px;margin-bottom:10px">Zonas del observador</h3>
-        <form method="post" action="{% url 'tickets:monitoreo_zonas' %}"
-              style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            {% csrf_token %}
-            <input type="hidden" name="observador" value="{{ observador_id }}">
-            <input type="hidden" name="volver" value="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}">
-            <select name="punto" class="obs-buscador-tipo" aria-label="Zona" required>
-                {% for z in zonas %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
-            </select>
-            <button type="submit" name="accion" value="asignar" class="btn btn-sm">Asignar zona</button>
-            <button type="submit" name="accion" value="quitar" class="btn btn-outline btn-sm">Quitar zona</button>
-        </form>
-    </div>
-
-    <div class="panel" style="margin-top:18px">
-        <h3 class="cat-det-bloque" style="font-size:14px;margin-bottom:4px">Registro de auditoría</h3>
-        <p class="panel-sub">Cambios realizados en el monitoreo: quién, qué y cuándo.</p>
-        {% if auditoria %}
-        <div class="table-scroll">
-            <table class="obs-tabla">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Acción</th>
-                        <th>Zona</th>
-                        <th>Supervisor</th>
-                        <th>Hecho por</th>
-                        <th>Detalle</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for a in auditoria %}
-                    <tr>
-                        <td style="white-space:nowrap">{{ a.fecha|date:"d/m/Y H:i" }}</td>
-                        <td>{{ a.get_accion_display }}</td>
-                        <td><strong>{{ a.zona_nombre|default:"—" }}</strong></td>
-                        <td>{{ a.observador.nombre|default:"—" }}</td>
-                        <td>{{ a.actor.nombre|default:"—" }}</td>
-                        <td>{{ a.detalle|default:"—" }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <h3 class="obs-bloque-titulo" style="font-size:14px">Zonas del observador</h3>
+            <form method="post" action="{% url 'tickets:monitoreo_zonas' %}" class="obs-filtros" style="margin-bottom:0">
+                {% csrf_token %}
+                <input type="hidden" name="observador" value="{{ observador_id }}">
+                <input type="hidden" name="volver" value="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}">
+                <select name="punto" class="obs-buscador-tipo" aria-label="Zona" required>
+                    {% for z in zonas %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
+                </select>
+                <button type="submit" name="accion" value="asignar" class="btn btn-sm">Asignar zona</button>
+                <button type="submit" name="accion" value="quitar" class="btn btn-outline btn-sm">Quitar zona</button>
+            </form>
         </div>
-        {% else %}
-        <p class="panel-sub">Todavía no hay cambios registrados.</p>
-        {% endif %}
-    </div>
+    </section>
+
+    <section id="auditoria" class="obs-bloque">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
+                <h3>Registro de auditoría</h3>
+            </div>
+            <p class="muted" style="margin:0 0 12px;font-size:12.5px">Cambios realizados en el monitoreo: quién, qué y cuándo.</p>
+            {% if auditoria %}
+            <div class="obs-tabla-wrap tabla-scroll-seis">
+                <table class="obs-tabla">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Acción</th>
+                            <th>Zona</th>
+                            <th>Supervisor</th>
+                            <th>Hecho por</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in auditoria %}
+                        <tr>
+                            <td style="white-space:nowrap">{{ a.fecha|date:"d/m/Y H:i" }}</td>
+                            <td>{{ a.get_accion_display }}</td>
+                            <td><strong>{{ a.zona_nombre|default:"—" }}</strong></td>
+                            <td>{{ a.observador.nombre|default:"—" }}</td>
+                            <td>{{ a.actor.nombre|default:"—" }}</td>
+                            <td>{{ a.detalle|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted" style="margin:0">Todavía no hay cambios registrados.</p>
+            {% endif %}
+        </div>
+    </section>
     {% endif %}
 
 </main>
