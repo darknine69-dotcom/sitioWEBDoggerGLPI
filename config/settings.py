@@ -178,8 +178,15 @@ STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
+    # En desarrollo se sirve directo del disco (con ?v= por fecha): el
+    # manifest con hash dejaba el CSS/JS viejo o roto si no se corría
+    # collectstatic en cada cambio. En producción sí va con manifest.
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG else
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
     },
 }
 
