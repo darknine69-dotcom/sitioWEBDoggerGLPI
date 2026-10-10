@@ -482,6 +482,7 @@ class FiltroResueltasTest(SmokeTestCase):
         self.assertIn(".chart-card .dash-head-tools", css)
         self.assertIn("hover: none", css)
         self.assertIn("justify-content: center;", css)
+        self.assertIn("repeat(auto-fit, minmax(150px, 1fr))", css)
 
     def test_tecnicos_en_tarjetas_con_foto_y_semaforo(self):
         import json

@@ -3772,9 +3772,9 @@ a.dash-hov-usuarios.is-active { border-color: var(--dogger-red); }
 a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 /* Aire entre las pestañas y los indicadores del panel técnico. */
 .dash-stat-row--tec { margin-top: 14px; }
-/* Rejilla de 6 indicadores: la usan el admin y el supervisor en sus tableros. */
-.dash-stat-row--mesas { grid-template-columns: repeat(6, 1fr); }
-@media (max-width: 1180px) { .dash-stat-row--mesas { grid-template-columns: repeat(3, 1fr); } }
+/* Rejilla de indicadores: se auto-ajusta al ancho para que nunca se
+   apilen en una sola columna ni se descuadren. */
+.dash-stat-row--mesas { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
 @media (max-width: 960px) {
     .dash-stat-row { grid-template-columns: repeat(2, 1fr); }
