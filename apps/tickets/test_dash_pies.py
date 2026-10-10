@@ -499,3 +499,16 @@ class FiltroResueltasTest(SmokeTestCase):
             js = f.read()
         self.assertNotIn("renderPivotCards", js)
         self.assertIn("pivot-lead", js)
+
+    def test_ventanita_compacta_y_unificada(self):
+        from django.contrib.staticfiles import finders
+
+        html = self.client.get(
+            reverse("tickets:panel_tecnico"), {"vista": "panel"}).content.decode()
+        # Sin CSS duplicado en plantillas: una sola fuente global.
+        self.assertNotIn(".pivot-pop-ticket {", html)
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertIn(".pivot-pop {", css)
+        self.assertIn("width: 248px", css)
+        self.assertIn("font-family: var(--font-corp)", css)

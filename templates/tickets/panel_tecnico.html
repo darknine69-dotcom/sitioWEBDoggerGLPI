@@ -160,56 +160,6 @@
 .pivot-pop-sub { font-size: 12px; font-weight: 700; color: var(--ink-muted); margin-right: auto; }
 .pivot-pop-head { flex-wrap: wrap; }
 .chart-card[data-pivot-card] { position: relative; }
-.pivot-pop {
-    position: absolute; z-index: 70; width: 212px;
-    max-height: calc(100% - 14px);
-    display: flex; flex-direction: column;
-    background: #fff; border: 1px solid var(--line); border-radius: 12px;
-    box-shadow: 0 12px 30px rgba(29,27,22,.18); padding: 10px 12px;
-    opacity: 0; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease;
-}
-.pivot-pop.is-in { opacity: 1; transform: none; }
-.pivot-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.pivot-pop-head strong { font-size: 13px; }
-.pivot-pop-close { border: 0; background: transparent; font-size: 17px; line-height: 1; color: var(--ink-muted); cursor: pointer; padding: 2px 4px; }
-.pivot-pop-close:hover { color: var(--dogger-red); }
-.pivot-pop-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 10px; margin: 8px 0; }
-    .pivot-pop-stat { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-muted); min-width: 0; }
-    .pivot-pop-stat strong { margin-left: auto; font-family: var(--font-mono); color: #1d1b16; }
-    .pivot-pop-stat.st-btn { border: 0; background: transparent; cursor: pointer; padding: 3px 6px; border-radius: 8px; width: 100%; text-align: left; font-family: inherit; transition: background .12s ease; }
-    .pivot-pop-stat.st-btn:hover { background: var(--dogger-cream); }
-    .pivot-pop-stat.st-btn.is-activo { background: var(--dogger-cream); box-shadow: inset 0 0 0 2px rgba(214,43,31,.16); }
-    .pivot-pop-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
-    .pivot-pop-cats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-    .pivot-pop-cat { font-size: 10px; font-weight: 700; color: #6B6259; background: #FBFAF7; border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
-    .pivot-pop-foot { margin-top: 7px; font-size: 11px; color: var(--ink-muted); text-align: right; }
-    .pivot-pop-foot .ph-v { color: #D62B1F; }
-    .pivot-pop-foot .ph-r { color: #B7791F; }
-
-
-
-.pivot-pop-bar { display: flex; height: 6px; border-radius: 3px 3px 3px 3px; overflow: hidden; background: #F1EDE6; }
-.pivot-pop-bar span { display: block; height: 100%; min-width: 2px; }
-
-.pivot-pop { width: 284px; }
-.pivot-pop-list { flex: 1 1 auto; min-height: 0; margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
-.pivot-pop-ticket { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink); text-decoration: none; padding: 4px 6px; border-radius: 7px; }
-.pivot-pop-ticket:hover { background: var(--dogger-cream); }
-.pivot-pop-code { font-family: var(--font-mono); font-weight: 700; color: var(--dogger-red); flex: none; }
-.pivot-pop-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); }
-.pivot-pop-pill { flex: none; font-size: 10px; font-weight: 800; border-radius: 999px; padding: 1px 7px; }
-.pivot-pop-pill.gr-v { background: rgba(214,43,31,.14); color: #D62B1F; }
-.pivot-pop-pill.gr-abierto { background: rgba(37,99,235,.12); color: #2563EB; }
-.pivot-pop-pill.gr-en-progreso { background: rgba(47,125,79,.14); color: #2F7D4F; }
-.pivot-pop-pill.gr-resuelto { background: rgba(47,125,79,.14); color: #2F7D4F; }
-.pivot-pop-pill.gr-cerrado { background: #EEE9DB; color: #6B6259; }
-.pivot-pop-mas { text-align: center; font-size: 11px; color: var(--ink-muted); padding: 4px 0; }
-.pivot-pop-vacio { font-size: 12px; color: var(--ink-muted); text-align: center; padding: 8px 0; }
-@media (max-width: 480px) {
-    .pivot-pop { width: 250px; }
-}
-
-
 /* ---- Leyenda de series ---- */
 .dash-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: -2px 0 10px; }
 .dl-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-muted); }
