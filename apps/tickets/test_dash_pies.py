@@ -482,3 +482,23 @@ class FiltroResueltasTest(SmokeTestCase):
         self.assertIn(".chart-card .dash-head-tools", css)
         self.assertIn("hover: none", css)
         self.assertIn("justify-content: center;", css)
+
+    def test_tecnicos_en_tarjetas_con_foto_y_semaforo(self):
+        import json
+
+        from django.contrib.staticfiles import finders
+
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+        datos = json.loads(self.client.get(
+            reverse("tickets:panel_tecnico"), {"vista": "panel"}).context["dash_json"])
+        filas = datos["pivot"]["dimensiones"]["tecnico"]["rows"]
+        self.assertTrue(filas)
+        self.assertIn("foto", filas[0])
+        self.assertIn("clave", filas[0])
+        with open(finders.find("js/panel-dash.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn("renderPivotCards", js)
+        self.assertIn("PIVOT_METRICAS", js)
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertIn(".pivot-tec", css)

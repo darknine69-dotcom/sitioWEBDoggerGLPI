@@ -449,7 +449,7 @@ def _build_tecnico_dashboard(tecnico_id=None):
         for t in tickets:
             clave, label = dimension(t)
             fila = rows.setdefault(
-                clave, {"label": label, "abrir": 0, "espera": 0, "vencido": 0, "riesgo": 0, "cerrado": 0, "resueltos": 0, "total": 0, "categorias": [], "_cats": set(), "tickets": []}
+                clave, {"clave": clave, "label": label, "abrir": 0, "espera": 0, "vencido": 0, "riesgo": 0, "cerrado": 0, "resueltos": 0, "total": 0, "categorias": [], "_cats": set(), "tickets": []}
             )
             fila["total"] += 1
             if t.estado == Ticket.Estado.ABIERTO:
@@ -521,8 +521,7 @@ def _build_tecnico_dashboard(tecnico_id=None):
             "tecnico": {
                 "label": "Técnico",
                 "rows": sorted(_pivot(dim_tecnico), key=lambda r: r["label"].lower()),
-            },
-            "prioridad": {
+            },            "prioridad": {
                 "label": "Prioridad",
                 "rows": sorted(
                     _pivot(dim_prioridad),
@@ -551,6 +550,22 @@ def _build_tecnico_dashboard(tecnico_id=None):
         },
         "columnas": ["abrir", "espera", "vencido", "cerrado", "resueltos"],
     }
+    # Foto de cada técnico para sus tarjetas (vacía = inicial con icono).
+    try:
+        ids_tec = [
+            r["clave"] for r in pivot["dimensiones"]["tecnico"]["rows"]
+            if str(r.get("clave", "")).isdigit()
+        ]
+        fotos = {}
+        for u in User.objects.filter(pk__in=ids_tec):
+            try:
+                fotos[u.pk] = u.avatar.url if u.avatar else ""
+            except Exception:  # noqa: BLE001 - sin foto no se rompe el panel
+                fotos[u.pk] = ""
+        for r in pivot["dimensiones"]["tecnico"]["rows"]:
+            r["foto"] = fotos.get(r["clave"], "")
+    except Exception:  # noqa: BLE001 - sin fotos igual hay tarjetas
+        pass
 
     # --- Pie: modo / prioridad (solo abiertos) ---------------------------
     def _pie(acc, colores, etiquetas):

@@ -468,16 +468,19 @@
     // ------------------------------------------------------------------
     function renderPivot(dim) {
         var meta = D.pivot.dimensiones[dim];
-        var body = document.getElementById('pivotBody');
-        document.getElementById('pivotCol1').textContent = meta.label;
-        document.getElementById('pivotDimLabel').textContent = meta.label.toLowerCase();
+        var body = document.getElementById("pivotBody");
+        document.getElementById("pivotCol1").textContent = meta.label;
+        document.getElementById("pivotDimLabel").textContent = meta.label.toLowerCase();
         var rows = meta.rows.filter(function (r) { return r.total > 0 || r.vencido > 0; });
-        var pop0 = document.getElementById('pivotPop');
+        var pop0 = document.getElementById("pivotPop");
         if (pop0) pop0.remove();
         if (!rows.length) {
             body.innerHTML = '<tr class="table-empty"><td colspan="6">Sin datos todavía.</td></tr>';
             return;
         }
+        if (dim === "tecnico") { renderPivotCards(rows); return; }
+        var headT = document.querySelector("#pivotTable thead");
+        if (headT) headT.hidden = false;
         var tot = { label: 'Total', abrir: 0, espera: 0, vencido: 0, cerrado: 0, resueltos: 0, total: 0, totalRow: true };
         rows.forEach(function (r) {
             tot.abrir += r.abrir; tot.espera += r.espera; tot.vencido += r.vencido; tot.cerrado += r.cerrado; tot.resueltos += r.resueltos; tot.total += r.total;
@@ -510,6 +513,63 @@
         });
     }
 
+    /* Tarjetas por técnico: foto, semáforo de 5 métricas y despliegue. */
+    var PIVOT_METRICAS = [
+        { key: "abrir", label: "Abiertas", color: "#D62B1F", icono: "i-alert" },
+        { key: "espera", label: "En progreso", color: "#CA8A04", icono: "i-clock" },
+        { key: "vencido", label: "Vencidas", color: "#F97316", icono: "i-x-circle" },
+        { key: "cerrado", label: "Cerradas", color: "#059669", icono: "i-check" },
+        { key: "resueltos", label: "Resueltas", color: "#2563EB", icono: "i-wrench" }
+    ];
+    function renderPivotCards(rows) {
+        var body = document.getElementById("pivotBody");
+        var tabla = body.closest("table");
+        var head = tabla ? tabla.querySelector("thead") : null;
+        if (head) head.hidden = true;
+        var base = "";
+        var card0 = document.querySelector("[data-pivot-card]");
+        if (card0) base = card0.getAttribute("data-detalle-url") || "";
+        function detalleUrl(id) {
+            return base ? base.replace("/0/", "/" + id + "/") : "#";
+        }
+        var html = '<tr><td colspan="6" style="padding:0;border:0"><div class="pivot-cards">';
+        html += rows.map(function (r, i) {
+            var ini = esc((r.label || "?").trim().charAt(0).toUpperCase() || "?");
+            var avatar = r.foto
+                ? '<img src="' + esc(r.foto) + '" alt="">'
+                : '<svg class="icon"><use href="#i-user"/></svg>';
+            var chips = PIVOT_METRICAS.map(function (m) {
+                return '<span class="pivot-chip" title="' + esc(m.label) + '">' +
+                    '<svg class="icon" style="color:' + m.color + '"><use href="#' + m.icono + '"/></svg>' +
+                    '<b>' + (r[m.key] || 0) + '</b><small>' + esc(m.label) + '</small></span>';
+            }).join("");
+            var tickets = (r.tickets || []).map(function (t) {
+                return '<a class="pivot-ticket" href="' + esc(detalleUrl(t.id)) + '">' +
+                    '<span class="obs-ticket t-' + esc(t.estado) + '">' + esc(t.codigo) + '</span>' +
+                    '<span class="pivot-ticket-t">' + esc(t.titulo || "") + '</span>' +
+                    (t.vencido ? '<span class="badge-vencido">vencido</span>' : '') + '</a>';
+            }).join("") || '<p class="chart-empty">Sin tickets.</p>';
+            return '<article class="pivot-tec">' +
+                '<button type="button" class="pivot-tec-head" data-pt="' + i + '" aria-expanded="false">' +
+                '<span class="pivot-tec-avatar">' + avatar + '</span>' +
+                '<span class="pivot-tec-id"><strong>' + esc(r.label) + '</strong>' +
+                '<small>' + r.total + ' solicitud' + (r.total === 1 ? "" : "es") + '</small></span>' +
+                '<span class="pivot-tec-metrics">' + chips + '</span>' +
+                '<span class="obs-zona-chev" aria-hidden="true">▾</span></button>' +
+                '<div class="pivot-tec-body" id="pt-body-' + i + '" hidden>' + tickets + '</div></article>';
+        }).join("");
+        html += "</div></td></tr>";
+        body.innerHTML = html;
+        Array.prototype.forEach.call(body.querySelectorAll("[data-pt]"), function (btn) {
+            btn.addEventListener("click", function () {
+                var box = document.getElementById("pt-body-" + btn.getAttribute("data-pt"));
+                if (!box) return;
+                var abierto = btn.getAttribute("aria-expanded") !== "false";
+                btn.setAttribute("aria-expanded", abierto ? "false" : "true");
+                box.hidden = abierto;
+            });
+        });
+    }
     var FILTROS = [
         { key: 'abierto', label: 'Abiertas', color: '#2563EB', cuenta: function (r) { return r.abrir; } },
         { key: 'en-progreso', label: 'En progreso', color: '#B7791F', cuenta: function (r) { return r.espera; } },
