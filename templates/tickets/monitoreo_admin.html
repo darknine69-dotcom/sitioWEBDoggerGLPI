@@ -11,6 +11,11 @@
 main.obs-page { font-family: var(--font-corp); }
 /* Formularios cortos dentro de las tarjetas de zona: misma línea, sin aire de más. */
 .obs-admin-form { display: flex; gap: 6px; margin: 10px 0 4px; align-items: center; }
+/* Fila renombrar + más + correo al ladito. */
+.obs-admin-row { display: flex; gap: 6px; margin: 10px 0 4px; align-items: center; flex-wrap: wrap; }
+.obs-admin-row .obs-admin-form { margin: 0; }
+.obs-admin-row .obs-admin-rename { flex: none; }
+.obs-admin-row .obs-admin-email { flex: 1; min-width: 200px; }
 .obs-admin-form input { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
 .obs-admin-form input:focus { outline: none; border-color: var(--dogger-red); }
 .obs-admin-rename input { max-width: 230px; }
@@ -115,7 +120,7 @@ main.obs-page { font-family: var(--font-corp); }
         </div>
         {% for z in bloque.zonas %}
         <section class="obs-zona-card">
-            <div class="obs-zona-head">
+            <button type="button" class="obs-zona-head" data-zona-toggle="za-{{ z.zona.pk }}" aria-expanded="true" title="Plegar o desplegar {{ z.zona.nombre }}">
                 <span class="obs-zona-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
                 <div class="obs-zona-tit">
                     <strong>{{ z.zona.nombre }}</strong>
@@ -129,23 +134,26 @@ main.obs-page { font-family: var(--font-corp); }
                         <span class="obs-crate-seg s-abiertos"><b>{{ z.abiertos }}</b> abiertos</span>
                     </span>
                 </div>
-            </div>
-            <div style="padding:4px 16px 14px">
-                <form method="post" action="{% url 'tickets:monitoreo_zona_renombrar' z.zona.pk %}" class="obs-admin-form obs-admin-rename" data-zona-nombre="{{ z.zona.nombre }}">
-                    {% csrf_token %}
-                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                    <span class="obs-input-icon">
-                        <input type="text" name="nombre" value="{{ z.zona.nombre }}" maxlength="80" aria-label="Renombrar zona {{ z.zona.nombre }}" required>
-                        <button type="submit" class="mini-icon-btn" title="Renombrar la zona" aria-label="Renombrar la zona {{ z.zona.nombre }}"><svg class="icon"><use href="#i-pencil"/></svg></button>
-                    </span>
+                <span class="obs-zona-chev" aria-hidden="true">▾</span>
+            </button>
+            <div id="za-{{ z.zona.pk }}" style="padding:4px 16px 14px">
+                <div class="obs-admin-row">
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_renombrar' z.zona.pk %}" class="obs-admin-form obs-admin-rename" data-zona-nombre="{{ z.zona.nombre }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                        <span class="obs-input-icon">
+                            <input type="text" name="nombre" value="{{ z.zona.nombre }}" maxlength="80" aria-label="Renombrar zona {{ z.zona.nombre }}" required>
+                            <button type="submit" class="mini-icon-btn" title="Renombrar la zona" aria-label="Renombrar la zona {{ z.zona.nombre }}"><svg class="icon"><use href="#i-pencil"/></svg></button>
+                        </span>
+                    </form>
                     <button type="button" class="mini-icon-btn obs-assign-toggle" data-assign-toggle="asg-{{ z.zona.pk }}" aria-expanded="false" title="Asignar cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-plus"/></svg></button>
-                </form>
-                <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form" id="asg-{{ z.zona.pk }}" hidden>
-                    {% csrf_token %}
-                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                    <input type="email" name="email" placeholder="correo@dogger.com.co" aria-label="Correo de la cuenta para {{ z.zona.nombre }}" required>
-                    <button type="submit" class="mini-icon-btn" title="Meter la cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-check"/></svg></button>
-                </form>
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form obs-admin-email" id="asg-{{ z.zona.pk }}" hidden>
+                        {% csrf_token %}
+                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                        <input type="email" name="email" placeholder="correo@dogger.com.co" aria-label="Correo de la cuenta para {{ z.zona.nombre }}" required>
+                        <button type="submit" class="mini-icon-btn" title="Meter la cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-check"/></svg></button>
+                    </form>
+                </div>
                 {% for m in z.miembros %}
                 <article class="obs-miembro">
                     <div class="obs-miembro-top" data-href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}" style="cursor:pointer">
@@ -366,6 +374,16 @@ main.obs-page { font-family: var(--font-corp); }
        Los botones y formularios (iconos, asignar, renombrar…) siguen
        funcionando: si el clic nace ahí, no se navega. */
     (function () {
+        /* Encabezado de la zona: pliega y despliega su contenido. */
+        document.querySelectorAll("[data-zona-toggle]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var body = document.getElementById(btn.getAttribute("data-zona-toggle"));
+                if (!body) return;
+                var abierto = btn.getAttribute("aria-expanded") !== "false";
+                btn.setAttribute("aria-expanded", abierto ? "false" : "true");
+                body.hidden = abierto;
+            });
+        });
         document.querySelectorAll("[data-href]").forEach(function (fila) {
             fila.addEventListener("click", function (e) {
                 if (e.target.closest("a, button, form, input, select, textarea")) return;
