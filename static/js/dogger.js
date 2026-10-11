@@ -208,44 +208,54 @@
         if (!txt) { hint.remove(); return; }
     })();
 
-    /* ---- Sidebar lateral: plegar a iconos y cajón en móvil ---- */
+    /* ---- Sidebar lateral: una pestaña a mitad del borde ----
+       En escritorio pliega a iconos, en móvil abre el cajón. */
     (function () {
         var side = document.getElementById("sidebar");
         if (!side) return;
-        var burger = document.getElementById("sidebarBurger");
+        var borde = document.getElementById("sidebarEdge");
         var backdrop = document.getElementById("sidebarBackdrop");
-        var plegar = document.getElementById("sidebarCollapse");
+
+        function esMovil() { return window.innerWidth <= 1080; }
 
         /* Plegado: se guarda igual que la preferencia de "navegación compacta"
            de Ajustes, así que los dos sitios controlan lo mismo. */
         function plegarA(mini) {
             document.documentElement.setAttribute("data-navcompact", mini ? "1" : "0");
             try { localStorage.setItem("dogger:pv:navcompact", mini ? "1" : "0"); } catch (e) {}
-            if (plegar) {
-                plegar.setAttribute("aria-label", mini ? "Expandir el menú" : "Contraer el menú");
-                plegar.title = mini ? "Expandir el menú" : "Contraer el menú";
-            }
-        }
-        if (plegar) {
-            plegar.addEventListener("click", function () {
-                plegarA(document.documentElement.getAttribute("data-navcompact") !== "1");
-            });
+            actualizarBorde();
         }
 
         function abrir(abrir) {
             side.classList.toggle("is-open", abrir);
-            if (burger) {
-                burger.classList.toggle("is-active", abrir);
-                burger.setAttribute("aria-expanded", String(abrir));
-            }
             if (backdrop) backdrop.hidden = !abrir;
             document.body.classList.toggle("sidebar-abierto", abrir);
+            actualizarBorde();
         }
-        if (burger) {
-            burger.addEventListener("click", function () {
-                abrir(!side.classList.contains("is-open"));
+        /* La flecha mira hacia donde va el borde: a la derecha para
+           abrir/desplegar, a la izquierda para cerrar/plegar. */
+        function actualizarBorde() {
+            if (!borde) return;
+            var cerrado = esMovil()
+                ? !side.classList.contains("is-open")
+                : document.documentElement.getAttribute("data-navcompact") === "1";
+            var uso = borde.querySelector("use");
+            if (uso) uso.setAttribute("href", cerrado ? "#i-arrow-right" : "#i-arrow-left");
+            var etiqueta = esMovil()
+                ? (cerrado ? "Abrir menú" : "Cerrar menú")
+                : (cerrado ? "Expandir el menú" : "Contraer el menú");
+            borde.setAttribute("aria-label", etiqueta);
+            borde.title = etiqueta;
+            borde.setAttribute("aria-expanded", String(!cerrado));
+        }
+        if (borde) {
+            borde.addEventListener("click", function () {
+                ocultarTip();
+                if (esMovil()) abrir(!side.classList.contains("is-open"));
+                else plegarA(document.documentElement.getAttribute("data-navcompact") !== "1");
             });
         }
+        actualizarBorde();
         if (backdrop) backdrop.addEventListener("click", function () { abrir(false); });
         document.addEventListener("keydown", function (ev) {
             if (ev.key === "Escape") abrir(false);
@@ -255,8 +265,10 @@
             link.addEventListener("click", function () { abrir(false); });
         });
         // Si la ventana crece y deja de ser móvil, el cajón se olvida.
+        // Al cambiar de modo se repinta la flecha de la pestaña.
         window.addEventListener("resize", function () {
             if (window.innerWidth > 1080) abrir(false);
+            else actualizarBorde();
         });
 
         /* Aviso con el nombre del enlace al pasar el ratón por un icono.
@@ -292,7 +304,6 @@
             link.addEventListener("blur", ocultarTip);
         });
         side.addEventListener("scroll", ocultarTip, { passive: true });
-        if (plegar) plegar.addEventListener("click", ocultarTip);
         window.addEventListener("resize", ocultarTip);
         document.addEventListener("keydown", function (ev) {
             if (ev.key === "Escape") ocultarTip();

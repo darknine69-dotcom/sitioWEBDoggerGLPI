@@ -7025,7 +7025,7 @@ body:has(> .sidebar) { padding-left: 272px; }
   border-right: 1px solid rgba(255, 255, 255, .12);
 }
 
-/* ---- Cabecera: marca + botón de plegar ---- */
+/* ---- Cabecera: marca (el botón vive a mitad del borde) ---- */
 .sidebar-top {
   display: flex;
   align-items: center;
@@ -7054,23 +7054,31 @@ body:has(> .sidebar) { padding-left: 272px; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sidebar-toggle {
-  flex: none;
+/* ---- Pestaña del borde: único botón del menú, a mitad del lateral ----
+   Va montada sobre el borde (mitad menú, mitad contenido) y lo sigue al
+   plegar. En móvil asoma desde el filo izquierdo y acompaña al cajón. */
+.sidebar-edge {
+  position: fixed;
+  top: 50%;
+  left: 272px;
+  transform: translate(-50%, -50%);
+  z-index: 96;
   width: 30px;
-  height: 30px;
+  height: 46px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, .12);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, .05);
-  color: rgba(239, 233, 225, .75);
+  border: 1px solid rgba(255, 255, 255, .30);
+  border-radius: 999px;
+  background: var(--sb-bg);
+  color: #fff;
   cursor: pointer;
-  transition: background .15s ease, color .15s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .30);
+  transition: background .15s ease;
 }
-.sidebar-toggle:hover { background: rgba(255, 255, 255, .12); color: #fff; }
-.sidebar-toggle .icon { width: 15px; height: 15px; transition: transform .2s ease; }
-html[data-navcompact="1"] .sidebar-toggle .icon { transform: rotate(180deg); }
+.sidebar-edge:hover { filter: brightness(1.12); }
+.sidebar-edge .icon { width: 15px; height: 15px; }
+html[data-navcompact="1"] .sidebar-edge { left: 84px; }
 
 /* ---- Secciones y enlaces ---- */
 .sidebar-nav {
@@ -7268,46 +7276,22 @@ html[data-navcompact="1"] .sidebar-foot { display: none; }
 .brand-titles h1:hover .title-hint-bubble,
 .title-hint:focus-visible .title-hint-bubble { opacity: 1; visibility: visible; transform: none; }
 .topbar .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-/* El botón del menú vive en la banda de color, así que se pinta claro. */
-.topbar-burger {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  width: 40px;
-  height: 40px;
-  flex: none;
-  padding: 0;
-  border: 1px solid rgba(255, 255, 255, .28);
-  border-radius: 11px;
-  background: rgba(255, 255, 255, .10);
-  cursor: pointer;
-}
-.topbar-burger:hover { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .18); }
-.topbar-burger .nav-toggle-bar { display: block; width: 18px; height: 2px; margin: 0 auto; border-radius: 2px; background: #fff; }
-.topbar-burger.is-active { border-color: rgba(255, 255, 255, .55); }
-.topbar-burger.is-active .nav-toggle-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.topbar-burger.is-active .nav-toggle-bar:nth-child(2) { opacity: 0; }
-.topbar-burger.is-active .nav-toggle-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 
 /* La página ya no está debajo de una barra fija, así no hace falta el offset. */
 body:has(> .sidebar) { scroll-padding-top: 80px; }
 
 /* ---- Modo plegado: una barra de solo iconos ----
-   El botón de desplegar deja de flotar (se montaba encima del logo) y los
-   rótulos se ocultan sin desaparecer del árbol de accesibilidad. */
+   Los rótulos se ocultan sin desaparecer del árbol de accesibilidad. */
 html[data-navcompact="1"] body:has(> .sidebar) { padding-left: 84px; }
 html[data-navcompact="1"] .sidebar { width: 84px; }
 
 html[data-navcompact="1"] .sidebar-top {
-  flex-direction: column;
   align-items: center;
-  gap: 9px;
   padding: 14px 10px;
 }
 html[data-navcompact="1"] .sidebar-brand { justify-content: center; flex: none; }
 html[data-navcompact="1"] .sidebar-brand-txt { display: none; }
-html[data-navcompact="1"] .sidebar-toggle { position: static; }
 
 /* El texto del grupo se sustituye por una línea divisoria. */
 html[data-navcompact="1"] .sidebar-group-title { display: none; }
@@ -7390,7 +7374,19 @@ html[data-navcompact="1"] .sidebar-count {
     box-shadow: none;
   }
   .sidebar.is-open { transform: none; box-shadow: 0 0 70px rgba(0, 0, 0, .5); }
-  .topbar-burger { display: flex; }
+  /* La pestaña asoma desde el filo con el cajón cerrado y viaja con su borde. */
+  .sidebar-edge {
+    left: 0;
+    transform: translate(-30%, -50%);
+    border-radius: 0 999px 999px 0;
+    border-left: 0;
+  }
+  .sidebar.is-open + .sidebar-edge {
+    left: 272px;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    border-left: 1px solid rgba(255, 255, 255, .30);
+  }
   .topbar-top { padding: 6px 16px; }
   .topbar > .header-row { padding: 10px 16px; }
   /* En el cajón siempre va completo: el ancho completo es lo cómodo al navegar,
@@ -7420,7 +7416,6 @@ html[data-navcompact="1"] .sidebar-count {
     padding: 2px 7px;
     font-size: 10.5px;
   }
-  html[data-navcompact="1"] .sidebar-toggle { position: static; }
 }
 
 @media (max-width: 560px) {

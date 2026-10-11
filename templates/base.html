@@ -120,10 +120,6 @@
                     <strong>Mesa de Ayuda TI</strong>
                 </span>
             </a>
-            <button type="button" class="sidebar-toggle" id="sidebarCollapse"
-                    aria-label="Contraer el menú" title="Contraer el menú">
-                <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
-            </button>
         </div>
 
         <nav class="sidebar-nav" id="sidebarNav" aria-label="Secciones">
@@ -287,6 +283,13 @@
 
     </aside>
 
+    {% comment %}Único botón del menú: pestaña a mitad del borde lateral.
+    En escritorio pliega a iconos, en móvil abre el cajón.{% endcomment %}
+    <button type="button" class="sidebar-edge" id="sidebarEdge"
+            aria-label="Contraer el menú" title="Contraer el menú" aria-expanded="true">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+    </button>
+
     <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
 
     {% endif %}
@@ -298,14 +301,6 @@
         {% comment %}Encabezado superior: va POR ENCIMA del título de la vista y
         sostiene el acceso del usuario y la campana.{% endcomment %}
         <div class="topbar-top">
-            {% comment %}El botón del menú vive en la banda de color: así las
-            vistas sin título pueden colapsar su fila sin quedarse sin acceso al
-            menú en el móvil.{% endcomment %}
-            <button type="button" class="topbar-burger" id="sidebarBurger" aria-label="Abrir menú" aria-expanded="false">
-                <span class="nav-toggle-bar"></span>
-                <span class="nav-toggle-bar"></span>
-                <span class="nav-toggle-bar"></span>
-            </button>
             <div class="topbar-account">
             {% include "notificaciones/_campana.html" %}
             <div class="user-chip-wrap">
