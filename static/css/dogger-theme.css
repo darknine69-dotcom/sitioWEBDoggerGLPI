@@ -3770,46 +3770,6 @@ a.dash-hov-sla-no.is-active { border-color: #F97316; }
 a.dash-hov-tecnicos.is-active { border-color: #4F46E5; }
 a.dash-hov-usuarios.is-active { border-color: var(--dogger-red); }
 a.dash-hov-zonas.is-active { border-color: #7C3AED; }
-/* ---- Banda de control de zonas (admin y observador) ----
-   Los mismos indicadores de los paneles, sobre una banda oscura con
-   título para que el tablero se vea como un centro de control. */
-.obs-hero-band {
-    background: linear-gradient(135deg, #241F1C 0%, #3D2F26 60%, #4A3428 100%);
-    border: 1px solid #241F1C;
-    border-radius: 16px;
-    padding: 14px 16px 16px;
-    margin-bottom: 16px;
-    box-shadow: var(--shadow-card);
-    position: relative;
-    overflow: hidden;
-}
-.obs-hero-band::after {
-    content: "";
-    position: absolute;
-    right: -50px;
-    top: -50px;
-    width: 190px;
-    height: 190px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(251,192,45,.16), transparent 70%);
-    pointer-events: none;
-}
-.obs-hero-cap {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 10px;
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: .09em;
-    color: #E8DCC8;
-}
-.obs-hero-cap .icon { width: 14px; height: 14px; color: #FBC02D; }
-.obs-hero-band .dash-stat-row { position: relative; z-index: 1; margin-bottom: 0; }
-.obs-hero-band .dash-stat { background: #FFFDF8; border-color: transparent; }
 /* Aire entre las pestañas y los indicadores del panel técnico. */
 .dash-stat-row--tec { margin-top: 14px; }
 /* Rejilla de indicadores: se auto-ajusta al ancho para que nunca se

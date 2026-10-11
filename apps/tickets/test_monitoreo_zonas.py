@@ -64,8 +64,6 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn("Zonas creadas por los observadores", html)
         self.assertIn("Supervisor a cargo", html)
         self.assertIn("ana@x.com", html)
-        self.assertIn("Control de zonas", html)
-        self.assertIn("obs-hero-band", html)
         dash = respuesta.context["dash"]
         self.assertEqual(dash["supervisores"], 1)
         self.assertEqual(dash["zonas"], 1)
