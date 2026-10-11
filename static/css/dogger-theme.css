@@ -3231,6 +3231,21 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .sw-modo.is-active { background: #fff; color: var(--dogger-red-dark, #A81E18); }
 .sw-corp-nombre { margin: 9px 0 0; font-size: 12px; font-weight: 600; color: rgba(255,255,255,.92); }
 .sw-corp-nombre[hidden] { display: none; }
+/* Identidad propia del modo corporativo: índigo staff, no rojo de soporte. */
+.sw-win[data-modo="corporativo"] .sw-head,
+html[data-navpalette] .sw-win[data-modo="corporativo"] .sw-head,
+html[style*="--sb-accent"] .sw-win[data-modo="corporativo"] .sw-head {
+  background: linear-gradient(135deg, #4F46E5, #3730A3);
+}
+.sw-win[data-modo="corporativo"] .sw-thread { background: #F5F3FF; }
+.sw-win[data-modo="corporativo"] .sw-send,
+html[data-navpalette] .sw-win[data-modo="corporativo"] .sw-send,
+html[style*="--sb-accent"] .sw-win[data-modo="corporativo"] .sw-send {
+  background: #4F46E5;
+  box-shadow: 0 4px 12px rgba(79,70,229,.4);
+}
+.sw-win[data-modo="corporativo"] .sw-msg-propio .sw-bubble { background: #4F46E5; }
+.sw-win[data-modo="corporativo"] .sw-composer textarea:focus { border-color: #4F46E5; }
 .sw-thread { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #FBFAF7; scrollbar-width: thin; }
 .sw-msg { display: flex; gap: 7px; max-width: 88%; align-items: flex-end; }
 .sw-msg-propio { align-self: flex-end; flex-direction: row-reverse; }

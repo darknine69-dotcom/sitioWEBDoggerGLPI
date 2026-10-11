@@ -6,11 +6,11 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
     <svg class="icon"><use href="#i-message"/></svg>
     <span class="sw-fab-count" id="swCount" hidden>0</span>
 </div>
-<section class="sw-win" id="swWin" aria-label="Chat de soporte">
+<section class="sw-win" id="swWin" data-modo="soporte" aria-label="Chat de soporte">
     <div class="sw-head">
         <div class="sw-head-top">
-            <strong>Mesa de ayuda</strong>
-            <span class="sw-online">Estamos en línea</span>
+            <strong id="swHeadTitulo">Mesa de ayuda</strong>
+            <span class="sw-online" id="swHeadSub">Estamos en línea</span>
             <button type="button" class="sw-head-x" id="swCerrar" aria-label="Cerrar chat">&times;</button>
         </div>
         {% if request.user.rol == 'tecnico' or request.user.rol == 'admin' or request.user.rol == 'observador' %}

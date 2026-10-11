@@ -18,6 +18,8 @@
     var modoSoporteBtn = document.getElementById("swModoSoporte");
     var modoCorpBtn = document.getElementById("swModoCorp");
     var corpNombre = document.getElementById("swCorpNombre");
+    var headTitulo = document.getElementById("swHeadTitulo");
+    var headSub = document.getElementById("swHeadSub");
 
     var ticketPk = 0;
     var ultimoId = 0;
@@ -243,6 +245,9 @@
             modoCorpBtn.classList.toggle("is-active", enCorp);
             modoCorpBtn.setAttribute("aria-selected", String(enCorp));
         }
+        win.setAttribute("data-modo", enCorp ? "corporativo" : "soporte");
+        if (headTitulo) { headTitulo.textContent = enCorp ? "Sala corporativa" : "Mesa de ayuda"; }
+        if (headSub) { headSub.textContent = enCorp ? "Solo staff en línea" : "Estamos en línea"; }
         if (sel) { sel.hidden = enCorp; }
         if (corpNombre) { corpNombre.hidden = !enCorp; }
         if (adjBtn) { adjBtn.style.display = enCorp ? "none" : ""; }

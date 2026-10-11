@@ -95,6 +95,8 @@ class SalaCorporativaTest(TestCase):
         html = self.client.get(reverse("tickets:monitoreo_admin")).content.decode()
         self.assertIn("swModoCorp", html)
         self.assertIn("Corporativo", html)
+        self.assertIn("Sala corporativa", html)
+        self.assertIn('data-modo="soporte"', html)
         self.client.force_login(self.usuario)
         html = self.client.get(reverse("tickets:mi_panel")).content.decode()
         self.assertNotIn("swModoCorp", html)
