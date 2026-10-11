@@ -14,6 +14,14 @@ main.obs-page { font-family: var(--font-corp); }
 .obs-admin-form input { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
 .obs-admin-form input:focus { outline: none; border-color: var(--dogger-red); }
 .obs-admin-rename input { max-width: 230px; }
+/* Input con el lápiz adentro, a la derecha. */
+.obs-input-icon { position: relative; flex: 1; max-width: 230px; min-width: 0; }
+.obs-input-icon input { width: 100%; max-width: none; padding-right: 34px; }
+.obs-input-icon .mini-icon-btn {
+    position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px; border: 0; background: transparent;
+}
+.obs-input-icon .mini-icon-btn:hover { background: rgba(214,43,31,.10); }
 /* Botón icono cuadrado: renombrar, sacar, asignar, eliminar. */
 .mini-icon-btn {
     flex: none; width: 30px; height: 30px;
@@ -126,12 +134,12 @@ main.obs-page { font-family: var(--font-corp); }
                 <form method="post" action="{% url 'tickets:monitoreo_zona_renombrar' z.zona.pk %}" class="obs-admin-form obs-admin-rename" data-zona-nombre="{{ z.zona.nombre }}">
                     {% csrf_token %}
                     <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                    <input type="text" name="nombre" value="{{ z.zona.nombre }}" maxlength="80" aria-label="Renombrar zona {{ z.zona.nombre }}" required>
-                    <button type="submit" class="mini-icon-btn" title="Renombrar la zona" aria-label="Renombrar la zona {{ z.zona.nombre }}"><svg class="icon"><use href="#i-pencil"/></svg></button>
+                    <span class="obs-input-icon">
+                        <input type="text" name="nombre" value="{{ z.zona.nombre }}" maxlength="80" aria-label="Renombrar zona {{ z.zona.nombre }}" required>
+                        <button type="submit" class="mini-icon-btn" title="Renombrar la zona" aria-label="Renombrar la zona {{ z.zona.nombre }}"><svg class="icon"><use href="#i-pencil"/></svg></button>
+                    </span>
+                    <button type="button" class="mini-icon-btn obs-assign-toggle" data-assign-toggle="asg-{{ z.zona.pk }}" aria-expanded="false" title="Asignar cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-plus"/></svg></button>
                 </form>
-                <button type="button" class="btn btn-outline btn-sm obs-assign-toggle" data-assign-toggle="asg-{{ z.zona.pk }}" aria-expanded="false" style="margin-top:6px">
-                    <svg class="icon icon-sm"><use href="#i-plus"/></svg> Asignar cuenta
-                </button>
                 <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form" id="asg-{{ z.zona.pk }}" hidden>
                     {% csrf_token %}
                     <input type="hidden" name="volver" value="{{ request.get_full_path }}">
