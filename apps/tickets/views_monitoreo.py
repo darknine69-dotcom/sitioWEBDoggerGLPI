@@ -259,11 +259,18 @@ def _zonas_creadas_por_observador():
                 }
             )
         miembros.sort(key=lambda m: (-m["abiertos"], m["nombre"].lower()))
+        total_zona = sum(m["total"] for m in miembros)
+        abiertos_zona = sum(m["abiertos"] for m in miembros)
         por_supervisor[z.observador_id]["zonas"].append(
             {
                 "zona": z,
                 "miembros": miembros,
-                "abiertos": sum(m["abiertos"] for m in miembros),
+                "abiertos": abiertos_zona,
+                "total": total_zona,
+                "avance": (
+                    int(round(100.0 * (total_zona - abiertos_zona) / total_zona))
+                    if total_zona else 0
+                ),
             }
         )
     return [v for v in por_supervisor.values() if v["zonas"]]

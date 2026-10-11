@@ -50,7 +50,9 @@ main.obs-page { font-family: var(--font-corp); }
 {% block content %}
 <main class="page obs-page">
 
-    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
+    <div class="obs-hero-band">
+        <p class="obs-hero-cap"><svg class="icon"><use href="#i-eye"/></svg> Control de zonas</p>
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim">
         <a class="dash-stat dash-hov-usuarios" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-eye"/></svg></span>
             <span class="dash-stat-body">
@@ -83,6 +85,7 @@ main.obs-page { font-family: var(--font-corp); }
                 <span class="dash-stat-hint">tickets por atender</span>
             </span>
         </a>
+    </div>
     </div>
 
     <section id="zonas" class="obs-bloque">
@@ -133,6 +136,7 @@ main.obs-page { font-family: var(--font-corp); }
                         <span class="obs-crate-seg"><b>{{ z.miembros|length }}</b> cuentas</span>
                         <span class="obs-crate-seg s-abiertos"><b>{{ z.abiertos }}</b> abiertos</span>
                     </span>
+                    <span class="obs-avance" style="flex:none;min-width:80px;width:110px" title="Avance {{ z.avance }}%"><span class="obs-avance-bar"><span style="width: {{ z.avance }}%"></span></span><span class="obs-avance-num">{{ z.avance }}%</span></span>
                 </div>
                 <span class="obs-zona-chev" aria-hidden="true">▾</span>
             </button>
