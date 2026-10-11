@@ -208,15 +208,15 @@
         if (!txt) { hint.remove(); return; }
     })();
 
-    /* ---- Sidebar lateral: una pestaña a mitad del borde ----
-       En escritorio pliega a iconos, en móvil abre el cajón. */
+    /* ---- Sidebar lateral: pestaña al borde en escritorio,
+       hamburguesa en móvil ----
+       La pestaña pliega a iconos; la hamburguesa abre el cajón. */
     (function () {
         var side = document.getElementById("sidebar");
         if (!side) return;
         var borde = document.getElementById("sidebarEdge");
+        var burger = document.getElementById("sidebarBurger");
         var backdrop = document.getElementById("sidebarBackdrop");
-
-        function esMovil() { return window.innerWidth <= 1080; }
 
         /* Plegado: se guarda igual que la preferencia de "navegación compacta"
            de Ajustes, así que los dos sitios controlan lo mismo. */
@@ -225,37 +225,40 @@
             try { localStorage.setItem("dogger:pv:navcompact", mini ? "1" : "0"); } catch (e) {}
             actualizarBorde();
         }
-
-        function abrir(abrir) {
-            side.classList.toggle("is-open", abrir);
-            if (backdrop) backdrop.hidden = !abrir;
-            document.body.classList.toggle("sidebar-abierto", abrir);
-            actualizarBorde();
-        }
         /* La flecha mira hacia donde va el borde: a la derecha para
-           abrir/desplegar, a la izquierda para cerrar/plegar. */
+           desplegar, a la izquierda para plegar. */
         function actualizarBorde() {
             if (!borde) return;
-            var cerrado = esMovil()
-                ? !side.classList.contains("is-open")
-                : document.documentElement.getAttribute("data-navcompact") === "1";
+            var mini = document.documentElement.getAttribute("data-navcompact") === "1";
             var uso = borde.querySelector("use");
-            if (uso) uso.setAttribute("href", cerrado ? "#i-arrow-right" : "#i-arrow-left");
-            var etiqueta = esMovil()
-                ? (cerrado ? "Abrir menú" : "Cerrar menú")
-                : (cerrado ? "Expandir el menú" : "Contraer el menú");
+            if (uso) uso.setAttribute("href", mini ? "#i-arrow-right" : "#i-arrow-left");
+            var etiqueta = mini ? "Expandir el menú" : "Contraer el menú";
             borde.setAttribute("aria-label", etiqueta);
             borde.title = etiqueta;
-            borde.setAttribute("aria-expanded", String(!cerrado));
+            borde.setAttribute("aria-expanded", String(!mini));
         }
         if (borde) {
             borde.addEventListener("click", function () {
                 ocultarTip();
-                if (esMovil()) abrir(!side.classList.contains("is-open"));
-                else plegarA(document.documentElement.getAttribute("data-navcompact") !== "1");
+                plegarA(document.documentElement.getAttribute("data-navcompact") !== "1");
             });
         }
         actualizarBorde();
+
+        function abrir(abrir) {
+            side.classList.toggle("is-open", abrir);
+            if (burger) {
+                burger.classList.toggle("is-active", abrir);
+                burger.setAttribute("aria-expanded", String(abrir));
+            }
+            if (backdrop) backdrop.hidden = !abrir;
+            document.body.classList.toggle("sidebar-abierto", abrir);
+        }
+        if (burger) {
+            burger.addEventListener("click", function () {
+                abrir(!side.classList.contains("is-open"));
+            });
+        }
         if (backdrop) backdrop.addEventListener("click", function () { abrir(false); });
         document.addEventListener("keydown", function (ev) {
             if (ev.key === "Escape") abrir(false);

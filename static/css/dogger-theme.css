@@ -7079,6 +7079,28 @@ body:has(> .sidebar) { padding-left: 272px; }
 .sidebar-edge:hover { filter: brightness(1.12); }
 .sidebar-edge .icon { width: 15px; height: 15px; }
 html[data-navcompact="1"] .sidebar-edge { left: 84px; }
+/* La hamburguesa vive en la banda de color, así que se pinta clara.
+   Solo existe en móvil; en escritorio manda la pestaña del borde. */
+.topbar-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .10);
+  cursor: pointer;
+}
+.topbar-burger:hover { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .18); }
+.topbar-burger .nav-toggle-bar { display: block; width: 18px; height: 2px; margin: 0 auto; border-radius: 2px; background: #fff; }
+.topbar-burger.is-active { border-color: rgba(255, 255, 255, .55); }
+.topbar-burger.is-active .nav-toggle-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.topbar-burger.is-active .nav-toggle-bar:nth-child(2) { opacity: 0; }
+.topbar-burger.is-active .nav-toggle-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 /* ---- Secciones y enlaces ---- */
 .sidebar-nav {
@@ -7374,19 +7396,9 @@ html[data-navcompact="1"] .sidebar-count {
     box-shadow: none;
   }
   .sidebar.is-open { transform: none; box-shadow: 0 0 70px rgba(0, 0, 0, .5); }
-  /* La pestaña asoma desde el filo con el cajón cerrado y viaja con su borde. */
-  .sidebar-edge {
-    left: 0;
-    transform: translate(-30%, -50%);
-    border-radius: 0 999px 999px 0;
-    border-left: 0;
-  }
-  .sidebar.is-open + .sidebar-edge {
-    left: 272px;
-    transform: translate(-50%, -50%);
-    border-radius: 999px;
-    border-left: 1px solid rgba(255, 255, 255, .30);
-  }
+  /* En móvil manda la hamburguesa: la pestaña del borde se esconde. */
+  .sidebar-edge { display: none; }
+  .topbar-burger { display: flex; }
   .topbar-top { padding: 6px 16px; }
   .topbar > .header-row { padding: 10px 16px; }
   /* En el cajón siempre va completo: el ancho completo es lo cómodo al navegar,

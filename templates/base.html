@@ -283,8 +283,8 @@
 
     </aside>
 
-    {% comment %}Único botón del menú: pestaña a mitad del borde lateral.
-    En escritorio pliega a iconos, en móvil abre el cajón.{% endcomment %}
+    {% comment %}Pestaña a mitad del borde lateral (solo escritorio):
+    pliega el menú a iconos. En móvil se usa la hamburguesa.{% endcomment %}
     <button type="button" class="sidebar-edge" id="sidebarEdge"
             aria-label="Contraer el menú" title="Contraer el menú" aria-expanded="true">
         <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
@@ -301,6 +301,13 @@
         {% comment %}Encabezado superior: va POR ENCIMA del título de la vista y
         sostiene el acceso del usuario y la campana.{% endcomment %}
         <div class="topbar-top">
+            {% comment %}En móvil el menú se abre con la hamburguesa de la banda
+            de color; en escritorio se pliega con la pestaña del borde.{% endcomment %}
+            <button type="button" class="topbar-burger" id="sidebarBurger" aria-label="Abrir menú" aria-expanded="false">
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+            </button>
             <div class="topbar-account">
             {% include "notificaciones/_campana.html" %}
             <div class="user-chip-wrap">
