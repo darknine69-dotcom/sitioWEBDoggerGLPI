@@ -10,9 +10,21 @@
 <style>
 main.obs-page { font-family: var(--font-corp); }
 /* Formularios cortos dentro de las tarjetas de zona: misma línea, sin aire de más. */
-.obs-admin-form { display: flex; gap: 6px; margin: 10px 0 4px; }
+.obs-admin-form { display: flex; gap: 6px; margin: 10px 0 4px; align-items: center; }
 .obs-admin-form input { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
 .obs-admin-form input:focus { outline: none; border-color: var(--dogger-red); }
+.obs-admin-rename input { max-width: 230px; }
+/* Botón icono cuadrado: renombrar, sacar, asignar, eliminar. */
+.mini-icon-btn {
+    flex: none; width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; color: var(--ink-muted); cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.mini-icon-btn:hover { border-color: var(--dogger-red); color: var(--dogger-red); background: rgba(214,43,31,.06); }
+.mini-icon-btn .icon { width: 15px; height: 15px; }
+.mini-icon-btn.is-danger:hover { border-color: var(--dogger-red); color: #fff; background: var(--dogger-red); }
 .obs-admin-crear { margin-bottom: 18px; }
 .obs-admin-crear label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); }
 .obs-admin-foot { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
@@ -111,11 +123,20 @@ main.obs-page { font-family: var(--font-corp); }
                 </div>
             </div>
             <div style="padding:4px 16px 14px">
-                <form method="post" action="{% url 'tickets:monitoreo_zona_renombrar' z.zona.pk %}" class="obs-admin-form">
+                <form method="post" action="{% url 'tickets:monitoreo_zona_renombrar' z.zona.pk %}" class="obs-admin-form obs-admin-rename" data-zona-nombre="{{ z.zona.nombre }}">
                     {% csrf_token %}
                     <input type="hidden" name="volver" value="{{ request.get_full_path }}">
                     <input type="text" name="nombre" value="{{ z.zona.nombre }}" maxlength="80" aria-label="Renombrar zona {{ z.zona.nombre }}" required>
-                    <button type="submit" class="btn btn-outline btn-sm" title="Guardar el nombre nuevo">Renombrar</button>
+                    <button type="submit" class="mini-icon-btn" title="Renombrar la zona" aria-label="Renombrar la zona {{ z.zona.nombre }}"><svg class="icon"><use href="#i-pencil"/></svg></button>
+                </form>
+                <button type="button" class="btn btn-outline btn-sm obs-assign-toggle" data-assign-toggle="asg-{{ z.zona.pk }}" aria-expanded="false" style="margin-top:6px">
+                    <svg class="icon icon-sm"><use href="#i-plus"/></svg> Asignar cuenta
+                </button>
+                <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form" id="asg-{{ z.zona.pk }}" hidden>
+                    {% csrf_token %}
+                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                    <input type="email" name="email" placeholder="correo@dogger.com.co" aria-label="Correo de la cuenta para {{ z.zona.nombre }}" required>
+                    <button type="submit" class="mini-icon-btn" title="Meter la cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-check"/></svg></button>
                 </form>
                 {% for m in z.miembros %}
                 <article class="obs-miembro">
@@ -132,28 +153,22 @@ main.obs-page { font-family: var(--font-corp); }
                                 <span class="obs-crate-seg s-abiertos"><b>{{ m.abiertos }}</b> abiertos</span>
                             </span>
                         </span>
-                        <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_quitar' m.elemento_id %}">
+                        <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_quitar' m.elemento_id %}" data-sacar-nombre="{{ m.nombre }}" data-sacar-zona="{{ z.zona.nombre }}">
                             {% csrf_token %}
                             <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                            <button type="submit" class="btn btn-outline btn-sm" title="Sacar de la zona (queda en la lista)">Sacar</button>
+                            <button type="submit" class="mini-icon-btn" title="Sacar de la zona (queda en la lista)" aria-label="Sacar a {{ m.nombre }} de {{ z.zona.nombre }}"><svg class="icon"><use href="#i-x"/></svg></button>
                         </form>
                     </div>
                 </article>
                 {% empty %}
                 <p class="muted" style="margin:6px 0">Zona vacía: todavía no tiene cuentas dentro.</p>
                 {% endfor %}
-                <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                    <input type="email" name="email" placeholder="correo@dogger.com.co" aria-label="Correo de la cuenta" required>
-                    <button type="submit" class="btn btn-sm">Asignar</button>
-                </form>
                 <div class="obs-admin-foot">
                     <small class="muted">{{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }} en total</small>
-                    <form method="post" action="{% url 'tickets:monitoreo_zona_eliminar' z.zona.pk %}" style="margin-left:auto" onsubmit="return confirm('¿Eliminar la zona {{ z.zona.nombre|escapejs }}? Su gente queda en la lista, sin zona.')">
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_eliminar' z.zona.pk %}" style="margin-left:auto" data-eliminar-zona="{{ z.zona.nombre }}" data-eliminar-n="{{ z.miembros|length }}">
                         {% csrf_token %}
                         <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                        <button type="submit" class="btn btn-outline btn-sm">Eliminar zona</button>
+                        <button type="submit" class="mini-icon-btn is-danger" title="Eliminar la zona" aria-label="Eliminar la zona {{ z.zona.nombre }}"><svg class="icon"><use href="#i-trash"/></svg></button>
                     </form>
                 </div>
             </div>
@@ -340,13 +355,74 @@ main.obs-page { font-family: var(--font-corp); }
 
     <script>
     /* Clic en el nombre o en la fila: abre la vista principal de la cuenta.
-       Los botones y formularios (Sacar, Agregar, Renombrar…) siguen
+       Los botones y formularios (iconos, asignar, renombrar…) siguen
        funcionando: si el clic nace ahí, no se navega. */
     (function () {
         document.querySelectorAll("[data-href]").forEach(function (fila) {
             fila.addEventListener("click", function (e) {
                 if (e.target.closest("a, button, form, input, select, textarea")) return;
                 window.location.href = fila.getAttribute("data-href");
+            });
+        });
+        /* Asignar: el input del correo vive debajo del renombrar y se
+           muestra solo al pedirlo. */
+        document.querySelectorAll("[data-assign-toggle]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var form = document.getElementById(btn.getAttribute("data-assign-toggle"));
+                if (!form) return;
+                var abierto = form.hidden;
+                form.hidden = !abierto;
+                btn.setAttribute("aria-expanded", String(abierto));
+                if (abierto) {
+                    var input = form.querySelector('input[type="email"]');
+                    if (input) input.focus();
+                }
+            });
+        });
+        function confirma(mensaje, form, textoOk, opciones) {
+            if (typeof window.DoggerConfirma === "function") {
+                window.DoggerConfirma(mensaje, function () { form.submit(); }, textoOk, opciones);
+            } else if (window.confirm(mensaje)) {
+                form.submit();
+            }
+        }
+        /* Renombrar: avisa qué cambia y qué no. */
+        document.querySelectorAll(".obs-admin-rename").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                var viejo = form.getAttribute("data-zona-nombre") || "";
+                var campo = form.querySelector('input[name="nombre"]');
+                var nuevo = campo ? campo.value.trim() : "";
+                if (!nuevo || nuevo === viejo) { form.submit(); return; }
+                confirma(
+                    "¿Renombrar «" + viejo + "» a «" + nuevo + "»?",
+                    form, "Sí, renombrar",
+                    { titulo: "Renombrar zona", icono: "#i-pencil", nota: "Las cuentas y su seguimiento no cambian: solo el nombre." }
+                );
+            });
+        });
+        /* Sacar: la cuenta queda en la lista, sin zona. */
+        document.querySelectorAll("[data-sacar-nombre]").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                confirma(
+                    "¿Sacar a " + form.getAttribute("data-sacar-nombre") +
+                    " de «" + form.getAttribute("data-sacar-zona") + "»?",
+                    form, "Sí, sacar",
+                    { titulo: "Sacar de la zona", icono: "#i-x", nota: "Queda en la lista del supervisor, sin zona. Sus tickets no se tocan." }
+                );
+            });
+        });
+        /* Eliminar: la gente no se borra, los tickets tampoco. */
+        document.querySelectorAll("[data-eliminar-zona]").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                var n = parseInt(form.getAttribute("data-eliminar-n") || "0", 10);
+                confirma(
+                    "¿Eliminar la zona «" + form.getAttribute("data-eliminar-zona") + "»?",
+                    form, "Sí, eliminar",
+                    { titulo: "Eliminar zona", icono: "#i-trash", nota: "Sus " + n + " cuenta" + (n === 1 ? "" : "s") + " quedan en la lista, sin zona. Nadie se borra y los tickets no se tocan." }
+                );
             });
         });
     })();
