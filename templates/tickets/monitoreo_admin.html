@@ -90,7 +90,7 @@ main.obs-page { font-family: var(--font-corp); }
             <span class="obs-avatar">{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
             <div class="obs-miembro-id">
                 <strong>{{ bloque.supervisor.nombre }}</strong>
-                <small>{{ bloque.supervisor.email }} · Supervisor a cargo{% if bloque.puntos %} · {% for p in bloque.puntos %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</small>
+                <small>{{ bloque.supervisor.email }} · {% if bloque.supervisor.rol == 'observador' %}Supervisor a cargo{% else %}creó la zona cuando era supervisor (rol actual: {{ bloque.supervisor.get_rol_display }}){% endif %}{% if bloque.puntos %} · {% for p in bloque.puntos %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</small>
             </div>
         </div>
         {% for z in bloque.zonas %}

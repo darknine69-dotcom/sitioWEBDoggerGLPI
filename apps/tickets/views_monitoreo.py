@@ -178,16 +178,18 @@ def _zonas_creadas_por_observador():
     cada zona (el observador que la creó), las cuentas que tiene dentro y
     el estado de sus tickets. Sin zonas creadas, va vacío.
     """
-    supervisores = list(
-        Usuario.objects.filter(rol=Usuario.Rol.OBSERVADOR).order_by("nombre")
-    )
-    if not supervisores:
-        return []
+    # Se agrupa por quien creó la zona, no solo por quien hoy tiene el rol:
+    # si al supervisor le cambian el rol, su zona seguía sin aparecer aquí
+    # (o la página reventaba con KeyError). Con el dueño real siempre sale.
     zonas = list(
-        ZonaObservador.objects.filter(observador__in=supervisores)
-        .select_related("observador")
+        ZonaObservador.objects.select_related("observador")
         .prefetch_related("elementos__usuario")
         .order_by("observador__nombre", "nombre")
+    )
+    if not zonas:
+        return []
+    supervisores = list(
+        Usuario.objects.filter(rol=Usuario.Rol.OBSERVADOR).order_by("nombre")
     )
     correos = {
         (e.usuario_email or "").strip().lower()
@@ -228,6 +230,15 @@ def _zonas_creadas_por_observador():
             "puntos": _zonas_de(sup),
             "zonas": [],
         }
+    for z in zonas:
+        if z.observador_id not in por_supervisor:
+            # Dueño sin rol de observador (se lo cambiaron): igual se muestra,
+            # marcando su rol actual en la tarjeta.
+            por_supervisor[z.observador_id] = {
+                "supervisor": z.observador,
+                "puntos": _zonas_de(z.observador),
+                "zonas": [],
+            }
     for z in zonas:
         miembros = []
         for e in z.elementos.all():

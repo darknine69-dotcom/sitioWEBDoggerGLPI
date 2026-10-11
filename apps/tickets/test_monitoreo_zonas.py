@@ -75,6 +75,19 @@ class MonitoreoZonasAdminTest(TestCase):
         html = self.client.get(reverse("tickets:monitoreo_admin")).content.decode()
         self.assertIn("Ningún observador ha creado zonas todavía", html)
 
+    def test_zona_sigue_visible_si_al_dueno_le_cambian_el_rol(self):
+        """La zona se agrupa por quien la creó, no por quien hoy es observador."""
+        self.obs.rol = Usuario.Rol.USUARIO
+        self.obs.save(update_fields=["rol"])
+        respuesta = self.client.get(reverse("tickets:monitoreo_admin"))
+        self.assertEqual(respuesta.status_code, 200)
+        bloques = respuesta.context["zonas_creadas"]
+        self.assertEqual(len(bloques), 1)
+        self.assertEqual(bloques[0]["zonas"][0]["zona"].nombre, "Norte")
+        html = respuesta.content.decode()
+        self.assertIn("Norte", html)
+        self.assertIn("rol actual", html)
+
     def test_sacar_cuenta_de_la_zona(self):
         respuesta = self.client.post(
             reverse("tickets:monitoreo_zona_miembro_quitar", args=[self.elemento.pk]),
