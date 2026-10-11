@@ -482,11 +482,12 @@ class TicketComentario(models.Model):
 
 
 class MensajeCorporativo(models.Model):
-    """Sala corporativa del chat: técnicos, admins y observadores.
+    """Chat corporativo: técnicos, admins y observadores.
 
-    Es una sola sala compartida, sin ticket: lo que se habla aquí es
-    coordinación interna (pasar un caso, avisar una caída) y nunca lo ve
-    el usuario final. Solo texto, sin adjuntos ni GLPI.
+    Sin ticket: lo que se habla aquí es coordinación interna (pasar un
+    caso, avisar una caída) y nunca lo ve el usuario final. Solo texto,
+    sin adjuntos ni GLPI. Sin destinatario es la sala general; con
+    destinatario es un directo entre dos personas del staff.
     """
 
     usuario = models.ForeignKey(
@@ -496,6 +497,15 @@ class MensajeCorporativo(models.Model):
         blank=True,
         related_name="mensajes_corporativos",
         db_column="UsuarioId",
+    )
+    destinatario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="directos_corporativos",
+        db_column="DestinatarioId",
+        help_text="Vacío = sala general; con valor = directo entre dos.",
     )
     autor_nombre = models.CharField(max_length=100, blank=True, default="")
     texto = models.TextField(db_column="Texto")

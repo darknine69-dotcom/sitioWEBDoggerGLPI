@@ -3220,17 +3220,16 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .sw-head-x:hover { background: rgba(255,255,255,.28); }
 .sw-ticket { margin-top: 9px; width: 100%; font: inherit; font-size: 12.5px; font-weight: 600; color: #fff; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); border-radius: 9px; padding: 7px 9px; }
 .sw-ticket option { color: #111; }
-/* Selector de modo del chat: Soporte (por ticket) o Corporativo (sala staff). */
-.sw-modos { display: flex; gap: 4px; margin-top: 9px; padding: 3px; border-radius: 10px; background: rgba(0,0,0,.18); }
+/* Selector de modo del chat: compacto, Soporte o Corporativo (sala staff). */
+.sw-modos { display: inline-flex; gap: 2px; margin-top: 8px; padding: 2px; border-radius: 999px; background: rgba(0,0,0,.18); }
 .sw-modo {
-  flex: 1; border: 0; border-radius: 7px; padding: 6px 8px;
-  font: inherit; font-size: 12px; font-weight: 800; color: rgba(255,255,255,.75);
+  border: 0; border-radius: 999px; padding: 3px 10px;
+  font: inherit; font-size: 11px; font-weight: 800; color: rgba(255,255,255,.75);
   background: transparent; cursor: pointer; transition: background .15s ease, color .15s ease;
 }
 .sw-modo:hover { color: #fff; }
 .sw-modo.is-active { background: #fff; color: var(--dogger-red-dark, #A81E18); }
-.sw-corp-nombre { margin: 9px 0 0; font-size: 12px; font-weight: 600; color: rgba(255,255,255,.92); }
-.sw-corp-nombre[hidden] { display: none; }
+.sw-win[data-modo="corporativo"] .sw-modo.is-active { color: #3730A3; }
 /* Identidad propia del modo corporativo: índigo staff, no rojo de soporte. */
 .sw-win[data-modo="corporativo"] .sw-head,
 html[data-navpalette] .sw-win[data-modo="corporativo"] .sw-head,

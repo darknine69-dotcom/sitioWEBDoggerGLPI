@@ -272,17 +272,71 @@ def _mensaje_corp_json(m, lector):
     }
 
 
+def _colega_corporativo(usuario, para):
+    """Valida el destinatario del directo: staff activo, distinto de uno."""
+    from apps.accounts.models import Usuario
+
+    if not para:
+        return None
+    try:
+        colega = Usuario.objects.filter(pk=int(para)).first()
+    except (TypeError, ValueError):
+        return None
+    if (
+        colega is None
+        or colega.pk == usuario.pk
+        or not getattr(colega, "is_active", False)
+        or getattr(colega, "rol", None) not in ROLES_CORPORATIVO
+    ):
+        return None
+    return colega
+
+
+@login_required
+@require_GET
+def chat_colegas(request):
+    """Gente del staff con la que se puede hablar en directo."""
+    if not _es_corporativo(request.user):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    from apps.accounts.models import Usuario
+
+    colegas = (
+        Usuario.objects.filter(rol__in=ROLES_CORPORATIVO, is_active=True)
+        .exclude(pk=request.user.pk)
+        .order_by("nombre")[:200]
+    )
+    return JsonResponse({
+        "ok": True,
+        "colegas": [
+            {"pk": c.pk, "nombre": c.nombre or c.email,
+             "insignia": _insignia(c),
+             "en_linea": bool(getattr(c, "en_linea", False))}
+            for c in colegas
+        ],
+    })
+
+
 @login_required
 @require_GET
 def chat_corporativo(request):
-    """Sala corporativa: últimos mensajes del staff (`?desde=` para el vivo)."""
+    """Sala o directo del staff (`?desde=` para el vivo, `?para=` directo)."""
     if not _es_corporativo(request.user):
         return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    para = request.GET.get("para") or ""
+    if para and _colega_corporativo(request.user, para) is None:
+        return JsonResponse({"ok": False, "error": "Colega no válido."}, status=404)
     try:
         desde = int(request.GET.get("desde") or 0)
     except (TypeError, ValueError):
         desde = 0
     qs = MensajeCorporativo.objects.select_related("usuario").order_by("fecha", "id")
+    if para:
+        qs = qs.filter(
+            Q(usuario=request.user, destinatario_id=int(para))
+            | Q(usuario_id=int(para), destinatario=request.user)
+        )
+    else:
+        qs = qs.filter(destinatario__isnull=True)
     if desde:
         qs = qs.filter(pk__gt=desde)
     mensajes = [_mensaje_corp_json(m, request.user) for m in qs[:200]]
@@ -292,7 +346,7 @@ def chat_corporativo(request):
 @login_required
 @require_POST
 def chat_corporativo_enviar(request):
-    """Escribe en la sala con las mismas reglas de chateo de cada rol."""
+    """Escribe en la sala o al colega, con las reglas de chateo del rol."""
     if not _es_corporativo(request.user):
         return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
     u = request.user
@@ -303,12 +357,18 @@ def chat_corporativo_enviar(request):
             {"ok": False, "error": "El administrador no te permite chatear."},
             status=403,
         )
+    para = request.POST.get("para") or ""
+    colega = None
+    if para:
+        colega = _colega_corporativo(u, para)
+        if colega is None:
+            return JsonResponse({"ok": False, "error": "Colega no válido."}, status=404)
     texto = (request.POST.get("mensaje") or "").strip()
     if not texto:
         return JsonResponse({"ok": False, "error": "Escribe tu mensaje."}, status=400)
     if len(texto) > 2000:
         return JsonResponse({"ok": False, "error": "Máximo 2000 caracteres."}, status=400)
     mensaje = MensajeCorporativo.objects.create(
-        usuario=u, autor_nombre=u.nombre, texto=texto,
+        usuario=u, autor_nombre=u.nombre, texto=texto, destinatario=colega,
     )
     return JsonResponse({"ok": True, "mensaje": _mensaje_corp_json(mensaje, u)})

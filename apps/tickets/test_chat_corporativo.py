@@ -90,13 +90,55 @@ class SalaCorporativaTest(TestCase):
         self.assertEqual([m["texto"] for m in mensajes], ["dos"])
         self.assertEqual(MensajeCorporativo.objects.count(), 2)
 
+    def test_directo_entre_dos_no_lo_ve_un_tercero(self):
+        self.client.force_login(self.tecnico)
+        r = self.client.post(self.enviar, {"mensaje": "entre nos", "para": self.admin.pk})
+        self.assertEqual(r.status_code, 200)
+        # La sala sigue vacía: el directo no se mezcla.
+        self.assertEqual(self.client.get(self.hilo).json(), {"ok": True, "mensajes": []})
+        # El admin lo lee en su directo con el técnico.
+        self.client.force_login(self.admin)
+        hilo = self.client.get(f"{self.hilo}?para={self.tecnico.pk}").json()
+        self.assertEqual([m["texto"] for m in hilo["mensajes"]], ["entre nos"])
+        # El observador no lo ve ni en sala ni en su directo.
+        self.client.force_login(self.obs)
+        self.assertEqual(self.client.get(self.hilo).json(), {"ok": True, "mensajes": []})
+        self.assertEqual(
+            self.client.get(f"{self.hilo}?para={self.tecnico.pk}").json(),
+            {"ok": True, "mensajes": []},
+        )
+
+    def test_directo_valida_colega(self):
+        self.client.force_login(self.tecnico)
+        # Uno mismo, un usuario final y un id raro no valen.
+        for malo in (self.tecnico.pk, self.usuario.pk, 999999):
+            r = self.client.post(self.enviar, {"mensaje": "x", "para": malo})
+            self.assertEqual(r.status_code, 404)
+            r = self.client.get(f"{self.hilo}?para={malo}")
+            self.assertEqual(r.status_code, 404)
+
+    def test_colegas_solo_staff_y_sin_uno_mismo(self):
+        self.client.force_login(self.obs)
+        datos = self.client.get(reverse("tickets:chat_colegas")).json()
+        nombres = [c["nombre"] for c in datos["colegas"]]
+        self.assertIn("Tec", nombres)
+        self.assertIn("Admin", nombres)
+        self.assertNotIn("Sup", nombres)
+        self.assertNotIn("Ana", nombres)
+        self.client.force_login(self.usuario)
+        self.assertEqual(
+            self.client.get(reverse("tickets:chat_colegas")).status_code, 403
+        )
+
     def test_selector_solo_para_staff(self):
         self.client.force_login(self.admin)
         html = self.client.get(reverse("tickets:monitoreo_admin")).content.decode()
         self.assertIn("swModoCorp", html)
         self.assertIn("Corporativo", html)
-        self.assertIn("Sala corporativa", html)
+        self.assertIn("swColega", html)
+        self.assertIn("Hablar con", html)
         self.assertIn('data-modo="soporte"', html)
         self.client.force_login(self.usuario)
         html = self.client.get(reverse("tickets:mi_panel")).content.decode()
         self.assertNotIn("swModoCorp", html)
+        self.assertNotIn("swColega", html)

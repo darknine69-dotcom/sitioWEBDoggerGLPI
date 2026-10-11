@@ -17,7 +17,7 @@
     var count = document.getElementById("swCount");
     var modoSoporteBtn = document.getElementById("swModoSoporte");
     var modoCorpBtn = document.getElementById("swModoCorp");
-    var corpNombre = document.getElementById("swCorpNombre");
+    var colegaSel = document.getElementById("swColega");
     var headTitulo = document.getElementById("swHeadTitulo");
     var headSub = document.getElementById("swHeadSub");
 
@@ -28,7 +28,9 @@
     var timer = null;
     /* Modo del chat: soporte (hilo por ticket) o corporativo (sala staff).
        El usuario final no tiene selector: siempre va en soporte. */
-    var hayCorp = Boolean(modoCorpBtn && urls.corpHilo && urls.corpEnviar);
+    var hayCorp = Boolean(modoCorpBtn && colegaSel && urls.corpHilo && urls.corpEnviar && urls.colegas);
+    var colegaPk = 0;
+    var colegasCargados = false;
     var modo = "soporte";
     try {
         if (hayCorp && localStorage.getItem("dogger:chat:modo") === "corporativo") {
@@ -87,10 +89,15 @@
         hilo.appendChild(caja);
     }
 
+    function nombreColega() {
+        if (!colegaSel || !colegaPk) { return ""; }
+        var op = colegaSel.querySelector('option[value="' + colegaPk + '"]');
+        return op ? op.textContent : "";
+    }
     function cargar(desde) {
         var enCorp = esCorp();
         var url = enCorp
-            ? urls.corpHilo + "?desde=" + (desde || 0)
+            ? urls.corpHilo + "?desde=" + (desde || 0) + (colegaPk ? "&para=" + colegaPk : "")
             : (ticketPk ? urlBase(urls.hilo) + "?desde=" + (desde || 0) : null);
         if (!url) { return; }
         fetch(url, { credentials: "same-origin" })
@@ -101,9 +108,11 @@
                     hilo.innerHTML = "";
                     ultimoId = 0;
                     if (!d.mensajes.length && !(d.adjuntos || []).length) {
-                        hilo.innerHTML = enCorp
-                            ? '<p class="sw-empty">Sala corporativa: coordínate con técnicos, admins y observadores.</p>'
-                            : '<p class="sw-empty">Cuéntanos en qué te ayudamos.</p>';
+                        hilo.innerHTML = !enCorp
+                            ? '<p class="sw-empty">Cuéntanos en qué te ayudamos.</p>'
+                            : (colegaPk
+                                ? '<p class="sw-empty">Directo con ' + esc(nombreColega()) + ": solo ustedes dos lo ven.</p>"
+                                : '<p class="sw-empty">Sala corporativa: coordínate con técnicos, admins y observadores.</p>');
                         // El saludo va en la caja del técnico como mensaje
                         // inicial para enviar; al usuario le sale solo cuando
                         // el técnico realmente le escribe.
@@ -249,17 +258,49 @@
         if (headTitulo) { headTitulo.textContent = enCorp ? "Sala corporativa" : "Mesa de ayuda"; }
         if (headSub) { headSub.textContent = enCorp ? "Solo staff en línea" : "Estamos en línea"; }
         if (sel) { sel.hidden = enCorp; }
-        if (corpNombre) { corpNombre.hidden = !enCorp; }
+        if (colegaSel) { colegaSel.hidden = !enCorp; }
         if (adjBtn) { adjBtn.style.display = enCorp ? "none" : ""; }
-        texto.placeholder = enCorp ? "Escríbele al equipo…" : "Escríbenos…";
+        texto.placeholder = !enCorp ? "Escríbenos…"
+            : (colegaPk ? "Escríbele a " + nombreColega() + "…" : "Escríbele al equipo…");
         ultimoId = 0;
         noLeidos = 0;
         pintarContador();
-        if (enCorp) { cargar(0); }
+        if (enCorp) { listarColegas(); cargar(0); }
         else { listarTickets(); }
     }
     if (modoSoporteBtn) { modoSoporteBtn.addEventListener("click", function () { ponerModo("soporte"); }); }
     if (modoCorpBtn) { modoCorpBtn.addEventListener("click", function () { ponerModo("corporativo"); }); }
+
+    function listarColegas() {
+        if (!hayCorp || colegasCargados) { return; }
+        colegasCargados = true;
+        fetch(urls.colegas, { credentials: "same-origin" })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                colegaSel.innerHTML = "";
+                var op0 = document.createElement("option");
+                op0.value = "0";
+                op0.textContent = "Sala general · todos";
+                colegaSel.appendChild(op0);
+                (d.colegas || []).forEach(function (c) {
+                    var op = document.createElement("option");
+                    op.value = c.pk;
+                    op.textContent = c.nombre + " · " + c.insignia + (c.en_linea ? " (en línea)" : "");
+                    colegaSel.appendChild(op);
+                });
+            })
+            .catch(function () { colegasCargados = false; });
+    }
+    if (colegaSel) {
+        colegaSel.addEventListener("change", function () {
+            colegaPk = parseInt(colegaSel.value, 10) || 0;
+            ultimoId = 0;
+            noLeidos = 0;
+            pintarContador();
+            texto.placeholder = colegaPk ? "Escríbele a " + nombreColega() + "…" : "Escríbele al equipo…";
+            cargar(0);
+        });
+    }
 
     function enviarTexto() {
         var v = (texto.value || "").trim();
@@ -267,6 +308,7 @@
         if (!v || (!enCorp && !ticketPk)) { return; }
         var datos = new FormData();
         datos.append("mensaje", v);
+        if (enCorp && colegaPk) { datos.append("para", colegaPk); }
         fetch(enCorp ? urls.corpEnviar : urlBase(urls.responder), {
             method: "POST", credentials: "same-origin",
             headers: { "X-CSRFToken": csrf() }, body: datos

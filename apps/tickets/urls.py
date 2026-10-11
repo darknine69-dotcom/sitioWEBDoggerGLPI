@@ -79,6 +79,7 @@ urlpatterns = [
     path("chat/api/adjuntar/<int:pk>/", views_chat.chat_adjuntar, name="chat_adjuntar"),
     path("chat/api/corporativo/", views_chat.chat_corporativo, name="chat_corporativo"),
     path("chat/api/corporativo/enviar/", views_chat.chat_corporativo_enviar, name="chat_corporativo_enviar"),
+    path("chat/api/colegas/", views_chat.chat_colegas, name="chat_colegas"),
     # --- Módulo del observador ---
     path("observador/", views_observador.panel_observador, name="obs_panel"),
     path("observador/buscar/", views_observador.buscar_observador, name="obs_buscar"),
