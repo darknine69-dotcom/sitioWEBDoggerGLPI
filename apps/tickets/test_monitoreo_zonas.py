@@ -180,6 +180,9 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn(ticket.codigo, html)
         self.assertIn("Ya voy en camino", html)
         self.assertIn("Tec", html)
+        # La conversación se abre con clic en el ticket, no plana.
+        self.assertIn("Tickets y sus conversaciones", html)
+        self.assertIn(f'data-miembro-toggle="conv-{ticket.pk}"', html)
 
     def test_ficha_usuario_es_su_vista_principal(self):
         respuesta = self.client.get(

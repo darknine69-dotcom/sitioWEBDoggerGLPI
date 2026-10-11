@@ -18,8 +18,6 @@
 .mon-conv-interno { border-left-color: #F97316; background: #FFF8F0; }
 .mon-conv-meta { font-size: 11px; color: var(--ink-muted); font-weight: 700; }
 .mon-conv-meta b { color: #1d1b16; }
-.mon-conv-tit { margin: 14px 0 2px; font-size: 13px; }
-.mon-conv-tit code { font-family: var(--font-mono); font-weight: 800; color: var(--dogger-red); }
 .mon-imgs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .mon-imgs a.image img { width: 120px; height: 90px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
 .mon-imgs a.file { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; text-decoration: none; color: var(--ink); }
@@ -224,41 +222,73 @@
     </section>
     {% endif %}
 
-    <!-- ===== Conversaciones y archivos ===== -->
+    <!-- ===== Tickets y sus conversaciones: se abren con clic ===== -->
     <section class="corp-card corp-table-card">
         <div class="corp-card-head">
             <div class="corp-title-wrap">
                 <span class="corp-title-icon"><svg class="icon"><use href="#i-message"/></svg></span>
                 <div>
-                    <h3>Conversaciones y archivos</h3>
-                    <p class="corp-sub">Respuestas de los técnicos y capturas de cada solicitud.</p>
+                    <h3>Tickets y sus conversaciones</h3>
+                    <p class="corp-sub">Dale clic a un ticket para ver sus respuestas y archivos.</p>
                 </div>
             </div>
         </div>
         {% for t in tickets %}
-        {% if t.comentarios.all or t.adjuntos.all %}
-        <p class="mon-conv-tit"><code>{{ t.codigo }}</code> · {{ t.titulo }}</p>
-        {% for c in t.comentarios.all %}
-        <div class="mon-conv{% if c.es_interno %} mon-conv-interno{% endif %}">
-            <span class="mon-conv-meta"><b>{% if c.usuario %}{{ c.usuario.nombre|default:c.usuario.email }}{% else %}{{ c.autor_nombre|default:"Soporte" }}{% endif %}</b> · {{ c.fecha|date:"d/m/Y H:i" }}{% if c.es_interno %} · interna{% endif %}</span><br>
-            {{ c.comentario|linebreaksbr }}
-        </div>
-        {% endfor %}
-        {% if t.adjuntos.all %}
-        <div class="mon-imgs">
-            {% for a in t.adjuntos.all %}
-            {% if a.es_imagen %}
-            <a class="image" href="{% url 'tickets:adjunto' a.pk %}" target="_blank" rel="noopener"><img src="{% url 'tickets:adjunto' a.pk %}" alt="{{ a.nombre_original }}" loading="lazy"></a>
-            {% else %}
-            <a class="file" href="{% url 'tickets:adjunto' a.pk %}" target="_blank" rel="noopener"><svg class="icon icon-sm"><use href="#i-file"/></svg>{{ a.nombre_original }}</a>
-            {% endif %}
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endif %}
+        <article class="obs-miembro">
+            <button type="button" class="obs-miembro-top obs-miembro-toggle" data-miembro-toggle="conv-{{ t.pk }}" aria-expanded="false" title="Ver conversación y archivos de {{ t.codigo }}">
+                <span class="obs-avatar" style="font-family:var(--font-mono);font-size:11px">{{ t.codigo|slice:"3:" }}</span>
+                <span class="obs-miembro-id">
+                    <strong>{{ t.titulo }}</strong>
+                    <small>{{ t.codigo }} · {{ t.tecnico_asignado.nombre|default:"sin asignar" }} · {{ t.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                </span>
+                <span class="obs-pill obs-pill-{% if t.estado == 'abierto' %}amarillo{% elif t.estado == 'en-progreso' %}amarillo{% else %}verde{% endif %}">{{ t.get_estado_display }}</span>
+                <span class="obs-miembro-nums">
+                    <span class="obs-crate" title="{{ t.comentarios.all|length }} respuestas y {{ t.adjuntos.all|length }} archivos">
+                        <span class="obs-crate-seg"><b>{{ t.comentarios.all|length }}</b> respuestas</span>
+                        <span class="obs-crate-seg s-resueltos"><b>{{ t.adjuntos.all|length }}</b> archivos</span>
+                    </span>
+                </span>
+                <span class="obs-zona-chev" aria-hidden="true">▾</span>
+            </button>
+            <div id="conv-{{ t.pk }}" hidden>
+                {% for c in t.comentarios.all %}
+                <div class="mon-conv{% if c.es_interno %} mon-conv-interno{% endif %}">
+                    <span class="mon-conv-meta"><b>{% if c.usuario %}{{ c.usuario.nombre|default:c.usuario.email }}{% else %}{{ c.autor_nombre|default:"Soporte" }}{% endif %}</b> · {{ c.fecha|date:"d/m/Y H:i" }}{% if c.es_interno %} · interna{% endif %}</span><br>
+                    {{ c.comentario|linebreaksbr }}
+                </div>
+                {% empty %}
+                <p class="empty-hint">Este ticket todavía no tiene respuestas.</p>
+                {% endfor %}
+                {% if t.adjuntos.all %}
+                <div class="mon-imgs">
+                    {% for a in t.adjuntos.all %}
+                    {% if a.es_imagen %}
+                    <a class="image" href="{% url 'tickets:adjunto' a.pk %}" target="_blank" rel="noopener"><img src="{% url 'tickets:adjunto' a.pk %}" alt="{{ a.nombre_original }}" loading="lazy"></a>
+                    {% else %}
+                    <a class="file" href="{% url 'tickets:adjunto' a.pk %}" target="_blank" rel="noopener"><svg class="icon icon-sm"><use href="#i-file"/></svg>{{ a.nombre_original }}</a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <p style="margin:10px 0 2px"><a href="{% url 'tickets:detalle' t.pk %}" class="btn btn-outline btn-sm">Abrir ticket {{ t.codigo }}</a></p>
+            </div>
+        </article>
         {% empty %}
-        <p class="empty-hint">Sin conversaciones todavía.</p>
+        <p class="empty-hint">Sin tickets todavía.</p>
         {% endfor %}
     </section>
+    <script>
+    (function () {
+        document.querySelectorAll("[data-miembro-toggle]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var body = document.getElementById(btn.getAttribute("data-miembro-toggle"));
+                if (!body) return;
+                var abierto = btn.getAttribute("aria-expanded") !== "false";
+                btn.setAttribute("aria-expanded", abierto ? "false" : "true");
+                body.hidden = abierto;
+            });
+        });
+    })();
+    </script>
 </main>
 {% endblock %}
