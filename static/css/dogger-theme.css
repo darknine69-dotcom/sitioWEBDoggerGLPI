@@ -3220,6 +3220,17 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .sw-head-x:hover { background: rgba(255,255,255,.28); }
 .sw-ticket { margin-top: 9px; width: 100%; font: inherit; font-size: 12.5px; font-weight: 600; color: #fff; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); border-radius: 9px; padding: 7px 9px; }
 .sw-ticket option { color: #111; }
+/* Selector de modo del chat: Soporte (por ticket) o Corporativo (sala staff). */
+.sw-modos { display: flex; gap: 4px; margin-top: 9px; padding: 3px; border-radius: 10px; background: rgba(0,0,0,.18); }
+.sw-modo {
+  flex: 1; border: 0; border-radius: 7px; padding: 6px 8px;
+  font: inherit; font-size: 12px; font-weight: 800; color: rgba(255,255,255,.75);
+  background: transparent; cursor: pointer; transition: background .15s ease, color .15s ease;
+}
+.sw-modo:hover { color: #fff; }
+.sw-modo.is-active { background: #fff; color: var(--dogger-red-dark, #A81E18); }
+.sw-corp-nombre { margin: 9px 0 0; font-size: 12px; font-weight: 600; color: rgba(255,255,255,.92); }
+.sw-corp-nombre[hidden] { display: none; }
 .sw-thread { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #FBFAF7; scrollbar-width: thin; }
 .sw-msg { display: flex; gap: 7px; max-width: 88%; align-items: flex-end; }
 .sw-msg-propio { align-self: flex-end; flex-direction: row-reverse; }

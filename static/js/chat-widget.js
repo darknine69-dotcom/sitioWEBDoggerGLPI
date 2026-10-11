@@ -15,12 +15,25 @@
     var emojiBtn = document.getElementById("swEmojiBtn");
     var cerrar = document.getElementById("swCerrar");
     var count = document.getElementById("swCount");
+    var modoSoporteBtn = document.getElementById("swModoSoporte");
+    var modoCorpBtn = document.getElementById("swModoCorp");
+    var corpNombre = document.getElementById("swCorpNombre");
 
     var ticketPk = 0;
     var ultimoId = 0;
     var noLeidos = 0;
     var abierto = false;
     var timer = null;
+    /* Modo del chat: soporte (hilo por ticket) o corporativo (sala staff).
+       El usuario final no tiene selector: siempre va en soporte. */
+    var hayCorp = Boolean(modoCorpBtn && urls.corpHilo && urls.corpEnviar);
+    var modo = "soporte";
+    try {
+        if (hayCorp && localStorage.getItem("dogger:chat:modo") === "corporativo") {
+            modo = "corporativo";
+        }
+    } catch (e) { }
+    function esCorp() { return hayCorp && modo === "corporativo"; }
 
     var EMOJIS = ["😀", "😄", "😉", "😍", "🤝", "👍", "👏", "🙏", "✅", "❌",
                   "⚠️", "❓", "❗", "🎉", "🔧", "🖨️", "💻", "🌐", "📎",
@@ -73,20 +86,26 @@
     }
 
     function cargar(desde) {
-        if (!ticketPk) { return; }
-        fetch(urlBase(urls.hilo) + "?desde=" + (desde || 0), { credentials: "same-origin" })
+        var enCorp = esCorp();
+        var url = enCorp
+            ? urls.corpHilo + "?desde=" + (desde || 0)
+            : (ticketPk ? urlBase(urls.hilo) + "?desde=" + (desde || 0) : null);
+        if (!url) { return; }
+        fetch(url, { credentials: "same-origin" })
             .then(function (r) { return r.json(); })
             .then(function (d) {
                 if (!d.ok) { return; }
                 if (!desde) {
                     hilo.innerHTML = "";
                     ultimoId = 0;
-                    if (!d.mensajes.length && !d.adjuntos.length) {
-                        hilo.innerHTML = '<p class="sw-empty">Cuéntanos en qué te ayudamos.</p>';
+                    if (!d.mensajes.length && !(d.adjuntos || []).length) {
+                        hilo.innerHTML = enCorp
+                            ? '<p class="sw-empty">Sala corporativa: coordínate con técnicos, admins y observadores.</p>'
+                            : '<p class="sw-empty">Cuéntanos en qué te ayudamos.</p>';
                         // El saludo va en la caja del técnico como mensaje
                         // inicial para enviar; al usuario le sale solo cuando
                         // el técnico realmente le escribe.
-                        if ((urls.rol === "tecnico" || urls.rol === "admin") && !texto.value) {
+                        if (!enCorp && (urls.rol === "tecnico" || urls.rol === "admin") && !texto.value) {
                             texto.value = "¡Hola! Gracias por escribirnos. Cuéntanos tu caso y un técnico te atiende enseguida.";
                         }
                     }
@@ -94,7 +113,7 @@
                         hilo.insertAdjacentHTML("beforeend", mensajeHtml(m));
                         ultimoId = Math.max(ultimoId, m.id);
                     });
-                    pintarAdjuntos(d.adjuntos);
+                    if (!enCorp) { pintarAdjuntos(d.adjuntos); }
                     bajar();
                 } else if ((d.mensajes || []).length) {
                     d.mensajes.forEach(function (m) {
@@ -211,12 +230,39 @@
         cargar(0);
     });
 
+    function ponerModo(nuevo) {
+        if (!hayCorp || (nuevo !== "soporte" && nuevo !== "corporativo")) { return; }
+        modo = nuevo;
+        try { localStorage.setItem("dogger:chat:modo", modo); } catch (e) { }
+        var enCorp = esCorp();
+        if (modoSoporteBtn) {
+            modoSoporteBtn.classList.toggle("is-active", !enCorp);
+            modoSoporteBtn.setAttribute("aria-selected", String(!enCorp));
+        }
+        if (modoCorpBtn) {
+            modoCorpBtn.classList.toggle("is-active", enCorp);
+            modoCorpBtn.setAttribute("aria-selected", String(enCorp));
+        }
+        if (sel) { sel.hidden = enCorp; }
+        if (corpNombre) { corpNombre.hidden = !enCorp; }
+        if (adjBtn) { adjBtn.style.display = enCorp ? "none" : ""; }
+        texto.placeholder = enCorp ? "Escríbele al equipo…" : "Escríbenos…";
+        ultimoId = 0;
+        noLeidos = 0;
+        pintarContador();
+        if (enCorp) { cargar(0); }
+        else { listarTickets(); }
+    }
+    if (modoSoporteBtn) { modoSoporteBtn.addEventListener("click", function () { ponerModo("soporte"); }); }
+    if (modoCorpBtn) { modoCorpBtn.addEventListener("click", function () { ponerModo("corporativo"); }); }
+
     function enviarTexto() {
         var v = (texto.value || "").trim();
-        if (!v || !ticketPk) { return; }
+        var enCorp = esCorp();
+        if (!v || (!enCorp && !ticketPk)) { return; }
         var datos = new FormData();
         datos.append("mensaje", v);
-        fetch(urlBase(urls.responder), {
+        fetch(enCorp ? urls.corpEnviar : urlBase(urls.responder), {
             method: "POST", credentials: "same-origin",
             headers: { "X-CSRFToken": csrf() }, body: datos
         })
@@ -235,7 +281,7 @@
         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviarTexto(); }
     });
 
-    adjBtn.addEventListener("click", function () { if (ticketPk) { archivo.click(); } });
+    adjBtn.addEventListener("click", function () { if (!esCorp() && ticketPk) { archivo.click(); } });
     archivo.addEventListener("change", function () {
         if (!archivo.files.length || !ticketPk) { return; }
         var datos = new FormData();
@@ -284,5 +330,5 @@
         if (e.key === "Escape" && pop) { pop.remove(); pop = null; }
     });
 
-    listarTickets();
+    if (hayCorp) { ponerModo(modo); } else { listarTickets(); }
 })();

@@ -481,6 +481,36 @@ class TicketComentario(models.Model):
         return f"Comentario en {self.ticket.codigo}"
 
 
+class MensajeCorporativo(models.Model):
+    """Sala corporativa del chat: técnicos, admins y observadores.
+
+    Es una sola sala compartida, sin ticket: lo que se habla aquí es
+    coordinación interna (pasar un caso, avisar una caída) y nunca lo ve
+    el usuario final. Solo texto, sin adjuntos ni GLPI.
+    """
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="mensajes_corporativos",
+        db_column="UsuarioId",
+    )
+    autor_nombre = models.CharField(max_length=100, blank=True, default="")
+    texto = models.TextField(db_column="Texto")
+    fecha = models.DateTimeField(auto_now_add=True, db_column="Fecha")
+
+    class Meta:
+        db_table = "ChatCorporativo"
+        verbose_name = "Mensaje corporativo"
+        verbose_name_plural = "Sala corporativa"
+        ordering = ["fecha"]
+
+    def __str__(self):
+        return f"Corporativo de {self.autor_nombre or '—'}"
+
+
 class GlpiEvento(models.Model):
     """
     Bitácora de eventos recibidos desde el webhook de GLPI.

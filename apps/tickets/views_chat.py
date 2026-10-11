@@ -1,9 +1,14 @@
-"""Chat corporativo de soporte (técnico ↔ usuario).
+"""Chat de soporte con dos modos.
 
-Ventana flotante estilo Tidio disponible para todos los roles: el hilo es
-el de un ticket (sus comentarios no internos y sus adjuntos) y escribir
-usa las mismas reglas de cada rol —el dueño responde, el staff gestiona
-y el observador participa en lo de sus zonas— con aviso al otro lado.
+Soporte (técnico ↔ usuario): ventana flotante estilo Tidio disponible
+para todos los roles; el hilo es el de un ticket (sus comentarios no
+internos y sus adjuntos) y escribir usa las mismas reglas de cada rol
+—el dueño responde, el staff gestiona y el observador participa en lo
+de sus zonas— con aviso al otro lado.
+
+Corporativo (staff ↔ staff): una sola sala compartida entre técnicos,
+admins y observadores para coordinarse (pasar un caso, avisar una
+caída). Sin ticket, sin adjuntos y sin GLPI; el usuario final no la ve.
 """
 import logging
 
@@ -14,7 +19,13 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from apps.tickets.models import ElementoMiLista, Ticket, TicketAdjunto, TicketComentario
+from apps.tickets.models import (
+    ElementoMiLista,
+    MensajeCorporativo,
+    Ticket,
+    TicketAdjunto,
+    TicketComentario,
+)
 from apps.tickets.notifications import notificar_comentario
 from apps.tickets.services.glpi_client import GlpiError, sync_followup_to_glpi
 
@@ -38,6 +49,18 @@ def _puntos_de(usuario):
     if getattr(usuario, "rol", None) != "observador":
         return []
     return puntos_del_observador(usuario)
+
+
+ROLES_CORPORATIVO = ("tecnico", "admin", "observador")
+
+
+def _es_corporativo(usuario):
+    """Quién entra a la sala corporativa: staff activo, sin usuarios."""
+    if not getattr(usuario, "is_authenticated", False):
+        return False
+    if getattr(usuario, "rol", None) not in ROLES_CORPORATIVO:
+        return False
+    return bool(getattr(usuario, "is_active", False))
 
 
 def _puede_ver_hilo(usuario, ticket):
@@ -235,3 +258,57 @@ def chat_adjuntar(request, pk):
             "fecha": timezone.localtime(adjunto.fecha_subida).strftime("%d/%m/%Y %H:%M"),
         },
     })
+
+
+def _mensaje_corp_json(m, lector):
+    return {
+        "id": m.pk,
+        "autor": m.autor_nombre or (m.usuario.nombre if m.usuario_id else "Mesa de ayuda"),
+        "insignia": _insignia(m.usuario) if m.usuario_id else "Mesa de ayuda",
+        "avatar": _avatar_url(m.usuario),
+        "texto": m.texto,
+        "fecha": timezone.localtime(m.fecha).strftime("%d/%m/%Y %H:%M"),
+        "propio": bool(m.usuario_id and lector.pk and m.usuario_id == lector.pk),
+    }
+
+
+@login_required
+@require_GET
+def chat_corporativo(request):
+    """Sala corporativa: últimos mensajes del staff (`?desde=` para el vivo)."""
+    if not _es_corporativo(request.user):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    try:
+        desde = int(request.GET.get("desde") or 0)
+    except (TypeError, ValueError):
+        desde = 0
+    qs = MensajeCorporativo.objects.select_related("usuario").order_by("fecha", "id")
+    if desde:
+        qs = qs.filter(pk__gt=desde)
+    mensajes = [_mensaje_corp_json(m, request.user) for m in qs[:200]]
+    return JsonResponse({"ok": True, "mensajes": mensajes})
+
+
+@login_required
+@require_POST
+def chat_corporativo_enviar(request):
+    """Escribe en la sala con las mismas reglas de chateo de cada rol."""
+    if not _es_corporativo(request.user):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    u = request.user
+    if getattr(u, "rol", None) != "admin" and not getattr(
+        u, "puede_responder_chat", False
+    ):
+        return JsonResponse(
+            {"ok": False, "error": "El administrador no te permite chatear."},
+            status=403,
+        )
+    texto = (request.POST.get("mensaje") or "").strip()
+    if not texto:
+        return JsonResponse({"ok": False, "error": "Escribe tu mensaje."}, status=400)
+    if len(texto) > 2000:
+        return JsonResponse({"ok": False, "error": "Máximo 2000 caracteres."}, status=400)
+    mensaje = MensajeCorporativo.objects.create(
+        usuario=u, autor_nombre=u.nombre, texto=texto,
+    )
+    return JsonResponse({"ok": True, "mensaje": _mensaje_corp_json(mensaje, u)})
