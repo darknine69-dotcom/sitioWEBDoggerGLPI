@@ -190,6 +190,10 @@ class MonitoreoZonasAdminTest(TestCase):
         html = respuesta.content.decode()
         self.assertIn("Vista principal de Ana", html)
         self.assertIn("Sus solicitudes", html)
+        # Mismo diseño de su cuenta: hero, KPIs y tabla corp.
+        self.assertIn("corp-hero", html)
+        self.assertIn("corp-kpis", html)
+        self.assertIn("tickets-table", html)
 
     def test_ficha_tecnico_muestra_lo_que_atiende_y_su_calificacion(self):
         elemento_tec = ElementoMiLista.objects.create(

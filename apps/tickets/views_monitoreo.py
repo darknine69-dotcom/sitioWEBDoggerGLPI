@@ -502,7 +502,7 @@ def monitoreo_cuenta_detalle(request, pk):
     rol = getattr(cuenta, "rol", None) or "usuario"
     tickets = list(
         Ticket.objects.filter(solicitante_email__iexact=correo)
-        .select_related("tecnico_asignado")
+        .select_related("tecnico_asignado", "categoria")
         .prefetch_related("adjuntos", "comentarios__usuario")
         .order_by("-fecha_creacion") if correo else []
     )
