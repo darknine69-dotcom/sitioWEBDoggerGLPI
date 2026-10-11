@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Dogger · Ficha de cuenta en seguimiento{% endblock %}
+{% block title %}Dogger · {{ cuenta.nombre|default:correo }}{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
-{% block header_title %}Ficha de cuenta{% endblock %}
-{% block header_desc %}Todo lo de {{ cuenta.nombre|default:correo }}: sus tickets, quién los atendió, las conversaciones y las imágenes.{% endblock %}
+{% block header_title %}Vista principal de {{ cuenta.nombre|default:correo }}{% endblock %}
+{% block header_desc %}Así ve su {{ vista_principal|default:"panel" }}: todo lo de esta cuenta en un solo lugar.{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -38,6 +38,7 @@
             <small>{{ correo }} · {% if cuenta %}{{ cuenta.get_rol_display }} · {{ cuenta.ubicacion|default:"sin ubicación" }}{% else %}Sin cuenta registrada{% endif %}</small>
         </div>
         <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+            <span class="chip chip-soft">{{ vista_principal|default:"Su panel" }}</span>
             {% if elemento.zona %}<span class="chip chip-soft">{{ elemento.zona.nombre }}</span>{% endif %}
             <span class="chip chip-soft">Supervisor: {{ elemento.observador.nombre }}</span>
         </span>
@@ -46,22 +47,56 @@
     <div class="mon-ficha-stats">
         <div class="dash-stat dash-hov-total">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
-            <span class="dash-stat-body"><span class="dash-stat-label">Tickets creados</span><span class="dash-stat-value">{{ total }}</span></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Solicitudes</span><span class="dash-stat-value">{{ total }}</span><span class="dash-stat-hint">creadas por la cuenta</span></span>
         </div>
         <div class="dash-stat dash-hov-abiertos">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
-            <span class="dash-stat-body"><span class="dash-stat-label">Abiertos</span><span class="dash-stat-value st-abiertos">{{ abiertos }}</span></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Abiertas</span><span class="dash-stat-value st-abiertos">{{ abiertos }}</span><span class="dash-stat-hint">por atender</span></span>
         </div>
-        <div class="dash-stat dash-hov-tecnicos">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
-            <span class="dash-stat-body"><span class="dash-stat-label">Técnicos</span><span class="dash-stat-value">{{ tecnicos|length }}</span><span class="dash-stat-hint">{% for n, c in tecnicos %}{{ n }}{% if not forloop.last %}, {% endif %}{% empty %}nadie aún{% endfor %}</span></span>
+        <div class="dash-stat dash-hov-progreso">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-refresh"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">En progreso</span><span class="dash-stat-value st-progreso">{{ en_progreso|default:0 }}</span><span class="dash-stat-hint">en curso</span></span>
         </div>
         <div class="dash-stat dash-hov-resueltos">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
-            <span class="dash-stat-body"><span class="dash-stat-label">Resueltos</span><span class="dash-stat-value st-resueltos">{{ resueltos }}</span></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Resueltas</span><span class="dash-stat-value st-resueltos">{{ resueltos }}</span><span class="dash-stat-hint">terminadas</span></span>
         </div>
     </div>
 
+    {% if calificacion %}
+    <div class="mon-ficha-stats">
+        <div class="dash-stat dash-hov-tecnicos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Atiende</span><span class="dash-stat-value">{{ asignados_total }}</span><span class="dash-stat-hint">{{ asignados_abiertos }} abiertos</span></span>
+        </div>
+        <div class="dash-stat dash-hov-usuarios">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-thumb-up"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Calificación</span><span class="dash-stat-value">{{ calificacion.total }} voto{{ calificacion.total|pluralize }}</span><span class="dash-stat-hint">{% if calificacion.cobertura != None %}{{ calificacion.cobertura }}% de {{ calificacion.resueltos }} resueltos{% else %}sin resueltos{% endif %}</span></span>
+        </div>
+    </div>
+    {% elif asignados %}
+    <div class="mon-ficha-stats">
+        <div class="dash-stat dash-hov-tecnicos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Atiende</span><span class="dash-stat-value">{{ asignados_total }}</span><span class="dash-stat-hint">{{ asignados_abiertos }} abiertos</span></span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if rol == 'observador' %}
+    <div class="mon-ficha-stats">
+        <div class="dash-stat dash-hov-usuarios">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-eye"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">En seguimiento</span><span class="dash-stat-value">{{ lista_total }}</span><span class="dash-stat-hint">cuentas en su lista</span></span>
+        </div>
+        <div class="dash-stat dash-hov-zonas">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <span class="dash-stat-body"><span class="dash-stat-label">Zonas</span><span class="dash-stat-value">{{ zonas_obs|length }}</span><span class="dash-stat-hint">{% for z in zonas_obs %}{{ z.nombre }}{% if not forloop.last %}, {% endif %}{% empty %}ninguna{% endfor %}</span></span>
+        </div>
+    </div>
+    {% endif %}
+
+    <h3 class="obs-bloque-titulo">Sus solicitudes</h3>
     {% for t in tickets %}
     <article class="mon-ticket">
         <div class="mon-ticket-head">
@@ -95,7 +130,37 @@
         </div>
     </article>
     {% empty %}
-    <div class="panel"><p class="panel-sub">Esta cuenta todavía no ha creado tickets.</p></div>
+    <div class="panel"><p class="panel-sub">Esta cuenta todavía no ha creado solicitudes.</p></div>
     {% endfor %}
+
+    {% if asignados %}
+    <h3 class="obs-bloque-titulo" style="margin-top:18px">Lo que atiende</h3>
+    <div class="obs-tabla-wrap tabla-scroll-seis">
+        <table class="obs-tabla">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Título</th>
+                    <th>Estado</th>
+                    <th>Solicitante</th>
+                    <th>Fecha</th>
+                    <th class="obs-acciones">Ticket</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in asignados %}
+                <tr>
+                    <td><strong>{{ t.codigo }}</strong></td>
+                    <td>{{ t.titulo }}</td>
+                    <td><span class="obs-pill obs-pill-{% if t.estado == 'abierto' %}amarillo{% elif t.estado == 'en-progreso' %}amarillo{% else %}verde{% endif %}">{{ t.get_estado_display }}</span></td>
+                    <td>{{ t.solicitante_nombre }}<small>{{ t.solicitante_email }}</small></td>
+                    <td style="white-space:nowrap">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                    <td class="obs-acciones"><a href="{% url 'tickets:detalle' t.pk %}" class="btn btn-outline btn-sm">Abrir</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
 </main>
 {% endblock %}

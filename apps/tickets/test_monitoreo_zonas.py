@@ -181,6 +181,40 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn("Ya voy en camino", html)
         self.assertIn("Tec", html)
 
+    def test_ficha_usuario_es_su_vista_principal(self):
+        respuesta = self.client.get(
+            reverse("tickets:monitoreo_cuenta_detalle", args=[self.elemento.pk])
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context["vista_principal"], "Mis solicitudes")
+        html = respuesta.content.decode()
+        self.assertIn("Vista principal de Ana", html)
+        self.assertIn("Sus solicitudes", html)
+
+    def test_ficha_tecnico_muestra_lo_que_atiende_y_su_calificacion(self):
+        elemento_tec = ElementoMiLista.objects.create(
+            observador=self.obs, tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario=self.tec, usuario_email="tec@x.com", zona=self.zona,
+        )
+        respuesta = self.client.get(
+            reverse("tickets:monitoreo_cuenta_detalle", args=[elemento_tec.pk])
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context["vista_principal"], "Panel Técnico")
+        self.assertEqual(respuesta.context["asignados_total"], 1)
+        self.assertIsNotNone(respuesta.context["calificacion"])
+        html = respuesta.content.decode()
+        self.assertIn("Lo que atiende", html)
+        self.assertIn("Calificación", html)
+
+    def test_filas_del_monitoreo_llevan_a_la_vista_principal(self):
+        html = self.client.get(reverse("tickets:monitoreo_admin")).content.decode()
+        url_ficha = reverse(
+            "tickets:monitoreo_cuenta_detalle", args=[self.elemento.pk]
+        )
+        self.assertIn(f'data-href="{url_ficha}"', html)
+        self.assertIn(f'href="{url_ficha}"', html)
+
     def test_ficha_cuenta_inexistente_404(self):
         self.assertEqual(
             self.client.get(

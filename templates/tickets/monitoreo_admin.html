@@ -119,10 +119,10 @@ main.obs-page { font-family: var(--font-corp); }
                 </form>
                 {% for m in z.miembros %}
                 <article class="obs-miembro">
-                    <div class="obs-miembro-top">
+                    <div class="obs-miembro-top" data-href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}" style="cursor:pointer">
                         <span class="obs-avatar">{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
                         <span class="obs-miembro-id">
-                            <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Ver ficha completa: tickets, técnicos, conversaciones e imágenes">{{ m.nombre }}</a></strong>
+                            <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}: todo lo de esta cuenta">{{ m.nombre }}</a></strong>
                             <small>{{ m.email|default:"—" }} · {{ m.rol }} · {{ m.tecnico }}</small>
                         </span>
                         {% if m.abiertos %}<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>{{ m.abiertos }}</span>{% endif %}
@@ -250,8 +250,8 @@ main.obs-page { font-family: var(--font-corp); }
                     </thead>
                     <tbody>
                         {% for f in filas %}
-                        <tr>
-                            <td><strong>{{ f.nombre }}</strong></td>
+                        <tr{% if f.elemento_id %} data-href="{% url 'tickets:monitoreo_cuenta_detalle' f.elemento_id %}" title="Abrir la vista principal de {{ f.nombre }}" style="cursor:pointer"{% endif %}>
+                            <td><strong>{% if f.elemento_id %}<a href="{% url 'tickets:monitoreo_cuenta_detalle' f.elemento_id %}" title="Abrir la vista principal de {{ f.nombre }}: todo lo de esta cuenta">{{ f.nombre }}</a>{% else %}{{ f.nombre }}{% endif %}</strong></td>
                             <td>{{ f.email|default:"—" }}</td>
                             <td>{{ f.rol }}</td>
                             <td>{{ f.ubicacion }}</td>
@@ -338,5 +338,18 @@ main.obs-page { font-family: var(--font-corp); }
     </section>
     {% endif %}
 
+    <script>
+    /* Clic en el nombre o en la fila: abre la vista principal de la cuenta.
+       Los botones y formularios (Sacar, Agregar, Renombrar…) siguen
+       funcionando: si el clic nace ahí, no se navega. */
+    (function () {
+        document.querySelectorAll("[data-href]").forEach(function (fila) {
+            fila.addEventListener("click", function (e) {
+                if (e.target.closest("a, button, form, input, select, textarea")) return;
+                window.location.href = fila.getAttribute("data-href");
+            });
+        });
+    })();
+    </script>
 </main>
 {% endblock %}

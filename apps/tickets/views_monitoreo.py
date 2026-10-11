@@ -76,10 +76,11 @@ def monitoreo_admin(request):
         observador = Usuario.objects.filter(pk=observadores[0][0]).first()
 
     observers_ids = {pk for pk, _ in observadores}
-    ya_mis_lista = {
-        (e.usuario_email or "").strip().lower()
+    elementos_por_correo = {
+        (e.usuario_email or "").strip().lower(): e.pk
         for e in _elementos_de(observador) if (e.usuario_email or "").strip()
-    } if observador else set()
+    } if observador else {}
+    ya_mis_lista = set(elementos_por_correo)
     zonas_ya = {
         (e.punto.nombre if e.punto_id else "")
         for e in _elementos_de(observador).select_related("punto")
@@ -126,6 +127,7 @@ def monitoreo_admin(request):
                 "ubicacion": u.ubicacion or "—",
                 "abiertos": abiertos.get(correo, 0),
                 "ya_agregado": correo in ya_mis_lista,
+                "elemento_id": elementos_por_correo.get(correo),
             }
         )
 
@@ -468,12 +470,23 @@ def monitoreo_zona_miembro_agregar(request, pk):
     return redirect(volver)
 
 
+_VISTA_PRINCIPAL_POR_ROL = {
+    "admin": "Panel de administración",
+    "tecnico": "Panel Técnico",
+    "usuario": "Mis solicitudes",
+    "observador": "Monitoreo",
+}
+
+
 @admin_required
 def monitoreo_cuenta_detalle(request, pk):
-    """Ficha de una cuenta en seguimiento: tickets, técnicos y conversación.
+    """Vista principal de la cuenta en seguimiento, según su rol.
 
-    Al darle clic a la tarjeta de la cuenta se abre todo: qué tickets ha
-    creado, qué técnico atendió cada uno, las conversaciones y las imágenes.
+    Al darle clic al nombre (o a la fila) se abre lo mismo que ve esa
+    cuenta al entrar, pero con todo lo suyo: si es usuario, sus
+    solicitudes creadas; si es técnico, sus asignados y su calificación;
+    si es observador, su lista y sus zonas. Lo creado siempre sale, y lo
+    asignado sale cuando tiene asignaciones.
     """
     from django.http import Http404
 
@@ -484,16 +497,15 @@ def monitoreo_cuenta_detalle(request, pk):
     )
     if elemento is None:
         raise Http404
+    cuenta = elemento.usuario
     correo = (elemento.usuario_email or "").strip().lower()
+    rol = getattr(cuenta, "rol", None) or "usuario"
     tickets = list(
         Ticket.objects.filter(solicitante_email__iexact=correo)
         .select_related("tecnico_asignado")
         .prefetch_related("adjuntos", "comentarios__usuario")
         .order_by("-fecha_creacion") if correo else []
     )
-    estados = {}
-    for t in tickets:
-        estados[t.estado] = estados.get(t.estado, 0) + 1
     tecnicos = {}
     for t in tickets:
         nombre = (
@@ -501,24 +513,58 @@ def monitoreo_cuenta_detalle(request, pk):
         ).strip()
         if nombre:
             tecnicos[nombre] = tecnicos.get(nombre, 0) + 1
+    # Lo asignado: lo que atiende esa cuenta como técnico (o admin de apoyo).
+    asignados = list(
+        Ticket.objects.filter(tecnico_asignado=cuenta)
+        .select_related("tecnico_asignado")
+        .prefetch_related("adjuntos", "comentarios__usuario")
+        .order_by("-fecha_creacion") if cuenta is not None else []
+    )
+    calificacion = None
+    if rol == Usuario.Rol.TECNICO and cuenta is not None:
+        from apps.tickets.views import _calificacion_de
+
+        calificacion = _calificacion_de(cuenta)
+    # Lo vigilado: si la cuenta es observadora, su lista y sus zonas.
+    lista_total = 0
+    zonas_obs = []
+    if rol == Usuario.Rol.OBSERVADOR and cuenta is not None:
+        lista_total = ElementoMiLista.objects.filter(observador=cuenta).count()
+        zonas_obs = list(
+            ZonaObservador.objects.filter(observador=cuenta).order_by("nombre")
+        )
     return render(
         request,
         "tickets/monitoreo_cuenta.html",
         {
             "elemento": elemento,
-            "cuenta": elemento.usuario,
+            "cuenta": cuenta,
             "correo": correo,
+            "rol": rol,
+            "vista_principal": _VISTA_PRINCIPAL_POR_ROL.get(rol, "Mis solicitudes"),
             "tickets": tickets,
             "total": len(tickets),
             "abiertos": sum(
                 1 for t in tickets
                 if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
             ),
+            "en_progreso": sum(
+                1 for t in tickets if t.estado == Ticket.Estado.EN_PROGRESO
+            ),
             "resueltos": sum(
                 1 for t in tickets
                 if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
             ),
             "tecnicos": sorted(tecnicos.items(), key=lambda kv: (-kv[1], kv[0])),
+            "asignados": asignados,
+            "asignados_total": len(asignados),
+            "asignados_abiertos": sum(
+                1 for t in asignados
+                if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
+            ),
+            "calificacion": calificacion,
+            "lista_total": lista_total,
+            "zonas_obs": zonas_obs,
         },
     )
 
