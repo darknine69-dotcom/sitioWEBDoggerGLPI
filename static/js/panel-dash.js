@@ -39,17 +39,8 @@
         }
     });
 
-    /* Tipos que calzan con cada dato: las categorías nominales no tienen
-       tendencia (sin línea/área), el tiempo no se parte en torta ni embudo,
-       y el embudo/pirámide solo ordenan repartos por grupo. */
-    var TIPOS_CATEGORICOS = ['bar', 'pie', 'donut', 'funnel', 'pyramid', 'count'];
-    var TIPOS_SERIE = ['line', 'area', 'bar', 'count'];
-    var TIPOS_COMPARATIVO = ['bar', 'line', 'area', 'pie', 'donut', 'count'];
-    function tiposDe(widget) {
-        if (widget === 'linea') return TIPOS_SERIE;
-        if (widget === 'sla' || widget === 'comp20') return TIPOS_COMPARATIVO;
-        return TIPOS_CATEGORICOS;
-    }
+    /* Todos los tipos en todos los gráficos de solicitudes. */
+    var TIPOS = ['bar', 'line', 'area', 'pie', 'donut', 'funnel', 'pyramid', 'count'];
     var TIPO_LABEL = {
         bar: 'Barras', line: 'Línea', area: 'Área', pie: 'Circular',
         donut: 'Dona', funnel: 'Embudo', pyramid: 'Pirámide', count: 'Recuento'
@@ -373,11 +364,6 @@
             if (leg) leg.style.display = on ? '' : 'none';
         }
         var tipo = estado[widget] || DEFAULT_TIPO[widget];
-        /* Si el tipo guardado ya no calza con el widget, se vuelve al suyo. */
-        if (tiposDe(widget).indexOf(tipo) === -1) {
-            tipo = DEFAULT_TIPO[widget] || 'bar';
-            estado[widget] = tipo;
-        }
         /* La leyenda fija de series solo vale en cartesianos; en torta o
            recuento confundiría (describe series que ahí no se ven). */
         var ley = card.querySelector('[data-legend]');
@@ -446,7 +432,7 @@
         if (!wrap) return;
         var btn = domEl('<button type="button" class="chart-switch-btn" data-toggle><svg class="icon icon-sm"><use href="#i-chart"/></svg> Tipo</button>');
         var menu = domEl('<div class="chart-switch-menu" hidden></div>');
-        tiposDe(widget).forEach(function (tp) {
+        TIPOS.forEach(function (tp) {
             var b = domEl('<button type="button" data-type="' + tp + '">' + prevSvg(tp) + '<span>' + TIPO_LABEL[tp] + '</span></button>');
             b.addEventListener('click', function () {
                 estado[widget] = tp;
@@ -469,6 +455,8 @@
         wrap.appendChild(refrescar);
         function markActive() {
             var cur = estado[widget] || DEFAULT_TIPO[widget];
+            /* El botón muestra el icono y nombre del tipo elegido. */
+            btn.innerHTML = prevSvg(cur) + '<span>' + TIPO_LABEL[cur] + '</span>';
             Array.prototype.forEach.call(menu.querySelectorAll('button[data-type]'), function (b) {
                 b.classList.toggle('is-active', b.dataset.type === cur);
             });
