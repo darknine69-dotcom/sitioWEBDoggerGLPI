@@ -193,6 +193,9 @@
             r.setAttribute('x', x); r.setAttribute('y', y);
             r.setAttribute('width', w); r.setAttribute('height', hh);
             r.setAttribute('rx', 6); r.setAttribute('fill', p.color);
+            var tt = document.createElementNS(NS, 'title');
+            tt.textContent = p.label + ': ' + p.value;
+            r.appendChild(tt);
             svg.appendChild(r);
             var t = document.createElementNS(NS, 'text');
             t.setAttribute('x', W / 2); t.setAttribute('y', y + hh / 2 + 4);
@@ -254,9 +257,14 @@
                         stack: stacked ? 's' : undefined,
                         fill: tipo === 'area' ? 'origin' : false,
                         tension: 0.35,
+                        /* Realce del mismo tono al hover, sin mover nada. */
+                        hoverBorderColor: ds.color,
+                        hoverBorderWidth: 3,
                         pointRadius: 3,
                         pointHoverRadius: 5,
-                        pointBackgroundColor: ds.color
+                        pointBackgroundColor: ds.color,
+                        pointHoverBorderColor: ds.color,
+                        pointHoverBorderWidth: 3
                     };
                 })
             };
@@ -284,8 +292,12 @@
                         borderWidth: 1, borderRadius: 4,
                         fill: tipo === 'area' ? 'origin' : false,
                         tension: 0.35,
+                        hoverBorderColor: prs.map(function (p) { return p.color; }),
+                        hoverBorderWidth: 3,
                         pointRadius: 3, pointHoverRadius: 5,
-                        pointBackgroundColor: prs.map(function (p) { return p.color; })
+                        pointBackgroundColor: prs.map(function (p) { return p.color; }),
+                        pointHoverBorderColor: prs.map(function (p) { return p.color; }),
+                        pointHoverBorderWidth: 3
                     }]
                 };
             }
