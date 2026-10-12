@@ -70,12 +70,31 @@
 
     function csrf() {
         var m = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || "";
+        if (!m) {
+            var inp = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            m = (inp && inp.value) || "";
+        }
         return m;
     }
     function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
             return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
         });
+    }
+    /* Enlaces directos: las URLs del mensaje se vuelven clicables.
+       Va sobre el texto ya escapado para no abrir huecos XSS. */
+    function enlaceify(s) {
+        return String(s).replace(/(https?:\/\/[^\s<>"']+)/g, function (u) {
+            return '<a href="' + u + '" target="_blank" rel="noopener">' + u + "</a>";
+        });
+    }
+    /* Aviso dentro del hilo: ningún fallo vuelve a ser silencioso. */
+    function aviso(texto) {
+        var caja = document.createElement("div");
+        caja.className = "sw-msg";
+        caja.innerHTML = '<div class="sw-bubble sw-bubble-error">' + esc(texto) + "</div>";
+        hilo.appendChild(caja);
+        bajar();
     }
     function urlBase(tpl) { return tpl.replace("/0/", "/" + ticketPk + "/"); }
 
@@ -99,7 +118,7 @@
             (m.propio ? "" : avatarHtml(m)) +
             '<div class="sw-bubble"><span class="sw-bubble-n">' + esc(m.autor) +
             (m.insignia ? " · " + esc(m.insignia) : "") + "</span>" +
-            '<span class="sw-bubble-t">' + esc(m.texto) + "</span>" +
+            '<span class="sw-bubble-t">' + enlaceify(esc(m.texto)) + "</span>" +
             '<span class="sw-bubble-f">' + esc(m.fecha) + "</span></div></div>";
     }
     function bajar() { hilo.scrollTop = hilo.scrollHeight; }
@@ -124,10 +143,14 @@
             ? urls.corpHilo + "?desde=" + (desde || 0) + (colegaPk ? "&para=" + colegaPk : "")
             : (ticketPk ? urlBase(urls.hilo) + "?desde=" + (desde || 0) : null);
         if (!url) { return; }
+        var esInicial = !desde;
         fetch(url, { credentials: "same-origin" })
-            .then(function (r) { return r.json(); })
+            .then(function (r) { return r.json().catch(function () { return null; }); })
             .then(function (d) {
-                if (!d.ok) { return; }
+                if (!d || !d.ok) {
+                    if (!desde) { aviso((d && d.error) || "No se pudo cargar la conversación."); }
+                    return;
+                }
                 if (!desde) {
                     hilo.innerHTML = "";
                     ultimoId = 0;
@@ -164,7 +187,7 @@
                     }
                 }
             })
-            .catch(function () { });
+            .catch(function () { if (esInicial) { aviso("Sin conexión con el servidor."); } });
     }
 
     function pintarContador() {
@@ -218,7 +241,7 @@
                 }
                 cargar(0);
             })
-            .catch(function () { });
+            .catch(function () { aviso("No se pudo cargar el chat. Revisa tu conexión y recarga."); });
     }
 
     function abrir() {
@@ -230,8 +253,15 @@
         cargar(0);
         consultarNovedades();
         clearInterval(timer);
-        timer = setInterval(function () { cargar(ultimoId); }, 8000);
+        timer = setInterval(function () { cargar(ultimoId); }, 6000);
     }
+    /* En vivo: al volver a la pestaña se trae lo nuevo sin esperar el turno. */
+    document.addEventListener("visibilitychange", function () {
+        if (!document.hidden && abierto) {
+            cargar(ultimoId);
+            consultarNovedades();
+        }
+    });
     function cerrarWin() {
         abierto = false;
         win.removeAttribute("data-open");
@@ -354,10 +384,13 @@
         });
     }
 
+    var enviando = false;
     function enviarTexto() {
         var v = (texto.value || "").trim();
         var enCorp = esCorp();
-        if (!v || (!enCorp && !ticketPk)) { return; }
+        if (enviando || !v || (!enCorp && !ticketPk)) { return; }
+        enviando = true;
+        enviar.disabled = true;
         var datos = new FormData();
         datos.append("mensaje", v);
         if (enCorp && colegaPk) { datos.append("para", colegaPk); }
@@ -365,16 +398,21 @@
             method: "POST", credentials: "same-origin",
             headers: { "X-CSRFToken": csrf() }, body: datos
         })
-            .then(function (r) { return r.json(); })
+            .then(function (r) { return r.json().catch(function () { return null; }); })
             .then(function (d) {
-                if (!d.ok) { return; }
+                if (!d || !d.ok) {
+                    aviso((d && d.error) || "No se pudo enviar. Revisa tu conexión e inténtalo de nuevo.");
+                    return;
+                }
                 texto.value = "";
                 hilo.insertAdjacentHTML("beforeend", mensajeHtml(d.mensaje));
                 ultimoId = Math.max(ultimoId, d.mensaje.id);
                 if (enCorp) { marcarVisto([d.mensaje]); consultarNovedades(); }
+                else { cargar(ultimoId); }
                 bajar();
             })
-            .catch(function () { });
+            .catch(function () { aviso("No se pudo enviar. Revisa tu conexión e inténtalo de nuevo."); })
+            .then(function () { enviando = false; enviar.disabled = false; texto.focus(); });
     }
     enviar.addEventListener("click", enviarTexto);
     texto.addEventListener("keydown", function (e) {
@@ -390,17 +428,17 @@
             method: "POST", credentials: "same-origin",
             headers: { "X-CSRFToken": csrf() }, body: datos
         })
-            .then(function (r) { return r.json(); })
+            .then(function (r) { return r.json().catch(function () { return null; }); })
             .then(function (d) {
                 archivo.value = "";
-                if (!d.ok) { return; }
+                if (!d || !d.ok) { aviso((d && d.error) || "No se pudo adjuntar el archivo."); return; }
                 var caja = document.createElement("div");
                 caja.className = "sw-msg sw-msg-propio";
                 caja.innerHTML = '<div class="sw-bubble">' + adjuntoHtml(d.adjunto) + "</div>";
                 hilo.appendChild(caja);
                 bajar();
             })
-            .catch(function () { archivo.value = ""; });
+            .catch(function () { archivo.value = ""; aviso("No se pudo adjuntar el archivo."); });
     });
 
     var pop = null;
