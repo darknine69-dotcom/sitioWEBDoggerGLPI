@@ -231,7 +231,12 @@
                 datasets: [{
                     data: prs.map(function (p) { return p.value; }),
                     backgroundColor: prs.map(function (p) { return p.color; }),
-                    borderColor: '#fff', borderWidth: 2, hoverOffset: 20, borderRadius: 4
+                    borderColor: '#fff', borderWidth: 2, borderRadius: 4,
+                    /* Sin salto al hover: el segmento se realza con un aro
+                       de su mismo color, sin mover el gráfico. */
+                    hoverOffset: 0,
+                    hoverBorderWidth: 5,
+                    hoverBorderColor: prs.map(function (p) { return p.color; })
                 }]
             };
         }
@@ -656,7 +661,7 @@
             var total = prs.reduce(function (s, p) { return s + p.value; }, 0);
             leg.innerHTML = prs.map(function (p) {
                 var pct = total ? Math.round(p.value / total * 100) : 0;
-                return '<li title="' + esc(p.label) + '"><span class="pl-dot" style="background:' + p.color + '"></span>' +
+                return '<li title="' + esc(p.label) + '" style="--seg:' + p.color + '"><span class="pl-dot" style="background:' + p.color + '"></span>' +
                     '<span class="pl-name">' + esc(p.label) + '</span>' +
                     '<span class="pl-val">' + p.value + '</span>' +
                     '<span class="pl-pct">' + pct + '%</span></li>';

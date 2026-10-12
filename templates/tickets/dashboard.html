@@ -74,9 +74,9 @@
 .pie-legend { list-style: none; margin: 0; padding: 0 4px 0 0; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; }
 .pie-legend li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink); border-radius: 8px; padding: 5px 8px; cursor: default; transition: background .12s ease; min-width: 0; }
 .pie-legend .pl-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pie-legend li:hover, .pie-legend li.is-hi { background: var(--dogger-cream); text-decoration: underline; text-decoration-color: rgba(29,27,22,.35); text-underline-offset: 3px; }
-.pie-legend .pl-dot { width: 11px; height: 11px; border-radius: 3px; flex: none; transition: transform .12s ease; }
-.pie-legend li:hover .pl-dot, .pie-legend li.is-hi .pl-dot { transform: scale(1.25); }
+.pie-legend li:hover, .pie-legend li.is-hi { background: var(--dogger-cream); }
+.pie-legend li:hover .pl-name, .pie-legend li.is-hi .pl-name { text-decoration: underline; text-decoration-color: var(--seg, currentColor); text-decoration-thickness: 2px; text-underline-offset: 3px; font-weight: 700; }
+.pie-legend .pl-dot { width: 11px; height: 11px; border-radius: 3px; flex: none; }
 .pie-legend .pl-pct { margin-left: auto; font-weight: 800; font-family: var(--font-mono); color: #1d1b16; }
 .pie-legend::-webkit-scrollbar { width: 6px; }
 .pie-legend::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
