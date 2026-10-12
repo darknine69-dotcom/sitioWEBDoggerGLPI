@@ -130,6 +130,42 @@ class SalaCorporativaTest(TestCase):
             self.client.get(reverse("tickets:chat_colegas")).status_code, 403
         )
 
+    def test_novedades_cuenta_sala_y_directos(self):
+        novedades = reverse("tickets:chat_novedades")
+        self.client.force_login(self.tecnico)
+        self.assertEqual(
+            self.client.get(novedades).json(),
+            {"ok": True, "sala": {"ultimo": 0, "nuevos": 0}, "dms": {}, "total": 0},
+        )
+        # El admin escribe en sala y un directo al técnico.
+        self.client.force_login(self.admin)
+        self.client.post(self.enviar, {"mensaje": "a todos"})
+        self.client.post(self.enviar, {"mensaje": "para ti", "para": self.tecnico.pk})
+        # El técnico lo ve todo pendiente; lo propio no cuenta.
+        self.client.force_login(self.tecnico)
+        datos = self.client.get(novedades).json()
+        self.assertEqual(datos["sala"]["nuevos"], 1)
+        self.assertEqual(datos["dms"][str(self.admin.pk)]["nuevos"], 1)
+        self.assertEqual(datos["total"], 2)
+        # Visto la sala, solo queda el directo.
+        datos = self.client.get(
+            f"{novedades}?sala={datos['sala']['ultimo']}"
+        ).json()
+        self.assertEqual(datos["sala"]["nuevos"], 0)
+        self.assertEqual(datos["total"], 1)
+        # Visto el directo, queda en cero.
+        ultimo_dm = datos["dms"][str(self.admin.pk)]["ultimo"]
+        datos = self.client.get(
+            f"{novedades}?sala={datos['sala']['ultimo']}&dm={self.admin.pk}:{ultimo_dm}"
+        ).json()
+        self.assertEqual(datos["total"], 0)
+
+    def test_novedades_solo_staff(self):
+        self.client.force_login(self.usuario)
+        self.assertEqual(
+            self.client.get(reverse("tickets:chat_novedades")).status_code, 403
+        )
+
     def test_selector_solo_para_staff(self):
         self.client.force_login(self.admin)
         html = self.client.get(reverse("tickets:monitoreo_admin")).content.decode()

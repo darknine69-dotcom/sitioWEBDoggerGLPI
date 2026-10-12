@@ -318,6 +318,65 @@ def chat_colegas(request):
 
 @login_required
 @require_GET
+def chat_novedades(request):
+    """Cuántos mensajes corporativos no ha visto el staff.
+
+    Recibe lo ya visto (`?sala=` y `?dm=pk:id,pk:id`) y devuelve los
+    conteos de la sala y de cada directo, para pintar el contador de la
+    burbuja aunque el chat esté cerrado o en otro hilo.
+    """
+    from django.db.models import Count, Max
+
+    if not _es_corporativo(request.user):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    try:
+        visto_sala = int(request.GET.get("sala") or 0)
+    except (TypeError, ValueError):
+        visto_sala = 0
+    vistos_dm = {}
+    for par in (request.GET.get("dm") or "").split(","):
+        try:
+            pk, visto = par.split(":")
+            vistos_dm[int(pk)] = int(visto)
+        except (TypeError, ValueError):
+            continue
+    sala = MensajeCorporativo.objects.filter(
+        destinatario__isnull=True
+    ).exclude(usuario=request.user).aggregate(
+        ultimo=Max("pk"), nuevos=Count("pk", filter=Q(pk__gt=visto_sala))
+    )
+    de_partners = set(
+        MensajeCorporativo.objects.filter(destinatario=request.user)
+        .exclude(usuario__isnull=True)
+        .values_list("usuario_id", flat=True)[:200]
+    )
+    a_partners = set(
+        MensajeCorporativo.objects.filter(usuario=request.user)
+        .exclude(destinatario__isnull=True)
+        .values_list("destinatario_id", flat=True)[:200]
+    )
+    dms = {}
+    total = sala["nuevos"] or 0
+    for otro in sorted(de_partners | a_partners)[:50]:
+        hilo = MensajeCorporativo.objects.filter(
+            Q(usuario=request.user, destinatario_id=otro)
+            | Q(usuario_id=otro, destinatario=request.user)
+        ).exclude(usuario=request.user).aggregate(
+            ultimo=Max("pk"),
+            nuevos=Count("pk", filter=Q(pk__gt=vistos_dm.get(otro, 0))),
+        )
+        dms[otro] = {"ultimo": hilo["ultimo"] or 0, "nuevos": hilo["nuevos"] or 0}
+        total += hilo["nuevos"] or 0
+    return JsonResponse({
+        "ok": True,
+        "sala": {"ultimo": sala["ultimo"] or 0, "nuevos": sala["nuevos"] or 0},
+        "dms": dms,
+        "total": total,
+    })
+
+
+@login_required
+@require_GET
 def chat_corporativo(request):
     """Sala o directo del staff (`?desde=` para el vivo, `?para=` directo)."""
     if not _es_corporativo(request.user):

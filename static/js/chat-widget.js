@@ -28,9 +28,33 @@
     var timer = null;
     /* Modo del chat: soporte (hilo por ticket) o corporativo (sala staff).
        El usuario final no tiene selector: siempre va en soporte. */
-    var hayCorp = Boolean(modoCorpBtn && colegaSel && urls.corpHilo && urls.corpEnviar && urls.colegas);
+    var hayCorp = Boolean(modoCorpBtn && colegaSel && urls.corpHilo && urls.corpEnviar && urls.colegas && urls.novedades);
     var colegaPk = 0;
     var colegasCargados = false;
+    /* Lo ya visto del corporativo (sala + cada directo): con esto el
+       servidor cuenta lo pendiente para la burbuja, esté o no abierto. */
+    var visto = { sala: 0, dm: {} };
+    try {
+        var gv = JSON.parse(localStorage.getItem("dogger:chat:vistoCorp") || "null");
+        if (gv && typeof gv.sala === "number") { visto.sala = gv.sala; }
+        if (gv && gv.dm && typeof gv.dm === "object") { visto.dm = gv.dm; }
+    } catch (e) { }
+    function guardarVisto() {
+        try { localStorage.setItem("dogger:chat:vistoCorp", JSON.stringify(visto)); } catch (e) { }
+    }
+    /* Al pintar mensajes corporativos, esa conversación queda vista. */
+    function marcarVisto(lista) {
+        if (!hayCorp || !lista || !lista.length) { return; }
+        var max = 0;
+        lista.forEach(function (m) { if (m.id > max) { max = m.id; } });
+        if (!max) { return; }
+        if (colegaPk) {
+            if ((visto.dm[colegaPk] || 0) < max) { visto.dm[colegaPk] = max; guardarVisto(); }
+        } else if (visto.sala < max) {
+            visto.sala = max; guardarVisto();
+        }
+    }
+    var corpPendientes = 0;
     var modo = "soporte";
     try {
         if (hayCorp && localStorage.getItem("dogger:chat:modo") === "corporativo") {
@@ -124,13 +148,15 @@
                         hilo.insertAdjacentHTML("beforeend", mensajeHtml(m));
                         ultimoId = Math.max(ultimoId, m.id);
                     });
-                    if (!enCorp) { pintarAdjuntos(d.adjuntos); }
+                    if (enCorp) { marcarVisto(d.mensajes); }
+                    else { pintarAdjuntos(d.adjuntos); }
                     bajar();
                 } else if ((d.mensajes || []).length) {
                     d.mensajes.forEach(function (m) {
                         hilo.insertAdjacentHTML("beforeend", mensajeHtml(m));
                         ultimoId = Math.max(ultimoId, m.id);
                     });
+                    if (enCorp) { marcarVisto(d.mensajes); }
                     if (abierto) { bajar(); }
                     else {
                         noLeidos += d.mensajes.length;
@@ -143,10 +169,34 @@
 
     function pintarContador() {
         if (!count) { return; }
-        if (noLeidos > 0) {
+        var total = noLeidos + corpPendientes;
+        if (total > 0) {
             count.hidden = false;
-            count.textContent = noLeidos > 9 ? "9+" : String(noLeidos);
+            count.textContent = total > 9 ? "9+" : String(total);
         } else { count.hidden = true; }
+    }
+    /* Sondeo de pendientes del corporativo: corre siempre (abierto o no)
+       para que la burbuja avise con el número aunque se escriba en otro
+       hilo o con el chat cerrado. */
+    function consultarNovedades() {
+        if (!hayCorp) { return; }
+        var pares = Object.keys(visto.dm).map(function (k) { return k + ":" + visto.dm[k]; }).join(",");
+        var url = urls.novedades + "?sala=" + visto.sala + (pares ? "&dm=" + encodeURIComponent(pares) : "");
+        fetch(url, { credentials: "same-origin" })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (!d || !d.ok) { return; }
+                /* Lo que está en pantalla se descuenta: ya se ve o está
+                   por pintarse en el sondeo del hilo abierto. */
+                var enPantalla = 0;
+                if (abierto && esCorp()) {
+                    if (colegaPk && d.dms && d.dms[colegaPk]) { enPantalla = d.dms[colegaPk].nuevos || 0; }
+                    else if (!colegaPk && d.sala) { enPantalla = d.sala.nuevos || 0; }
+                }
+                corpPendientes = Math.max(0, (d.total || 0) - enPantalla);
+                pintarContador();
+            })
+            .catch(function () { });
     }
 
     function listarTickets() {
@@ -178,6 +228,7 @@
         win.setAttribute("data-open", "");
         fab.setAttribute("aria-expanded", "true");
         cargar(0);
+        consultarNovedades();
         clearInterval(timer);
         timer = setInterval(function () { cargar(ultimoId); }, 8000);
     }
@@ -267,6 +318,7 @@
         pintarContador();
         if (enCorp) { listarColegas(); cargar(0); }
         else { listarTickets(); }
+        consultarNovedades();
     }
     if (modoSoporteBtn) { modoSoporteBtn.addEventListener("click", function () { ponerModo("soporte"); }); }
     if (modoCorpBtn) { modoCorpBtn.addEventListener("click", function () { ponerModo("corporativo"); }); }
@@ -319,6 +371,7 @@
                 texto.value = "";
                 hilo.insertAdjacentHTML("beforeend", mensajeHtml(d.mensaje));
                 ultimoId = Math.max(ultimoId, d.mensaje.id);
+                if (enCorp) { marcarVisto([d.mensaje]); consultarNovedades(); }
                 bajar();
             })
             .catch(function () { });
@@ -377,5 +430,9 @@
         if (e.key === "Escape" && pop) { pop.remove(); pop = null; }
     });
 
-    if (hayCorp) { ponerModo(modo); } else { listarTickets(); }
+    if (hayCorp) {
+        ponerModo(modo);
+        consultarNovedades();
+        setInterval(consultarNovedades, 15000);
+    } else { listarTickets(); }
 })();
