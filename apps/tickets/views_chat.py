@@ -165,7 +165,7 @@ def chat_hilo(request, pk):
     for c in comentarios[:200]:
         mensajes.append({
             "id": c.pk,
-            "autor": c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda"),
+            "autor": _nombre_autor(c.autor_nombre, c.usuario) or "Mesa de ayuda",
             "insignia": _insignia(c.usuario) if c.usuario_id else "Mesa de ayuda",
             "avatar": _avatar_url(c.usuario),
             "texto": c.comentario,
@@ -260,10 +260,19 @@ def chat_adjuntar(request, pk):
     })
 
 
+def _nombre_autor(autor_nombre, usuario):
+    """Quién escribió, siempre identificable: nombre o, en su defecto, correo."""
+    if (autor_nombre or "").strip():
+        return autor_nombre.strip()
+    if usuario is not None:
+        return (usuario.nombre or "").strip() or (usuario.email or "").strip()
+    return ""
+
+
 def _mensaje_corp_json(m, lector):
     return {
         "id": m.pk,
-        "autor": m.autor_nombre or (m.usuario.nombre if m.usuario_id else "Mesa de ayuda"),
+        "autor": _nombre_autor(m.autor_nombre, m.usuario) or "Mesa de ayuda",
         "insignia": _insignia(m.usuario) if m.usuario_id else "Mesa de ayuda",
         "avatar": _avatar_url(m.usuario),
         "texto": m.texto,
@@ -465,4 +474,22 @@ def chat_corporativo_enviar(request):
     mensaje = MensajeCorporativo.objects.create(
         usuario=u, autor_nombre=u.nombre, texto=texto, destinatario=colega,
     )
+    if colega is not None:
+        # El destinatario se entera por la campana (la sala no avisa a nadie).
+        try:
+            from apps.accounts.routing import landing_por_rol
+            from apps.notificaciones import services as avisos
+
+            avisos.crear(
+                colega,
+                "sistema",
+                f"Mensaje corporativo de {u.nombre or u.email}",
+                texto,
+                url=f"{landing_por_rol(colega)}#chat-corp-dm-{u.pk}",
+                icono="i-message",
+                actor=u.nombre or u.email,
+                actor_rol=u.get_rol_display(),
+            )
+        except Exception:  # noqa: BLE001 - sin campana igual se publica
+            logger.warning("Sin campana corporativa para %s", colega)
     return JsonResponse({"ok": True, "mensaje": _mensaje_corp_json(mensaje, u)})

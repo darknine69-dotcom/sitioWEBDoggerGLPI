@@ -31,6 +31,7 @@
     var hayCorp = Boolean(modoCorpBtn && colegaSel && urls.corpHilo && urls.corpEnviar && urls.colegas && urls.novedades);
     var colegaPk = 0;
     var colegasCargados = false;
+    var dmPendiente = 0;
     /* Lo ya visto del corporativo (sala + cada directo): con esto el
        servidor cuenta lo pendiente para la burbuja, esté o no abierto. */
     var visto = { sala: 0, dm: {} };
@@ -409,6 +410,15 @@
                     op.textContent = c.nombre + " · " + c.insignia + (c.en_linea ? " (en línea)" : "");
                     colegaSel.appendChild(op);
                 });
+                /* Viene de la campana con un directo pendiente: se abre solo. */
+                if (dmPendiente && colegaSel.querySelector('option[value="' + dmPendiente + '"]')) {
+                    colegaSel.value = String(dmPendiente);
+                    colegaPk = dmPendiente;
+                    dmPendiente = 0;
+                    ultimoId = 0;
+                    texto.placeholder = "Escríbele a " + nombreColega() + "…";
+                    cargar(0);
+                }
             })
             .catch(function () { colegasCargados = false; });
     }
@@ -512,5 +522,13 @@
         ponerModo(modo);
         consultarNovedades();
         setInterval(consultarNovedades, 15000);
+        /* Desde la campana se abre directo el corporativo (y su directo). */
+        var hm = (location.hash || "").match(/^#chat-corp(?:-dm-(\d+))?$/);
+        if (hm) {
+            dmPendiente = hm[1] ? parseInt(hm[1], 10) : 0;
+            try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { }
+            ponerModo("corporativo");
+            abrir();
+        }
     } else { listarTickets(); }
 })();

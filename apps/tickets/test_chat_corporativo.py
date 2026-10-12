@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.accounts.models import Usuario
+from apps.notificaciones.models import Notificacion
 from apps.tickets.models import MensajeCorporativo
 
 
@@ -176,6 +177,27 @@ class SalaCorporativaTest(TestCase):
         self.assertEqual(
             self.client.get(reverse("tickets:chat_novedades")).status_code, 403
         )
+
+    def test_directo_avisa_en_la_campana_y_sala_no(self):
+        self.client.force_login(self.tecnico)
+        self.client.post(self.enviar, {"mensaje": "a todos"})
+        self.assertFalse(
+            Notificacion.objects.filter(tipo="sistema").exists()
+        )
+        self.client.post(self.enviar, {"mensaje": "oye", "para": self.admin.pk})
+        avisos = Notificacion.objects.filter(usuario=self.admin, tipo="sistema")
+        self.assertEqual(avisos.count(), 1)
+        aviso = avisos.get()
+        self.assertIn("Tec", aviso.titulo)
+        self.assertIn("oye", aviso.mensaje)
+        self.assertIn(f"#chat-corp-dm-{self.tecnico.pk}", aviso.url)
+
+    def test_autor_siempre_identificable(self):
+        self.tecnico.nombre = ""
+        self.tecnico.save(update_fields=["nombre"])
+        self.client.force_login(self.tecnico)
+        datos = self.client.post(self.enviar, {"mensaje": "yo"}).json()
+        self.assertEqual(datos["mensaje"]["autor"], "tec@x.com")
 
     def test_selector_solo_para_staff(self):
         self.client.force_login(self.admin)
