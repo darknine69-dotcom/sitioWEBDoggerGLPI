@@ -88,6 +88,32 @@
             return '<a href="' + u + '" target="_blank" rel="noopener">' + u + "</a>";
         });
     }
+    /* Respuestas que no son JSON (404, 500, sesión vencida) dicen el
+       código exacto en vez de un genérico, para saber dónde mirar. */
+    function fetchJson(url, opciones) {
+        return fetch(url, opciones).then(function (r) {
+            var ct = (r.headers.get("content-type") || "").toLowerCase();
+            if (r.redirected && /login/.test(r.url || "")) {
+                return { sesion: true };
+            }
+            if (ct.indexOf("application/json") === -1) {
+                return { http: r.status || 0 };
+            }
+            return r.json().catch(function () { return null; }).then(function (d) {
+                return { http: r.status, datos: d };
+            });
+        });
+    }
+    function textoFallo(res, defecto) {
+        if (!res) { return "Sin conexión con el servidor."; }
+        if (res.sesion) { return "Tu sesión venció. Recarga la página e inténtalo de nuevo."; }
+        if (res.datos && res.datos.error) { return res.datos.error; }
+        if (res.http === 404) { return "Servicio no encontrado (404): reconstruye con docker compose up -d --build."; }
+        if (res.http === 403) { return "Sin permiso (403): revisa tu sesión o el permiso de chateo."; }
+        if (res.http >= 500) { return "Error del servidor (" + res.http + "): revisa docker compose logs web."; }
+        if (res.http) { return (defecto || "No se pudo completar") + " (" + res.http + ")."; }
+        return defecto || "No se pudo completar.";
+    }
     /* Aviso dentro del hilo: ningún fallo vuelve a ser silencioso,
        pero sale una sola vez (el sondeo reintenta en silencio). */
     var errorMostrado = false;
@@ -151,11 +177,11 @@
             : (ticketPk ? urlBase(urls.hilo) + "?desde=" + (desde || 0) : null);
         if (!url) { return; }
         var esInicial = !desde;
-        fetch(url, { credentials: "same-origin" })
-            .then(function (r) { return r.json().catch(function () { return null; }); })
-            .then(function (d) {
+        fetchJson(url, { credentials: "same-origin" })
+            .then(function (res) {
+                var d = res && res.datos;
                 if (!d || !d.ok) {
-                    if (!desde) { avisarUnaVez((d && d.error) || "No se pudo cargar la conversación."); }
+                    if (!desde) { avisarUnaVez(textoFallo(res, "No se pudo cargar la conversación.")); }
                     return;
                 }
                 if (!desde) {
@@ -213,9 +239,9 @@
         if (!hayCorp) { return; }
         var pares = Object.keys(visto.dm).map(function (k) { return k + ":" + visto.dm[k]; }).join(",");
         var url = urls.novedades + "?sala=" + visto.sala + (pares ? "&dm=" + encodeURIComponent(pares) : "");
-        fetch(url, { credentials: "same-origin" })
-            .then(function (r) { return r.json(); })
-            .then(function (d) {
+        fetchJson(url, { credentials: "same-origin" })
+            .then(function (res) {
+                var d = res && res.datos;
                 if (!d || !d.ok) { return; }
                 /* Lo que está en pantalla se descuenta: ya se ve o está
                    por pintarse en el sondeo del hilo abierto. */
@@ -231,9 +257,10 @@
     }
 
     function listarTickets() {
-        fetch(urls.tickets, { credentials: "same-origin" })
-            .then(function (r) { return r.json(); })
-            .then(function (d) {
+        fetchJson(urls.tickets, { credentials: "same-origin" })
+            .then(function (res) {
+                var d = res && res.datos;
+                if (!d || !d.ok) { avisarUnaVez(textoFallo(res, "No se pudo cargar el chat.")); return; }
                 sel.innerHTML = "";
                 (d.tickets || []).forEach(function (t, i) {
                     var op = document.createElement("option");
@@ -249,7 +276,7 @@
                 }
                 cargar(0);
             })
-            .catch(function () { avisarUnaVez("No se pudo cargar el chat. Revisa tu conexión y recarga."); });
+            .catch(function () { avisarUnaVez("Sin conexión con el servidor."); });
     }
 
     function abrir() {
@@ -367,9 +394,10 @@
     function listarColegas() {
         if (!hayCorp || colegasCargados) { return; }
         colegasCargados = true;
-        fetch(urls.colegas, { credentials: "same-origin" })
-            .then(function (r) { return r.json(); })
-            .then(function (d) {
+        fetchJson(urls.colegas, { credentials: "same-origin" })
+            .then(function (res) {
+                var d = res && res.datos;
+                if (!d || !d.ok) { colegasCargados = false; return; }
                 colegaSel.innerHTML = "";
                 var op0 = document.createElement("option");
                 op0.value = "0";
@@ -406,14 +434,14 @@
         var datos = new FormData();
         datos.append("mensaje", v);
         if (enCorp && colegaPk) { datos.append("para", colegaPk); }
-        fetch(enCorp ? urls.corpEnviar : urlBase(urls.responder), {
+        fetchJson(enCorp ? urls.corpEnviar : urlBase(urls.responder), {
             method: "POST", credentials: "same-origin",
             headers: { "X-CSRFToken": csrf() }, body: datos
         })
-            .then(function (r) { return r.json().catch(function () { return null; }); })
-            .then(function (d) {
+            .then(function (res) {
+                var d = res && res.datos;
                 if (!d || !d.ok) {
-                    aviso((d && d.error) || "No se pudo enviar. Revisa tu conexión e inténtalo de nuevo.");
+                    aviso(textoFallo(res, "No se pudo enviar."));
                     return;
                 }
                 texto.value = "";
@@ -423,7 +451,7 @@
                 else { cargar(ultimoId); }
                 bajar();
             })
-            .catch(function () { aviso("No se pudo enviar. Revisa tu conexión e inténtalo de nuevo."); })
+            .catch(function () { aviso("Sin conexión con el servidor."); })
             .then(function () { enviando = false; enviar.disabled = false; texto.focus(); });
     }
     enviar.addEventListener("click", enviarTexto);
@@ -436,21 +464,21 @@
         if (!archivo.files.length || !ticketPk) { return; }
         var datos = new FormData();
         datos.append("archivo", archivo.files[0]);
-        fetch(urlBase(urls.adjuntar), {
+        fetchJson(urlBase(urls.adjuntar), {
             method: "POST", credentials: "same-origin",
             headers: { "X-CSRFToken": csrf() }, body: datos
         })
-            .then(function (r) { return r.json().catch(function () { return null; }); })
-            .then(function (d) {
+            .then(function (res) {
+                var d = res && res.datos;
                 archivo.value = "";
-                if (!d || !d.ok) { aviso((d && d.error) || "No se pudo adjuntar el archivo."); return; }
+                if (!d || !d.ok) { aviso(textoFallo(res, "No se pudo adjuntar el archivo.")); return; }
                 var caja = document.createElement("div");
                 caja.className = "sw-msg sw-msg-propio";
                 caja.innerHTML = '<div class="sw-bubble">' + adjuntoHtml(d.adjunto) + "</div>";
                 hilo.appendChild(caja);
                 bajar();
             })
-            .catch(function () { archivo.value = ""; aviso("No se pudo adjuntar el archivo."); });
+            .catch(function () { archivo.value = ""; aviso("Sin conexión con el servidor."); });
     });
 
     var pop = null;
