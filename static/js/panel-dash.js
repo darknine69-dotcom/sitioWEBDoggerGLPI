@@ -39,7 +39,17 @@
         }
     });
 
-    var TIPOS = ['bar', 'line', 'area', 'pie', 'donut', 'funnel', 'pyramid', 'count'];
+    /* Tipos que calzan con cada dato: las categorías nominales no tienen
+       tendencia (sin línea/área), el tiempo no se parte en torta ni embudo,
+       y el embudo/pirámide solo ordenan repartos por grupo. */
+    var TIPOS_CATEGORICOS = ['bar', 'pie', 'donut', 'funnel', 'pyramid', 'count'];
+    var TIPOS_SERIE = ['line', 'area', 'bar', 'count'];
+    var TIPOS_COMPARATIVO = ['bar', 'line', 'area', 'pie', 'donut', 'count'];
+    function tiposDe(widget) {
+        if (widget === 'linea') return TIPOS_SERIE;
+        if (widget === 'sla' || widget === 'comp20') return TIPOS_COMPARATIVO;
+        return TIPOS_CATEGORICOS;
+    }
     var TIPO_LABEL = {
         bar: 'Barras', line: 'Línea', area: 'Área', pie: 'Circular',
         donut: 'Dona', funnel: 'Embudo', pyramid: 'Pirámide', count: 'Recuento'
@@ -170,7 +180,10 @@
     }
 
     function drawFunnelLike(stage, widget, pyramid) {
-        var prs = pairs(widget).filter(function (p) { return p.value > 0; });
+        /* El embudo/pirámide ordenan de mayor a menor: sin orden las
+           franjas quedan arbitrarias y el gráfico no dice nada. */
+        var prs = pairs(widget).filter(function (p) { return p.value > 0; })
+            .sort(function (a, b) { return b.value - a.value; });
         if (!prs.length) { stage.appendChild(domEl('<p class="chart-empty">Sin datos.</p>')); return; }
         var max = Math.max.apply(null, prs.map(function (p) { return p.value; })) || 1;
         var W = 620, H = 260, top = 18, base = 330, n = prs.length;
@@ -218,7 +231,7 @@
         return ' ' + name + ': ' + v + (pct ? ' (' + pct + '%)' : '');
     }
 
-    function configFor(widget, tipo) {
+    function configFor(widget, tipo, conLeyendaPropia) {
         var multi = serieWidget(widget);
         function single() {
             var prs = pairs(widget);
@@ -306,7 +319,11 @@
             opts = {
                 responsive: true, maintainAspectRatio: false, cutout: tipo === 'donut' ? '58%' : 0,
                 plugins: {
-                    legend: { display: false },
+                    /* Sin leyenda propia (sla/comp20) se usa la nativa abajo;
+                       con leyenda propia se apaga para no duplicar. */
+                    legend: conLeyendaPropia
+                        ? { display: false }
+                        : { position: 'bottom', labels: { boxWidth: 12, padding: 12 } },
                     tooltip: { callbacks: { label: tooltipPct } }
                 }
             };
@@ -356,6 +373,16 @@
             if (leg) leg.style.display = on ? '' : 'none';
         }
         var tipo = estado[widget] || DEFAULT_TIPO[widget];
+        /* Si el tipo guardado ya no calza con el widget, se vuelve al suyo. */
+        if (tiposDe(widget).indexOf(tipo) === -1) {
+            tipo = DEFAULT_TIPO[widget] || 'bar';
+            estado[widget] = tipo;
+        }
+        /* La leyenda fija de series solo vale en cartesianos; en torta o
+           recuento confundiría (describe series que ahí no se ven). */
+        var ley = card.querySelector('[data-legend]');
+        if (ley) ley.style.display = (tipo === 'bar' || tipo === 'line' || tipo === 'area') ? '' : 'none';
+        card.classList.toggle('is-count', tipo === 'count');
         clearStage(stage);
         if (charts[widget]) { charts[widget].destroy(); charts[widget] = null; }
 
@@ -364,7 +391,7 @@
         if (tipo === 'pyramid') { drawFunnelLike(stage, widget, true); onPie(false); return; }
 
         var canvas = document.createElement('canvas');
-        var cfg = configFor(widget, tipo);
+        var cfg = configFor(widget, tipo, Boolean(card.querySelector('[data-pie-legend]')));
         // Sin importarle si hay etiquetas: un canvas en blanco no le dice nada
         // al usuario. Si no hay ni un solo valor, se explica qué falta.
         if (!tieneValores(cfg)) {
@@ -419,7 +446,7 @@
         if (!wrap) return;
         var btn = domEl('<button type="button" class="chart-switch-btn" data-toggle><svg class="icon icon-sm"><use href="#i-chart"/></svg> Tipo</button>');
         var menu = domEl('<div class="chart-switch-menu" hidden></div>');
-        TIPOS.forEach(function (tp) {
+        tiposDe(widget).forEach(function (tp) {
             var b = domEl('<button type="button" data-type="' + tp + '">' + prevSvg(tp) + '<span>' + TIPO_LABEL[tp] + '</span></button>');
             b.addEventListener('click', function () {
                 estado[widget] = tp;
@@ -450,7 +477,6 @@
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
             var open = !wrap.hasAttribute('data-open');
-            TIPOS.forEach(function () {});
             document.querySelectorAll('.chart-switch-menu').forEach(function (m) { m.hidden = true; });
             Array.prototype.forEach.call(document.querySelectorAll('[data-switch]'), function (el) { el.removeAttribute('data-open'); });
             if (open) { wrap.setAttribute('data-open', ''); menu.hidden = false; }

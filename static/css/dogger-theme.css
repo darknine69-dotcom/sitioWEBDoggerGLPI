@@ -3815,6 +3815,8 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 /* ---- Gráficas CSS (sin dependencias externas) ---- */
 .chart-card { background:#fff; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-card); padding:18px 20px; min-width:0; }
 .chart-card h3 { margin:0 0 14px; font-size:14.5px; }
+/* En modo recuento no hay leyenda lateral: el número usa todo el ancho. */
+.chart-card.is-count .pie-flex { grid-template-columns: minmax(0, 1fr); }
 .charts-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(0,1fr)); gap:16px; margin-bottom:20px; }
 /* Herramientas de la gráfica (Ver… + Tipo + recargar): salen al pasar el
    mouse por el contenedor, sin mover nada porque solo cambia la opacidad. */
