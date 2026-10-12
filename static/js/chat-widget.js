@@ -155,6 +155,13 @@
             '<span class="sw-bubble-t">' + enlaceify(esc(m.texto)) + "</span>" +
             '<span class="sw-bubble-f">' + esc(m.fecha) + "</span></div></div>";
     }
+    /* Pinta sin duplicar: los sondeos solapados traen lo mismo dos veces. */
+    function pintarMensaje(m) {
+        if (!m || hilo.querySelector('.sw-msg[data-id="' + m.id + '"]')) { return false; }
+        hilo.insertAdjacentHTML("beforeend", mensajeHtml(m));
+        ultimoId = Math.max(ultimoId, m.id);
+        return true;
+    }
     function bajar() { hilo.scrollTop = hilo.scrollHeight; }
 
     function pintarAdjuntos(lista) {
@@ -202,18 +209,12 @@
                             texto.value = "¡Hola! Gracias por escribirnos. Cuéntanos tu caso y un técnico te atiende enseguida.";
                         }
                     }
-                    (d.mensajes || []).forEach(function (m) {
-                        hilo.insertAdjacentHTML("beforeend", mensajeHtml(m));
-                        ultimoId = Math.max(ultimoId, m.id);
-                    });
+                    (d.mensajes || []).forEach(function (m) { pintarMensaje(m); });
                     if (enCorp) { marcarVisto(d.mensajes); }
                     else { pintarAdjuntos(d.adjuntos); }
                     bajar();
                 } else if ((d.mensajes || []).length) {
-                    d.mensajes.forEach(function (m) {
-                        hilo.insertAdjacentHTML("beforeend", mensajeHtml(m));
-                        ultimoId = Math.max(ultimoId, m.id);
-                    });
+                    d.mensajes.forEach(function (m) { pintarMensaje(m); });
                     if (enCorp) { marcarVisto(d.mensajes); }
                     if (abierto) { bajar(); }
                     else {
@@ -280,11 +281,28 @@
             .catch(function () { avisarUnaVez("Sin conexión con el servidor."); });
     }
 
+    /* La ventana se abre junto a la burbuja: arriba de ella y alineada
+       a su derecha. En móvil manda el CSS de pantalla completa. */
+    function ubicarVentana() {
+        if (window.innerWidth <= 520) {
+            win.style.left = ""; win.style.top = "";
+            win.style.right = ""; win.style.bottom = "";
+            return;
+        }
+        var r = fab.getBoundingClientRect();
+        var w = Math.min(374, window.innerWidth - 16);
+        var h = Math.min(540, window.innerHeight - 100);
+        win.style.left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8) + "px";
+        win.style.top = Math.max(8, r.top - h - 12) + "px";
+        win.style.right = "auto";
+        win.style.bottom = "auto";
+    }
     function abrir() {
         abierto = true;
         noLeidos = 0;
         errorMostrado = false;
         pintarContador();
+        ubicarVentana();
         win.setAttribute("data-open", "");
         fab.setAttribute("aria-expanded", "true");
         cargar(0);
@@ -455,8 +473,7 @@
                     return;
                 }
                 texto.value = "";
-                hilo.insertAdjacentHTML("beforeend", mensajeHtml(d.mensaje));
-                ultimoId = Math.max(ultimoId, d.mensaje.id);
+                pintarMensaje(d.mensaje);
                 if (enCorp) { marcarVisto([d.mensaje]); consultarNovedades(); }
                 else { cargar(ultimoId); }
                 bajar();
