@@ -81,6 +81,7 @@ urlpatterns = [
     path("chat/api/corporativo/enviar/", views_chat.chat_corporativo_enviar, name="chat_corporativo_enviar"),
     path("chat/api/colegas/", views_chat.chat_colegas, name="chat_colegas"),
     path("chat/api/novedades/", views_chat.chat_novedades, name="chat_novedades"),
+    path("chat/api/estado/", views_chat.chat_estado, name="chat_estado"),
     # --- Módulo del observador ---
     path("observador/", views_observador.panel_observador, name="obs_panel"),
     path("observador/buscar/", views_observador.buscar_observador, name="obs_buscar"),

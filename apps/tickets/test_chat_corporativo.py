@@ -160,6 +160,17 @@ class SalaCorporativaTest(TestCase):
         ).json()
         self.assertEqual(datos["total"], 0)
 
+    def test_estado_diagnostica_para_staff(self):
+        self.client.force_login(self.admin)
+        datos = self.client.get(reverse("tickets:chat_estado")).json()
+        self.assertTrue(datos["ok"])
+        self.assertEqual(datos["tablas"]["ChatCorporativo"], 0)
+        self.assertIn("0024_mensajecorporativo_destinatario", datos["migraciones_tickets"])
+        self.client.force_login(self.usuario)
+        self.assertEqual(
+            self.client.get(reverse("tickets:chat_estado")).status_code, 403
+        )
+
     def test_novedades_solo_staff(self):
         self.client.force_login(self.usuario)
         self.assertEqual(

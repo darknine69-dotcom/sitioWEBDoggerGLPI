@@ -377,6 +377,41 @@ def chat_novedades(request):
 
 @login_required
 @require_GET
+def chat_estado(request):
+    """Diagnóstico del chat: tablas y migraciones aplicadas (solo staff).
+
+    Para ubicar un 500 sin entrar al servidor: abre /chat/api/estado/
+    en el navegador y pega lo que salga.
+    """
+    if not (
+        getattr(request.user, "es_staff_helpdesk", False)
+        or getattr(request.user, "es_observador", False)
+    ):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    from django.db import connection
+
+    info = {"ok": True, "tablas": {}, "migraciones_tickets": []}
+    for tabla in ("ChatCorporativo", "TicketComentarios"):
+        try:
+            with connection.cursor() as cur:
+                cur.execute(f'SELECT COUNT(*) FROM "{tabla}"')
+                info["tablas"][tabla] = cur.fetchone()[0]
+        except Exception as exc:  # noqa: BLE001 - el error ES el diagnóstico
+            info["tablas"][tabla] = f"ERROR: {exc.__class__.__name__}: {exc}"
+    try:
+        from django.db.migrations.recorder import MigrationRecorder
+
+        aplicadas = MigrationRecorder.Migration.objects.filter(
+            app="tickets"
+        ).values_list("name", flat=True)
+        info["migraciones_tickets"] = sorted(aplicadas)[-8:]
+    except Exception as exc:  # noqa: BLE001
+        info["migraciones_tickets"] = f"ERROR: {exc.__class__.__name__}: {exc}"
+    return JsonResponse(info)
+
+
+@login_required
+@require_GET
 def chat_corporativo(request):
     """Sala o directo del staff (`?desde=` para el vivo, `?para=` directo)."""
     if not _es_corporativo(request.user):
