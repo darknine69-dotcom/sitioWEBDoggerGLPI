@@ -88,13 +88,20 @@
             return '<a href="' + u + '" target="_blank" rel="noopener">' + u + "</a>";
         });
     }
-    /* Aviso dentro del hilo: ningún fallo vuelve a ser silencioso. */
+    /* Aviso dentro del hilo: ningún fallo vuelve a ser silencioso,
+       pero sale una sola vez (el sondeo reintenta en silencio). */
+    var errorMostrado = false;
     function aviso(texto) {
         var caja = document.createElement("div");
         caja.className = "sw-msg";
         caja.innerHTML = '<div class="sw-bubble sw-bubble-error">' + esc(texto) + "</div>";
         hilo.appendChild(caja);
         bajar();
+    }
+    function avisarUnaVez(texto) {
+        if (errorMostrado) { return; }
+        errorMostrado = true;
+        aviso(texto);
     }
     function urlBase(tpl) { return tpl.replace("/0/", "/" + ticketPk + "/"); }
 
@@ -148,12 +155,13 @@
             .then(function (r) { return r.json().catch(function () { return null; }); })
             .then(function (d) {
                 if (!d || !d.ok) {
-                    if (!desde) { aviso((d && d.error) || "No se pudo cargar la conversación."); }
+                    if (!desde) { avisarUnaVez((d && d.error) || "No se pudo cargar la conversación."); }
                     return;
                 }
                 if (!desde) {
                     hilo.innerHTML = "";
                     ultimoId = 0;
+                    errorMostrado = false;
                     if (!d.mensajes.length && !(d.adjuntos || []).length) {
                         hilo.innerHTML = !enCorp
                             ? '<p class="sw-empty">Cuéntanos en qué te ayudamos.</p>'
@@ -187,7 +195,7 @@
                     }
                 }
             })
-            .catch(function () { if (esInicial) { aviso("Sin conexión con el servidor."); } });
+            .catch(function () { if (esInicial) { avisarUnaVez("Sin conexión con el servidor."); } });
     }
 
     function pintarContador() {
@@ -241,12 +249,13 @@
                 }
                 cargar(0);
             })
-            .catch(function () { aviso("No se pudo cargar el chat. Revisa tu conexión y recarga."); });
+            .catch(function () { avisarUnaVez("No se pudo cargar el chat. Revisa tu conexión y recarga."); });
     }
 
     function abrir() {
         abierto = true;
         noLeidos = 0;
+        errorMostrado = false;
         pintarContador();
         win.setAttribute("data-open", "");
         fab.setAttribute("aria-expanded", "true");
@@ -319,6 +328,7 @@
     sel.addEventListener("change", function () {
         ticketPk = parseInt(sel.value, 10) || 0;
         ultimoId = 0;
+        errorMostrado = false;
         cargar(0);
     });
 
@@ -343,6 +353,7 @@
         if (adjBtn) { adjBtn.style.display = enCorp ? "none" : ""; }
         texto.placeholder = !enCorp ? "Escríbenos…"
             : (colegaPk ? "Escríbele a " + nombreColega() + "…" : "Escríbele al equipo…");
+        errorMostrado = false;
         ultimoId = 0;
         noLeidos = 0;
         pintarContador();
@@ -377,6 +388,7 @@
         colegaSel.addEventListener("change", function () {
             colegaPk = parseInt(colegaSel.value, 10) || 0;
             ultimoId = 0;
+            errorMostrado = false;
             noLeidos = 0;
             pintarContador();
             texto.placeholder = colegaPk ? "Escríbele a " + nombreColega() + "…" : "Escríbele al equipo…";
