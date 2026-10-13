@@ -56,6 +56,8 @@
 .act-lista:hover::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
 .act-lista:hover::-webkit-scrollbar-track { background: transparent; }
 .act-vacio { display: none; font-size: 12.5px; color: var(--ink-muted); text-align: center; padding: 12px 0; }
+.obs-avatar-ico { background: #241F1C; color: #fff; }
+.obs-avatar-ico .icon { width: 18px; height: 18px; }
 .mon-miembro { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed #F1EDE6; font-size: 12.5px; }
 .mon-miembro:last-child { border-bottom: 0; }
 .mon-miembro .mon-m-id { min-width: 0; flex: 1; }
@@ -273,7 +275,7 @@
                  {% for e in presionar %}
                   <div class="act-tec is-closed{% if e.tickets|length > 2 %} act-tec-scroll{% endif %}">
                       <div class="act-tec-head" role="button" tabindex="0" aria-expanded="false" data-tec-toggle>
-                          <span class="obs-avatar">{{ e.tecnico.nombre|default:"?"|slice:":1"|upper }}</span>
+                          <span class="obs-avatar obs-avatar-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
                           <strong>{{ e.tecnico.nombre }}</strong>
                           {% if e.urgentes %}<span class="obs-pill obs-pill-rojo">{{ e.urgentes }} urgente{{ e.urgentes|pluralize }}</span>{% endif %}
                           <small class="muted">{{ e.tickets|length }} abierto{{ e.tickets|length|pluralize }}</small>

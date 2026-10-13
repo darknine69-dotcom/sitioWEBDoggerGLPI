@@ -28,7 +28,7 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
     {% for f in g.filas %}
     <article class="obs-miembro">
         <button type="button" class="obs-miembro-top obs-miembro-toggle" data-miembro-toggle="zgm-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" aria-expanded="false" title="Desplegar el detalle de {{ f.nombre }}">
-            <span class="obs-avatar">{{ f.nombre|default:"?"|slice:":1"|upper }}</span>
+            <span class="obs-avatar obs-avatar-ico"><svg class="icon"><use href="#i-user"/></svg></span>
             <span class="obs-miembro-id">
                 <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ f.email|urlencode }}" title="Abrir su ficha" data-stop>{{ f.nombre }}</a></strong>
                 <small>{{ f.email|default:"Sin correo" }}{% if f.detalle %} · {{ f.detalle }}{% endif %}</small>
