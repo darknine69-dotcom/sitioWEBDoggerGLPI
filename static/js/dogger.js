@@ -320,10 +320,25 @@
                       input.closest(".form-group")?.querySelector(".file-preview");
             if (!box) return;
             box.innerHTML = "";
-            Array.from(input.files).slice(0, 6).forEach(function (f) {
+            Array.from(input.files).slice(0, 6).forEach(function (f, idx) {
                 var item = document.createElement("span");
                 item.className = "file-chip";
                 item.textContent = f.name + " (" + Math.round(f.size / 1024) + " KB)";
+                var btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "file-chip-x";
+                btn.title = "Quitar archivo";
+                btn.setAttribute("aria-label", "Quitar " + f.name);
+                btn.textContent = "×";
+                btn.addEventListener("click", function () {
+                    var dt = new DataTransfer();
+                    Array.from(input.files).forEach(function (file, i) {
+                        if (i !== idx) dt.items.add(file);
+                    });
+                    input.files = dt.files;
+                    input.dispatchEvent(new Event("change", { bubbles: true }));
+                });
+                item.appendChild(btn);
                 box.appendChild(item);
             });
             if (input.files.length > 6) {

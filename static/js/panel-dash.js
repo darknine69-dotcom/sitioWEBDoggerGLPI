@@ -229,21 +229,24 @@
         var multi = serieWidget(widget);
         function single() {
             var prs = pairs(widget);
+            var bg = prs.map(function (p) { return p.color; });
             return {
                 labels: prs.map(function (p) { return p.label; }),
                 datasets: [{
                     data: prs.map(function (p) { return p.value; }),
-                    backgroundColor: prs.map(function (p) { return p.color; }),
+                    backgroundColor: bg,
                     borderColor: '#fff', borderWidth: 2, borderRadius: 4,
-                    /* Sin salto al hover: el segmento se realza con un aro
-                       de su mismo color, sin mover el gráfico. */
+                    /* Sin ningún realce al hover: mismos colores, grosores
+                       y offset que en reposo. El segmento queda quieto. */
                     hoverOffset: 0,
-                    hoverBorderWidth: 5,
-                    hoverBorderColor: prs.map(function (p) { return p.color; })
+                    hoverBackgroundColor: bg,
+                    hoverBorderWidth: 2,
+                    hoverBorderColor: '#fff'
                 }]
             };
         }
         function multiDatasets(stacked) {
+            var bw = tipo === 'bar' ? 1 : 2;
             return {
                 labels: multi.labels,
                 datasets: multi.datasets.map(function (ds) {
@@ -252,19 +255,22 @@
                         data: ds.data,
                         backgroundColor: ds.color,
                         borderColor: ds.color,
-                        borderWidth: tipo === 'bar' ? 1 : 2,
+                        borderWidth: bw,
                         borderRadius: 4,
                         stack: stacked ? 's' : undefined,
                         fill: tipo === 'area' ? 'origin' : false,
                         tension: 0.35,
-                        /* Realce del mismo tono al hover, sin mover nada. */
+                        /* Sin realce al hover: idéntico al reposo. */
+                        hoverBackgroundColor: ds.color,
                         hoverBorderColor: ds.color,
-                        hoverBorderWidth: 3,
+                        hoverBorderWidth: bw,
                         pointRadius: 3,
-                        pointHoverRadius: 5,
+                        pointHoverRadius: 3,
                         pointBackgroundColor: ds.color,
+                        pointBorderColor: ds.color,
+                        pointHoverBackgroundColor: ds.color,
                         pointHoverBorderColor: ds.color,
-                        pointHoverBorderWidth: 3
+                        pointHoverBorderWidth: 1
                     };
                 })
             };
@@ -282,22 +288,26 @@
                 data = multiDatasets(stacked);
             } else {
                 var prs = pairs(widget);
+                var bg2 = prs.map(function (p) { return p.color; });
                 data = {
                     labels: prs.map(function (p) { return p.label; }),
                     datasets: [{
                         label: undefined,
                         data: prs.map(function (p) { return p.value; }),
-                        backgroundColor: prs.map(function (p) { return p.color; }),
-                        borderColor: prs.map(function (p) { return p.color; }),
+                        backgroundColor: bg2,
+                        borderColor: bg2,
                         borderWidth: 1, borderRadius: 4,
                         fill: tipo === 'area' ? 'origin' : false,
                         tension: 0.35,
-                        hoverBorderColor: prs.map(function (p) { return p.color; }),
-                        hoverBorderWidth: 3,
-                        pointRadius: 3, pointHoverRadius: 5,
-                        pointBackgroundColor: prs.map(function (p) { return p.color; }),
-                        pointHoverBorderColor: prs.map(function (p) { return p.color; }),
-                        pointHoverBorderWidth: 3
+                        hoverBackgroundColor: bg2,
+                        hoverBorderColor: bg2,
+                        hoverBorderWidth: 1,
+                        pointRadius: 3, pointHoverRadius: 3,
+                        pointBackgroundColor: bg2,
+                        pointBorderColor: bg2,
+                        pointHoverBackgroundColor: bg2,
+                        pointHoverBorderColor: bg2,
+                        pointHoverBorderWidth: 1
                     }]
                 };
             }
@@ -405,9 +415,12 @@
         stage.appendChild(canvas);
         var chart = new Chart(canvas.getContext('2d'), cfg);
         var ct = cfg.type || tipo;
-
-        if (ct === 'pie' || ct === 'doughnut') { onPie(true); bindPieCard(card, widget, chart); }
-        else onPie(false);
+        if (ct === 'pie' || ct === 'doughnut') {
+            onPie(true);
+            bindPieCard(card, widget, chart);
+        } else {
+            onPie(false);
+        }
         charts[widget] = chart;
     }
 
@@ -415,18 +428,15 @@
         var leg = card.querySelector('[data-pie-legend]');
         if (!leg) return;
         var lis = Array.prototype.slice.call(leg.querySelectorAll('li'));
+        /* Solo se resalta la fila de la leyenda (CSS). Sin bordes,
+           sin acercamientos, sin malla. */
         function setHi(i) {
-            try {
-                chart.setActiveElements(i >= 0 ? [{ datasetIndex: 0, index: i }] : []);
-                chart.update();
-            } catch (e) {}
             lis.forEach(function (li, k) { li.classList.toggle('is-hi', k === i); });
         }
         lis.forEach(function (li, i) {
             li.addEventListener('mouseenter', function () { setHi(i); });
             li.addEventListener('mouseleave', function () { setHi(-1); });
         });
-        chart.options.onHover = function (ev, items) { setHi(items.length ? items[0].index : -1); };
     }
 
     // ------------------------------------------------------------------

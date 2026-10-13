@@ -82,6 +82,7 @@ class TicketForm(forms.ModelForm):
 
     class Meta:
         model = Ticket
+        labels = {"titulo": "Asunto"}
         fields = [
             "titulo",
             "categoria",

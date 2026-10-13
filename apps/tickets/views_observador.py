@@ -746,7 +746,7 @@ def monitorear_observador(request):
     return render(request, "observador/monitoreo.html", contexto)
 
 
-def _actividad_reciente(filas, limite=8):
+def _actividad_reciente(filas, limite=20):
     """Lo último que pasó en la lista: tickets nuevos y respuestas.
 
     Junta los tickets recientes de todos los miembros y las últimas

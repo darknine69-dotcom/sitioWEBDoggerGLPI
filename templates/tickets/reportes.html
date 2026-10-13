@@ -12,6 +12,8 @@
 <link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 <style>
 /* ============ Reportes corporativos · tema Dogger ============ */
+/* Los estilos de gráficos (.chart-stage, .charts-grid, .chart-card) viven en
+   mi-panel-corp.css: no se repiten aquí para no romper el tamaño. */
 .rpt-filterbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin: 0 0 14px; }
 .rpt-fld { display: flex; flex-direction: column; gap: 4px; min-width: 150px; flex: 1 1 165px; }
 .rpt-fld label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: var(--ink-muted); }
@@ -103,10 +105,6 @@
 .rpt-chip-x { border: 0; background: transparent; cursor: pointer; color: var(--ink-muted); font-size: 14px; line-height: 1; padding: 0 2px; }
 .rpt-chip-x:hover { color: var(--dogger-red); }
 .rpt-suggest-empty { padding: 10px 12px; font-size: 12.5px; color: var(--ink-muted); }
-
-/* Contenedor de gráficas (mismo alto que el dashboard) */
-.chart-stage { position: relative; height: 280px; }
-@media (max-width: 900px) { .chart-stage { height: 240px; } }
 
 @media (max-width: 700px) {
     .rpt-fld { flex: 1 1 100%; }
@@ -484,8 +482,8 @@
             data: {
                 labels: tec.labels,
                 datasets: [
-                    { label: "Asignados", data: tec.asignados, backgroundColor: "rgba(214,43,31,.85)", borderRadius: 4, barPercentage: .7 },
-                    { label: "Resueltos", data: tec.resueltos, backgroundColor: "rgba(47,125,79,.85)", borderRadius: 4, barPercentage: .7 }
+                    { label: "Asignados", data: tec.asignados, backgroundColor: "rgba(214,43,31,.85)", hoverBackgroundColor: "rgba(214,43,31,.85)", hoverBorderWidth: 0, borderRadius: 4, barPercentage: .7 },
+                    { label: "Resueltos", data: tec.resueltos, backgroundColor: "rgba(47,125,79,.85)", hoverBackgroundColor: "rgba(47,125,79,.85)", hoverBorderWidth: 0, borderRadius: 4, barPercentage: .7 }
                 ]
             },
             options: {
@@ -529,7 +527,7 @@
             type: "doughnut",
             data: {
                 labels: cat.labels,
-                datasets: [{ data: cat.data, backgroundColor: cat.colores, borderColor: "#fff", borderWidth: 2 }]
+                datasets: [{ data: cat.data, backgroundColor: cat.colores, hoverBackgroundColor: cat.colores, borderColor: "#fff", hoverBorderColor: "#fff", borderWidth: 2, hoverBorderWidth: 2, hoverOffset: 0 }]
             },
             options: {
                 responsive: true,
