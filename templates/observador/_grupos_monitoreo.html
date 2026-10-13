@@ -10,8 +10,8 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
             <strong>{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</strong>
             <small>
                 {% if g.zona %}Creada por ti{% if g.zona.creado_en %} el {{ g.zona.creado_en|date:"d/m/Y" }}{% endif %}
-                {% else %}Personas de tu lista que aún no están en ninguna zona{% endif %}
-                · {{ g.filas|length }} usuario{{ g.filas|length|pluralize }} en la zona
+                 {% else %}Personas de tu lista que aún no están en ninguna zona{% endif %}
+                 · <svg class="icon icon-sm" style="vertical-align:-2px"><use href="#i-user"/></svg> <b>{{ g.filas|length }}</b> usuario{{ g.filas|length|pluralize }}
             </small>
         </div>
         <div class="obs-zona-stats">
