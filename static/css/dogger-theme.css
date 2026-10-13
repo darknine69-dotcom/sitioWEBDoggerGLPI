@@ -4270,6 +4270,9 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
     gap: 6px;
 }
 .act-tec.is-closed .act-tec-tickets { display: none; }
+.act-tec-scroll .act-tec-tickets { max-height: 180px; overflow-y: auto; padding-right: 4px; }
+.act-tec-scroll .act-tec-tickets::-webkit-scrollbar { width: 6px; }
+.act-tec-scroll .act-tec-tickets::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 
 /* =====================================================================
    LANDING (INICIO) — v4
@@ -6849,9 +6852,9 @@ html[style*="--sb-accent"] .notif-head {
 .obs-avance-bar span { display: block; height: 100%; border-radius: 999px; background: #2F7D4F; }
 .obs-avance-num { font-size: 12px; font-weight: 800; color: #2F7D4F; white-space: nowrap; }
 .obs-zona-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 18px; overflow: hidden; }
-.obs-zona-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px; background: #FBFAF7; border-bottom: 1px solid var(--line); }
+.obs-zona-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px; background: #F0EBE3; border-bottom: 1px solid var(--line); }
 button.obs-zona-head { width: 100%; font: inherit; text-align: left; cursor: pointer; border: 0; border-bottom: 1px solid var(--line); color: inherit; }
-button.obs-zona-head:hover { background: #F5F0E6; }
+button.obs-zona-head:hover { background: #E8E2D6; }
 .obs-zona-chev { margin-left: auto; font-weight: 800; color: var(--ink-muted); transition: transform .15s ease; flex: none; }
 button.obs-zona-head[aria-expanded="false"] .obs-zona-chev { transform: rotate(-90deg); }
 button.obs-zona-head[aria-expanded="false"] { border-bottom: 0; }
@@ -6870,13 +6873,15 @@ button.obs-zona-head[aria-expanded="false"] { border-bottom: 0; }
 .obs-crate-seg b { font-family: var(--font-mono); font-size: 13px; color: #1d1b16; }
 .obs-crate-seg.s-abiertos b { color: #F97316; }
 .obs-crate-seg.s-resueltos b { color: #059669; }
-/* Contador global de la zona: oscuro y más grande, distinto al de usuarios. */
-.obs-crate-global { display: inline-flex; align-items: stretch; background: #241F1C; border: 1px solid #241F1C; border-radius: 10px; overflow: hidden; font-size: 12px; font-weight: 600; color: #C9BFAE; white-space: nowrap; box-shadow: 0 2px 8px rgba(23,20,18,.25); }
+/* Contador global de la zona: claro y más grande, distinto al de usuarios. */
+.obs-crate-global { display: inline-flex; align-items: stretch; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 12px; font-weight: 600; color: var(--ink-muted); white-space: nowrap; box-shadow: 0 2px 6px rgba(23,20,18,.08); }
 .obs-crate-global .obs-crate-seg { padding: 5px 12px; }
-.obs-crate-global .obs-crate-seg + .obs-crate-seg { border-left: 1px solid rgba(255,255,255,.14); }
-.obs-crate-global .obs-crate-seg b { font-size: 15px; color: #fff; }
-.obs-crate-global .obs-crate-seg.s-abiertos b { color: #FB923C; }
-.obs-crate-global .obs-crate-seg.s-resueltos b { color: #34D399; }
+.obs-crate-global .obs-crate-seg + .obs-crate-seg { border-left: 1px solid var(--line); }
+.obs-crate-global .obs-crate-seg b { font-size: 15px; color: #1d1b16; }
+.obs-crate-global .obs-crate-seg.s-abiertos b { color: #F97316; }
+.obs-crate-global .obs-crate-seg.s-resueltos b { color: #059669; }
+/* Al desplegar la zona, el total global se oculta: ya se ve en cada usuario. */
+.obs-zona-card.is-open .obs-crate-global { display: none; }
 .obs-miembro { padding: 14px 16px; border-bottom: 1px dashed var(--line); }
 .obs-miembro:last-child { border-bottom: 0; }
 .obs-miembro-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

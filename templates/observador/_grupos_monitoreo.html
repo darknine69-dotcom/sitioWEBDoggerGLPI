@@ -4,7 +4,7 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
 {% if grupos %}
 {% for g in grupos %}
 <section class="obs-zona-card">
-    <button type="button" class="obs-zona-head" data-zona-toggle="zg-{{ forloop.counter }}" aria-expanded="true" title="Desplegar la lista de usuarios de esta zona">
+    <button type="button" class="obs-zona-head" data-zona-toggle="zg-{{ forloop.counter }}" aria-expanded="false" title="Desplegar la lista de usuarios de esta zona">
         <span class="obs-zona-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
         <div class="obs-zona-tit">
             <strong>{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</strong>
@@ -25,7 +25,7 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
         </div>
         <span class="obs-zona-chev" aria-hidden="true">▾</span>
     </button>
-    <div id="zg-{{ forloop.counter }}">
+    <div id="zg-{{ forloop.counter }}" hidden>
     {% for f in g.filas %}
     <article class="obs-miembro">
         <button type="button" class="obs-miembro-top obs-miembro-toggle" data-miembro-toggle="zgm-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" aria-expanded="false" title="Desplegar el detalle de {{ f.nombre }}">
@@ -36,12 +36,12 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
             </span>
             <span class="obs-pill obs-pill-{{ f.estado }}"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
             <span class="obs-miembro-nums">
+                <span class="obs-avance" style="flex:none;min-width:80px;width:110px" title="Avance {{ f.avance }}%"><span class="obs-avance-bar"><span style="width: {{ f.avance }}%"></span></span><span class="obs-avance-num">{{ f.avance }}%</span></span>
                 <span class="obs-crate" title="Contador propio de {{ f.nombre }}: {{ f.total }} tickets, {{ f.abiertos }} abiertos, {{ f.cerrados_total }} resueltos">
                     <span class="obs-crate-seg"><b>{{ f.total }}</b> tickets</span>
                     <span class="obs-crate-seg s-abiertos"><b>{{ f.abiertos }}</b> abiertos</span>
                     <span class="obs-crate-seg s-resueltos"><b>{{ f.cerrados_total }}</b> resueltos</span>
                 </span>
-                <span class="obs-avance" style="flex:none;min-width:80px;width:110px" title="Avance {{ f.avance }}%"><span class="obs-avance-bar"><span style="width: {{ f.avance }}%"></span></span><span class="obs-avance-num">{{ f.avance }}%</span></span>
             </span>
             <span class="obs-zona-chev" aria-hidden="true">▾</span>
         </button>
@@ -87,6 +87,8 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
             var abierto = btn.getAttribute("aria-expanded") !== "false";
             btn.setAttribute("aria-expanded", abierto ? "false" : "true");
             body.hidden = abierto;
+            var card = btn.closest(".obs-zona-card");
+            if (card) card.classList.toggle("is-open", !abierto);
         });
     });
 })();
