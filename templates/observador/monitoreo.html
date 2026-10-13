@@ -20,22 +20,6 @@
 .obs-barra-fill.f-tec { background: #1D4ED8; }
 .obs-barra-v { flex: none; width: 34px; text-align: right; font-weight: 800; font-family: var(--font-mono); }
 .obs-dona { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.obs-estado-wrap { display: flex; flex-direction: column; gap: 14px; }
-.obs-estado-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.obs-estado-stat { background: #FBFAF7; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
-.obs-estado-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; color: var(--ink-muted); }
-.obs-estado-stat b { font-size: 18px; font-family: var(--font-mono); }
-.obs-zona-carga { margin-bottom: 10px; }
-.obs-zona-carga-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
-.obs-zona-carga-nums { display: flex; gap: 8px; font-size: 12px; align-items: center; }
-.obs-zona-total { font-weight: 800; font-family: var(--font-mono); font-size: 13px; }
-.obs-zona-abiertos { color: #F97316; font-weight: 600; }
-.obs-zona-track { height: 8px; }
-.obs-zona-track-abiertos { height: 5px; margin-top: 2px; }
-.obs-tec-carga { margin-bottom: 8px; }
-.obs-tec-carga-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 3px; }
-.obs-tec-total { font-weight: 800; font-family: var(--font-mono); font-size: 13px; }
-.obs-tec-track { height: 8px; }
 .obs-dona-svg { width: 130px; height: 130px; flex: none; }
 .obs-dona-leyenda { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
 .obs-dona-leyenda li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
@@ -141,29 +125,21 @@
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-chart"/></svg></span>
                 <h3>Estado de tu lista</h3>
             </div>
-            <div class="obs-estado-wrap">
-                <div class="obs-dona">
-                    <svg class="obs-dona-svg" viewBox="0 0 42 42" role="img" aria-label="Reparto por estado">
-                        <circle cx="21" cy="21" r="15.9" fill="none" stroke="#F1EDE6" stroke-width="6"/>
-                        {% for s in dona %}
-                        {% if s.pct %}
-                        <circle cx="21" cy="21" r="15.9" fill="none" stroke="{{ s.color }}" stroke-width="6" pathLength="100" stroke-dasharray="{{ s.pct }} 100" stroke-dashoffset="{{ s.offset }}" stroke-linecap="butt"/>
-                        {% endif %}
-                        {% endfor %}
-                        <text x="21" y="21" text-anchor="middle" dominant-baseline="central" font-size="8" font-weight="800" fill="#1d1b16">{{ total }}</text>
-                    </svg>
-                    <ul class="obs-dona-leyenda">
-                        <li><span class="obs-dot obs-dot-verde"></span> Activos <b>{{ conteo.verde }}</b></li>
-                        <li><span class="obs-dot obs-dot-amarillo"></span> Pendientes <b>{{ conteo.amarillo }}</b></li>
-                        <li><span class="obs-dot obs-dot-rojo"></span> Incidencias <b>{{ conteo.rojo }}</b></li>
-                    </ul>
-                </div>
-                <div class="obs-estado-stats">
-                    <div class="obs-estado-stat"><span class="obs-estado-label">Tickets totales</span><b>{{ total_tickets }}</b></div>
-                    <div class="obs-estado-stat"><span class="obs-estado-label">Abiertos</span><b class="st-abiertos">{{ total_abiertos }}</b></div>
-                    <div class="obs-estado-stat"><span class="obs-estado-label">Avance global</span><b class="st-resueltos">{{ avance_global }}%</b></div>
-                    <div class="obs-estado-stat"><span class="obs-estado-label">Zonas activas</span><b>{{ total_zonas }}</b></div>
-                </div>
+            <div class="obs-dona">
+                <svg class="obs-dona-svg" viewBox="0 0 42 42" role="img" aria-label="Reparto por estado">
+                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="#F1EDE6" stroke-width="6"/>
+                    {% for s in dona %}
+                    {% if s.pct %}
+                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="{{ s.color }}" stroke-width="6" pathLength="100" stroke-dasharray="{{ s.pct }} 100" stroke-dashoffset="{{ s.offset }}" stroke-linecap="butt"/>
+                    {% endif %}
+                    {% endfor %}
+                    <text x="21" y="21" text-anchor="middle" dominant-baseline="central" font-size="8" font-weight="800" fill="#1d1b16">{{ total }}</text>
+                </svg>
+                <ul class="obs-dona-leyenda">
+                    <li><span class="obs-dot obs-dot-verde"></span> Activos <b>{{ conteo.verde }}</b></li>
+                    <li><span class="obs-dot obs-dot-amarillo"></span> Pendientes <b>{{ conteo.amarillo }}</b></li>
+                    <li><span class="obs-dot obs-dot-rojo"></span> Incidencias <b>{{ conteo.rojo }}</b></li>
+                </ul>
             </div>
         </div>
         <div class="chart-card">
@@ -172,16 +148,15 @@
                 <h3>Carga por zona</h3>
             </div>
             {% for g in grupos %}
-            <div class="obs-zona-carga">
-                <div class="obs-zona-carga-head">
-                    <span class="obs-barra-n">{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</span>
-                    <span class="obs-zona-carga-nums">
-                        <span class="obs-zona-total">{{ g.total_tickets }}</span>
-                        <span class="obs-zona-abiertos">{{ g.abiertos }} abiertos</span>
-                    </span>
-                </div>
-                <div class="obs-barra-track obs-zona-track"><span class="obs-barra-fill" style="width: {% if max_zona_tickets %}{% widthratio g.total_tickets max_zona_tickets 100 %}{% else %}0{% endif %}%;"></span></div>
-                <div class="obs-barra-track obs-zona-track obs-zona-track-abiertos"><span class="obs-barra-fill f-abiertos" style="width: {% if max_zona_tickets %}{% widthratio g.abiertos max_zona_tickets 100 %}{% else %}0{% endif %}%;"></span></div>
+            <div class="obs-barra">
+                <span class="obs-barra-n">{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</span>
+                <span class="obs-barra-track"><span class="obs-barra-fill" style="width: {% if max_zona_tickets %}{% widthratio g.total_tickets max_zona_tickets 100 %}{% else %}0{% endif %}%;"></span></span>
+                <span class="obs-barra-v">{{ g.total_tickets }}</span>
+            </div>
+            <div class="obs-barra">
+                <span class="obs-barra-n"></span>
+                <span class="obs-barra-track"><span class="obs-barra-fill f-abiertos" style="width: {% if max_zona_tickets %}{% widthratio g.abiertos max_zona_tickets 100 %}{% else %}0{% endif %}%;"></span></span>
+                <span class="obs-barra-v">{{ g.abiertos }}</span>
             </div>
             {% empty %}
             <p class="chart-empty">Sin zonas todavía.</p>
@@ -196,14 +171,10 @@
                 <h3>Técnicos que atienden</h3>
             </div>
             {% for nombre, n in top_tecnicos %}
-            <div class="obs-tec-carga">
-                <div class="obs-tec-carga-head">
-                    <span class="obs-barra-n">{{ nombre }}</span>
-                    <span class="obs-tec-carga-nums">
-                        <span class="obs-tec-total">{{ n }}</span>
-                    </span>
-                </div>
-                <div class="obs-barra-track obs-tec-track"><span class="obs-barra-fill f-tec" style="width: {% if max_tec_tickets %}{% widthratio n max_tec_tickets 100 %}{% else %}0{% endif %}%;"></span></div>
+            <div class="obs-barra">
+                <span class="obs-barra-n">{{ nombre }}</span>
+                <span class="obs-barra-track"><span class="obs-barra-fill f-tec" style="width: {% if max_tec_tickets %}{% widthratio n max_tec_tickets 100 %}{% else %}0{% endif %}%;"></span></span>
+                <span class="obs-barra-v">{{ n }}</span>
             </div>
             {% empty %}
             <p class="chart-empty">Nadie atendiendo todavía.</p>
@@ -222,19 +193,19 @@
                             <th class="num">Cuentas</th>
                             <th class="num">Tickets</th>
                             <th class="num">Abiertos</th>
-                            <th class="num">Resueltos</th>
                             <th class="num">Avance</th>
+                            <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for g in grupos %}
                         <tr>
-                            <td><strong>{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</strong></td>
+                            <td><strong>{{ g.zona.nombre }}</strong></td>
                             <td class="num">{{ g.filas|length }}</td>
                             <td class="num">{{ g.total_tickets }}</td>
-                            <td class="num st-abiertos">{{ g.abiertos }}</td>
-                            <td class="num st-resueltos">{{ g.cerrados }}</td>
+                            <td class="num">{{ g.abiertos }}</td>
                             <td class="num">{{ g.avance }}%</td>
+                            <td><span class="obs-pill obs-pill-{{ g.estado }}">{{ g.estado|capfirst }}</span></td>
                         </tr>
                         {% empty %}
                         <tr class="table-empty"><td colspan="6">Sin zonas todavía.</td></tr>
