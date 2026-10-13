@@ -233,9 +233,10 @@
             <div class="chart-card-head obs-tickets-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 <h3>Tickets recientes</h3>
+                <button type="button" class="chart-refresh-btn" id="actBtnBuscar" title="Buscar en tickets recientes" aria-label="Buscar en tickets recientes" aria-expanded="false"><svg class="icon"><use href="#i-search"/></svg></button>
                 <button type="button" class="chart-refresh-btn" id="actRecargar" title="Recargar tickets recientes" aria-label="Recargar tickets recientes"><svg class="icon"><use href="#i-refresh"/></svg></button>
             </div>
-            <div class="act-buscador">
+            <div class="act-buscador" id="actBuscadorBox" hidden>
                 <input type="search" id="actBuscar" placeholder="Buscar por código, título o usuario…" aria-label="Buscar en tickets recientes">
             </div>
             <div class="act-lista" id="actLista">
@@ -263,6 +264,10 @@
             <div class="chart-card-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-send"/></svg></span>
                 <h3>Presionar al técnico</h3>
+                <button type="button" class="chart-refresh-btn" id="actBtnBuscarTec" title="Buscar en solicitudes por técnico" aria-label="Buscar en solicitudes por técnico" aria-expanded="false"><svg class="icon"><use href="#i-search"/></svg></button>
+            </div>
+            <div class="act-buscador" id="actBuscadorTecBox" hidden>
+                <input type="search" id="actBuscarTec" placeholder="Buscar por técnico o código de ticket…" aria-label="Buscar en solicitudes por técnico">
             </div>
              <div class="act-presionar" style="margin-top:0;border-top:0;padding-top:0">
                  {% for e in presionar %}
@@ -298,6 +303,16 @@
         var campo = document.getElementById("actBuscar");
         var lista = document.getElementById("actLista");
         var vacio = document.getElementById("actVacio");
+        var buscadorBox = document.getElementById("actBuscadorBox");
+        var btnBuscar = document.getElementById("actBtnBuscar");
+        if (btnBuscar && buscadorBox) {
+            btnBuscar.addEventListener("click", function () {
+                var open = buscadorBox.hidden;
+                buscadorBox.hidden = !open;
+                btnBuscar.setAttribute("aria-expanded", String(open));
+                if (open && campo) campo.focus();
+            });
+        }
         if (!campo || !lista) return;
         campo.addEventListener("input", function () {
             var q = campo.value.trim().toLowerCase();
@@ -309,6 +324,26 @@
             });
             if (vacio) vacio.style.display = visibles ? "none" : "block";
         });
+        var campoTec = document.getElementById("actBuscarTec");
+        var presionarBox = document.getElementById("actBuscadorTecBox");
+        var btnBuscarTec = document.getElementById("actBtnBuscarTec");
+        if (btnBuscarTec && presionarBox) {
+            btnBuscarTec.addEventListener("click", function () {
+                var open = presionarBox.hidden;
+                presionarBox.hidden = !open;
+                btnBuscarTec.setAttribute("aria-expanded", String(open));
+                if (open && campoTec) campoTec.focus();
+            });
+        }
+        if (campoTec) {
+            campoTec.addEventListener("input", function () {
+                var q = campoTec.value.trim().toLowerCase();
+                document.querySelectorAll(".act-tec").forEach(function (tec) {
+                    var ok = !q || (tec.textContent || "").toLowerCase().includes(q);
+                    tec.style.display = ok ? "" : "none";
+                });
+            });
+        }
         var recargar = document.getElementById("actRecargar");
         if (recargar) {
             recargar.addEventListener("click", function () {

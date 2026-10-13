@@ -36,7 +36,6 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
             </span>
             <span class="obs-pill obs-pill-{{ f.estado }}"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
             <span class="obs-miembro-nums">
-                <span class="obs-avance" style="flex:none;min-width:80px;width:110px" title="Avance {{ f.avance }}%"><span class="obs-avance-bar"><span style="width: {{ f.avance }}%"></span></span><span class="obs-avance-num">{{ f.avance }}%</span></span>
                 <span class="obs-crate" title="Contador propio de {{ f.nombre }}: {{ f.total }} tickets, {{ f.abiertos }} abiertos, {{ f.cerrados_total }} resueltos">
                     <span class="obs-crate-seg"><b>{{ f.total }}</b> tickets</span>
                     <span class="obs-crate-seg s-abiertos"><b>{{ f.abiertos }}</b> abiertos</span>
