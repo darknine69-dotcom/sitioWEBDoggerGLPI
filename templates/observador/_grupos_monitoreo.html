@@ -14,7 +14,6 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
                 · {{ g.filas|length }} usuario{{ g.filas|length|pluralize }} en la zona
             </small>
         </div>
-        <span class="obs-pill obs-pill-{{ g.estado }}"><span class="obs-dot obs-dot-{{ g.estado }}"></span>{{ g.estado|capfirst }}</span>
         <div class="obs-zona-stats">
             <span class="obs-crate-global" title="Total global de la zona: suma de sus usuarios">
                 <span class="obs-crate-seg"><b>{{ g.total_tickets }}</b> tickets</span>
