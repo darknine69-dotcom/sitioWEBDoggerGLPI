@@ -1,8 +1,9 @@
-from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth import get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.conf import settings
 from django.contrib import messages
+from django.db.models import Q
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.http import FileResponse, Http404, JsonResponse
@@ -128,6 +129,97 @@ class StaffLogoutView(View):
 
 
 @login_required
+@require_POST
+def configuracion_glpi(request):
+    """Guarda y prueba la conexión con la web de GLPI.
+
+    Solo administradores. Vacío = manda el .env (GLPI_*); con valores, el
+    panel manda. "Probar" abre sesión contra la API y la cierra.
+    """
+    if request.user.rol != "admin":
+        from django.http import Http404
+
+        raise Http404("Solo los administradores configuran GLPI.")
+    from apps.tickets.models import ConfigSitio
+
+    cfg = ConfigSitio.cargar()
+    modo = (request.POST.get("modo") or "auto").strip()
+    cfg.glpi_habilitado = {"on": True, "off": False}.get(modo)
+    base_url = (request.POST.get("base_url") or "").strip()
+    if base_url:
+        cfg.glpi_base_url = base_url[:250]
+    app_token = (request.POST.get("app_token") or "").strip()
+    if app_token:
+        cfg.glpi_app_token = app_token[:250]
+    user_token = (request.POST.get("user_token") or "").strip()
+    if user_token:
+        cfg.glpi_user_token = user_token[:250]
+    timeout = (request.POST.get("timeout") or "").strip()
+    cfg.glpi_timeout = int(timeout) if timeout.isdigit() else None
+    cfg.save()
+    if (request.POST.get("accion") or "guardar") == "probar":
+        from apps.tickets.services.glpi_client import GlpiClient, GlpiError
+
+        try:
+            cliente = GlpiClient()
+            if not cliente.available:
+                messages.warning(
+                    request, "Faltan datos: URL y los dos tokens para probar.")
+            else:
+                cliente.init_session()
+                try:
+                    cliente.kill_session()
+                except GlpiError:
+                    pass
+                messages.success(request, "Conexión con GLPI verificada.")
+        except GlpiError as exc:
+            messages.error(request, f"No se pudo conectar: {exc}")
+        except Exception:  # noqa: BLE001 - red caída no rompe ajustes
+            messages.error(request, "No se pudo conectar con la web de GLPI.")
+    else:
+        messages.success(request, "Conexión con GLPI actualizada.")
+    return redirect(reverse("accounts:ajustes") + "#glpi")
+
+
+@login_required
+def permisos_roles(request):
+    """Guarda los permisos por cuenta desde la sección Página de Ajustes.
+
+    Solo administradores. La vista vive en Ajustes (#pagina); el GET
+    redirige allá para no tener dos páginas de configuración.
+    """
+    from django.http import Http404
+
+    if request.user.rol != "admin":
+        raise Http404("Solo los administradores gestionan los permisos.")
+    if request.method != "POST":
+        return redirect(reverse("accounts:ajustes") + "#pagina")
+    User = get_user_model()
+    vistos = {
+        int(pk) for pk in request.POST.getlist("uid") if str(pk).isdigit()
+    }
+    for u in User.objects.filter(pk__in=vistos):
+        for campo, llave in (
+            ("puede_cerrar_tickets", "cerrar"),
+            ("puede_eliminar_tickets", "eliminar"),
+            ("puede_reabrir_tickets", "reabrir"),
+            ("puede_crear_tickets", "crear"),
+            ("puede_responder_chat", "responder"),
+        ):
+            setattr(
+                u, campo,
+                request.POST.get(f"perm_{u.pk}_{llave}") in ("1", "on", "true"),
+            )
+        u.save(update_fields=[
+            "puede_cerrar_tickets", "puede_eliminar_tickets",
+            "puede_reabrir_tickets", "puede_crear_tickets",
+            "puede_responder_chat",
+        ])
+    messages.success(request, "Permisos guardados.")
+    return redirect(reverse("accounts:ajustes") + "#pagina")
+
+
+@login_required
 def ajustes_cuenta(request):
     user = request.user
     glpi_enabled = _glpi_available() and bool(getattr(user, "glpi_user_id", None))
@@ -176,8 +268,32 @@ def ajustes_cuenta(request):
         except Exception:
             ctx["config_sitio"] = None
             ctx["config_sitio_sin_migracion"] = True
-    return render(request, "accounts/ajustes.html", ctx)
+        rol_perm = (request.GET.get("rol_perm") or "").strip()
+        cuentas = get_user_model().objects.all().order_by("nombre")
+        if rol_perm:
+            cuentas = cuentas.filter(rol=rol_perm)
+        ctx["cuentas_permisos"] = cuentas
+        ctx["rol_perm_sel"] = rol_perm
+        from django.conf import settings as dj_settings
 
+        env = dict(getattr(dj_settings, "GLPI", {}) or {})
+        efectivo = ConfigSitio.glpi_efectivo()
+        panel = ctx["config_sitio"]
+        ctx["glpi_panel"] = None
+        if panel is not None:
+            ctx["glpi_panel"] = {
+                "modo": (
+                    "auto" if panel.glpi_habilitado is None
+                    else ("on" if panel.glpi_habilitado else "off")
+                ),
+                "vigente": bool(efectivo["config"].get("enabled")),
+                "fuente": efectivo["fuente"],
+                "env_url": env.get("base_url", ""),
+                "env_timeout": env.get("timeout", 30),
+                "tiene_app": bool((panel.glpi_app_token or "").strip()),
+                "tiene_user": bool((panel.glpi_user_token or "").strip()),
+            }
+    return render(request, "accounts/ajustes.html", ctx)
 
 # Un archivo del manual por rol. Se guardan en apps/accounts/documentos/.
 # El observador ve el manual del tecnico: su sesion es de solo lectura y
@@ -615,6 +731,8 @@ def configuracion_pagina(request):
         cfg.instagram_url = request.POST.get("instagram_url", "").strip()
         cfg.facebook_activo = _bool("facebook_activo", True)
         cfg.facebook_url = request.POST.get("facebook_url", "").strip()
+        cfg.teams_activo = _bool("teams_activo", True)
+        cfg.teams_url = request.POST.get("teams_url", "").strip()
     # Interruptor con acción inmediata: si viene el checkbox apagado no se
     # toca, porque el navegador no envía el campo unchecked. Por eso el
     # formulario se guarda con JavaScript antes de enviarlo.
@@ -626,6 +744,9 @@ def configuracion_pagina(request):
         pass
     cfg.save()
     messages.success(request, "Configuración de la página actualizada.")
+    siguiente = (request.POST.get("siguiente") or "").strip()
+    if siguiente.startswith("/"):
+        return redirect(siguiente)
     return redirect(reverse("accounts:ajustes") + "#" + request.POST.get("volver", "pagina"))
 
 

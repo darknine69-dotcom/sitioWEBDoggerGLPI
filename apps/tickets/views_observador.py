@@ -14,7 +14,7 @@ aunque manipule la URL no llega a ver zonas ajenas.
 import csv
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -24,12 +24,14 @@ from apps.accounts.models import Usuario
 
 from .models import (
     ElementoMiLista,
+    MonitoreoAuditoria,
     ObservadorPunto,
     Punto,
     Ticket,
     TicketComentario,
     ZonaObservador,
 )
+from .views_monitoreo import _auditar
 
 # Estados que el observador monitorea: verde activo, rojo incidencia, amarillo pendiente.
 ESTADO_VERDE = "verde"
@@ -101,25 +103,25 @@ def _resumen_por_punto(usuario):
     ahora = timezone.now()
     consulta = _visible_a_observador(usuario, Ticket.objects.all())
     por_punto = {}
+    for clave in puntos:
+        # La zona asignada existe aunque todavía no tenga tickets.
+        por_punto[clave] = {
+            "punto": clave,
+            "total": 0,
+            "estado": ESTADO_VERDE,
+            "sin_tecnico": 0,
+            "verde": 0,
+            "rojo": 0,
+            "amarillo": 0,
+            "abiertos": 0,
+        }
     for t in consulta.select_related("tecnico_asignado").only(
         "solicitante_punto", "estado", "prioridad", "codigo", "tecnico_asignado__nombre"
     ):
         clave = (t.solicitante_punto or "").strip()
         if clave not in puntos:
             continue
-        fila = por_punto.setdefault(
-            clave,
-            {
-                "punto": clave,
-                "total": 0,
-                "estado": ESTADO_VERDE,
-                "sin_tecnico": 0,
-                "verde": 0,
-                "rojo": 0,
-                "amarillo": 0,
-                "abiertos": 0,
-            },
-        )
+        fila = por_punto[clave]
         fila["total"] += 1
         estado = _estado_de(t, ahora)
         fila[estado] += 1
@@ -134,14 +136,23 @@ def _resumen_por_punto(usuario):
     return [por_punto[p] for p in puntos]
 
 
-def _resumen_por_correo(usuario):
+def _resumen_por_correo(usuario, global_scope=False):
     """Acumula, por correo, los tickets de las zonas del observador.
 
     De cada persona deja cuántos tickets lleva, cuántos se resolvieron y qué
     técnicos tiene asignados. Es lo que permite mostrar el avance de la
     resolución y quién está viendo el caso.
+
+    Con global_scope=True cuenta todos los tickets de cada correo, sin
+    importar el punto: se usa para la gente que ya está en la lista del
+    observador, a la que se le muestran sus datos reales.
     """
     resumen = {}
+    base = (
+        Ticket.objects.all()
+        if global_scope
+        else _visible_a_observador(usuario, Ticket.objects.all())
+    )
 
     def fila(correo):
         return resumen.setdefault(
@@ -161,7 +172,7 @@ def _resumen_por_correo(usuario):
             },
         )
 
-    for t in _visible_a_observador(usuario, Ticket.objects.all()).select_related(
+    for t in base.select_related(
         "tecnico_asignado"
     ).order_by("fecha_creacion"):
         correo = (t.solicitante_email or "").strip().lower()
@@ -259,9 +270,71 @@ def panel_observador(request):
     for fila in personas.values():
         fila["puntos"] = sorted(fila["puntos"])
         lista_personas.append(fila)
+
+    # Cuentas de la aplicación en sus puntos, aunque no tengan tickets:
+    # lo que el admin crea (o asigna de ubicación) se ve aquí de una vez,
+    # con sus números en cero hasta que levanten su primer ticket.
+    nombres_puntos = puntos_del_observador(usuario)
+    resumen = _resumen_por_correo(usuario)
+    if nombres_puntos:
+        vistos = {f["email"] for f in lista_personas if f["email"]}
+        for u in Usuario.objects.filter(
+            activo=True, is_active=True, ubicacion__in=nombres_puntos
+        ).order_by("nombre"):
+            correo = (u.email or "").strip().lower()
+            if not correo or correo in vistos:
+                continue
+            vistos.add(correo)
+            r = resumen.get(correo, {})
+            lista_personas.append(
+                {
+                    "email": correo,
+                    "nombre": u.nombre or correo,
+                    "rol": u.get_rol_display(),
+                    "puntos": [u.ubicacion],
+                    "total": r.get("total", 0),
+                    "abiertos": r.get("abiertos", 0),
+                    "tecnico": r.get("tecnico_principal", ""),
+                    "estado": r.get("estado", ESTADO_VERDE),
+                    "sin_tickets": True,
+                }
+            )
+    for fila in lista_personas:
+        fila.setdefault("rol", "")
+        if not fila.get("tecnico") and fila["email"]:
+            fila["tecnico"] = resumen.get(fila["email"], {}).get(
+                "tecnico_principal", ""
+            )
     lista_personas.sort(key=lambda f: (-f["abiertos"], f["nombre"] or ""))
 
     total_tickets = visibles.count()
+    # El panel es el monitoreo: los mismos grupos por zona con el detalle
+    # completo de usuarios, tickets, técnicos y respuestas.
+    grupos = _contexto_monitoreo(usuario)["grupos"]
+    # Buscar y agregar integrado al panel: encuentra cuentas por nombre,
+    # correo o ubicación para agregarlas a la lista sin salir de aquí.
+    q_busc = (request.GET.get("q_busc") or "").strip()
+    busqueda = []
+    if q_busc:
+        ya = {
+            (e.usuario_email or "").strip().lower()
+            for e in ElementoMiLista.objects.filter(observador=usuario)
+            if (e.usuario_email or "").strip()
+        }
+        for u in Usuario.objects.filter(activo=True, is_active=True).filter(
+            Q(nombre__icontains=q_busc) | Q(email__icontains=q_busc)
+            | Q(ubicacion__icontains=q_busc)
+        ).order_by("nombre")[:12]:
+            correo = (u.email or "").strip().lower()
+            busqueda.append(
+                {
+                    "nombre": u.nombre or u.email,
+                    "email": correo,
+                    "rol": u.get_rol_display(),
+                    "ubicacion": u.ubicacion or "—",
+                    "ya_agregado": correo in ya,
+                }
+            )
     return render(
         request,
         "observador/panel.html",
@@ -271,11 +344,18 @@ def panel_observador(request):
             "total_tickets": total_tickets,
             "total_personas": len(lista_personas),
             "total_zonas": len(tarjetas),
+            "abiertos": visibles.filter(estado__in=_ACTIVOS).count(),
+            "mi_lista_total": ElementoMiLista.objects.filter(
+                observador=usuario
+            ).count(),
             "personas_en_alerta": sum(
                 1 for f in lista_personas if f["estado"] == ESTADO_ROJO
             ),
             "conteo": _contar_por_estado(visibles),
             "sin_puntos": not tarjetas,
+            "q_busc": q_busc,
+            "busqueda": busqueda,
+            "grupos": grupos,
         },
     )
 
@@ -479,6 +559,7 @@ def usuarios_observador(request):
     for f in filas:
         conteo[f["estado"]] += 1
 
+    todos_usuarios, zonas_obs = _tabla_todos_usuarios(usuario, resumen)
     return render(
         request,
         "observador/usuarios.html",
@@ -493,6 +574,8 @@ def usuarios_observador(request):
             "estado_sel": estado,
             "orden_sel": orden if orden in ("nombre", "abiertos", "tickets", "avance") else "nombre",
             "puntos": puntos_del_observador(usuario),
+            "todos_usuarios": todos_usuarios,
+            "zonas_obs": zonas_obs,
         },
     )
 
@@ -517,12 +600,21 @@ def mi_lista_observador(request):
     )
 
 
-def _filas_de_mi_lista(usuario, elementos):
-    """Une cada elemento de la lista con el estado de sus tickets."""
+def _filas_de_mi_lista(usuario, elementos, global_scope=False):
+    """Une cada elemento de la lista con el estado de sus tickets.
+
+    Con global_scope=True se muestran los datos reales de cada cuenta
+    (todos sus tickets y técnicos), aunque caigan fuera de los puntos
+    asignados: es gente que el observador (o el admin) puso en su lista
+    para seguirla.
+    """
     puntos = puntos_del_observador(usuario)
-    visibles = _visible_a_observador(usuario, Ticket.objects.all())
+    if global_scope:
+        visibles = Ticket.objects.all()
+    else:
+        visibles = _visible_a_observador(usuario, Ticket.objects.all())
     ahora = timezone.now()
-    resumen = _resumen_por_correo(usuario)
+    resumen = _resumen_por_correo(usuario, global_scope=global_scope)
     filas = []
     for e in elementos:
         correo = (e.usuario_email or "").strip().lower()
@@ -534,7 +626,9 @@ def _filas_de_mi_lista(usuario, elementos):
             )
         elif e.punto_id:
             consulta = visibles.filter(solicitante_punto=e.punto.nombre)
-        tickets = list(consulta.order_by("-fecha_creacion")[:60])
+        tickets = list(
+            consulta.select_related("tecnico_asignado").order_by("-fecha_creacion")[:60]
+        )
         estado = ESTADO_VERDE
         orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
         for t in tickets:
@@ -570,6 +664,23 @@ def _filas_de_mi_lista(usuario, elementos):
                 "falta": 100 - r.get("avance", 0),
                 "es_punto": bool(e.punto_id and not e.usuario_id),
             }
+        )
+    # Tickets de esas mismas cuentas que caen fuera de los puntos asignados:
+    # explican los ceros (el dato existe, pero no es de sus zonas). Una sola
+    # consulta para todas las filas.
+    correos = [f["email"].strip().lower() for f in filas if (f["email"] or "").strip()]
+    fuera = {}
+    if correos:
+        consulta_fuera = Ticket.objects.filter(solicitante_email__in=correos)
+        if puntos:
+            consulta_fuera = consulta_fuera.exclude(solicitante_punto__in=puntos)
+        for fila in consulta_fuera.values("solicitante_email").annotate(
+            n=Count("pk")
+        ):
+            fuera[(fila["solicitante_email"] or "").strip().lower()] = fila["n"]
+    for f in filas:
+        f["fuera_puntos"] = 0 if global_scope else fuera.get(
+            (f["email"] or "").strip().lower(), 0
         )
     return filas
 
@@ -624,22 +735,306 @@ def quitar_mi_lista(request, pk):
 
 @solo_observador
 def monitorear_observador(request):
-    """Monitoreo: la lista con sus indicadores y las acciones de reporte."""
+    """Monitoreo: la lista con sus indicadores y las acciones de reporte.
+
+    Agrupa a las personas por zona (con su supervisor, sus cuentas, sus
+    tickets y las últimas respuestas de los técnicos) para que la vista
+    muestre el detalle completo y no solo una tabla plana.
+    """
     usuario = request.user
+    contexto = _contexto_monitoreo(usuario)
+    return render(request, "observador/monitoreo.html", contexto)
+
+
+def _actividad_reciente(filas, limite=20):
+    """Lo último que pasó en la lista: tickets nuevos y respuestas.
+
+    Junta los tickets recientes de todos los miembros y las últimas
+    respuestas de los técnicos, ordenados por fecha.
+    """
+    vistos = {}
+    for f in filas:
+        for t in f.get("tickets", []):
+            if t.pk not in vistos:
+                vistos[t.pk] = t
+    recientes = sorted(
+        vistos.values(), key=lambda t: t.fecha_creacion, reverse=True
+    )[:limite]
+    frescos = {
+        t.pk: t
+        for t in Ticket.objects.filter(
+            pk__in=[t.pk for t in recientes]
+        ).select_related("tecnico_asignado")
+    }
+    tickets = [frescos[t.pk] for t in recientes if t.pk in frescos]
+    respuestas = sorted(
+        (r for f in filas for r in f.get("respuestas", [])),
+        key=lambda r: r.fecha,
+        reverse=True,
+    )[:5]
+    return {"tickets": tickets, "respuestas": respuestas}
+
+
+def _tecnicos_para_presionar(filas):
+    """Técnicos con carga abierta, en orden de prioridad.
+
+    Primero los que tienen urgentes abiertos, luego por abiertos. Cada uno
+    trae sus tickets para presionarlos ticket por ticket.
+    """
+    por_tec = {}
+    for f in filas:
+        for t in f.get("tickets", []):
+            if t.estado not in _ACTIVOS or not t.tecnico_asignado_id:
+                continue
+            tec = t.tecnico_asignado
+            entrada = por_tec.setdefault(
+                tec.pk, {"tecnico": tec, "tickets": [], "urgentes": 0}
+            )
+            if t.pk not in {x.pk for x in entrada["tickets"]}:
+                entrada["tickets"].append(t)
+                if t.prioridad == _URGENTE:
+                    entrada["urgentes"] += 1
+    for entrada in por_tec.values():
+        entrada["tickets"].sort(
+            key=lambda t: (
+                t.prioridad != _URGENTE,
+                t.fecha_creacion,
+            )
+        )
+    return sorted(
+        por_tec.values(),
+        key=lambda e: (
+            -e["urgentes"], -len(e["tickets"]), e["tecnico"].nombre or ""
+        ),
+    )
+
+
+def _tabla_todos_usuarios(usuario, resumen):
+    """Todas las cuentas del aplicativo, con acciones para este rol.
+
+    El observador ve cada cuenta con sus números (acotados a sus puntos),
+    su zona si ya está en su lista, y puede verla, agregarla/quitarla y
+    meterla a una zona sin salir de aquí.
+    """
+    elementos = {
+        (e.usuario_email or "").strip().lower(): e
+        for e in ElementoMiLista.objects.filter(observador=usuario).select_related(
+            "zona"
+        )
+    }
+    zonas = list(
+        ZonaObservador.objects.filter(observador=usuario).order_by("nombre")
+    )
+    puntos = puntos_del_observador(usuario)
+    cuentas = list(
+        Usuario.objects.filter(activo=True, is_active=True).order_by("nombre")
+    )
+    fuera = {}
+    correos = [(u.email or "").strip().lower() for u in cuentas]
+    correos = [c for c in correos if c]
+    if correos:
+        consulta = Ticket.objects.filter(solicitante_email__in=correos)
+        if puntos:
+            consulta = consulta.exclude(solicitante_punto__in=puntos)
+        for fila in consulta.values("solicitante_email").annotate(n=Count("pk")):
+            fuera[(fila["solicitante_email"] or "").strip().lower()] = fila["n"]
+    filas = []
+    for u in cuentas:
+        correo = (u.email or "").strip().lower()
+        e = elementos.get(correo)
+        r = resumen.get(correo, {})
+        filas.append(
+            {
+                "nombre": u.nombre or u.email,
+                "email": correo,
+                "rol": u.get_rol_display(),
+                "ubicacion": u.ubicacion or "—",
+                "en_lista": e is not None,
+                "elemento_id": e.pk if e else None,
+                "zona": e.zona if e else None,
+                "total": r.get("total", 0),
+                "abiertos": r.get("abiertos", 0),
+                "tecnico": r.get("tecnico_principal", ""),
+                "fuera_puntos": fuera.get(correo, 0),
+            }
+        )
+    return filas, zonas
+
+
+def _contexto_monitoreo(usuario):
+    """Filas, grupos por zona y totales de la lista del observador.
+
+    Lo comparten el Monitoreo y el Panel: el panel es el monitoreo, con
+    el detalle completo de usuarios, tickets y técnicos por zona.
+    """
     elementos = (
         ElementoMiLista.objects.filter(observador=usuario)
-        .select_related("usuario", "punto")
+        .select_related("usuario", "punto", "zona")
         .order_by("-creado_en")
     )
-    filas = _filas_de_mi_lista(usuario, elementos)
+    filas = _filas_de_mi_lista(usuario, elementos, global_scope=True)
     conteo = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
     for f in filas:
         conteo[f["estado"]] += 1
-    return render(
-        request,
-        "observador/monitoreo.html",
-        {"filas": filas, "conteo": conteo, "total": len(filas)},
+    puntos = puntos_del_observador(usuario)
+    respuestas = _respuestas_por_correo(
+        puntos, [f["email"] for f in filas if f["email"]], limite=10,
+        global_scope=True,
     )
+    for f in filas:
+        f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
+    grupos = _grupos_por_zona(filas)
+    total_tickets = sum(f["total"] for f in filas)
+    resumen = _resumen_por_correo(usuario)
+    todos_usuarios, zonas_obs = _tabla_todos_usuarios(usuario, resumen)
+    top_tecnicos = {}
+    for f in filas:
+        for t in f.get("tecnicos", []):
+            top_tecnicos[t["nombre"]] = top_tecnicos.get(t["nombre"], 0) + t["tickets"]
+    top_tecnicos = sorted(
+        top_tecnicos.items(), key=lambda kv: (-kv[1], kv[0])
+    )[:6]
+    base = len(filas) or 1
+    pct_v = round(100.0 * conteo[ESTADO_VERDE] / base, 1)
+    pct_a = round(100.0 * conteo[ESTADO_AMARILLO] / base, 1)
+    pct_r = round(100.0 * conteo[ESTADO_ROJO] / base, 1)
+    dona = [
+        {"color": "#2F7D4F", "pct": pct_v, "offset": 25.0},
+        {"color": "#D9A436", "pct": pct_a, "offset": 25.0 - pct_v},
+        {"color": "#D62B1F", "pct": pct_r, "offset": 25.0 - pct_v - pct_a},
+    ]
+    return {
+        "filas": filas,
+        "conteo": conteo,
+        "total": len(filas),
+        "grupos": grupos,
+        "total_zonas": sum(1 for g in grupos if g["zona"] is not None),
+        "total_tickets": total_tickets,
+        "total_abiertos": sum(f["abiertos"] for f in filas),
+        "avance_global": (
+            int(round(100.0 * sum(f["cerrados_total"] for f in filas) / total_tickets))
+            if total_tickets else 0
+        ),
+        "top_tecnicos": top_tecnicos,
+        "dona": dona,
+        "todos_usuarios": todos_usuarios,
+        "zonas_obs": zonas_obs,
+        "actividad": _actividad_reciente(filas),
+        "presionar": _tecnicos_para_presionar(filas),
+        "max_zona_tickets": max(
+            [g["total_tickets"] for g in grupos] + [0]
+        ),
+        "max_tec_tickets": max([n for _, n in top_tecnicos] + [0]),
+    }
+
+
+def _grupos_por_zona(filas):
+    """Agrupa las filas por zona, con sus totales y su estado global."""
+    grupos = []
+    por_zona = {}
+    for f in filas:
+        zona = (f["elemento"].zona if f["elemento"] else None)
+        if zona is None:
+            # Sin zona no se muestra como grupo: esas cuentas salen en la
+            # tabla de todos los usuarios, donde se les asigna su zona.
+            continue
+        clave = zona.pk
+        if clave not in por_zona:
+            por_zona[clave] = {"zona": zona, "filas": []}
+        por_zona[clave]["filas"].append(f)
+    orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
+    for clave in sorted(por_zona):
+        grupo = por_zona[clave]
+        grupo["abiertos"] = sum(f["abiertos"] for f in grupo["filas"])
+        grupo["total_tickets"] = sum(f["total"] for f in grupo["filas"])
+        grupo["cerrados"] = sum(f["cerrados_total"] for f in grupo["filas"])
+        grupo["avance"] = (
+            int(round(100.0 * grupo["cerrados"] / grupo["total_tickets"]))
+            if grupo["total_tickets"] else 0
+        )
+        grupo["estado"] = ESTADO_VERDE
+        for f in grupo["filas"]:
+            if orden[f["estado"]] > orden[grupo["estado"]]:
+                grupo["estado"] = f["estado"]
+        grupos.append(grupo)
+    return grupos
+
+
+def _respuestas_por_correo(puntos, correos, limite=2, global_scope=False):
+    """Últimas respuestas de los técnicos, por correo.
+
+    Una sola consulta para todos los miembros: sin puntos asignados no se
+    ve nada, igual que en el resto del módulo. Con global_scope=True trae
+    las respuestas reales aunque sean de otros puntos (gente de la lista).
+    Las de administradores no salen aquí: es el tablero del seguimiento
+    con los técnicos.
+    """
+    correos = {(c or "").strip().lower() for c in correos if (c or "").strip()}
+    if not correos or (not puntos and not global_scope):
+        return {}
+    consulta = TicketComentario.objects.filter(
+        es_interno=False,
+        usuario__rol=Usuario.Rol.TECNICO,
+    )
+    if not global_scope:
+        consulta = consulta.filter(ticket__solicitante_punto__in=puntos)
+    comentarios = (
+        consulta.select_related("ticket", "usuario").order_by("-fecha")
+    )
+    por_correo = {}
+    for c in comentarios:
+        correo = (c.ticket.solicitante_email or "").strip().lower()
+        if correo not in correos:
+            continue
+        lista = por_correo.setdefault(correo, [])
+        if len(lista) < limite:
+            lista.append(c)
+    return por_correo
+
+
+@solo_observador
+def presionar_tecnico(request, pk):
+    """El observador le escribe al técnico para que resuelva rápido.
+
+    Guarda el mensaje en el hilo del ticket (visible, no interno) y le
+    avisa al técnico por campana y correo. Solo tickets de sus puntos o
+    de cuentas de su lista.
+    """
+    from django.contrib import messages
+
+    from .notifications import notificar_comentario
+
+    if request.method != "POST":
+        raise Http404
+    usuario = request.user
+    volver = request.POST.get("volver") or reverse("tickets:obs_monitoreo")
+    mensaje = (request.POST.get("mensaje") or "").strip()[:500]
+    if not mensaje:
+        messages.error(request, "Escribe el mensaje para el técnico.")
+        return redirect(volver)
+    try:
+        ticket = Ticket.objects.select_related("tecnico_asignado").get(pk=pk)
+    except (Ticket.DoesNotExist, ValueError, TypeError):
+        raise Http404
+    puntos = puntos_del_observador(usuario)
+    en_lista = bool(
+        ticket.solicitante_email
+        and ElementoMiLista.objects.filter(
+            observador=usuario, usuario_email__iexact=ticket.solicitante_email
+        ).exists()
+    )
+    if (ticket.solicitante_punto or "") not in puntos and not en_lista:
+        raise Http404
+    TicketComentario.objects.create(
+        ticket=ticket,
+        usuario=usuario,
+        autor_nombre=usuario.nombre,
+        comentario=mensaje,
+        es_interno=False,
+    )
+    notificar_comentario(ticket, usuario.nombre, mensaje, actor=usuario)
+    messages.success(request, f"Mensaje enviado al técnico del {ticket.codigo}.")
+    return redirect(volver)
 
 
 @solo_observador
@@ -675,16 +1070,45 @@ def zonas_observador(request):
     usuario = request.user
     error = ""
     if request.method == "POST":
-        nombre = (request.POST.get("nombre") or "").strip()[:80]
-        if not nombre:
-            error = "Ponle un nombre a la zona para crearla."
-        elif ZonaObservador.objects.filter(
-            observador=usuario, nombre__iexact=nombre
-        ).exists():
-            error = "Ya tienes una zona con ese nombre."
+        zona_id = (request.POST.get("zona_id") or "").strip()
+        if zona_id:
+            nuevo = (request.POST.get("nuevo_nombre") or "").strip()[:80]
+            try:
+                zona = ZonaObservador.objects.get(
+                    pk=int(zona_id), observador=usuario
+                )
+            except (ZonaObservador.DoesNotExist, ValueError, TypeError):
+                raise Http404
+            if not nuevo:
+                error = "El nombre nuevo no puede quedar vacío."
+            elif ZonaObservador.objects.filter(
+                observador=usuario, nombre__iexact=nuevo
+            ).exclude(pk=zona.pk).exists():
+                error = "Ya tienes una zona con ese nombre."
+            else:
+                anterior = zona.nombre
+                zona.nombre = nuevo
+                zona.save(update_fields=["nombre"])
+                _auditar(
+                    usuario, MonitoreoAuditoria.RENOMBRAR_ZONA, usuario,
+                    nuevo, f"antes: {anterior}",
+                )
+                return redirect("tickets:obs_zonas")
+            nombre = ""
         else:
-            zona = ZonaObservador.objects.create(observador=usuario, nombre=nombre)
-            return redirect("tickets:obs_zona_detalle", pk=zona.pk)
+            nombre = (request.POST.get("nombre") or "").strip()[:80]
+            if not nombre:
+                error = "Ponle un nombre a la zona para crearla."
+            elif ZonaObservador.objects.filter(
+                observador=usuario, nombre__iexact=nombre
+            ).exists():
+                error = "Ya tienes una zona con ese nombre."
+            else:
+                zona = ZonaObservador.objects.create(observador=usuario, nombre=nombre)
+                _auditar(
+                    usuario, MonitoreoAuditoria.CREAR_ZONA, usuario, nombre, "",
+                )
+                return redirect("tickets:obs_zona_detalle", pk=zona.pk)
     resumen = _resumen_por_correo(usuario)
     zonas = list(
         ZonaObservador.objects.filter(observador=usuario).prefetch_related("elementos")
@@ -807,7 +1231,17 @@ def zona_miembro_asignar(request):
             )
         except (ZonaObservador.DoesNotExist, ValueError, TypeError):
             raise Http404
+        _auditar(
+            usuario, MonitoreoAuditoria.AGREGAR_MIEMBRO, usuario,
+            elemento.zona.nombre, (elemento.usuario_email or ""),
+        )
     else:
+        if elemento.zona_id:
+            _auditar(
+                usuario, MonitoreoAuditoria.QUITAR_MIEMBRO, usuario,
+                (elemento.zona.nombre if elemento.zona else ""),
+                (elemento.usuario_email or ""),
+            )
         elemento.zona = None
     elemento.save(update_fields=["zona"])
     return redirect(request.POST.get("volver") or reverse("tickets:obs_zonas"))
@@ -822,5 +1256,9 @@ def zona_eliminar(request, pk):
         zona = ZonaObservador.objects.get(pk=pk, observador=request.user)
     except ZonaObservador.DoesNotExist:
         raise Http404
+    _auditar(
+        request.user, MonitoreoAuditoria.ELIMINAR_ZONA, request.user,
+        zona.nombre, "",
+    )
     zona.delete()
     return redirect("tickets:obs_zonas")

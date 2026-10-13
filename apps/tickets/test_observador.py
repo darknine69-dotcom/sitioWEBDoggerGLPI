@@ -170,6 +170,140 @@ class ObservadorListaTest(TestCase):
         self.assertEqual(respuesta.context["total"], 1)
         self.assertEqual(respuesta.context["total_sin_filtro"], 2)
 
+    def test_usuarios_trae_tabla_total_para_meter_a_zona(self):
+        Usuario.objects.create_user(
+            email="nueva@x.com", password="x", nombre="Nueva",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        respuesta = self.client.get(reverse("tickets:obs_usuarios"))
+        self.assertEqual(respuesta.status_code, 200)
+        todos = respuesta.context["todos_usuarios"]
+        self.assertTrue(any(u["email"] == "nueva@x.com" for u in todos))
+        html = respuesta.content.decode()
+        self.assertIn("Todos los usuarios", html)
+        self.assertIn("Agregar", html)
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "nueva@x.com"})
+        html = self.client.get(reverse("tickets:obs_usuarios")).content.decode()
+        self.assertIn("Asignar", html)
+
+    def test_panel_es_tablero_con_indicadores_propios(self):
+        import re
+
+        self._ticket("Ana", "Zona Uno", email="ana@x.com")
+        self._agregar("ana@x.com")
+        respuesta = self.client.get(reverse("tickets:obs_panel"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context["total_personas"], 1)
+        self.assertEqual(respuesta.context["total_tickets"], 1)
+        self.assertEqual(respuesta.context["abiertos"], 1)
+        self.assertEqual(respuesta.context["mi_lista_total"], 1)
+        clases = set(re.findall(r"dash-hov-[a-z]+", respuesta.content.decode()))
+        self.assertEqual(
+            clases,
+            {
+                "dash-hov-usuarios", "dash-hov-total", "dash-hov-abiertos",
+                "dash-hov-vencidos", "dash-hov-zonas", "dash-hov-progreso",
+            },
+        )
+
+    def test_panel_sin_duplicados_y_con_buscador(self):
+        html = self.client.get(reverse("tickets:obs_panel")).content.decode()
+        self.assertNotIn("obs_usuarios", html)
+        self.assertNotIn("Imprimir", html)
+        self.assertNotIn("Exportar", html)
+        self.assertIn("Buscar y agregar", html)
+        self.assertIn("axFab", html)
+
+    def test_buscador_del_panel_agrega_a_la_lista(self):
+        Usuario.objects.create_user(
+            email="nueva@x.com", password="x", nombre="Nueva",
+            rol=Usuario.Rol.USUARIO,
+        )
+        respuesta = self.client.get(
+            reverse("tickets:obs_panel"), {"q_busc": "nueva"}
+        )
+        self.assertContains(respuesta, "nueva@x.com")
+        self.client.post(
+            reverse("tickets:obs_agregar"), {"email": "nueva@x.com"}
+        )
+        self.assertTrue(
+            ElementoMiLista.objects.filter(
+                observador=self.observador, usuario_email="nueva@x.com"
+            ).exists()
+        )
+
+    def test_cuenta_creada_se_ve_aunque_no_tenga_tickets(self):
+        Usuario.objects.create_user(
+            email="nueva@x.com", password="x", nombre="Nueva",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        respuesta = self.client.get(reverse("tickets:obs_panel"))
+        filas = respuesta.context["personas"]
+        nueva = [f for f in filas if f["email"] == "nueva@x.com"]
+        self.assertEqual(len(nueva), 1)
+        self.assertEqual(nueva[0]["total"], 0)
+        self.assertIn("sin tickets aún", respuesta.content.decode())
+
+    def test_panel_muestra_el_tecnico_de_cada_cuenta(self):
+        tec = Usuario.objects.create_user(
+            email="tec@x.com", password="x", nombre="Tec",
+            rol=Usuario.Rol.TECNICO,
+        )
+        Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com", solicitante_punto="Zona Uno",
+            tecnico_asignado=tec,
+        )
+        respuesta = self.client.get(reverse("tickets:obs_panel"))
+        ana = [
+            f for f in respuesta.context["personas"] if f["email"] == "ana@x.com"
+        ]
+        self.assertEqual(ana[0]["tecnico"], "Tec")
+        self.assertIn("Tec", respuesta.content.decode())
+
+    def test_panel_es_el_monitoreo_por_zonas(self):
+        from apps.tickets.models import ZonaObservador
+
+        ticket = self._ticket("Ana", "Zona Uno", email="ana@x.com")
+        self._agregar("ana@x.com")
+        zona = ZonaObservador.objects.create(observador=self.observador, nombre="Norte")
+        elemento = ElementoMiLista.objects.get(observador=self.observador)
+        elemento.zona = zona
+        elemento.save()
+        respuesta = self.client.get(reverse("tickets:obs_panel"))
+        self.assertEqual(len(respuesta.context["grupos"]), 1)
+        html = respuesta.content.decode()
+        self.assertIn("Monitoreo por zonas", html)
+        self.assertIn("Norte", html)
+        self.assertIn("Técnico a cargo", html)
+        self.assertIn(ticket.codigo, html)
+
+    def test_menu_lateral_sin_panel_y_monitoreo_primero(self):
+        html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
+        self.assertNotIn("Puntos asignados", html)
+        self.assertNotIn('sidebar-label">Panel', html)
+        self.assertIn('sidebar-label">Monitoreo', html)
+        self.assertNotIn('sidebar-label">Buscar y agregar', html)
+
+    def test_usuarios_y_lista_sin_botones_duplicados(self):
+        html_usuarios = self.client.get(
+            reverse("tickets:obs_usuarios")
+        ).content.decode()
+        self.assertNotIn("Imprimir", html_usuarios)
+        self.assertNotIn("obs_buscar", html_usuarios)
+        html_lista = self.client.get(
+            reverse("tickets:obs_mi_lista")
+        ).content.decode()
+        self.assertNotIn("Agregar más", html_lista)
+
+    def test_entrada_del_observador_es_monitoreo(self):
+        from apps.accounts.routing import landing_por_rol
+
+        self.assertEqual(
+            landing_por_rol(self.observador),
+            reverse("tickets:obs_monitoreo"),
+        )
+
 
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

@@ -41,6 +41,22 @@ class PapeleraDelUsuario(TestCase):
             estado=estado,
         )
 
+    def test_resueltas_trae_resueltas_y_cerradas(self):
+        from django.utils import timezone
+
+        resuelta = self.ticket("HD-2001", estado=Ticket.Estado.CERRADO)
+        resuelta.fecha_resolucion = timezone.now()
+        resuelta.save(update_fields=["fecha_resolucion"])
+        self.ticket("HD-2002", estado=Ticket.Estado.CERRADO)
+        self.ticket("HD-2003", estado=Ticket.Estado.ABIERTO)
+        self.client.force_login(self.user)
+        respuesta = self.client.get(
+            reverse("tickets:mi_panel"), {"estado": "resuelto"})
+        self.assertEqual(respuesta.status_code, 200)
+        codigos = {t.codigo for t in respuesta.context["tickets"]}
+        self.assertEqual(codigos, {"HD-2001", "HD-2002"})
+        self.assertEqual(respuesta.context["stats"]["resueltos"], 2)
+
     # ---------- cancelar ----------
     def test_el_usuario_cancela_su_solicitud_desde_mi_panel(self):
         t = self.ticket("HD-1001")

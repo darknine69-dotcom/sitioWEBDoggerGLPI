@@ -15,7 +15,7 @@ _VISTA_POR_ROL = {
     "admin": "tickets:dashboard",
     "tecnico": "tickets:panel_tecnico",
     "usuario": "tickets:mi_panel",
-    "observador": "tickets:obs_panel",
+    "observador": "tickets:obs_monitoreo",
 }
 
 # Vista de reserva: `accounts:perfil` solo pide iniciar sesión, así que
@@ -30,4 +30,4 @@ def landing_por_rol(user):
     if not getattr(user, "activo", True):
         # Cuenta desactivada: el panel es solo de personal activo.
         return reverse(_VISTA_RESERVA)
-    return reverse(_VISTA_POR_ROL.get(getattr(user, "rol", None), _VISTA_RESERVA))
+    return reverse(_VISTA_POR_ROL.get(getattr(user, "rol", None), _VISTA_RESERVA))

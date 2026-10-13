@@ -2,76 +2,375 @@
 
 {% block title %}Dogger · Monitoreo{% endblock %}
 {% block body_class %}observador-shell{% endblock %}
-{% block header_title %}Observación{% endblock %}
-{% block header_desc %}Estado de lo que agregaste a tu lista. Desde aquí puedes exportar o imprimir.{% endblock %}
+{% block header_title %}Monitoreo{% endblock %}
+{% block header_desc %}Tablero de tu lista: indicadores, gráficos por zona y técnico, y el detalle cuenta por cuenta.{% endblock %}
+{% block header_actions %}
+<a href="{% url 'tickets:obs_exportar' %}" class="btn btn-outline btn-sm" title="Descargar tu lista en Excel">
+    <svg class="icon"><use href="#i-download"/></svg> Exportar datos
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.obs-barra { display: flex; align-items: center; gap: 8px; margin: 7px 0; font-size: 12px; }
+.obs-barra-n { flex: none; width: 130px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.obs-barra-track { flex: 1; height: 12px; border-radius: 999px; background: #F1EDE6; overflow: hidden; display: flex; }
+.obs-barra-fill { display: block; height: 100%; border-radius: 999px; background: #4F46E5; min-width: 3px; }
+.obs-barra-fill.f-abiertos { background: #F97316; }
+.obs-barra-fill.f-tec { background: #1D4ED8; }
+.obs-barra-v { flex: none; width: 34px; text-align: right; font-weight: 800; font-family: var(--font-mono); }
+.obs-dona { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.obs-dona-svg { width: 130px; height: 130px; flex: none; }
+.obs-dona-leyenda { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 8px; }
+.obs-dona-leyenda li { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.obs-dona-leyenda b { margin-left: auto; font-family: var(--font-mono); }
+/* Actividad reciente: tarjetas semafóricas y respuestas con avatar. */
+.act-ticket { display: flex; flex-direction: column; gap: 4px; background: #fff; border: 1px solid var(--line); border-left: 4px solid #8A8478; border-radius: 10px; padding: 8px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(23,20,18,.05); transition: transform .15s ease, box-shadow .15s ease; animation: corpUp .4s ease both; font-family: var(--font-corp); }
+.act-ticket:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+.act-ticket.st-abierto { border-left-color: #D62B1F; }
+.act-ticket.st-en-progreso { border-left-color: #CA8A04; }
+.act-ticket.st-resuelto, .act-ticket.st-cerrado { border-left-color: #059669; }
+.act-ticket-top { display: flex; align-items: center; gap: 8px; }
+.act-ticket-id { font-weight: 800; font-size: 13px; font-family: var(--font-mono); color: var(--dogger-red); }
+.act-ticket-desc { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-ticket-meta { font-size: 11.5px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.act-ticket-fecha { font-size: 11px; color: #8A8478; margin-left: auto; white-space: nowrap; }
+.act-ticket-detalle { align-self: flex-end; font-size: 11.5px; font-weight: 700; color: var(--dogger-red); text-decoration: none; }
+.act-ticket-detalle:hover { text-decoration: underline; }
+/* Presionar al técnico: cuadrito de mensaje por ticket. */
+.act-presionar { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.act-presionar-tit { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+.act-tec { margin-bottom: 10px; }
+.act-tec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; }
+.act-nudge { display: flex; align-items: center; gap: 6px; margin: 0 0 6px 44px; }
+.act-nudge input { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
+.act-nudge input:focus { outline: none; border-color: var(--dogger-red); }
+/* Buscador + lista con scroll de 5 resultados (barra solo al hover). */
+.act-buscador { display: flex; gap: 6px; margin-bottom: 8px; }
+.act-buscador input { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
+.act-buscador input:focus { outline: none; border-color: var(--dogger-red); }
+.act-lista { max-height: 472px; overflow-y: auto; scrollbar-width: none; padding-right: 2px; }
+.act-lista::-webkit-scrollbar { width: 0; }
+.act-lista:hover { scrollbar-width: thin; }
+.act-lista:hover::-webkit-scrollbar { width: 6px; }
+.act-lista:hover::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+.act-lista:hover::-webkit-scrollbar-track { background: transparent; }
+.act-vacio { display: none; font-size: 12.5px; color: var(--ink-muted); text-align: center; padding: 12px 0; }
+.obs-avatar-ico { background: #241F1C; color: #fff; }
+.obs-avatar-ico .icon { width: 18px; height: 18px; }
+.mon-miembro { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed #F1EDE6; font-size: 12.5px; }
+.mon-miembro:last-child { border-bottom: 0; }
+.mon-miembro .mon-m-id { min-width: 0; flex: 1; }
+.mon-miembro .mon-m-id strong { display: block; font-size: 12.5px; }
+.mon-miembro .mon-m-id strong a { color: inherit; }
+.mon-miembro .mon-m-id small { color: var(--ink-muted); font-size: 11px; }
+</style>
+{% endblock %}
 
 {% block content %}
 <main class="page obs-page">
-    <div class="page-head">
-        <div class="obs-head-actions">
-            <a href="{% url 'tickets:obs_exportar' %}" class="btn btn-outline btn-sm">
-                <svg class="icon"><use href="#i-download"/></svg> Exportar
-            </a>
-            <button type="button" class="btn btn-outline btn-sm" onclick="window.print()">
-                <svg class="icon"><use href="#i-printer"/></svg> Imprimir
-            </button>
+
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
+        <a class="dash-stat dash-hov-zonas" href="#zonas-monitoreo" title="Bajar a ver cuántos usuarios hay en cada zona">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Zonas a cargo</span>
+                <span class="dash-stat-value">{{ total_zonas|default:0 }}</span>
+                <span class="dash-stat-hint">clic para ver usuarios</span>
+            </span>
+        </a>
+        <div class="dash-stat dash-hov-total">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Tickets</span>
+                <span class="dash-stat-value">{{ total_tickets }}</span>
+                <span class="dash-stat-hint">de tu lista</span>
+            </span>
+        </div>
+        <div class="dash-stat dash-hov-abiertos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Abiertos</span>
+                <span class="dash-stat-value st-abiertos">{{ total_abiertos }}</span>
+                <span class="dash-stat-hint">por atender</span>
+            </span>
+        </div>
+        <div class="dash-stat dash-hov-resueltos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Avance</span>
+                <span class="dash-stat-value st-resueltos">{{ avance_global }}%</span>
+                <span class="dash-stat-hint">resuelto global</span>
+            </span>
+        </div>
+        <div class="dash-stat dash-hov-usuarios">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-user"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Cuentas</span>
+                <span class="dash-stat-value">{{ total }}</span>
+                <span class="dash-stat-hint">en tu lista</span>
+            </span>
+        </div>
+        <div class="dash-stat dash-hov-vencidos">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Incidencias</span>
+                <span class="dash-stat-value st-vencidos">{{ conteo.rojo }}</span>
+                <span class="dash-stat-hint">en alerta</span>
+            </span>
         </div>
     </div>
 
-    {% include "observador/_menu.html" with activa="monitoreo" total_mi_lista=total %}
-
-    <div class="obs-resumen">
-        <div class="obs-kpi"><span class="obs-kpi-n">{{ total }}</span><span class="obs-kpi-l">En seguimiento</span></div>
-        <div class="obs-kpi obs-kpi-verde">
-            <span class="obs-kpi-n">{{ conteo.verde }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-verde"></span> Activos</span>
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-chart"/></svg></span>
+                <h3>Estado de tu lista</h3>
+            </div>
+            <div class="obs-dona">
+                <svg class="obs-dona-svg" viewBox="0 0 42 42" role="img" aria-label="Reparto por estado">
+                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="#F1EDE6" stroke-width="6"/>
+                    {% for s in dona %}
+                    {% if s.pct %}
+                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="{{ s.color }}" stroke-width="6" pathLength="100" stroke-dasharray="{{ s.pct }} 100" stroke-dashoffset="{{ s.offset }}" stroke-linecap="butt"/>
+                    {% endif %}
+                    {% endfor %}
+                    <text x="21" y="21" text-anchor="middle" dominant-baseline="central" font-size="8" font-weight="800" fill="#1d1b16">{{ total }}</text>
+                </svg>
+                <ul class="obs-dona-leyenda">
+                    <li><span class="obs-dot obs-dot-verde"></span> Activos <b>{{ conteo.verde }}</b></li>
+                    <li><span class="obs-dot obs-dot-amarillo"></span> Pendientes <b>{{ conteo.amarillo }}</b></li>
+                    <li><span class="obs-dot obs-dot-rojo"></span> Incidencias <b>{{ conteo.rojo }}</b></li>
+                </ul>
+            </div>
         </div>
-        <div class="obs-kpi obs-kpi-amarillo">
-            <span class="obs-kpi-n">{{ conteo.amarillo }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-amarillo"></span> Pendientes</span>
-        </div>
-        <div class="obs-kpi obs-kpi-rojo">
-            <span class="obs-kpi-n">{{ conteo.rojo }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-rojo"></span> Incidencias</span>
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+                <h3>Carga por zona</h3>
+            </div>
+            {% for g in grupos %}
+            <div class="obs-barra">
+                <span class="obs-barra-n">{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</span>
+                <span class="obs-barra-track"><span class="obs-barra-fill" style="width: {% if max_zona_tickets %}{% widthratio g.total_tickets max_zona_tickets 100 %}{% else %}0{% endif %}%;"></span></span>
+                <span class="obs-barra-v">{{ g.total_tickets }}</span>
+            </div>
+            <div class="obs-barra">
+                <span class="obs-barra-n"></span>
+                <span class="obs-barra-track"><span class="obs-barra-fill f-abiertos" style="width: {% if max_zona_tickets %}{% widthratio g.abiertos max_zona_tickets 100 %}{% else %}0{% endif %}%;"></span></span>
+                <span class="obs-barra-v">{{ g.abiertos }}</span>
+            </div>
+            {% empty %}
+            <p class="chart-empty">Sin zonas todavía.</p>
+            {% endfor %}
         </div>
     </div>
 
-    {% if filas %}
-    <div class="obs-tabla-wrap">
-        <table class="obs-tabla">
-            <thead>
-                <tr>
-                    <th>Elemento</th>
-                    <th>Estado</th>
-                    <th class="num">Abiertos</th>
-                    <th>Tickets</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for f in filas %}
-                <tr>
-                    <td>
-                        <strong>{{ f.nombre }}</strong>
-                        {% if f.detalle %}<small>{{ f.detalle }}</small>{% endif %}
-                    </td>
-                    <td><span class="obs-pill obs-pill-{{ f.estado }}"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span></td>
-                    <td class="num">{{ f.abiertos }}</td>
-                    <td class="obs-tickets">
-                        {% for t in f.tickets|slice:":6" %}
-                        <span class="chip chip-soft">{{ t.codigo }}</span>
-                        {% empty %}<span class="muted">—</span>{% endfor %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                <h3>Técnicos que atienden</h3>
+            </div>
+            {% for nombre, n in top_tecnicos %}
+            <div class="obs-barra">
+                <span class="obs-barra-n">{{ nombre }}</span>
+                <span class="obs-barra-track"><span class="obs-barra-fill f-tec" style="width: {% if max_tec_tickets %}{% widthratio n max_tec_tickets 100 %}{% else %}0{% endif %}%;"></span></span>
+                <span class="obs-barra-v">{{ n }}</span>
+            </div>
+            {% empty %}
+            <p class="chart-empty">Nadie atendiendo todavía.</p>
+            {% endfor %}
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
+                <h3>Resumen por zona</h3>
+            </div>
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Zona</th>
+                            <th class="num">Cuentas</th>
+                            <th class="num">Tickets</th>
+                            <th class="num">Abiertos</th>
+                            <th class="num">Avance</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for g in grupos %}
+                        <tr>
+                            <td><strong>{{ g.zona.nombre }}</strong></td>
+                            <td class="num">{{ g.filas|length }}</td>
+                            <td class="num">{{ g.total_tickets }}</td>
+                            <td class="num">{{ g.abiertos }}</td>
+                            <td class="num">{{ g.avance }}%</td>
+                            <td><span class="obs-pill obs-pill-{{ g.estado }}">{{ g.estado|capfirst }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr class="table-empty"><td colspan="6">Sin zonas todavía.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    {% else %}
-    <div class="obs-vacio">
-        <span class="obs-vacio-icon"><svg class="icon"><use href="#i-eye"/></svg></span>
-        <strong>No hay nada que monitorear todavía</strong>
-        <p>Agrega personas o puntos a tu lista para ver aquí su estado.</p>
+
+    <section id="zonas-monitoreo" class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Zonas</h3>
+        <p class="obs-leyenda">
+            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-verde"></span> Al día<span class="obs-tip">Todo resuelto, sin pendientes</span></span>
+            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-amarillo"></span> Pendiente<span class="obs-tip">Abiertos o en progreso</span></span>
+            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-rojo"></span> Incidencia<span class="obs-tip">Urgentes abiertos</span></span>
+        </p>
+    {% include "observador/_grupos_monitoreo.html" %}
+    </section>
+
+    <section class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Actividad reciente</h3>
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-card-head obs-tickets-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <h3>Tickets recientes</h3>
+                <button type="button" class="chart-refresh-btn" id="actBtnBuscar" title="Buscar en tickets recientes" aria-label="Buscar en tickets recientes" aria-expanded="false"><svg class="icon"><use href="#i-search"/></svg></button>
+                <button type="button" class="chart-refresh-btn" id="actRecargar" title="Recargar tickets recientes" aria-label="Recargar tickets recientes"><svg class="icon"><use href="#i-refresh"/></svg></button>
+            </div>
+            <div class="act-buscador" id="actBuscadorBox" hidden>
+                <input type="search" id="actBuscar" placeholder="Buscar por código, título o usuario…" aria-label="Buscar en tickets recientes">
+            </div>
+            <div class="act-lista" id="actLista">
+            {% for t in actividad.tickets %}
+            <article class="act-ticket st-{{ t.estado }}">
+                <div class="act-ticket-top">
+                    <span class="act-ticket-id">{{ t.codigo }}</span>
+                    <span class="obs-pill obs-pill-{% if t.estado == 'abierto' %}rojo{% elif t.estado == 'en-progreso' %}amarillo{% else %}verde{% endif %}">{{ t.get_estado_display }}</span>
+                    <span class="act-ticket-fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                </div>
+                <span class="act-ticket-desc">{{ t.titulo }}</span>
+                <span class="act-ticket-meta">
+                    <span>{{ t.solicitante_nombre }}</span>
+                    <span>Técnico: {{ t.tecnico_asignado.nombre|default:"sin asignar" }}</span>
+                </span>
+                <a class="act-ticket-detalle" href="{% url 'tickets:mi_ticket' t.pk %}">detalles ›</a>
+            </article>
+            {% empty %}
+            <p class="chart-empty">Sin tickets todavía.</p>
+            {% endfor %}
+            </div>
+            <p class="act-vacio" id="actVacio">Sin resultados para esa búsqueda.</p>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-send"/></svg></span>
+                <h3>Presionar al técnico</h3>
+                <button type="button" class="chart-refresh-btn" id="actBtnBuscarTec" title="Buscar en solicitudes por técnico" aria-label="Buscar en solicitudes por técnico" aria-expanded="false"><svg class="icon"><use href="#i-search"/></svg></button>
+            </div>
+            <div class="act-buscador" id="actBuscadorTecBox" hidden>
+                <input type="search" id="actBuscarTec" placeholder="Buscar por técnico o código de ticket…" aria-label="Buscar en solicitudes por técnico">
+            </div>
+             <div class="act-presionar" style="margin-top:0;border-top:0;padding-top:0">
+                 {% for e in presionar %}
+                  <div class="act-tec is-closed{% if e.tickets|length > 2 %} act-tec-scroll{% endif %}">
+                      <div class="act-tec-head" role="button" tabindex="0" aria-expanded="false" data-tec-toggle>
+                          <span class="obs-avatar obs-avatar-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                          <strong>{{ e.tecnico.nombre }}</strong>
+                          {% if e.urgentes %}<span class="obs-pill obs-pill-rojo">{{ e.urgentes }} urgente{{ e.urgentes|pluralize }}</span>{% endif %}
+                          <small class="muted">{{ e.tickets|length }} abierto{{ e.tickets|length|pluralize }}</small>
+                          <svg class="icon icon-sm obs-tec-chevron"><use href="#i-chevron-down"/></svg>
+                      </div>
+                      <div class="act-tec-tickets" data-tec-body>
+                         {% for t in e.tickets %}
+                         <form method="post" action="{% url 'tickets:obs_presionar' t.pk %}" class="act-nudge">
+                             {% csrf_token %}
+                             <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                             <span class="obs-ticket t-{{ t.estado }}">{{ t.codigo }}</span>
+                             <input type="text" name="mensaje" maxlength="500" placeholder="Escríbele para que resuelva rápido…" aria-label="Mensaje para {{ e.tecnico.nombre }} sobre {{ t.codigo }}" required>
+                             <button type="submit" class="btn btn-sm" title="Enviar mensaje al técnico">Enviar</button>
+                         </form>
+                         {% endfor %}
+                     </div>
+                 </div>
+                 {% empty %}
+                 <p class="chart-empty">Sin técnicos con carga abierta.</p>
+                 {% endfor %}
+             </div>
+        </div>
     </div>
-    {% endif %}
+    </section>
+    <script>
+    (function () {
+        var campo = document.getElementById("actBuscar");
+        var lista = document.getElementById("actLista");
+        var vacio = document.getElementById("actVacio");
+        var buscadorBox = document.getElementById("actBuscadorBox");
+        var btnBuscar = document.getElementById("actBtnBuscar");
+        if (btnBuscar && buscadorBox) {
+            btnBuscar.addEventListener("click", function () {
+                var open = buscadorBox.hidden;
+                buscadorBox.hidden = !open;
+                btnBuscar.setAttribute("aria-expanded", String(open));
+                if (open && campo) campo.focus();
+            });
+        }
+        if (!campo || !lista) return;
+        campo.addEventListener("input", function () {
+            var q = campo.value.trim().toLowerCase();
+            var visibles = 0;
+            lista.querySelectorAll(".act-ticket").forEach(function (card) {
+                var ok = !q || (card.textContent || "").toLowerCase().includes(q);
+                card.style.display = ok ? "" : "none";
+                if (ok) visibles += 1;
+            });
+            if (vacio) vacio.style.display = visibles ? "none" : "block";
+        });
+        var campoTec = document.getElementById("actBuscarTec");
+        var presionarBox = document.getElementById("actBuscadorTecBox");
+        var btnBuscarTec = document.getElementById("actBtnBuscarTec");
+        if (btnBuscarTec && presionarBox) {
+            btnBuscarTec.addEventListener("click", function () {
+                var open = presionarBox.hidden;
+                presionarBox.hidden = !open;
+                btnBuscarTec.setAttribute("aria-expanded", String(open));
+                if (open && campoTec) campoTec.focus();
+            });
+        }
+        if (campoTec) {
+            campoTec.addEventListener("input", function () {
+                var q = campoTec.value.trim().toLowerCase();
+                document.querySelectorAll(".act-tec").forEach(function (tec) {
+                    var ok = !q || (tec.textContent || "").toLowerCase().includes(q);
+                    tec.style.display = ok ? "" : "none";
+                });
+            });
+        }
+        var recargar = document.getElementById("actRecargar");
+        if (recargar) {
+            recargar.addEventListener("click", function () {
+                recargar.classList.add("is-girando");
+                location.reload();
+                setTimeout(function () { recargar.classList.remove("is-girando"); }, 350);
+            });
+        }
+        /* Técnicos desplegables: colapsan sus tickets para no crecer el bloque */
+        document.querySelectorAll("[data-tec-toggle]").forEach(function (head) {
+            var body = head.parentElement.querySelector("[data-tec-body]");
+            if (!body) return;
+            head.addEventListener("click", function () {
+                var open = head.getAttribute("aria-expanded") === "true";
+                head.setAttribute("aria-expanded", String(!open));
+                head.parentElement.classList.toggle("is-closed", open);
+            });
+            head.addEventListener("keydown", function (ev) {
+                if (ev.key === "Enter" || ev.key === " ") {
+                    ev.preventDefault();
+                    head.click();
+                }
+            });
+        });
+    })();
+    </script>
 </main>
 {% endblock %}

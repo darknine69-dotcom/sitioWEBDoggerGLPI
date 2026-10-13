@@ -17,3 +17,9 @@ tickets
  [X] 0016_facturacion_electronica_unificada
  [X] 0017_calificacion_tecnico_por_ticket
  [X] 0018_quitar_indice_viejo_calificacion
+ [X] 0019_zonaobservador_elementomilista_zona
+ [X] 0020_monitoreoauditoria
+ [X] 0021_configsitio_teams_activo_configsitio_teams_url
+ [X] 0022_configsitio_glpi_app_token_configsitio_glpi_base_url_and_more
+ [X] 0023_mensajecorporativo
+ [X] 0024_mensajecorporativo_destinatario

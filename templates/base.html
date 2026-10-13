@@ -120,10 +120,6 @@
                     <strong>Mesa de Ayuda TI</strong>
                 </span>
             </a>
-            <button type="button" class="sidebar-toggle" id="sidebarCollapse"
-                    aria-label="Contraer el menú" title="Contraer el menú">
-                <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
-            </button>
         </div>
 
         <nav class="sidebar-nav" id="sidebarNav" aria-label="Secciones">
@@ -239,9 +235,9 @@
             {% if request.user.rol == 'observador' %}
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Observación</p>
-                <a href="{% url 'tickets:obs_panel' %}" class="sidebar-link{% nav_active 'obs_panel' %}"{% nav_current 'obs_panel' %} data-title="Panel">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-eye"/></svg>
-                    <span class="sidebar-label">Panel</span>
+                <a href="{% url 'tickets:obs_monitoreo' %}" class="sidebar-link{% nav_active 'obs_monitoreo' %}"{% nav_current 'obs_monitoreo' %} data-title="Monitoreo">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-check-circle"/></svg>
+                    <span class="sidebar-label">Monitoreo</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets en tus zonas</span>{% endif %}
                 </a>
@@ -249,19 +245,11 @@
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-user"/></svg>
                     <span class="sidebar-label">Usuarios</span>
                 </a>
-                <a href="{% url 'tickets:obs_buscar' %}" class="sidebar-link{% nav_active 'obs_buscar' %}"{% nav_current 'obs_buscar' %} data-title="Buscar y agregar">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-search"/></svg>
-                    <span class="sidebar-label">Buscar y agregar</span>
-                </a>
                 <a href="{% url 'tickets:obs_mi_lista' %}" class="sidebar-link{% nav_active 'obs_mi_lista' %}"{% nav_current 'obs_mi_lista' %} data-title="Mi lista">
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-layers"/></svg>
                     <span class="sidebar-label">Mi lista</span>
                     {% if menu_mios %}<span class="sidebar-count" data-nivel="bajo">{{ menu_mios }}</span>{% endif %}
                     {% if menu_mios %}<span class="nav-count-sr">{{ menu_mios }} elementos en tu lista</span>{% endif %}
-                </a>
-                <a href="{% url 'tickets:obs_monitoreo' %}" class="sidebar-link{% nav_active 'obs_monitoreo' %}"{% nav_current 'obs_monitoreo' %} data-title="Monitoreo">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-check-circle"/></svg>
-                    <span class="sidebar-label">Monitoreo</span>
                 </a>
             </div>
             {% endif %}
@@ -282,9 +270,9 @@
                 <p class="sidebar-group-title">Tu calificación</p>
                 {% if calif_lateral.total %}
                 <div class="side-calif">
-                    <strong class="side-calif-num">{{ calif_lateral.porcentaje }}%</strong>
-                    <span class="side-calif-bar" role="img" aria-label="{{ calif_lateral.porcentaje }}% de aprobación"><span style="width: {{ calif_lateral.porcentaje }}%"></span></span>
-                    <small>{{ calif_lateral.porcentaje }}% de aprobación · {{ calif_lateral.total }} voto{{ calif_lateral.total|pluralize:"s" }}</small>
+                    <strong class="side-calif-num">{% if calif_lateral.porcentaje != None %}{{ calif_lateral.porcentaje }}%{% else %}—{% endif %}</strong>
+                    <span class="side-calif-bar" role="img" aria-label="{{ calif_lateral.total }} votos de {{ calif_lateral.resueltos }} resueltos"><span style="width: {{ calif_lateral.porcentaje|default:0 }}%"></span></span>
+                    <small>{{ calif_lateral.total }} voto{{ calif_lateral.total|pluralize:"s" }}{% if calif_lateral.porcentaje != None %} · {{ calif_lateral.porcentaje }}% de {{ calif_lateral.resueltos }} resueltos{% endif %}</small>
                 </div>
                 {% else %}
                 <small class="side-calif-vacia">Todavía no hay votos. Cuando un usuario te califique, aparecerá aquí.</small>
@@ -294,6 +282,13 @@
         </nav>
 
     </aside>
+
+    {% comment %}Pestaña a mitad del borde lateral (solo escritorio):
+    pliega el menú a iconos. En móvil se usa la hamburguesa.{% endcomment %}
+    <button type="button" class="sidebar-edge" id="sidebarEdge"
+            aria-label="Contraer el menú" title="Contraer el menú" aria-expanded="true">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+    </button>
 
     <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
 
@@ -306,9 +301,8 @@
         {% comment %}Encabezado superior: va POR ENCIMA del título de la vista y
         sostiene el acceso del usuario y la campana.{% endcomment %}
         <div class="topbar-top">
-            {% comment %}El botón del menú vive en la banda de color: así las
-            vistas sin título pueden colapsar su fila sin quedarse sin acceso al
-            menú en el móvil.{% endcomment %}
+            {% comment %}En móvil el menú se abre con la hamburguesa de la banda
+            de color; en escritorio se pliega con la pestaña del borde.{% endcomment %}
             <button type="button" class="topbar-burger" id="sidebarBurger" aria-label="Abrir menú" aria-expanded="false">
                 <span class="nav-toggle-bar"></span>
                 <span class="nav-toggle-bar"></span>
@@ -421,6 +415,8 @@
     {% endif %}
 
     {% include "notificaciones/_emergente.html" %}
+    {% include "tickets/_chat_widget.html" %}
+    {% include "accounts/_atajos.html" %}
 
     <div id="contenido">
     {% block content %}{% endblock %}
@@ -614,16 +610,6 @@
     </div>
     {% endif %}
 
-    {# Atajo de consulta: solo dentro del sistema, no en la portada. #}
-    {% if request.user.is_authenticated and request.resolver_match.url_name != 'portal' %}
-    <aside class="action-float" aria-label="Consultar código HD">
-        <a class="act-float-btn" href="{% url 'tickets:consultar' %}" title="Consultar por código HD">
-            <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
-            <span class="act-float-label">Consultar ticket HD</span>
-        </a>
-    </aside>
-    {% endif %}
-
     <script>
     (function(){
         var chip = document.getElementById('userChipToggle');
@@ -793,10 +779,10 @@
                   texto: "Aqui se crea el listado de categorias con el que reportan los usuarios." }
             ],
             observador: [
-                { sel: "[href*='obs-panel'], [href*='/observador/']", titulo: "Tu observacion",
+                { sel: "[href*='obs-monitoreo'], [href*='/observador/monitoreo/']", titulo: "Tu monitoreo",
                   texto: "Solo ves los puntos que tienes asignados, en modo lectura." },
-                { sel: "[href*='obs-buscar'], [href*='/observador/buscar/']", titulo: "Buscar y agregar",
-                  texto: "Encuentra a alguien por nombre o correo y agregalo a tu lista para monitorearlo." }
+                { sel: "[href*='obs-usuarios'], [href*='/observador/usuarios/']", titulo: "Usuarios y búsqueda",
+                  texto: "Encuentra a alguien por nombre, correo o ubicación y velo con sus tickets y su técnico." }
             ]
         };
         var pasos = COMUN.concat(POR_ROL[ROL] || []);

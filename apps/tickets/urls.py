@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, views_monitoreo, views_observador, webhooks
+from . import views, views_chat, views_monitoreo, views_observador, webhooks
 
 app_name = "tickets"
 
@@ -23,6 +23,7 @@ urlpatterns = [
     path("mi-panel/tickets/<int:pk>/editar/", views.editar_mi_ticket, name="mi_editar"),
     path("mi-panel/tickets/<int:pk>/reenviar-glpi/", views.reenviar_glpi, name="mi_reenviar_glpi"),
     path("mi-panel/tickets/<int:pk>/responder/", views.responder_ticket, name="mi_responder"),
+    path("mi-panel/tickets/<int:pk>/responder-obs/", views.responder_ticket_obs, name="mi_responder_obs"),
     path("mi-panel/api/tickets/<int:pk>/info/", views.mi_ticket_info_ajax, name="mi_api_info"),
     path("mi-panel/api/tickets/<int:pk>/editar/", views.mi_ticket_editar_ajax, name="mi_api_editar"),
     path("mi-panel/api/tickets/<int:pk>/cerrar/", views.mi_ticket_cerrar_ajax, name="mi_api_cerrar"),
@@ -56,6 +57,12 @@ urlpatterns = [
     path("panel/monitoreo/agregar/", views_monitoreo.monitoreo_agregar, name="monitoreo_agregar"),
     path("panel/monitoreo/quitar/<int:pk>/", views_monitoreo.monitoreo_quitar, name="monitoreo_quitar"),
     path("panel/monitoreo/zonas/", views_monitoreo.monitoreo_zonas, name="monitoreo_zonas"),
+    path("panel/monitoreo/miembro/<int:pk>/quitar-zona/", views_monitoreo.monitoreo_zona_miembro_quitar, name="monitoreo_zona_miembro_quitar"),
+    path("panel/monitoreo/zona/crear/", views_monitoreo.monitoreo_zona_crear, name="monitoreo_zona_crear"),
+    path("panel/monitoreo/zona/<int:pk>/agregar/", views_monitoreo.monitoreo_zona_miembro_agregar, name="monitoreo_zona_miembro_agregar"),
+    path("panel/monitoreo/cuenta/<int:pk>/", views_monitoreo.monitoreo_cuenta_detalle, name="monitoreo_cuenta_detalle"),
+    path("panel/monitoreo/zona/<int:pk>/eliminar/", views_monitoreo.monitoreo_zona_eliminar, name="monitoreo_zona_eliminar"),
+    path("panel/monitoreo/zona/<int:pk>/renombrar/", views_monitoreo.monitoreo_zona_renombrar, name="monitoreo_zona_renombrar"),
     path("panel/usuarios/estado.json", views.usuarios_estado_api, name="usuarios_estado"),
     path("panel/usuarios/guardar/", views.usuario_guardar, name="usuario_guardar"),
     path("panel/usuarios/<int:pk>/ficha/", views.usuario_ficha_api, name="usuario_ficha"),
@@ -66,6 +73,15 @@ urlpatterns = [
     path("panel/usuarios/importar-glpi/", views.usuarios_importar_glpi, name="usuarios_importar_glpi"),
     path("panel/usuarios/importar/<int:glpi_id>/", views.usuario_importar_uno, name="usuario_importar_uno"),
     path("api/glpi/webhook/", webhooks.glpi_webhook, name="glpi_webhook"),
+    path("chat/api/tickets/", views_chat.chat_tickets, name="chat_tickets"),
+    path("chat/api/hilo/<int:pk>/", views_chat.chat_hilo, name="chat_hilo"),
+    path("chat/api/responder/<int:pk>/", views_chat.chat_responder, name="chat_responder"),
+    path("chat/api/adjuntar/<int:pk>/", views_chat.chat_adjuntar, name="chat_adjuntar"),
+    path("chat/api/corporativo/", views_chat.chat_corporativo, name="chat_corporativo"),
+    path("chat/api/corporativo/enviar/", views_chat.chat_corporativo_enviar, name="chat_corporativo_enviar"),
+    path("chat/api/colegas/", views_chat.chat_colegas, name="chat_colegas"),
+    path("chat/api/novedades/", views_chat.chat_novedades, name="chat_novedades"),
+    path("chat/api/estado/", views_chat.chat_estado, name="chat_estado"),
     # --- Módulo del observador ---
     path("observador/", views_observador.panel_observador, name="obs_panel"),
     path("observador/buscar/", views_observador.buscar_observador, name="obs_buscar"),
@@ -75,6 +91,7 @@ urlpatterns = [
     path("observador/mi-lista/<int:pk>/quitar/", views_observador.quitar_mi_lista, name="obs_quitar"),
     path("observador/monitoreo/", views_observador.monitorear_observador, name="obs_monitoreo"),
     path("observador/exportar/", views_observador.exportar_observador, name="obs_exportar"),
+    path("observador/presionar/<int:pk>/", views_observador.presionar_tecnico, name="obs_presionar"),
     path("observador/zonas/", views_observador.zonas_observador, name="obs_zonas"),
     path("observador/zonas/<int:pk>/", views_observador.zona_detalle_observador, name="obs_zona_detalle"),
     path("observador/zonas/miembro/", views_observador.zona_miembro_asignar, name="obs_zona_miembro"),

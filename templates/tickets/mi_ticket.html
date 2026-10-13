@@ -6,13 +6,13 @@
 {% block header_desc %}Descripción, avance e historial de la solicitud.{% endblock %}
 
 {% block extra_css %}
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260923">
+{% load static asset %}
+<link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 {% endblock %}
 
 {% block content %}
 <main class="page page-corporate ticket-detail-page">
-    <a class="ticket-back" href="{% url 'tickets:mi_panel' %}" title="Volver a Mis tickets" aria-label="Volver a Mis tickets">
+    <a class="ticket-back" href="{% if solo_lectura %}{% url 'tickets:obs_monitoreo' %}{% else %}{% url 'tickets:mi_panel' %}{% endif %}" title="{% if solo_lectura %}Volver al monitoreo{% else %}Volver a Mis tickets{% endif %}" aria-label="{% if solo_lectura %}Volver al monitoreo{% else %}Volver a Mis tickets{% endif %}">
         <svg class="icon"><use href="#i-arrow-left"/></svg>
     </a>
 
@@ -48,6 +48,7 @@
                 </div>
 
                 <div class="corp-detail-toolbar">
+                    {% if not solo_lectura %}
                     {% if ticket.estado == 'abierto' %}
                     <a class="btn btn-outline btn-sm" href="{% url 'tickets:mi_editar' ticket.pk %}"><svg class="icon"><use href="#i-edit"/></svg> Editar ticket</a>
                     {% endif %}
@@ -60,6 +61,7 @@
                     </form>
                     {% if not ticket.glpi_id %}
                     <span class="corp-hint">Este ticket aún no llegó a GLPI (¿GLPI apagado cuando se creó?).</span>
+                    {% endif %}
                     {% endif %}
                     {% endif %}
                 </div>
@@ -114,12 +116,16 @@
                             <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
                             <h3>Actividad</h3>
                         </div>
+                        <div class="chat-scroll">
                         {% include "tickets/_chat_thread.html" %}
-                        <form method="post" action="{% url 'tickets:mi_responder' ticket.pk %}" class="chat-composer chat-composer-compact">
+                        </div>
+                        {% if puede_responder %}
+                        <form method="post" action="{% if solo_lectura %}{% url 'tickets:mi_responder_obs' ticket.pk %}{% else %}{% url 'tickets:mi_responder' ticket.pk %}{% endif %}" class="chat-composer chat-composer-compact">
                             {% csrf_token %}
-                            <textarea id="comentario" name="comentario" rows="1" aria-label="Escribe tu respuesta para la mesa de ayuda" placeholder="Escribe tu respuesta para la mesa de ayuda..."></textarea>
+                            <textarea id="comentario" name="comentario" rows="1" aria-label="Escribe tu mensaje en la conversación" placeholder="{% if solo_lectura %}Únete a la conversación…{% else %}Escribe tu respuesta para la mesa de ayuda...{% endif %}"></textarea>
                             <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-send"/></svg> Enviar</button>
                         </form>
+                        {% endif %}
                         {% include "tickets/_share_row.html" %}
                     </section>
                 </div>

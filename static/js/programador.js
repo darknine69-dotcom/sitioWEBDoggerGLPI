@@ -794,4 +794,4 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
     }
     bind();
     load();
-})();
+})();

@@ -263,11 +263,17 @@ class CalificacionConPulgares(TestCase):
             ),
             valor=CalificacionTecnico.Valor.NO_ME_GUSTA,
         )
+        for i in range(60):
+            Ticket.objects.create(
+                titulo=f"R{i}", descripcion="d", solicitante_nombre="U",
+                solicitante_email=f"u{i}@x.com", estado=Ticket.Estado.CERRADO,
+                tecnico_asignado=self.tecnico,
+            )
         self.client.force_login(self.tecnico)
         html = self.client.get(reverse("tickets:panel_tecnico")).content.decode()
         self.assertIn("Tu calificación", html)
-        # 2 de 3 votos: 67% de aprobación.
-        self.assertIn("67% de aprobación", html)
+        # 3 votos de 60 resueltos: 5% de cobertura, no 100% de 3.
+        self.assertIn("3 votos · 5% de 60 resueltos", html)
 
     def test_sin_votos_el_panel_no_enseña_porcentaje(self):
         self.client.force_login(self.tecnico)

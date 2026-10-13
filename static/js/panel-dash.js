@@ -39,6 +39,7 @@
         }
     });
 
+    /* Todos los tipos en todos los gráficos de solicitudes. */
     var TIPOS = ['bar', 'line', 'area', 'pie', 'donut', 'funnel', 'pyramid', 'count'];
     var TIPO_LABEL = {
         bar: 'Barras', line: 'Línea', area: 'Área', pie: 'Circular',
@@ -170,7 +171,10 @@
     }
 
     function drawFunnelLike(stage, widget, pyramid) {
-        var prs = pairs(widget).filter(function (p) { return p.value > 0; });
+        /* El embudo/pirámide ordenan de mayor a menor: sin orden las
+           franjas quedan arbitrarias y el gráfico no dice nada. */
+        var prs = pairs(widget).filter(function (p) { return p.value > 0; })
+            .sort(function (a, b) { return b.value - a.value; });
         if (!prs.length) { stage.appendChild(domEl('<p class="chart-empty">Sin datos.</p>')); return; }
         var max = Math.max.apply(null, prs.map(function (p) { return p.value; })) || 1;
         var W = 620, H = 260, top = 18, base = 330, n = prs.length;
@@ -189,6 +193,9 @@
             r.setAttribute('x', x); r.setAttribute('y', y);
             r.setAttribute('width', w); r.setAttribute('height', hh);
             r.setAttribute('rx', 6); r.setAttribute('fill', p.color);
+            var tt = document.createElementNS(NS, 'title');
+            tt.textContent = p.label + ': ' + p.value;
+            r.appendChild(tt);
             svg.appendChild(r);
             var t = document.createElementNS(NS, 'text');
             t.setAttribute('x', W / 2); t.setAttribute('y', y + hh / 2 + 4);
@@ -218,20 +225,28 @@
         return ' ' + name + ': ' + v + (pct ? ' (' + pct + '%)' : '');
     }
 
-    function configFor(widget, tipo) {
+    function configFor(widget, tipo, conLeyendaPropia) {
         var multi = serieWidget(widget);
         function single() {
             var prs = pairs(widget);
+            var bg = prs.map(function (p) { return p.color; });
             return {
                 labels: prs.map(function (p) { return p.label; }),
                 datasets: [{
                     data: prs.map(function (p) { return p.value; }),
-                    backgroundColor: prs.map(function (p) { return p.color; }),
-                    borderColor: '#fff', borderWidth: 2, hoverOffset: 20, borderRadius: 4
+                    backgroundColor: bg,
+                    borderColor: '#fff', borderWidth: 2, borderRadius: 4,
+                    /* Sin ningún realce al hover: mismos colores, grosores
+                       y offset que en reposo. El segmento queda quieto. */
+                    hoverOffset: 0,
+                    hoverBackgroundColor: bg,
+                    hoverBorderWidth: 2,
+                    hoverBorderColor: '#fff'
                 }]
             };
         }
         function multiDatasets(stacked) {
+            var bw = tipo === 'bar' ? 1 : 2;
             return {
                 labels: multi.labels,
                 datasets: multi.datasets.map(function (ds) {
@@ -240,14 +255,22 @@
                         data: ds.data,
                         backgroundColor: ds.color,
                         borderColor: ds.color,
-                        borderWidth: tipo === 'bar' ? 1 : 2,
+                        borderWidth: bw,
                         borderRadius: 4,
                         stack: stacked ? 's' : undefined,
                         fill: tipo === 'area' ? 'origin' : false,
                         tension: 0.35,
+                        /* Sin realce al hover: idéntico al reposo. */
+                        hoverBackgroundColor: ds.color,
+                        hoverBorderColor: ds.color,
+                        hoverBorderWidth: bw,
                         pointRadius: 3,
-                        pointHoverRadius: 5,
-                        pointBackgroundColor: ds.color
+                        pointHoverRadius: 3,
+                        pointBackgroundColor: ds.color,
+                        pointBorderColor: ds.color,
+                        pointHoverBackgroundColor: ds.color,
+                        pointHoverBorderColor: ds.color,
+                        pointHoverBorderWidth: 1
                     };
                 })
             };
@@ -265,18 +288,26 @@
                 data = multiDatasets(stacked);
             } else {
                 var prs = pairs(widget);
+                var bg2 = prs.map(function (p) { return p.color; });
                 data = {
                     labels: prs.map(function (p) { return p.label; }),
                     datasets: [{
                         label: undefined,
                         data: prs.map(function (p) { return p.value; }),
-                        backgroundColor: prs.map(function (p) { return p.color; }),
-                        borderColor: prs.map(function (p) { return p.color; }),
+                        backgroundColor: bg2,
+                        borderColor: bg2,
                         borderWidth: 1, borderRadius: 4,
                         fill: tipo === 'area' ? 'origin' : false,
                         tension: 0.35,
-                        pointRadius: 3, pointHoverRadius: 5,
-                        pointBackgroundColor: prs.map(function (p) { return p.color; })
+                        hoverBackgroundColor: bg2,
+                        hoverBorderColor: bg2,
+                        hoverBorderWidth: 1,
+                        pointRadius: 3, pointHoverRadius: 3,
+                        pointBackgroundColor: bg2,
+                        pointBorderColor: bg2,
+                        pointHoverBackgroundColor: bg2,
+                        pointHoverBorderColor: bg2,
+                        pointHoverBorderWidth: 1
                     }]
                 };
             }
@@ -306,7 +337,11 @@
             opts = {
                 responsive: true, maintainAspectRatio: false, cutout: tipo === 'donut' ? '58%' : 0,
                 plugins: {
-                    legend: { display: false },
+                    /* Sin leyenda propia (sla/comp20) se usa la nativa abajo;
+                       con leyenda propia se apaga para no duplicar. */
+                    legend: conLeyendaPropia
+                        ? { display: false }
+                        : { position: 'bottom', labels: { boxWidth: 12, padding: 12 } },
                     tooltip: { callbacks: { label: tooltipPct } }
                 }
             };
@@ -356,6 +391,11 @@
             if (leg) leg.style.display = on ? '' : 'none';
         }
         var tipo = estado[widget] || DEFAULT_TIPO[widget];
+        /* La leyenda fija de series solo vale en cartesianos; en torta o
+           recuento confundiría (describe series que ahí no se ven). */
+        var ley = card.querySelector('[data-legend]');
+        if (ley) ley.style.display = (tipo === 'bar' || tipo === 'line' || tipo === 'area') ? '' : 'none';
+        card.classList.toggle('is-count', tipo === 'count');
         clearStage(stage);
         if (charts[widget]) { charts[widget].destroy(); charts[widget] = null; }
 
@@ -364,7 +404,7 @@
         if (tipo === 'pyramid') { drawFunnelLike(stage, widget, true); onPie(false); return; }
 
         var canvas = document.createElement('canvas');
-        var cfg = configFor(widget, tipo);
+        var cfg = configFor(widget, tipo, Boolean(card.querySelector('[data-pie-legend]')));
         // Sin importarle si hay etiquetas: un canvas en blanco no le dice nada
         // al usuario. Si no hay ni un solo valor, se explica qué falta.
         if (!tieneValores(cfg)) {
@@ -375,9 +415,12 @@
         stage.appendChild(canvas);
         var chart = new Chart(canvas.getContext('2d'), cfg);
         var ct = cfg.type || tipo;
-
-        if (ct === 'pie' || ct === 'doughnut') { onPie(true); bindPieCard(card, widget, chart); }
-        else onPie(false);
+        if (ct === 'pie' || ct === 'doughnut') {
+            onPie(true);
+            bindPieCard(card, widget, chart);
+        } else {
+            onPie(false);
+        }
         charts[widget] = chart;
     }
 
@@ -385,32 +428,29 @@
         var leg = card.querySelector('[data-pie-legend]');
         if (!leg) return;
         var lis = Array.prototype.slice.call(leg.querySelectorAll('li'));
+        /* Solo se resalta la fila de la leyenda (CSS). Sin bordes,
+           sin acercamientos, sin malla. */
         function setHi(i) {
-            try {
-                chart.setActiveElements(i >= 0 ? [{ datasetIndex: 0, index: i }] : []);
-                chart.update();
-            } catch (e) {}
             lis.forEach(function (li, k) { li.classList.toggle('is-hi', k === i); });
         }
         lis.forEach(function (li, i) {
             li.addEventListener('mouseenter', function () { setHi(i); });
             li.addEventListener('mouseleave', function () { setHi(-1); });
         });
-        chart.options.onHover = function (ev, items) { setHi(items.length ? items[0].index : -1); };
     }
 
     // ------------------------------------------------------------------
     // Menú de cambio de tipo
     // ------------------------------------------------------------------
     function prevSvg(tipo) {
-        var s = 'stroke="#212121" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"';
-        if (tipo === 'bar') return '<svg viewBox="0 0 20 14" class="csm-prev"><rect x="2" y="6" width="3.4" height="6" rx="1" fill="#212121"/><rect x="8.3" y="3" width="3.4" height="9" rx="1" fill="#212121"/><rect x="14.6" y="9" width="3.4" height="3" rx="1" fill="#212121"/></svg>';
-        if (tipo === 'line') return '<svg viewBox="0 0 20 14" class="csm-prev"><polyline points="1,12 6,8 10,10 15,4 19,2" ' + s + '/></svg>';
-        if (tipo === 'area') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M1,12 L6,8 L10,10 L15,4 L19,2 L19,12 Z" fill="#212121" opacity=".25"/><polyline points="1,12 6,8 10,10 15,4 19,2" ' + s + '/></svg>';
-        if (tipo === 'donut') return '<svg viewBox="0 0 20 14" class="csm-prev"><circle cx="10" cy="7" r="5.4" ' + s + ' stroke-dasharray="3 2.2 3.4 1.4"/><circle cx="10" cy="7" r="2" ' + s + '/></svg>';
-        if (tipo === 'pie') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M10 7 L10 1.8 A5.2 5.2 0 0 1 14.6 4.2 Z" fill="#212121"/><path d="M10 7 L14.6 4.2 A5.2 5.2 0 0 1 13 11.6 Z" fill="#212121" opacity=".55"/><path d="M10 7 L13 11.6 A5.2 5.2 0 0 1 6.6 11.8 Z" fill="#212121" opacity=".3"/></svg>';
-        if (tipo === 'funnel') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M4 1 H16 L13 6 H7 Z" fill="#212121" opacity=".9"/><path d="M6.4 7 H13.6 L12 12 H8 Z" fill="#212121" opacity=".5"/></svg>';
-        if (tipo === 'pyramid') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M7 1 H13 L15 6 H5 Z" fill="#212121" opacity=".45"/><path d="M5.6 7 H14.4 L16 12 H4 Z" fill="#212121" opacity=".85"/></svg>';
+        if (tipo === 'bar') return '<svg viewBox="0 0 20 14" class="csm-prev"><rect x="2" y="6" width="3.4" height="6" rx="1" fill="#D62B1F"/><rect x="8.3" y="3" width="3.4" height="9" rx="1" fill="#F26522"/><rect x="14.6" y="9" width="3.4" height="3" rx="1" fill="#FFC72C"/></svg>';
+        if (tipo === 'line') return '<svg viewBox="0 0 20 14" class="csm-prev"><polyline points="1,12 6,8 10,10 15,4 19,2" stroke="#2563EB" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        if (tipo === 'area') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M1,12 L6,8 L10,10 15,4 19,2 L19,12 Z" fill="#2F7D4F" opacity=".25"/><polyline points="1,12 6,8 10,10 15,4 19,2" stroke="#2F7D4F" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        if (tipo === 'donut') return '<svg viewBox="0 0 20 14" class="csm-prev"><circle cx="10" cy="7" r="5.4" fill="none" stroke="#D62B1F" stroke-width="2.4" stroke-dasharray="8 25"/><circle cx="10" cy="7" r="5.4" fill="none" stroke="#F2A900" stroke-width="2.4" stroke-dasharray="6 25" stroke-dashoffset="-8"/><circle cx="10" cy="7" r="5.4" fill="none" stroke="#2F7D4F" stroke-width="2.4" stroke-dasharray="11 25" stroke-dashoffset="-14"/></svg>';
+        if (tipo === 'pie') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M10 7 L10 1.8 A5.2 5.2 0 0 1 14.6 4.2 Z" fill="#D62B1F"/><path d="M10 7 L14.6 4.2 A5.2 5.2 0 0 1 13 11.6 Z" fill="#2563EB" opacity=".85"/><path d="M10 7 L13 11.6 A5.2 5.2 0 0 1 6.6 11.8 Z" fill="#2F7D4F" opacity=".85"/></svg>';
+        if (tipo === 'funnel') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M4 1 H16 L13 6 H7 Z" fill="#F26522" opacity=".9"/><path d="M6.4 7 H13.6 L12 12 H8 Z" fill="#F26522" opacity=".5"/></svg>';
+        if (tipo === 'pyramid') return '<svg viewBox="0 0 20 14" class="csm-prev"><path d="M7 1 H13 L15 6 H5 Z" fill="#B7791F" opacity=".45"/><path d="M5.6 7 H14.4 L16 12 H4 Z" fill="#B7791F" opacity=".85"/></svg>';
+        var s = 'stroke="#212121" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round';
         return '<svg viewBox="0 0 20 14" class="csm-prev"><text x="10" y="11" text-anchor="middle" font-size="9" font-weight="bold" fill="#212121">123</text></svg>';
     }
 
@@ -432,8 +472,18 @@
         });
         wrap.appendChild(btn);
         wrap.appendChild(menu);
+        var refrescar = domEl('<button type="button" class="chart-refresh-btn" title="Recargar el gráfico"><svg class="icon"><use href="#i-refresh"/></svg></button>');
+        refrescar.setAttribute("aria-label", "Recargar el gráfico");
+        refrescar.addEventListener("click", function () {
+            refrescar.classList.add("is-girando");
+            render(card, widget);
+            setTimeout(function () { refrescar.classList.remove("is-girando"); }, 350);
+        });
+        wrap.appendChild(refrescar);
         function markActive() {
             var cur = estado[widget] || DEFAULT_TIPO[widget];
+            /* El botón muestra el icono y nombre del tipo elegido. */
+            btn.innerHTML = prevSvg(cur) + '<span>' + TIPO_LABEL[cur] + '</span>';
             Array.prototype.forEach.call(menu.querySelectorAll('button[data-type]'), function (b) {
                 b.classList.toggle('is-active', b.dataset.type === cur);
             });
@@ -442,7 +492,6 @@
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
             var open = !wrap.hasAttribute('data-open');
-            TIPOS.forEach(function () {});
             document.querySelectorAll('.chart-switch-menu').forEach(function (m) { m.hidden = true; });
             Array.prototype.forEach.call(document.querySelectorAll('[data-switch]'), function (el) { el.removeAttribute('data-open'); });
             if (open) { wrap.setAttribute('data-open', ''); menu.hidden = false; }
@@ -460,11 +509,11 @@
     // ------------------------------------------------------------------
     function renderPivot(dim) {
         var meta = D.pivot.dimensiones[dim];
-        var body = document.getElementById('pivotBody');
-        document.getElementById('pivotCol1').textContent = meta.label;
-        document.getElementById('pivotDimLabel').textContent = meta.label.toLowerCase();
+        var body = document.getElementById("pivotBody");
+        document.getElementById("pivotCol1").textContent = meta.label;
+        document.getElementById("pivotDimLabel").textContent = meta.label.toLowerCase();
         var rows = meta.rows.filter(function (r) { return r.total > 0 || r.vencido > 0; });
-        var pop0 = document.getElementById('pivotPop');
+        var pop0 = document.getElementById("pivotPop");
         if (pop0) pop0.remove();
         if (!rows.length) {
             body.innerHTML = '<tr class="table-empty"><td colspan="6">Sin datos todavía.</td></tr>';
@@ -530,8 +579,7 @@
             f = mejor.key;
         }
         var activo = f;
-        var activas = r.abrir + r.espera;
-        var pct = activas ? Math.round(r.vencido / activas * 100) : 0;
+        var pct = r.total ? Math.round(r.vencido / r.total * 100) : 0;
         var ans = (r.vencido || r.riesgo) ? 'ANS: <strong class="ph-v">' + r.vencido + ' vencid' + (r.vencido === 1 ? 'a' : 'as') + '</strong> · <strong class="ph-r">' + r.riesgo + ' por vencer</strong>' : 'ANS ok';
         var base = card.getAttribute('data-detalle-url') || '';
         pop.innerHTML =
@@ -575,7 +623,7 @@
                 : '<div class="pivot-pop-vacio">Sin tickets en esta vista.</div>';
             elList.innerHTML = lista;
             var esAb = activo === 'abierto' || activo === 'en-progreso' || activo === 'vencido';
-            elFoot.innerHTML = ans + ' · ' + pct + '% de abiertas vencidas';
+            elFoot.innerHTML = ans + ' · ' + pct + '% vencidas del total';
             elFoot.style.display = esAb ? '' : 'none';
             elCats.innerHTML = (r.categorias || []).map(function (c) {
                 return '<span class="pivot-pop-cat">' + esc(c) + '</span>';
@@ -591,19 +639,24 @@
         }
         pintar();
         card.appendChild(pop);
-        var cardRect = card.getBoundingClientRect();
         var acr = anchor.getBoundingClientRect();
         pop.style.visibility = 'hidden';
         var w = pop.offsetWidth;
         var h = pop.offsetHeight;
-        var x = acr.left - cardRect.left + 8;
-        var y = acr.top - cardRect.top - 2;
-        x = Math.max(6, Math.min(x, cardRect.width - w - 6));
-        y = Math.max(6, Math.min(y, Math.max(6, cardRect.height - h - 6)));
+        var x = Math.max(6, Math.min(acr.left + 8, window.innerWidth - w - 6));
+        var y = Math.max(6, Math.min(acr.top - 2, window.innerHeight - h - 6));
         pop.style.left = x + 'px';
         pop.style.top = y + 'px';
         pop.style.visibility = '';
         requestAnimationFrame(function () { pop.classList.add('is-in'); });
+        function cerrarScroll(e) {
+            if (!e.target.closest || !e.target.closest('#pivotPop')) {
+                var p = document.getElementById('pivotPop');
+                if (p) p.remove();
+                document.removeEventListener('scroll', cerrarScroll, true);
+            }
+        }
+        document.addEventListener('scroll', cerrarScroll, true);
         pop.querySelector('.pivot-pop-close').addEventListener('click', function (e) {
             e.stopPropagation();
             pop.remove();
@@ -630,7 +683,7 @@
             var total = prs.reduce(function (s, p) { return s + p.value; }, 0);
             leg.innerHTML = prs.map(function (p) {
                 var pct = total ? Math.round(p.value / total * 100) : 0;
-                return '<li title="' + esc(p.label) + '"><span class="pl-dot" style="background:' + p.color + '"></span>' +
+                return '<li title="' + esc(p.label) + '" style="--seg:' + p.color + '"><span class="pl-dot" style="background:' + p.color + '"></span>' +
                     '<span class="pl-name">' + esc(p.label) + '</span>' +
                     '<span class="pl-val">' + p.value + '</span>' +
                     '<span class="pl-pct">' + pct + '%</span></li>';
@@ -643,10 +696,31 @@
     // Init
     // ------------------------------------------------------------------
     function init() {
-        var pivotSel = document.getElementById('pivotDim');
+        var pivotSel = document.getElementById("pivotDim");
         if (pivotSel) {
             renderPivot(pivotSel.value);
-            pivotSel.addEventListener('change', function () { renderPivot(pivotSel.value); });
+            pivotSel.addEventListener("change", function () { renderPivot(pivotSel.value); });
+            var pivotCard = pivotSel.closest(".chart-card");
+            if (pivotCard && pivotCard.querySelector(".chart-card-head")) {
+                var tools = pivotCard.querySelector(".dash-head-tools");
+                if (!tools) {
+                    tools = document.createElement("div");
+                    tools.className = "dash-head-tools";
+                    pivotCard.querySelector(".chart-card-head").appendChild(tools);
+                }
+                var ref = document.createElement("button");
+                ref.type = "button";
+                ref.className = "chart-refresh-btn";
+                ref.title = "Recargar la tabla";
+                ref.setAttribute("aria-label", "Recargar la tabla");
+                ref.innerHTML = '<svg class="icon"><use href="#i-refresh"/></svg>';
+                ref.addEventListener("click", function () {
+                    ref.classList.add("is-girando");
+                    renderPivot(pivotSel.value);
+                    setTimeout(function () { ref.classList.remove("is-girando"); }, 350);
+                });
+                tools.appendChild(ref);
+            }
         }
         buildPieLegends();
         Array.prototype.forEach.call(document.querySelectorAll('.chart-modal'), function (card) {
@@ -753,4 +827,4 @@
     } else {
         init();
     }
-})();
+})();

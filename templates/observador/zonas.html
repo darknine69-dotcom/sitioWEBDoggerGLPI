@@ -16,8 +16,6 @@
         </div>
     </div>
 
-    {% include "observador/_menu.html" with activa="zonas" %}
-
     <div class="obs-bloque">
         <h3 class="obs-bloque-titulo">Crear zona</h3>
         <form method="post" class="obs-filtros">
@@ -45,6 +43,13 @@
                 <span class="obs-tarjeta-dato">
                     <a href="{% url 'tickets:obs_zona_detalle' t.zona.pk %}" class="btn btn-sm">Ver</a>
                 </span>
+                <form method="post" class="obs-filtros">
+                    {% csrf_token %}
+                    <input type="hidden" name="zona_id" value="{{ t.zona.pk }}">
+                    <input type="text" name="nuevo_nombre" value="{{ t.zona.nombre }}" maxlength="80" required
+                           aria-label="Renombrar {{ t.zona.nombre }}" class="obs-buscador-tipo" style="min-width:0;flex:1">
+                    <button type="submit" class="btn btn-sm btn-ghost" title="Guardar el nombre nuevo">Renombrar</button>
+                </form>
                 <form method="post" action="{% url 'tickets:obs_zona_eliminar' t.zona.pk %}" onsubmit="return confirm('¿Borrar esta zona? Su gente queda sin zona.')">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-ghost" title="Borrar la zona">Borrar</button>

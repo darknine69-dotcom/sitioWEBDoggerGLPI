@@ -303,4 +303,4 @@ def programador_festivo(request):
     if not nombre:
         return JsonResponse({"error": "Indica el nombre del festivo"}, status=400)
     Festivo.objects.update_or_create(fecha=fecha, defaults={"nombre": nombre[:100]})
-    return JsonResponse({"ok": True})
+    return JsonResponse({"ok": True})

@@ -8,10 +8,12 @@
 {% block header_desc %}Comparativos por técnico, categoría y usuario.{% endblock %}
 
 {% block extra_css %}
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/mi-panel-corp.css' %}?v=20260923">
+{% load static asset %}
+<link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 <style>
 /* ============ Reportes corporativos · tema Dogger ============ */
+/* Los estilos de gráficos (.chart-stage, .charts-grid, .chart-card) viven en
+   mi-panel-corp.css: no se repiten aquí para no romper el tamaño. */
 .rpt-filterbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin: 0 0 14px; }
 .rpt-fld { display: flex; flex-direction: column; gap: 4px; min-width: 150px; flex: 1 1 165px; }
 .rpt-fld label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: var(--ink-muted); }
@@ -104,10 +106,6 @@
 .rpt-chip-x:hover { color: var(--dogger-red); }
 .rpt-suggest-empty { padding: 10px 12px; font-size: 12.5px; color: var(--ink-muted); }
 
-/* Contenedor de gráficas (mismo alto que el dashboard) */
-.chart-stage { position: relative; height: 280px; }
-@media (max-width: 900px) { .chart-stage { height: 240px; } }
-
 @media (max-width: 700px) {
     .rpt-fld { flex: 1 1 100%; }
     .rpt-actions { margin-left: 0; }
@@ -131,7 +129,7 @@
             </a>
         </div>
         <div class="dash-stat-row">
-            <a class="dash-stat" href="{% url 'tickets:lista' %}" title="Tickets incluidos según los filtros aplicados">
+            <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}" title="Tickets incluidos según los filtros aplicados">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Total tickets</span>
@@ -139,7 +137,7 @@
                     <span class="dash-stat-hint">{{ filtros_txt }}</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=abierto" title="Solicitudes recién creadas, pendientes de atención">
+            <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?estado=abierto" title="Solicitudes recién creadas, pendientes de atención">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Abiertos</span>
@@ -147,7 +145,7 @@
                     <span class="dash-stat-hint">en espera de atención</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=en-progreso" title="Solicitudes que ya están siendo atendidas">
+            <a class="dash-stat dash-hov-progreso" href="{% url 'tickets:lista' %}?estado=en-progreso" title="Solicitudes que ya están siendo atendidas">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">En progreso</span>
@@ -155,7 +153,7 @@
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=resuelto" title="Solicitudes resueltas o cerradas">
+            <a class="dash-stat dash-hov-resueltos" href="{% url 'tickets:lista' %}?estado=resuelto" title="Solicitudes resueltas o cerradas">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltos</span>
@@ -163,7 +161,7 @@
                     <span class="dash-stat-hint">{{ kpis.cerrados }} cerrados</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}?estado=cerrado" title="Solicitudes cerradas definitivamente">
+            <a class="dash-stat dash-hov-cerrados" href="{% url 'tickets:lista' %}?estado=cerrado" title="Solicitudes cerradas definitivamente">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-lock"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Cerrados</span>
@@ -171,7 +169,7 @@
                     <span class="dash-stat-hint">finalizados</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}" title="Abiertos o en progreso cuyo ANS ya venció">
+            <a class="dash-stat dash-hov-vencidos" href="{% url 'tickets:lista' %}" title="Abiertos o en progreso cuyo ANS ya venció">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Vencidos (ANS)</span>
@@ -179,7 +177,7 @@
                     <span class="dash-stat-hint">fuera de tiempo límite</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}" title="Tickets en curso dentro del tiempo límite de atención">
+            <a class="dash-stat dash-hov-sla-ok" href="{% url 'tickets:lista' %}" title="Tickets en curso dentro del tiempo límite de atención">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-check"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">SLA cumplidos</span>
@@ -187,7 +185,7 @@
                     <span class="dash-stat-hint">{{ kpis.pct_sla }}% en plazo</span>
                 </span>
             </a>
-            <a class="dash-stat" href="{% url 'tickets:lista' %}" title="Tickets en curso por fuera del tiempo límite de atención">
+            <a class="dash-stat dash-hov-sla-no" href="{% url 'tickets:lista' %}" title="Tickets en curso por fuera del tiempo límite de atención">
                 <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">SLA incumplidos</span>
@@ -484,8 +482,8 @@
             data: {
                 labels: tec.labels,
                 datasets: [
-                    { label: "Asignados", data: tec.asignados, backgroundColor: "rgba(214,43,31,.85)", borderRadius: 4, barPercentage: .7 },
-                    { label: "Resueltos", data: tec.resueltos, backgroundColor: "rgba(47,125,79,.85)", borderRadius: 4, barPercentage: .7 }
+                    { label: "Asignados", data: tec.asignados, backgroundColor: "rgba(214,43,31,.85)", hoverBackgroundColor: "rgba(214,43,31,.85)", hoverBorderWidth: 0, borderRadius: 4, barPercentage: .7 },
+                    { label: "Resueltos", data: tec.resueltos, backgroundColor: "rgba(47,125,79,.85)", hoverBackgroundColor: "rgba(47,125,79,.85)", hoverBorderWidth: 0, borderRadius: 4, barPercentage: .7 }
                 ]
             },
             options: {
@@ -529,7 +527,7 @@
             type: "doughnut",
             data: {
                 labels: cat.labels,
-                datasets: [{ data: cat.data, backgroundColor: cat.colores, borderColor: "#fff", borderWidth: 2 }]
+                datasets: [{ data: cat.data, backgroundColor: cat.colores, hoverBackgroundColor: cat.colores, borderColor: "#fff", hoverBorderColor: "#fff", borderWidth: 2, hoverBorderWidth: 2, hoverOffset: 0 }]
             },
             options: {
                 responsive: true,

@@ -1,0 +1,282 @@
+"""Permisos por cuenta: el admin otorga cerrar/eliminar (usuarios) y reabrir."""
+
+from django.contrib.auth import get_user_model
+from django.test import TestCase, override_settings
+from django.urls import reverse
+
+from apps.tickets.models import Ticket
+
+
+@override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
+class PermisosRolesTest(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_user(
+            email="adm@x.com", password="x", nombre="Adm", rol=User.Rol.ADMIN)
+        self.usuario = User.objects.create_user(
+            email="ana@x.com", password="x", nombre="Ana", rol=User.Rol.USUARIO)
+        self.tec = User.objects.create_user(
+            email="tec@x.com", password="x", nombre="Tec", rol=User.Rol.TECNICO)
+
+    def _ticket(self, estado=Ticket.Estado.ABIERTO):
+        return Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com", estado=estado,
+            tecnico_asignado=self.tec,
+        )
+
+    def test_pagina_solo_admin_y_guarda(self):
+        self.client.force_login(self.usuario)
+        self.assertEqual(
+            self.client.get(reverse("accounts:permisos")).status_code, 404)
+        self.client.force_login(self.admin)
+        respuesta = self.client.get(reverse("accounts:permisos"))
+        self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#pagina")
+        respuesta = self.client.get(reverse("accounts:ajustes"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Permisos por cuenta")
+        html = self.client.get(reverse("tickets:dashboard")).content.decode()
+        self.assertNotIn('sidebar-label">Configuración', html)
+        respuesta = self.client.post(reverse("accounts:permisos"), {
+            "uid": [str(self.admin.pk), str(self.usuario.pk)],
+            f"perm_{self.usuario.pk}_cerrar": "1",
+        })
+        self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#pagina")
+        self.usuario.refresh_from_db()
+        self.assertTrue(self.usuario.puede_cerrar_tickets)
+        self.assertFalse(self.usuario.puede_eliminar_tickets)
+
+    def test_guardar_no_toca_a_quien_no_se_ve(self):
+        otro = get_user_model().objects.create_user(
+            email="otro@x.com", password="x", nombre="Otro",
+            rol=get_user_model().Rol.USUARIO,
+        )
+        otro.puede_cerrar_tickets = False
+        otro.save()
+        self.client.force_login(self.admin)
+        self.client.post(reverse("accounts:permisos"), {
+            "uid": [str(self.usuario.pk)],
+            f"perm_{self.usuario.pk}_cerrar": "1",
+        })
+        otro.refresh_from_db()
+        self.assertFalse(otro.puede_cerrar_tickets)
+
+    def test_guarda_pagina_general(self):
+        from apps.tickets.models import ConfigSitio
+
+        self.client.force_login(self.admin)
+        respuesta = self.client.post(reverse("accounts:configuracion_pagina"), {
+            "ajustes_pagina": "1",
+            "ajustes_actividad_glpi": "1",
+            "correo_soporte": "nuevo@dogger.com.co",
+            "siguiente": reverse("accounts:ajustes") + "#pagina",
+        })
+        self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#pagina")
+        self.assertEqual(ConfigSitio.cargar().correo_soporte, "nuevo@dogger.com.co")
+
+    def test_cerrar_y_eliminar_exigen_permiso(self):
+        ticket = self._ticket()
+        self.client.force_login(self.usuario)
+        self.usuario.puede_cerrar_tickets = False
+        self.usuario.puede_eliminar_tickets = False
+        self.usuario.save()
+        self.assertEqual(
+            self.client.post(reverse("tickets:mi_api_cerrar", args=[ticket.pk])).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.post(reverse("tickets:mi_api_eliminar", args=[ticket.pk])).status_code,
+            403,
+        )
+
+    def test_reabrir_exige_permiso_al_tecnico(self):
+        ticket = self._ticket(estado=Ticket.Estado.CERRADO)
+        self.client.force_login(self.tec)
+        self.tec.puede_reabrir_tickets = False
+        self.tec.save()
+        respuesta = self.client.post(
+            reverse("tickets:cambiar_estado", args=[ticket.pk]),
+            {"estado": Ticket.Estado.ABIERTO, "next": "/panel/tickets/"},
+            follow=True,
+        )
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.estado, Ticket.Estado.CERRADO)
+        self.assertContains(respuesta, "no te permite reabrir")
+
+    def test_acciones_hasta_resuelto_y_cerrado(self):
+        self._ticket(estado=Ticket.Estado.EN_PROGRESO)
+        self.client.force_login(self.usuario)
+        html = self.client.get(reverse("tickets:mi_panel")).content.decode()
+        self.assertIn('data-action="eliminar"', html)
+        self.assertIn('data-action="cerrar"', html)
+
+    def test_saludo_predeterminado_en_chat(self):
+        from django.contrib.staticfiles import finders
+
+        with open(finders.find("js/chat-widget.js"), encoding="utf-8") as f:
+            js = f.read()
+        # Sin burbuja falsa: el saludo va en la caja del técnico y al
+        # usuario le sale solo cuando el técnico le escribe de verdad.
+        self.assertIn("¡Hola! Gracias por escribirnos", js)
+        self.assertNotIn("Mesa de ayuda · Soporte", js)
+
+    def test_crear_y_responder_exigen_permiso(self):
+        from apps.tickets.models import Ticket
+
+        ticket = Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com", tecnico_asignado=self.tec,
+        )
+        self.client.force_login(self.usuario)
+        for campo in ("puede_crear_tickets", "puede_responder_chat"):
+            setattr(self.usuario, campo, False)
+        self.usuario.save()
+        respuesta = self.client.get(reverse("tickets:crear_ticket"))
+        self.assertRedirects(respuesta, reverse("tickets:mi_panel"))
+        respuesta = self.client.post(
+            reverse("tickets:chat_responder", args=[ticket.pk]),
+            {"mensaje": "Hola"},
+        )
+        self.assertEqual(respuesta.status_code, 403)
+
+    def test_ficha_muestra_permisos_y_whatsapp_obedece(self):
+        from apps.tickets.models import ConfigSitio, Ticket
+
+        self.client.force_login(self.admin)
+        html = self.client.get(
+            reverse("tickets:usuario_ficha", args=[self.usuario.pk])
+        ).content.decode()
+        for etiqueta in ("Cerrar", "Eliminar", "Reabrir", "Crear", "Chatear"):
+            self.assertIn(etiqueta, html)
+        cfg = ConfigSitio.cargar()
+        cfg.whatsapp_activo = False
+        cfg.save()
+        ticket = Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com",
+        )
+        self.client.force_login(self.usuario)
+        html = self.client.get(
+            reverse("tickets:mi_ticket", args=[ticket.pk])).content.decode()
+        self.assertNotIn("btn-whatsapp", html)
+
+    def test_atajos_por_defecto_segun_rol(self):
+        for usuario, esperado in (
+            (self.usuario, ("Nueva solicitud", "Mis solicitudes")),
+        ):
+            self.client.force_login(usuario)
+            html = self.client.get(reverse("tickets:mi_panel")).content.decode()
+            self.assertIn("axFab", html)
+            for etiqueta in esperado:
+                self.assertIn(etiqueta, html)
+        html = self.client.get(reverse("tickets:mi_panel")).content.decode()
+        self.assertNotIn(">Consultar ticket<", html)
+        self.assertNotIn("action-float", html)
+
+    def test_x_por_rol_tecnico_y_obs(self):
+        tec = get_user_model().objects.create_user(
+            email="t@x.com", password="x", nombre="T",
+            rol=get_user_model().Rol.TECNICO,
+        )
+        self.client.force_login(tec)
+        html = self.client.get(reverse("tickets:panel_tecnico")).content.decode()
+        for etiqueta in ("Mis asignados", "Tickets"):
+            self.assertIn(etiqueta, html)
+        self.assertNotIn(">Consultar ticket<", html)
+        obs = get_user_model().objects.create_user(
+            email="o@x.com", password="x", nombre="O",
+            rol=get_user_model().Rol.OBSERVADOR,
+        )
+        self.client.force_login(obs)
+        html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
+        for etiqueta in ("Usuarios", "Todos"):
+            self.assertIn(etiqueta, html)
+
+    def test_encabezados_grises_y_titulos_por_pestana(self):
+        from django.contrib.staticfiles import finders
+
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertIn(
+            ".perm-lista .table-scroll table.obs-tabla thead th", css)
+        with open(finders.find("js/dogger.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn("TITULOS_AJUSTES", js)
+        self.assertIn("Contraseña", js)
+
+    def test_redes_en_footer_y_teams_en_contacto(self):
+        from apps.tickets.models import ConfigSitio
+
+        html = self.client.get(reverse("tickets:portal")).content.decode()
+        self.assertIn("web.facebook.com/DoggerColombia", html)
+        self.assertIn("instagram.com/dogger1996", html)
+        self.assertNotIn("Teams de soporte", html)
+        cfg = ConfigSitio.cargar()
+        cfg.teams_activo = True
+        cfg.teams_url = "https://teams.microsoft.com/l/chat/0/0"
+        cfg.save()
+        html = self.client.get(reverse("tickets:portal")).content.decode()
+        self.assertIn("Teams de soporte", html)
+        cfg.whatsapp_activo = False
+        cfg.teams_activo = False
+        cfg.save()
+        from apps.tickets.models import Ticket
+
+        ticket = Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com",
+        )
+        self.client.force_login(self.usuario)
+        html = self.client.get(
+            reverse("tickets:mi_ticket", args=[ticket.pk])).content.decode()
+        self.assertNotIn("btn-whatsapp", html)
+        self.assertNotIn("btn-teams", html)
+
+    def test_glpi_bloque_obedece_al_interruptor(self):
+        from apps.tickets.models import ConfigSitio
+
+        self.client.force_login(self.admin)
+        html = self.client.get(reverse("tickets:dashboard")).content.decode()
+        self.assertIn("Actividad GLPI", html)
+        cfg = ConfigSitio.cargar()
+        cfg.panel_mostrar_actividad_glpi = False
+        cfg.save()
+        html = self.client.get(reverse("tickets:dashboard")).content.decode()
+        self.assertNotIn("Actividad GLPI", html)
+
+    def test_glpi_conexion_desde_panel_y_env(self):
+        from apps.tickets.models import ConfigSitio
+        from apps.tickets.services.glpi_client import GlpiClient, esta_activo
+
+        self.client.force_login(self.usuario)
+        self.assertEqual(
+            self.client.post(reverse("accounts:configuracion_glpi"), {}).status_code,
+            404,
+        )
+        self.client.force_login(self.admin)
+        html = self.client.get(reverse("accounts:ajustes")).content.decode()
+        self.assertIn("Conexión con la web de GLPI", html)
+        respuesta = self.client.post(reverse("accounts:configuracion_glpi"), {
+            "modo": "on", "base_url": "http://glpi.local/apirest.php",
+            "app_token": "APP", "user_token": "USER", "timeout": "10",
+            "accion": "guardar",
+        })
+        self.assertRedirects(respuesta, reverse("accounts:ajustes") + "#glpi")
+        cfg = ConfigSitio.cargar()
+        self.assertTrue(cfg.glpi_habilitado)
+        self.assertEqual(cfg.glpi_base_url, "http://glpi.local/apirest.php")
+        cliente = GlpiClient()
+        self.assertTrue(cliente.enabled)
+        self.assertTrue(esta_activo())
+        self.assertEqual(cliente.timeout, 10)
+
+    def test_glpi_probar_sin_datos_avisa(self):
+        self.client.force_login(self.admin)
+        respuesta = self.client.post(
+            reverse("accounts:configuracion_glpi"),
+            {"modo": "auto", "accion": "probar"}, follow=True,
+        )
+        self.assertContains(respuesta, "Faltan datos")

@@ -78,6 +78,12 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if DEBUG:
+    # En desarrollo WhiteNoise servía la copia vieja de staticfiles/ e
+    # ignoraba los cambios (el ?v= no le afecta): sin él, Django sirve
+    # directo del disco y siempre se ve lo último. En producción sigue.
+    MIDDLEWARE = [m for m in MIDDLEWARE if "whitenoise" not in m]
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -178,8 +184,15 @@ STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
+    # En desarrollo se sirve directo del disco (con ?v= por fecha): el
+    # manifest con hash dejaba el CSS/JS viejo o roto si no se corría
+    # collectstatic en cada cambio. En producción sí va con manifest.
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG else
+            "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
     },
 }
 
@@ -283,9 +296,17 @@ DOGGER = {
     # Ejemplo: "Mantenimiento programado de SIESA el sábado 3 de octubre, 6:00 p.m."
     "aviso_destacado": os.getenv("DOGGER_AVISO", ""),
     # Redes sociales (se muestran como iconos en el pie del portal).
+    "pagina_mostrar_redes": True,
+    "correo_activo": True,
+    "whatsapp_activo": True,
     "facebook": os.getenv("DOGGER_FACEBOOK", "https://web.facebook.com/DoggerColombia"),
+    "facebook_activo": True,
     "instagram": os.getenv("DOGGER_INSTAGRAM", "https://www.instagram.com/dogger1996"),
+    "instagram_activo": True,
     "tiktok": os.getenv("DOGGER_TIKTOK", ""),
+    "tiktok_activo": True,
+    "teams": os.getenv("DOGGER_TEAMS", ""),
+    "teams_activo": True,
     "max_adjuntos": 5,
     "max_adjunto_mb": 8,
     # Puntos Dogger activos (mostrados con mapa en el pie del portal).

@@ -18,6 +18,17 @@ MINUTOS_EN_LINEA = 5
 ESTADOS_ACTIVOS = ("abierto", "en-progreso")
 
 
+def _cobertura(votos, resueltos):
+    """% de resueltos que recibieron voto: 2 votos de 40 = 5%.
+
+    El % de aprobación entre votos confunde (2/2 = 100%); este mide
+    cuántos trabajos calificaron. Tope 100, None sin resueltos.
+    """
+    if not resueltos:
+        return None
+    return min(100, round(votos * 100 / resueltos))
+
+
 def puede_calificar(usuario):
     """Quién tiene derecho a calificar técnicos.
 
@@ -75,7 +86,10 @@ def mapeados_del_tecnico(usuario_actual, ticket=None):
         ),
         resueltos=Count(
             "tickets_asignados",
-            filter=Q(tickets_asignados__estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO]),
+            filter=(
+                Q(tickets_asignados__estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO])
+                | Q(tickets_asignados__fecha_resolucion__isnull=False)
+            ),
             distinct=True,
         ),
         me_gusta=Count(
@@ -170,6 +184,11 @@ def mapeados_del_tecnico(usuario_actual, ticket=None):
                 ),
                 "conteo_down": (
                     del_ticket.get("no_me_gusta", 0) if ticket is not None else dislikes
+                ),
+                "cobertura": _cobertura(
+                    (del_ticket.get("me_gusta", 0) + del_ticket.get("no_me_gusta", 0))
+                    if ticket is not None else (likes + dislikes),
+                    tecnico.resueltos or 0,
                 ),
             }
         )

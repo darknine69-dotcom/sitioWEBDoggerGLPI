@@ -1,0 +1,52 @@
+{% load static asset %}
+{% comment %}Chat corporativo de soporte: FAB arrastrable + ventana Tidio.
+Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% endcomment %}
+{% if request.user.is_authenticated %}
+<div class="sw-fab" id="swFab" role="button" tabindex="0" aria-label="Abrir chat de soporte" title="Chat de soporte">
+    <svg class="icon"><use href="#i-message"/></svg>
+    <span class="sw-fab-count" id="swCount" hidden>0</span>
+</div>
+<section class="sw-win" id="swWin" data-modo="soporte" aria-label="Chat de soporte">
+    <div class="sw-head">
+        <div class="sw-head-top">
+            <strong id="swHeadTitulo">Mesa de ayuda</strong>
+            <span class="sw-online" id="swHeadSub">Estamos en línea</span>
+            <button type="button" class="sw-head-x" id="swCerrar" aria-label="Cerrar chat">&times;</button>
+        </div>
+        {% if request.user.rol == 'tecnico' or request.user.rol == 'admin' or request.user.rol == 'observador' %}
+        <div class="sw-modos" role="tablist" aria-label="Modo de chat">
+            <button type="button" class="sw-modo is-active" id="swModoSoporte" role="tab" aria-selected="true" title="Hablar con los usuarios por ticket">Soporte</button>
+            <button type="button" class="sw-modo" id="swModoCorp" role="tab" aria-selected="false" title="Sala interna: técnicos, admins y observadores">Corporativo</button>
+        </div>
+        <select class="sw-ticket" id="swColega" aria-label="Hablar con" hidden></select>
+        {% endif %}
+        <select class="sw-ticket" id="swTicket" aria-label="Conversación"></select>
+    </div>
+    <div class="sw-thread" id="swThread"></div>
+    <div class="sw-composer">
+        <button type="button" class="sw-icon-btn" id="swAdjuntar" title="Adjuntar imagen, PDF o documento" aria-label="Adjuntar archivo">
+            <svg class="icon"><use href="#i-paperclip"/></svg>
+        </button>
+        <input type="file" id="swArchivo" hidden accept="image/png,image/jpeg,image/gif,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+        <button type="button" class="sw-icon-btn" id="swEmojiBtn" title="Emojis" aria-label="Emojis" aria-expanded="false">😊</button>
+        <textarea id="swTexto" rows="1" placeholder="Escríbenos…" aria-label="Escribe tu mensaje"></textarea>
+        <button type="button" class="sw-send" id="swEnviar" title="Enviar" aria-label="Enviar mensaje">
+            <svg class="icon"><use href="#i-send"/></svg>
+        </button>
+    </div>
+</section>
+<script>
+window.__SW_URLS__ = {
+    rol: "{{ request.user.rol }}",
+    tickets: "{% url 'tickets:chat_tickets' %}",
+    hilo: "{% url 'tickets:chat_hilo' 0 %}",
+    responder: "{% url 'tickets:chat_responder' 0 %}",
+    adjuntar: "{% url 'tickets:chat_adjuntar' 0 %}",
+    corpHilo: "{% url 'tickets:chat_corporativo' %}",
+    corpEnviar: "{% url 'tickets:chat_corporativo_enviar' %}",
+    colegas: "{% url 'tickets:chat_colegas' %}",
+    novedades: "{% url 'tickets:chat_novedades' %}"
+};
+</script>
+<script defer src="{% asset 'js/chat-widget.js' %}"></script>
+{% endif %}

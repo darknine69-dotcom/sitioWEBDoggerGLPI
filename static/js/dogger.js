@@ -208,29 +208,42 @@
         if (!txt) { hint.remove(); return; }
     })();
 
-    /* ---- Sidebar lateral: plegar a iconos y cajón en móvil ---- */
+    /* ---- Sidebar lateral: pestaña al borde en escritorio,
+       hamburguesa en móvil ----
+       La pestaña pliega a iconos; la hamburguesa abre el cajón. */
     (function () {
         var side = document.getElementById("sidebar");
         if (!side) return;
+        var borde = document.getElementById("sidebarEdge");
         var burger = document.getElementById("sidebarBurger");
         var backdrop = document.getElementById("sidebarBackdrop");
-        var plegar = document.getElementById("sidebarCollapse");
 
         /* Plegado: se guarda igual que la preferencia de "navegación compacta"
            de Ajustes, así que los dos sitios controlan lo mismo. */
         function plegarA(mini) {
             document.documentElement.setAttribute("data-navcompact", mini ? "1" : "0");
             try { localStorage.setItem("dogger:pv:navcompact", mini ? "1" : "0"); } catch (e) {}
-            if (plegar) {
-                plegar.setAttribute("aria-label", mini ? "Expandir el menú" : "Contraer el menú");
-                plegar.title = mini ? "Expandir el menú" : "Contraer el menú";
-            }
+            actualizarBorde();
         }
-        if (plegar) {
-            plegar.addEventListener("click", function () {
+        /* La flecha mira hacia donde va el borde: a la derecha para
+           desplegar, a la izquierda para plegar. */
+        function actualizarBorde() {
+            if (!borde) return;
+            var mini = document.documentElement.getAttribute("data-navcompact") === "1";
+            var uso = borde.querySelector("use");
+            if (uso) uso.setAttribute("href", mini ? "#i-arrow-right" : "#i-arrow-left");
+            var etiqueta = mini ? "Expandir el menú" : "Contraer el menú";
+            borde.setAttribute("aria-label", etiqueta);
+            borde.title = etiqueta;
+            borde.setAttribute("aria-expanded", String(!mini));
+        }
+        if (borde) {
+            borde.addEventListener("click", function () {
+                ocultarTip();
                 plegarA(document.documentElement.getAttribute("data-navcompact") !== "1");
             });
         }
+        actualizarBorde();
 
         function abrir(abrir) {
             side.classList.toggle("is-open", abrir);
@@ -255,8 +268,10 @@
             link.addEventListener("click", function () { abrir(false); });
         });
         // Si la ventana crece y deja de ser móvil, el cajón se olvida.
+        // Al cambiar de modo se repinta la flecha de la pestaña.
         window.addEventListener("resize", function () {
             if (window.innerWidth > 1080) abrir(false);
+            else actualizarBorde();
         });
 
         /* Aviso con el nombre del enlace al pasar el ratón por un icono.
@@ -292,7 +307,6 @@
             link.addEventListener("blur", ocultarTip);
         });
         side.addEventListener("scroll", ocultarTip, { passive: true });
-        if (plegar) plegar.addEventListener("click", ocultarTip);
         window.addEventListener("resize", ocultarTip);
         document.addEventListener("keydown", function (ev) {
             if (ev.key === "Escape") ocultarTip();
@@ -306,10 +320,25 @@
                       input.closest(".form-group")?.querySelector(".file-preview");
             if (!box) return;
             box.innerHTML = "";
-            Array.from(input.files).slice(0, 6).forEach(function (f) {
+            Array.from(input.files).slice(0, 6).forEach(function (f, idx) {
                 var item = document.createElement("span");
                 item.className = "file-chip";
                 item.textContent = f.name + " (" + Math.round(f.size / 1024) + " KB)";
+                var btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "file-chip-x";
+                btn.title = "Quitar archivo";
+                btn.setAttribute("aria-label", "Quitar " + f.name);
+                btn.textContent = "×";
+                btn.addEventListener("click", function () {
+                    var dt = new DataTransfer();
+                    Array.from(input.files).forEach(function (file, i) {
+                        if (i !== idx) dt.items.add(file);
+                    });
+                    input.files = dt.files;
+                    input.dispatchEvent(new Event("change", { bubbles: true }));
+                });
+                item.appendChild(btn);
                 box.appendChild(item);
             });
             if (input.files.length > 6) {
@@ -384,14 +413,23 @@
     });
 
     /* ---- Ajustes de cuenta: tabs + preview de avatar ---- */
+    var TITULOS_AJUSTES = {
+        perfil: "Mi perfil", password: "Contraseña", ayuda: "Ayuda y tour",
+        notificaciones: "Notificaciones", glpi: "GLPI", pagina: "Página"
+    };
+    function tituloAjustes(name) {
+        if (TITULOS_AJUSTES[name]) { document.title = "Dogger · " + TITULOS_AJUSTES[name]; }
+    }
     document.querySelectorAll("[data-settings-tab]").forEach(function (tab) {
         tab.addEventListener("click", function (e) {
             e.preventDefault();
             document.querySelectorAll("[data-settings-tab]").forEach(function (t) { t.classList.remove("active"); });
             document.querySelectorAll("[data-settings-panel]").forEach(function (p) { p.classList.remove("active"); });
             tab.classList.add("active");
-            var target = document.querySelector('[data-settings-panel="' + tab.getAttribute("data-settings-tab") + '"]');
+            var name = tab.getAttribute("data-settings-tab");
+            var target = document.querySelector('[data-settings-panel="' + name + '"]');
             if (target) target.classList.add("active");
+            tituloAjustes(name);
         });
     });
     function openSettingsPanel(name) {
@@ -402,6 +440,7 @@
         document.querySelectorAll("[data-settings-panel]").forEach(function (p) { p.classList.remove("active"); });
         tab.classList.add("active");
         panel.classList.add("active");
+        tituloAjustes(name);
         setTimeout(function () {
             if (panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 50);
@@ -967,6 +1006,8 @@
             '<div class="toast-body">' +
             '<strong>' + esc(n.titulo) + '</strong>' +
             '<span>' + esc(n.mensaje || "") + '</span>' +
+            (n.actor ? '<small class="toast-actor">por ' + esc(n.actor) +
+                (n.actor_rol ? " · " + esc(n.actor_rol) : "") + "</small>" : "") +
             '<a href="' + esc(url) + '">Ver</a>' +
             '</div>' +
             '<button type="button" class="toast-close" aria-label="Cerrar">&times;</button>';
@@ -1034,7 +1075,10 @@
             '<span class="notif-text">' +
             '<a class="notif-link" href="' + esc(n.url || "#") + '">' + esc(n.titulo) + '</a>' +
             '<span class="notif-msg">' + esc(n.mensaje) + '</span>' +
-            '<small class="notif-time">' + esc(n.fecha || "ahora mismo") + '</small>' +
+            '<small class="notif-time">' +
+            (n.actor ? "por " + esc(n.actor) +
+                (n.actor_rol ? " · " + esc(n.actor_rol) : "") + " · " : "") +
+            esc(n.fecha || "ahora mismo") + '</small>' +
             '</span>' +
             '<button type="button" class="notif-x" data-notif-quitar="' + esc(n.id) + '" ' +
             'aria-label="Quitar notificación" title="Quitar">&times;</button>' +
@@ -1059,6 +1103,8 @@
             '<h3 class="notif-popup-title" id="notifPopVivaTitulo">' + esc(n.titulo) + '</h3>' +
             '</span>' +
             '<p class="notif-popup-text">' + esc(n.mensaje) + '</p>' +
+            (n.actor ? '<p class="notif-popup-actor">por ' + esc(n.actor) +
+                (n.actor_rol ? " · " + esc(n.actor_rol) : "") + "</p>" : "") +
             '<div class="notif-popup-actions">' +
             (n.url
                 ? '<a class="btn btn-accent notif-popup-ver" href="' + esc(n.url) + '" data-notif-cerrar>' +

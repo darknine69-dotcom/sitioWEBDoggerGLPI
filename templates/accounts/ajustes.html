@@ -300,36 +300,67 @@
             <section id="glpi" class="settings-panel" data-settings-panel="glpi">
                 <div class="settings-panel-header">
                     <h3>Sincronización GLPI</h3>
-                    <p>Estado de la conexión con el sistema GLPI de la empresa.</p>
                 </div>
                 <div class="settings-form">
-                    <div class="glpi-status-card">
-                        <div class="glpi-status-row">
-                            <span class="glpi-status-dot {% if glpi_enabled %}on{% else %}off{% endif %}"></span>
-                            <strong>GLPI: {% if glpi_enabled %}Activo{% else %}Desactivado{% endif %}</strong>
-                        </div>
-                        <p class="glpi-status-detail">
-                            {% if glpi_enabled %}
-                            Conectado a <code>{{ glpi_base_url }}</code>. La sincronización automática está habilitada.
-                            {% else %}
-                            GLPI está desactivado en el entorno actual (nube). Solo funciona en la red interna de Dogger.
-                            {% endif %}
-                        </p>
+                    <div class="glpi-card">
+                    <div class="cfg-row">
+                        <span class="glpi-status-dot {% if glpi_enabled %}on{% else %}off{% endif %}"></span>
+                        <span class="cfg-label">Estado</span>
+                        <span class="glpi-pill {% if glpi_enabled %}on{% else %}off{% endif %}">{% if glpi_enabled %}Activo{% else %}Desactivado{% endif %}</span>
+                        <small class="muted">{% if glpi_enabled %}{{ glpi_base_url }}{% else %}Solo red interna{% endif %}</small>
                     </div>
                     {% if request.user.glpi_user_id %}
-                    <div class="glpi-status-card">
-                        <strong>Tu perfil en GLPI</strong>
-                        <p class="glpi-status-detail">ID: <code>#{{ request.user.glpi_user_id }}</code></p>
+                    <div class="cfg-row">
+                        <span class="cfg-label">Tu ID GLPI</span>
+                        <code>#{{ request.user.glpi_user_id }}</code>
                     </div>
                     {% endif %}
+                    </div>
 
                     {% comment %}El interruptor tambien vive aqui: la pestana GLPI es donde
                     se busca, y no hay que ir a "Pagina" a encontrarlo.{% endcomment %}
-                    {% if request.user.rol == 'admin' %}
+                    {% if request.user.rol == 'admin' and glpi_panel %}
                     <div class="settings-panel-header">
-                        <h3>Actividad de GLPI en los paneles</h3>
-                        <p>Enciende o apaga, para todo el mundo, el bloque «Actividad reciente GLPI» que aparece en «Mi panel» y en el dashboard.</p>
+                        <h3>Conexión con la web de GLPI</h3>
                     </div>
+                    <div class="glpi-card">
+                    <form method="post" action="{% url 'accounts:configuracion_glpi' %}" class="settings-form">
+                        {% csrf_token %}
+                        <div class="cfg-row">
+                            <span class="cfg-label">Estado</span>
+                            <select name="modo" class="obs-buscador-tipo" aria-label="Estado de la conexión">
+                                <option value="auto"{% if glpi_panel.modo == 'auto' %} selected{% endif %}>Automático (.env)</option>
+                                <option value="on"{% if glpi_panel.modo == 'on' %} selected{% endif %}>Activado</option>
+                                <option value="off"{% if glpi_panel.modo == 'off' %} selected{% endif %}>Desactivado</option>
+                            </select>
+                            <small class="muted">Vigente: {% if glpi_panel.vigente %}sí{% else %}no{% endif %} ({{ glpi_panel.fuente.enabled }})</small>
+                        </div>
+                        <div class="cfg-row">
+                            <span class="cfg-label">URL base</span>
+                            <input type="url" name="base_url" value="" maxlength="250" placeholder="{{ glpi_panel.env_url }}">
+                        </div>
+                        <div class="cfg-row">
+                            <span class="cfg-label">App token</span>
+                            <input type="password" name="app_token" value="" maxlength="250" placeholder="{% if glpi_panel.tiene_app %}•••• guardado{% else %}vacío = .env{% endif %}" autocomplete="new-password">
+                        </div>
+                        <div class="cfg-row">
+                            <span class="cfg-label">User token</span>
+                            <input type="password" name="user_token" value="" maxlength="250" placeholder="{% if glpi_panel.tiene_user %}•••• guardado{% else %}vacío = .env{% endif %}" autocomplete="new-password">
+                        </div>
+                        <div class="cfg-row">
+                            <span class="cfg-label">Timeout (s)</span>
+                            <input type="number" name="timeout" value="" min="1" max="120" placeholder="{{ glpi_panel.env_timeout }}">
+                        </div>
+                        <div class="settings-actions" style="display:flex;gap:8px">
+                            <button type="submit" name="accion" value="guardar" class="btn btn-primary btn-sm">Guardar conexión</button>
+                            <button type="submit" name="accion" value="probar" class="btn btn-outline btn-sm">Probar conexión</button>
+                        </div>
+                    </form>
+                    </div>
+                    <div class="settings-panel-header">
+                        <h3>Actividad en paneles</h3>
+                    </div>
+                    <div class="glpi-card">
                     <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form">
                         {% csrf_token %}
                         <input type="hidden" name="ajustes_actividad_glpi" value="1">
@@ -338,44 +369,37 @@
                         {% if config_sitio_sin_migracion %}
                         <div class="settings-warning">
                             <strong>Falta aplicar una migración.</strong>
-                            <span>Ejecuta <code>python manage.py migrate</code> en el servidor: hasta entonces el interruptor no surte efecto.</span>
+                            <span>Ejecuta <code>python manage.py migrate</code> en el servidor.</span>
                         </div>
                         {% endif %}
-                        <div class="notif-item">
-                            <div class="notif-info">
-                                <strong>Mostrar actividad de GLPI</strong>
-                                <small>Al desactivarla desaparece de todas las pantallas. Los datos de GLPI no se tocan.</small>
-                            </div>
+                        <div class="cfg-row">
                             <label class="toggle-switch">
                                 <input type="checkbox" name="panel_mostrar_actividad_glpi" value="1" onchange="this.form.submit()"
                                        {% if config_sitio.panel_mostrar_actividad_glpi %}checked{% endif %}>
                                 <span class="toggle-slider"></span>
                             </label>
+                            <span class="cfg-label">Mostrar actividad</span>
                         </div>
                     </form>
+                    </div>
                     {% endif %}
 
                     <div class="settings-panel-header">
                         <h3>Eliminación de tickets</h3>
-                        <p>Decide si al borrar un ticket también se elimina del sistema GLPI.</p>
                     </div>
+                    <div class="glpi-card">
                     <form method="post" action="{% url 'accounts:ajustes' %}" class="settings-form">
                         {% csrf_token %}
-                        <div class="notif-item">
-                            <div class="notif-info">
-                                <strong>Borrar también en GLPI</strong>
-                                <small>Al eliminar, el ticket va a la papelera y se conserva en Dogger <strong>y en GLPI</strong>. Si este interruptor está activo, borrar definitivamente desde la papelera también lo elimina en GLPI.</small>
-                            </div>
+                        <div class="cfg-row">
                             <label class="toggle-switch">
-                                <input type="checkbox" name="borrar_glpi_al_eliminar" value="1"
+                                <input type="checkbox" name="borrar_glpi_al_eliminar" value="1" onchange="this.form.submit()"
                                        {% if request.user.borrar_glpi_al_eliminar %}checked{% endif %}>
                                 <span class="toggle-slider"></span>
                             </label>
-                        </div>
-                        <div class="settings-actions">
-                            <button type="submit" class="btn btn-primary">Guardar preferencia</button>
+                            <span class="cfg-label">Borrar también en GLPI</span>
                         </div>
                     </form>
+                    </div>
                 </div>
             </section>
             {% endif %}
@@ -385,7 +409,6 @@
             <section id="pagina" class="settings-panel" data-settings-panel="pagina">
                 <div class="settings-panel-header">
                     <h3>Configuración de la página</h3>
-                    <p>Controla qué se muestra en toda la página: el bloque de actividad de GLPI de los paneles y los botones de redes sociales con sus enlaces.</p>
                 </div>
                 <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form">
                     {% csrf_token %}
@@ -394,137 +417,150 @@
                     <input type="hidden" name="ajustes_actividad_glpi" value="1">
                     <input type="hidden" name="panel_mostrar_actividad_glpi" value="0">
                     <input type="hidden" name="volver" value="pagina">
-
-                    <div class="settings-panel-header">
-                        <h3>Panel de los usuarios</h3>
-                        <p>Un ajuste general: cuando está apagado, nadie ve el bloque «Actividad reciente GLPI».</p>
-                    </div>
                     {% if config_sitio_sin_migracion %}
                     <div class="settings-warning">
                         <strong>Falta aplicar una migración en la base de datos.</strong>
-                        <span>Por eso el interruptor de GLPI no hace nada todavía. Ejecuta <code>python manage.py migrate</code> en el servidor y recarga esta página.</span>
+                        <span>Ejecuta <code>python manage.py migrate</code> en el servidor y recarga esta página.</span>
                     </div>
                     {% endif %}
-                    <div class="notif-item">
-                        <div class="notif-info">
-                            <strong>Mostrar actividad de GLPI</strong>
-                            <small>En «Mi panel» y en el dashboard aparece la lista de eventos de GLPI (cambios de estado, seguimientos). Al desactivarla desaparece de todas las pantallas, sin tocar los datos.</small>
-                        </div>
+
+                    <div class="settings-panel-header">
+                        <h3>Paneles y contacto</h3>
+                    </div>
+                    <div class="cfg-row">
                         <label class="toggle-switch">
                             <input type="checkbox" name="panel_mostrar_actividad_glpi" value="1" onchange="this.form.submit()"
                                    {% if config_sitio.panel_mostrar_actividad_glpi %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
+                        <span class="cfg-label">Actividad GLPI</span>
+                    </div>
+                    <div class="cfg-row">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="whatsapp_activo" onchange="this.form.submit()" value="1"
+                                   {% if config_sitio.whatsapp_activo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="cfg-label">WhatsApp</span>
+                        <input type="text" name="whatsapp_numero" onchange="this.form.submit()" id="id_whatsapp_numero"
+                               value="{{ config_sitio.whatsapp_numero }}" maxlength="20" placeholder="3103716129">
+                    </div>
+                    <div class="cfg-row">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="correo_activo" onchange="this.form.submit()" value="1"
+                                   {% if config_sitio.correo_activo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="cfg-label">Correo</span>
+                        <input type="email" name="correo_soporte" onchange="this.form.submit()" id="id_correo_soporte"
+                               value="{{ config_sitio.correo_soporte }}" maxlength="254" placeholder="sistemasbogota@dogger.com.co">
                     </div>
 
+                    <hr class="cfg-sep">
                     <div class="settings-panel-header">
                         <h3>Redes sociales</h3>
-                        <p>Si la URL está vacía, el botón no se muestra.</p>
-                    </div>
-                    <div class="notif-item">
-                        <div class="notif-info">
-                            <strong>Mostrar sección de redes</strong>
-                            <small>Si está apagada, los iconos de redes sociales no se muestran en el pie de las páginas.</small>
-                        </div>
+                    </div>                    <div class="cfg-row">
                         <label class="toggle-switch">
                             <input type="checkbox" name="pagina_mostrar_redes" value="1" onchange="this.form.submit()"
                                    {% if config_sitio.pagina_mostrar_redes %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
+                        <span class="cfg-label">Mostrar sección</span>
                     </div>
-
-                    <div class="settings-panel-header">
-                        <h3>Botones de contacto</h3>
-                        <p>WhatsApp y correo se muestran como botones de contacto directo.</p>
-                    </div>
-                    <div class="notif-item">
-                        <div class="notif-info">
-                            <strong>WhatsApp</strong>
-                            <small>Muestra el botón de WhatsApp en el pie.</small>
-                        </div>
+                    <div class="cfg-row">
                         <label class="toggle-switch">
-                            <input type="checkbox" name="whatsapp_activo" value="1"
-                                   {% if config_sitio.whatsapp_activo %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <div class="settings-form-row">
-                        <label for="id_whatsapp_numero">Número de WhatsApp</label>
-                        <input type="text" name="whatsapp_numero" id="id_whatsapp_numero"
-                               value="{{ config_sitio.whatsapp_numero }}" maxlength="20" placeholder="Ej: 3103716129">
-                    </div>
-                    <div class="notif-item">
-                        <div class="notif-info">
-                            <strong>Correo de soporte</strong>
-                            <small>Muestra el botón de correo en el pie.</small>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" name="correo_activo" value="1"
-                                   {% if config_sitio.correo_activo %}checked{% endif %}>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <div class="settings-form-row">
-                        <label for="id_correo_soporte">Correo de soporte</label>
-                        <input type="email" name="correo_soporte" id="id_correo_soporte"
-                               value="{{ config_sitio.correo_soporte }}" maxlength="254" placeholder="sistemasbogota@dogger.com.co">
-                    </div>
-
-                    <div class="settings-panel-header">
-                        <h3>Redes sociales</h3>
-                        <p>Activa cada red y define su enlace. Si la URL está vacía, el botón no se muestra.</p>
-                    </div>
-                    <div class="notif-item">
-                        <div class="notif-info">
-                            <strong>Facebook</strong>
-                            <small>Muestra el botón de Facebook en el pie.</small>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" name="facebook_activo" value="1"
+                            <input type="checkbox" name="facebook_activo" onchange="this.form.submit()" value="1"
                                    {% if config_sitio.facebook_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                    </div>
-                    <div class="settings-form-row">
-                        <label for="id_facebook_url">URL de Facebook</label>
-                        <input type="url" name="facebook_url" id="id_facebook_url"
+                        <span class="cfg-label">Facebook</span>
+                        <input type="url" name="facebook_url" onchange="this.form.submit()" id="id_facebook_url"
                                value="{{ config_sitio.facebook_url }}" maxlength="250" placeholder="https://facebook.com/…">
                     </div>
-                    <div class="notif-item">
-                        <div class="notif-info">
-                            <strong>Instagram</strong>
-                            <small>Muestra el botón de Instagram en el pie.</small>
-                        </div>
+                    <div class="cfg-row">
                         <label class="toggle-switch">
-                            <input type="checkbox" name="instagram_activo" value="1"
+                            <input type="checkbox" name="instagram_activo" onchange="this.form.submit()" value="1"
                                    {% if config_sitio.instagram_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                    </div>
-                    <div class="settings-form-row">
-                        <label for="id_instagram_url">URL de Instagram</label>
-                        <input type="url" name="instagram_url" id="id_instagram_url"
+                        <span class="cfg-label">Instagram</span>
+                        <input type="url" name="instagram_url" onchange="this.form.submit()" id="id_instagram_url"
                                value="{{ config_sitio.instagram_url }}" maxlength="250" placeholder="https://instagram.com/…">
                     </div>
-                    <div class="notif-item">
-                        <div class="notif-info">
-                            <strong>TikTok</strong>
-                            <small>Muestra el botón de TikTok en el pie.</small>
-                        </div>
+                    <div class="cfg-row">
                         <label class="toggle-switch">
-                            <input type="checkbox" name="tiktok_activo" value="1"
+                            <input type="checkbox" name="tiktok_activo" onchange="this.form.submit()" value="1"
                                    {% if config_sitio.tiktok_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                    </div>
-                    <div class="settings-form-row">
-                        <label for="id_tiktok_url">URL de TikTok</label>
-                        <input type="url" name="tiktok_url" id="id_tiktok_url"
+                        <span class="cfg-label">TikTok</span>
+                        <input type="url" name="tiktok_url" onchange="this.form.submit()" id="id_tiktok_url"
                                value="{{ config_sitio.tiktok_url }}" maxlength="250" placeholder="https://tiktok.com/…">
                     </div>
+                    <div class="cfg-row">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="teams_activo" value="1"
+                                   {% if config_sitio.teams_activo %}checked{% endif %}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="cfg-label">Teams</span>
+                        <input type="url" name="teams_url" id="id_teams_url"
+                               value="{{ config_sitio.teams_url }}" maxlength="250" placeholder="https://teams.microsoft.com/…">
+                    </div>
 
-                    <div class="settings-actions">
-                        <button type="submit" class="btn btn-primary">Guardar configuración</button>
+                </form>
+
+                <hr class="cfg-sep">
+                <div class="settings-panel-header">
+                    <h3>Permisos por cuenta</h3>
+                </div>
+                <form method="get" action="{% url 'accounts:ajustes' %}#pagina" class="settings-form" style="margin-bottom:8px">
+                    <div class="cfg-row">
+                        <span class="cfg-label">Ver rol</span>
+                        <select name="rol_perm" class="obs-buscador-tipo" onchange="this.form.submit()" aria-label="Filtrar por rol">
+                            <option value="">Usuarios y técnicos</option>
+                            <option value="usuario"{% if rol_perm_sel == 'usuario' %} selected{% endif %}>Usuarios</option>
+                            <option value="tecnico"{% if rol_perm_sel == 'tecnico' %} selected{% endif %}>Técnicos</option>
+                            <option value="admin"{% if rol_perm_sel == 'admin' %} selected{% endif %}>Administradores</option>
+                            <option value="observador"{% if rol_perm_sel == 'observador' %} selected{% endif %}>Observadores</option>
+                        </select>
+                    </div>
+                </form>
+                <form method="post" action="{% url 'accounts:permisos' %}" class="settings-form">
+                    {% csrf_token %}
+                    <div class="perm-lista">
+                    <div class="table-scroll">
+                        <table class="obs-tabla">
+                            <thead>
+                                <tr>
+                                    <th>Cuenta</th>
+                                    <th>Cerrar</th>
+                                    <th>Eliminar</th>
+                                    <th>Reabrir</th>
+                                    <th>Crear</th>
+                                    <th>Chatear</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in cuentas_permisos %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ u.nombre }}</strong>
+                                        <small>{{ u.email }} · {{ u.get_rol_display }}</small>
+                                        <input type="hidden" name="uid" value="{{ u.pk }}">
+                                    </td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_reabrir" value="1"{% if u.puede_reabrir_tickets %} checked{% endif %} aria-label="Reabrir para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_crear" value="1"{% if u.puede_crear_tickets %} checked{% endif %} aria-label="Crear para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_responder" value="1"{% if u.puede_responder_chat %} checked{% endif %} aria-label="Chatear para {{ u.email }}" onchange="this.form.submit()"></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="obs-sin-datos">Sin cuentas.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     </div>
                 </form>
             </section>

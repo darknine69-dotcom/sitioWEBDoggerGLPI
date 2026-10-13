@@ -4,70 +4,271 @@
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_usuarios %}is-active{% endblock %}
 {% block header_title %}Monitoreo por zona{% endblock %}
-{% block header_desc %}Elige un observador, mira los usuarios activos y guárdalos en la zona que le toca. El observador los ve de inmediato en su panel.{% endblock %}
+{% block header_desc %}Tablero de lo que vigila cada supervisor: sus zonas, sus cuentas y su estado. Desde aquí se administra todo.{% endblock %}
+
+{% block extra_css %}
+<style>
+main.obs-page { font-family: var(--font-corp); }
+/* Formularios cortos dentro de las tarjetas de zona: misma línea, sin aire de más. */
+.obs-admin-form { display: flex; gap: 6px; margin: 10px 0 4px; align-items: center; }
+/* Fila renombrar + más + correo al ladito. */
+.obs-admin-row { display: flex; gap: 6px; margin: 10px 0 4px; align-items: center; flex-wrap: wrap; }
+.obs-admin-row .obs-admin-form { margin: 0; }
+.obs-admin-row .obs-admin-rename { flex: none; }
+.obs-admin-row .obs-admin-email { flex: 1; min-width: 200px; }
+.obs-admin-form input { flex: 1; min-width: 0; font: inherit; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); }
+.obs-admin-form input:focus { outline: none; border-color: var(--dogger-red); }
+.obs-admin-rename input { max-width: 230px; }
+/* Input con el lápiz adentro, a la derecha. */
+.obs-input-icon { position: relative; flex: 1; max-width: 230px; min-width: 0; }
+.obs-input-icon input { width: 100%; max-width: none; padding-right: 34px; }
+.obs-input-icon .mini-icon-btn {
+    position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px; border: 0; background: transparent;
+}
+.obs-input-icon .mini-icon-btn:hover { background: rgba(214,43,31,.10); }
+/* Botón icono cuadrado: renombrar, sacar, asignar, eliminar. */
+.mini-icon-btn {
+    flex: none; width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; color: var(--ink-muted); cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.mini-icon-btn:hover { border-color: var(--dogger-red); color: var(--dogger-red); background: rgba(214,43,31,.06); }
+.mini-icon-btn .icon { width: 15px; height: 15px; }
+.mini-icon-btn.is-danger:hover { border-color: var(--dogger-red); color: #fff; background: var(--dogger-red); }
+.obs-admin-crear { margin-bottom: 18px; }
+.obs-admin-crear label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); }
+.obs-admin-foot { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.obs-sup-tit { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; }
+.obs-sup-tit:first-of-type { margin-top: 0; }
+.obs-sup-tit small { font-size: 11.5px; color: var(--ink-muted); }
+</style>
+{% endblock %}
 
 {% block content %}
-<main class="wrap">
+<main class="page obs-page">
+
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
+        <a class="dash-stat dash-hov-usuarios" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-eye"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Supervisores</span>
+                <span class="dash-stat-value">{{ dash.supervisores|default:0 }}</span>
+                <span class="dash-stat-hint">con zonas creadas</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-zonas" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Zonas creadas</span>
+                <span class="dash-stat-value">{{ dash.zonas|default:0 }}</span>
+                <span class="dash-stat-hint">carpetas de seguimiento</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-total" href="#zonas" title="Bajar a las cuentas dentro de cada zona">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-user"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Cuentas en zonas</span>
+                <span class="dash-stat-value">{{ dash.cuentas|default:0 }}</span>
+                <span class="dash-stat-hint">personas vigiladas</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-abiertos" href="#agregar" title="Bajar a agregar cuentas al seguimiento">
+            <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Abiertos en zonas</span>
+                <span class="dash-stat-value st-abiertos">{{ dash.abiertos|default:0 }}</span>
+                <span class="dash-stat-hint">tickets por atender</span>
+            </span>
+        </a>
+    </div>
+
+    <section id="zonas" class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Zonas creadas por los observadores</h3>
+        <p class="obs-leyenda">
+            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-verde"></span> Al día<span class="obs-tip">Zona sin tickets abiertos</span></span>
+            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-amarillo"></span> Pendiente<span class="obs-tip">Zona con tickets abiertos o en progreso</span></span>
+            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-rojo"></span> Incidencia<span class="obs-tip">Zona con urgentes abiertos</span></span>
+        </p>
+        <p class="muted" style="margin:0 0 12px;font-size:12.5px">Cada supervisor a cargo con sus zonas, las cuentas que metió en cada una y su estado. Se administra desde aquí: se crea la zona, se le asignan cuentas, se saca una cuenta o se elimina la zona (la gente no se borra). Dale clic al nombre de una cuenta para ver su ficha completa.</p>
+        <form method="post" action="{% url 'tickets:monitoreo_zona_crear' %}" class="obs-filtros obs-admin-crear">
+            {% csrf_token %}
+            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+            <label>Supervisor
+                <select name="observador" class="obs-buscador-tipo" style="min-width:200px" required>
+                    <option value="">Elige…</option>
+                    {% for pk, nombre in observadores %}
+                    <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label style="flex:1">Nueva zona
+                <input type="text" name="nombre" maxlength="80" placeholder="Ej.: Sede norte" class="obs-buscador-tipo" style="width:100%" required>
+            </label>
+            <button type="submit" class="btn btn-sm btn-accent" style="align-self:flex-end"><svg class="icon icon-sm"><use href="#i-plus"/></svg> Crear zona</button>
+        </form>
+        {% if zonas_creadas %}
+        {% for bloque in zonas_creadas %}
+        <div class="obs-sup-tit">
+            <span class="obs-avatar">{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
+            <div class="obs-miembro-id">
+                <strong>{{ bloque.supervisor.nombre }}</strong>
+                <small>{{ bloque.supervisor.email }} · {% if bloque.supervisor.rol == 'observador' %}Supervisor a cargo{% else %}creó la zona cuando era supervisor (rol actual: {{ bloque.supervisor.get_rol_display }}){% endif %}{% if bloque.puntos %} · {% for p in bloque.puntos %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</small>
+            </div>
+        </div>
+        {% for z in bloque.zonas %}
+        <section class="obs-zona-card">
+            <button type="button" class="obs-zona-head" data-zona-toggle="za-{{ z.zona.pk }}" aria-expanded="true" title="Plegar o desplegar {{ z.zona.nombre }}">
+                <span class="obs-zona-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+                <div class="obs-zona-tit">
+                    <strong>{{ z.zona.nombre }}</strong>
+                    <small>{{ z.zona.creado_en|date:"d/m/Y" }} · {{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }} · {{ bloque.supervisor.nombre }}</small>
+                </div>
+                {% if z.abiertos %}<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>{{ z.abiertos }} abiertos</span>
+                {% else %}<span class="obs-pill obs-pill-verde"><span class="obs-dot obs-dot-verde"></span>al día</span>{% endif %}
+                <div class="obs-zona-stats">
+                    <span class="obs-crate-global" title="Total de la zona: cuentas y abiertos">
+                        <span class="obs-crate-seg"><b>{{ z.miembros|length }}</b> cuentas</span>
+                        <span class="obs-crate-seg s-abiertos"><b>{{ z.abiertos }}</b> abiertos</span>
+                    </span>
+                    <span class="obs-avance" style="flex:none;min-width:80px;width:110px" title="Avance {{ z.avance }}%"><span class="obs-avance-bar"><span style="width: {{ z.avance }}%"></span></span><span class="obs-avance-num">{{ z.avance }}%</span></span>
+                </div>
+                <span class="obs-zona-chev" aria-hidden="true">▾</span>
+            </button>
+            <div id="za-{{ z.zona.pk }}" style="padding:4px 16px 14px">
+                <div class="obs-admin-row">
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_renombrar' z.zona.pk %}" class="obs-admin-form obs-admin-rename" data-zona-nombre="{{ z.zona.nombre }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                        <span class="obs-input-icon">
+                            <input type="text" name="nombre" value="{{ z.zona.nombre }}" maxlength="80" aria-label="Renombrar zona {{ z.zona.nombre }}" required>
+                            <button type="submit" class="mini-icon-btn" title="Renombrar la zona" aria-label="Renombrar la zona {{ z.zona.nombre }}"><svg class="icon"><use href="#i-pencil"/></svg></button>
+                        </span>
+                    </form>
+                    <button type="button" class="mini-icon-btn obs-assign-toggle" data-assign-toggle="asg-{{ z.zona.pk }}" aria-expanded="false" title="Asignar cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-plus"/></svg></button>
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form obs-admin-email" id="asg-{{ z.zona.pk }}" hidden>
+                        {% csrf_token %}
+                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                        <input type="email" name="email" placeholder="correo@dogger.com.co" aria-label="Correo de la cuenta para {{ z.zona.nombre }}" required>
+                        <button type="submit" class="mini-icon-btn" title="Meter la cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-check"/></svg></button>
+                    </form>
+                </div>
+                {% for m in z.miembros %}
+                <article class="obs-miembro">
+                    <div class="obs-miembro-top" data-href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}" style="cursor:pointer">
+                        <span class="obs-avatar">{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
+                        <span class="obs-miembro-id">
+                            <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}: todo lo de esta cuenta">{{ m.nombre }}</a></strong>
+                            <small>{{ m.email|default:"—" }} · {{ m.rol }} · {{ m.tecnico }}</small>
+                        </span>
+                        {% if m.abiertos %}<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>{{ m.abiertos }}</span>{% endif %}
+                        <span class="obs-miembro-nums">
+                            <span class="obs-crate" title="Tickets de {{ m.nombre }}: {{ m.total }} en total, {{ m.abiertos }} abiertos">
+                                <span class="obs-crate-seg"><b>{{ m.total }}</b> tickets</span>
+                                <span class="obs-crate-seg s-abiertos"><b>{{ m.abiertos }}</b> abiertos</span>
+                            </span>
+                        </span>
+                        <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_quitar' m.elemento_id %}" data-sacar-nombre="{{ m.nombre }}" data-sacar-zona="{{ z.zona.nombre }}">
+                            {% csrf_token %}
+                            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                            <button type="submit" class="mini-icon-btn" title="Sacar de la zona (queda en la lista)" aria-label="Sacar a {{ m.nombre }} de {{ z.zona.nombre }}"><svg class="icon"><use href="#i-x"/></svg></button>
+                        </form>
+                    </div>
+                </article>
+                {% empty %}
+                <p class="muted" style="margin:6px 0">Zona vacía: todavía no tiene cuentas dentro.</p>
+                {% endfor %}
+                <div class="obs-admin-foot">
+                    <small class="muted">{{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }} en total</small>
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_eliminar' z.zona.pk %}" style="margin-left:auto" data-eliminar-zona="{{ z.zona.nombre }}" data-eliminar-n="{{ z.miembros|length }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                        <button type="submit" class="mini-icon-btn is-danger" title="Eliminar la zona" aria-label="Eliminar la zona {{ z.zona.nombre }}"><svg class="icon"><use href="#i-trash"/></svg></button>
+                    </form>
+                </div>
+            </div>
+        </section>
+        {% endfor %}
+        {% endfor %}
+        {% else %}
+        <div class="obs-vacio">
+            <span class="obs-vacio-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <strong>Ningún observador ha creado zonas todavía.</strong>
+            <p>Aparecen aquí en cuanto armen la primera desde su panel.</p>
+        </div>
+        {% endif %}
+    </section>
 
     {% if not observadores %}
-    <div class="panel">
-        <p class="panel-sub">No hay observadores activos. Crea uno desde Usuarios y técnicos.</p>
+    <div class="chart-card">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+            <h3>Agregar cuentas al seguimiento</h3>
+        </div>
+        <p class="muted" style="margin:0">No hay observadores activos. Crea uno desde Usuarios y técnicos.</p>
     </div>
     {% else %}
 
-    <form method="get" class="cat-publico-busca" style="margin-bottom:18px">
-        <label for="f-obs" style="font-size:12px;font-weight:700">Observador</label>
-        <select name="observador" id="f-obs" class="obs-buscador-tipo" style="min-width:220px">
-            {% for pk, nombre in observadores %}
-            <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit" class="btn btn-sm">Cambiar</button>
-        <span class="muted" style="align-self:center">
-            Zonas asignadas:
-            {% if zonas %}{% for z in zonas %}<span class="chip chip-soft">{{ z }}</span>{% endfor %}
-            {% else %}<em>ninguna todavía</em>{% endif %}
-        </span>
-    </form>
+    <section id="agregar" class="obs-bloque">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+                <h3>Agregar cuentas al seguimiento</h3>
+            </div>
+            <p class="muted" style="margin:0 0 12px;font-size:12.5px">Elige un observador, mira los usuarios activos y guárdalos en la zona que le toca. El observador los ve de inmediato en su panel.</p>
+            <form method="get" class="obs-filtros">
+                <label for="f-obs" style="font-size:12px;font-weight:700">Supervisor</label>
+                <select name="observador" id="f-obs" class="obs-buscador-tipo" style="min-width:220px">
+                    {% for pk, nombre in observadores %}
+                    <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm">Cambiar</button>
+                <span class="muted" style="align-self:center">
+                    Zonas asignadas:
+                    {% if zonas %}{% for z in zonas %}<span class="chip chip-soft">{{ z }}</span>{% endfor %}
+                    {% else %}<em>ninguna todavía</em>{% endif %}
+                </span>
+            </form>
 
-    <form method="get" class="cat-publico-busca" style="margin-bottom:18px;flex-wrap:wrap">
-        <input type="hidden" name="observador" value="{{ observador_id }}">
-        <div class="cat-publico-busca-campo" style="flex:1 1 240px">
-            <svg class="icon"><use href="#i-search"/></svg>
-            <input type="search" name="q" value="{{ q }}"
-                   placeholder="Nombre, correo o ubicación" aria-label="Buscar usuario">
-        </div>
-        <select name="rol" class="obs-buscador-tipo" aria-label="Filtrar por rol">
-            <option value="">Todos los roles</option>
-            <option value="usuario"{% if rol_sel == 'usuario' %} selected{% endif %}>Usuarios</option>
-            <option value="tecnico"{% if rol_sel == 'tecnico' %} selected{% endif %}>Técnicos</option>
-            <option value="admin"{% if rol_sel == 'admin' %} selected{% endif %}>Administradores</option>
-        </select>
-        <select name="zona" class="obs-buscador-tipo" aria-label="Filtrar por zona">
-            <option value="">Cualquier zona</option>
-            {% for z in zonas %}
-            <option value="{{ z }}"{% if zona_sel == z %} selected{% endif %}>{{ z }}</option>
-            {% endfor %}
-        </select>
-        <select name="estado" class="obs-buscador-tipo" aria-label="Filtrar por estado">
-            <option value="">Todos</option>
-            <option value="pendientes"{% if estado_sel == 'pendientes' %} selected{% endif %}>Sin agregar</option>
-            <option value="agregados"{% if estado_sel == 'agregados' %} selected{% endif %}>Ya agregados</option>
-            <option value="con_tickets"{% if estado_sel == 'con_tickets' %} selected{% endif %}>Con tickets abiertos</option>
-        </select>
-        <button type="submit" class="btn btn-sm">Filtrar</button>
-        <a href="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}" class="btn btn-outline btn-sm">Limpiar</a>
-    </form>
+            <form method="get" class="obs-filtros">
+                <input type="hidden" name="observador" value="{{ observador_id }}">
+                <div class="obs-buscador-campo">
+                    <svg class="icon"><use href="#i-search"/></svg>
+                    <input type="search" name="q" value="{{ q }}"
+                           placeholder="Nombre, correo o ubicación" aria-label="Buscar usuario">
+                </div>
+                <select name="rol" class="obs-buscador-tipo" aria-label="Filtrar por rol">
+                    <option value="">Todos los roles</option>
+                    <option value="usuario"{% if rol_sel == 'usuario' %} selected{% endif %}>Usuarios</option>
+                    <option value="tecnico"{% if rol_sel == 'tecnico' %} selected{% endif %}>Técnicos</option>
+                    <option value="admin"{% if rol_sel == 'admin' %} selected{% endif %}>Administradores</option>
+                </select>
+                <select name="zona" class="obs-buscador-tipo" aria-label="Filtrar por zona">
+                    <option value="">Cualquier zona</option>
+                    {% for z in zonas %}
+                    <option value="{{ z }}"{% if zona_sel == z %} selected{% endif %}>{{ z }}</option>
+                    {% endfor %}
+                </select>
+                <select name="estado" class="obs-buscador-tipo" aria-label="Filtrar por estado">
+                    <option value="">Todos</option>
+                    <option value="pendientes"{% if estado_sel == 'pendientes' %} selected{% endif %}>Sin agregar</option>
+                    <option value="agregados"{% if estado_sel == 'agregados' %} selected{% endif %}>Ya agregados</option>
+                    <option value="con_tickets"{% if estado_sel == 'con_tickets' %} selected{% endif %}>Con tickets abiertos</option>
+                </select>
+                <button type="submit" class="btn btn-sm">Filtrar</button>
+                <a href="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}" class="btn btn-outline btn-sm">Limpiar</a>
+            </form>
 
-    <div class="panel">
-        <p class="panel-sub">
-            {{ total }} usuario{{ total|pluralize }} activo{{ total|pluralize:"s, :" }}.
-            Se guarda en <strong>{{ zona_elegida|default:"la zona elegida" }}</strong> para
-            <strong>{{ observador.nombre }}</strong>.
-        </p>
+            <p class="muted" style="font-size:12.5px">
+                {{ total }} usuario{{ total|pluralize }} activo{{ total|pluralize:"s, :" }}.
+                Se guarda en <strong>{{ zona_elegida|default:"la zona elegida" }}</strong> para
+                <strong>{{ observador.nombre }}</strong>.
+            </p>
 
-        <div class="table-card" style="margin-bottom:16px">
-            <div class="table-scroll">
+            <div class="obs-tabla-wrap tabla-scroll-seis" style="margin-bottom:16px">
                 <table class="obs-tabla">
                     <thead>
                         <tr>
@@ -76,13 +277,13 @@
                             <th>Rol</th>
                             <th>Zona</th>
                             <th class="num">Abiertos</th>
-                            <th>Monitoreo</th>
+                            <th class="obs-acciones">Monitoreo</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for f in filas %}
-                        <tr>
-                            <td><strong>{{ f.nombre }}</strong></td>
+                        <tr{% if f.elemento_id %} data-href="{% url 'tickets:monitoreo_cuenta_detalle' f.elemento_id %}" title="Abrir la vista principal de {{ f.nombre }}" style="cursor:pointer"{% endif %}>
+                            <td><strong>{% if f.elemento_id %}<a href="{% url 'tickets:monitoreo_cuenta_detalle' f.elemento_id %}" title="Abrir la vista principal de {{ f.nombre }}: todo lo de esta cuenta">{{ f.nombre }}</a>{% else %}{{ f.nombre }}{% endif %}</strong></td>
                             <td>{{ f.email|default:"—" }}</td>
                             <td>{{ f.rol }}</td>
                             <td>{{ f.ubicacion }}</td>
@@ -90,12 +291,12 @@
                                 {% if f.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ f.abiertos }}</span>
                                 {% else %}<span class="muted">0</span>{% endif %}
                             </td>
-                            <td>
+                            <td class="obs-acciones">
                                 {% if f.ya_agregado %}
                                 <span class="obs-pill obs-pill-verde">En la lista</span>
                                 {% else %}
                                 <form method="post" action="{% url 'tickets:monitoreo_agregar' %}"
-                                      style="display:flex;gap:6px;align-items:center">
+                                      style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
                                     {% csrf_token %}
                                     <input type="hidden" name="observador" value="{{ observador_id }}">
                                     <input type="hidden" name="email" value="{{ f.email }}">
@@ -113,21 +314,145 @@
                     </tbody>
                 </table>
             </div>
-        </div>
 
-        <h3 class="cat-det-bloque" style="font-size:14px;margin-bottom:10px">Zonas del observador</h3>
-        <form method="post" action="{% url 'tickets:monitoreo_zonas' %}"
-              style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            {% csrf_token %}
-            <input type="hidden" name="observador" value="{{ observador_id }}">
-            <input type="hidden" name="volver" value="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}">
-            <select name="punto" class="obs-buscador-tipo" aria-label="Zona" required>
-                {% for z in zonas %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
-            </select>
-            <button type="submit" name="accion" value="asignar" class="btn btn-sm">Asignar zona</button>
-            <button type="submit" name="accion" value="quitar" class="btn btn-outline btn-sm">Quitar zona</button>
-        </form>
-    </div>
+            <h3 class="obs-bloque-titulo" style="font-size:14px">Zonas del observador</h3>
+            <form method="post" action="{% url 'tickets:monitoreo_zonas' %}" class="obs-filtros" style="margin-bottom:0">
+                {% csrf_token %}
+                <input type="hidden" name="observador" value="{{ observador_id }}">
+                <input type="hidden" name="volver" value="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}">
+                <select name="punto" class="obs-buscador-tipo" aria-label="Zona" required>
+                    {% for z in zonas %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
+                </select>
+                <button type="submit" name="accion" value="asignar" class="btn btn-sm">Asignar zona</button>
+                <button type="submit" name="accion" value="quitar" class="btn btn-outline btn-sm">Quitar zona</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="auditoria" class="obs-bloque">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
+                <h3>Registro de auditoría</h3>
+            </div>
+            <p class="muted" style="margin:0 0 12px;font-size:12.5px">Cambios realizados en el monitoreo: quién, qué y cuándo.</p>
+            {% if auditoria %}
+            <div class="obs-tabla-wrap tabla-scroll-seis">
+                <table class="obs-tabla">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Acción</th>
+                            <th>Zona</th>
+                            <th>Supervisor</th>
+                            <th>Hecho por</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in auditoria %}
+                        <tr>
+                            <td style="white-space:nowrap">{{ a.fecha|date:"d/m/Y H:i" }}</td>
+                            <td>{{ a.get_accion_display }}</td>
+                            <td><strong>{{ a.zona_nombre|default:"—" }}</strong></td>
+                            <td>{{ a.observador.nombre|default:"—" }}</td>
+                            <td>{{ a.actor.nombre|default:"—" }}</td>
+                            <td>{{ a.detalle|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted" style="margin:0">Todavía no hay cambios registrados.</p>
+            {% endif %}
+        </div>
+    </section>
     {% endif %}
+
+    <script>
+    /* Clic en el nombre o en la fila: abre la vista principal de la cuenta.
+       Los botones y formularios (iconos, asignar, renombrar…) siguen
+       funcionando: si el clic nace ahí, no se navega. */
+    (function () {
+        /* Encabezado de la zona: pliega y despliega su contenido. */
+        document.querySelectorAll("[data-zona-toggle]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var body = document.getElementById(btn.getAttribute("data-zona-toggle"));
+                if (!body) return;
+                var abierto = btn.getAttribute("aria-expanded") !== "false";
+                btn.setAttribute("aria-expanded", abierto ? "false" : "true");
+                body.hidden = abierto;
+            });
+        });
+        document.querySelectorAll("[data-href]").forEach(function (fila) {
+            fila.addEventListener("click", function (e) {
+                if (e.target.closest("a, button, form, input, select, textarea")) return;
+                window.location.href = fila.getAttribute("data-href");
+            });
+        });
+        /* Asignar: el input del correo vive debajo del renombrar y se
+           muestra solo al pedirlo. */
+        document.querySelectorAll("[data-assign-toggle]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var form = document.getElementById(btn.getAttribute("data-assign-toggle"));
+                if (!form) return;
+                var abierto = form.hidden;
+                form.hidden = !abierto;
+                btn.setAttribute("aria-expanded", String(abierto));
+                if (abierto) {
+                    var input = form.querySelector('input[type="email"]');
+                    if (input) input.focus();
+                }
+            });
+        });
+        function confirma(mensaje, form, textoOk, opciones) {
+            if (typeof window.DoggerConfirma === "function") {
+                window.DoggerConfirma(mensaje, function () { form.submit(); }, textoOk, opciones);
+            } else if (window.confirm(mensaje)) {
+                form.submit();
+            }
+        }
+        /* Renombrar: avisa qué cambia y qué no. */
+        document.querySelectorAll(".obs-admin-rename").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                var viejo = form.getAttribute("data-zona-nombre") || "";
+                var campo = form.querySelector('input[name="nombre"]');
+                var nuevo = campo ? campo.value.trim() : "";
+                if (!nuevo || nuevo === viejo) { form.submit(); return; }
+                confirma(
+                    "¿Renombrar «" + viejo + "» a «" + nuevo + "»?",
+                    form, "Sí, renombrar",
+                    { titulo: "Renombrar zona", icono: "#i-pencil", nota: "Las cuentas y su seguimiento no cambian: solo el nombre." }
+                );
+            });
+        });
+        /* Sacar: la cuenta queda en la lista, sin zona. */
+        document.querySelectorAll("[data-sacar-nombre]").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                confirma(
+                    "¿Sacar a " + form.getAttribute("data-sacar-nombre") +
+                    " de «" + form.getAttribute("data-sacar-zona") + "»?",
+                    form, "Sí, sacar",
+                    { titulo: "Sacar de la zona", icono: "#i-x", nota: "Queda en la lista del supervisor, sin zona. Sus tickets no se tocan." }
+                );
+            });
+        });
+        /* Eliminar: la gente no se borra, los tickets tampoco. */
+        document.querySelectorAll("[data-eliminar-zona]").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                var n = parseInt(form.getAttribute("data-eliminar-n") || "0", 10);
+                confirma(
+                    "¿Eliminar la zona «" + form.getAttribute("data-eliminar-zona") + "»?",
+                    form, "Sí, eliminar",
+                    { titulo: "Eliminar zona", icono: "#i-trash", nota: "Sus " + n + " cuenta" + (n === 1 ? "" : "s") + " quedan en la lista, sin zona. Nadie se borra y los tickets no se tocan." }
+                );
+            });
+        });
+    })();
+    </script>
 </main>
 {% endblock %}

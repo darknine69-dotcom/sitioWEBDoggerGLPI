@@ -42,6 +42,16 @@
             </a>
         </div>
     </div>
+    <div class="ue-box">
+        <h4><svg class="icon"><use href="#i-shield"/></svg> Acciones permitidas</h4>
+        <div class="ue-chips">
+            <span class="perm-chip {% if not u.puede_cerrar_tickets %}off{% endif %}">Cerrar</span>
+            <span class="perm-chip {% if not u.puede_eliminar_tickets %}off{% endif %}">Eliminar</span>
+            <span class="perm-chip {% if not u.puede_reabrir_tickets %}off{% endif %}">Reabrir</span>
+            <span class="perm-chip {% if not u.puede_crear_tickets %}off{% endif %}">Crear</span>
+            <span class="perm-chip {% if not u.puede_responder_chat %}off{% endif %}">Chatear</span>
+        </div>
+    </div>
     {% if u.rol == 'tecnico' or u.rol == 'admin' %}
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-lock"/></svg> Permisos</h4>

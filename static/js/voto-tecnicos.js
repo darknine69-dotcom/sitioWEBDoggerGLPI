@@ -62,20 +62,21 @@ viene del detalle, el pk del ticket (data-ticket).
 
     function pintarBarra(card, barra) {
         if (!barra) return;
+        var pct = barra.cobertura != null ? barra.cobertura : 0;
+        var votos = (barra.me_gusta || 0) + (barra.no_me_gusta || 0);
+        var res = barra.resueltos || 0;
         var fill = card.querySelector("[data-barra-fill]");
-        if (fill) fill.style.width = barra.porcentaje + "%";
-        var pct = card.querySelector("[data-barra-pct]");
-        if (pct) {
-            pct.textContent = barra.total
-                ? barra.porcentaje + "% de aprobación · " + barra.me_gusta + " de " +
-                  barra.total + " ticket" + (barra.total === 1 ? " resuelto" : " resueltos")
+        if (fill) fill.style.width = pct + "%";
+        var txt = card.querySelector("[data-barra-pct]");
+        if (txt) {
+            txt.textContent = barra.total
+                ? votos + " votos · " + (barra.cobertura != null ? pct + "% de " + res + " resueltos" : "sin resueltos")
                 : "Todavía sin votos en tickets resueltos.";
         }
         var barraEl = card.querySelector(".tec-barra");
         if (barraEl) barraEl.classList.toggle("is-vacia", !barra.total);
         var track = card.querySelector(".tec-barra");
-        if (track) track.setAttribute("title", barra.porcentaje + "% de aprobación en " +
-            barra.total + " ticket" + (barra.total === 1 ? " resuelto" : " resueltos"));
+        if (track) track.setAttribute("title", votos + " votos de " + res + " resueltos");
     }
 
     document.querySelectorAll(".tec-pulgar").forEach(function (btn) {

@@ -1,9 +1,6 @@
 {% comment %}Menú del módulo del observador, compartido por sus vistas.
    Se incluye con: {% include "observador/_menu.html" with activa="panel" %}{% endcomment %}
 <nav class="obs-tabs" aria-label="Secciones del observador">
-    <a href="{% url 'tickets:obs_panel' %}" class="obs-tab{% if activa == 'panel' %} is-active{% endif %}">
-        <svg class="icon"><use href="#i-grid"/></svg> Puntos asignados
-    </a>
     <a href="{% url 'tickets:obs_usuarios' %}" class="obs-tab{% if activa == 'usuarios' %} is-active{% endif %}">
         <svg class="icon"><use href="#i-user"/></svg> Usuarios
     </a>
@@ -21,3 +18,4 @@
         <svg class="icon"><use href="#i-check-circle"/></svg> Monitoreo
     </a>
 </nav>
+{% include "observador/_fab.html" %}

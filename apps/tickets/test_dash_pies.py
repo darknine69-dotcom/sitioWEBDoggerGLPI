@@ -128,8 +128,11 @@ class DashPiesTest(SmokeTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'id="wCatScope"')
         self.assertContains(resp, 'id="wPrioScope"')
-        self.assertContains(resp, 'id="wCatLabel"')
-        self.assertContains(resp, 'id="wPrioLabel"')
+        for titulo in ("Solicitudes por categoría",
+                       "Solicitudes por prioridad", "Solicitudes por período",
+                       "Solicitudes recibidas", "Solicitudes vencidas (ANS)"):
+            self.assertContains(resp, titulo)
+        self.assertContains(resp, 'id="pivotDimLabel"')
         self.assertContains(resp, 'id="wComp20"')
         # los tres desplegables ofrecen los seis ámbitos
         for valor in ("abiertas", "en_progreso", "resueltos", "cerrados", "eliminados", "todas"):
@@ -399,17 +402,30 @@ class FiltroResueltasTest(SmokeTestCase):
 
         html = self._listado(Ticket.Estado.RESUELTO)
         esperado = Ticket.objects.filter(fecha_resolucion__isnull=False).count()
-        chip = re.search(r'stat-n">(\d+)</span><span class="stat-l">Resueltas', html)
-        self.assertIsNotNone(chip, "no se encontro el chip de resueltas")
+        chip = re.search(r'dash-stat-value st-resueltos">(\d+)</span>', html)
+        self.assertIsNotNone(chip, "no se encontro la tarjeta de resueltas")
         self.assertEqual(int(chip.group(1)), esperado)
         self.assertEqual(esperado, 1)
 
+    def test_indicadores_con_diseno_del_panel(self):
+        import re
+
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+        html = self.client.get(reverse("tickets:lista")).content.decode()
+        clases = set(re.findall(r"dash-hov-[a-z-]+", html))
+        for esperada in (
+            "dash-hov-total", "dash-hov-abiertos", "dash-hov-progreso",
+            "dash-hov-resueltos", "dash-hov-cerrados", "dash-hov-sla-no",
+        ):
+            self.assertIn(esperada, clases)
+        self.assertNotIn("stat-chip", html)
+
     def test_en_resueltas_salen_los_dos_distintivos(self):
-        # Al resolverse queda cerrado, así que lleva "Resuelto" y "Cerrado".
+        # En el filtro de resueltas sale solo "Resuelto" (ya no van pegados).
         self._ticket(Ticket.Estado.CERRADO, "ZK-Resuelta", resuelta=True)
         html = self._listado(Ticket.Estado.RESUELTO)
         self.assertEqual(html.count("status-pill status-resuelto"), 1)
-        self.assertEqual(html.count("status-pill status-cerrado"), 1)
+        self.assertNotIn("status-pill status-cerrado", html)
 
     def test_en_cerradas_solo_sale_el_distintivo_cerrado(self):
         # Aunque se haya resuelto, en el filtro de cerradas solo se ve
@@ -440,3 +456,61 @@ class FiltroResueltasTest(SmokeTestCase):
         html = self._listado(Ticket.Estado.ABIERTO)
         self.assertNotIn("{#", html)
         self.assertNotIn("#}", html)
+
+    def test_detalle_con_actividad_abierta_y_seguimiento_unido(self):
+        ticket = self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+        html = self.client.get(
+            reverse("tickets:detalle", args=[ticket.pk])
+        ).content.decode()
+        self.assertIn("chat-scroll", html)
+        self.assertIn("Agregar seguimiento", html)
+        self.assertIn('name="action" value="comentario"', html)
+        self.assertNotIn("corp-notif-toggle", html)
+
+    def test_graficos_con_titulos_hover_y_colores(self):
+        from django.contrib.staticfiles import finders
+
+        with open(finders.find("js/panel-dash.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn("chart-refresh-btn", js)
+        self.assertIn('Recargar el gráfico', js)
+        # Tipos en colores, no en gris.
+        self.assertIn('fill="#D62B1F"', js)
+        self.assertIn('stroke="#2563EB"', js)
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertIn(".chart-card .dash-head-tools", css)
+        self.assertIn("hover: none", css)
+        self.assertIn("justify-content: center;", css)
+        self.assertIn("repeat(auto-fit, minmax(150px, 1fr))", css)
+
+    def test_tecnicos_en_tarjetas_con_foto_y_semaforo(self):
+        import json
+
+        from django.contrib.staticfiles import finders
+
+        self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
+        datos = json.loads(self.client.get(
+            reverse("tickets:panel_tecnico"), {"vista": "panel"}).context["dash_json"])
+        filas = datos["pivot"]["dimensiones"]["tecnico"]["rows"]
+        self.assertTrue(filas)
+        self.assertIn("foto", filas[0])
+        self.assertIn("clave", filas[0])
+        with open(finders.find("js/panel-dash.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertNotIn("renderPivotCards", js)
+        self.assertIn("pivot-lead", js)
+
+    def test_ventanita_compacta_y_unificada(self):
+        from django.contrib.staticfiles import finders
+
+        html = self.client.get(
+            reverse("tickets:panel_tecnico"), {"vista": "panel"}).content.decode()
+        # Sin CSS duplicado en plantillas: una sola fuente global.
+        self.assertNotIn(".pivot-pop-ticket {", html)
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertIn(".pivot-pop {", css)
+        self.assertIn("width: 248px", css)
+        self.assertIn("font-family: var(--font-corp)", css)
+        self.assertIn("position: fixed", css)

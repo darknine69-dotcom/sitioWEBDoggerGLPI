@@ -29,12 +29,12 @@ y con scroll si son más de tres.
                         {% if voto_ticket and tec.barra %}
                         <span class="tec-barra {% if not tec.barra.total %}is-vacia{% endif %}"
                               data-barra
-                              title="{{ tec.barra.porcentaje }}% de aprobación en {{ tec.barra.total }} ticket{{ tec.barra.total|pluralize:"s" }} resuelto{{ tec.barra.total|pluralize:"s" }}">
-                            <span class="mi-gusta-bar-fill" data-barra-fill style="width: {{ tec.barra.porcentaje }}%"></span>
+                              title="{{ tec.barra.total }} votos de {{ tec.barra.resueltos }} resueltos">
+                            <span class="mi-gusta-bar-fill" data-barra-fill style="width: {{ tec.barra.cobertura|default:0 }}%"></span>
                         </span>
                         <span class="tec-barra-pct" data-barra-pct>
                             {% if tec.barra.total %}
-                            {{ tec.barra.porcentaje }}% de aprobación · {{ tec.barra.me_gusta }} de {{ tec.barra.total }} ticket{{ tec.barra.total|pluralize:"s" }} resuelto{{ tec.barra.total|pluralize:"s" }}
+                            {{ tec.barra.total }} votos · {% if tec.barra.cobertura != None %}{{ tec.barra.cobertura }}% de {{ tec.barra.resueltos }} resueltos{% else %}sin resueltos{% endif %}
                             {% else %}
                             Todavía sin votos en tickets resueltos.
                             {% endif %}

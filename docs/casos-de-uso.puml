@@ -1,0 +1,226 @@
+@startuml
+'==============================================================
+' Render: docs/casos-de-uso.svg  |  fuente PlantUML (sin Java: pegar en plantuml.com)
+'==============================================================
+' Dogger HelpDesk - Diagrama de casos de uso
+' Fuente: apps/accounts/urls.py, apps/tickets/urls.py,
+'        apps/programador/urls.py, apps/tickets/webhooks.py
+' Roles: accounts.models.Usuario.Rol = admin | técnico | usuario
+' Accesos: login_required > user_required (rol usuario)
+'          staff_required (admin o técnico) > admin_required (admin)
+'==============================================================
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam usecaseBackgroundColor #F5F7FA
+skinparam usecaseBorderColor #4A5568
+skinparam actorBorderColor #2C5282
+skinparam actorBackgroundColor #EBF4FF
+
+'------------------- ACTORES -------------------
+actor Visitante
+actor "Autenticado\n(login_required)" as Autenticado
+actor "Usuario\n(rol: usuario)" as Usuario
+actor "Técnico\n(rol: técnico)" as Tecnico
+actor "Administrador\n(rol: admin)" as Admin
+actor "GLPI 10.0.11\n(sistema externo)" as GLPI
+actor "Correo SMTP\n(servicio)" as SMTP
+
+'------------------- FRONTERA -------------------
+rectangle "Dogger HelpDesk" {
+
+package "1. Acceso y cuenta" {
+  usecase "Ver portal" as UC01
+  usecase "Ver FAQ\n/faq/" as UC02
+  usecase "Ver política de privacidad\n/politica-privacidad/" as UC03
+  usecase "Iniciar sesión\n/login/\n/login/staff/\n/login/usuario/" as UC04
+  usecase "Registrarse\n/registro/" as UC05
+  usecase "Solicitar reset de clave\n/reset/solicitar/" as UC06
+  usecase "Restablecer clave con código\n/reset/confirmar/" as UC07
+  usecase "Cerrar sesión\n/logout/" as UC08
+  usecase "Ver y editar perfil\n/perfil/" as UC09
+  usecase "Ajustes de cuenta\n/ajustes/" as UC10
+  usecase "Cambiar contraseña\n/cambiar-password/" as UC11
+  usecase "Cambiar contraseña forzado\n/cambiar-password-forzado/" as UC12
+  usecase "Descartar aviso\n/descartar-aviso/" as UC13
+}
+
+package "2. Portal del usuario" {
+  usecase "Mi panel\n/mi-panel/" as UC20
+  usecase "Consultar ticket por clave\n/consultar/" as UC21
+  usecase "Crear ticket\n/tickets/nuevo/" as UC22
+  usecase "Ver mis tickets y detalle\n/mi-panel/tickets/<pk>/" as UC23
+  usecase "Editar mi ticket\n/mi-panel/tickets/<pk>/editar/" as UC24
+  usecase "Responder mi ticket" as UC25
+  usecase "Ver info del ticket (AJAX)" as UC26
+  usecase "Editar ticket (AJAX)" as UC27
+  usecase "Cerrar mi ticket (AJAX)" as UC28
+  usecase "Eliminar mi ticket (AJAX)" as UC29
+  usecase "Reenviar ticket a GLPI\n/reenviar-glpi/" as UC30
+  usecase "Exportar mis tickets\n/mi-panel/exportar/" as UC31
+  usecase "Descartar aviso de edición" as UC32
+}
+
+package "3. Panel del técnico" {
+  usecase "Dashboard del técnico\n/panel/tecnico/" as UC40
+  usecase "Mis tickets asignados\n/panel/tecnico/mis-tickets/" as UC41
+  usecase "Tomar ticket del pool\n/panel/tecnico/tomar/<pk>/" as UC42
+  usecase "Tomar lote de tickets\n/panel/tecnico/lote/" as UC43
+  usecase "Bandeja sin asignar\n/panel/sin-asignar/" as UC44
+  usecase "Listar tickets\n/panel/tickets/" as UC45
+  usecase "Ver detalle de ticket\n/panel/tickets/<pk>/" as UC46
+  usecase "Cambiar estado de ticket" as UC47
+  usecase "Eliminar ticket" as UC48
+  usecase "Chat del ticket\n(ver / enviar)" as UC49
+  usecase "Ver adjunto\n/panel/adjunto/<pk>/" as UC50
+  usecase "Arbol de categorías\n/categorías/" as UC51
+  usecase "Administrar categorías\n(crear / actualizar /\nactivar / eliminar)" as UC52
+  usecase "Exportar tickets (CSV)\n/reportes/exportar/" as UC53
+  usecase "Consultar estado de\nusuarios (JSON)" as UC54
+}
+
+package "4. Administración" {
+  usecase "Dashboard general\n/panel/" as UC60
+  usecase "Reportes e indicadores\n/reportes/" as UC61
+  usecase "Exportar reportes\n/reportes/exportar-reporte/" as UC62
+  usecase "Ver tickets de un técnico (AJAX)" as UC63
+  usecase "Papelera\n/panel/papelera/" as UC64
+  usecase "Restaurar ticket de papelera" as UC65
+  usecase "Purgar ticket" as UC66
+  usecase "Administrar usuarios\n/panel/usuarios/" as UC67
+  usecase "Ver ficha de usuario\n(API)" as UC68
+  usecase "Guardar usuario" as UC69
+  usecase "Activar / desactivar usuario" as UC70
+  usecase "Eliminar usuario" as UC71
+  usecase "Configuracion de la página\n/ajustes/configuración-página/" as UC72
+}
+
+package "5. Panel del programador" {
+  usecase "Panel del programador\n/programador/" as UC80
+  usecase "Consultar calendario y disponibilidad\n/api/datos/" as UC81
+  usecase "Agregar evento\n/api/agregar/" as UC82
+  usecase "Eliminar evento\n/api/eliminar/" as UC83
+  usecase "Marcar completado\n/api/completado/" as UC84
+  usecase "Gestionar disponibilidad\n/api/disponibilidad/" as UC85
+  usecase "Gestionar festivos\n/api/festivo/" as UC86
+}
+
+package "6. Integración con GLPI" {
+  usecase "Crear ticket en GLPI" as UC90
+  usecase "Actualizar ticket en GLPI" as UC91
+  usecase "Recibir webhook de GLPI\n/api/glpi/webhook/" as UC92
+  usecase "Enviar perfil a GLPI\n/glpi/pull-perfil/" as UC93
+  usecase "Enviar avatar a GLPI\n/glpi/push-avatar/" as UC94
+  usecase "Crear usuario en GLPI" as UC95
+  usecase "Sincronizar usuario con GLPI" as UC96
+  usecase "Importar usuarios de GLPI" as UC97
+  usecase "Notificar por correo" as UC98
+}
+}
+
+'------------------- ASOCIACIONES -------------------
+Visitante --> UC01
+Visitante --> UC02
+Visitante --> UC03
+Visitante --> UC04
+Visitante --> UC05
+Visitante --> UC06
+Visitante --> UC07
+Visitante --> UC21
+
+Autenticado --> UC08
+Autenticado --> UC09
+Autenticado --> UC10
+Autenticado --> UC11
+Autenticado --> UC12
+Autenticado --> UC13
+Autenticado --> UC93
+Autenticado --> UC94
+
+Usuario --> UC20
+Usuario --> UC22
+Usuario --> UC23
+Usuario --> UC24
+Usuario --> UC25
+Usuario --> UC26
+Usuario --> UC27
+Usuario --> UC28
+Usuario --> UC29
+Usuario --> UC30
+Usuario --> UC31
+Usuario --> UC32
+
+Tecnico --> UC40
+Tecnico --> UC41
+Tecnico --> UC42
+Tecnico --> UC43
+Tecnico --> UC44
+Tecnico --> UC45
+Tecnico --> UC46
+Tecnico --> UC47
+Tecnico --> UC48
+Tecnico --> UC49
+Tecnico --> UC50
+Tecnico --> UC51
+Tecnico --> UC52
+Tecnico --> UC53
+Tecnico --> UC54
+Tecnico --> UC80
+Tecnico --> UC81
+Tecnico --> UC82
+Tecnico --> UC83
+Tecnico --> UC84
+Tecnico --> UC85
+Tecnico --> UC86
+
+Admin --> UC60
+Admin --> UC61
+Admin --> UC62
+Admin --> UC63
+Admin --> UC64
+Admin --> UC65
+Admin --> UC66
+Admin --> UC67
+Admin --> UC68
+Admin --> UC69
+Admin --> UC70
+Admin --> UC71
+Admin --> UC72
+Admin --> UC95
+Admin --> UC96
+Admin --> UC97
+
+'------------------- GENERALIZACION -------------------
+Autenticado <|-- Usuario
+Autenticado <|-- Tecnico
+Autenticado <|-- Admin
+Tecnico <|-- Admin
+
+'------------------- GLPI / SMTP -------------------
+UC22 ..> UC90 : <<include>>
+UC30 ..> UC91 : <<include>>
+UC97 ..> UC90 : <<include>>
+UC93 ..> UC91 : <<include>>
+UC94 ..> UC91 : <<include>>
+UC90 ..> UC98 : <<include>>
+
+GLPI --> UC92
+UC90 ..> GLPI
+UC91 ..> GLPI
+UC93 ..> GLPI
+UC94 ..> GLPI
+UC95 ..> GLPI
+UC96 ..> GLPI
+UC97 ..> GLPI
+SMTP --> UC98
+UC98 ..> SMTP
+UC06 ..> UC98 : <<include>>
+
+'------------------- EXTENSIONES -------------------
+UC92 ..> UC91 : <<extend>>\n(actualiza estado/seguimiento)
+UC28 ..> UC47 : <<extend>>
+UC12 ..> UC11 : <<extend>>
+UC29 ..> UC66 : <<extend>>\n(solo admin)
+
+@enduml

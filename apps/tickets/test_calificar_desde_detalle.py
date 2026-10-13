@@ -122,12 +122,25 @@ class CalificarDesdeElDetalle(TestCase):
         self.assertNotIn("tec-lista", html)
 
     def test_el_observador_no_llega_a_la_calificacion(self):
-        """El observador no tiene Mi panel, y tampoco puede calificar por URL."""
+        """El observador ve la ficha en lectura, sin calificar ni responder."""
+        from apps.tickets.models import ElementoMiLista
+
         ticket = self.resuelto()
         self.client.force_login(self.observador)
-        html = self.client.get(self.url(ticket)).content.decode()
-        self.assertEqual(self.client.get(self.url(ticket)).status_code, 403)
+        # Fuera de su alcance: 404.
+        self.assertEqual(self.client.get(self.url(ticket)).status_code, 404)
+        # En su lista: la ve en solo lectura, sin votar ni responder.
+        ElementoMiLista.objects.create(
+            observador=self.observador,
+            tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario_email=self.usuario.email,
+        )
+        respuesta = self.client.get(self.url(ticket))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["solo_lectura"])
+        html = respuesta.content.decode()
         self.assertNotIn("tec-lista", html)
+        self.assertNotIn("mi_responder", html)
 
     def test_el_tecnico_no_califica_a_su_propio_detalle(self):
         ticket = self.resuelto(solicitante_email=self.tecnico.email)
@@ -249,7 +262,7 @@ class CalificarDesdeElDetalle(TestCase):
         self.assertIn(self.tecnico.nombre, html)
         self.assertIn(self.ayudante.nombre, html)
         self.assertIn("tec-barra", html)
-        self.assertIn("100% de aprobación", html)
+        self.assertIn("1 votos · 100% de 1 resueltos", html)
 
     def test_sin_votos_la_barra_dice_que_no_hay(self):
         ticket = self.resuelto()

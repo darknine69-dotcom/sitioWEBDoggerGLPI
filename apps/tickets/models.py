@@ -481,6 +481,46 @@ class TicketComentario(models.Model):
         return f"Comentario en {self.ticket.codigo}"
 
 
+class MensajeCorporativo(models.Model):
+    """Chat corporativo: técnicos, admins y observadores.
+
+    Sin ticket: lo que se habla aquí es coordinación interna (pasar un
+    caso, avisar una caída) y nunca lo ve el usuario final. Solo texto,
+    sin adjuntos ni GLPI. Sin destinatario es la sala general; con
+    destinatario es un directo entre dos personas del staff.
+    """
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="mensajes_corporativos",
+        db_column="UsuarioId",
+    )
+    destinatario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="directos_corporativos",
+        db_column="DestinatarioId",
+        help_text="Vacío = sala general; con valor = directo entre dos.",
+    )
+    autor_nombre = models.CharField(max_length=100, blank=True, default="")
+    texto = models.TextField(db_column="Texto")
+    fecha = models.DateTimeField(auto_now_add=True, db_column="Fecha")
+
+    class Meta:
+        db_table = "ChatCorporativo"
+        verbose_name = "Mensaje corporativo"
+        verbose_name_plural = "Sala corporativa"
+        ordering = ["fecha"]
+
+    def __str__(self):
+        return f"Corporativo de {self.autor_nombre or '—'}"
+
+
 class GlpiEvento(models.Model):
     """
     Bitácora de eventos recibidos desde el webhook de GLPI.
@@ -603,10 +643,35 @@ class ConfigSitio(models.Model):
     facebook_url = models.CharField(
         "URL de Facebook", max_length=250, blank=True, default=""
     )
+    teams_activo = models.BooleanField("Mostrar botón de Teams", default=True)
+    teams_url = models.CharField(
+        "URL de Teams", max_length=250, blank=True, default=""
+    )
     panel_mostrar_actividad_glpi = models.BooleanField(
         "Mostrar actividad de GLPI en los paneles",
         default=True,
         help_text="Si está apagada, el bloque «Actividad reciente GLPI» no aparece en el panel de nadie.",
+    )
+    glpi_habilitado = models.BooleanField(
+        "GLPI habilitado",
+        null=True, blank=True, default=None,
+        help_text="Vacío = manda el .env (GLPI_ENABLED).",
+    )
+    glpi_base_url = models.CharField(
+        "URL base de GLPI", max_length=250, blank=True, default="",
+        help_text="Vacía = manda el .env (GLPI_BASE_URL).",
+    )
+    glpi_app_token = models.CharField(
+        "App token", max_length=250, blank=True, default="",
+        help_text="Vacío = manda el .env (GLPI_APP_TOKEN).",
+    )
+    glpi_user_token = models.CharField(
+        "User token", max_length=250, blank=True, default="",
+        help_text="Vacío = manda el .env (GLPI_USER_TOKEN).",
+    )
+    glpi_timeout = models.PositiveIntegerField(
+        "Timeout (s)", null=True, blank=True, default=None,
+        help_text="Vacío = manda el .env (GLPI_TIMEOUT).",
     )
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -626,6 +691,39 @@ class ConfigSitio(models.Model):
             "instagram_url": D.get("instagram", ""),
             "facebook_url": D.get("facebook", ""),
         })[0]
+
+    @classmethod
+    def glpi_efectivo(cls):
+        """Conexión GLPI efectiva: el .env manda, el panel lo ajusta.
+
+        Cada campo vacío en el panel deja el valor del .env
+        (GLPI_ENABLED, GLPI_BASE_URL, GLPI_APP_TOKEN, GLPI_USER_TOKEN,
+        GLPI_TIMEOUT). Devuelve el dict más de dónde salió cada dato.
+        """
+        from django.conf import settings as dj_settings
+
+        base = dict(getattr(dj_settings, "GLPI", {}) or {})
+        fuente = {k: ".env" for k in
+                  ("enabled", "base_url", "app_token", "user_token", "timeout")}
+        try:
+            cfg = cls.objects.filter(pk=1).first()
+        except Exception:  # noqa: BLE001 - sin tabla vale el .env
+            cfg = None
+        if cfg is not None:
+            if cfg.glpi_habilitado is not None:
+                base["enabled"] = bool(cfg.glpi_habilitado)
+                fuente["enabled"] = "panel"
+            for campo, llave in (("glpi_base_url", "base_url"),
+                                 ("glpi_app_token", "app_token"),
+                                 ("glpi_user_token", "user_token")):
+                valor = (getattr(cfg, campo, "") or "").strip()
+                if valor:
+                    base[llave] = valor
+                    fuente[llave] = "panel"
+            if cfg.glpi_timeout:
+                base["timeout"] = int(cfg.glpi_timeout)
+                fuente["timeout"] = "panel"
+        return {"config": base, "fuente": fuente}
 
     def __str__(self):
         return "Configuración de la página"
@@ -763,11 +861,19 @@ class CalificacionTecnico(models.Model):
         me_gusta = qs.filter(valor=cls.Valor.ME_GUSTA).count()
         no_me_gusta = qs.filter(valor=cls.Valor.NO_ME_GUSTA).count()
         total = me_gusta + no_me_gusta
+        resueltos = Ticket.objects.filter(tecnico_asignado=tecnico).filter(
+            Q(fecha_resolucion__isnull=False)
+            | Q(estado=Ticket.Estado.RESUELTO)
+            | Q(estado=Ticket.Estado.CERRADO)
+        ).count()
         return {
             "me_gusta": me_gusta,
             "no_me_gusta": no_me_gusta,
             "total": total,
             "porcentaje": round(me_gusta * 100 / total) if total else 0,
+            "aprobacion": round(me_gusta * 100 / total) if total else 0,
+            "resueltos": resueltos,
+            "cobertura": min(100, round(total * 100 / resueltos)) if resueltos else None,
         }
 
 
@@ -981,3 +1087,72 @@ class ElementoMiLista(models.Model):
         if self.usuario_id and self.punto_id:
             return f"{self.observador} → {self.usuario} @ {self.punto}"
         return f"{self.observador} → {self.usuario or self.punto}"
+
+
+class MonitoreoAuditoria(models.Model):
+    """Registro de cambios del monitoreo corporativo.
+
+    Cada vez que el administrador (o el propio supervisor) crea, renombra
+    o elimina una zona, o mete/saca cuentas y puntos, queda aquí quién lo
+    hizo, sobre qué supervisor/zona y cuándo. Es lo que alimenta el
+    registro visible del tablero del administrador.
+    """
+
+    CREAR_ZONA = "crear_zona"
+    RENOMBRAR_ZONA = "renombrar_zona"
+    ELIMINAR_ZONA = "eliminar_zona"
+    AGREGAR_MIEMBRO = "agregar_miembro"
+    QUITAR_MIEMBRO = "quitar_miembro"
+    ASIGNAR_PUNTO = "asignar_punto"
+    QUITAR_PUNTO = "quitar_punto"
+    AGREGAR_LISTA = "agregar_lista"
+    QUITAR_LISTA = "quitar_lista"
+    ACCION_CHOICES = (
+        (CREAR_ZONA, "Zona creada"),
+        (RENOMBRAR_ZONA, "Zona renombrada"),
+        (ELIMINAR_ZONA, "Zona eliminada"),
+        (AGREGAR_MIEMBRO, "Cuenta agregada a zona"),
+        (QUITAR_MIEMBRO, "Cuenta sacada de zona"),
+        (ASIGNAR_PUNTO, "Punto asignado"),
+        (QUITAR_PUNTO, "Punto quitado"),
+        (AGREGAR_LISTA, "Cuenta agregada a la lista"),
+        (QUITAR_LISTA, "Cuenta sacada de la lista"),
+    )
+
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        db_column="ActorId",
+        verbose_name="Quién lo hizo",
+    )
+    observador = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        db_column="ObservadorId",
+        verbose_name="Supervisor afectado",
+    )
+    zona_nombre = models.CharField(
+        "Zona", max_length=80, blank=True, default="", db_column="Zona"
+    )
+    accion = models.CharField(
+        "Acción", max_length=20, choices=ACCION_CHOICES, db_column="Accion"
+    )
+    detalle = models.CharField(
+        "Detalle", max_length=200, blank=True, default="", db_column="Detalle"
+    )
+    fecha = models.DateTimeField(auto_now_add=True, db_column="Fecha")
+
+    class Meta:
+        db_table = "MonitoreoAuditoria"
+        verbose_name = "Auditoría de monitoreo"
+        verbose_name_plural = "Auditoría de monitoreo"
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        return f"{self.get_accion_display()} · {self.zona_nombre}"

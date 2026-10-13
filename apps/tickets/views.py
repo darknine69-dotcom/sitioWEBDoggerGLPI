@@ -58,12 +58,14 @@ from .forms import (
     UsuarioPanelForm,
 )
 from .context_processors import _tipos_por_revisar
-from .models import Categoria, GlpiEvento, Ticket, TicketAdjunto, TicketComentario, TicketVinculo
+from .models import Categoria, ElementoMiLista, GlpiEvento, Ticket, TicketAdjunto, TicketComentario, TicketVinculo
 from .notifications import notificar_comentario, notificar_ticket_actualizado, notificar_ticket_creado
 from .sla import horas_por_prioridad, orden_prioridad_annotation
 from .services.glpi_client import (
     GlpiClient,
     GlpiError,
+    configuracion_efectiva as configuracion_glpi,
+    esta_activo as esta_activo_glpi,
     sync_adjuntos_to_glpi,
     sync_asignacion_to_glpi,
     sync_edicion_to_glpi,
@@ -447,7 +449,7 @@ def _build_tecnico_dashboard(tecnico_id=None):
         for t in tickets:
             clave, label = dimension(t)
             fila = rows.setdefault(
-                clave, {"label": label, "abrir": 0, "espera": 0, "vencido": 0, "riesgo": 0, "cerrado": 0, "resueltos": 0, "total": 0, "categorias": [], "_cats": set(), "tickets": []}
+                clave, {"clave": clave, "label": label, "abrir": 0, "espera": 0, "vencido": 0, "riesgo": 0, "cerrado": 0, "resueltos": 0, "total": 0, "categorias": [], "_cats": set(), "tickets": []}
             )
             fila["total"] += 1
             if t.estado == Ticket.Estado.ABIERTO:
@@ -519,8 +521,7 @@ def _build_tecnico_dashboard(tecnico_id=None):
             "tecnico": {
                 "label": "Técnico",
                 "rows": sorted(_pivot(dim_tecnico), key=lambda r: r["label"].lower()),
-            },
-            "prioridad": {
+            },            "prioridad": {
                 "label": "Prioridad",
                 "rows": sorted(
                     _pivot(dim_prioridad),
@@ -549,6 +550,22 @@ def _build_tecnico_dashboard(tecnico_id=None):
         },
         "columnas": ["abrir", "espera", "vencido", "cerrado", "resueltos"],
     }
+    # Foto de cada técnico para sus tarjetas (vacía = inicial con icono).
+    try:
+        ids_tec = [
+            r["clave"] for r in pivot["dimensiones"]["tecnico"]["rows"]
+            if str(r.get("clave", "")).isdigit()
+        ]
+        fotos = {}
+        for u in User.objects.filter(pk__in=ids_tec):
+            try:
+                fotos[u.pk] = u.avatar.url if u.avatar else ""
+            except Exception:  # noqa: BLE001 - sin foto no se rompe el panel
+                fotos[u.pk] = ""
+        for r in pivot["dimensiones"]["tecnico"]["rows"]:
+            r["foto"] = fotos.get(r["clave"], "")
+    except Exception:  # noqa: BLE001 - sin fotos igual hay tarjetas
+        pass
 
     # --- Pie: modo / prioridad (solo abiertos) ---------------------------
     def _pie(acc, colores, etiquetas):
@@ -771,12 +788,25 @@ def _calificacion_de(tecnico):
     except Exception:
         pass
     total = me_gusta + no_me_gusta
+    try:
+        resueltos = Ticket.objects.filter(tecnico_asignado=tecnico).filter(
+            Q(fecha_resolucion__isnull=False)
+            | Q(estado=Ticket.Estado.RESUELTO)
+            | Q(estado=Ticket.Estado.CERRADO)
+        ).count()
+    except Exception:
+        resueltos = 0
+    cobertura = min(100, round(total * 100 / resueltos)) if resueltos else None
     return {
         "me_gusta": me_gusta,
         "no_me_gusta": no_me_gusta,
         "total": total,
         "balance": me_gusta - no_me_gusta,
-        "porcentaje": round(me_gusta * 100 / total) if total else None,
+        "resueltos": resueltos,
+        "cobertura": cobertura,
+        # Alias histórico: la plantilla lateral lee "porcentaje" como cobertura
+        # (% de resueltos con voto), no como aprobación entre votos.
+        "porcentaje": cobertura,
     }
 
 
@@ -1321,7 +1351,7 @@ def usuarios_lista(request):
 
     # Auto-sincronización con GLPI al abrir el panel (sin pulsar botones).
     # Máximo una consulta cada 45 s salvo ?force_glpi=1.
-    if dj_settings.GLPI.get("enabled"):
+    if esta_activo_glpi():
         forzado = request.GET.get("force_glpi") == "1"
         ahora = time.time()
         ultima = request.session.get("_glpi_usuarios_sync", 0)
@@ -1441,6 +1471,11 @@ def usuarios_lista(request):
             "permisos": {
                 "es_staff": u.is_staff,
                 "borrar_glpi": u.borrar_glpi_al_eliminar,
+                "cerrar": u.puede_cerrar_tickets,
+                "eliminar": u.puede_eliminar_tickets,
+                "reabrir": u.puede_reabrir_tickets,
+                "crear": u.puede_crear_tickets,
+                "responder": u.puede_responder_chat,
             },
             "disponibilidad": disp_por_tec.get(u.pk, []),
             "eventos": evts_por_tec.get(u.pk, [])[:6],
@@ -1474,7 +1509,7 @@ def usuarios_lista(request):
 
     # Búsqueda en vivo del perfil en GLPI (pestaña Técnicos con texto de búsqueda)
     perfiles_encontrados = 0
-    if tab == "tecnico" and q and dj_settings.GLPI.get("enabled"):
+    if tab == "tecnico" and q and esta_activo_glpi():
         client = GlpiClient()
         if client.available:
             try:
@@ -1524,8 +1559,8 @@ def usuarios_lista(request):
                 )
 
     glpi_base = ""
-    if dj_settings.GLPI.get("enabled"):
-        glpi_base = dj_settings.GLPI["base_url"].split("/apirest.php")[0].rstrip("/")
+    if esta_activo_glpi():
+        glpi_base = configuracion_glpi()["base_url"].split("/apirest.php")[0].rstrip("/")
 
     # Técnicos en GLPI que aún no están en el aplicativo:
     # en la pestaña Técnicos se muestran siempre (con búsqueda, solo coincidencias)
@@ -2220,7 +2255,16 @@ def mi_panel(request):
     total_qs = tickets_qs.count()
     estado_filtro = request.GET.get("estado", "").strip()
     q_filtro = request.GET.get("q", "").strip()
-    if estado_filtro:
+    if estado_filtro == Ticket.Estado.RESUELTO:
+        # En Mi panel "Resueltas" trae resueltas y cerradas: al marcar
+        # resuelto el ticket se cierra, y las cerradas directo también
+        # cuentan como terminadas para quien las pidió.
+        tickets_qs = tickets_qs.filter(
+            Q(fecha_resolucion__isnull=False)
+            | Q(estado=Ticket.Estado.RESUELTO)
+            | Q(estado=Ticket.Estado.CERRADO)
+        )
+    elif estado_filtro:
         tickets_qs = tickets_qs.filter(estado=estado_filtro)
     if q_filtro:
         tickets_qs = tickets_qs.filter(
@@ -2232,13 +2276,14 @@ def mi_panel(request):
         "total": total_qs,
         "abiertos": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.ABIERTO).count(),
         "en_progreso": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.EN_PROGRESO).count(),
-        # El KPI "Resueltas" enlaza al filtro de resueltas, así que cuenta lo
-        # mismo: los que tienen la marca de resolución, no las cerradas tal
-        # cual (una se puede cerrar sin haber pasado por "marcar resuelto").
+        # El KPI "Resueltas" enlaza al filtro de resueltas, así que cuenta
+        # lo mismo: con marca de resolución o cerradas.
         "resueltos": Ticket.objects.filter(
             solicitante_email=request.user.email
         ).filter(
-            Q(fecha_resolucion__isnull=False) | Q(estado=Ticket.Estado.RESUELTO)
+            Q(fecha_resolucion__isnull=False)
+            | Q(estado=Ticket.Estado.RESUELTO)
+            | Q(estado=Ticket.Estado.CERRADO)
         ).count(),
     }
     pp_mp = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
@@ -2363,6 +2408,9 @@ def crear_ticket(request):
     El staff puede crear en nombre de otro solicitante indicando sus datos.
     """
     es_usuario_final = request.user.rol == "usuario"
+    if es_usuario_final and not getattr(request.user, "puede_crear_tickets", False):
+        messages.error(request, "El administrador no te permite crear tickets.")
+        return redirect("tickets:mi_panel")
     initial = {
         "solicitante_nombre": request.user.nombre,
         "solicitante_email": request.user.email,
@@ -2458,13 +2506,25 @@ def _timeline_ticket(ticket, include_internos=False):
             )
             continue
         es_usuario = bool(c.usuario_id and getattr(c.usuario, "rol", None) == "usuario")
+        es_observador = bool(c.usuario_id and getattr(c.usuario, "rol", None) == "observador")
         autor = c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda")
+        if es_usuario:
+            insignia = "Usuario"
+        elif es_observador:
+            insignia = "Observador"
+        elif c.usuario_id:
+            insignia = {"tecnico": "Técnico", "admin": "Admin"}.get(
+                getattr(c.usuario, "rol", ""), "Soporte"
+            )
+        else:
+            insignia = "Mesa de ayuda"
         items.append(
             {
-                "tipo": "usuario" if es_usuario else "soporte",
+                "tipo": "usuario" if es_usuario else ("observador" if es_observador else "soporte"),
                 "fecha": c.fecha,
                 "autor": autor,
                 "texto": c.comentario,
+                "insignia": insignia,
             }
         )
     for ev in ticket.eventos_glpi.all():
@@ -2482,17 +2542,47 @@ def _timeline_ticket(ticket, include_internos=False):
     return items
 
 
-@user_required
+@login_required
 def mi_ticket(request, pk):
-    ticket = get_object_or_404(
-        Ticket.objects.select_related("categoria").prefetch_related(
-            "comentarios",
-            "eventos_glpi",
-            "adjuntos",
-        ),
-        pk=pk,
-        solicitante_email=request.user.email,
-    )
+    u = request.user
+    rol = getattr(u, "rol", None)
+    if rol == "usuario":
+        ticket = get_object_or_404(
+            Ticket.objects.select_related("categoria").prefetch_related(
+                "comentarios",
+                "eventos_glpi",
+                "adjuntos",
+            ),
+            pk=pk,
+            solicitante_email=u.email,
+        )
+        solo_lectura = False
+    elif rol == "observador":
+        # El observador abre la misma ficha del ticket, en solo lectura:
+        # sin responder, sin editar y sin calificar. Solo tickets de sus
+        # puntos o de cuentas de su lista.
+        from .views_observador import puntos_del_observador
+
+        ticket = get_object_or_404(
+            Ticket.objects.select_related("categoria").prefetch_related(
+                "comentarios",
+                "eventos_glpi",
+                "adjuntos",
+            ),
+            pk=pk,
+        )
+        puntos = puntos_del_observador(u)
+        en_lista = bool(
+            ticket.solicitante_email
+            and ElementoMiLista.objects.filter(
+                observador=u, usuario_email__iexact=ticket.solicitante_email
+            ).exists()
+        )
+        if (ticket.solicitante_punto or "") not in puntos and not en_lista:
+            raise Http404
+        solo_lectura = True
+    else:
+        raise PermissionDenied("Solo puedes ver tus propias solicitudes.")
     timeline = _timeline_ticket(ticket)
 
     # Botón de calificar técnicos: se muestra siempre que el ticket tenga un
@@ -2520,6 +2610,8 @@ def mi_ticket(request, pk):
             "nombre_tecnico_ticket": (
                 ticket.tecnico_asignado.nombre if puede and ticket.tecnico_asignado else ""
             ),
+            "solo_lectura": solo_lectura,
+            "puede_responder": not solo_lectura or rol == "observador",
         },
     )
 
@@ -2563,6 +2655,56 @@ def responder_ticket(request, pk):
         descripcion=f"{ticket.codigo}: respuesta del solicitante registrada",
         payload_bruto={"usuario": request.user.email, "comentario": comentario},
     )
+    return redirect("tickets:mi_ticket", pk=pk)
+
+
+@login_required
+@require_POST
+def responder_ticket_obs(request, pk):
+    """El observador se une a la conversación del ticket.
+
+    Solo lectura en todo lo demás: esto solo guarda su mensaje (visible,
+    no interno) en tickets de sus puntos o de su lista, y avisa al
+    técnico y al solicitante como cualquier respuesta.
+    """
+    from .views_observador import puntos_del_observador
+
+    u = request.user
+    if getattr(u, "rol", None) != "observador":
+        raise PermissionDenied("Solo el observador usa esta vía.")
+    if not getattr(u, "puede_responder_chat", False):
+        messages.error(request, "El administrador no te permite chatear.")
+        return redirect("tickets:mi_ticket", pk=pk)
+    ticket = get_object_or_404(
+        Ticket.objects.select_related("categoria"), pk=pk
+    )
+    puntos = puntos_del_observador(u)
+    en_lista = bool(
+        ticket.solicitante_email
+        and ElementoMiLista.objects.filter(
+            observador=u, usuario_email__iexact=ticket.solicitante_email
+        ).exists()
+    )
+    if (ticket.solicitante_punto or "") not in puntos and not en_lista:
+        raise Http404
+    comentario = request.POST.get("comentario", "").strip()
+    if not comentario:
+        messages.error(request, "Escribe tu mensaje para participar.")
+        return redirect("tickets:mi_ticket", pk=pk)
+    TicketComentario.objects.create(
+        ticket=ticket,
+        usuario=u,
+        autor_nombre=u.nombre,
+        comentario=comentario,
+        es_interno=False,
+    )
+    notificar_comentario(ticket, u.nombre, comentario, actor=u)
+    if ticket.glpi_id:
+        try:
+            sync_followup_to_glpi(ticket, comentario)
+        except GlpiError:
+            pass
+    messages.success(request, "Tu mensaje quedó en la conversación.")
     return redirect("tickets:mi_ticket", pk=pk)
 
 
@@ -2966,6 +3108,7 @@ def lista_tickets(request):
 
     scope_qs = Ticket.objects.all() if es_admin else qs
     stats = scope_qs.aggregate(
+        total=Count("pk"),
         abiertas=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
         progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
         # El chip cuenta lo mismo que el filtro "Resueltas": los que tienen
@@ -3212,6 +3355,12 @@ def cambiar_estado(request, pk):
     validos = {c[0] for c in Ticket.Estado.choices}
     if nuevo not in validos:
         messages.error(request, "Estado no valido.")
+    elif (
+        nuevo == Ticket.Estado.ABIERTO
+        and getattr(request.user, "rol", None) == "tecnico"
+        and not getattr(request.user, "puede_reabrir_tickets", False)
+    ):
+        messages.error(request, "El administrador no te permite reabrir tickets.")
     else:
         if nuevo == Ticket.Estado.RESUELTO:
             # Marcar resuelto cierra el ticket: queda registrado que se
@@ -3613,6 +3762,11 @@ def mi_ticket_editar_ajax(request, pk):
 @require_POST
 def mi_ticket_cerrar_ajax(request, pk):
     """Cerrar el ticket del usuario sin recargar la página."""
+    if not getattr(request.user, "puede_cerrar_tickets", False):
+        return JsonResponse(
+            {"ok": False, "error": "El administrador no te permite cerrar tickets."},
+            status=403,
+        )
     ticket = _mi_ticket_del_usuario(request, pk)
     if ticket.estado in (ticket.Estado.RESUELTO, ticket.Estado.CERRADO):
         return JsonResponse(
@@ -3645,6 +3799,11 @@ def mi_ticket_eliminar_ajax(request, pk):
 
     Antes `ticket.delete()` lo borraba sin vuelta atrás.
     """
+    if not getattr(request.user, "puede_eliminar_tickets", False):
+        return JsonResponse(
+            {"ok": False, "error": "El administrador no te permite eliminar tickets."},
+            status=403,
+        )
     ticket = _mi_ticket_del_usuario(request, pk)
     codigo = ticket.codigo
     tecnico = ticket.tecnico_asignado

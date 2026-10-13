@@ -25,7 +25,8 @@ ICONO_POR_TIPO = {
 
 
 # --------------------------------------------------------------------- base
-def crear(usuario, tipo, titulo, mensaje, url="", icono="", clave=""):
+def crear(usuario, tipo, titulo, mensaje, url="", icono="", clave="", actor="",
+          actor_rol=""):
     """Crea un aviso. Devuelve None si el usuario no existe o ya fue avisado."""
     if usuario is None or not getattr(usuario, "pk", None):
         return None
@@ -39,7 +40,24 @@ def crear(usuario, tipo, titulo, mensaje, url="", icono="", clave=""):
         url=url or "",
         icono=icono or ICONO_POR_TIPO.get(tipo, "i-bell"),
         clave=clave or "",
+        actor=(actor or "")[:100],
+        actor_rol=(actor_rol or "")[:20],
     )
+
+
+def _rol_de(actor):
+    """Rol para mostrar de dónde viene el aviso."""
+    if actor is None:
+        return ""
+    muestra = getattr(actor, "get_rol_display", None)
+    if callable(muestra):
+        try:
+            return muestra()
+        except Exception:  # noqa: BLE001 - sin rol no se rompe el aviso
+            return ""
+    return {"tecnico": "Técnico", "admin": "Administrador",
+            "usuario": "Usuario", "observador": "Observador"}.get(
+                getattr(actor, "rol", ""), "")
 
 
 # Tipos de aviso que cuentan como "algo por revisar" en los contadores.
@@ -177,6 +195,7 @@ def _personal_activo():
 def ticket_creado(ticket):
     """Un ticket nuevo: avisa al técnico (o a la bandeja) y al solicitante."""
     creadas = []
+    responsable = (ticket.solicitante_nombre or "").strip()[:100]
 
     if ticket.tecnico_asignado_id:
         creadas.append(
@@ -187,6 +206,8 @@ def ticket_creado(ticket):
                 f"{ticket.prioridad.upper()} · {ticket.titulo[:80]}",
                 url=_url_ticket(ticket, ticket.tecnico_asignado),
                 clave=f"ticket:{ticket.pk}:nuevo:{ticket.tecnico_asignado_id}",
+                actor=responsable,
+                actor_rol="Usuario",
             )
         )
     else:
@@ -199,6 +220,8 @@ def ticket_creado(ticket):
                     f"{ticket.prioridad.upper()} · {ticket.titulo[:80]}",
                     url=_url_ticket(ticket, persona),
                     clave=f"ticket:{ticket.pk}:nuevo:{persona.pk}",
+                    actor=responsable,
+                actor_rol="Usuario",
                 )
             )
 
@@ -212,6 +235,8 @@ def ticket_creado(ticket):
                 f"{ticket.get_estado_display()} · {ticket.titulo[:80]}",
                 url=_url_ticket(ticket, solicitante),
                 clave=f"ticket:{ticket.pk}:nuevo:{solicitante.pk}",
+                actor=responsable,
+                actor_rol="Usuario",
             )
         )
     return [n for n in creadas if n]
@@ -222,6 +247,7 @@ def ticket_cerrado(ticket, actor=None):
     creadas = []
     solicitante = _es_usuario_registrado(ticket.solicitante_email)
     quien = f" por {nombre_corto(actor)}" if actor is not None else ""
+    responsable = nombre_corto(actor) if actor is not None else ""
 
     if solicitante is not None:
         creadas.append(
@@ -232,6 +258,8 @@ def ticket_cerrado(ticket, actor=None):
                 f"{ticket.get_estado_display()}{quien} · {ticket.titulo[:70]}",
                 url=_url_ticket(ticket, solicitante),
                 clave=f"ticket:{ticket.pk}:cerrado:{solicitante.pk}",
+                actor=responsable,
+                actor_rol=_rol_de(actor),
             )
         )
     if ticket.tecnico_asignado_id:
@@ -243,6 +271,8 @@ def ticket_cerrado(ticket, actor=None):
                 f"{ticket.get_estado_display()}{quien} · {ticket.titulo[:70]}",
                 url=_url_ticket(ticket, ticket.tecnico_asignado),
                 clave=f"ticket:{ticket.pk}:cerrado:{ticket.tecnico_asignado_id}",
+                actor=responsable,
+                actor_rol=_rol_de(actor),
             )
         )
     return [n for n in creadas if n]
@@ -271,6 +301,8 @@ def ticket_editado(ticket, actor, detalle=""):
                 # Con el minuto de reloj para que dos cambios seguidos
                 # del mismo ticket no se pisen entre sí.
                 clave=f"ticket:{ticket.pk}:editado:{ticket.tecnico_asignado_id}:{timezone.now():%Y%m%d%H%M}",
+                actor=quien,
+                actor_rol=_rol_de(actor),
             )
         )
 
@@ -286,6 +318,8 @@ def ticket_editado(ticket, actor, detalle=""):
                 url=_url_ticket(ticket, solicitante),
                 icono="i-pencil",
                 clave=f"ticket:{ticket.pk}:editado:{solicitante.pk}:{timezone.now():%Y%m%d%H%M}",
+                actor=quien,
+                actor_rol=_rol_de(actor),
             )
         )
 
@@ -304,6 +338,8 @@ def ticket_editado(ticket, actor, detalle=""):
                 url=_url_ticket(ticket, admin),
                 icono="i-pencil",
                 clave=f"ticket:{ticket.pk}:editado:admin{admin.pk}:{timezone.now():%Y%m%d%H%M}",
+                actor=quien,
+                actor_rol=_rol_de(actor),
             )
         )
     return [n for n in creadas if n]

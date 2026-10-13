@@ -83,6 +83,8 @@ def api(request):
                     "url": n.url or "",
                     "nueva": not n.leida,
                     "sin_mostrar": n.mostrada_en is None,
+                    "actor": n.actor or "",
+                    "actor_rol": n.actor_rol or "",
                     "fecha": timezone.localtime(n.creada_en).strftime("%d/%m/%Y %H:%M"),
                 }
                 for n in services.lista(request.user, limite=15)
@@ -95,6 +97,8 @@ def api(request):
                     "mensaje": n.mensaje,
                     "icono": n.icono or "i-bell",
                     "url": n.url or "",
+                    "actor": n.actor or "",
+                    "actor_rol": n.actor_rol or "",
                 }
                 for n in pendientes
             ],

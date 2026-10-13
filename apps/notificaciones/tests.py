@@ -404,3 +404,63 @@ class FechaNotificacionesTest(TestCase):
         # Sin personalizar sigue negro: la base no usa el acento.
         base = css.split(".notif-head {", 1)[1].split("}", 1)[0]
         self.assertIn("var(--dogger-black)", base)
+
+
+@override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
+class ActorResponsableTest(BaseNotificaciones):
+    def _ticket(self):
+        from apps.tickets.models import Ticket
+
+        return Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email=self.usuario.email, solicitante_punto="X",
+            tecnico_asignado=self.tecnico,
+        )
+
+    def test_aviso_guarda_quien_genero_el_evento(self):
+        from apps.notificaciones import services as srv
+
+        ticket = self._ticket()
+        creadas = srv.ticket_editado(ticket, self.tecnico, "Respondio: voy")
+        self.assertTrue(creadas)
+        for n in creadas:
+            self.assertEqual(n.actor, "Tecnico")
+            self.assertEqual(n.actor_rol, "Técnico")
+
+    def test_rol_en_popup_y_api(self):
+        from apps.notificaciones import services as srv
+
+        ticket = self._ticket()
+        srv.ticket_editado(ticket, self.tecnico, "Respondio: voy")
+        self.client.force_login(self.usuario)
+        datos = self.client.get(reverse("notificaciones:api")).json()
+        tecnico = [a for a in datos["avisos"] if a["actor"] == "Tecnico"]
+        self.assertTrue(tecnico)
+        self.assertEqual(tecnico[0]["actor_rol"], "Técnico")
+
+    def test_api_y_campana_muestran_al_responsable(self):
+        from apps.notificaciones import services as srv
+
+        ticket = self._ticket()
+        srv.ticket_editado(ticket, self.tecnico, "Respondio: voy")
+        self.client.force_login(self.usuario)
+        datos = self.client.get(reverse("notificaciones:api")).json()
+        actores = [a["actor"] for a in datos["avisos"]]
+        self.assertIn("Tecnico", actores)
+        html = self.client.get(reverse("tickets:mi_panel")).content.decode()
+        self.assertIn("por Tecnico", html)
+
+    def test_toast_pequeno_con_responsable(self):
+        from django.contrib.staticfiles import finders
+
+        with open(finders.find("js/dogger.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn("toast-actor", js)
+        self.assertIn("n.actor", js)
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
+            css = f.read()
+        pila = css.split(".toast-stack")[1].split("}")[0]
+        self.assertIn("width: 280px", pila)

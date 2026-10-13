@@ -1,4 +1,4 @@
-{% load static %}
+{% load static asset %}
 {# ---- Widgets gráficos del Panel Técnico / Administrador ---- #}
 {# Depende de: dash_json en el contexto, chart.umd.min.js y panel-dash.js #}
 <div class="charts-grid">
@@ -38,7 +38,7 @@
     <div class="chart-card chart-modal" data-widget="categoria">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
-            <h3><em id="wCatLabel">Abiertas</em> por categoría</h3>
+            <h3>Solicitudes por categoría</h3>
             <div class="dash-head-tools">
                 <label class="dash-select">
                     <span>Ver</span>
@@ -62,7 +62,7 @@
     <div class="chart-card chart-modal" data-widget="prioridad">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
-            <h3><em id="wPrioLabel">Abiertas</em> por prioridad</h3>
+            <h3>Solicitudes por prioridad</h3>
             <div class="dash-head-tools">
                 <label class="dash-select">
                     <span>Ver</span>
@@ -110,7 +110,7 @@
     <div class="chart-card chart-modal" data-widget="comp20">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
-            <h3><em id="comp20Label">Recibidas</em> · 20 días</h3>
+            <h3>Solicitudes recibidas</h3>
             <div class="dash-head-tools">
                 <label class="dash-select">
                     <span>Analizar</span>
@@ -132,7 +132,7 @@
     <div class="chart-card chart-modal" data-widget="sla">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
-            <h3>Sanciones por vencimiento de ANS</h3>
+            <h3>Solicitudes vencidas (ANS)</h3>
             <div class="dash-head-tools">
                 <label class="dash-select">
                     <span>Agrupar por</span>
@@ -156,4 +156,4 @@
 
 <script type="application/json" id="dashData">{{ dash_json|safe }}</script>
 <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
-<script src="{% static 'js/panel-dash.js' %}?v=20260927"></script>
+<script src="{% asset 'js/panel-dash.js' %}"></script>

@@ -40,6 +40,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     nombre = models.CharField("Nombre", max_length=100)
     email = models.EmailField("Correo", max_length=150, unique=True)
+    grado = models.CharField("Grado", max_length=50, blank=True, default="")
     telefono = models.CharField("Teléfono", max_length=20, blank=True, default="")
     ubicacion = models.CharField("Ubicación / punto", max_length=120, blank=True, default="")
     avatar = models.ImageField("Foto de perfil", upload_to=avatar_upload_to, blank=True, null=True)
@@ -94,6 +95,30 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         "Borrar en GLPI al purgar",
         default=False,
         help_text="Si está activo, al purgar de la papelera un ticket se eliminará también del sistema GLPI.",
+    )
+
+    # Permisos que el administrador otorga por cuenta: el usuario puede
+    # cerrar y eliminar sus tickets, y el técnico puede reabrir. Activos
+    # por defecto para no cambiar el comportamiento actual.
+    puede_cerrar_tickets = models.BooleanField(
+        "Puede cerrar tickets", default=True,
+        help_text="El usuario puede cerrar sus propias solicitudes.",
+    )
+    puede_eliminar_tickets = models.BooleanField(
+        "Puede eliminar tickets", default=True,
+        help_text="El usuario puede mandar sus solicitudes a la papelera.",
+    )
+    puede_reabrir_tickets = models.BooleanField(
+        "Puede reabrir tickets", default=True,
+        help_text="El técnico puede devolver un ticket a abierto.",
+    )
+    puede_crear_tickets = models.BooleanField(
+        "Puede crear tickets", default=True,
+        help_text="Puede reportar nuevas solicitudes.",
+    )
+    puede_responder_chat = models.BooleanField(
+        "Puede responder en el chat", default=True,
+        help_text="Puede escribir en el chat de soporte.",
     )
 
     objects = UsuarioManager()
