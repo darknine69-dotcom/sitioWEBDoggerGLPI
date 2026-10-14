@@ -2286,7 +2286,25 @@ def _mi_zona_supervisor(user):
                 "en_linea": bool(getattr(o, "en_linea", False)),
                 "avatar": _avatar_url_simple(o),
             })
-    return {"zonas": zonas, "supervisores": supervisores}
+    # Equipo combinado para el retrato del hero (sin repetidos, con foto primero).
+    equipo = []
+    vistos_eq = set()
+
+    def _meter(sup):
+        clave = ((sup.get("nombre") or "").strip().lower())
+        if not clave or clave in vistos_eq:
+            return
+        vistos_eq.add(clave)
+        equipo.append(sup)
+
+    for sup in supervisores:
+        _meter(sup)
+    for z in zonas:
+        for sup in z["supervisores"]:
+            _meter(sup)
+    equipo.sort(key=lambda s: (not s.get("avatar"), not s.get("en_linea"), s.get("nombre", "")))
+    return {"zonas": zonas, "supervisores": supervisores,
+            "equipo": equipo[:5], "equipo_extra": max(0, len(equipo) - 5)}
 
 
 @login_required
