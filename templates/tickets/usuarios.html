@@ -222,6 +222,31 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     .ue-box-actions { flex-direction: column; align-items: stretch; }
     .ue-box-actions .btn { width: 100%; justify-content: center; }
 }
+
+/* Acordeón móvil: cada cuenta es nombre + 2 desplegables (ficha y más
+   info); las celdas sueltas se ocultan porque ya viven en los paneles. */
+.ue-m-toggles { display: none; }
+@media (max-width: 640px) {
+    #tablaUsuarios tr.ue-row > td:not([data-label="Nombre"]) { display: none; }
+    #tablaUsuarios tr.ue-row > td[data-label="Nombre"] { flex-direction: column; align-items: stretch; }
+    #tablaUsuarios tr.ue-row > td[data-label="Nombre"]::before { content: none; }
+    .ue-m-toggles { display: flex; gap: 8px; margin-top: 10px; }
+    .ue-m-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: #FBFAF7; font: inherit; font-size: 12px; font-weight: 700; color: var(--ink); cursor: pointer; }
+    .ue-m-btn .chev { font-size: 10px; transition: transform .15s ease; }
+    .ue-m-btn[aria-expanded="true"] { border-color: #D8C8AC; background: #FFF9ED; color: var(--dogger-red); }
+    .ue-m-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+    .ue-m-panel { margin-top: 8px; }
+    .ue-m-panel[hidden] { display: none; }
+    .ue-m-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px dashed var(--line); font-size: 12.5px; }
+    .ue-m-k { flex: none; min-width: 84px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 700; }
+    .ue-m-v { flex: 1; min-width: 0; }
+    .ue-m-v .row-menu { display: flex; justify-content: flex-end; }
+    .ue-m-panel .ue-stats-grande { grid-template-columns: repeat(2, 1fr); }
+    .ue-m-panel .ue-ficha-meta { margin-top: 2px; }
+}
+@media (min-width: 641px) {
+    .ue-m-toggles, .ue-m-panel { display: none !important; }
+}
 </style>
 {% endblock %}
 
@@ -635,8 +660,122 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         }
         soltarOverflowFicha();
     }
+    var mqMovil = window.matchMedia('(max-width: 640px)');
+
+    function traerFicha(filita) {
+        return fetch(filita.getAttribute('data-ficha-url'), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                if (!j || !j.ok) { throw new Error('respuesta inválida'); }
+                return j.html;
+            });
+    }
+    /* Acordeón móvil: solo una cuenta desplegada a la vez. */
+    function cerrarTodoMovil(excepto) {
+        document.querySelectorAll('#tablaUsuarios tr.ue-row').forEach(function (f) {
+            if (f === excepto) { return; }
+            f.querySelectorAll('.ue-m-panel').forEach(function (p) { p.hidden = true; });
+            f.querySelectorAll('.ue-m-btn').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+            f.classList.remove('is-open');
+        });
+    }
+    function toggleMovil(filita, cual) {
+        var nombreTd = filita.querySelector('td[data-label="Nombre"]');
+        if (!nombreTd) { return; }
+        var panel = nombreTd.querySelector('.ue-m-panel[data-mp="' + cual + '"]');
+        var btn = nombreTd.querySelector('.ue-m-btn[data-m="' + cual + '"]');
+        if (!panel) { return; }
+        var abrir = panel.hidden;
+        cerrarFichaInline();
+        cerrarTodoMovil(filita);
+        if (!abrir) {
+            panel.hidden = true;
+            if (btn) { btn.setAttribute('aria-expanded', 'false'); }
+            filita.classList.remove('is-open');
+            return;
+        }
+        panel.hidden = false;
+        if (btn) { btn.setAttribute('aria-expanded', 'true'); }
+        filita.classList.add('is-open');
+        if (cual === 'ficha') {
+            if (filita._fichaHTML) {
+                panel.innerHTML = filita._fichaHTML;
+            } else {
+                panel.innerHTML = '<div id="ficha-loading"><span class="spin"></span> Cargando ficha…</div>';
+                traerFicha(filita).then(function (html) {
+                    filita._fichaHTML = html;
+                    if (!panel.hidden) { panel.innerHTML = html; }
+                }).catch(function () {
+                    panel.innerHTML = '<p class="ue-empty" style="padding:26px 0;text-align:center">No se pudo cargar la ficha. Intenta de nuevo.</p>';
+                });
+            }
+        }
+        panel.scrollIntoView({ block: 'nearest' });
+    }
+    /* En móvil cada tarjeta es nombre + 2 desplegables; Rol y Acciones se
+       mudan al panel "Más info" (el resto ya vive en la ficha). */
+    function adaptarMovil() {
+        var esMovil = mqMovil.matches;
+        cerrarFichaInline();
+        document.querySelectorAll('#tablaUsuarios tr.ue-row').forEach(function (filita) {
+            var nombreTd = filita.querySelector('td[data-label="Nombre"]');
+            if (!nombreTd) { return; }
+            var zona = nombreTd.querySelector('.ue-m-toggles');
+            if (esMovil && !zona) {
+                var toggles = document.createElement('div');
+                toggles.className = 'ue-m-toggles';
+                toggles.innerHTML =
+                    '<button type="button" class="ue-m-btn" data-m="ficha" aria-expanded="false">Ver ficha <span class="chev">▾</span></button>' +
+                    '<button type="button" class="ue-m-btn" data-m="mas" aria-expanded="false">Más info <span class="chev">▾</span></button>';
+                var pFicha = document.createElement('div');
+                pFicha.className = 'ue-m-panel';
+                pFicha.setAttribute('data-mp', 'ficha');
+                pFicha.hidden = true;
+                var pMas = document.createElement('div');
+                pMas.className = 'ue-m-panel';
+                pMas.setAttribute('data-mp', 'mas');
+                pMas.hidden = true;
+                var respaldo = [];
+                [['Rol', 'rol'], ['Acciones', 'acciones']].forEach(function (par) {
+                    var td = filita.querySelector('td[data-label="' + par[0] + '"]');
+                    if (!td) { return; }
+                    var item = document.createElement('div');
+                    item.className = 'ue-m-item';
+                    var k = document.createElement('span');
+                    k.className = 'ue-m-k';
+                    k.textContent = par[0];
+                    var v = document.createElement('div');
+                    v.className = 'ue-m-v';
+                    Array.prototype.slice.call(td.childNodes).forEach(function (n) { v.appendChild(n); });
+                    item.appendChild(k);
+                    item.appendChild(v);
+                    pMas.appendChild(item);
+                    respaldo.push({ td: td, item: item });
+                });
+                nombreTd.appendChild(toggles);
+                nombreTd.appendChild(pFicha);
+                nombreTd.appendChild(pMas);
+                filita._mRespaldo = respaldo;
+            } else if (!esMovil && zona) {
+                (filita._mRespaldo || []).forEach(function (r) {
+                    var v = r.item.querySelector('.ue-m-v');
+                    if (v) {
+                        Array.prototype.slice.call(v.childNodes).forEach(function (n) { r.td.appendChild(n); });
+                    }
+                    if (r.item.parentNode) { r.item.parentNode.removeChild(r.item); }
+                });
+                zona.parentNode.removeChild(zona);
+                nombreTd.querySelectorAll('.ue-m-panel').forEach(function (p) {
+                    if (p.parentNode) { p.parentNode.removeChild(p); }
+                });
+                filita._mRespaldo = null;
+                filita._fichaHTML = null;
+            }
+        });
+    }
     function abrirFichaInline(filita) {
         cerrarFichaInline();
+        cerrarTodoMovil();
         filita.classList.add('is-open');
         var filaFicha = document.createElement('tr');
         filaFicha.className = 'ue-ficha-row';
@@ -648,11 +787,10 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         filaFichaActual = filaFicha;
         filaFicha.scrollIntoView({ block: 'nearest' });
         soltarOverflowFicha();
-        fetch(filita.getAttribute('data-ficha-url'), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(function (r) { return r.json(); })
-            .then(function (j) {
-                if (!j || !j.ok || !filaFichaActual) throw new Error('respuesta inválida');
-                celda.innerHTML = j.html;
+        traerFicha(filita)
+            .then(function (html) {
+                if (!filaFichaActual) return;
+                celda.innerHTML = html;
             })
             .catch(function () {
                 if (!filaFichaActual) return;
@@ -660,15 +798,25 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
             });
     }
     document.addEventListener('click', function (e) {
+        var btnM = e.target.closest('.ue-m-btn');
+        if (btnM) {
+            var filitaM = btnM.closest('tr.ue-row');
+            if (filitaM) { toggleMovil(filitaM, btnM.getAttribute('data-m')); }
+            return;
+        }
         var filita = e.target.closest('tr.ue-row');
         if (!filita) return;
-        if (e.target.closest('a, button, select, input, textarea, label, .row-menu')) return;
+        if (e.target.closest('a, button, select, input, textarea, label, .row-menu, .ue-m-panel')) return;
+        if (mqMovil.matches) { toggleMovil(filita, 'ficha'); return; }
         if (filita.classList.contains('is-open')) { cerrarFichaInline(); return; }
         abrirFichaInline(filita);
     });
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') cerrarFichaInline();
+        if (e.key === 'Escape') { cerrarFichaInline(); cerrarTodoMovil(); }
     });
+    adaptarMovil();
+    if (mqMovil.addEventListener) { mqMovil.addEventListener('change', adaptarMovil); }
+    else if (mqMovil.addListener) { mqMovil.addListener(adaptarMovil); }
 
     /* ---- Menú de acciones por fila: se dibuja en el body (fuera de la tabla)
        con position:fixed, para que ningún overflow del contenedor lo recorte ---- */
