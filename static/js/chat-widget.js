@@ -284,25 +284,150 @@
         ticketUser.style.display = nombre ? "inline" : "none";
     }
     function primerNombre(n) { return String(n || "").trim().split(/\s+/)[0] || ""; }
-    /* El desplegable compacto abre el picker nativo con el teclado. */
-    function abrirPicker(nativo) {
-        if (!nativo) { return; }
-        try {
-            if (typeof nativo.showPicker === "function") { nativo.showPicker(); return; }
-        } catch (e) { }
-        nativo.focus();
-        try { nativo.click(); } catch (err) { }
+    /* ---- Desplegables propios: panel compacto con filas ricas ----
+       El select nativo queda oculto como fuente de datos; el panel muestra
+       nombre pequeño, icono de rol y badge/contador separados a la derecha.
+       Elegir una fila setea el nativo y dispara su change: toda la lógica
+       existente (hilo, etiquetas, contadores) se reutiliza sin cambios. */
+    var ROL_ICONO = { "Técnico": "i-wrench", "Admin": "i-shield", "Observador": "i-eye", "Usuario": "i-user" };
+    function cerrarPaneles() {
+        document.querySelectorAll(".sw-dd-panel").forEach(function (p) {
+            if (!p.hidden) {
+                p.hidden = true;
+                var caja = p.closest(".sw-dd");
+                if (caja) { caja.setAttribute("aria-expanded", "false"); }
+            }
+        });
     }
-    [["ddColega", "swColega"], ["ddUsuario", "swUsuario"], ["ddTicket", "swTicket"]].forEach(function (par) {
-        var caja = document.getElementById(par[0]);
-        var nat = document.getElementById(par[1]);
-        if (!caja || !nat) { return; }
+    function ubicarPanel(panel, caja) {
+        panel.hidden = false;
+        var r = caja.getBoundingClientRect();
+        var w = Math.min(292, window.innerWidth - 16);
+        panel.style.minWidth = Math.min(244, w) + "px";
+        panel.style.maxWidth = w + "px";
+        panel.style.left = Math.min(Math.max(8, r.left), Math.max(8, window.innerWidth - w - 8)) + "px";
+        var alto = Math.min(panel.scrollHeight || 300, 302);
+        var top = r.bottom + 6;
+        if (top + alto > window.innerHeight - 8) { top = Math.max(8, r.top - alto - 6); }
+        panel.style.top = top + "px";
+    }
+    function avatarMini(nombre, avatarUrl, enLinea) {
+        var ini = esc(primerNombre(nombre).charAt(0).toUpperCase() || "?");
+        var cara = avatarUrl
+            ? '<img src="' + esc(avatarUrl) + '" alt="" loading="lazy">'
+            : ini;
+        return '<span class="sw-dd-ava-w"><span class="sw-dd-ava">' + cara + "</span>" +
+            '<span class="sw-dd-dot' + (enLinea ? " green" : "") + '"></span></span>';
+    }
+    function pintarPanelUsuarios() {
+        var panel = document.getElementById("ddUsuarioPanel");
+        if (!panel || !usuSel) { return; }
+        var html = "";
+        for (var i = 0; i < usuSel.options.length; i++) {
+            var op = usuSel.options[i];
+            if (!op.value) { continue; }
+            var u = usuariosDatos[op.value.toLowerCase()] ||
+                { email: op.value, nombre: op.textContent, avatar: "", en_linea: false, n_tickets: 0 };
+            var activo = op.value === usuarioEmail;
+            html += '<button type="button" class="sw-dd-row' + (activo ? " is-active" : "") +
+                '" role="option" aria-selected="' + activo + '" data-value="' + esc(u.email) + '">' +
+                avatarMini(u.nombre, u.avatar, u.en_linea) +
+                '<span class="sw-dd-name">' + esc(u.nombre) + "</span>" +
+                '<span class="sw-dd-meta"><svg class="icon"><use href="#i-ticket"/></svg>' +
+                esc(u.n_tickets) + "</span></button>";
+        }
+        panel.innerHTML = html || '<p class="sw-dd-empty">Sin usuarios para chatear.</p>';
+    }
+    function pintarPanelTickets() {
+        var panel = document.getElementById("ddTicketPanel");
+        if (!panel) { return; }
+        var html = "";
+        for (var i = 0; i < sel.options.length; i++) {
+            var op = sel.options[i];
+            if (!op.value) { continue; }
+            var t = ticketsDatos[op.value] || { codigo: op.textContent, titulo: "", estado_display: "" };
+            var activo = String(ticketPk) === String(op.value);
+            html += '<button type="button" class="sw-dd-row' + (activo ? " is-active" : "") +
+                '" role="option" aria-selected="' + activo + '" data-value="' + esc(op.value) + '">' +
+                '<span class="sw-dd-meta"><svg class="icon"><use href="#i-ticket"/></svg></span>' +
+                '<span class="sw-dd-name">' + esc(t.codigo) +
+                (t.titulo ? " · " + esc(t.titulo) : "") + "</span>" +
+                (t.estado_display ? '<span class="sw-dd-estado">' + esc(t.estado_display) + "</span>" : "") +
+                "</button>";
+        }
+        panel.innerHTML = html || '<p class="sw-dd-empty">Sin tickets para chatear.</p>';
+    }
+    function pintarPanelColegas() {
+        var panel = document.getElementById("ddColegaPanel");
+        if (!panel || !colegaSel) { return; }
+        var html = '<button type="button" class="sw-dd-row' + (!colegaPk ? " is-active" : "") +
+            '" role="option" aria-selected="' + (!colegaPk) + '" data-value="0">' +
+            '<span class="sw-dd-ava-w"><span class="sw-dd-ava"><svg class="icon" style="width:13px;height:13px"><use href="#i-users"/></svg></span></span>' +
+            '<span class="sw-dd-name">Sala general · todos</span>' +
+            (novedadesCache.sala > 0 ? '<span class="sw-dd-badge">' + novedadesCache.sala + "</span>" : "") +
+            "</button>";
+        for (var i = 0; i < colegaSel.options.length; i++) {
+            var op = colegaSel.options[i];
+            if (!op.value || op.value === "0") { continue; }
+            var c = colegasDatos[op.value];
+            if (!c) { continue; }
+            var nuevos = (novedadesCache.dms[op.value] || {}).nuevos || 0;
+            var activo = String(colegaPk) === String(op.value);
+            var iconoRol = ROL_ICONO[c.insignia] || "i-user";
+            html += '<button type="button" class="sw-dd-row' + (activo ? " is-active" : "") +
+                '" role="option" aria-selected="' + activo + '" data-value="' + esc(op.value) + '">' +
+                avatarMini(c.nombre, c.avatar, c.en_linea) +
+                '<span class="sw-dd-name">' + esc(c.nombre) +
+                '<small><svg class="icon"><use href="#' + iconoRol + '"/></svg>' + esc(c.insignia) + "</small></span>" +
+                (nuevos > 0 ? '<span class="sw-dd-badge">' + nuevos + "</span>" : "") +
+                "</button>";
+        }
+        panel.innerHTML = html;
+    }
+    function cablearDd(cajaId, panelId, natId, pintar) {
+        var caja = document.getElementById(cajaId);
+        var panel = document.getElementById(panelId);
+        var nat = document.getElementById(natId);
+        if (!caja || !panel || !nat) { return; }
         caja.setAttribute("role", "button");
         caja.setAttribute("tabindex", "0");
-        caja.addEventListener("keydown", function (e) {
-            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirPicker(nat); }
+        caja.setAttribute("aria-expanded", "false");
+        function abrir() {
+            pintar();
+            cerrarPaneles();
+            ubicarPanel(panel, caja);
+            caja.setAttribute("aria-expanded", "true");
+        }
+        caja.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (!panel.hidden) {
+                panel.hidden = true;
+                caja.setAttribute("aria-expanded", "false");
+                return;
+            }
+            abrir();
         });
+        caja.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); abrir(); }
+        });
+        panel.addEventListener("click", function (e) {
+            var row = e.target.closest(".sw-dd-row");
+            if (!row || row.dataset.value === undefined) { return; }
+            e.stopPropagation();
+            nat.value = row.dataset.value;
+            nat.dispatchEvent(new Event("change", { bubbles: true }));
+            panel.hidden = true;
+            caja.setAttribute("aria-expanded", "false");
+        });
+    }
+    cablearDd("ddUsuario", "ddUsuarioPanel", "swUsuario", pintarPanelUsuarios);
+    cablearDd("ddTicket", "ddTicketPanel", "swTicket", pintarPanelTickets);
+    cablearDd("ddColega", "ddColegaPanel", "swColega", pintarPanelColegas);
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest(".sw-dd")) { cerrarPaneles(); }
     });
+    document.addEventListener("scroll", function () { cerrarPaneles(); }, true);
+    window.addEventListener("resize", function () { cerrarPaneles(); });
     /* Nombre corto junto al icono: lo elegido en cada desplegable. */
     function pintarUsuarioLabel() {
         if (!ddUsuarioLabel || !usuSel) { return; }
@@ -572,6 +697,8 @@
             colegaSel.value = actual;
         }
         pintarColegaLabel();
+        var pc = document.getElementById("ddColegaPanel");
+        if (pc && !pc.hidden) { pintarPanelColegas(); }
     }
     function listarColegas(forzar) {
         if (!hayCorp || (colegasCargados && !forzar)) { return; }
@@ -706,7 +833,10 @@
     });
 
     document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape" && abierto) { cerrarWin(); }
+        if (e.key === "Escape" && abierto) {
+            var panelAbierto = document.querySelector(".sw-dd-panel:not([hidden])");
+            if (panelAbierto) { cerrarPaneles(); } else { cerrarWin(); }
+        }
         if (e.key === "Escape" && pop) { pop.remove(); pop = null; }
     });
 

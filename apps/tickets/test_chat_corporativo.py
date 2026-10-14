@@ -126,6 +126,11 @@ class SalaCorporativaTest(TestCase):
         self.assertIn("Admin", nombres)
         self.assertNotIn("Sup", nombres)
         self.assertNotIn("Ana", nombres)
+        # El panel propio trae foto y estado para pintar cada fila.
+        for c in datos["colegas"]:
+            self.assertIn("avatar", c)
+            self.assertIn("en_linea", c)
+            self.assertIn("insignia", c)
         self.client.force_login(self.usuario)
         self.assertEqual(
             self.client.get(reverse("tickets:chat_colegas")).status_code, 403

@@ -3259,8 +3259,28 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .sw-dd-ico .icon { width: 15px; height: 15px; }
 .sw-dd-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sw-dd-chev { flex: none; font-size: 10px; opacity: .85; }
-.sw-dd-native { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.sw-dd-native { display: none; }
 .sw-dd-native option { color: #111; }
+/* Panel propio del desplegable: filas compactas con nombre pequeño,
+   icono de rol a la izquierda y contador/badge separados a la derecha. */
+.sw-dd-panel { position: fixed; z-index: 9600; min-width: 244px; max-width: 292px; max-height: 302px; overflow-y: auto; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-pop); padding: 5px; font-family: var(--font-corp); }
+.sw-dd-panel[hidden] { display: none; }
+.sw-dd-row { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 6px 8px; font: inherit; cursor: pointer; }
+.sw-dd-row:hover { background: #FBF7EF; }
+.sw-dd-row.is-active { background: rgba(214,43,31,.08); }
+.sw-dd-ava-w { position: relative; flex: none; }
+.sw-dd-ava { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff; background: #4F46E5; overflow: hidden; }
+.sw-dd-ava img { width: 100%; height: 100%; object-fit: cover; }
+.sw-dd-dot { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; background: #9AA0A6; border: 2px solid #fff; }
+.sw-dd-dot.green { background: #2F7D4F; }
+.sw-dd-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; color: var(--ink); }
+.sw-dd-name small { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--ink-muted); }
+.sw-dd-name small .icon { width: 10px; height: 10px; }
+.sw-dd-meta { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; color: var(--ink-muted); }
+.sw-dd-meta .icon { width: 13px; height: 13px; }
+.sw-dd-badge { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--dogger-red); color: #fff; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.sw-dd-estado { flex: none; font-size: 9.5px; font-weight: 800; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .03em; }
+.sw-dd-empty { padding: 10px 12px; font-size: 12px; color: var(--ink-muted); text-align: center; }
 /* Selector de modo del chat: compacto, Soporte o Corporativo (sala staff). */
 .sw-modos { display: inline-flex; gap: 2px; margin-top: 8px; padding: 2px; border-radius: 999px; background: rgba(0,0,0,.18); }
 .sw-modo {

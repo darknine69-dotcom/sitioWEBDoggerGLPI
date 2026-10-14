@@ -24,12 +24,14 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
                 <span class="sw-dd-label" id="ddColegaLabel">Sala</span>
                 <span class="sw-dd-chev" aria-hidden="true">▾</span>
                 <select class="sw-ticket sw-dd-native" id="swColega" aria-label="Hablar con" tabindex="-1"></select>
+                <div class="sw-dd-panel" id="ddColegaPanel" role="listbox" aria-label="Conversaciones corporativas" hidden></div>
             </div>
             <div class="sw-dd" id="ddUsuario" hidden>
                 <span class="sw-dd-ico"><svg class="icon"><use href="#i-user"/></svg></span>
                 <span class="sw-dd-label" id="ddUsuarioLabel">Usuario</span>
                 <span class="sw-dd-chev" aria-hidden="true">▾</span>
                 <select class="sw-ticket sw-dd-native" id="swUsuario" aria-label="Usuario" tabindex="-1"></select>
+                <div class="sw-dd-panel" id="ddUsuarioPanel" role="listbox" aria-label="Usuarios" hidden></div>
             </div>
         {% endif %}
             <div class="sw-dd" id="ddTicket">
@@ -37,6 +39,7 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
                 <span class="sw-dd-label" id="ddTicketLabel">Ticket</span>
                 <span class="sw-dd-chev" aria-hidden="true">▾</span>
                 <select class="sw-ticket sw-dd-native" id="swTicket" aria-label="Conversación" tabindex="-1"></select>
+                <div class="sw-dd-panel" id="ddTicketPanel" role="listbox" aria-label="Tickets" hidden></div>
             </div>
             <span class="sw-ticket-user" id="swTicketUser"></span>
         {% if request.user.rol == 'tecnico' or request.user.rol == 'admin' or request.user.rol == 'observador' %}

@@ -380,6 +380,7 @@ def chat_colegas(request):
         "colegas": [
             {"pk": c.pk, "nombre": c.nombre or c.email,
              "insignia": _insignia(c),
+             "avatar": _avatar_url(c),
              "en_linea": bool(getattr(c, "en_linea", False))}
             for c in colegas
         ],
