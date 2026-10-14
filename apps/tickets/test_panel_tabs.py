@@ -45,7 +45,9 @@ class PestanasPanelTest(TestCase):
                        "Sin asignar"):
             self.assertIn(nombre, html)
         self.assertNotIn("?vista=corp", html)
-        self.assertNotIn("Corporativo", html)
+        # Sin pestaña "Corporativo" en el panel (el botón del chat flotante
+        # sí dice Corporativo: es un <button>, no una pestaña <a>).
+        self.assertNotIn(">Corporativo</a>", html)
         self.assertNotIn("dash-stat-mtd", html)
 
     def test_sin_asignar_muestra_solo_sin_tecnico(self):
