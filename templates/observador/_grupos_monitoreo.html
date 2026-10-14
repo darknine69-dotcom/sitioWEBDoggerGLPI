@@ -34,7 +34,7 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
             <span class="obs-miembro-id">
                 <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ f.email|urlencode }}" title="Abrir su ficha" data-stop>{{ f.nombre }}</a></strong>
                 <small>
-                    <svg class="icon icon-xs"><use href="#i-mail"/></svg> {{ f.email|default:"Sin correo" }}
+                    <svg class="icon icon-xs"><use href="#i-mail"/></svg> {{ f.email|default:"Sin correo" }}{% if f.detalle %} · {{ f.detalle }}{% endif %}
                     {% if f.telefono %}<svg class="icon icon-xs"><use href="#i-phone"/></svg> {{ f.telefono }}{% endif %}
                 </small>
             </span>

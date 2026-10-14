@@ -324,7 +324,7 @@
         tip.setAttribute("role", "tooltip");
         tip.hidden = true;
         document.body.appendChild(tip);
-        varTimer = null;
+        var timer = null;
 
         function mostrar(el) {
             var texto = el.getAttribute("data-tip");
