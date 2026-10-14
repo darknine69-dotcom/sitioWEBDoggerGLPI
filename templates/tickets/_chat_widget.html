@@ -19,6 +19,7 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
             <button type="button" class="sw-modo" id="swModoCorp" role="tab" aria-selected="false" title="Sala interna: técnicos, admins y observadores">Corporativo</button>
         </div>
         <select class="sw-ticket" id="swColega" aria-label="Hablar con" hidden></select>
+        <select class="sw-ticket" id="swUsuario" aria-label="Usuario" hidden></select>
         {% endif %}
         <div class="sw-select-wrap">
             <select class="sw-ticket" id="swTicket" aria-label="Conversación"></select>
@@ -42,6 +43,7 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
 window.__SW_URLS__ = {
     rol: "{{ request.user.rol }}",
     tickets: "{% url 'tickets:chat_tickets' %}",
+    usuarios: "{% url 'tickets:chat_usuarios' %}",
     hilo: "{% url 'tickets:chat_hilo' 0 %}",
     responder: "{% url 'tickets:chat_responder' 0 %}",
     adjuntar: "{% url 'tickets:chat_adjuntar' 0 %}",

@@ -133,3 +133,34 @@ class ChatWidgetTest(TestCase):
         self.assertIn("swFab", html)
         self.assertIn("Estamos en línea", html)
         self.assertIn("/chat/api/hilo/", html)
+
+    def test_chat_usuarios_solo_staff_y_agrupado(self):
+        # El usuario final no entra al desplegable de personas.
+        self.client.force_login(self.usuario)
+        self.assertEqual(
+            self.client.get(reverse("tickets:chat_usuarios")).status_code, 403
+        )
+        # El staff ve una entrada por solicitante, con su conteo.
+        self.client.force_login(self.tec)
+        datos = self.client.get(reverse("tickets:chat_usuarios")).json()
+        self.assertTrue(datos["ok"])
+        por_email = {u["email"]: u for u in datos["usuarios"]}
+        self.assertIn("ana@x.com", por_email)
+        self.assertIn("otro@x.com", por_email)
+        self.assertEqual(por_email["ana@x.com"]["n_tickets"], 1)
+        self.assertEqual(por_email["ana@x.com"]["nombre"], "Ana")
+
+    def test_chat_tickets_filtra_por_usuario(self):
+        self.client.force_login(self.tec)
+        todos = self.client.get(reverse("tickets:chat_tickets")).json()["tickets"]
+        self.assertEqual(len(todos), 2)
+        unos = self.client.get(
+            reverse("tickets:chat_tickets") + "?usuario=ana@x.com").json()["tickets"]
+        self.assertEqual([t["codigo"] for t in unos], [self.ticket.codigo])
+        # El filtro respeta mayúsculas y ajenos al alcance no aparecen.
+        otros = self.client.get(
+            reverse("tickets:chat_tickets") + "?usuario=OTRO@x.com").json()["tickets"]
+        self.assertEqual([t["codigo"] for t in otros], [self.ajeno.codigo])
+        ningunos = self.client.get(
+            reverse("tickets:chat_tickets") + "?usuario=nadie@x.com").json()["tickets"]
+        self.assertEqual(ningunos, [])

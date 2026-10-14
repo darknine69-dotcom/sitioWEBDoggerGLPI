@@ -131,17 +131,77 @@ def _tickets_del_rol(usuario, limite=20):
 @login_required
 @require_GET
 def chat_tickets(request):
-    """Tickets con los que puede chatear quien pregunta."""
+    """Tickets con los que puede chatear quien pregunta.
+
+    El staff puede pedir `?usuario=<correo>` para ver solo los tickets de
+    esa persona (el desplegable de usuarios va primero, el de tickets
+    después).
+    """
     tickets = _tickets_del_rol(request.user)
+    correo = (request.GET.get("usuario") or "").strip().lower()
+    if correo:
+        tickets = [
+            t for t in tickets
+            if (t.solicitante_email or "").strip().lower() == correo
+        ]
     return JsonResponse({
         "ok": True,
         "tickets": [
             {"pk": t.pk, "codigo": t.codigo, "titulo": t.titulo,
              "solicitante_nombre": t.solicitante_nombre or "",
+             "solicitante_email": t.solicitante_email or "",
              "estado": t.estado, "estado_display": t.get_estado_display()}
             for t in tickets
         ],
     })
+
+
+@login_required
+@require_GET
+def chat_usuarios(request):
+    """Usuarios con tickets para chatear (solo staff).
+
+    El staff primero elige a la persona y luego uno de sus tickets, en vez
+    de una lista larga de tickets mezclados de todo el mundo.
+    """
+    if getattr(request.user, "rol", None) not in ("tecnico", "admin", "observador"):
+        return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
+    from apps.accounts.models import Usuario
+
+    tickets = list(_tickets_del_rol(request.user, limite=200))
+    por_correo = {}
+    for t in tickets:
+        correo = (t.solicitante_email or "").strip()
+        if not correo:
+            continue
+        entrada = por_correo.get(correo.lower())
+        if entrada is None:
+            # Los tickets vienen del más reciente al más viejo: el primer
+            # nombre visto es el más fresco y ese manda.
+            entrada = por_correo[correo.lower()] = {
+                "email": correo,
+                "nombre": (t.solicitante_nombre or "").strip() or correo,
+                "n_tickets": 0,
+            }
+        entrada["n_tickets"] += 1
+    bajos = list(por_correo)
+    registrados = {
+        (u.email or "").lower(): u
+        for u in Usuario.objects.filter(email__in=bajos)
+    }
+    usuarios = []
+    for clave, entrada in por_correo.items():
+        reg = registrados.get(clave)
+        usuarios.append({
+            "email": entrada["email"],
+            "nombre": (reg.nombre if reg and reg.nombre else entrada["nombre"]),
+            "n_tickets": entrada["n_tickets"],
+            "avatar": _avatar_url(reg),
+            "en_linea": bool(reg is not None and getattr(reg, "en_linea", False)),
+        })
+    # En línea primero, luego por nombre.
+    usuarios.sort(key=lambda u: (not u["en_linea"], (u["nombre"] or "").lower()))
+    return JsonResponse({"ok": True, "usuarios": usuarios})
 
 
 @login_required

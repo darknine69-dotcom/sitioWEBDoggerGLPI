@@ -19,6 +19,7 @@
     var modoSoporteBtn = document.getElementById("swModoSoporte");
     var modoCorpBtn = document.getElementById("swModoCorp");
     var colegaSel = document.getElementById("swColega");
+    var usuSel = document.getElementById("swUsuario");
     var headTitulo = document.getElementById("swHeadTitulo");
     var headSub = document.getElementById("swHeadSub");
 
@@ -30,8 +31,13 @@
     /* Modo del chat: soporte (hilo por ticket) o corporativo (sala staff).
        El usuario final no tiene selector: siempre va en soporte. */
     var hayCorp = Boolean(modoCorpBtn && colegaSel && urls.corpHilo && urls.corpEnviar && urls.colegas && urls.novedades);
+    /* Soporte para el staff: primero la persona, luego sus tickets. */
+    var hayUsuarios = Boolean(usuSel && urls.usuarios);
+    var usuarioEmail = "";
     var colegaPk = 0;
     var colegasCargados = false;
+    var colegasDatos = {};
+    var novedadesCache = { sala: 0, dms: {} };
     var dmPendiente = 0;
     /* Lo ya visto del corporativo (sala + cada directo): con esto el
        servidor cuenta lo pendiente para la burbuja, esté o no abierto. */
@@ -149,8 +155,9 @@
             esc(a.nombre) + "</a>";
     }
     function mensajeHtml(m) {
+        /* La foto sale en ambos lados: del que escribe y del que responde. */
         return '<div class="sw-msg' + (m.propio ? " sw-msg-propio" : "") + '" data-id="' + m.id + '">' +
-            (m.propio ? "" : avatarHtml(m)) +
+            avatarHtml(m) +
             '<div class="sw-bubble"><span class="sw-bubble-n">' + esc(m.autor) +
             (m.insignia ? " · " + esc(m.insignia) : "") + "</span>" +
             '<span class="sw-bubble-t">' + enlaceify(esc(m.texto)) + "</span>" +
@@ -255,12 +262,50 @@
                 }
                 corpPendientes = Math.max(0, (d.total || 0) - enPantalla);
                 pintarContador();
+                /* Contadores por persona en el desplegable corporativo. */
+                novedadesCache.sala = (d.sala && d.sala.nuevos) || 0;
+                novedadesCache.dms = d.dms || {};
+                pintarEtiquetasColegas();
             })
             .catch(function () { });
     }
 
-    function listarTickets() {
-        fetchJson(urls.tickets, { credentials: "same-origin" })
+    function pintarTicketUser(nombre) {
+        if (!ticketUser) { return; }
+        ticketUser.textContent = nombre ? "De: " + nombre : "";
+        ticketUser.style.display = nombre ? "inline" : "none";
+    }
+    /* Staff: primero la persona (con su estado en línea), luego sus tickets. */
+    function listarUsuarios() {
+        if (!hayUsuarios) { listarTickets(); return; }
+        fetchJson(urls.usuarios, { credentials: "same-origin" })
+            .then(function (res) {
+                var d = res && res.datos;
+                if (!d || !d.ok) { avisarUnaVez(textoFallo(res, "No se pudo cargar el chat.")); return; }
+                usuSel.innerHTML = "";
+                (d.usuarios || []).forEach(function (u, i) {
+                    var op = document.createElement("option");
+                    op.value = u.email;
+                    op.textContent = (u.en_linea ? "🟢 " : "⚪ ") + u.nombre +
+                        " (" + u.n_tickets + " ticket" + (u.n_tickets === 1 ? "" : "s") + ")";
+                    usuSel.appendChild(op);
+                    if (i === 0) { usuarioEmail = u.email; }
+                });
+                if (!d.usuarios || !d.usuarios.length) {
+                    var op0 = document.createElement("option");
+                    op0.textContent = "Sin usuarios para chatear";
+                    usuSel.appendChild(op0);
+                    usuarioEmail = "";
+                } else {
+                    usuSel.value = usuarioEmail;
+                }
+                listarTickets(usuarioEmail);
+            })
+            .catch(function () { avisarUnaVez("Sin conexión con el servidor."); });
+    }
+    function listarTickets(email) {
+        var url = urls.tickets + (email ? "?usuario=" + encodeURIComponent(email) : "");
+        fetchJson(url, { credentials: "same-origin" })
             .then(function (res) {
                 var d = res && res.datos;
                 if (!d || !d.ok) { avisarUnaVez(textoFallo(res, "No se pudo cargar el chat.")); return; }
@@ -269,20 +314,19 @@
                     var op = document.createElement("option");
                     op.value = t.pk;
                     op.textContent = t.codigo + " · " + t.titulo + " (" + t.estado_display + ")";
+                    if (t.solicitante_nombre) { op.setAttribute("data-user", t.solicitante_nombre); }
                     sel.appendChild(op);
                     if (i === 0) {
                         ticketPk = t.pk;
-                        if (ticketUser) {
-                            ticketUser.textContent = t.solicitante_nombre ? "De: " + t.solicitante_nombre : "";
-                            ticketUser.style.display = t.solicitante_nombre ? "inline" : "none";
-                        }
+                        pintarTicketUser(t.solicitante_nombre);
                     }
                 });
                 if (!d.tickets || !d.tickets.length) {
                     var op0 = document.createElement("option");
                     op0.textContent = "Sin tickets para chatear";
                     sel.appendChild(op0);
-                    if (ticketUser) ticketUser.style.display = "none";
+                    ticketPk = 0;
+                    pintarTicketUser("");
                 }
                 cargar(0);
             })
@@ -313,7 +357,9 @@
         ubicarVentana();
         win.setAttribute("data-open", "");
         fab.setAttribute("aria-expanded", "true");
-        cargar(0);
+        if (esCorp()) { listarColegas(true); cargar(0); }
+        else if (hayUsuarios) { listarUsuarios(); }
+        else { listarTickets(); }
         consultarNovedades();
         clearInterval(timer);
         timer = setInterval(function () { cargar(ultimoId); }, 6000);
@@ -388,8 +434,18 @@
         ticketPk = parseInt(sel.value, 10) || 0;
         ultimoId = 0;
         errorMostrado = false;
+        var op = sel.options[sel.selectedIndex];
+        pintarTicketUser(op ? op.getAttribute("data-user") : "");
         cargar(0);
     });
+    if (usuSel) {
+        usuSel.addEventListener("change", function () {
+            usuarioEmail = usuSel.value || "";
+            ultimoId = 0;
+            errorMostrado = false;
+            listarTickets(usuarioEmail);
+        });
+    }
 
     function ponerModo(nuevo) {
         if (!hayCorp || (nuevo !== "soporte" && nuevo !== "corporativo")) { return; }
@@ -408,6 +464,7 @@
         if (headTitulo) { headTitulo.textContent = enCorp ? "Sala corporativa" : "Mesa de ayuda"; }
         if (headSub) { headSub.textContent = enCorp ? "Solo staff en línea" : "Estamos en línea"; }
         if (sel) { sel.hidden = enCorp; }
+        if (usuSel) { usuSel.hidden = enCorp; }
         if (colegaSel) { colegaSel.hidden = !enCorp; }
         if (adjBtn) { adjBtn.style.display = enCorp ? "none" : ""; }
         texto.placeholder = !enCorp ? "Escríbenos…"
@@ -416,31 +473,59 @@
         ultimoId = 0;
         noLeidos = 0;
         pintarContador();
-        if (enCorp) { listarColegas(); cargar(0); }
+        if (enCorp) { listarColegas(true); cargar(0); }
+        else if (hayUsuarios) { listarUsuarios(); }
         else { listarTickets(); }
         consultarNovedades();
     }
     if (modoSoporteBtn) { modoSoporteBtn.addEventListener("click", function () { ponerModo("soporte"); }); }
     if (modoCorpBtn) { modoCorpBtn.addEventListener("click", function () { ponerModo("corporativo"); }); }
 
-    function listarColegas() {
-        if (!hayCorp || colegasCargados) { return; }
+    /* Etiqueta del colega: punto en línea + pendientes de esa persona. */
+    function etiquetaColega(c) {
+        var nuevos = (novedadesCache.dms[String(c.pk)] || {}).nuevos || 0;
+        var txt = (c.en_linea ? "🟢 " : "⚪ ") + c.nombre + " · " + c.insignia;
+        if (nuevos > 0) { txt += " (" + nuevos + " nuevo" + (nuevos === 1 ? "" : "s") + ")"; }
+        return txt;
+    }
+    function pintarEtiquetasColegas() {
+        if (!hayCorp || !colegaSel || !colegasCargados) { return; }
+        var actual = String(colegaPk || "0");
+        for (var i = 0; i < colegaSel.options.length; i++) {
+            var op = colegaSel.options[i];
+            if (op.value === "0") {
+                var ns = novedadesCache.sala || 0;
+                op.textContent = "Sala general · todos" + (ns > 0 ? " (" + ns + " nuevos)" : "");
+            } else {
+                var c = colegasDatos[op.value];
+                if (c) { op.textContent = etiquetaColega(c); }
+            }
+        }
+        if (colegaSel.querySelector('option[value="' + actual + '"]')) {
+            colegaSel.value = actual;
+        }
+    }
+    function listarColegas(forzar) {
+        if (!hayCorp || (colegasCargados && !forzar)) { return; }
         colegasCargados = true;
         fetchJson(urls.colegas, { credentials: "same-origin" })
             .then(function (res) {
                 var d = res && res.datos;
                 if (!d || !d.ok) { colegasCargados = false; return; }
+                colegasDatos = {};
                 colegaSel.innerHTML = "";
                 var op0 = document.createElement("option");
                 op0.value = "0";
                 op0.textContent = "Sala general · todos";
                 colegaSel.appendChild(op0);
                 (d.colegas || []).forEach(function (c) {
+                    colegasDatos[String(c.pk)] = c;
                     var op = document.createElement("option");
                     op.value = c.pk;
-                    op.textContent = c.nombre + " · " + c.insignia + (c.en_linea ? " (en línea)" : "");
+                    op.textContent = etiquetaColega(c);
                     colegaSel.appendChild(op);
                 });
+                pintarEtiquetasColegas();
                 /* Viene de la campana con un directo pendiente: se abre solo. */
                 if (dmPendiente && colegaSel.querySelector('option[value="' + dmPendiente + '"]')) {
                     colegaSel.value = String(dmPendiente);
@@ -449,6 +534,8 @@
                     ultimoId = 0;
                     texto.placeholder = "Escríbele a " + nombreColega() + "…";
                     cargar(0);
+                } else if (colegaPk && colegaSel.querySelector('option[value="' + colegaPk + '"]')) {
+                    colegaSel.value = String(colegaPk);
                 }
             })
             .catch(function () { colegasCargados = false; });
@@ -460,6 +547,13 @@
             errorMostrado = false;
             noLeidos = 0;
             pintarContador();
+            /* Lo que se abre se descuenta del contador de esa persona. */
+            if (colegaPk && novedadesCache.dms[String(colegaPk)]) {
+                novedadesCache.dms[String(colegaPk)].nuevos = 0;
+            } else if (!colegaPk) {
+                novedadesCache.sala = 0;
+            }
+            pintarEtiquetasColegas();
             texto.placeholder = colegaPk ? "Escríbele a " + nombreColega() + "…" : "Escríbele al equipo…";
             cargar(0);
         });

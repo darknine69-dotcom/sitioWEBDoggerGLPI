@@ -74,6 +74,7 @@ urlpatterns = [
     path("panel/usuarios/importar/<int:glpi_id>/", views.usuario_importar_uno, name="usuario_importar_uno"),
     path("api/glpi/webhook/", webhooks.glpi_webhook, name="glpi_webhook"),
     path("chat/api/tickets/", views_chat.chat_tickets, name="chat_tickets"),
+    path("chat/api/usuarios/", views_chat.chat_usuarios, name="chat_usuarios"),
     path("chat/api/hilo/<int:pk>/", views_chat.chat_hilo, name="chat_hilo"),
     path("chat/api/responder/<int:pk>/", views_chat.chat_responder, name="chat_responder"),
     path("chat/api/adjuntar/<int:pk>/", views_chat.chat_adjuntar, name="chat_adjuntar"),
