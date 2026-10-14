@@ -243,6 +243,28 @@
                             </button>
                         </form>
                     </div>
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>Tooltips de ayuda</strong>
+                            <small>
+                                {% if request.user.tooltips_habilitado %}
+                                    Están activos: al pasar el mouse sobre un elemento verás una ventana que explica su función.
+                                {% else %}
+                                    Están desactivados. Puedes volver a activarlos cuando quieras.
+                                {% endif %}
+                            </small>
+                        </div>
+                        <form method="post" action="{% url 'accounts:tooltips_preferencia' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="accion"
+                                   value="{% if request.user.tooltips_habilitado %}desactivar{% else %}activar{% endif %}">
+                            <button type="submit" class="btn btn-{% if request.user.tooltips_habilitado %}outline{% else %}primary{% endif %} btn-sm">
+                                <svg class="icon icon-sm"><use href="#i-info"/></svg>
+                                {% if request.user.tooltips_habilitado %}Desactivar{% else %}Activar{% endif %}
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </section>
 

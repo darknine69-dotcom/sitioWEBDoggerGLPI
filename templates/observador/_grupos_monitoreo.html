@@ -28,18 +28,23 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
     {% for f in g.filas %}
     <article class="obs-miembro">
         <button type="button" class="obs-miembro-top obs-miembro-toggle" data-miembro-toggle="zgm-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" aria-expanded="false" title="Desplegar el detalle de {{ f.nombre }}">
-            <span class="obs-avatar obs-avatar-ico"><svg class="icon"><use href="#i-user"/></svg></span>
+            <span class="obs-avatar">
+                {% if f.avatar %}<img src="{{ f.avatar.url }}" alt="" class="obs-avatar-img">{% else %}<svg class="icon"><use href="#i-user"/></svg>{% endif %}
+            </span>
             <span class="obs-miembro-id">
                 <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ f.email|urlencode }}" title="Abrir su ficha" data-stop>{{ f.nombre }}</a></strong>
-                <small>{{ f.email|default:"Sin correo" }}{% if f.detalle %} · {{ f.detalle }}{% endif %}</small>
+                <small>
+                    <svg class="icon icon-xs"><use href="#i-mail"/></svg> {{ f.email|default:"Sin correo" }}
+                    {% if f.telefono %}<svg class="icon icon-xs"><use href="#i-phone"/></svg> {{ f.telefono }}{% endif %}
+                </small>
             </span>
-            <span class="obs-pill obs-pill-{{ f.estado }}"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
             <span class="obs-miembro-nums">
                 <span class="obs-crate" title="Contador propio de {{ f.nombre }}: {{ f.total }} tickets, {{ f.abiertos }} abiertos, {{ f.cerrados_total }} resueltos">
                     <span class="obs-crate-seg"><b>{{ f.total }}</b> tickets</span>
                     <span class="obs-crate-seg s-abiertos"><b>{{ f.abiertos }}</b> abiertos</span>
                     <span class="obs-crate-seg s-resueltos"><b>{{ f.cerrados_total }}</b> resueltos</span>
                 </span>
+                <span class="obs-pill obs-pill-{{ f.estado }}"><span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}</span>
             </span>
             <span class="obs-zona-chev" aria-hidden="true">▾</span>
         </button>

@@ -6896,7 +6896,9 @@ button.obs-miembro-top[aria-expanded="false"] .obs-zona-chev { transform: rotate
 .obs-leyenda-item .obs-tip { position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%) translateY(4px); background: #241F1C; color: #fff; font-size: 11px; font-weight: 600; padding: 5px 11px; border-radius: 8px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease; z-index: 60; box-shadow: var(--shadow-pop); }
 .obs-leyenda-item .obs-tip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #241F1C; }
 .obs-leyenda-item:hover .obs-tip, .obs-leyenda-item:focus-within .obs-tip { opacity: 1; transform: translateX(-50%); }
-.obs-avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: #EEE9DB; color: #6B6259; font-weight: 800; font-size: 14px; }
+.obs-avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: #EEE9DB; color: #6B6259; font-weight: 800; font-size: 14px; overflow: hidden; }
+.obs-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.icon-xs { width: 12px; height: 12px; vertical-align: -1px; }
 .obs-miembro-id { display: flex; flex-direction: column; min-width: 0; }
 .obs-miembro-id strong { font-size: 13.5px; }
 .obs-miembro-id small { font-size: 11.5px; color: var(--ink-muted); }
@@ -7482,6 +7484,27 @@ html[data-navcompact="1"] .sidebar-count {
   pointer-events: none;
 }
 .sidebar-tip[hidden] { display: none; }
+.dogger-tooltip {
+  position: fixed;
+  z-index: 300;
+  max-width: 260px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #14100E;
+  border: 1px solid rgba(255, 255, 255, .12);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .45);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .15s ease, transform .15s ease;
+}
+.dogger-tooltip:not([hidden]) { opacity: 1; transform: translateY(0); }
+.dogger-tooltip[hidden] { display: none; }
 
 /* ---- Cajón deslizante en pantallas pequeñas ---- */
 .sidebar-backdrop {

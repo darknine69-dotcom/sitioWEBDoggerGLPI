@@ -80,6 +80,11 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         default=False,
         help_text="Se marca al terminar el tour guiado para no volver a mostrarlo.",
     )
+    tooltips_habilitado = models.BooleanField(
+        "Tooltips de ayuda activados",
+        default=True,
+        help_text="Si está activo, se muestran ventanas de ayuda al pasar el mouse sobre los elementos de la interfaz.",
+    )
     glpi_user_id = models.PositiveIntegerField(
         "ID usuario GLPI",
         null=True,

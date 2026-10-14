@@ -71,7 +71,7 @@
 <main class="page obs-page">
 
     <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
-        <a class="dash-stat dash-hov-zonas" href="#zonas-monitoreo" title="Bajar a ver cuántos usuarios hay en cada zona">
+        <a class="dash-stat dash-hov-zonas" href="#zonas-monitoreo" title="Bajar a ver cuántos usuarios hay en cada zona" data-tip="Ver las zonas y sus usuarios">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Zonas a cargo</span>
@@ -79,7 +79,7 @@
                 <span class="dash-stat-hint">clic para ver usuarios</span>
             </span>
         </a>
-        <div class="dash-stat dash-hov-total">
+        <div class="dash-stat dash-hov-total" data-tip="Total de tickets de tu lista">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Tickets</span>
@@ -87,7 +87,7 @@
                 <span class="dash-stat-hint">de tu lista</span>
             </span>
         </div>
-        <div class="dash-stat dash-hov-abiertos">
+        <div class="dash-stat dash-hov-abiertos" data-tip="Tickets abiertos por atender">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Abiertos</span>
@@ -95,7 +95,7 @@
                 <span class="dash-stat-hint">por atender</span>
             </span>
         </div>
-        <div class="dash-stat dash-hov-resueltos">
+        <div class="dash-stat dash-hov-resueltos" data-tip="Porcentaje de tickets resueltos">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Avance</span>
@@ -103,7 +103,7 @@
                 <span class="dash-stat-hint">resuelto global</span>
             </span>
         </div>
-        <div class="dash-stat dash-hov-usuarios">
+        <div class="dash-stat dash-hov-usuarios" data-tip="Cuentas en tu lista de monitoreo">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-user"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Cuentas</span>
@@ -111,7 +111,7 @@
                 <span class="dash-stat-hint">en tu lista</span>
             </span>
         </div>
-        <div class="dash-stat dash-hov-vencidos">
+        <div class="dash-stat dash-hov-vencidos" data-tip="Cuentas con incidencias urgentes">
             <span class="dash-stat-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Incidencias</span>
@@ -235,8 +235,8 @@
             <div class="chart-card-head obs-tickets-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 <h3>Tickets recientes</h3>
-                <button type="button" class="chart-refresh-btn" id="actBtnBuscar" title="Buscar en tickets recientes" aria-label="Buscar en tickets recientes" aria-expanded="false"><svg class="icon"><use href="#i-search"/></svg></button>
-                <button type="button" class="chart-refresh-btn" id="actRecargar" title="Recargar tickets recientes" aria-label="Recargar tickets recientes"><svg class="icon"><use href="#i-refresh"/></svg></button>
+                <button type="button" class="chart-refresh-btn" id="actBtnBuscar" title="Buscar en tickets recientes" aria-label="Buscar en tickets recientes" aria-expanded="false" data-tip="Abrir el buscador de tickets recientes"><svg class="icon"><use href="#i-search"/></svg></button>
+                <button type="button" class="chart-refresh-btn" id="actRecargar" title="Recargar tickets recientes" aria-label="Recargar tickets recientes" data-tip="Recargar la lista de tickets recientes"><svg class="icon"><use href="#i-refresh"/></svg></button>
             </div>
             <div class="act-buscador" id="actBuscadorBox" hidden>
                 <input type="search" id="actBuscar" placeholder="Buscar por código, título o usuario…" aria-label="Buscar en tickets recientes">
@@ -266,7 +266,7 @@
             <div class="chart-card-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-send"/></svg></span>
                 <h3>Presionar al técnico</h3>
-                <button type="button" class="chart-refresh-btn" id="actBtnBuscarTec" title="Buscar en solicitudes por técnico" aria-label="Buscar en solicitudes por técnico" aria-expanded="false"><svg class="icon"><use href="#i-search"/></svg></button>
+                <button type="button" class="chart-refresh-btn" id="actBtnBuscarTec" title="Buscar en solicitudes por técnico" aria-label="Buscar en solicitudes por técnico" aria-expanded="false" data-tip="Abrir el buscador de solicitudes por técnico"><svg class="icon"><use href="#i-search"/></svg></button>
             </div>
             <div class="act-buscador" id="actBuscadorTecBox" hidden>
                 <input type="search" id="actBuscarTec" placeholder="Buscar por técnico o código de ticket…" aria-label="Buscar en solicitudes por técnico">

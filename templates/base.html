@@ -33,7 +33,7 @@
     <script defer src="{% asset 'js/dogger.js' %}"></script>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}"
+<body class="{% block body_class %}{% endblock %}" data-tooltips="{% if request.user.tooltips_habilitado %}1{% else %}0{% endif %}"
       {% if request.user.is_authenticated %}data-url-latido="{% url 'accounts:latido' %}"{% endif %}>
 <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
 

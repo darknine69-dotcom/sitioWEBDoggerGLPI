@@ -313,6 +313,48 @@
         });
     })();
 
+    /* ---- Tooltips de ayuda globales (data-tip) ----
+       Solo se muestran si el usuario tiene tooltips_habilitado activo.
+       Se controla con data-tooltips="1" en <body>. */
+    (function () {
+        var body = document.body;
+        if (body.getAttribute("data-tooltips") !== "1") return;
+        var tip = document.createElement("div");
+        tip.className = "dogger-tooltip";
+        tip.setAttribute("role", "tooltip");
+        tip.hidden = true;
+        document.body.appendChild(tip);
+        varTimer = null;
+
+        function mostrar(el) {
+            var texto = el.getAttribute("data-tip");
+            if (!texto) return;
+            tip.textContent = texto;
+            tip.hidden = false;
+            var r = el.getBoundingClientRect();
+            var alto = tip.offsetHeight;
+            var arriba = r.top + (r.height / 2) - (alto / 2);
+            var izquierda = r.left + (r.width / 2);
+            var ancho = tip.offsetWidth;
+            izquierda = Math.max(8, Math.min(izquierda - ancho / 2, window.innerWidth - ancho - 8));
+            tip.style.left = izquierda + "px";
+            tip.style.top = Math.max(8, arriba) + "px";
+            if (timer) { clearTimeout(timer); timer = null; }
+        }
+        function ocultar() {
+            if (timer) { clearTimeout(timer); }
+            timer = setTimeout(function () { tip.hidden = true; }, 150);
+        }
+        document.querySelectorAll("[data-tip]").forEach(function (el) {
+            el.addEventListener("mouseenter", function () { mostrar(el); });
+            el.addEventListener("focus", function () { mostrar(el); });
+            el.addEventListener("mouseleave", ocultar);
+            el.addEventListener("blur", ocultar);
+        });
+        document.addEventListener("scroll", ocultar, { passive: true });
+        window.addEventListener("resize", ocultar);
+    })();
+
     /* ---- Nombre de archivos seleccionados + preview de imagen ---- */
     document.querySelectorAll('input[type="file"][multiple], input[type="file"]').forEach(function (input) {
         input.addEventListener("change", function () {

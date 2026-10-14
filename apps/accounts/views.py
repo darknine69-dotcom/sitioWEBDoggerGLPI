@@ -393,6 +393,35 @@ def tour_preferencia(request):
 
 
 @login_required
+@require_POST
+def tooltips_preferencia(request):
+    """Activa o desactiva los tooltips de ayuda de la cuenta."""
+    user = request.user
+    accion = request.POST.get("accion", "")
+    if accion == "activar":
+        user.tooltips_habilitado = True
+        mensaje = "Los tooltips de ayuda quedaron activados."
+    elif accion == "desactivar":
+        user.tooltips_habilitado = False
+        mensaje = "Los tooltips de ayuda quedaron desactivados."
+    else:
+        user.tooltips_habilitado = not user.tooltips_habilitado
+        mensaje = (
+            "Los tooltips de ayuda quedaron activados."
+            if user.tooltips_habilitado
+            else "Los tooltips de ayuda quedaron desactivados."
+        )
+    user.save(update_fields=["tooltips_habilitado"])
+    if request.POST.get("ajax") == "1":
+        return JsonResponse(
+            {"ok": True, "tooltips_habilitado": user.tooltips_habilitado}
+        )
+    messages.success(request, mensaje)
+    destino = request.POST.get("next") or reverse("accounts:ajustes")
+    return redirect(destino)
+
+
+@login_required
 def glpi_pull_perfil(request):
     """Descarga perfil y foto desde GLPI al usuario local."""
     user = request.user

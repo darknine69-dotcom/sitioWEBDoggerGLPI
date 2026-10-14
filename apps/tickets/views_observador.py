@@ -663,6 +663,8 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
                 "avance": r.get("avance", 0),
                 "falta": 100 - r.get("avance", 0),
                 "es_punto": bool(e.punto_id and not e.usuario_id),
+                "telefono": e.usuario.telefono if e.usuario_id else "",
+                "avatar": e.usuario.avatar if e.usuario_id else None,
             }
         )
     # Tickets de esas mismas cuentas que caen fuera de los puntos asignados:

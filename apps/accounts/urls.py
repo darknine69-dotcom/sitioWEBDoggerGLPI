@@ -20,6 +20,7 @@ from .views import (
     presencia,
     restablecer_password,
     solicitar_reset,
+    tooltips_preferencia,
     tour_preferencia,
 )
 
@@ -39,6 +40,7 @@ urlpatterns = [
     path("perfil/", perfil_usuario, name="perfil"),
     path("permisos/", permisos_roles, name="permisos"),
     path("tour/preferencia/", tour_preferencia, name="tour_preferencia"),
+    path("tooltips/preferencia/", tooltips_preferencia, name="tooltips_preferencia"),
     path("latido/", latido, name="latido"),
     path("presencia/", presencia, name="presencia"),
     path("cambiar-password/", cambiar_password, name="cambiar_password"),
