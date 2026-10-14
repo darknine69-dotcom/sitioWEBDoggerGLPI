@@ -303,6 +303,21 @@
         });
     }
 
+    /* Rueda sobre la tabla: mueve las filas solo cuando queda recorrido en
+       esa dirección; al llegar al tope o al fondo deja pasar el evento para
+       que la página siga haciendo scroll con normalidad. */
+    document.querySelectorAll(".tickets-table-wrap").forEach(function (box) {
+        box.addEventListener("wheel", function (e) {
+            if (e.deltaY === 0 || box.scrollHeight <= box.clientHeight + 1) return;
+            var arriba = box.scrollTop <= 0;
+            var abajo = box.scrollTop + box.clientHeight >= box.scrollHeight - 1;
+            if ((e.deltaY < 0 && arriba) || (e.deltaY > 0 && abajo)) return;
+            e.preventDefault();
+            var step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * box.clientHeight : e.deltaY;
+            box.scrollTop += step;
+        }, { passive: false });
+    });
+
     /* Delegación de acciones de fila de la tabla */
     document.addEventListener("click", function (e) {
         var btn = e.target.closest("[data-action]");

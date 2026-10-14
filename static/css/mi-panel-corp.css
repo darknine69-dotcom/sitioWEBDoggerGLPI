@@ -114,10 +114,10 @@
 .corp-kpi.corp-hov-abiertos:hover { border-color: #F97316; background: rgba(249,115,22,.09); }
 .corp-kpi.corp-hov-progreso:hover { border-color: #CA8A04; background: rgba(202,138,4,.11); }
 .corp-kpi.corp-hov-resueltos:hover { border-color: #059669; background: rgba(5,150,105,.09); }
-.corp-kpi-num { display: block; font-size: 17px; font-weight: 800; line-height: 1; font-family: var(--font-display); color: #111; }
+.corp-kpi-num { display: block; font-size: 19px; font-weight: 800; line-height: 1; font-family: var(--font-display); color: #111; }
 .corp-kpi-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.corp-kpi-label { display: block; font-size: 11.5px; color: #111; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
-.corp-kpi-hint { display: block; font-size: 11px; color: #6B6259; font-weight: 600; }
+.corp-kpi-label { display: block; font-size: 12.5px; color: #111; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+.corp-kpi-hint { display: block; font-size: 12px; color: #6B6259; font-weight: 600; }
 .corp-kpi-total { color: #111; }
 .corp-kpi-red { color: #D32F2F; }
 .corp-kpi-yellow { color: #F9A825; }
@@ -149,8 +149,8 @@
     box-shadow: 0 4px 10px rgba(0,0,0,.2);
 }
 .corp-title-icon .icon { width: 20px; height: 20px; }
-.corp-title-wrap h3 { margin: 0; font-size: 18px; }
-.corp-sub { margin: 2px 0 0; color: var(--ink-muted); font-size: 13px; }
+.corp-title-wrap h3 { margin: 0; font-size: 19px; }
+.corp-sub { margin: 2px 0 0; color: var(--ink-muted); font-size: 13.5px; }
 .corp-badge {
     background: #212121;
     color: #FBC02D;
@@ -168,7 +168,7 @@
 .tickets-table { width: 100%; border-collapse: collapse; min-width: 760px; }
 .tickets-table thead th {
     text-align: left;
-    font-size: 11.5px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: .05em;
     color: var(--ink-muted);
@@ -176,8 +176,8 @@
     border-bottom: 2px solid #212121;
     background: #FAFAFA;
 }
-.tickets-table tbody td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
-.tickets-table tbody tr:hover { background: rgba(251,192,45,.07); }
+.tickets-table tbody td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 14px; }
+.tickets-table tbody tr:hover { background: rgba(214,43,31,.06); }
 /* Color por estado: filo a la izquierda de cada fila. */
 .tickets-table tbody tr.ticket-row > td:first-child { box-shadow: inset 4px 0 0 transparent; }
 .tickets-table tbody tr.ticket-row[data-estado="abierto"] > td:first-child { box-shadow: inset 4px 0 0 #2563EB; }
