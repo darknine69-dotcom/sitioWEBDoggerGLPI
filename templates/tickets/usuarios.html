@@ -1040,6 +1040,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     if (uids.length) {
         var url = '{% url "tickets:usuarios_estado" %}?ids=' + uids.join(',');
         setInterval(function () {
+            if (document.hidden) { return; }
             fetch(url).then(function (r) { return r.json(); }).then(function (j) {
                 if (!j || !j.ok) return;
                 var us = j.usuarios || {};

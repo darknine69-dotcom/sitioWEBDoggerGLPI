@@ -241,6 +241,7 @@
         tl.setAttribute("data-estado", estado);
     }
     function poll() {
+        if (document.hidden) { return; }
         fetch("/mi-panel/api/tickets/" + pk + "/info/", { headers: { "Accept": "application/json" } })
             .then(function (r) { return r.json(); })
             .then(function (data) {
@@ -283,6 +284,7 @@
     }
     applyP(fill.getAttribute("data-estado"), fill.getAttribute("data-resuelto") === "1");
     setInterval(function () {
+        if (document.hidden) { return; }
         var pk = fill.getAttribute("data-pk");
         if (!pk) return;
         fetch("/mi-panel/api/tickets/" + pk + "/info/", { headers: { "Accept": "application/json" } })

@@ -1223,6 +1223,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
     }
 
     setInterval(function () {
+        if (document.hidden) { return; }
         fetch('{% url "tickets:panel_tecnico_msgs" 0 %}'.replace('0', ticketPk), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
             .then(function (r) { return r.json(); })
             .then(function (d) {

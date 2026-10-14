@@ -2398,17 +2398,17 @@ def mi_panel(request):
 
     stats = {
         "total": total_qs,
-        "abiertos": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.ABIERTO).count(),
-        "en_progreso": Ticket.objects.filter(solicitante_email=request.user.email, estado=Ticket.Estado.EN_PROGRESO).count(),
-        # El KPI "Resueltas" enlaza al filtro de resueltas, así que cuenta
-        # lo mismo: con marca de resolución o cerradas.
-        "resueltos": Ticket.objects.filter(
-            solicitante_email=request.user.email
-        ).filter(
-            Q(fecha_resolucion__isnull=False)
-            | Q(estado=Ticket.Estado.RESUELTO)
-            | Q(estado=Ticket.Estado.CERRADO)
-        ).count(),
+        # Un solo agregado en vez de tres COUNT: misma cuenta, una ida a la BD.
+        **Ticket.objects.filter(solicitante_email=request.user.email).aggregate(
+            abiertos=Count("id", filter=Q(estado=Ticket.Estado.ABIERTO)),
+            en_progreso=Count("id", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
+            resueltos=Count(
+                "id",
+                filter=Q(fecha_resolucion__isnull=False)
+                | Q(estado=Ticket.Estado.RESUELTO)
+                | Q(estado=Ticket.Estado.CERRADO),
+            ),
+        ),
     }
     pp_mp = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
     page_obj = _paginar(

@@ -196,6 +196,11 @@ class Ticket(models.Model):
             models.Index(fields=["estado"], name="IX_Tickets_Estado"),
             models.Index(fields=["prioridad"], name="IX_Tickets_Prioridad"),
             models.Index(fields=["fecha_creacion"], name="IX_Tickets_Fecha"),
+            # Filtros calientes: panel propio, listas y chat por solicitante
+            # o por técnico casi siempre combinados con estado.
+            models.Index(fields=["solicitante_email", "estado"], name="IX_Tickets_SolEst"),
+            models.Index(fields=["tecnico_asignado", "estado"], name="IX_Tickets_TecEst"),
+            models.Index(fields=["solicitante_punto"], name="IX_Tickets_Punto"),
         ]
 
     @classmethod

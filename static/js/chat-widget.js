@@ -254,7 +254,7 @@
        para que la burbuja avise con el número aunque se escriba en otro
        hilo o con el chat cerrado. */
     function consultarNovedades() {
-        if (!hayCorp) { return; }
+        if (!hayCorp || document.hidden) { return; }
         var pares = Object.keys(visto.dm).map(function (k) { return k + ":" + visto.dm[k]; }).join(",");
         var url = urls.novedades + "?sala=" + visto.sala + (pares ? "&dm=" + encodeURIComponent(pares) : "");
         fetchJson(url, { credentials: "same-origin" })
@@ -617,7 +617,7 @@
         else { listarTickets(); }
         consultarNovedades();
         clearInterval(timer);
-        timer = setInterval(function () { cargar(ultimoId); }, 6000);
+        timer = setInterval(function () { if (!document.hidden) { cargar(ultimoId); } }, 6000);
     }
     /* En vivo: al volver a la pestaña se trae lo nuevo sin esperar el turno. */
     document.addEventListener("visibilitychange", function () {
