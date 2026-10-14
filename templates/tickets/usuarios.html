@@ -243,6 +243,15 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     .ue-m-k { flex: none; min-width: 84px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 700; }
     .ue-m-v { flex: 1; min-width: 0; }
     .ue-m-v .row-menu { display: flex; justify-content: flex-end; }
+    .row-menu-btn { position: relative; }
+    .ue-m-badge {
+        position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px;
+        padding: 0 4px; border-radius: 999px; background: var(--dogger-red); color: #fff;
+        font-size: 10px; font-weight: 800; display: inline-flex; align-items: center;
+        justify-content: center; border: 2px solid #fff; pointer-events: none;
+        animation: ue-badge-pulso 1.8s ease-in-out infinite;
+    }
+    @keyframes ue-badge-pulso { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
     .ue-m-panel .ue-stats-grande { grid-template-columns: repeat(2, 1fr); }
     .ue-m-panel .ue-ficha-meta { margin-top: 2px; }
 }
@@ -726,7 +735,6 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
             }
             if (n.classList.contains('ue-stats-grande')) {
                 ficha.push(n);
-                mas.push(n.cloneNode(true));
                 return;
             }
             ficha.push(n);
@@ -825,6 +833,17 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                     var v = document.createElement('div');
                     v.className = 'ue-m-v';
                     Array.prototype.slice.call(td.childNodes).forEach(function (n) { v.appendChild(n); });
+                    if (par[0] === 'Acciones') {
+                        var menuBtn = v.querySelector('.row-menu-btn');
+                        var nActs = v.querySelectorAll('.row-menu-item').length;
+                        if (menuBtn && nActs) {
+                            var badge = document.createElement('span');
+                            badge.className = 'ue-m-badge';
+                            badge.textContent = nActs;
+                            badge.title = nActs + ' acciones disponibles';
+                            menuBtn.appendChild(badge);
+                        }
+                    }
                     item.appendChild(k);
                     item.appendChild(v);
                     pMas.appendChild(item);
@@ -841,6 +860,9 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                         Array.prototype.slice.call(v.childNodes).forEach(function (n) { r.td.appendChild(n); });
                     }
                     if (r.item.parentNode) { r.item.parentNode.removeChild(r.item); }
+                    r.td.querySelectorAll('.ue-m-badge').forEach(function (b) {
+                        if (b.parentNode) { b.parentNode.removeChild(b); }
+                    });
                 });
                 zona.parentNode.removeChild(zona);
                 nombreTd.querySelectorAll('.ue-m-panel').forEach(function (p) {
