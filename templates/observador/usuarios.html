@@ -6,6 +6,30 @@
 {% block header_title %}Usuarios{% endblock %}
 {% block header_desc %}Personas con tickets en tus zonas y las que ya están en tu lista.{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Responsive: panel de observador */
+@media (max-width: 768px) {
+    .obs-filtros { flex-wrap: wrap; gap: 8px; }
+    .obs-filtros .obs-buscador-campo { flex: 1 1 100%; }
+    .obs-filtros .obs-buscador-tipo { flex: 1 1 calc(50% - 4px); }
+    .obs-filtros .btn { flex: 1 1 100%; }
+    .obs-kpi { flex-direction: column; gap: 8px; }
+    .obs-kpi-n { font-size: 24px; }
+    .obs-tabla { min-width: 640px; }
+    .obs-tabla th, .obs-tabla td { padding: 10px 12px; font-size: 12.5px; }
+    .obs-tecnicos { flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+    .obs-filtros .obs-buscador-tipo { flex: 1 1 100%; }
+    .obs-tabla { min-width: 480px; }
+    .obs-tabla th, .obs-tabla td { padding: 8px 10px; font-size: 11.5px; }
+    .obs-acciones .btn { width: 100%; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <main class="page obs-page">
 

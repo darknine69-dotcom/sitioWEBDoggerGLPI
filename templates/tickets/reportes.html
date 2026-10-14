@@ -63,6 +63,26 @@
 /* Las tarjetas de tablas (técnicos y usuarios) no quedan pegadas */
 .mesa-tec-card { margin-top: 26px; }
 
+/* Responsive: tablas de reportes */
+@media (max-width: 768px) {
+    .rpt-filterbar { flex-direction: column; align-items: stretch; }
+    .rpt-fld { min-width: 0; flex: 1 1 100%; }
+    .rpt-actions { margin-left: 0; width: 100%; }
+    .rpt-actions .btn { flex: 1; }
+    .rpt-searchbar { flex-wrap: wrap; }
+    .rpt-searchbar .search-field { flex: 1 1 100%; max-width: none; }
+    .rpt-pager { justify-content: center; }
+    .rpt-table { min-width: 640px; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .rpt-persona { flex: 1 1 100%; max-width: none; }
+}
+
+@media (max-width: 480px) {
+    .rpt-table { min-width: 480px; }
+    .rpt-table th, .rpt-table td { padding: 8px 10px; font-size: 11.5px; }
+    .rpt-suggest { position: static; box-shadow: none; border: 0; border-top: 1px solid var(--line); }
+}
+
 /* Buscador unificado de persona (técnico o usuario) */
 .rpt-persona { position: relative; flex: 1 1 250px; max-width: 360px; }
 .rpt-persona-input { position: relative; }
@@ -372,7 +392,7 @@
 
 
 {% block extra_js %}
-<script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20260918"></script>
+<script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20261402"></script>
 <script>
 (function () {
     // Autosubmit de los filtros por selección

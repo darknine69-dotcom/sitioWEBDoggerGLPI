@@ -93,6 +93,30 @@
 </main>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+/* Responsive: categorías */
+@media (max-width: 768px) {
+    .cat-resumen { flex-wrap: wrap; gap: 12px; }
+    .cat-resumen-item { flex: 1 1 40%; text-align: center; }
+    .cat-publico-busca { flex-wrap: wrap; }
+    .cat-publico-busca input { flex: 1 1 100%; }
+    .cat-grupo-head { flex-wrap: wrap; gap: 8px; }
+    .cat-grupo-txt { flex: 1 1 100%; }
+    .cat-item-head { flex-wrap: wrap; gap: 6px; }
+    .cat-item-nom { flex: 1 1 100%; }
+    .cat-item-detalle { padding: 10px 0; }
+    .cat-item-datos li { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+
+@media (max-width: 480px) {
+    .cat-resumen-item { flex: 1 1 100%; }
+    .cat-grupo-cuenta { display: none; }
+    .meta-pill { font-size: 10px; }
+}
+</style>
+{% endblock %}
+
 {% block extra_js %}
 <script>
 (function () {

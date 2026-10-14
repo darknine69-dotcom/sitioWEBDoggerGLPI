@@ -170,6 +170,35 @@
 @media (max-width: 560px) {
     .tec-ticket-meta { max-width: 140px; }
 }
+
+/* Responsive mejorado para dashboard y estadísticas */
+@media (max-width: 768px) {
+    .dash-stat-row { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+    .dash-stat { padding: 12px 14px; }
+    .dash-stat-icon { width: 36px; height: 36px; }
+    .dash-stat-value { font-size: 22px; }
+    .dash-stat-label { font-size: 11px; }
+    .charts-grid { grid-template-columns: 1fr !important; gap: 12px; }
+    .chart-card { padding: 14px 16px; }
+    .chart-stage { height: 200px; }
+    .pie-flex { grid-template-columns: 1fr; gap: 10px; }
+    .pie-legend { max-height: none; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .mesa-tec-table { min-width: 560px; }
+    .filterbar { flex-wrap: wrap; gap: 8px; }
+    .filterbar select,
+    .filterbar .search-field { flex: 1 1 100%; }
+    .mias-check { flex: 1 1 100%; }
+    .toolbar-count { flex: 1 1 100%; text-align: center; }
+}
+
+@media (max-width: 480px) {
+    .dash-stat-row { grid-template-columns: 1fr !important; }
+    .dash-stat { flex-direction: row; align-items: center; }
+    .dash-stat-body { align-items: flex-start; }
+    .tec-ticket { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .tec-ticket-meta { max-width: 100%; justify-content: flex-start; }
+}
 </style>
 {% endblock %}
 

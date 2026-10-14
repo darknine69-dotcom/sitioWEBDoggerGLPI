@@ -260,6 +260,21 @@ html[data-theme="dark"] .lp-pregunta-campo textarea::placeholder { color: #9A886
     .hd-glow { animation: none; }
 }
 
+/* Responsive mejorado para portal */
+@media (max-width: 768px) {
+    .lp-faq { grid-template-columns: 1fr; }
+    .lp-contact { grid-template-columns: 1fr; }
+    .lp-pregunta-fila { grid-template-columns: 1fr; }
+    .steps-section .page { padding: 20px 16px; }
+}
+
+@media (max-width: 480px) {
+    .lp-horario .hp-dias { min-width: 120px; font-size: 12px; }
+    .lp-horario .hp-hora { font-size: 12px; }
+    .lp-pregunta { padding: 14px 12px; }
+    .lp-pregunta-head h3 { font-size: 15px; }
+}
+
 /* Preguntas frecuentes dentro de la portada */
 .lp-faq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .lp-faq details {

@@ -224,6 +224,29 @@
     .tec-chat { min-height: 420px; }
 }
 
+@media (max-width: 768px) {
+    .section-head { flex-direction: column; align-items: flex-start; }
+    .section-count { align-self: flex-start; }
+    .tec-list-head { flex-direction: column; align-items: flex-start; }
+    .tec-chat-head-top { flex-direction: column; align-items: flex-start; }
+    .tec-chat-tools { flex-direction: column; align-items: stretch; }
+    .tec-state-row { flex-direction: column; align-items: stretch; }
+    .tec-state-row select { width: 100%; }
+    .dash-head-tools { flex-direction: column; align-items: stretch; }
+    .dash-select { width: 100%; }
+    .dash-select select { width: 100%; }
+    .chart-switch-menu { position: static; width: 100%; margin-top: 6px; }
+}
+
+@media (max-width: 480px) {
+    .tec-item { padding: 10px 12px; }
+    .tec-item-title { font-size: 13px; }
+    .tec-chat-body { padding: 12px; }
+    .tec-chat-form { padding: 10px 12px; }
+    .corp-actions { flex-direction: column; }
+    .corp-btn { width: 100%; justify-content: center; }
+}
+
 /* ============ Módulo corporativo: Mis solicitudes abiertas ============ */
 .corp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
 .corp-btn {
@@ -1206,6 +1229,6 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 })();
 </script>
 {% if not ticket %}
-<script src="{% static 'js/panel-lote.js' %}?v=1"></script>
+<script src="{% static 'js/panel-lote.js' %}?v=20261402"></script>
 {% endif %}
 {% endblock %}

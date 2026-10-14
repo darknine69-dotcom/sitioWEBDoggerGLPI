@@ -44,6 +44,26 @@ main.obs-page { font-family: var(--font-corp); }
 .obs-sup-tit { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; }
 .obs-sup-tit:first-of-type { margin-top: 0; }
 .obs-sup-tit small { font-size: 11.5px; color: var(--ink-muted); }
+
+/* Responsive: panel de monitoreo */
+@media (max-width: 768px) {
+    .obs-admin-form { flex-wrap: wrap; }
+    .obs-admin-form input { flex: 1 1 100%; }
+    .obs-admin-row { flex-direction: column; align-items: stretch; }
+    .obs-admin-row .obs-admin-form { width: 100%; }
+    .obs-admin-row .obs-admin-email { min-width: 0; }
+    .obs-input-icon { max-width: 100%; }
+    .obs-sup-tit { flex-wrap: wrap; }
+    .obs-sup-tit small { flex-basis: 100%; }
+    .dash-stat-row { grid-template-columns: repeat(2, 1fr) !important; }
+    .obs-admin-foot { flex-direction: column; align-items: stretch; }
+}
+
+@media (max-width: 480px) {
+    .dash-stat-row { grid-template-columns: 1fr !important; }
+    .obs-admin-form { flex-direction: column; }
+    .obs-admin-form .btn { width: 100%; }
+}
 </style>
 {% endblock %}
 

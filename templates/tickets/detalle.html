@@ -75,6 +75,23 @@
     .ticket-detail-grid { grid-template-columns: 1fr; }
     .ticket-side-col { position: static; max-height: none; overflow: visible; }
 }
+
+@media (max-width: 768px) {
+    .ticket-detail-hero { padding: 18px 16px; }
+    .ticket-detail-grid { gap: 16px; }
+    .ticket-main-col, .ticket-side-col { gap: 14px; }
+    .ficha-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .ficha-row .ficha-k { margin-right: 0; }
+    .ficha-row .ficha-v { text-align: left; }
+    .corp-vinculo-meta-row { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+    .ticket-detail-hero { padding: 14px 12px; }
+    .corp-detail-head h2 { font-size: 18px; }
+    .corp-detail-badges { gap: 6px; }
+    .meta-pill { font-size: 11px; padding: 4px 8px; }
+}
 </style>
 {% endblock %}
 

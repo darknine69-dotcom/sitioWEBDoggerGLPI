@@ -28,9 +28,9 @@
         if (color && /^#[0-9a-f]{6}$/i.test(color)) root.style.setProperty('--sb-accent', color);
     })();
     </script>
-    <link rel="stylesheet" href="{% asset 'css/dogger-theme.css' %}">
+    <link rel="stylesheet" href="{% asset 'css/dogger-theme.css' %}?v=20261402">
     <link rel="stylesheet" href="{% asset 'css/theme-modes.css' %}">
-    <script defer src="{% asset 'js/dogger.js' %}"></script>
+    <script defer src="{% asset 'js/dogger.js' %}?v=20261402"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}" data-tooltips="{% if request.user.tooltips_habilitado %}1{% else %}0{% endif %}"

@@ -8,7 +8,29 @@
 {% block header_desc %}Programa tareas, solicitudes, recordatorios y anuncios; gestiona la disponibilidad de los técnicos.{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% asset 'css/programador.css' %}">
+<link rel="stylesheet" href="{% asset 'css/programador.css' %}?v=20261403">
+<style>
+/* Responsive: panel del programador */
+@media (max-width: 768px) {
+    .prog-filters { flex-direction: column; gap: 8px; }
+    .prog-field { width: 100%; }
+    .prog-field select { width: 100%; }
+    .prog-tabs { flex-wrap: wrap; gap: 4px; }
+    .prog-tab { flex: 1 1 calc(50% - 2px); font-size: 12px; padding: 8px 6px; }
+    .prog-cal-head { flex-wrap: wrap; gap: 8px; }
+    .prog-cal-title { flex: 1 1 100%; text-align: center; }
+    .prog-cal-grid { font-size: 11px; }
+    .tec-matrix-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tec-matrix { min-width: 640px; }
+    .prog-list-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
+
+@media (max-width: 480px) {
+    .prog-tab { flex: 1 1 100%; }
+    .prog-cal-weekdays span { font-size: 10px; }
+    .prog-chart-head { flex-direction: column; align-items: flex-start; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
