@@ -3804,17 +3804,38 @@ a.dash-stat { text-decoration: none; }
 }
 a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(23, 20, 18, .08); }
 .dash-stat-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    position: relative;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     background: #F1EDE6;
-    color: var(--dogger-red);
+    color: #111;
+    transition: transform .18s ease;
 }
-.dash-stat-icon .icon { width: 19px; height: 19px; }
+a.dash-stat:hover .dash-stat-icon { transform: scale(1.06); }
+.dash-stat-icon .dash-stat-value { font-size: 18px; font-weight: 800; line-height: 1; letter-spacing: -.01em; }
+.dash-stat-glyph {
+    position: absolute; right: -3px; bottom: -3px;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; background: #6B6259; border: 2px solid #FBFAF7;
+}
+.dash-stat-glyph .icon { width: 11px; height: 11px; }
+/* Tinte por estado: el icono lleva el contador dentro. */
+.st-ic-abiertos { background: rgba(214,43,31,.12); }
+.st-ic-abiertos .dash-stat-glyph { background: #C6281E; }
+.st-ic-progreso { background: rgba(249,115,22,.16); }
+.st-ic-progreso .dash-stat-glyph { background: #C2410C; }
+.st-ic-resueltos, .st-ic-sla-ok { background: rgba(47,125,79,.14); }
+.st-ic-resueltos .dash-stat-glyph, .st-ic-sla-ok .dash-stat-glyph { background: #16A34A; }
+.st-ic-cerrados { background: #EEE9DB; }
+.st-ic-cerrados .dash-stat-glyph { background: #6B6259; }
+.st-ic-vencidos, .st-ic-sla-no { background: rgba(214,43,31,.14); }
+.st-ic-vencidos .dash-stat-glyph, .st-ic-sla-no .dash-stat-glyph { background: #D62B1F; }
 .dash-stat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .dash-stat-label {
     font-size: 10.5px;

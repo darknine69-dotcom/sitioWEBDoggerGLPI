@@ -147,66 +147,82 @@
         </div>
         <div class="dash-stat-row">
             <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}" title="Tickets incluidos según los filtros aplicados">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <span class="dash-stat-icon">
+                    <span class="dash-stat-value">{{ kpis.total }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Total tickets</span>
-                    <span class="dash-stat-value">{{ kpis.total }}</span>
                     <span class="dash-stat-hint">{{ filtros_txt }}</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?estado=abierto" title="Solicitudes recién creadas, pendientes de atención">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+                <span class="dash-stat-icon st-ic-abiertos">
+                    <span class="dash-stat-value st-abiertos">{{ kpis.abiertos }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Abiertos</span>
-                    <span class="dash-stat-value st-abiertos">{{ kpis.abiertos }}</span>
                     <span class="dash-stat-hint">en espera de atención</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-progreso" href="{% url 'tickets:lista' %}?estado=en-progreso" title="Solicitudes que ya están siendo atendidas">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                <span class="dash-stat-icon st-ic-progreso">
+                    <span class="dash-stat-value st-progreso">{{ kpis.en_progreso }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">En progreso</span>
-                    <span class="dash-stat-value st-progreso">{{ kpis.en_progreso }}</span>
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-resueltos" href="{% url 'tickets:lista' %}?estado=resuelto" title="Solicitudes resueltas o cerradas">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                <span class="dash-stat-icon st-ic-resueltos">
+                    <span class="dash-stat-value st-resueltos">{{ kpis.resueltos_cerrados }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltos</span>
-                    <span class="dash-stat-value st-resueltos">{{ kpis.resueltos_cerrados }}</span>
                     <span class="dash-stat-hint">{{ kpis.cerrados }} cerrados</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-cerrados" href="{% url 'tickets:lista' %}?estado=cerrado" title="Solicitudes cerradas definitivamente">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-lock"/></svg></span>
+                <span class="dash-stat-icon st-ic-cerrados">
+                    <span class="dash-stat-value st-cerrados">{{ kpis.cerrados }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-lock"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Cerrados</span>
-                    <span class="dash-stat-value st-cerrados">{{ kpis.cerrados }}</span>
                     <span class="dash-stat-hint">finalizados</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-vencidos" href="{% url 'tickets:lista' %}" title="Abiertos o en progreso cuyo ANS ya venció">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+                <span class="dash-stat-icon st-ic-vencidos">
+                    <span class="dash-stat-value st-vencidos">{{ kpis.vencidos }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Vencidos (ANS)</span>
-                    <span class="dash-stat-value st-vencidos">{{ kpis.vencidos }}</span>
                     <span class="dash-stat-hint">fuera de tiempo límite</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-sla-ok" href="{% url 'tickets:lista' %}" title="Tickets en curso dentro del tiempo límite de atención">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-check"/></svg></span>
+                <span class="dash-stat-icon st-ic-sla-ok">
+                    <span class="dash-stat-value st-sla-ok">{{ kpis.sla_ok }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">SLA cumplidos</span>
-                    <span class="dash-stat-value st-sla-ok">{{ kpis.sla_ok }}</span>
                     <span class="dash-stat-hint">{{ kpis.pct_sla }}% en plazo</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-sla-no" href="{% url 'tickets:lista' %}" title="Tickets en curso por fuera del tiempo límite de atención">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+                <span class="dash-stat-icon st-ic-sla-no">
+                    <span class="dash-stat-value st-sla-no">{{ kpis.sla_no }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">SLA incumplidos</span>
-                    <span class="dash-stat-value st-sla-no">{{ kpis.sla_no }}</span>
                     <span class="dash-stat-hint">por fuera del plazo</span>
                 </span>
             </a>
@@ -695,4 +711,4 @@
     if (rows.length) render();
 })();
 </script>
-{% endblock %}
+{% endblock %}

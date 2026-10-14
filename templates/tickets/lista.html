@@ -127,45 +127,57 @@
     <div class="tickets-stats">
         <div class="dash-stat-row dash-stat-row--mesas">
             <a class="dash-stat dash-hov-total {% if not filtro_estado and sv == 'todas' %}is-active{% endif %}" href="{% url 'tickets:lista' %}" title="Todos los tickets">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <span class="dash-stat-icon">
+                    <span class="dash-stat-value">{{ stats.total|default:0 }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Total</span>
-                    <span class="dash-stat-value">{{ stats.total|default:0 }}</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-abiertos {% if filtro_estado == 'abierto' %}is-active{% endif %}" href="?estado=abierto" title="Solo solicitudes abiertas (pendientes de atención)">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+                <span class="dash-stat-icon st-ic-abiertos">
+                    <span class="dash-stat-value st-abiertos">{{ stats.abiertas|default:0 }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Abiertas</span>
-                    <span class="dash-stat-value st-abiertos">{{ stats.abiertas|default:0 }}</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-progreso {% if filtro_estado == 'en-progreso' %}is-active{% endif %}" href="?estado=en-progreso" title="Solo solicitudes en progreso (siendo atendidas)">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                <span class="dash-stat-icon st-ic-progreso">
+                    <span class="dash-stat-value st-progreso">{{ stats.progreso|default:0 }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">En progreso</span>
-                    <span class="dash-stat-value st-progreso">{{ stats.progreso|default:0 }}</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-resueltos {% if filtro_estado == 'resuelto' %}is-active{% endif %}" href="?estado=resuelto" title="Solo solicitudes resueltas">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                <span class="dash-stat-icon st-ic-resueltos">
+                    <span class="dash-stat-value st-resueltos">{{ stats.resueltas|default:0 }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltas</span>
-                    <span class="dash-stat-value st-resueltos">{{ stats.resueltas|default:0 }}</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-cerrados {% if filtro_estado == 'cerrado' %}is-active{% endif %}" href="?estado=cerrado" title="Solo solicitudes cerradas">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-lock"/></svg></span>
+                <span class="dash-stat-icon st-ic-cerrados">
+                    <span class="dash-stat-value st-cerrados">{{ stats.cerradas|default:0 }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-lock"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Cerradas</span>
-                    <span class="dash-stat-value st-cerrados">{{ stats.cerradas|default:0 }}</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-sla-no {% if sv == 'no-asignadas' %}is-active{% endif %}" href="?sv=no-asignadas" title="Solicitudes abiertas sin técnico asignado: admin las asigna, el técnico puede tomarlas">
-                <span class="dash-stat-icon"><svg class="icon"><use href="#i-inbox"/></svg></span>
+                <span class="dash-stat-icon st-ic-sla-no">
+                    <span class="dash-stat-value st-sla-no">{{ stats.sin_asignar|default:0 }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-inbox"/></svg></span>
+                </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Sin asignar</span>
-                    <span class="dash-stat-value st-sla-no">{{ stats.sin_asignar|default:0 }}</span>
                 </span>
             </a>
         </div>

@@ -225,6 +225,14 @@ html[data-theme="dark"] { color-scheme: dark; }
 
 [data-theme="dark"] .dash-stat-icon,
 [data-theme="dark"] .chart-head-icon { background: #2E2620; }
+[data-theme="dark"] .dash-stat-icon.st-ic-abiertos { background: rgba(214,43,31,.28); }
+[data-theme="dark"] .dash-stat-icon.st-ic-progreso { background: rgba(249,115,22,.28); }
+[data-theme="dark"] .dash-stat-icon.st-ic-resueltos,
+[data-theme="dark"] .dash-stat-icon.st-ic-sla-ok { background: rgba(47,125,79,.28); }
+[data-theme="dark"] .dash-stat-icon.st-ic-cerrados { background: #3A322B; }
+[data-theme="dark"] .dash-stat-icon.st-ic-vencidos,
+[data-theme="dark"] .dash-stat-icon.st-ic-sla-no { background: rgba(214,43,31,.3); }
+[data-theme="dark"] .dash-stat-glyph { border-color: #241F1C; }
 
 [data-theme="dark"] .row-menu-btn {
     background: #241D17;

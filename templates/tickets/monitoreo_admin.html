@@ -72,34 +72,42 @@ main.obs-page { font-family: var(--font-corp); }
 
     <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
         <a class="dash-stat dash-hov-usuarios" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-eye"/></svg></span>
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ dash.supervisores|default:0 }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-eye"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Supervisores</span>
-                <span class="dash-stat-value">{{ dash.supervisores|default:0 }}</span>
                 <span class="dash-stat-hint">con zonas creadas</span>
             </span>
         </a>
         <a class="dash-stat dash-hov-zonas" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ dash.zonas|default:0 }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Zonas creadas</span>
-                <span class="dash-stat-value">{{ dash.zonas|default:0 }}</span>
                 <span class="dash-stat-hint">carpetas de seguimiento</span>
             </span>
         </a>
         <a class="dash-stat dash-hov-total" href="#zonas" title="Bajar a las cuentas dentro de cada zona">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-user"/></svg></span>
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ dash.cuentas|default:0 }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-user"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Cuentas en zonas</span>
-                <span class="dash-stat-value">{{ dash.cuentas|default:0 }}</span>
                 <span class="dash-stat-hint">personas vigiladas</span>
             </span>
         </a>
         <a class="dash-stat dash-hov-abiertos" href="#agregar" title="Bajar a agregar cuentas al seguimiento">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <span class="dash-stat-icon st-ic-abiertos">
+                <span class="dash-stat-value st-abiertos">{{ dash.abiertos|default:0 }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Abiertos en zonas</span>
-                <span class="dash-stat-value st-abiertos">{{ dash.abiertos|default:0 }}</span>
                 <span class="dash-stat-hint">tickets por atender</span>
             </span>
         </a>
