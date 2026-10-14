@@ -238,6 +238,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     .ue-m-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
     .ue-m-panel { margin-top: 8px; }
     .ue-m-panel[hidden] { display: none; }
+    .ue-m-dinam { margin-top: 6px; }
     .ue-m-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px dashed var(--line); font-size: 12.5px; }
     .ue-m-k { flex: none; min-width: 84px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); font-weight: 700; }
     .ue-m-v { flex: 1; min-width: 0; }
@@ -680,6 +681,53 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
             f.classList.remove('is-open');
         });
     }
+    /* La ficha completa se reparte: vista actual (estado y permisos) y más
+       info (contacto, stats, tareas). Cada nodo vive en un solo panel. */
+    function distribuirFicha(filita, html) {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        var ficha = [];
+        var mas = [];
+        Array.prototype.slice.call(tmp.childNodes).forEach(function (n) {
+            if (!n || n.nodeType !== 1) { return; }
+            if (n.classList.contains('ue-ficha-grid')) {
+                Array.prototype.slice.call(n.childNodes).forEach(function (caja) {
+                    if (!caja || caja.nodeType !== 1) { return; }
+                    var h4 = caja.querySelector('h4');
+                    var t = h4 ? h4.textContent : '';
+                    if (/Contacto|Disponibilidad|Tareas/.test(t)) { mas.push(caja); }
+                    else { ficha.push(caja); }
+                });
+                return;
+            }
+            if (n.classList.contains('ue-stats-grande')) {
+                ficha.push(n);
+                mas.push(n.cloneNode(true));
+                return;
+            }
+            ficha.push(n);
+        });
+        filita._panelFicha = ficha;
+        filita._panelMas = mas;
+    }
+    function asegurarFicha(filita) {
+        if (!filita._fichaPromise) {
+            filita._fichaPromise = traerFicha(filita).then(function (html) {
+                distribuirFicha(filita, html);
+                return true;
+            });
+        }
+        return filita._fichaPromise;
+    }
+    function pintarPanelMovil(filita, cual, panel, destino) {
+        var nodos = cual === 'ficha' ? (filita._panelFicha || []) : (filita._panelMas || []);
+        destino.innerHTML = '';
+        if (!nodos.length && cual === 'mas') {
+            destino.innerHTML = '<p class="ue-empty" style="padding:14px 0;text-align:center">Sin información adicional.</p>';
+            return;
+        }
+        nodos.forEach(function (n) { destino.appendChild(n); });
+    }
     function toggleMovil(filita, cual) {
         var nombreTd = filita.querySelector('td[data-label="Nombre"]');
         if (!nombreTd) { return; }
@@ -698,19 +746,24 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         panel.hidden = false;
         if (btn) { btn.setAttribute('aria-expanded', 'true'); }
         filita.classList.add('is-open');
-        if (cual === 'ficha') {
-            if (filita._fichaHTML) {
-                panel.innerHTML = filita._fichaHTML;
-            } else {
-                panel.innerHTML = '<div id="ficha-loading"><span class="spin"></span> Cargando ficha…</div>';
-                traerFicha(filita).then(function (html) {
-                    filita._fichaHTML = html;
-                    if (!panel.hidden) { panel.innerHTML = html; }
-                }).catch(function () {
-                    panel.innerHTML = '<p class="ue-empty" style="padding:26px 0;text-align:center">No se pudo cargar la ficha. Intenta de nuevo.</p>';
-                });
+        // En "Más info" lo fijo (rol/acciones) se conserva y lo dinámico
+        // va en su propio contenedor.
+        var destino = panel;
+        if (cual === 'mas') {
+            destino = panel.querySelector('.ue-m-dinam');
+            if (!destino) {
+                destino = document.createElement('div');
+                destino.className = 'ue-m-dinam';
+                panel.appendChild(destino);
             }
         }
+        destino.innerHTML = '<div id="ficha-loading"><span class="spin"></span> Cargando…</div>';
+        asegurarFicha(filita).then(function () {
+            if (panel.hidden || !destino.isConnected) { return; }
+            pintarPanelMovil(filita, cual, panel, destino);
+        }).catch(function () {
+            destino.innerHTML = '<p class="ue-empty" style="padding:26px 0;text-align:center">No se pudo cargar. Intenta de nuevo.</p>';
+        });
         panel.scrollIntoView({ block: 'nearest' });
     }
     /* En móvil cada tarjeta es nombre + 2 desplegables; Rol y Acciones se
@@ -770,7 +823,9 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                     if (p.parentNode) { p.parentNode.removeChild(p); }
                 });
                 filita._mRespaldo = null;
-                filita._fichaHTML = null;
+                filita._fichaPromise = null;
+                filita._panelFicha = null;
+                filita._panelMas = null;
             }
         });
     }
