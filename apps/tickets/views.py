@@ -1715,8 +1715,15 @@ def _ficha_usuario(u):
             punto = cuentas.most_common(1)[0][0]
 
     marca = u.ultima_actividad or u.last_login
+    from urllib.parse import quote
+
+    if u.rol == "usuario":
+        lista_url = reverse("tickets:lista") + "?solicitante_email=" + quote(u.email or "")
+    else:
+        lista_url = reverse("tickets:lista") + f"?tecnico={u.pk}"
     ficha = {
         "stats": stats,
+        "lista_url": lista_url,
         "punto": punto,
         "es_nuevo": bool(u.fecha_creacion and u.fecha_creacion >= hace_7d),
         "en_linea": bool(marca and marca >= hace_10min),

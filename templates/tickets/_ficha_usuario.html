@@ -13,6 +13,24 @@
     <span class="ue-ficha-meta-item">Estado <b class="{% if not u.activo %}meta-off{% endif %}">{% if u.activo %}Activa{% else %}Inactiva{% endif %}</b></span>
     <span class="ue-ficha-meta-item">Estadísticas <b>{{ u.ficha.stats.total|default:0 }}</b> ticket{{ u.ficha.stats.total|pluralize }}</span>
 </div>
+<div class="ue-stats-grande">
+    <a class="ue-stat-link s-ab" href="{{ u.ficha.lista_url }}&estado=abierto" title="Ver tickets abiertos">
+        <span class="ue-stat-ico"><svg class="icon"><use href="#i-inbox"/></svg></span>
+        <span class="ue-stat-tx"><b>{{ u.ficha.stats.abiertos|default:0 }}</b><span>Abiertos</span></span>
+    </a>
+    <a class="ue-stat-link s-pr" href="{{ u.ficha.lista_url }}&estado=en-progreso" title="Ver tickets en progreso">
+        <span class="ue-stat-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
+        <span class="ue-stat-tx"><b>{{ u.ficha.stats.progreso|default:0 }}</b><span>Progreso</span></span>
+    </a>
+    <a class="ue-stat-link s-re" href="{{ u.ficha.lista_url }}&estado=resuelto" title="Ver tickets resueltos">
+        <span class="ue-stat-ico"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+        <span class="ue-stat-tx"><b>{{ u.ficha.stats.resueltos|default:0 }}</b><span>Resueltos</span></span>
+    </a>
+    <a class="ue-stat-link s-ce" href="{{ u.ficha.lista_url }}&estado=cerrado" title="Ver tickets cerrados">
+        <span class="ue-stat-ico"><svg class="icon"><use href="#i-lock"/></svg></span>
+        <span class="ue-stat-tx"><b>{{ u.ficha.stats.cerrados|default:0 }}</b><span>Cerrados</span></span>
+    </a>
+</div>
 <div class="ue-ficha-grid">
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-user"/></svg> Contacto y ubicación</h4>
@@ -27,15 +45,9 @@
     </div>
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-ticket"/></svg> Estadísticas de tickets</h4>
-        <div class="ue-stats">
-            <span class="ue-stat s-ab"><span>Abiertos</span><b>{{ u.ficha.stats.abiertos|default:0 }}</b></span>
-            <span class="ue-stat s-pr"><span>Progreso</span><b>{{ u.ficha.stats.progreso|default:0 }}</b></span>
-            <span class="ue-stat s-re"><span>Resueltos</span><b>{{ u.ficha.stats.resueltos|default:0 }}</b></span>
-            <span class="ue-stat s-ce"><span>Cerrados</span><b>{{ u.ficha.stats.cerrados|default:0 }}</b></span>
-        </div>
-        <p class="ue-empty" style="margin:9px 0 0">Total creados: <b>{{ u.ficha.stats.total|default:0 }}</b></p>
+        <p class="ue-empty" style="margin:0 0 4px">Total creados: <b>{{ u.ficha.stats.total|default:0 }}</b></p>
         <div class="ue-box-actions">
-            <a class="btn btn-outline-light btn-sm" href="{% url 'tickets:lista' %}{% if u.rol == 'usuario' %}?solicitante_email={{ u.email|urlencode }}{% else %}?tecnico={{ u.pk }}{% endif %}">
+            <a class="btn btn-outline-light btn-sm" href="{{ u.ficha.lista_url }}">
                 <svg class="icon icon-sm"><use href="#i-ticket"/></svg> Ver sus tickets
             </a>
         </div>
@@ -50,7 +62,6 @@
             <span class="perm-chip {% if not u.puede_responder_chat %}off{% endif %}">Chatear</span>
         </div>
     </div>
-    {% if u.rol == 'tecnico' or u.rol == 'admin' %}
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-lock"/></svg> Permisos</h4>
         <div class="ue-chips">
@@ -68,10 +79,12 @@
         <p class="ue-empty">Sin ausencias registradas · disponible por defecto.</p>
         {% endfor %}
         <div class="ue-box-actions">
+            {% if u.rol == 'tecnico' or u.rol == 'admin' %}
             <a class="btn btn-outline-light btn-sm" target="_blank" rel="noopener"
                href="{% url 'programador:panel_programador' %}#disponibilidad">
                 <svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel de disponibilidad
             </a>
+            {% endif %}
         </div>
     </div>
     <div class="ue-box">
@@ -88,11 +101,13 @@
         <p class="ue-empty">Sin tareas ni eventos asignados en los próximos 14 días.</p>
         {% endfor %}
         <div class="ue-box-actions">
+            {% if u.rol == 'tecnico' or u.rol == 'admin' %}
             <button type="button" class="btn btn-primary btn-sm"
                     data-user-id="{{ u.pk }}"
                     data-open-modal="#modal-tarea">
                 <svg class="icon icon-sm"><use href="#i-plus"/></svg> Asignar tarea
             </button>
+            {% endif %}
         </div>
     </div>
     <div class="ue-box">
@@ -106,5 +121,4 @@
         <p class="ue-empty">Sin alertas.</p>
         {% endfor %}
     </div>
-    {% endif %}
 </div>

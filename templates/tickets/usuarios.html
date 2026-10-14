@@ -124,6 +124,32 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 .ue-stat.s-re b { color: #059669; }
 .ue-stat.s-ce b { color: #374151; }
 
+/* Indicadores grandes fuera de las cajas: cada uno abre sus tickets. */
+.ue-stats-grande { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 2px 0 14px; }
+.ue-stat-link {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 1px solid #EFE8DA; border-radius: 12px;
+    padding: 10px 12px; text-decoration: none;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.ue-stat-link:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(60,40,10,.12); border-color: #EAD9C3; }
+.ue-stat-ico {
+    width: 38px; height: 38px; border-radius: 12px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.ue-stat-ico .icon { width: 18px; height: 18px; }
+.ue-stat-tx { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.ue-stat-tx b { font-size: 22px; font-weight: 800; }
+.ue-stat-tx span { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); }
+.ue-stat-link.s-ab .ue-stat-ico { background: rgba(249,115,22,.15); color: #C2410C; }
+.ue-stat-link.s-ab .ue-stat-tx b { color: #F97316; }
+.ue-stat-link.s-pr .ue-stat-ico { background: rgba(202,138,4,.15); color: #8a6116; }
+.ue-stat-link.s-pr .ue-stat-tx b { color: #CA8A04; }
+.ue-stat-link.s-re .ue-stat-ico { background: rgba(5,150,105,.12); color: #047857; }
+.ue-stat-link.s-re .ue-stat-tx b { color: #059669; }
+.ue-stat-link.s-ce .ue-stat-ico { background: #EEE9DB; color: #57534E; }
+.ue-stat-link.s-ce .ue-stat-tx b { color: #374151; }
+
 /* Disponibilidad, eventos, alertas */
 .ue-disp, .ue-evento, .ue-alerta { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; font-size: 11.5px; border-bottom: 1px dashed #EFE8DA; }
 .ue-disp:last-child, .ue-evento:last-child, .ue-alerta:last-child { border-bottom: 0; }
@@ -160,7 +186,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     .usuarios-page .search-field { flex: 1 1 100%; }
     .usuarios-page .row-menu-panel { min-width: 200px; }
     .usuarios-page .ue-ficha-grid { grid-template-columns: 1fr; }
-    .usuarios-page .ue-stats { grid-template-columns: repeat(2, 1fr); }
+    .usuarios-page .ue-stats, .usuarios-page .ue-stats-grande { grid-template-columns: repeat(2, 1fr); }
     .usuarios-page .pagination-bar { flex-direction: column; gap: 8px; align-items: center; }
 }
 
