@@ -171,6 +171,31 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     .usuarios-page .row-menu-panel { min-width: 180px; }
     .usuarios-page .ue-ficha-meta { flex-direction: column; align-items: flex-start; }
 }
+
+/* Presencia con color según estado: verde conectado, amarillo activo sin
+   conexión, rojo inactivo. El JS sincroniza la clase en tiempo real. */
+.ue-ficha-presencia.is-green { background: #EAF6EF; border-color: #CBE7D5; color: #205C3B; }
+.ue-ficha-presencia.is-yellow { background: #FFF3DB; border-color: rgba(217,164,54,.4); color: #8a6116; }
+.ue-ficha-presencia.is-red { background: #FDECEA; border-color: rgba(214,43,31,.25); color: #A6281E; }
+
+/* Tipografía de la ficha: legible sin lupa */
+.ue-ficha-presencia { font-size: 12.5px; font-weight: 700; }
+.ue-ficha-meta-item { font-size: 13px; }
+.ue-box h4 { font-size: 12px; }
+.ue-kv { font-size: 13.5px; }
+.ue-kv b { min-width: 96px; }
+.ue-box .ue-empty { font-size: 13px; }
+.ue-disp, .ue-evento, .ue-alerta { font-size: 12.5px; }
+.ue-stat span { font-size: 10.5px; }
+.ue-stat b { font-size: 19px; }
+
+/* La ficha se apila hacia abajo: una tarjeta tras otra, botones a lo ancho */
+@media (max-width: 700px) {
+    .ue-ficha-row > td { padding: 14px 12px 18px; }
+    .ue-kv b { min-width: 0; }
+    .ue-box-actions { flex-direction: column; align-items: stretch; }
+    .ue-box-actions .btn { width: 100%; justify-content: center; }
+}
 </style>
 {% endblock %}
 
@@ -555,11 +580,16 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     var tableScroll = tablaUsuarios ? tablaUsuarios.closest('.table-scroll') : null;
     var filaFichaActual = null;
 
-    /* Rueda sobre la tabla: desplaza las filas cuando hay más de las que caben */
+    /* Rueda sobre la tabla: mueve las filas solo cuando queda recorrido en
+       esa direccion; al llegar al tope o al fondo deja pasar el evento para
+       que la pagina siga haciendo scroll con normalidad. */
     if (tableScroll) {
         tableScroll.addEventListener('wheel', function (e) {
             var box = this;
             if (e.deltaY === 0 || box.scrollHeight <= box.clientHeight + 1) return;
+            var arriba = box.scrollTop <= 0;
+            var abajo = box.scrollTop + box.clientHeight >= box.scrollHeight - 1;
+            if ((e.deltaY < 0 && arriba) || (e.deltaY > 0 && abajo)) return;
             e.preventDefault();
             var step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * box.clientHeight : e.deltaY;
             box.scrollTop += step;
@@ -749,6 +779,13 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                         if (dot) {
                             dot.classList.remove('green', 'yellow', 'red', 'gray');
                             dot.classList.add(st.dot);
+                        }
+                        // La píldora de la ficha ("Activo, pero sin conexión"…)
+                        // tiñe su fondo según el estado, en vivo como el punto.
+                        var pill = dotW.closest('.ue-ficha-presencia');
+                        if (pill) {
+                            pill.classList.remove('is-green', 'is-yellow', 'is-red');
+                            pill.classList.add('is-' + st.dot);
                         }
                         var previo = dotW.dataset.estado || '';
                         if (previo !== st.dot) {

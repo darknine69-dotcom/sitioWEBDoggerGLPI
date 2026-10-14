@@ -115,11 +115,13 @@
         m.classList.remove("open");
         if (!document.querySelector(".modal-overlay.open")) document.body.style.overflow = "";
     }
-    document.querySelectorAll("[data-open-modal]").forEach(function (btn) {
-        btn.addEventListener("click", function (e) {
-            e.preventDefault();
-            openModal(btn.getAttribute("data-open-modal"));
-        });
+    /* Delegado en document: tambien abre los botones que llegan por AJAX
+       (como "Asignar tarea" dentro de la ficha expandida de usuarios). */
+    document.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-open-modal]");
+        if (!btn) return;
+        e.preventDefault();
+        openModal(btn.getAttribute("data-open-modal"));
     });
     document.querySelectorAll(".modal-overlay").forEach(function (m) {
         m.addEventListener("click", function (e) {
