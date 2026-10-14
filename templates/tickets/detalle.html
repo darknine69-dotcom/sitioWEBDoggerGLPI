@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ ticket.codigo }} · Dogger{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
+{% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-ticket"/></svg></span>{% endblock %}
 {% block header_title %}{{ ticket.codigo }}{% endblock %}
 {% block header_desc %}La ficha completa de la solicitud.{% endblock %}
 

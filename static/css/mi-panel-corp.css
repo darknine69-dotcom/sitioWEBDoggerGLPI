@@ -1120,6 +1120,8 @@
     padding: 20px 24px 22px;
     margin-bottom: 18px;
 }
+/* Hero plano (dashboard admin): sin tarjeta ni filo rojo, solo contenido. */
+.dash-hero--plano { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; }
 .dash-hero-kicker {
     display: flex;
     align-items: center;

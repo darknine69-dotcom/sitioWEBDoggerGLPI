@@ -370,7 +370,7 @@
             por el título, o al llegar con Tab, muestra en una burbuja el texto
             que tenía debajo. Cada vista lo escribe en header_desc; si no lo
             escribe, dogger.js quita el símbolo.{% endcomment %}
-            <h1>{% block header_title %}Mesa de Ayuda TI{% endblock %}<span class="title-hint" tabindex="0"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span class="title-hint-bubble">{% block header_desc %}{% endblock %}</span></span></h1>
+            <h1>{% block header_icon %}{% endblock %}{% block header_title %}Mesa de Ayuda TI{% endblock %}<span class="title-hint" tabindex="0"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span class="title-hint-bubble">{% block header_desc %}{% endblock %}</span></span></h1>
         </div>
         {% if not request.user.is_authenticated %}</div>{% endif %}
         <div class="header-actions">

@@ -3,6 +3,7 @@
 {% block title %}Dogger · Panel de Administración{% endblock %}
 {% block body_class %}admin-shell{% endblock %}
 {% block nav_dashboard %}is-active{% endblock %}
+{% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-chart"/></svg></span>{% endblock %}
 {% block header_title %}Panel Administrador{% endblock %}
 {% block header_desc %}Carga de los técnicos, el ANS y las últimas solicitudes.{% endblock %}
 {% block header_actions %}
@@ -53,6 +54,10 @@
 .head-live .badge-envivo { margin-left: 0; }
 .head-live .dash-refresh { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; color: var(--dogger-red); }
 .head-live .dash-refresh:hover { background: rgba(214,43,31,.1); }
+/* En móvil la fecha no se pisa con el título: se parte en dos líneas. */
+@media (max-width: 640px) {
+    .head-live { white-space: normal; flex-wrap: wrap; row-gap: 4px; font-size: 11px; max-width: 100%; }
+}
 
 
 
@@ -204,8 +209,8 @@
 
 {% block content %}
 <main class="page page-corporate">
-    <section class="dash-hero">
-        <div class="dash-stat-row dash-stat-row--mesas dash-stat-row--libre">
+    <section class="dash-hero dash-hero--plano">
+        <div class="dash-stat-row dash-stat-row--mesas">
             <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}">
                 <span class="dash-stat-icon">
                     <span class="dash-stat-value">{{ stats.total|default:0 }}</span>

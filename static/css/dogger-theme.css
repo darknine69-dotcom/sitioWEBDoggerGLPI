@@ -3893,7 +3893,8 @@ a.dash-hov-usuarios.is-active { border-color: var(--dogger-red); }
 a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 /* Aire entre las pestañas y los indicadores del panel técnico. */
 .dash-stat-row--tec { margin-top: 14px; }
-/* Indicadores libres: sin caja ni bordes de color, solo icono y datos. */
+/* Indicadores libres: sin caja ni bordes de color, solo icono y datos.
+   (En desuso en el dashboard: las tarjetas volvieron a su caja.) */
 .dash-stat-row--libre .dash-stat { background: transparent; border-color: transparent; box-shadow: none; }
 .dash-stat-row--libre a.dash-stat:hover { background: transparent; border-color: transparent; box-shadow: none; transform: none; }
 .dash-stat-row--libre a.dash-stat:hover .dash-stat-icon { transform: scale(1.1); }
@@ -7517,6 +7518,13 @@ html[data-navcompact="1"] .sidebar-foot { display: none; }
   line-height: 1.2;
   color: var(--ink);
 }
+/* Icono representativo de cada vista, junto al título. */
+.topbar-titles h1 .h1-ico, .brand-titles h1 .h1-ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 10px; margin-right: 10px;
+  background: rgba(214,43,31,.1); color: var(--dogger-red); vertical-align: -6px;
+}
+.h1-ico .icon { width: 16px; height: 16px; }
 
 /* Símbolo del título: al pasar el mouse por el título (o con el teclado, al
    llegar con Tab) explica para qué sirve la vista. */
