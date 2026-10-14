@@ -182,6 +182,22 @@
         var svg = document.createElementNS(NS, 'svg');
         svg.setAttribute('class', 'funnel');
         svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+        /* Trama diagonal blanca para el realce al hover de cada franja. */
+        var pid = 'dg-hatch-' + widget + (pyramid ? '-p' : '-f');
+        var defs = document.createElementNS(NS, 'defs');
+        var pat = document.createElementNS(NS, 'pattern');
+        pat.setAttribute('id', pid);
+        pat.setAttribute('width', '9'); pat.setAttribute('height', '9');
+        pat.setAttribute('patternUnits', 'userSpaceOnUse');
+        pat.setAttribute('patternTransform', 'rotate(45)');
+        var pl = document.createElementNS(NS, 'line');
+        pl.setAttribute('x1', '0'); pl.setAttribute('y1', '0');
+        pl.setAttribute('x2', '0'); pl.setAttribute('y2', '9');
+        pl.setAttribute('stroke', 'rgba(255,255,255,.55)');
+        pl.setAttribute('stroke-width', '3');
+        pat.appendChild(pl);
+        defs.appendChild(pat);
+        svg.appendChild(defs);
         prs.forEach(function (p, i) {
             var f = p.value / max;
             var fw = pyramid ? (i + 1) / n : (n - i) / n;
@@ -189,6 +205,8 @@
             var x = (W - w) / 2;
             var y = top + i * step;
             var hh = Math.max(10, step - 6);
+            var g = document.createElementNS(NS, 'g');
+            g.setAttribute('class', 'funnel-seg');
             var r = document.createElementNS(NS, 'rect');
             r.setAttribute('x', x); r.setAttribute('y', y);
             r.setAttribute('width', w); r.setAttribute('height', hh);
@@ -196,19 +214,27 @@
             var tt = document.createElementNS(NS, 'title');
             tt.textContent = p.label + ': ' + p.value;
             r.appendChild(tt);
-            svg.appendChild(r);
+            g.appendChild(r);
+            var rayas = document.createElementNS(NS, 'rect');
+            rayas.setAttribute('x', x); rayas.setAttribute('y', y);
+            rayas.setAttribute('width', w); rayas.setAttribute('height', hh);
+            rayas.setAttribute('rx', 6);
+            rayas.setAttribute('fill', 'url(#' + pid + ')');
+            rayas.setAttribute('class', 'funnel-hatch');
+            g.appendChild(rayas);
             var t = document.createElementNS(NS, 'text');
             t.setAttribute('x', W / 2); t.setAttribute('y', y + hh / 2 + 4);
             t.setAttribute('text-anchor', 'middle'); t.setAttribute('fill', '#fff');
             t.setAttribute('font-size', '12'); t.setAttribute('font-weight', 'bold');
             t.textContent = p.value;
-            svg.appendChild(t);
+            g.appendChild(t);
             var lb = document.createElementNS(NS, 'text');
             lb.setAttribute('x', x - 10); lb.setAttribute('y', y + hh / 2 + 4);
             lb.setAttribute('text-anchor', 'end'); lb.setAttribute('fill', '#6B6259');
             lb.setAttribute('font-size', '11');
             lb.textContent = p.label.length > 24 ? p.label.slice(0, 23) + '…' : p.label;
-            svg.appendChild(lb);
+            g.appendChild(lb);
+            svg.appendChild(g);
         });
         stage.appendChild(svg);
     }
@@ -225,6 +251,51 @@
         return ' ' + name + ': ' + v + (pct ? ' (' + pct + '%)' : '');
     }
 
+    /* Realce al hover: el segmento/barra activo se rellena con líneas
+       diagonales blancas sobre su propio color. */
+    var _hatchCache = {};
+    var _hatchCtx = null;
+    function hatchDe(color) {
+        var key = String(color);
+        if (_hatchCache[key]) { return _hatchCache[key]; }
+        if (!_hatchCtx) { _hatchCtx = document.createElement('canvas').getContext('2d'); }
+        var baldosa = document.createElement('canvas');
+        baldosa.width = 10; baldosa.height = 10;
+        var g = baldosa.getContext('2d');
+        g.fillStyle = key;
+        g.fillRect(0, 0, 10, 10);
+        g.strokeStyle = 'rgba(255,255,255,.55)';
+        g.lineWidth = 2.5;
+        g.beginPath();
+        g.moveTo(-3, 13); g.lineTo(13, -3);
+        g.moveTo(-3, 3); g.lineTo(3, -3);
+        g.stroke();
+        var patron = null;
+        try { patron = _hatchCtx.createPattern(baldosa, 'repeat'); } catch (e) { patron = null; }
+        _hatchCache[key] = patron || key;
+        return _hatchCache[key];
+    }
+    /* Fondo según estado: reposo = color plano, hover = diagonal. */
+    function realcePorIndice(base) {
+        return function (c) {
+            var color = base[c.dataIndex];
+            try { return c.active ? hatchDe(color) : color; }
+            catch (e) { return color; }
+        };
+    }
+    function realceFijo(color) {
+        return function (c) {
+            try { return c.active ? hatchDe(color) : color; }
+            catch (e) { return color; }
+        };
+    }
+    function cursorSegunHover(e, els) {
+        var t = (e && e.native) ? e.native.target : null;
+        if (t) { t.style.cursor = (els && els.length) ? 'pointer' : 'default'; }
+    }
+    var ANIM = { duration: 700, easing: 'easeOutQuart' };
+    var TRANS_ACTIVA = { active: { animation: { duration: 250 } } };
+
     function configFor(widget, tipo, conLeyendaPropia) {
         var multi = serieWidget(widget);
         function single() {
@@ -234,13 +305,12 @@
                 labels: prs.map(function (p) { return p.label; }),
                 datasets: [{
                     data: prs.map(function (p) { return p.value; }),
-                    backgroundColor: bg,
+                    backgroundColor: realcePorIndice(bg),
                     borderColor: '#fff', borderWidth: 2, borderRadius: 4,
-                    /* Sin ningún realce al hover: mismos colores, grosores
-                       y offset que en reposo. El segmento queda quieto. */
-                    hoverOffset: 0,
-                    hoverBackgroundColor: bg,
-                    hoverBorderWidth: 2,
+                    /* Al hover el segmento se separa un poco y se raya en
+                       diagonal por dentro (ver realcePorIndice). */
+                    hoverOffset: 6,
+                    hoverBorderWidth: 3,
                     hoverBorderColor: '#fff'
                 }]
             };
@@ -253,24 +323,21 @@
                     return {
                         label: ds.label,
                         data: ds.data,
-                        backgroundColor: ds.color,
+                        backgroundColor: realceFijo(ds.color),
                         borderColor: ds.color,
                         borderWidth: bw,
                         borderRadius: 4,
                         stack: stacked ? 's' : undefined,
                         fill: tipo === 'area' ? 'origin' : false,
                         tension: 0.35,
-                        /* Sin realce al hover: idéntico al reposo. */
-                        hoverBackgroundColor: ds.color,
-                        hoverBorderColor: ds.color,
-                        hoverBorderWidth: bw,
+                        hoverBorderWidth: bw + 1,
                         pointRadius: 3,
-                        pointHoverRadius: 3,
+                        pointHoverRadius: 5,
                         pointBackgroundColor: ds.color,
                         pointBorderColor: ds.color,
                         pointHoverBackgroundColor: ds.color,
-                        pointHoverBorderColor: ds.color,
-                        pointHoverBorderWidth: 1
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 2
                     };
                 })
             };
@@ -294,20 +361,18 @@
                     datasets: [{
                         label: undefined,
                         data: prs.map(function (p) { return p.value; }),
-                        backgroundColor: bg2,
+                        backgroundColor: realcePorIndice(bg2),
                         borderColor: bg2,
                         borderWidth: 1, borderRadius: 4,
                         fill: tipo === 'area' ? 'origin' : false,
                         tension: 0.35,
-                        hoverBackgroundColor: bg2,
-                        hoverBorderColor: bg2,
-                        hoverBorderWidth: 1,
-                        pointRadius: 3, pointHoverRadius: 3,
+                        hoverBorderWidth: 2,
+                        pointRadius: 3, pointHoverRadius: 5,
                         pointBackgroundColor: bg2,
                         pointBorderColor: bg2,
                         pointHoverBackgroundColor: bg2,
-                        pointHoverBorderColor: bg2,
-                        pointHoverBorderWidth: 1
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 2
                     }]
                 };
             }
@@ -316,6 +381,9 @@
                 : { x: scalesX, y: scalesY };
             opts = {
                 responsive: true, maintainAspectRatio: false,
+                animation: ANIM,
+                transitions: TRANS_ACTIVA,
+                onHover: cursorSegunHover,
                 scales: scales,
                 plugins: {
                     legend: { display: false },
@@ -336,12 +404,17 @@
             data = single();
             opts = {
                 responsive: true, maintainAspectRatio: false, cutout: tipo === 'donut' ? '58%' : 0,
+                animation: ANIM,
+                transitions: TRANS_ACTIVA,
+                onHover: cursorSegunHover,
                 plugins: {
                     /* Sin leyenda propia (sla/comp20) se usa la nativa abajo;
                        con leyenda propia se apaga para no duplicar. */
                     legend: conLeyendaPropia
                         ? { display: false }
-                        : { position: 'bottom', labels: { boxWidth: 12, padding: 12 } },
+                        : { position: 'bottom', labels: { boxWidth: 12, padding: 12 },
+                            onHover: function (e) { if (e.native) { e.native.target.style.cursor = 'pointer'; } },
+                            onLeave: function (e) { if (e.native) { e.native.target.style.cursor = 'default'; } } },
                     tooltip: { callbacks: { label: tooltipPct } }
                 }
             };
@@ -428,14 +501,19 @@
         var leg = card.querySelector('[data-pie-legend]');
         if (!leg) return;
         var lis = Array.prototype.slice.call(leg.querySelectorAll('li'));
-        /* Solo se resalta la fila de la leyenda (CSS). Sin bordes,
-           sin acercamientos, sin malla. */
         function setHi(i) {
             lis.forEach(function (li, k) { li.classList.toggle('is-hi', k === i); });
         }
+        /* La fila se subraya (CSS) y el segmento se raya en diagonal. */
+        function resaltar(i) {
+            try {
+                chart.setActiveElements(i < 0 ? [] : [{ datasetIndex: 0, index: i }]);
+                chart.update();
+            } catch (e) { }
+        }
         lis.forEach(function (li, i) {
-            li.addEventListener('mouseenter', function () { setHi(i); });
-            li.addEventListener('mouseleave', function () { setHi(-1); });
+            li.addEventListener('mouseenter', function () { setHi(i); resaltar(i); });
+            li.addEventListener('mouseleave', function () { setHi(-1); resaltar(-1); });
         });
     }
 

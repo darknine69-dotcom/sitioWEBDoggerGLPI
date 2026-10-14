@@ -501,6 +501,49 @@
         if (sel.tipo) { inp.value = sel.nombre; renderChip(); }
     })();
 
+    // ---- Realce diagonal al hover (igual que los gráficos del panel) ----
+    var _rptHatchCache = {};
+    var _rptHatchCtx = null;
+    function rptHatch(color) {
+        var key = String(color);
+        if (_rptHatchCache[key]) { return _rptHatchCache[key]; }
+        if (!_rptHatchCtx) { _rptHatchCtx = document.createElement("canvas").getContext("2d"); }
+        var baldosa = document.createElement("canvas");
+        baldosa.width = 10; baldosa.height = 10;
+        var g = baldosa.getContext("2d");
+        g.fillStyle = key;
+        g.fillRect(0, 0, 10, 10);
+        g.strokeStyle = "rgba(255,255,255,.55)";
+        g.lineWidth = 2.5;
+        g.beginPath();
+        g.moveTo(-3, 13); g.lineTo(13, -3);
+        g.moveTo(-3, 3); g.lineTo(3, -3);
+        g.stroke();
+        var patron = null;
+        try { patron = _rptHatchCtx.createPattern(baldosa, "repeat"); } catch (e) { patron = null; }
+        _rptHatchCache[key] = patron || key;
+        return _rptHatchCache[key];
+    }
+    function rptRealce(color) {
+        return function (c) {
+            try { return c.active ? rptHatch(color) : color; }
+            catch (e) { return color; }
+        };
+    }
+    function rptRealceLista(base) {
+        return function (c) {
+            var color = base[c.dataIndex];
+            try { return c.active ? rptHatch(color) : color; }
+            catch (e) { return color; }
+        };
+    }
+    var RPT_ANIM = { duration: 700, easing: "easeOutQuart" };
+    var RPT_TRANS = { active: { animation: { duration: 250 } } };
+    function rptCursor(e, els) {
+        var t = (e && e.native) ? e.native.target : null;
+        if (t) { t.style.cursor = (els && els.length) ? "pointer" : "default"; }
+    }
+
     // ---- Gráfico de barras: comparativo por técnico ----
     var tec = JSON.parse('{{ tec_chart_json|escapejs }}');
     var tecBox = document.getElementById("tecChartBox");
@@ -511,13 +554,16 @@
             data: {
                 labels: tec.labels,
                 datasets: [
-                    { label: "Asignados", data: tec.asignados, backgroundColor: "rgba(214,43,31,.85)", hoverBackgroundColor: "rgba(214,43,31,.85)", hoverBorderWidth: 0, borderRadius: 4, barPercentage: .7 },
-                    { label: "Resueltos", data: tec.resueltos, backgroundColor: "rgba(47,125,79,.85)", hoverBackgroundColor: "rgba(47,125,79,.85)", hoverBorderWidth: 0, borderRadius: 4, barPercentage: .7 }
+                    { label: "Asignados", data: tec.asignados, backgroundColor: rptRealce("rgba(214,43,31,.85)"), borderRadius: 4, barPercentage: .7, hoverBorderWidth: 1 },
+                    { label: "Resueltos", data: tec.resueltos, backgroundColor: rptRealce("rgba(47,125,79,.85)"), borderRadius: 4, barPercentage: .7, hoverBorderWidth: 1 }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: RPT_ANIM,
+                transitions: RPT_TRANS,
+                onHover: rptCursor,
                 indexAxis: tec.labels.length > 6 ? "y" : "x",
                 plugins: {
                     legend: { position: "top", labels: { boxWidth: 10, font: { size: 11 } } },
@@ -556,11 +602,14 @@
             type: "doughnut",
             data: {
                 labels: cat.labels,
-                datasets: [{ data: cat.data, backgroundColor: cat.colores, hoverBackgroundColor: cat.colores, borderColor: "#fff", hoverBorderColor: "#fff", borderWidth: 2, hoverBorderWidth: 2, hoverOffset: 0 }]
+                datasets: [{ data: cat.data, backgroundColor: rptRealceLista(cat.colores), borderColor: "#fff", borderWidth: 2, hoverBorderWidth: 3, hoverOffset: 8 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: RPT_ANIM,
+                transitions: RPT_TRANS,
+                onHover: rptCursor,
                 cutout: "62%",
                 plugins: {
                     legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 }, padding: 12 } },
