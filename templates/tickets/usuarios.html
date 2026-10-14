@@ -249,6 +249,30 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 @media (min-width: 641px) {
     .ue-m-toggles, .ue-m-panel { display: none !important; }
 }
+
+/* Móvil compacto: sin anchos mínimos que desborden ni scroll diagonal. */
+@media (max-width: 640px) {
+    .usuarios-page .table-card { margin: 0; border: 0; background: transparent; box-shadow: none; border-radius: 0; }
+    .usuarios-page table.data-table { min-width: 0; }
+    .usuarios-page .table-scroll { padding: 0; }
+    table.data-table.cards-mobile tbody { gap: 10px; }
+    table.data-table.cards-mobile tbody td { padding: 8px 10px; }
+    .usuarios-page .ue-stats-grande { gap: 8px; margin-bottom: 10px; }
+    .ue-stat-link { padding: 8px 10px; gap: 8px; }
+    .ue-stat-ico { width: 32px; height: 32px; border-radius: 10px; }
+    .ue-stat-ico .icon { width: 15px; height: 15px; }
+    .ue-stat-tx b { font-size: 19px; }
+    .ue-stat-tx span { font-size: 9.5px; }
+    .ue-m-btn { padding: 8px 6px; font-size: 11.5px; }
+    .ue-m-toggles { margin-top: 8px; }
+    .ue-ficha-meta-item { font-size: 12px; padding: 3px 9px; }
+    .ue-ficha-presencia { font-size: 11.5px; }
+    .live-head-item { font-size: 11px; padding: 4px 9px; }
+    .tab-pill { font-size: 11.5px; padding: 6px 9px; }
+    .usuarios-page .table-toolbar { gap: 6px; }
+    .usuarios-page .pagination-bar { gap: 6px; }
+    .page-pill { padding: 6px 10px; font-size: 12px; }
+}
 </style>
 {% endblock %}
 
