@@ -6,11 +6,11 @@
 
 /* ---------- Hero + KPIs ---------- */
 .corp-hero {
-    background: linear-gradient(135deg, #F6FBF6 0%, #EAF5EA 55%, #DCEFDC 100%);
-    border: 1px solid #C8E6C9;
+    background: linear-gradient(135deg, #241F1C 0%, #4A0F0A 55%, #7E130C 100%);
+    border: 1px solid #3A2A24;
     border-radius: var(--radius);
     padding: 28px 30px 22px;
-    color: #212121;
+    color: #FFF7EA;
     box-shadow: var(--shadow-card);
     margin-bottom: 22px;
     position: relative;
@@ -24,7 +24,7 @@
     width: 220px;
     height: 220px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(46,125,50,.08), transparent 70%);
+    background: radial-gradient(circle, rgba(255,199,44,.16), transparent 70%);
     pointer-events: none;
 }
 .corp-hero::before {
@@ -35,7 +35,7 @@
     width: 180px;
     height: 180px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(211,47,47,.08), transparent 70%);
+    background: radial-gradient(circle, rgba(214,43,31,.28), transparent 70%);
     pointer-events: none;
 }
 .corp-hero-inner {
@@ -54,7 +54,7 @@
     font-size: 12.5px;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: #212121;
+    color: #FFC72C;
     font-weight: 700;
 }
 .corp-dot {
@@ -68,9 +68,13 @@
     50%  { box-shadow: 0 0 0 7px rgba(211,47,47,0); }
     100% { box-shadow: 0 0 0 0 rgba(211,47,47,0); }
 }
-.corp-hero-text h2 { margin: 8px 0 6px; font-size: 26px; color: #111; }
-.corp-hero-text p { margin: 0; color: #222; max-width: 620px; }
-.corp-actions { display: flex; gap: 8px; }
+.corp-hero-text h2 { margin: 8px 0 6px; font-size: 26px; color: #fff; }
+.corp-hero-text p { margin: 0; color: rgba(255,247,234,.78); max-width: 620px; }
+.corp-hero-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+.corp-hero-actions .btn-ghost { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.3); color: #fff; }
+.corp-hero-actions .btn-ghost:hover { background: rgba(255,255,255,.2); color: #fff; }
+.btn-nuevo { background: var(--dogger-red); border: 1px solid var(--dogger-red); color: #fff; font-weight: 800; box-shadow: 0 6px 18px rgba(214,43,31,.45); }
+.btn-nuevo:hover { background: var(--dogger-red-dark); border-color: var(--dogger-red-dark); color: #fff; transform: translateY(-1px); }
 
 .corp-kpis {
     display: grid;
@@ -84,17 +88,38 @@
     border-radius: 14px;
     padding: 16px 18px;
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 13px;
     transition: transform .15s ease, background .15s ease, border-color .15s ease;
     backdrop-filter: blur(2px);
 }
+.corp-kpi-ico {
+    position: relative; flex: none;
+    width: 52px; height: 52px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #E8E4DA; color: #111;
+    transition: transform .18s ease;
+}
+.corp-kpi:hover .corp-kpi-ico { transform: scale(1.07); }
+.corp-kpi-glyph {
+    position: absolute; right: -3px; bottom: -3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; background: #374151; border: 2px solid #FBFAF7;
+}
+.corp-kpi-glyph .icon { width: 10px; height: 10px; }
+.st-ic-abiertos .corp-kpi-glyph { background: #C6281E; }
+.st-ic-progreso .corp-kpi-glyph { background: #C2410C; }
+.st-ic-resueltos .corp-kpi-glyph { background: #16A34A; }
 .corp-kpi:hover { background: rgba(255,255,255,.72); border-color: rgba(46,125,50,.55); transform: translateY(-2px); }
 /* Mismo lenguaje del dashboard: cada indicador toma su color al pasar el mouse. */
 .corp-kpi.corp-hov-total:hover { border-color: #374151; background: rgba(55,65,81,.07); }
 .corp-kpi.corp-hov-abiertos:hover { border-color: #F97316; background: rgba(249,115,22,.09); }
 .corp-kpi.corp-hov-progreso:hover { border-color: #CA8A04; background: rgba(202,138,4,.11); }
 .corp-kpi.corp-hov-resueltos:hover { border-color: #059669; background: rgba(5,150,105,.09); }
-.corp-kpi-num { display: block; font-size: 30px; font-weight: 800; line-height: 1; font-family: var(--font-display); color: #111; }
-.corp-kpi-label { display: block; margin-top: 6px; font-size: 12px; color: #111; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.corp-kpi-num { display: block; font-size: 19px; font-weight: 800; line-height: 1; font-family: var(--font-display); color: #111; }
+.corp-kpi-label { display: block; font-size: 12px; color: #111; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
 .corp-kpi-total { color: #111; }
 .corp-kpi-red { color: #D32F2F; }
 .corp-kpi-yellow { color: #F9A825; }
@@ -155,6 +180,16 @@
 }
 .tickets-table tbody td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; font-size: 13px; }
 .tickets-table tbody tr:hover { background: rgba(251,192,45,.07); }
+/* Color por estado: filo a la izquierda de cada fila. */
+.tickets-table tbody tr.ticket-row > td:first-child { box-shadow: inset 4px 0 0 transparent; }
+.tickets-table tbody tr.ticket-row[data-estado="abierto"] > td:first-child { box-shadow: inset 4px 0 0 #2563EB; }
+.tickets-table tbody tr.ticket-row[data-estado="en-progreso"] > td:first-child { box-shadow: inset 4px 0 0 #B7791F; }
+.tickets-table tbody tr.ticket-row[data-estado="resuelto"] > td:first-child { box-shadow: inset 4px 0 0 #2F7D4F; }
+.tickets-table tbody tr.ticket-row[data-estado="cerrado"] > td:first-child { box-shadow: inset 4px 0 0 #8A8A86; }
+/* ANS vencido: la fila se tiñe suave para que salte a la vista. */
+.tickets-table tbody tr.ticket-row:has(.ans-vencido) { background: rgba(214,43,31,.05); }
+.tickets-table tbody tr.ticket-row:has(.ans-vencido):hover { background: rgba(214,43,31,.09); }
+.tickets-table tbody tr.ticket-row:has(.ans-vencido) .td-code .stub-code { color: #C6281E; }
 .tickets-table .th-actions { text-align: right; }
 .td-title .row-title { font-weight: 600; color: var(--ink); display: block; line-height: 1.35; font-size: 13px; }
 .td-title .row-tech { font-size: 13px; color: var(--ink-muted); display: block; margin-top: 2px; display: flex; align-items: center; gap: 5px; }

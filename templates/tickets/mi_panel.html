@@ -91,6 +91,9 @@
                 <p>Gestiona tus solicitudes de soporte, consulta sus respuestas y levanta nuevos pedidos desde un solo lugar.</p>
             </div>
             <div class="corp-hero-actions">
+                <a href="{% url 'tickets:crear_ticket' %}" class="btn btn-nuevo">
+                    <svg class="icon icon-sm"><use href="#i-plus"/></svg> Nueva solicitud
+                </a>
                 <button type="button" class="btn btn-ghost" data-open-modal="#modalTecnicos">
                     <svg class="icon icon-sm"><use href="#i-headset"/></svg> Técnicos activos
                     <span class="tec-btn-count">{{ tecnicos_activos|length }}</span>
@@ -100,19 +103,19 @@
 
         <div class="corp-kpis">
             <a class="corp-kpi corp-hov-total" href="?">
-                <span class="corp-kpi-num corp-kpi-total">{{ stats.total|default:0 }}</span>
+                <span class="corp-kpi-ico"><span class="corp-kpi-num corp-kpi-total">{{ stats.total|default:0 }}</span><span class="corp-kpi-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span></span>
                 <span class="corp-kpi-label">Solicitudes</span>
             </a>
             <a class="corp-kpi corp-hov-abiertos" href="?estado=abierto">
-                <span class="corp-kpi-num corp-kpi-red">{{ stats.abiertos|default:0 }}</span>
+                <span class="corp-kpi-ico st-ic-abiertos"><span class="corp-kpi-num corp-kpi-red">{{ stats.abiertos|default:0 }}</span><span class="corp-kpi-glyph"><svg class="icon"><use href="#i-alert"/></svg></span></span>
                 <span class="corp-kpi-label">Abiertas</span>
             </a>
             <a class="corp-kpi corp-hov-progreso" href="?estado=en-progreso">
-                <span class="corp-kpi-num corp-kpi-yellow">{{ stats.en_progreso|default:0 }}</span>
+                <span class="corp-kpi-ico st-ic-progreso"><span class="corp-kpi-num corp-kpi-yellow">{{ stats.en_progreso|default:0 }}</span><span class="corp-kpi-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span></span>
                 <span class="corp-kpi-label">En progreso</span>
             </a>
             <a class="corp-kpi corp-hov-resueltos" href="?estado=resuelto">
-                <span class="corp-kpi-num corp-kpi-green">{{ stats.resueltos|default:0 }}</span>
+                <span class="corp-kpi-ico st-ic-resueltos"><span class="corp-kpi-num corp-kpi-green">{{ stats.resueltos|default:0 }}</span><span class="corp-kpi-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span></span>
                 <span class="corp-kpi-label">Resueltas</span>
             </a>
         </div>
