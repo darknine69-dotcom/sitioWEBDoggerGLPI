@@ -6467,6 +6467,12 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
     table.data-table.cards-mobile tbody td.cell-actions { justify-content: flex-end; flex-wrap: wrap; row-gap: 6px; }
     table.data-table.cards-mobile tbody td.cell-actions::before { width: 100%; }
 
+    /* En móvil las tarjetas van a lo largo de la página: sin caja con alto
+       fijo ni scroll secuestrado, el dedo sigue bajando con normalidad. */
+    .tabla-scroll-seis { max-height: none; overflow: visible; overscroll-behavior: auto; }
+    .table-card .table-scroll,
+    .tickets-table-wrap { overflow: visible; overscroll-behavior: auto; }
+
     /* Ficha expandida dentro de la tarjeta: sin etiqueta fantasma, a lo ancho. */
     table.data-table.cards-mobile tbody tr.ue-ficha-row { padding: 0; }
     table.data-table.cards-mobile tbody tr.ue-ficha-row > td { display: block; padding: 14px 12px 16px; }
