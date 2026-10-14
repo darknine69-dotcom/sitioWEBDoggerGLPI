@@ -337,8 +337,13 @@
     try {
         var pos = JSON.parse(localStorage.getItem("dogger:chat:pos") || "null");
         if (pos && typeof pos.left === "number" && typeof pos.top === "number") {
-            fab.style.left = pos.left + "px";
-            fab.style.top = pos.top + "px";
+            /* La ventana pudo cambiar de tamaño o de monitor desde que se
+               guardo la posicion: se limita a lo visible para que el boton
+               nunca quede fuera de la pantalla. */
+            var maxL = Math.max(8, window.innerWidth - 66);
+            var maxT = Math.max(8, window.innerHeight - 66);
+            fab.style.left = Math.min(Math.max(8, pos.left), maxL) + "px";
+            fab.style.top = Math.min(Math.max(8, pos.top), maxT) + "px";
             fab.style.right = "auto";
             fab.style.bottom = "auto";
         } else if (document.querySelector(".corp-fab")) {
