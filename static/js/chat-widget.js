@@ -7,6 +7,7 @@
     if (!urls || !fab || !win) { return; }
 
     var sel = document.getElementById("swTicket");
+    var ticketUser = document.getElementById("swTicketUser");
     var hilo = document.getElementById("swThread");
     var texto = document.getElementById("swTexto");
     var enviar = document.getElementById("swEnviar");
@@ -269,12 +270,19 @@
                     op.value = t.pk;
                     op.textContent = t.codigo + " · " + t.titulo + " (" + t.estado_display + ")";
                     sel.appendChild(op);
-                    if (i === 0) { ticketPk = t.pk; }
+                    if (i === 0) {
+                        ticketPk = t.pk;
+                        if (ticketUser) {
+                            ticketUser.textContent = t.solicitante_nombre ? "De: " + t.solicitante_nombre : "";
+                            ticketUser.style.display = t.solicitante_nombre ? "inline" : "none";
+                        }
+                    }
                 });
                 if (!d.tickets || !d.tickets.length) {
                     var op0 = document.createElement("option");
                     op0.textContent = "Sin tickets para chatear";
                     sel.appendChild(op0);
+                    if (ticketUser) ticketUser.style.display = "none";
                 }
                 cargar(0);
             })

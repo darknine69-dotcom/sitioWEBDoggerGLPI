@@ -250,7 +250,7 @@ a { color: inherit; text-decoration: none; }
     padding: 28px 30px;
     border: 1px solid rgba(36,31,28,0.10);
     background: rgba(255,255,255,0.30);
-    border-radius: 18px;
+    border-radius: 16px;
 }
 
 .portal-logo-wrap {
@@ -258,7 +258,7 @@ a { color: inherit; text-decoration: none; }
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, rgba(214,43,31,.10), rgba(255,199,44,.10));
-    border-radius: 18px;
+    border-radius: 16px;
     min-height: 150px;
 }
 
@@ -2223,7 +2223,7 @@ select:focus-visible, textarea:focus-visible {
     background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(248,250,255,.96));
     border: 1px solid rgba(29,53,87,.12);
     border-top: 4px solid rgba(29,53,87,.9);
-    border-radius: 18px;
+    border-radius: 16px;
     box-shadow: 0 10px 24px rgba(29,53,87,.08);
     padding: 20px 18px 14px;
     display: flex;
@@ -3204,7 +3204,7 @@ select:focus-visible, textarea:focus-visible {
 .sw-fab:active { cursor: grabbing; }
 .sw-fab .icon { width: 26px; height: 26px; pointer-events: none; }
 .sw-fab-count { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; border-radius: 999px; background: #111; color: #fff; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; pointer-events: none; }
-.sw-win { position: fixed; right: 20px; bottom: 92px; z-index: 9400; width: 374px; max-width: calc(100vw - 32px); height: 540px; max-height: calc(100vh - 120px); display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-pop); font-family: var(--font-corp); opacity: 0; transform: translateY(14px) scale(.97); transform-origin: bottom right; pointer-events: none; transition: opacity .22s ease, transform .22s ease; }
+.sw-win { position: fixed; right: 20px; bottom: 92px; z-index: 9400; width: 374px; max-width: calc(100vw - 32px); height: 540px; max-height: calc(100vh - 120px); display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-pop); font-family: var(--font-corp); opacity: 0; transform: translateY(14px) scale(.97); transform-origin: bottom right; pointer-events: none; transition: opacity .22s ease, transform .22s ease; }
 .sw-win[data-open] { opacity: 1; transform: none; pointer-events: auto; }
 .sw-head { background: linear-gradient(135deg, var(--dogger-red), var(--dogger-red-dark)); color: #fff; padding: 13px 14px 11px; flex: none; }
 /* El chat coge el color de personalización de la página, como el menú. */
@@ -3220,6 +3220,8 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .sw-head-x:hover { background: rgba(255,255,255,.28); }
 .sw-ticket { margin-top: 9px; width: 100%; font: inherit; font-size: 12.5px; font-weight: 600; color: #fff; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); border-radius: 9px; padding: 7px 9px; }
 .sw-ticket option { color: #111; }
+.sw-select-wrap { position: relative; }
+.sw-ticket-user { display: inline-block; margin-top: 4px; font-size: 11px; color: rgba(255,255,255,.85); font-style: italic; }
 /* Selector de modo del chat: compacto, Soporte o Corporativo (sala staff). */
 .sw-modos { display: inline-flex; gap: 2px; margin-top: 8px; padding: 2px; border-radius: 999px; background: rgba(0,0,0,.18); }
 .sw-modo {
@@ -4338,7 +4340,7 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
     background: rgba(255,255,255,.10);
     border: 1px solid rgba(255,255,255,.22);
     backdrop-filter: blur(6px);
-    border-radius: 18px;
+    border-radius: 16px;
     padding: 26px;
     display: flex;
     flex-direction: column;
@@ -6513,15 +6515,14 @@ html[style*="--sb-accent"] .notif-head {
     left: 50%;
     margin: 0;
     transform: translate(-50%, -50%);
-    width: min(360px, calc(100vw - 32px));
+    width: min(320px, calc(100vw - 32px));
     max-width: none;
-    /* Alto según el contenido, con tope: compacta, ya no un cuadrado grande. */
     height: auto;
     max-height: calc(100vh - 48px);
     overflow: auto;
-    padding: 26px 26px 22px;
+    padding: 22px 22px 18px;
     border: 1px solid rgba(15, 23, 42, .10);
-    border-radius: 18px;
+    border-radius: 16px;
     background: #FFFFFF;
     color: var(--ink);
     box-shadow: 0 26px 60px rgba(15, 23, 42, .22);

@@ -137,6 +137,7 @@ def chat_tickets(request):
         "ok": True,
         "tickets": [
             {"pk": t.pk, "codigo": t.codigo, "titulo": t.titulo,
+             "solicitante_nombre": t.solicitante_nombre or "",
              "estado": t.estado, "estado_display": t.get_estado_display()}
             for t in tickets
         ],

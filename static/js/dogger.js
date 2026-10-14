@@ -1171,6 +1171,13 @@
         dlg.querySelectorAll("a").forEach(function (a) {
             a.addEventListener("click", function () { pedir(baseDe("data-url-mostrada", n.id)); });
         });
+        /* Asegurar que el botón OK sea visible y funcional */
+        var okBtn = dlg.querySelector(".notif-popup-ok");
+        if (okBtn) {
+            okBtn.style.display = "inline-flex";
+            okBtn.style.visibility = "visible";
+            okBtn.style.opacity = "1";
+        }
     }
 
     function cerrarEmergenteViva(dlg) {

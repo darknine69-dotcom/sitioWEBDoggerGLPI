@@ -20,7 +20,10 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
         </div>
         <select class="sw-ticket" id="swColega" aria-label="Hablar con" hidden></select>
         {% endif %}
-        <select class="sw-ticket" id="swTicket" aria-label="Conversación"></select>
+        <div class="sw-select-wrap">
+            <select class="sw-ticket" id="swTicket" aria-label="Conversación"></select>
+            <span class="sw-ticket-user" id="swTicketUser"></span>
+        </div>
     </div>
     <div class="sw-thread" id="swThread"></div>
     <div class="sw-composer">
