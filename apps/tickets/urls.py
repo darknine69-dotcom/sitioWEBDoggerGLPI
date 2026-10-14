@@ -19,6 +19,7 @@ urlpatterns = [
     path("tickets/nuevo/", views.crear_ticket, name="crear_ticket"),
     path("descartar-ticket-aviso/", views.descartar_ticket_aviso, name="descartar_ticket_aviso"),
     path("mi-panel/exportar/", views.exportar_mis_tickets, name="exportar_mis_tickets"),
+    path("mi-panel/presionar/<int:pk>/", views.mi_presionar_tecnico, name="mi_presionar"),
     path("mi-panel/tickets/<int:pk>/", views.mi_ticket, name="mi_ticket"),
     path("mi-panel/tickets/<int:pk>/editar/", views.editar_mi_ticket, name="mi_editar"),
     path("mi-panel/tickets/<int:pk>/reenviar-glpi/", views.reenviar_glpi, name="mi_reenviar_glpi"),

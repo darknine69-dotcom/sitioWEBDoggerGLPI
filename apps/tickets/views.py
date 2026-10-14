@@ -2222,6 +2222,105 @@ def _sin_revisar(usuario):
         return 0
 
 
+def _avatar_url_simple(usuario):
+    try:
+        if usuario and getattr(usuario, "avatar", None):
+            return usuario.avatar.url
+    except Exception:  # noqa: BLE001 - sin foto no se rompe la vista
+        pass
+    return ""
+
+
+def _mi_zona_supervisor(user):
+    """Zona que gobierna al usuario y supervisor que le toca.
+
+    Se mira por dos caminos: el punto de sus tickets (con los supervisores
+    que el administrador asignó a ese punto) y los observadores que lo
+    tienen en su lista de seguimiento.
+    """
+    from apps.tickets.models import ElementoMiLista, ObservadorPunto, Punto
+
+    email = (getattr(user, "email", "") or "").strip()
+    puntos_nombres = []
+    vistos = set()
+    if email:
+        for p in (
+            Ticket.objects.filter(solicitante_email__iexact=email)
+            .exclude(solicitante_punto__isnull=True)
+            .exclude(solicitante_punto="")
+            .values_list("solicitante_punto", flat=True)
+            .distinct()[:10]
+        ):
+            if p and p not in vistos:
+                vistos.add(p)
+                puntos_nombres.append(p)
+    ubicacion = (getattr(user, "ubicacion", "") or "").strip()
+    if ubicacion and ubicacion not in vistos:
+        puntos_nombres.append(ubicacion)
+    zonas = []
+    for nombre in puntos_nombres:
+        punto = Punto.objects.filter(nombre__iexact=nombre).first()
+        sups = []
+        if punto:
+            for op in ObservadorPunto.objects.filter(punto=punto).select_related("observador")[:10]:
+                o = op.observador
+                sups.append({
+                    "nombre": o.nombre or o.email,
+                    "en_linea": bool(getattr(o, "en_linea", False)),
+                    "avatar": _avatar_url_simple(o),
+                })
+        zonas.append({"nombre": nombre, "supervisores": sups})
+    supervisores = []
+    vistos_obs = set()
+    if email:
+        for el in ElementoMiLista.objects.filter(
+            tipo=ElementoMiLista.TIPO_USUARIO, usuario_email__iexact=email
+        ).select_related("observador", "zona")[:20]:
+            o = el.observador
+            if o.pk in vistos_obs:
+                continue
+            vistos_obs.add(o.pk)
+            supervisores.append({
+                "nombre": o.nombre or o.email,
+                "zona": el.zona.nombre if el.zona else "",
+                "en_linea": bool(getattr(o, "en_linea", False)),
+                "avatar": _avatar_url_simple(o),
+            })
+    return {"zonas": zonas, "supervisores": supervisores}
+
+
+@login_required
+@require_POST
+def mi_presionar_tecnico(request, pk):
+    """El usuario le escribe al técnico de SU ticket para que lo atienda.
+
+    Guarda el mensaje en el hilo (visible, no interno) y le avisa al
+    técnico por campana y correo. Solo tickets propios abiertos o en
+    progreso con técnico asignado.
+    """
+    ticket = get_object_or_404(Ticket, pk=pk)
+    u = request.user
+    if (ticket.solicitante_email or "").lower() != (u.email or "").lower():
+        raise Http404
+    if ticket.estado not in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+        messages.error(request, "Solo puedes presionar tickets abiertos o en progreso.")
+        return redirect("tickets:mi_panel")
+    if not ticket.tecnico_asignado_id:
+        messages.error(request, "Tu ticket aún no tiene técnico asignado.")
+        return redirect("tickets:mi_panel")
+    mensaje = (request.POST.get("mensaje") or "").strip()[:500]
+    if not mensaje:
+        messages.error(request, "Escribe el mensaje para el técnico.")
+        return redirect("tickets:mi_panel")
+    TicketComentario.objects.create(
+        ticket=ticket, usuario=u, autor_nombre=u.nombre,
+        comentario=mensaje, es_interno=False,
+    )
+    notificar_comentario(ticket, u.nombre, mensaje, actor=u)
+    messages.success(request, f"Mensaje enviado al técnico del {ticket.codigo}.")
+    return redirect("tickets:mi_panel")
+
+
 @user_required
 def mi_panel(request):
     initial = {
@@ -2324,6 +2423,13 @@ def mi_panel(request):
             "cat_sugerencias_json": json.dumps(claves_para_json(), ensure_ascii=False),
             "puede_calificar_tecnicos": puede_calificar(request.user),
             "tecnicos_activos": mapeados_del_tecnico(request.user),
+            "mi_zona": _mi_zona_supervisor(request.user),
+            "mis_abiertos": list(
+                Ticket.objects.select_related("tecnico_asignado").filter(
+                    solicitante_email=request.user.email,
+                    estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
+                ).order_by("-fecha_creacion")[:10]
+            ),
             **dashboard_context,
         },
     )
