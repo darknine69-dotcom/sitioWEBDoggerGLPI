@@ -3948,10 +3948,18 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 .pivot-pop-list::-webkit-scrollbar { width: 0; }
 .pivot-pop-list:hover::-webkit-scrollbar { width: 5px; }
 .pivot-pop-list:hover::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
-.pivot-pop-ticket { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink); text-decoration: none; padding: 3px 5px; border-radius: 7px; }
+.pivot-pop-ticket { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--ink); text-decoration: none; padding: 4px 6px; border-radius: 8px; }
 .pivot-pop-ticket:hover { background: var(--dogger-cream); }
-.pivot-pop-code { font-family: var(--font-mono); font-size: 11px; font-weight: 800; color: var(--dogger-red); flex: none; }
-.pivot-pop-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); }
+.pivot-pop-ico { flex: none; width: 24px; height: 24px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; transition: transform .15s ease; }
+.pivot-pop-ico .icon { width: 13px; height: 13px; }
+.pivot-pop-ticket:hover .pivot-pop-ico { transform: scale(1.1); }
+.pivot-pop-ico.gr-v { background: rgba(214,43,31,.12); color: #D62B1F; }
+.pivot-pop-ico.gr-abierto { background: rgba(37,99,235,.12); color: #2563EB; }
+.pivot-pop-ico.gr-en-progreso { background: rgba(183,121,31,.16); color: #B7791F; }
+.pivot-pop-ico.gr-resuelto { background: rgba(47,125,79,.14); color: #2F7D4F; }
+.pivot-pop-ico.gr-cerrado { background: #EEE9DB; color: #6B6259; }
+.pivot-pop-code { font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; color: var(--dogger-red); flex: none; }
+.pivot-pop-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); font-size: 11px; }
 .pivot-pop-pill { flex: none; font-size: 9.5px; font-weight: 800; border-radius: 999px; padding: 1px 6px; }
 .pivot-pop-pill.gr-v { background: rgba(214,43,31,.14); color: #D62B1F; }
 .pivot-pop-pill.gr-abierto { background: rgba(37,99,235,.12); color: #2563EB; }

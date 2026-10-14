@@ -689,7 +689,10 @@
                 var pill = t.vencido
                     ? '<span class="pivot-pop-pill gr-v">Vencido</span>'
                     : '<span class="pivot-pop-pill gr-' + t.estado + '">' + et + '</span>';
+                var ico = t.vencido ? 'i-alert' : 'i-ticket';
+                var cls = t.vencido ? 'gr-v' : 'gr-' + t.estado;
                 return '<a class="pivot-pop-ticket" href="' + base.replace('0', t.id) + '">' +
+                    '<span class="pivot-pop-ico ' + cls + '"><svg class="icon"><use href="#' + ico + '"/></svg></span>' +
                     '<span class="pivot-pop-code">' + esc(t.codigo) + '</span>' +
                     '<span class="pivot-pop-title">' + esc(t.titulo) + '</span>' +
                     pill + '</a>';
