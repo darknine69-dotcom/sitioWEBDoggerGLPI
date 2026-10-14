@@ -909,13 +909,19 @@
         ponerModo(modo);
         consultarNovedades();
         setInterval(consultarNovedades, 15000);
-        /* Desde la campana se abre directo el corporativo (y su directo). */
-        var hm = (location.hash || "").match(/^#chat-corp(?:-dm-(\d+))?$/);
-        if (hm) {
+        /* Desde la campana se abre directo el corporativo (y su directo),
+           tanto al cargar como si ya se está en la página (el hash cambia
+           sin recargar y hay que reaccionar igual). */
+        function abrirDesdeHash() {
+            var hm = (location.hash || "").match(/^#chat-corp(?:-dm-(\d+))?$/);
+            if (!hm) { return false; }
             dmPendiente = hm[1] ? parseInt(hm[1], 10) : 0;
             try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { }
             ponerModo("corporativo");
             abrir();
+            return true;
         }
+        abrirDesdeHash();
+        window.addEventListener("hashchange", abrirDesdeHash);
     } else { listarTickets(); }
 })();
