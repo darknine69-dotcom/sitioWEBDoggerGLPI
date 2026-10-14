@@ -225,7 +225,7 @@
             <button type="button" class="corp-view-btn is-active" data-view="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Lista</button>
         </div>
         {% if es_admin %}
-        <a class="btn btn-outline-light btn-sm btn-danger-outline" href="{% url 'tickets:exportar_admin' %}?{{ querystring }}"><svg class="icon"><use href="#i-download"/></svg> Excel</a>
+        <a class="btn btn-excel btn-sm btn-danger-outline" href="{% url 'tickets:exportar_admin' %}?{{ querystring }}"><svg class="icon"><use href="#i-excel"/></svg> Excel</a>
         {% endif %}
         <span class="toolbar-count">{{ total_resultados }} ticket{{ total_resultados|pluralize }} · página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
     </form>

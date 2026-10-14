@@ -144,9 +144,6 @@
                     <svg class="icon icon-sm"><use href="#i-refresh"/></svg>
                 </a>
             </span>
-            <a class="btn btn-primary btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Descarga el reporte actual con los filtros aplicados">
-                <svg class="icon"><use href="#i-download"/></svg> Descargar en Excel
-            </a>
         </div>
         <div class="dash-stat-row">
             <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}" title="Tickets incluidos según los filtros aplicados">
@@ -261,6 +258,9 @@
         </div>
         <div class="rpt-actions">
             <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-search"/></svg> Aplicar filtros</button>
+            <a class="btn btn-excel btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Descarga el reporte del rango seleccionado con los filtros aplicados">
+                <svg class="icon"><use href="#i-excel"/></svg> Descargar en Excel
+            </a>
             <a class="link-clear" href="{% url 'tickets:reportes' %}">Limpiar</a>
         </div>
     </form>
@@ -293,8 +293,8 @@
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
             <h3>Reporte por técnico</h3>
-            <a class="btn btn-outline btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Exportar estos datos a Excel">
-                <svg class="icon"><use href="#i-download"/></svg> Excel
+            <a class="btn btn-excel btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Exportar estos datos a Excel">
+                <svg class="icon"><use href="#i-excel"/></svg> Excel
             </a>
         </div>
         <div class="table-scroll">
@@ -336,8 +336,8 @@
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-user"/></svg></span>
             <h3>Reporte por usuario</h3>
-            <a class="btn btn-outline btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Exportar los reportes individuales a Excel">
-                <svg class="icon"><use href="#i-download"/></svg> Excel
+            <a class="btn btn-excel btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Exportar los reportes individuales a Excel">
+                <svg class="icon"><use href="#i-excel"/></svg> Excel
             </a>
         </div>
         <div class="rpt-searchbar">

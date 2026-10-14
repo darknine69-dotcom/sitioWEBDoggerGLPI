@@ -5,8 +5,8 @@
 {% block header_title %}Monitoreo{% endblock %}
 {% block header_desc %}Tablero de tu lista: indicadores, gráficos por zona y técnico, y el detalle cuenta por cuenta.{% endblock %}
 {% block header_actions %}
-<a href="{% url 'tickets:obs_exportar' %}" class="btn btn-outline btn-sm" title="Descargar tu lista en Excel">
-    <svg class="icon"><use href="#i-download"/></svg> Exportar datos
+<a href="{% url 'tickets:obs_exportar' %}" class="btn btn-excel btn-sm" title="Descargar tu lista en Excel">
+    <svg class="icon"><use href="#i-excel"/></svg> Exportar datos
 </a>
 {% endblock %}
 
