@@ -421,6 +421,9 @@
             if (p.tipo === "tecnico") return p.rol ? cap(p.rol) : "Técnico";
             return "Usuario";
         }
+        /* Mismo diseño compacto de los desplegables del chat: foto/inicial,
+           nombre pequeño e icono de rol separado a la derecha. */
+        var ICONO_ROL_RPT = { tecnico: "i-wrench", admin: "i-shield", usuario: "i-user" };
         function rolCls(p) {
             if (p.rol === "admin") return "rpt-rol--admin";
             if (p.rol === "tecnico") return "rpt-rol--tecnico";
@@ -450,10 +453,16 @@
             lista.forEach(function (p) {
                 var b = document.createElement("button");
                 b.type = "button";
-                b.innerHTML = '<svg class="icon"><use href="#i-user"/></svg><b></b>' +
-                    '<span class="rpt-rol ' + rolCls(p) + '"></span>';
-                b.querySelector("b").textContent = p.nombre;
-                b.querySelector(".rpt-rol").textContent = label(p);
+                b.className = "sw-dd-row";
+                b.setAttribute("role", "option");
+                var ini = ((p.nombre || "?").trim().charAt(0) || "?").toUpperCase();
+                var icono = ICONO_ROL_RPT[p.rol] || ICONO_ROL_RPT[p.tipo] || "i-user";
+                b.innerHTML = '<span class="sw-dd-ava"></span>' +
+                    '<span class="sw-dd-name"></span>' +
+                    '<span class="sw-dd-meta"><svg class="icon"><use href="#' + icono + '"/></svg><span></span></span>';
+                b.querySelector(".sw-dd-ava").textContent = ini;
+                b.querySelector(".sw-dd-name").textContent = p.nombre;
+                b.querySelector(".sw-dd-meta span").textContent = label(p);
                 b.addEventListener("click", function () {
                     sel = { tipo: p.tipo, nombre: p.nombre, rol: p.rol || "", valor: p.valor };
                     hTec.value = p.tipo === "tecnico" ? p.valor : "";

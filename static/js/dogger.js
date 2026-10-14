@@ -106,8 +106,31 @@
         });
     }, true);
 
-    /* ---- Modales ---- */
-    function openModal(sel) {
+    /* ---- Buscadores con resultado automático ----
+       Todo input[type="search"] con data-autosubmit envía su formulario al
+       dejar de escribir o al pegar (600 ms), sin pulsar Buscar. Funciona
+       igual al escribir letra por letra que al pegar el nombre completo. */
+    var _buscaTimer = null;
+    document.addEventListener("input", function (e) {
+        var inp = e.target && e.target.closest
+            ? e.target.closest('input[type="search"][data-autosubmit]')
+            : null;
+        if (!inp || !inp.form) { return; }
+        clearTimeout(_buscaTimer);
+        _buscaTimer = setTimeout(function () {
+            if (inp.form.requestSubmit) { inp.form.requestSubmit(); }
+            else { inp.form.submit(); }
+        }, 600);
+    });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Enter"
+            && e.target.matches
+            && e.target.matches('input[type="search"][data-autosubmit]')) {
+            clearTimeout(_buscaTimer);
+        }
+    });
+
+    /* ---- Modales ---- */    function openModal(sel) {
         var m = document.querySelector(sel);
         if (m) { m.classList.add("open"); document.body.style.overflow = "hidden"; }
     }

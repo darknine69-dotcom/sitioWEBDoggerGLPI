@@ -284,6 +284,37 @@
         ticketUser.style.display = nombre ? "inline" : "none";
     }
     function primerNombre(n) { return String(n || "").trim().split(/\s+/)[0] || ""; }
+    function normalizar(s) {
+        return String(s == null ? "" : s).toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+    /* Filtro en vivo del panel: lee lo escrito (sirve al escribir y al
+       pegar), conserva foco, cursor y scroll al repintar. */
+    function leerBusca(panel) {
+        var inp = panel ? panel.querySelector(".sw-dd-busca input") : null;
+        if (!inp) { return { valor: "", st: panel ? panel.scrollTop : 0, foco: false, caret: 0 }; }
+        var foco = document.activeElement === inp;
+        var caret = 0;
+        try { caret = foco ? (inp.selectionStart || inp.value.length) : 0; } catch (e) { caret = 0; }
+        return { valor: inp.value, st: panel.scrollTop, foco: foco, caret: caret };
+    }
+    function componerBusca(placeholder, leyenda, valor, total) {
+        if (total <= 5) { return ""; }
+        return '<div class="sw-dd-busca"><svg class="icon"><use href="#i-search"/></svg>' +
+            '<input type="search" placeholder="' + placeholder + '" aria-label="' + leyenda +
+            '" value="' + esc(valor) + '"></div>';
+    }
+    function retenerBusca(panel, antes) {
+        panel.scrollTop = antes.st;
+        if (!antes.foco) { return; }
+        var nin = panel.querySelector(".sw-dd-busca input");
+        if (!nin) { return; }
+        nin.focus();
+        try {
+            var c = Math.min(antes.caret, nin.value.length);
+            nin.setSelectionRange(c, c);
+        } catch (e) { }
+    }
     /* ---- Desplegables propios: panel compacto con filas ricas ----
        El select nativo queda oculto como fuente de datos; el panel muestra
        nombre pequeño, icono de rol y badge/contador separados a la derecha.
@@ -322,12 +353,17 @@
     function pintarPanelUsuarios() {
         var panel = document.getElementById("ddUsuarioPanel");
         if (!panel || !usuSel) { return; }
+        var antes = leerBusca(panel);
+        var q = normalizar(antes.valor);
+        var total = 0;
         var html = "";
         for (var i = 0; i < usuSel.options.length; i++) {
             var op = usuSel.options[i];
             if (!op.value) { continue; }
             var u = usuariosDatos[op.value.toLowerCase()] ||
                 { email: op.value, nombre: op.textContent, avatar: "", en_linea: false, n_tickets: 0 };
+            total++;
+            if (q && normalizar(u.nombre + " " + u.email).indexOf(q) === -1) { continue; }
             var activo = op.value === usuarioEmail;
             html += '<button type="button" class="sw-dd-row' + (activo ? " is-active" : "") +
                 '" role="option" aria-selected="' + activo + '" data-value="' + esc(u.email) + '">' +
@@ -336,16 +372,24 @@
                 '<span class="sw-dd-meta"><svg class="icon"><use href="#i-ticket"/></svg>' +
                 esc(u.n_tickets) + "</span></button>";
         }
-        panel.innerHTML = html || '<p class="sw-dd-empty">Sin usuarios para chatear.</p>';
+        panel.innerHTML = componerBusca("Filtrar…", "Filtrar usuarios", antes.valor, total) +
+            (html || (q ? '<p class="sw-dd-empty">Sin coincidencias.</p>'
+                        : '<p class="sw-dd-empty">Sin usuarios para chatear.</p>'));
+        retenerBusca(panel, antes);
     }
     function pintarPanelTickets() {
         var panel = document.getElementById("ddTicketPanel");
         if (!panel) { return; }
+        var antes = leerBusca(panel);
+        var q = normalizar(antes.valor);
+        var total = 0;
         var html = "";
         for (var i = 0; i < sel.options.length; i++) {
             var op = sel.options[i];
             if (!op.value) { continue; }
             var t = ticketsDatos[op.value] || { codigo: op.textContent, titulo: "", estado_display: "" };
+            total++;
+            if (q && normalizar(t.codigo + " " + t.titulo + " " + t.estado_display).indexOf(q) === -1) { continue; }
             var activo = String(ticketPk) === String(op.value);
             html += '<button type="button" class="sw-dd-row' + (activo ? " is-active" : "") +
                 '" role="option" aria-selected="' + activo + '" data-value="' + esc(op.value) + '">' +
@@ -355,22 +399,35 @@
                 (t.estado_display ? '<span class="sw-dd-estado">' + esc(t.estado_display) + "</span>" : "") +
                 "</button>";
         }
-        panel.innerHTML = html || '<p class="sw-dd-empty">Sin tickets para chatear.</p>';
+        panel.innerHTML = componerBusca("Filtrar…", "Filtrar tickets", antes.valor, total) +
+            (html || (q ? '<p class="sw-dd-empty">Sin coincidencias.</p>'
+                        : '<p class="sw-dd-empty">Sin tickets para chatear.</p>'));
+        retenerBusca(panel, antes);
     }
     function pintarPanelColegas() {
         var panel = document.getElementById("ddColegaPanel");
         if (!panel || !colegaSel) { return; }
-        var html = '<button type="button" class="sw-dd-row' + (!colegaPk ? " is-active" : "") +
-            '" role="option" aria-selected="' + (!colegaPk) + '" data-value="0">' +
-            '<span class="sw-dd-ava-w"><span class="sw-dd-ava"><svg class="icon" style="width:13px;height:13px"><use href="#i-users"/></svg></span></span>' +
-            '<span class="sw-dd-name">Sala general · todos</span>' +
-            (novedadesCache.sala > 0 ? '<span class="sw-dd-badge">' + novedadesCache.sala + "</span>" : "") +
-            "</button>";
+        var antes = leerBusca(panel);
+        var q = normalizar(antes.valor);
+        var total = 0;
+        for (var k = 0; k < colegaSel.options.length; k++) {
+            if (colegaSel.options[k].value) { total++; }
+        }
+        var html = "";
+        if (!q || normalizar("Sala general todos").indexOf(q) !== -1) {
+            html += '<button type="button" class="sw-dd-row' + (!colegaPk ? " is-active" : "") +
+                '" role="option" aria-selected="' + (!colegaPk) + '" data-value="0">' +
+                '<span class="sw-dd-ava-w"><span class="sw-dd-ava"><svg class="icon" style="width:13px;height:13px"><use href="#i-users"/></svg></span></span>' +
+                '<span class="sw-dd-name">Sala general · todos</span>' +
+                (novedadesCache.sala > 0 ? '<span class="sw-dd-badge">' + novedadesCache.sala + "</span>" : "") +
+                "</button>";
+        }
         for (var i = 0; i < colegaSel.options.length; i++) {
             var op = colegaSel.options[i];
             if (!op.value || op.value === "0") { continue; }
             var c = colegasDatos[op.value];
             if (!c) { continue; }
+            if (q && normalizar(c.nombre + " " + c.insignia).indexOf(q) === -1) { continue; }
             var nuevos = (novedadesCache.dms[op.value] || {}).nuevos || 0;
             var activo = String(colegaPk) === String(op.value);
             var iconoRol = ROL_ICONO[c.insignia] || "i-user";
@@ -382,7 +439,9 @@
                 (nuevos > 0 ? '<span class="sw-dd-badge">' + nuevos + "</span>" : "") +
                 "</button>";
         }
-        panel.innerHTML = html;
+        panel.innerHTML = componerBusca("Filtrar…", "Filtrar colegas", antes.valor, total) +
+            (html || '<p class="sw-dd-empty">Sin coincidencias.</p>');
+        retenerBusca(panel, antes);
     }
     function cablearDd(cajaId, panelId, natId, pintar) {
         var caja = document.getElementById(cajaId);
@@ -418,6 +477,12 @@
             nat.dispatchEvent(new Event("change", { bubbles: true }));
             panel.hidden = true;
             caja.setAttribute("aria-expanded", "false");
+        });
+        /* Filtro en vivo: al escribir o pegar se repinta solo la lista. */
+        panel.addEventListener("input", function (e) {
+            var inp = e.target.closest ? e.target.closest(".sw-dd-busca input") : null;
+            if (!inp || e.isComposing) { return; }
+            pintar();
         });
     }
     cablearDd("ddUsuario", "ddUsuarioPanel", "swUsuario", pintarPanelUsuarios);

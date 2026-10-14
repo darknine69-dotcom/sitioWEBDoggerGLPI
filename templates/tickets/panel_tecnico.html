@@ -454,7 +454,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
         <input type="hidden" name="vista" value="cola">
         <label class="search-field">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
-            <input type="search" name="q_cola" value="{{ q_cola }}" placeholder="Buscar por código HD, título, solicitante o punto…" />
+            <input type="search" data-autosubmit name="q_cola" value="{{ q_cola }}" placeholder="Buscar por código HD, título, solicitante o punto…" />
         </label>
         <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
         {% if q_cola %}
@@ -791,7 +791,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
         </select>
         <label class="search-field">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
-            <input type="search" name="q" value="{{ q }}" placeholder="Filtrar por asunto, solicitante, código…" />
+            <input type="search" data-autosubmit name="q" value="{{ q }}" placeholder="Filtrar por asunto, solicitante, código…" />
         </label>
         <select name="estado" data-autosubmit>
             <option value="">Todos los estados</option>

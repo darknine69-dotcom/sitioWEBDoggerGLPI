@@ -35,7 +35,7 @@ restaura lo que canceló sin pedirle ayuda a nadie.
 
     <form class="pap-search" method="get" action="{% url 'tickets:mi_papelera' %}">
         <svg class="icon pap-search-icon"><use href="#i-search"/></svg>
-        <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código o título…"
+        <input type="search" data-autosubmit name="q" value="{{ q }}" placeholder="Buscar por código o título…"
                aria-label="Buscar en mi papelera">
         <button type="submit" class="btn btn-primary">Buscar</button>
         {% if q %}<a class="link-clear" href="{% url 'tickets:mi_papelera' %}">✕ Limpiar</a>{% endif %}

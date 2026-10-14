@@ -3281,6 +3281,10 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .sw-dd-badge { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--dogger-red); color: #fff; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 .sw-dd-estado { flex: none; font-size: 9.5px; font-weight: 800; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .03em; }
 .sw-dd-empty { padding: 10px 12px; font-size: 12px; color: var(--ink-muted); text-align: center; }
+/* Buscador dentro del panel: filtra la lista al escribir o pegar. */
+.sw-dd-busca { display: flex; align-items: center; gap: 7px; padding: 6px 9px; margin-bottom: 3px; background: #FBFAF7; border: 1px solid var(--line); border-radius: 9px; position: sticky; top: 0; z-index: 2; }
+.sw-dd-busca .icon { width: 13px; height: 13px; color: var(--ink-muted); flex: none; }
+.sw-dd-busca input { border: 0; outline: none; background: transparent; width: 100%; font: inherit; font-size: 12px; color: var(--ink); }
 /* Selector de modo del chat: compacto, Soporte o Corporativo (sala staff). */
 .sw-modos { display: inline-flex; gap: 2px; margin-top: 8px; padding: 2px; border-radius: 999px; background: rgba(0,0,0,.18); }
 .sw-modo {

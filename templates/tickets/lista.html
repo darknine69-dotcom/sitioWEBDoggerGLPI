@@ -174,7 +174,7 @@
     <form method="get" class="table-toolbar filterbar" id="filtrosTickets">
         <label class="search-field">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
-            <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código HD o título…" />
+            <input type="search" data-autosubmit name="q" value="{{ q }}" placeholder="Buscar por código HD o título…" />
         </label>
         <select name="sv" data-autosubmit aria-label="Vista">
             {% for val, label in presets_mis %}
