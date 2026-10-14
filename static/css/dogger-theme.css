@@ -3893,6 +3893,12 @@ a.dash-hov-usuarios.is-active { border-color: var(--dogger-red); }
 a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 /* Aire entre las pestañas y los indicadores del panel técnico. */
 .dash-stat-row--tec { margin-top: 14px; }
+/* Indicadores libres: sin caja ni bordes de color, solo icono y datos. */
+.dash-stat-row--libre .dash-stat { background: transparent; border-color: transparent; box-shadow: none; }
+.dash-stat-row--libre a.dash-stat:hover { background: transparent; border-color: transparent; box-shadow: none; transform: none; }
+.dash-stat-row--libre a.dash-stat:hover .dash-stat-icon { transform: scale(1.1); }
+.dash-stat-row--libre a.dash-stat:hover .dash-stat-label { color: var(--dogger-red); }
+.dash-stat-row--libre a.dash-stat.is-active { border-color: transparent; box-shadow: none; transform: none; }
 /* Rejilla de indicadores: se auto-ajusta al ancho para que nunca se
    apilen en una sola columna ni se descuadren. */
 .dash-stat-row--mesas { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
