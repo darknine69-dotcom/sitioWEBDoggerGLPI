@@ -3950,12 +3950,30 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 .pivot-pop-sub { font-size: 11px; font-weight: 700; color: var(--ink-muted); margin-right: auto; }
 .pivot-pop-close { border: 0; background: #F1EDE6; width: 22px; height: 22px; border-radius: 50%; font-size: 14px; line-height: 1; color: var(--ink-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; transition: background .12s ease, color .12s ease; }
 .pivot-pop-close:hover { background: var(--dogger-red); color: #fff; }
-.pivot-pop-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 6px; margin: 7px 0; }
-.pivot-pop-stat { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-muted); min-width: 0; }
+.pivot-pop-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 4px; margin: 8px 0; }
+.pivot-pop-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
 .pivot-pop-stat strong { margin-left: auto; font-family: var(--font-mono); color: #1d1b16; }
-.pivot-pop-stat.st-btn { border: 0; background: transparent; cursor: pointer; padding: 2px 5px; border-radius: 7px; width: 100%; text-align: left; font-family: inherit; transition: background .12s ease; }
+.pivot-pop-stat.st-btn { border: 0; background: transparent; cursor: pointer; padding: 5px 2px; border-radius: 10px; width: 100%; font-family: inherit; transition: background .12s ease; }
 .pivot-pop-stat.st-btn:hover { background: var(--dogger-cream); }
 .pivot-pop-stat.st-btn.is-activo { background: var(--dogger-cream); box-shadow: inset 0 0 0 2px rgba(214,43,31,.16); }
+/* Indicador circular: el contador va dentro, con el color del estado
+   (se conserva al hover y al estar activo). */
+.pivot-pop-bola { position: relative; width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #F1EDE6; }
+.pivot-pop-bola b { font-size: 14px; font-weight: 800; font-family: var(--font-mono); color: #1d1b16; line-height: 1; }
+.pivot-pop-glyph { position: absolute; right: -2px; bottom: -2px; width: 16px; height: 16px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: #6B6259; border: 2px solid #fff; }
+.pivot-pop-glyph .icon { width: 9px; height: 9px; }
+.pivot-pop-nom { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-muted); }
+.pivot-pop-bola.st-ic-abiertos b { color: #2563EB; }
+.pivot-pop-bola.st-ic-abiertos { background: rgba(37,99,235,.12); }
+.pivot-pop-bola.st-ic-abiertos .pivot-pop-glyph { background: #2563EB; }
+.pivot-pop-bola.st-ic-progreso b { color: #B7791F; }
+.pivot-pop-bola.st-ic-progreso .pivot-pop-glyph { background: #B7791F; }
+.pivot-pop-bola.st-ic-vencidos b { color: #D62B1F; }
+.pivot-pop-bola.st-ic-vencidos .pivot-pop-glyph { background: #D62B1F; }
+.pivot-pop-bola.st-ic-cerrados b { color: #6B6259; }
+.pivot-pop-bola.st-ic-cerrados .pivot-pop-glyph { background: #6B6259; }
+.pivot-pop-bola.st-ic-resueltos b { color: #2F7D4F; }
+.pivot-pop-bola.st-ic-resueltos .pivot-pop-glyph { background: #2F7D4F; }
 .pivot-pop-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
 .pivot-pop-cats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .pivot-pop-cat { font-size: 10px; font-weight: 700; color: #6B6259; background: #FBFAF7; border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }

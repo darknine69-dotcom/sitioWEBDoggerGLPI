@@ -630,11 +630,11 @@
     }
 
     var FILTROS = [
-        { key: 'abierto', label: 'Abiertas', color: '#2563EB', cuenta: function (r) { return r.abrir; } },
-        { key: 'en-progreso', label: 'En progreso', color: '#B7791F', cuenta: function (r) { return r.espera; } },
-        { key: 'vencido', label: 'Vencidas', color: '#D62B1F', cuenta: function (r) { return r.vencido; } },
-        { key: 'cerrado', label: 'Cerradas', color: '#8A8A86', cuenta: function (r) { return r.cerrado; } },
-        { key: 'resuelto', label: 'Resueltas', color: '#2F7D4F', cuenta: function (r) { return r.resueltos; } }
+        { key: 'abierto', label: 'Abiertas', color: '#2563EB', icono: 'i-inbox', tint: 'st-ic-abiertos', cuenta: function (r) { return r.abrir; } },
+        { key: 'en-progreso', label: 'En progreso', color: '#B7791F', icono: 'i-wrench', tint: 'st-ic-progreso', cuenta: function (r) { return r.espera; } },
+        { key: 'vencido', label: 'Vencidas', color: '#D62B1F', icono: 'i-alert', tint: 'st-ic-vencidos', cuenta: function (r) { return r.vencido; } },
+        { key: 'cerrado', label: 'Cerradas', color: '#8A8A86', icono: 'i-lock', tint: 'st-ic-cerrados', cuenta: function (r) { return r.cerrado; } },
+        { key: 'resuelto', label: 'Resueltas', color: '#2F7D4F', icono: 'i-check-circle', tint: 'st-ic-resueltos', cuenta: function (r) { return r.resueltos; } }
     ];
     function matchF(t, f) {
         if (f === 'vencido') return !!t.vencido;
@@ -682,8 +682,9 @@
             elSub.textContent = ' · ' + F.label + ' (' + F.cuenta(r) + ')';
             elStats.innerHTML = FILTROS.map(function (F2) {
                 return '<button type="button" class="pivot-pop-stat st-btn' + (F2.key === activo ? ' is-activo' : '') + '" data-f="' + F2.key + '">' +
-                    '<span class="pivot-pop-dot" style="background:' + F2.color + '"></span>' +
-                    F2.label + '<strong>' + F2.cuenta(r) + '</strong></button>';
+                    '<span class="pivot-pop-bola ' + F2.tint + '"><b>' + F2.cuenta(r) + '</b>' +
+                    '<span class="pivot-pop-glyph"><svg class="icon"><use href="#' + F2.icono + '"/></svg></span></span>' +
+                    '<span class="pivot-pop-nom">' + F2.label + '</span></button>';
             }).join('');
             var filtrados = (r.tickets || []).filter(function (t) { return matchF(t, activo); });
             var lista = filtrados.map(function (t) {
