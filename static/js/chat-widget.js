@@ -20,6 +20,12 @@
     var modoCorpBtn = document.getElementById("swModoCorp");
     var colegaSel = document.getElementById("swColega");
     var usuSel = document.getElementById("swUsuario");
+    var ddColega = document.getElementById("ddColega");
+    var ddUsuario = document.getElementById("ddUsuario");
+    var ddTicket = document.getElementById("ddTicket");
+    var ddColegaLabel = document.getElementById("ddColegaLabel");
+    var ddUsuarioLabel = document.getElementById("ddUsuarioLabel");
+    var ddTicketLabel = document.getElementById("ddTicketLabel");
     var headTitulo = document.getElementById("swHeadTitulo");
     var headSub = document.getElementById("swHeadSub");
 
@@ -34,6 +40,8 @@
     /* Soporte para el staff: primero la persona, luego sus tickets. */
     var hayUsuarios = Boolean(usuSel && urls.usuarios);
     var usuarioEmail = "";
+    var usuariosDatos = {};
+    var ticketsDatos = {};
     var colegaPk = 0;
     var colegasCargados = false;
     var colegasDatos = {};
@@ -275,6 +283,55 @@
         ticketUser.textContent = nombre ? "De: " + nombre : "";
         ticketUser.style.display = nombre ? "inline" : "none";
     }
+    function primerNombre(n) { return String(n || "").trim().split(/\s+/)[0] || ""; }
+    /* El desplegable compacto abre el picker nativo con el teclado. */
+    function abrirPicker(nativo) {
+        if (!nativo) { return; }
+        try {
+            if (typeof nativo.showPicker === "function") { nativo.showPicker(); return; }
+        } catch (e) { }
+        nativo.focus();
+        try { nativo.click(); } catch (err) { }
+    }
+    [["ddColega", "swColega"], ["ddUsuario", "swUsuario"], ["ddTicket", "swTicket"]].forEach(function (par) {
+        var caja = document.getElementById(par[0]);
+        var nat = document.getElementById(par[1]);
+        if (!caja || !nat) { return; }
+        caja.setAttribute("role", "button");
+        caja.setAttribute("tabindex", "0");
+        caja.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirPicker(nat); }
+        });
+    });
+    /* Nombre corto junto al icono: lo elegido en cada desplegable. */
+    function pintarUsuarioLabel() {
+        if (!ddUsuarioLabel || !usuSel) { return; }
+        var u = usuariosDatos[String(usuarioEmail || "").toLowerCase()];
+        if (u) {
+            ddUsuarioLabel.textContent = (u.en_linea ? "🟢 " : "⚪ ") + primerNombre(u.nombre);
+            return;
+        }
+        var op = usuSel.options[usuSel.selectedIndex];
+        ddUsuarioLabel.textContent = op ? primerNombre(op.textContent.replace(/^[🟢⚪]\s*/, "")) : "Usuario";
+    }
+    function pintarTicketLabel() {
+        if (!ddTicketLabel) { return; }
+        var t = ticketsDatos[String(ticketPk || "")];
+        ddTicketLabel.textContent = t ? t.codigo : "Ticket";
+    }
+    function pintarColegaLabel() {
+        if (!ddColegaLabel) { return; }
+        if (!colegaPk) {
+            var ns = novedadesCache.sala || 0;
+            ddColegaLabel.textContent = "Sala general" + (ns > 0 ? " (" + ns + ")" : "");
+            return;
+        }
+        var c = colegasDatos[String(colegaPk)];
+        if (!c) { return; }
+        var nuevos = (novedadesCache.dms[String(colegaPk)] || {}).nuevos || 0;
+        ddColegaLabel.textContent = (c.en_linea ? "🟢 " : "⚪ ") + primerNombre(c.nombre) +
+            (nuevos > 0 ? " (" + nuevos + ")" : "");
+    }
     /* Staff: primero la persona (con su estado en línea), luego sus tickets. */
     function listarUsuarios() {
         if (!hayUsuarios) { listarTickets(); return; }
@@ -283,7 +340,9 @@
                 var d = res && res.datos;
                 if (!d || !d.ok) { avisarUnaVez(textoFallo(res, "No se pudo cargar el chat.")); return; }
                 usuSel.innerHTML = "";
+                usuariosDatos = {};
                 (d.usuarios || []).forEach(function (u, i) {
+                    usuariosDatos[(u.email || "").toLowerCase()] = u;
                     var op = document.createElement("option");
                     op.value = u.email;
                     op.textContent = (u.en_linea ? "🟢 " : "⚪ ") + u.nombre +
@@ -296,8 +355,10 @@
                     op0.textContent = "Sin usuarios para chatear";
                     usuSel.appendChild(op0);
                     usuarioEmail = "";
+                    if (ddUsuarioLabel) { ddUsuarioLabel.textContent = "Sin usuarios"; }
                 } else {
                     usuSel.value = usuarioEmail;
+                    pintarUsuarioLabel();
                 }
                 listarTickets(usuarioEmail);
             })
@@ -310,7 +371,9 @@
                 var d = res && res.datos;
                 if (!d || !d.ok) { avisarUnaVez(textoFallo(res, "No se pudo cargar el chat.")); return; }
                 sel.innerHTML = "";
+                ticketsDatos = {};
                 (d.tickets || []).forEach(function (t, i) {
+                    ticketsDatos[String(t.pk)] = t;
                     var op = document.createElement("option");
                     op.value = t.pk;
                     op.textContent = t.codigo + " · " + t.titulo + " (" + t.estado_display + ")";
@@ -319,6 +382,7 @@
                     if (i === 0) {
                         ticketPk = t.pk;
                         pintarTicketUser(t.solicitante_nombre);
+                        pintarTicketLabel();
                     }
                 });
                 if (!d.tickets || !d.tickets.length) {
@@ -327,6 +391,7 @@
                     sel.appendChild(op0);
                     ticketPk = 0;
                     pintarTicketUser("");
+                    if (ddTicketLabel) { ddTicketLabel.textContent = "Sin tickets"; }
                 }
                 cargar(0);
             })
@@ -436,11 +501,13 @@
         errorMostrado = false;
         var op = sel.options[sel.selectedIndex];
         pintarTicketUser(op ? op.getAttribute("data-user") : "");
+        pintarTicketLabel();
         cargar(0);
     });
     if (usuSel) {
         usuSel.addEventListener("change", function () {
             usuarioEmail = usuSel.value || "";
+            pintarUsuarioLabel();
             ultimoId = 0;
             errorMostrado = false;
             listarTickets(usuarioEmail);
@@ -463,9 +530,9 @@
         win.setAttribute("data-modo", enCorp ? "corporativo" : "soporte");
         if (headTitulo) { headTitulo.textContent = enCorp ? "Sala corporativa" : "Mesa de ayuda"; }
         if (headSub) { headSub.textContent = enCorp ? "Solo staff en línea" : "Estamos en línea"; }
-        if (sel) { sel.hidden = enCorp; }
-        if (usuSel) { usuSel.hidden = enCorp; }
-        if (colegaSel) { colegaSel.hidden = !enCorp; }
+        if (ddTicket) { ddTicket.hidden = enCorp; }
+        if (ddUsuario) { ddUsuario.hidden = enCorp; }
+        if (ddColega) { ddColega.hidden = !enCorp; }
         if (adjBtn) { adjBtn.style.display = enCorp ? "none" : ""; }
         texto.placeholder = !enCorp ? "Escríbenos…"
             : (colegaPk ? "Escríbele a " + nombreColega() + "…" : "Escríbele al equipo…");
@@ -504,6 +571,7 @@
         if (colegaSel.querySelector('option[value="' + actual + '"]')) {
             colegaSel.value = actual;
         }
+        pintarColegaLabel();
     }
     function listarColegas(forzar) {
         if (!hayCorp || (colegasCargados && !forzar)) { return; }

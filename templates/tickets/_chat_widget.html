@@ -18,11 +18,26 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
             <button type="button" class="sw-modo is-active" id="swModoSoporte" role="tab" aria-selected="true" title="Hablar con los usuarios por ticket">Soporte</button>
             <button type="button" class="sw-modo" id="swModoCorp" role="tab" aria-selected="false" title="Sala interna: técnicos, admins y observadores">Corporativo</button>
         </div>
-        <select class="sw-ticket" id="swColega" aria-label="Hablar con" hidden></select>
-        <select class="sw-ticket" id="swUsuario" aria-label="Usuario" hidden></select>
+        <div class="sw-dd" id="ddColega" hidden>
+            <span class="sw-dd-ico"><svg class="icon"><use href="#i-users"/></svg></span>
+            <span class="sw-dd-label" id="ddColegaLabel">Sala general</span>
+            <span class="sw-dd-chev" aria-hidden="true">▾</span>
+            <select class="sw-ticket sw-dd-native" id="swColega" aria-label="Hablar con" tabindex="-1"></select>
+        </div>
+        <div class="sw-dd" id="ddUsuario" hidden>
+            <span class="sw-dd-ico"><svg class="icon"><use href="#i-user"/></svg></span>
+            <span class="sw-dd-label" id="ddUsuarioLabel">Usuario</span>
+            <span class="sw-dd-chev" aria-hidden="true">▾</span>
+            <select class="sw-ticket sw-dd-native" id="swUsuario" aria-label="Usuario" tabindex="-1"></select>
+        </div>
         {% endif %}
         <div class="sw-select-wrap">
-            <select class="sw-ticket" id="swTicket" aria-label="Conversación"></select>
+            <div class="sw-dd" id="ddTicket">
+                <span class="sw-dd-ico"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <span class="sw-dd-label" id="ddTicketLabel">Ticket</span>
+                <span class="sw-dd-chev" aria-hidden="true">▾</span>
+                <select class="sw-ticket sw-dd-native" id="swTicket" aria-label="Conversación" tabindex="-1"></select>
+            </div>
             <span class="sw-ticket-user" id="swTicketUser"></span>
         </div>
     </div>

@@ -3247,6 +3247,17 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .sw-ticket option { color: #111; }
 .sw-select-wrap { position: relative; }
 .sw-ticket-user { display: inline-block; margin-top: 4px; font-size: 11px; color: rgba(255,255,255,.85); font-style: italic; }
+/* Desplegables compactos: icono + nombre corto; el select nativo va
+   invisible encima y abre el picker real al hacer clic (teclado: Enter). */
+.sw-dd { position: relative; display: flex; align-items: center; gap: 7px; margin-top: 9px; width: 100%; font: inherit; font-size: 11.5px; font-weight: 700; color: #fff; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); border-radius: 9px; padding: 6px 9px; cursor: pointer; }
+.sw-dd[hidden] { display: none; }
+.sw-dd:hover { background: rgba(255,255,255,.22); }
+.sw-dd-ico { display: inline-flex; flex: none; }
+.sw-dd-ico .icon { width: 15px; height: 15px; }
+.sw-dd-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw-dd-chev { flex: none; font-size: 10px; opacity: .85; }
+.sw-dd-native { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.sw-dd-native option { color: #111; }
 /* Selector de modo del chat: compacto, Soporte o Corporativo (sala staff). */
 .sw-modos { display: inline-flex; gap: 2px; margin-top: 8px; padding: 2px; border-radius: 999px; background: rgba(0,0,0,.18); }
 .sw-modo {
