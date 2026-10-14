@@ -46,7 +46,8 @@ class MiZonaSupervisorTest(TestCase):
         self.assertIn("Mi zona y supervisor", html)
         self.assertIn("Zona Uno", html)
         self.assertIn("Sup", html)
-        self.assertIn("Presionar al técnico", html)
+        self.assertIn("Presionar", html)
+        self.assertIn(self.ticket.codigo, html)
 
     def test_presionar_crea_comentario_y_avisa(self):
         respuesta = self.client.post(
