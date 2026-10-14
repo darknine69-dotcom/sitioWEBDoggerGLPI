@@ -11,28 +11,29 @@
 <link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 <style>
 /* Mi zona y supervisor: hero con degradado y tarjetas. */
-.corp-card.mz-card { overflow: hidden; padding: 0 22px 22px; }
+.corp-card.mz-card { overflow: hidden; padding: 20px 22px; }
 .mz-hero {
     display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    margin: 0 -22px; padding: 20px 22px;
-    background: linear-gradient(135deg, #241F1C 0%, #7E130C 100%);
-    color: #FFF7EA;
+    padding: 18px 0 14px;
+    border-bottom: 1px dashed var(--line);
+    margin-bottom: 12px;
 }
-.mz-hero .corp-kicker { color: #FFC72C; }
-.mz-hero h3 { margin: 4px 0 2px; font-size: 19px; color: #fff; letter-spacing: -.02em; }
-.mz-hero p { margin: 0; font-size: 12.5px; color: rgba(255,247,234,.75); }
+.mz-hero h3 { margin: 4px 0 2px; font-size: 18px; color: var(--ink); letter-spacing: -.02em; }
+.mz-hero p { margin: 0; font-size: 12.5px; color: var(--ink-muted); }
+.mz-hero .corp-kicker { color: var(--dogger-red-dark); }
 .mz-stack { display: flex; align-items: center; flex: none; }
 .mz-stack-ava {
     position: relative; width: 36px; height: 36px; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center;
     font-size: 13px; font-weight: 800; color: #fff; background: #4F46E5;
     border: 2px solid #fff; margin-left: -10px; overflow: visible;
+    box-shadow: 0 0 0 1px var(--line);
 }
 .mz-stack-ava:first-child { margin-left: 0; }
 .mz-stack-ava img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .mz-more {
-    margin-left: 6px; font-size: 11px; font-weight: 800; color: #fff;
-    background: rgba(255,255,255,.18); border-radius: 999px; padding: 3px 9px;
+    margin-left: 6px; font-size: 11px; font-weight: 800; color: var(--ink-muted);
+    background: #F1EDE6; border-radius: 999px; padding: 3px 9px;
 }
 .mz-body { padding-top: 14px; }
 .mz-zonas { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 6px; }
@@ -67,8 +68,7 @@
 .mz-presion textarea:focus { outline: none; border-color: var(--dogger-red); }
 .mz-vacio { color: var(--ink-muted); font-size: 13px; padding: 6px 0; }
 @media (max-width: 560px) {
-    .corp-card.mz-card { padding: 0 16px 16px; }
-    .mz-hero { margin: 0 -16px; padding: 16px; }
+    .corp-card.mz-card { padding: 16px; }
     .mz-hero h3 { font-size: 17px; }
     .mz-stack-ava { width: 30px; height: 30px; font-size: 11px; }
     .mz-tec { display: none; }
