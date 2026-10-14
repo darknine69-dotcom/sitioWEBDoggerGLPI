@@ -6449,10 +6449,42 @@ select.suggest-applied { border-color: #1D4ED8 !important; box-shadow: 0 0 0 3px
     table.data-table.cards-mobile tbody td.cell-actions { justify-content: flex-end; flex-wrap: wrap; row-gap: 6px; }
     table.data-table.cards-mobile tbody td.cell-actions::before { width: 100%; }
 
+    /* Ficha expandida dentro de la tarjeta: sin etiqueta fantasma, a lo ancho. */
+    table.data-table.cards-mobile tbody tr.ue-ficha-row { padding: 0; }
+    table.data-table.cards-mobile tbody tr.ue-ficha-row > td { display: block; padding: 14px 12px 16px; }
+    table.data-table.cards-mobile tbody tr.ue-ficha-row > td::before { content: none; }
+
+    /* Textos largos (correos, ubicaciones) que rompían las tarjetas. */
+    table.data-table.cards-mobile tbody td > *,
+    .ue-kv div > span, .ue-ficha-meta-item, .ue-evento > span:last-child,
+    .ue-name-line strong { min-width: 0; overflow-wrap: anywhere; }
+
     .toast-stack { bottom: 92px; right: 12px; width: 280px; }
     .toast-icon { width: 30px; height: 30px; margin-left: 10px; }
     .page-head-actions { flex-wrap: wrap; }
     .info-grid { gap: 14px; }
+}
+
+/* ---- Ajustes y perfil: filas que se apilan en pantallas estrechas ---- */
+@media (max-width: 560px) {
+    .cfg-row { flex-direction: column; align-items: stretch; gap: 6px; }
+    .cfg-row .cfg-label { min-width: 0; }
+    .cfg-row small.muted { overflow-wrap: anywhere; }
+    .notif-item { flex-wrap: wrap; gap: 10px; }
+    .notif-info { flex: 1 1 100%; min-width: 0; }
+    .settings-actions { flex-direction: column; align-items: stretch; }
+    .settings-actions .btn { width: 100%; justify-content: center; }
+    .glpi-sync-group { margin-right: 0; flex-wrap: wrap; }
+    .glpi-sync-group .btn { flex: 1 1 auto; justify-content: center; }
+    .settings-profile-card > * { min-width: 0; }
+    .settings-profile-card h3, .settings-profile-card p { overflow-wrap: anywhere; }
+    .manual-preview-pie { flex-direction: column; align-items: stretch; }
+    .manual-preview-pie > div { display: flex; gap: 8px; flex-wrap: wrap; }
+    .manual-preview-pie .btn { flex: 1 1 auto; justify-content: center; }
+}
+
+@media (max-width: 520px) {
+    .modal-box { padding: 18px 16px; }
 }
 
 /* =====================================================================

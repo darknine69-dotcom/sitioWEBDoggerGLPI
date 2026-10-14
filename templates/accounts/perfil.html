@@ -181,6 +181,16 @@
 }
 @media (max-width: 520px) {
     .prof-mode-grid { grid-template-columns: 1fr; }
+    .profile-card { padding: 16px; }
+    .profile-panel-head { flex-wrap: wrap; gap: 8px; }
+    .profile-save-hint { white-space: normal; }
+    .prof-row { flex-wrap: wrap; gap: 10px; }
+    .prof-row-label { flex: 1 1 100%; min-width: 0; }
+    .prof-row select { flex: 1 1 100%; max-width: 100%; }
+    .prof-color { flex: 1 1 100%; justify-content: space-between; }
+    .profile-facts dd { overflow-wrap: anywhere; min-width: 0; }
+    .profile-ident-actions { flex-wrap: wrap; }
+    .profile-ident-actions .btn { flex: 1 1 140px; }
 }
 </style>
 {% endblock %}
