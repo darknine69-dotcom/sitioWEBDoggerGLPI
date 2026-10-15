@@ -762,7 +762,23 @@ def claves_para_json():
     cliente pueda aplicar el mismo desempate que el servidor, y los pesos
     para que el JavaScript no los lleve escritos dentro. Cada categoría
     incluye su línea de "qué cubre" para el submenú del desplegable.
+
+    Se cachea versionado por conteo+máximo id: agregar o quitar categorías
+    lo invalida solo; editar una existente tarda como mucho el TTL.
     """
+    from django.db.models import Count, Max
+
+    from .services.cache import cachear, clave
+
+    agg = Categoria.objects.aggregate(n=Count("id"), m=Max("id"))
+
+    def _construir():
+        return _claves_para_json_frio()
+
+    return cachear(clave("cat", "sugerencias", agg["n"], agg["m"]), _construir, segundos=600)
+
+
+def _claves_para_json_frio():
     datos = []
     for cat in Categoria.objects.filter(activo=True).order_by("grupo", "nombre"):
         datos.append({

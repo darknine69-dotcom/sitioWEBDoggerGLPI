@@ -275,7 +275,10 @@ def chat_responder(request, pk):
     notificar_comentario(ticket, u.nombre, texto, actor=u)
     if ticket.glpi_id:
         try:
-            sync_followup_to_glpi(ticket, texto)
+            from apps.tickets.services.fondo import en_fondo
+
+            # La API de GLPI tarda: va a fondo para no frenar el chat.
+            en_fondo(sync_followup_to_glpi, ticket, texto)
         except GlpiError:
             logger.warning("Chat sin GLPI en %s", ticket.codigo)
     return JsonResponse({

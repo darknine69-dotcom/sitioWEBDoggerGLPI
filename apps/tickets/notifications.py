@@ -49,7 +49,11 @@ def _enviar(asunto, mensaje, destinatarios, html=""):
         logger.warning("SMTP no configurado (EMAIL_USER vacio). Correo no enviado: %s", asunto)
         return
     try:
-        send_mail(
+        from apps.tickets.services.fondo import en_fondo
+
+        # El SMTP tarda segundos: va a fondo para no frenar el request.
+        return en_fondo(
+            send_mail,
             asunto,
             mensaje,
             settings.DEFAULT_FROM_EMAIL,

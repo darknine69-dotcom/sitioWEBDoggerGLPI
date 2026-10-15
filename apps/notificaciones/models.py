@@ -53,7 +53,11 @@ class Notificacion(models.Model):
         verbose_name = "Notificación"
         verbose_name_plural = "Notificaciones"
         ordering = ["-creada_en", "-id"]
-        indexes = [models.Index(fields=["usuario", "leida"], name="ix_notif_usuario_leida")]
+        indexes = [
+            models.Index(fields=["usuario", "leida"], name="ix_notif_usuario_leida"),
+            # La campana lista lo último de cada usuario en cada poll.
+            models.Index(fields=["usuario", "-creada_en"], name="ix_notif_usr_fecha"),
+        ]
 
     def __str__(self):
         return f"{self.titulo} → {self.usuario_id}"

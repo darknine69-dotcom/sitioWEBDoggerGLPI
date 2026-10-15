@@ -31,7 +31,10 @@ def _enviar(asunto, texto, html, destinatarios):
         logger.warning("SMTP sin configurar (EMAIL_USER vacío). No se envió: %s", asunto)
         return False
     try:
-        return send_mail(
+        from apps.tickets.services.fondo import en_fondo
+
+        return en_fondo(
+            send_mail,
             asunto,
             texto,
             settings.DEFAULT_FROM_EMAIL,

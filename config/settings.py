@@ -206,6 +206,29 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ---------------------------------------------------------------------------
+# Caché y trabajo en segundo plano
+# ---------------------------------------------------------------------------
+# Sin Redis en el hosting: memoria local por proceso, con TTL cortos y
+# claves versionadas. Para Redis real habría que instalar django-redis y
+# apuntar esta URL por variable de entorno.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "dogger-cache",
+        "TIMEOUT": int(os.getenv("DOGGER_CACHE_TIMEOUT", "300")),
+        "OPTIONS": {"MAX_ENTRIES": int(os.getenv("DOGGER_CACHE_MAX", "2000"))},
+    }
+}
+
+# Correos y avisos a GLPI en hilos daemon para no frenar el request.
+# Apagar solo para depurar envíos (DOGGER_FONDO_ASINCRONO=false).
+DOGGER_FONDO_ASINCRONO = os.getenv("DOGGER_FONDO_ASINCRONO", "True").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
+# ---------------------------------------------------------------------------
 # Seguridad para producción
 # ---------------------------------------------------------------------------
 if not DEBUG:

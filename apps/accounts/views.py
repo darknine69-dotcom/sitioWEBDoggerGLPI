@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
-from django.core.mail import send_mail
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import redirect, render, reverse
 from django.views import View
@@ -656,13 +655,24 @@ def _enviar_codigo_reset(request, usuario, codigo):
             "login_url": request.build_absolute_uri(reverse("accounts:login")),
         },
     )
-    send_mail(
-        "Dogger HelpDesk — Restablece tu contraseña",
-        texto_plano,
-        settings.DEFAULT_FROM_EMAIL,
-        [usuario.email],
-        html_message=html,
-    )
+    try:
+        from django.core.mail import send_mail as _send
+
+        from apps.tickets.services.fondo import en_fondo
+
+        # El SMTP tarda segundos: va a fondo para no frenar el request.
+        en_fondo(
+            _send,
+            "Dogger HelpDesk — Restablece tu contraseña",
+            texto_plano,
+            settings.DEFAULT_FROM_EMAIL,
+            [usuario.email],
+            html_message=html,
+            fail_silently=True,
+        )
+    except Exception:
+        logger.exception("Error enviando código de reset a %s", usuario.email)
+        raise
 
 
 def pagina_no_autorizada(request, exception=None):

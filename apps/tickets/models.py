@@ -481,6 +481,10 @@ class TicketComentario(models.Model):
         verbose_name = "Comentario"
         verbose_name_plural = "Comentarios"
         ordering = ["fecha"]
+        indexes = [
+            # Hilo del chat: comentarios de un ticket en orden.
+            models.Index(fields=["ticket", "fecha"], name="IX_Com_TicketFecha"),
+        ]
 
     def __str__(self):
         return f"Comentario en {self.ticket.codigo}"
@@ -521,6 +525,10 @@ class MensajeCorporativo(models.Model):
         verbose_name = "Mensaje corporativo"
         verbose_name_plural = "Sala corporativa"
         ordering = ["fecha"]
+        indexes = [
+            # Sala (destinatario nulo) y directos por pareja.
+            models.Index(fields=["destinatario", "id"], name="IX_Corp_DestId"),
+        ]
 
     def __str__(self):
         return f"Corporativo de {self.autor_nombre or '—'}"

@@ -69,7 +69,21 @@ def mapeados_del_tecnico(usuario_actual, ticket=None):
     Con `ticket` (el detalle de un ticket ya resuelto) cada técnico añade su
     voto en ese ticket y la barra de aprobación contada solo sobre tickets
     resueltos, que es lo que se está calificando.
+
+    Se cachea 120 s por persona (los votos propios van en la llave): es
+    datos de vitrina, no transaccionales.
     """
+    from .cache import cachear, clave
+
+    pk_ticket = ticket.pk if ticket is not None else 0
+
+    def _construir():
+        return _mapeados_frio(usuario_actual, ticket)
+
+    return cachear(clave("tec", "mapeados", usuario_actual.pk, pk_ticket), _construir, segundos=120)
+
+
+def _mapeados_frio(usuario_actual, ticket=None):
     from apps.accounts.models import Usuario
     from apps.tickets.models import CalificacionTecnico, Ticket
 

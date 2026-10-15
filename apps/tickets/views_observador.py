@@ -60,12 +60,17 @@ def solo_observador(vista):
 # ------------------------------------------------------------------ helpers
 def puntos_del_observador(usuario):
     """Nombres de los puntos asignados al observador (vacío = todos)."""
-    return list(
-        ObservadorPunto.objects.filter(observador=usuario)
-        .select_related("punto")
-        .order_by("punto__nombre")
-        .values_list("punto__nombre", flat=True)
-    )
+    from apps.tickets.services.cache import cachear, clave
+
+    def _cargar():
+        return list(
+            ObservadorPunto.objects.filter(observador=usuario)
+            .select_related("punto")
+            .order_by("punto__nombre")
+            .values_list("punto__nombre", flat=True)
+        )
+
+    return cachear(clave("obs", "puntos", usuario.pk), _cargar, segundos=300)
 
 
 def _visible_a_observador(usuario, consulta):

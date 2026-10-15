@@ -6,3 +6,7 @@ class TicketsConfig(AppConfig):
     name = "apps.tickets"
     label = "tickets"
     verbose_name = "Tickets"
+
+    def ready(self):
+        # Conecta la invalidación del caché (puntos del observador, etc.).
+        import apps.tickets.signals  # noqa: F401
