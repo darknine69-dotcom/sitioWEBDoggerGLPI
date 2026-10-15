@@ -84,11 +84,20 @@ def monitoreo_admin(request):
     } if observador else {}
     zona_por_correo = {}
     if observador:
-        for e in ElementoMiLista.objects.filter(observador=observador).select_related("zona"):
+        carpetas_sup = {
+            n.lower() for n in ZonaObservador.objects.filter(
+                observador=observador).values_list("nombre", flat=True)
+        }
+        for e in ElementoMiLista.objects.filter(observador=observador).select_related("zona", "punto"):
             c = (e.usuario_email or "").strip().lower()
-            # Solo carpetas creadas: un punto suelto (ej. "Bogotá") no es zona.
-            if c and c not in zona_por_correo and e.zona_id:
+            if not c or c in zona_por_correo:
+                continue
+            # Solo carpetas creadas: un punto suelto (ej. "Bogotá") no es zona,
+            # salvo que exista la carpeta con ese mismo nombre.
+            if e.zona_id:
                 zona_por_correo[c] = e.zona.nombre
+            elif e.punto_id and (e.punto.nombre or "").lower() in carpetas_sup:
+                zona_por_correo[c] = e.punto.nombre
     ya_mis_lista = set(elementos_por_correo)
     zonas_ya = {
         (e.punto.nombre if e.punto_id else "")
@@ -159,7 +168,7 @@ def monitoreo_admin(request):
                 "nombre": u.nombre or u.email,
                 "email": correo,
                 "rol": u.get_rol_display(),
-                "ubicacion": u.ubicacion or "—",
+                "ubicacion": u.ubicacion or (puntos[0] if puntos else "") or "—",
                 "zona_badge": zona_por_correo.get(correo, ""),
                 "puntos": puntos_txt or "—",
                 "abiertos": abiertos.get(correo, 0),
@@ -180,6 +189,8 @@ def monitoreo_admin(request):
         .order_by("-creado_en", "-pk")
         .values_list("nombre", flat=True)[:50]
     ) if observador else []
+    vistos_destino = {z.lower() for z in zonas_destino}
+    zonas_destino += [p for p in (zonas or []) if p.lower() not in vistos_destino][:50]
     zona_elegida = zona or (zonas_destino[0] if zonas_destino else "")
     creadas = _zonas_creadas_por_observador()
     return render(
