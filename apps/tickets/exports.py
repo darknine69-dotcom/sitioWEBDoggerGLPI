@@ -345,7 +345,7 @@ def generar_excel_reportes(kpis, tecnicos, usuarios, tickets, filtros_txt="Sin f
     # ---- Hoja 3: Por usuario ----
     ws3 = wb.create_sheet("Por usuario")
     usu_headers = (
-        ("Usuario", 26),
+        ("Punto de venta", 26),
         ("Correo", 28),
         ("Creados", 10),
         ("Abiertos", 10),

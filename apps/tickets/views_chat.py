@@ -97,7 +97,7 @@ def _avatar_url(usuario):
 def _insignia(usuario):
     if not usuario:
         return "Mesa de ayuda"
-    return {"usuario": "Usuario", "observador": "Observador",
+    return {"usuario": "Punto de venta", "observador": "Observador",
             "tecnico": "Técnico", "admin": "Admin"}.get(
                 getattr(usuario, "rol", ""), "Soporte")
 

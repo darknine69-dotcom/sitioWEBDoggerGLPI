@@ -9,8 +9,10 @@ observador los vea en su panel.
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from apps.accounts.models import Usuario
 
@@ -80,6 +82,12 @@ def monitoreo_admin(request):
         (e.usuario_email or "").strip().lower(): e.pk
         for e in _elementos_de(observador) if (e.usuario_email or "").strip()
     } if observador else {}
+    zona_por_correo = {}
+    if observador:
+        for e in ElementoMiLista.objects.filter(observador=observador).select_related("zona", "punto"):
+            c = (e.usuario_email or "").strip().lower()
+            if c and c not in zona_por_correo:
+                zona_por_correo[c] = (e.zona.nombre if e.zona_id else "") or (e.punto.nombre if e.punto_id else "")
     ya_mis_lista = set(elementos_por_correo)
     zonas_ya = {
         (e.punto.nombre if e.punto_id else "")
@@ -151,6 +159,7 @@ def monitoreo_admin(request):
                 "email": correo,
                 "rol": u.get_rol_display(),
                 "ubicacion": u.ubicacion or "—",
+                "zona_badge": zona_por_correo.get(correo, ""),
                 "puntos": puntos_txt or "—",
                 "abiertos": abiertos.get(correo, 0),
                 "ya_agregado": correo in ya_mis_lista,
@@ -181,6 +190,11 @@ def monitoreo_admin(request):
             "estado_sel": estado,
             "zonas": zonas,
             "puntos_ticket": puntos_ticket,
+            "zonas_destino": list(
+                ZonaObservador.objects.filter(observador=observador)
+                .order_by("-creado_en", "-pk")
+                .values_list("nombre", flat=True)[:50]
+            ) if observador else [],
             "zona_elegida": zona_elegida,
             "total": len(filas),
             "zonas_creadas": creadas,
@@ -345,6 +359,41 @@ def monitoreo_agregar(request):
     if punto is not None:
         ObservadorPunto.objects.get_or_create(observador=observador, punto=punto)
 
+    return redirect(volver)
+
+
+@admin_required
+@require_POST
+def monitoreo_quitar_zona(request):
+    """Saca una cuenta de la zona elegida en el desplegable.
+
+    Solo si está en esa zona: si su seguimiento apunta a otra, se avisa
+    en vez de borrar de donde no se pidió.
+    """
+    observador_id = request.POST.get("observador") or ""
+    correo = (request.POST.get("email") or "").strip().lower()
+    nombre_zona = (request.POST.get("zona") or "").strip()
+    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    observador = Usuario.objects.filter(
+        pk=observador_id, rol=Usuario.Rol.OBSERVADOR
+    ).first() if observador_id.isdigit() else None
+    if observador is None or not correo or not nombre_zona:
+        return redirect(volver)
+    elemento = ElementoMiLista.objects.filter(
+        observador=observador, usuario_email__iexact=correo
+    ).select_related("punto", "zona").first()
+    if elemento is None:
+        messages.info(request, "Esa cuenta ya no está en el seguimiento.")
+        return redirect(volver)
+    actual = ((elemento.zona.nombre if elemento.zona_id else "")
+              or (elemento.punto.nombre if elemento.punto_id else ""))
+    if actual.lower() != nombre_zona.lower():
+        messages.info(request, f"{correo} no está en la zona {nombre_zona}.")
+        return redirect(volver)
+    elemento.delete()
+    _auditar(request.user, MonitoreoAuditoria.QUITAR_MIEMBRO,
+             observador, nombre_zona, correo)
+    messages.success(request, f"{correo} fuera de la zona {nombre_zona}.")
     return redirect(volver)
 
 

@@ -5,7 +5,7 @@
 {% block nav_usuarios %}is-active{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-users"/></svg></span>{% endblock %}
 {% block header_title %}Usuarios y técnicos{% endblock %}
-{% block header_desc %}Usuarios finales y técnicos (importados o creados en GLPI) con actividad en tiempo real.{% endblock %}
+{% block header_desc %}Puntos de venta y técnicos (importados o creados en GLPI) con actividad en tiempo real.{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -299,7 +299,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
             <svg class="icon icon-sm"><use href="#i-users"/></svg> Todos <span>{{ total }}</span>
         </a>
         <a class="tab-pill {% if tab == 'usuario' %}active{% endif %}" href="?rol=usuario{% if q %}&q={{ q|urlencode }}{% endif %}">
-            <svg class="icon icon-sm"><use href="#i-user"/></svg> Usuarios finales <span>{{ n_usuarios_finales }}</span>
+            <svg class="icon icon-sm"><use href="#i-user"/></svg> Puntos de venta <span>{{ n_usuarios_finales }}</span>
         </a>
         <a class="tab-pill {% if tab == 'tecnico' %}active{% endif %}" href="?rol=tecnico{% if q %}&q={{ q|urlencode }}{% endif %}">
             <svg class="icon icon-sm"><use href="#i-wrench"/></svg> Técnicos <span>{{ n_tecnicos }}</span> <small>({{ n_tecnicos_glpi }} en GLPI)</small>

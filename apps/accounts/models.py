@@ -35,7 +35,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     class Rol(models.TextChoices):
         ADMIN = "admin", "Administrador"
         TECNICO = "tecnico", "Técnico"
-        USUARIO = "usuario", "Usuario"
+        USUARIO = "usuario", "Punto de venta"
         OBSERVADOR = "observador", "Observador"
 
     nombre = models.CharField("Nombre", max_length=100)

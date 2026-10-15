@@ -2491,7 +2491,7 @@ def mi_presionar_zona(request):
             url=f"{landing_por_rol(d)}#zonas",
             icono="i-alert",
             actor=u.nombre or u.email,
-            actor_rol="Usuario",
+            actor_rol="Punto de venta",
         )
     messages.success(request, f"Aviso enviado a la {zona}.")
     return redirect("tickets:mi_panel")
@@ -2831,7 +2831,7 @@ def _timeline_ticket(ticket, include_internos=False):
         es_observador = bool(c.usuario_id and getattr(c.usuario, "rol", None) == "observador")
         autor = c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda")
         if es_usuario:
-            insignia = "Usuario"
+            insignia = "Punto de venta"
         elif es_observador:
             insignia = "Observador"
         elif c.usuario_id:

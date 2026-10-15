@@ -14,6 +14,8 @@ from apps.tickets.models import (
 )
 
 
+
+
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
@@ -304,10 +306,43 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertEqual(self.zona.nombre, "Centro")
 
 
+    def test_quitar_zona_saca_de_la_lista(self):
+        from apps.tickets.models import ElementoMiLista, MonitoreoAuditoria
+
+        url = reverse("tickets:monitoreo_quitar_zona")
+        respuesta = self.client.post(url, {
+            "observador": self.obs.pk, "email": "ana@x.com", "zona": "Norte"})
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertFalse(ElementoMiLista.objects.filter(
+            observador=self.obs, usuario_email="ana@x.com").exists())
+        self.assertTrue(MonitoreoAuditoria.objects.filter(
+            accion="quitar_miembro", zona_nombre="Norte").exists())
+
+    def test_quitar_zona_distinta_no_borra(self):
+        from apps.tickets.models import ElementoMiLista
+
+        url = reverse("tickets:monitoreo_quitar_zona")
+        respuesta = self.client.post(url, {
+            "observador": self.obs.pk, "email": "ana@x.com", "zona": "Sur"})
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(ElementoMiLista.objects.filter(
+            observador=self.obs, usuario_email="ana@x.com").exists())
+
+    def test_tabla_con_badge_de_zona_y_rol_punto_de_venta(self):
+        html = self.client.get(
+            reverse("tickets:monitoreo_admin"),
+            {"observador": self.obs.pk}).content.decode()
+        self.assertIn("zona-badge", html)
+        self.assertIn("Norte", html)
+        self.assertIn("Punto de venta", html)
+
+
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 })
+
+
 class MonitoreoObservadorDetalleTest(TestCase):
     def setUp(self):
         self.obs = Usuario.objects.create_user(
