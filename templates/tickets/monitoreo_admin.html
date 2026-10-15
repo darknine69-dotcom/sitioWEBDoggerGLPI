@@ -263,14 +263,6 @@ main.obs-page { font-family: var(--font-corp); }
                 {% else %}
                 <span class="muted" style="align-self:center">Sin zonas creadas todavía.</span>
                 {% endif %}
-                <form method="post" action="{% url 'tickets:monitoreo_zona_crear' %}" class="obs-buscador-campo" style="flex:0 1 220px;min-width:160px" title="Crear una carpeta de zona para este supervisor">
-                    {% csrf_token %}
-                    <input type="hidden" name="observador" value="{{ observador_id }}">
-                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                    <svg class="icon"><use href="#i-plus"/></svg>
-                    <input type="search" name="nombre" maxlength="80" required placeholder="Nueva zona…" aria-label="Nombre de la nueva zona">
-                    <button type="submit" class="btn btn-sm btn-accent" title="Crear zona">＋</button>
-                </form>
             </form>
 
             <form method="get" class="obs-filtros">

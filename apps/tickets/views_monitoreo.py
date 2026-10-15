@@ -103,9 +103,18 @@ def monitoreo_admin(request):
         (e.punto.nombre if e.punto_id else "")
         for e in _elementos_de(observador).select_related("punto")
     } if observador else set()
+    carpetas_ya = {
+        e.zona.nombre
+        for e in ElementoMiLista.objects.filter(
+            observador=observador).select_related("zona")
+        if e.zona_id
+    } if observador else set()
 
-    # Zonas que ve el observador elegido: las asignadas y las de su lista.
-    zonas = sorted(set(_zonas_de(observador)) | zonas_ya) if observador else []
+    # Zonas que ve el observador elegido: las asignadas, las de su lista
+    # y las carpetas con gente (aunque aún no tengan punto).
+    zonas = sorted(
+        (set(_zonas_de(observador)) | zonas_ya | carpetas_ya) - {""}
+    ) if observador else []
     if not zonas:
         zonas = sorted(Punto.objects.values_list("nombre", flat=True))
 
