@@ -12,7 +12,7 @@
     <form method="get" class="obs-buscador" action="{% url 'tickets:obs_buscar' %}">
         <div class="obs-buscador-campo">
             <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
-            <input type="search" data-autosubmit name="q" value="{{ q }}"
+            <input type="search" data-vivo name="q" value="{{ q }}"
                    placeholder="Nombre de la persona, correo o punto" aria-label="Buscar">
         </div>
         <select name="tipo" class="obs-buscador-tipo" aria-label="Buscar en">

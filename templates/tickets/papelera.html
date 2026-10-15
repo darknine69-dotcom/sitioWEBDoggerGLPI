@@ -28,7 +28,7 @@
 
     <form class="pap-search" method="get" action="{% url 'tickets:papelera' %}">
         <svg class="icon pap-search-icon"><use href="#i-search"/></svg>
-        <input type="search" data-autosubmit name="q" value="{{ q }}" placeholder="Buscar por código, título o solicitante…"
+        <input type="search" data-vivo name="q" value="{{ q }}" placeholder="Buscar por código, título o solicitante…"
                aria-label="Buscar en la papelera">
         <button type="submit" class="btn btn-primary">Buscar</button>
         {% if q %}<a class="link-clear" href="{% url 'tickets:papelera' %}">✕ Limpiar</a>{% endif %}

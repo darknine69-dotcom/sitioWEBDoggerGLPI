@@ -269,7 +269,7 @@ main.obs-page { font-family: var(--font-corp); }
                 <input type="hidden" name="observador" value="{{ observador_id }}">
                 <div class="obs-buscador-campo">
                     <svg class="icon"><use href="#i-search"/></svg>
-                    <input type="search" data-autosubmit name="q" value="{{ q }}"
+                    <input type="search" data-vivo data-vivo-conteo=".js-total" name="q" value="{{ q }}"
                            placeholder="Nombre, correo o ubicación" aria-label="Buscar usuario">
                 </div>
                 <select name="rol" class="obs-buscador-tipo" aria-label="Filtrar por rol">
@@ -295,7 +295,7 @@ main.obs-page { font-family: var(--font-corp); }
             </form>
 
             <p class="muted" style="font-size:12.5px">
-                {{ total }} usuario{{ total|pluralize }} activo{{ total|pluralize:"s, :" }}.
+                <span class="js-total">{{ total }}</span> usuario{{ total|pluralize }} activo{{ total|pluralize:"s, :" }}.
                 Se guarda en <strong id="zonaGuardaEn">{{ zona_elegida|default:"la zona elegida" }}</strong> para
                 <strong>{{ observador.nombre }}</strong>.
             </p>

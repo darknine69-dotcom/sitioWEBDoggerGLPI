@@ -129,7 +129,89 @@
         }
     });
 
-    /* ---- Modales ---- */    function openModal(sel) {
+    /* ---- Búsqueda en vivo sin recargar ----
+       input[type="search"][data-vivo] filtra al escribir o pegar: pide la
+       misma URL al servidor y cambia solo las filas, el conteo y los
+       enlaces de paginación. Sin recarga, sin perder el foco ni lo escrito.
+       Con Enter o sin JS, el formulario se envía normal. */
+    (function () {
+        var temporizadores = new WeakMap();
+        var controles = new WeakMap();
+        function ambitoDe(input) {
+            var form = input.form;
+            if (!form) { return document; }
+            return form.closest(".table-card, .chart-card, .corp-table-card, section, main") || document;
+        }
+        function sel(input, attr, defecto) {
+            return input.getAttribute(attr) || defecto;
+        }
+        function pintaBuscando(input, on) {
+            input.classList.toggle("is-buscando", !!on);
+        }
+        function refrescarPaginacion(ambito, input) {
+            var nombre = input.getAttribute("name");
+            if (!nombre) { return; }
+            ambito.querySelectorAll(".pagination-links a[href]").forEach(function (a) {
+                try {
+                    var u = new URL(a.getAttribute("href"), window.location.origin);
+                    if (input.value) { u.searchParams.set(nombre, input.value); }
+                    else { u.searchParams.delete(nombre); }
+                    a.setAttribute("href", u.pathname + u.search + u.hash);
+                } catch (e) { }
+            });
+        }
+        function buscar(input) {
+            var form = input.form;
+            if (!form) { return; }
+            var ambito = ambitoDe(input);
+            var cont = ambito.querySelector(sel(input, "data-vivo-contenedor", "tbody"));
+            if (!cont) { return; }
+            var anterior = controles.get(input);
+            if (anterior) { try { anterior.abort(); } catch (e) { } }
+            var control = ("AbortController" in window) ? new AbortController() : null;
+            controles.set(input, control);
+            var params = new URLSearchParams(new FormData(form));
+            var url = form.getAttribute("action") || window.location.pathname;
+            url += (url.indexOf("?") === -1 ? "?" : "&") + params.toString();
+            pintaBuscando(input, true);
+            fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                credentials: "same-origin",
+                signal: control ? control.signal : undefined
+            }).then(function (r) {
+                if (!r.ok) { throw new Error("http " + r.status); }
+                return r.text();
+            }).then(function (html) {
+                var doc = new DOMParser().parseFromString(html, "text/html");
+                var contNuevo = doc.querySelector(sel(input, "data-vivo-contenedor", "tbody"));
+                if (!contNuevo) { return; }
+                cont.innerHTML = contNuevo.innerHTML;
+                var selConteo = sel(input, "data-vivo-conteo", ".toolbar-count");
+                if (selConteo) {
+                    var cViejo = ambito.querySelector(selConteo);
+                    var cNuevo = doc.querySelector(selConteo);
+                    if (cViejo && cNuevo) { cViejo.textContent = cNuevo.textContent; }
+                }
+                refrescarPaginacion(ambito, input);
+                try {
+                    window.history.replaceState(null, "", url);
+                } catch (e) { }
+            }).catch(function () { }).then(function () {
+                pintaBuscando(input, false);
+            });
+        }
+        document.addEventListener("input", function (e) {
+            var inp = e.target && e.target.closest
+                ? e.target.closest('input[type="search"][data-vivo]')
+                : null;
+            if (!inp || !inp.form) { return; }
+            clearTimeout(temporizadores.get(inp));
+            temporizadores.set(inp, setTimeout(function () { buscar(inp); }, 350));
+        });
+    })();
+
+    /* ---- Modales ---- */
+    function openModal(sel) {
         var m = document.querySelector(sel);
         if (m) { m.classList.add("open"); document.body.style.overflow = "hidden"; }
     }

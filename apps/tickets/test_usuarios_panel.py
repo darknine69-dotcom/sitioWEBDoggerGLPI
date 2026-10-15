@@ -129,6 +129,12 @@ class AccesosPanelTest(TestCase):
         self.assertNotIn(rancia, html)
         self.assertIn("Ficha Fresca", html)
 
+
+    def test_buscador_en_vivo_sin_recarga(self):
+        html = self._pagina().content.decode()
+        self.assertIn('data-vivo', html)
+        self.assertIn('id="tablaUsuarios"', html)
+
     def test_js_muestra_fecha_absoluta(self):
         from pathlib import Path
 

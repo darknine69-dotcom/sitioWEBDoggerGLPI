@@ -310,7 +310,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         {% if tab %}<input type="hidden" name="rol" value="{{ tab }}">{% endif %}
         <label class="search-field">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
-            <input type="search" data-autosubmit name="q" value="{{ q }}" placeholder="Buscar por nombre o correo…" />
+            <input type="search" data-vivo name="q" value="{{ q }}" placeholder="Buscar por nombre o correo…" />
         </label>
         <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
         {% if q %}<a href="{% url 'tickets:usuarios' %}" class="link-clear">✕ Limpiar</a>{% endif %}
