@@ -318,15 +318,17 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertTrue(MonitoreoAuditoria.objects.filter(
             accion="quitar_miembro", zona_nombre="Norte").exists())
 
-    def test_quitar_zona_distinta_no_borra(self):
+    def test_quitar_saca_de_donde_este(self):
         from apps.tickets.models import ElementoMiLista
 
         url = reverse("tickets:monitoreo_quitar_zona")
         respuesta = self.client.post(url, {
-            "observador": self.obs.pk, "email": "ana@x.com", "zona": "Sur"})
-        self.assertEqual(respuesta.status_code, 302)
-        self.assertTrue(ElementoMiLista.objects.filter(
+            "observador": self.obs.pk, "email": "ana@x.com", "zona": "Sur"},
+            follow=True)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertFalse(ElementoMiLista.objects.filter(
             observador=self.obs, usuario_email="ana@x.com").exists())
+        self.assertContains(respuesta, "fuera de")
 
     def test_tabla_con_badge_de_zona_y_rol_punto_de_venta(self):
         html = self.client.get(

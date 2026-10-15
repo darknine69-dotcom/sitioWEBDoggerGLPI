@@ -441,19 +441,19 @@ def monitoreo_agregar(request):
 @admin_required
 @require_POST
 def monitoreo_quitar_zona(request):
-    """Saca una cuenta de la zona elegida en el desplegable.
+    """Saca una cuenta del seguimiento del supervisor.
 
-    Solo si está en esa zona: si su seguimiento apunta a otra, se avisa
-    en vez de borrar de donde no se pidió.
+    No depende de la zona elegida en el desplegable: se quita de donde
+    esté (su zona real) y se avisa cuál era, para que el botón siempre
+    responda.
     """
     observador_id = request.POST.get("observador") or ""
     correo = (request.POST.get("email") or "").strip().lower()
-    nombre_zona = (request.POST.get("zona") or "").strip()
     volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
     observador = Usuario.objects.filter(
         pk=observador_id, rol=Usuario.Rol.OBSERVADOR
     ).first() if observador_id.isdigit() else None
-    if observador is None or not correo or not nombre_zona:
+    if observador is None or not correo:
         return redirect(volver)
     elemento = ElementoMiLista.objects.filter(
         observador=observador, usuario_email__iexact=correo
@@ -461,21 +461,21 @@ def monitoreo_quitar_zona(request):
     if elemento is None:
         messages.info(request, "Esa cuenta ya no está en el seguimiento.")
         return redirect(volver)
-    actual = ((getattr(elemento.zona, "nombre", "") if elemento.zona_id else "")
-              or (getattr(elemento.punto, "nombre", "") if elemento.punto_id else ""))
-    if actual.lower() != nombre_zona.lower():
-        messages.info(request, f"{correo} no está en la zona {nombre_zona}.")
-        return redirect(volver)
+    zona_real = ((getattr(elemento.zona, "nombre", "") or "").strip()
+                 or (getattr(elemento.punto, "nombre", "") or "").strip())
     elemento.delete()
     _auditar(request.user, MonitoreoAuditoria.QUITAR_MIEMBRO,
-             observador, nombre_zona, correo)
+             observador, zona_real, correo)
     _avisar_supervisor(
         observador,
-        f"{correo} salió de tu zona {nombre_zona}",
+        f"{correo} salió de tu zona {zona_real or 'sin zona'}",
         "El administrador la sacó del seguimiento.",
         request.user,
     )
-    messages.success(request, f"{correo} fuera de la zona {nombre_zona}.")
+    if zona_real:
+        messages.success(request, f"{correo} fuera de {zona_real}.")
+    else:
+        messages.success(request, f"{correo} fuera del seguimiento.")
     return redirect(volver)
 
 
