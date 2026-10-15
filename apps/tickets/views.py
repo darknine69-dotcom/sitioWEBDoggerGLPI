@@ -2307,6 +2307,196 @@ def _mi_zona_supervisor(user):
             "equipo": equipo[:5], "equipo_extra": max(0, len(equipo) - 5)}
 
 
+def _zona_dashboard(user, zonas_info):
+    """Métricas por zona para el panel del usuario: indicadores, ranking,
+    alertas, técnicos y datos listos para las gráficas.
+
+    Solo agregados (conteos y promedios): ningún contenido ajeno sale de
+    aquí, así el usuario ve el pulso de su zona sin ver tickets de otros.
+    """
+    from collections import Counter
+
+    zonas = []
+    for z in zonas_info:
+        nombre = z["nombre"]
+        qs = Ticket.objects.filter(solicitante_punto__iexact=nombre)
+        total = qs.count()
+        if not total:
+            continue
+        agg = qs.aggregate(
+            abiertos=Count("id", filter=Q(estado=Ticket.Estado.ABIERTO)),
+            en_progreso=Count("id", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
+            resueltos=Count("id", filter=Q(estado=Ticket.Estado.RESUELTO)),
+            cerrados=Count("id", filter=Q(estado=Ticket.Estado.CERRADO)),
+        )
+        muestra = list(
+            qs.select_related("categoria", "tecnico_asignado")
+            .order_by("-fecha_creacion")[:500]
+        )
+        vencidos = sum(1 for t in muestra if (t.info_ans[0] if t.info_ans else None) == "vencido")
+        en_plazo = sum(1 for t in muestra if (t.info_ans[0] if t.info_ans else None) == "ok")
+        sin_asignar = sum(
+            1 for t in muestra
+            if not t.tecnico_asignado_id
+            and t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
+        )
+        horas = [
+            (t.fecha_cierre - t.fecha_creacion).total_seconds() / 3600.0
+            for t in muestra
+            if t.fecha_cierre and t.fecha_creacion
+            and (t.fecha_cierre - t.fecha_creacion).total_seconds() >= 0
+        ]
+        prom_h = round(sum(horas) / len(horas), 1) if horas else None
+        hechos = agg["resueltos"] + agg["cerrados"]
+        avance = round(hechos / total * 100) if total else 0
+        medidos = en_plazo + vencidos
+        sla = round(en_plazo / medidos * 100) if medidos else 100
+        cats = Counter(
+            t.categoria.nombre if t.categoria else "Sin categoría" for t in muestra
+        )
+        top_cats = [{"nombre": n, "total": v} for n, v in cats.most_common(5)]
+        tecs = {}
+        for t in muestra:
+            tec = t.tecnico_asignado
+            if not tec:
+                continue
+            e = tecs.setdefault(tec.pk, {
+                "nombre": tec.nombre or tec.email, "email": tec.email,
+                "avatar": _avatar_url_simple(tec),
+                "en_linea": bool(getattr(tec, "en_linea", False)),
+                "abiertos": 0,
+            })
+            if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+                e["abiertos"] += 1
+        zonas.append({
+            "nombre": nombre,
+            "total": total,
+            "abiertos": agg["abiertos"],
+            "en_progreso": agg["en_progreso"],
+            "resueltos": agg["resueltos"],
+            "cerrados": agg["cerrados"],
+            "vencidos": vencidos,
+            "en_plazo": en_plazo,
+            "sin_asignar": sin_asignar,
+            "prom_h": prom_h,
+            "avance": avance,
+            "sla": sla,
+            "supervisores": z["supervisores"],
+            "tecnicos": sorted(tecs.values(), key=lambda e: (-e["abiertos"], e["nombre"].lower()))[:6],
+            "top_categorias": top_cats,
+        })
+    zonas.sort(key=lambda z: (-z["avance"], -z["total"]))
+    for i, z in enumerate(zonas, start=1):
+        z["posicion"] = i
+    promhs = [z["prom_h"] for z in zonas if z["prom_h"] is not None]
+    totales = {
+        "abiertos": sum(z["abiertos"] for z in zonas),
+        "vencidos": sum(z["vencidos"] for z in zonas),
+        "en_progreso": sum(z["en_progreso"] for z in zonas),
+        "prom_h": round(sum(promhs) / len(promhs), 1) if promhs else None,
+        "avance": round(sum(z["resueltos"] + z["cerrados"] for z in zonas)
+                        / max(1, sum(z["total"] for z in zonas)) * 100),
+    }
+    alertas = []
+    for z in zonas:
+        if z["vencidos"]:
+            alertas.append({"nivel": "rojo",
+                            "texto": f"{z['vencidos']} vencido(s) en {z['nombre']}"})
+        if z["sin_asignar"]:
+            alertas.append({"nivel": "amarillo",
+                            "texto": f"{z['sin_asignar']} sin asignar en {z['nombre']}"})
+        if z["total"] >= 5 and z["avance"] < 50:
+            alertas.append({"nivel": "amarillo",
+                            "texto": f"Avance bajo en {z['nombre']} ({z['avance']}%)"})
+    return {"zonas": zonas, "alertas": alertas[:8], "totales": totales}
+
+
+def _zona_dashboard_ctx(user):
+    """Contexto del dashboard de zona del usuario (vacío para otros roles)."""
+    vacio = {"zona_dashboard": {"zonas": [], "alertas": [],
+                                "totales": {"abiertos": 0, "vencidos": 0,
+                                            "en_progreso": 0, "prom_h": None,
+                                            "avance": 0}},
+             "zona_json": "{}"}
+    if getattr(user, "rol", None) != "usuario":
+        return vacio
+    zd = _zona_dashboard(user, _mi_zona_supervisor(user)["zonas"])
+    desde_py = {
+        "barras": {
+            "labels": [z["nombre"] for z in zd["zonas"]],
+            "abiertos": [z["abiertos"] for z in zd["zonas"]],
+            "progreso": [z["en_progreso"] for z in zd["zonas"]],
+            "resueltos": [z["resueltos"] + z["cerrados"] for z in zd["zonas"]],
+        },
+        "ans": {
+            "plazo": sum(z["en_plazo"] for z in zd["zonas"]),
+            "vencidos": sum(z["vencidos"] for z in zd["zonas"]),
+        },
+        "categorias": _zona_categorias(zd["zonas"]),
+    }
+    return {"zona_dashboard": zd,
+            "zona_json": json.dumps(desde_py, ensure_ascii=False)}
+
+
+def _zona_categorias(zonas, tope=6):
+    from collections import Counter
+
+    conteo = Counter()
+    for z in zonas:
+        for c in z["top_categorias"]:
+            conteo[c["nombre"]] += c["total"]
+    top = conteo.most_common(tope)
+    return {"labels": [n for n, _ in top], "data": [v for _, v in top]}
+
+
+@login_required
+@require_POST
+def mi_presionar_zona(request):
+    """El usuario presiona o pide apoyo para UNA de sus zonas.
+
+    Avisa por campana a los supervisores de la zona (o a los admins si no
+    hay). La zona debe ser de las suyas: otra devuelve 404.
+    """
+    from apps.accounts.routing import landing_por_rol
+    from apps.notificaciones import services as avisos
+
+    u = request.user
+    zona = (request.POST.get("zona") or "").strip()[:80]
+    accion = "solicitar" if request.POST.get("accion") == "solicitar" else "presionar"
+    mensaje = (request.POST.get("mensaje") or "").strip()[:500]
+    mias = {z["nombre"].lower() for z in _mi_zona_supervisor(u)["zonas"]}
+    if not zona or zona.lower() not in mias:
+        raise Http404
+    if not mensaje:
+        messages.error(request, "Escribe el mensaje para la zona.")
+        return redirect("tickets:mi_panel")
+    from apps.tickets.models import ObservadorPunto, Punto
+
+    punto = Punto.objects.filter(nombre__iexact=zona).first()
+    dests = []
+    if punto:
+        dests = [op.observador for op in
+                 ObservadorPunto.objects.filter(punto=punto).select_related("observador")[:10]]
+    dests = [d for d in dests if getattr(d, "is_active", False)]
+    if not dests:
+        dests = list(get_user_model().objects.filter(
+            rol="admin", activo=True, is_active=True)[:10])
+    if accion == "solicitar":
+        titulo = f"{u.nombre or u.email} solicita apoyo en {zona}"
+    else:
+        titulo = f"{u.nombre or u.email} presiona la {zona}"
+    for d in dests:
+        avisos.crear(
+            d, "sistema", titulo, mensaje,
+            url=f"{landing_por_rol(d)}#zonas",
+            icono="i-alert",
+            actor=u.nombre or u.email,
+            actor_rol="Usuario",
+        )
+    messages.success(request, f"Aviso enviado a la {zona}.")
+    return redirect("tickets:mi_panel")
+
+
 @login_required
 @require_POST
 def mi_presionar_tecnico(request, pk):
@@ -2448,6 +2638,7 @@ def mi_panel(request):
                     estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
                 ).order_by("-fecha_creacion")[:10]
             ),
+            **_zona_dashboard_ctx(request.user),
             **dashboard_context,
         },
     )

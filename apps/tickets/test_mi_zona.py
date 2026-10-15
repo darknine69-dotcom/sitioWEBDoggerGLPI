@@ -84,3 +84,38 @@ class MiZonaSupervisorTest(TestCase):
                 reverse("tickets:mi_presionar", args=[self.ticket.pk]),
                 {"mensaje": "Hola"}).status_code, 302)
         self.assertFalse(TicketComentario.objects.filter(ticket=self.ticket).exists())
+
+    def test_dashboard_de_zona_con_metricas(self):
+        respuesta = self.client.get(reverse("tickets:mi_panel"))
+        self.assertEqual(respuesta.status_code, 200)
+        zd = respuesta.context["zona_dashboard"]
+        self.assertEqual(len(zd["zonas"]), 1)
+        zona = zd["zonas"][0]
+        self.assertEqual(zona["nombre"], "Zona Uno")
+        self.assertEqual(zona["total"], 1)
+        self.assertEqual(zona["abiertos"], 1)
+        self.assertEqual(zona["posicion"], 1)
+        self.assertTrue(respuesta.context["zona_json"])
+        html = respuesta.content.decode()
+        self.assertIn("Rendimiento por zona", html)
+        self.assertIn("Ranking de zonas", html)
+
+    def test_presionar_zona_avisa_supervisores(self):
+        from apps.notificaciones.models import Notificacion
+
+        respuesta = self.client.post(
+            reverse("tickets:mi_presionar_zona"),
+            {"zona": "Zona Uno", "mensaje": "Ayuda en la zona"})
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(Notificacion.objects.filter(
+            usuario=self.sup, titulo__icontains="Zona Uno").exists())
+
+    def test_presionar_zona_ajena_da_404(self):
+        from apps.notificaciones.models import Notificacion
+
+        respuesta = self.client.post(
+            reverse("tickets:mi_presionar_zona"),
+            {"zona": "Zona Ajena", "mensaje": "Hola"})
+        self.assertEqual(respuesta.status_code, 404)
+        self.assertFalse(Notificacion.objects.filter(
+            titulo__icontains="Zona Ajena").exists())

@@ -67,6 +67,69 @@
 .mz-presion textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 56px; border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 11px; font: inherit; font-size: 14px; }
 .mz-presion textarea:focus { outline: none; border-color: var(--dogger-red); }
 .mz-vacio { color: var(--ink-muted); font-size: 13px; padding: 6px 0; }
+/* ---- Dashboard de zona ---- */
+.mz-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 2px 0 14px; }
+.mz-kpi { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.mz-kpi-ico { width: 38px; height: 38px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; }
+.mz-kpi-ico .icon { width: 18px; height: 18px; }
+.mz-kpi-azul .mz-kpi-ico { background: rgba(37,99,235,.12); color: #2563EB; }
+.mz-kpi-rojo .mz-kpi-ico { background: rgba(214,43,31,.12); color: #D62B1F; }
+.mz-kpi-amarillo .mz-kpi-ico { background: rgba(242,169,0,.16); color: #B7791F; }
+.mz-kpi-gris .mz-kpi-ico { background: #EEE9DB; color: #57534E; }
+.mz-kpi-tx { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.mz-kpi-tx b { font-size: 20px; font-weight: 800; color: var(--ink); }
+.mz-kpi-tx span { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); }
+.mz-kpi-rojo .mz-kpi-tx b { color: #D62B1F; }
+.mz-dash { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 14px; align-items: start; }
+.mz-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.mz-chart-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.mz-chart-card:first-child { grid-column: 1 / -1; }
+.mz-chart-card h4 { margin: 0 0 8px; font-size: 12.5px; display: flex; align-items: center; gap: 7px; color: var(--ink); }
+.mz-chart-card h4 .icon { width: 14px; height: 14px; color: var(--dogger-red); }
+.mz-chart-stage { height: 220px; position: relative; }
+.mz-zonacard { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: #fff; }
+.mz-zonacard-head { display: flex; align-items: center; gap: 10px; }
+.mz-zonacard-head > div { min-width: 0; }
+.mz-zonacard-head strong { font-size: 14px; }
+.mz-zonacard-head small { display: block; font-size: 11.5px; color: var(--ink-muted); }
+.mz-ranking { flex: none; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #212121; color: #FBC02D; font-weight: 800; font-size: 13px; }
+.mz-bar { flex: 1; min-width: 60px; height: 8px; border-radius: 999px; background: #EFE8DA; overflow: hidden; }
+.mz-bar > span { display: block; height: 100%; background: linear-gradient(90deg, #2563EB, #2F7D4F); border-radius: 999px; }
+.mz-zonacard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+.mz-zonacard-grid > div { background: #FBFAF7; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; }
+.mz-zonacard-grid b { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); margin-bottom: 2px; }
+.mz-tecnicos { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 1 / -1; }
+.mz-tec-chip { position: relative; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; background: #4F46E5; }
+.mz-tec-chip img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.mz-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mz-cat { font-size: 11px; font-weight: 700; background: #FBF3D9; border: 1px solid #EADCA8; color: #8a6d1c; border-radius: 999px; padding: 2px 9px; }
+.mz-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: flex-start; }
+.mz-acciones .mz-presion { flex: 1 1 220px; margin-top: 0; }
+.mz-detalle { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 12.5px; }
+.mz-detalle b { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); margin-bottom: 2px; }
+.mz-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.mz-panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.mz-panel h4 { margin: 0 0 8px; font-size: 12.5px; display: flex; align-items: center; gap: 7px; }
+.mz-panel h4 .icon { width: 14px; height: 14px; color: var(--dogger-red); }
+.mz-rank { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-top: 1px dashed var(--line); }
+.mz-rank:first-of-type { border-top: 0; }
+.mz-rank .mz-ranking { width: 26px; height: 26px; font-size: 12px; }
+.mz-rank-tx { flex: 1; min-width: 0; }
+.mz-rank-tx strong { display: block; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mz-rank-tx small { font-size: 11px; color: var(--ink-muted); }
+.mz-alert { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; font-weight: 600; border-radius: 10px; padding: 8px 10px; margin-top: 6px; }
+.mz-alert .icon { width: 14px; height: 14px; flex: none; margin-top: 1px; }
+.mz-alert-rojo { background: rgba(214,43,31,.08); color: #A6281E; border: 1px solid rgba(214,43,31,.2); }
+.mz-alert-amarillo { background: rgba(242,169,0,.1); color: #8a6116; border: 1px solid rgba(242,169,0,.3); }
+@media (max-width: 960px) {
+    .mz-dash { grid-template-columns: 1fr; }
+    .mz-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+    .mz-charts { grid-template-columns: 1fr; }
+    .mz-zonacard-grid, .mz-detalle { grid-template-columns: 1fr; }
+    .mz-chart-stage { height: 200px; }
+}
 @media (max-width: 560px) {
     .corp-card.mz-card { padding: 16px; }
     .mz-hero h3 { font-size: 17px; }
@@ -137,44 +200,145 @@
             {% endif %}
         </div>
         <div class="mz-body">
-            <div class="mz-zonas">
-                {% for z in mi_zona.zonas %}
-                <span class="mz-zona">
-                    <svg class="icon"><use href="#i-map-pin"/></svg> {{ z.nombre }}
-                    {% if z.supervisores %}<small>· {% for s in z.supervisores %}{{ s.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}</small>{% endif %}
-                </span>
-                {% empty %}
-                <span class="mz-zona mz-zona-vacia"><svg class="icon"><use href="#i-map-pin"/></svg> Sin zona asignada</span>
-                {% endfor %}
+            {% with tot=zona_dashboard.totales %}
+            <div class="mz-kpis">
+                <div class="mz-kpi mz-kpi-azul">
+                    <span class="mz-kpi-ico"><svg class="icon"><use href="#i-alert"/></svg></span>
+                    <span class="mz-kpi-tx"><b>{{ tot.abiertos|default:0 }}</b><span>Abiertos</span></span>
+                </div>
+                <div class="mz-kpi mz-kpi-rojo">
+                    <span class="mz-kpi-ico"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+                    <span class="mz-kpi-tx"><b>{{ tot.vencidos|default:0 }}</b><span>Vencidos</span></span>
+                </div>
+                <div class="mz-kpi mz-kpi-amarillo">
+                    <span class="mz-kpi-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                    <span class="mz-kpi-tx"><b>{{ tot.en_progreso|default:0 }}</b><span>En progreso</span></span>
+                </div>
+                <div class="mz-kpi mz-kpi-gris">
+                    <span class="mz-kpi-ico"><svg class="icon"><use href="#i-clock"/></svg></span>
+                    <span class="mz-kpi-tx"><b>{% if tot.prom_h is not None %}{{ tot.prom_h }} h{% else %}—{% endif %}</b><span>T. prom. resolución</span></span>
+                </div>
             </div>
-            {% for s in mi_zona.supervisores %}
-            <div class="mz-sup">
-                <span class="mz-ava">{% if s.avatar %}<img src="{{ s.avatar }}" alt="{{ s.nombre }}">{% else %}{{ s.nombre|slice:":1"|upper }}{% endif %}<span class="mz-dot{% if s.en_linea %} green{% endif %}"></span></span>
-                <span class="mz-sup-tx">
-                    <strong>{{ s.nombre }}</strong>
-                    <small>{% if s.zona %}<span class="mz-zonachip">{{ s.zona }}</span>{% endif %}<span class="mz-estado{% if s.en_linea %} on{% endif %}">{% if s.en_linea %}En línea{% else %}Desconectado{% endif %}</span></small>
-                </span>
+            {% endwith %}
+            <div class="mz-dash">
+                <div class="mz-main">
+                    <div class="mz-charts">
+                        <div class="mz-chart-card">
+                            <h4><svg class="icon"><use href="#i-chart"/></svg> Rendimiento por zona</h4>
+                            <div class="mz-chart-stage"><canvas id="mzChartBarras"></canvas></div>
+                        </div>
+                        <div class="mz-chart-card">
+                            <h4><svg class="icon"><use href="#i-check-circle"/></svg> Cumplimiento ANS</h4>
+                            <div class="mz-chart-stage"><canvas id="mzChartAns"></canvas></div>
+                        </div>
+                        <div class="mz-chart-card">
+                            <h4><svg class="icon"><use href="#i-folder"/></svg> Incidencias frecuentes</h4>
+                            <div class="mz-chart-stage"><canvas id="mzChartCats"></canvas></div>
+                        </div>
+                    </div>
+                    {% for z in zona_dashboard.zonas %}
+                    <div class="mz-zonacard" id="mz-det-{{ forloop.counter }}">
+                        <div class="mz-zonacard-head">
+                            <span class="mz-ranking">{{ z.posicion }}</span>
+                            <div>
+                                <strong>{{ z.nombre }}</strong>
+                                <small>{{ z.total }} tickets · avance {{ z.avance }}% · ANS {{ z.sla }}%</small>
+                            </div>
+                            <span class="mz-bar"><span style="width:{{ z.avance }}%"></span></span>
+                        </div>
+                        <div class="mz-zonacard-grid">
+                            <div><b>Ubicación</b><span>{{ z.nombre }}</span></div>
+                            <div><b>Equipo técnico</b><span>{{ z.tecnicos|length }} activo(s)</span></div>
+                            <div class="mz-tecnicos">
+                                {% for t in z.tecnicos %}
+                                <span class="mz-tec-chip" title="{{ t.nombre }} · {{ t.abiertos }} abierto(s)">{% if t.avatar %}<img src="{{ t.avatar }}" alt="">{% else %}{{ t.nombre|slice:":1"|upper }}{% endif %}<span class="mz-dot{% if t.en_linea %} green{% endif %}"></span></span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% if z.top_categorias %}
+                        <div class="mz-cats">
+                            {% for c in z.top_categorias %}
+                            <span class="mz-cat">{{ c.nombre }} · {{ c.total }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="mz-acciones">
+                            <details class="mz-presion">
+                                <summary><svg class="icon"><use href="#i-message"/></svg> Presionar zona</summary>
+                                <form method="post" action="{% url 'tickets:mi_presionar_zona' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="zona" value="{{ z.nombre }}">
+                                    <textarea name="mensaje" required maxlength="500" placeholder="Ej: La zona lleva varios casos frenados, ¿nos ayudas a priorizar?"></textarea>
+                                    <button type="submit" class="btn btn-primary btn-sm">Enviar a la zona</button>
+                                </form>
+                            </details>
+                            <details class="mz-presion">
+                                <summary><svg class="icon"><use href="#i-users"/></svg> Solicitar apoyo</summary>
+                                <form method="post" action="{% url 'tickets:mi_presionar_zona' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="zona" value="{{ z.nombre }}">
+                                    <input type="hidden" name="accion" value="solicitar">
+                                    <textarea name="mensaje" required maxlength="500" placeholder="Ej: Necesitamos otro técnico en la zona esta semana…"></textarea>
+                                    <button type="submit" class="btn btn-primary btn-sm">Solicitar reasignación</button>
+                                </form>
+                            </details>
+                            <a class="btn btn-outline btn-sm" href="#mz-detalle-{{ forloop.counter }}">Ver detalles</a>
+                        </div>
+                        <div class="mz-detalle" id="mz-detalle-{{ forloop.counter }}">
+                            <div><b>Ubicación</b><span>{{ z.nombre }}</span></div>
+                            <div><b>Técnicos activos</b><span>{% for t in z.tecnicos %}{{ t.nombre }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</span></div>
+                            <div><b>Equipos en zona</b><span>{{ z.tecnicos|length }} técnico(s) · {{ z.total }} ticket(s)</span></div>
+                            <div><b>Incidencias frecuentes</b><span>{% for c in z.top_categorias %}{{ c.nombre }} ({{ c.total }}){% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</span></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% for t in mis_abiertos %}
+                    {% if t.tecnico_asignado %}
+                    <details class="mz-presion">
+                        <summary>
+                            <span class="mz-code">{{ t.codigo }}</span>
+                            <span class="mz-tit">{{ t.titulo }}</span>
+                            <span class="mz-tec">{% if t.tecnico_asignado.avatar %}<img src="{{ t.tecnico_asignado.avatar.url }}" alt="">{% endif %}{{ t.tecnico_asignado.nombre }}</span>
+                            <span class="mz-ir">Presionar <span class="chev">▾</span></span>
+                        </summary>
+                        <form method="post" action="{% url 'tickets:mi_presionar' t.pk %}">
+                            {% csrf_token %}
+                            <textarea name="mensaje" required maxlength="500" placeholder="Ej: Buenas, ¿me ayudas a priorizar este caso? Llevo dos días esperando…"></textarea>
+                            <button type="submit" class="btn btn-primary btn-sm">Enviar mensaje al técnico</button>
+                        </form>
+                    </details>
+                    {% endif %}
+                    {% empty %}
+                    <p class="mz-vacio">No tienes tickets abiertos para presionar.</p>
+                    {% endfor %}
+                </div>
+                <aside class="mz-side">
+                    <div class="mz-panel">
+                        <h4><svg class="icon"><use href="#i-layers"/></svg> Ranking de zonas</h4>
+                        {% for z in zona_dashboard.zonas %}
+                        <div class="mz-rank">
+                            <span class="mz-ranking">#{{ z.posicion }}</span>
+                            <span class="mz-rank-tx"><strong>{{ z.nombre }}</strong><small>{{ z.avance }}% avance · {{ z.total }} tickets</small></span>
+                            <span class="mz-bar"><span style="width:{{ z.avance }}%"></span></span>
+                        </div>
+                        {% empty %}
+                        <p class="mz-vacio">Sin zonas para rankear.</p>
+                        {% endfor %}
+                    </div>
+                    <div class="mz-panel">
+                        <h4><svg class="icon"><use href="#i-alert"/></svg> Alertas de desempeño</h4>
+                        {% for a in zona_dashboard.alertas %}
+                        <div class="mz-alert mz-alert-{{ a.nivel }}">
+                            <svg class="icon"><use href="#i-{% if a.nivel == 'rojo' %}x-circle{% else %}alert{% endif %}"/></svg>
+                            <span>{{ a.texto }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="mz-vacio">Todo en orden en tus zonas.</p>
+                        {% endfor %}
+                    </div>
+                </aside>
             </div>
-            {% endfor %}
-            {% for t in mis_abiertos %}
-            {% if t.tecnico_asignado %}
-            <details class="mz-presion">
-                <summary>
-                    <span class="mz-code">{{ t.codigo }}</span>
-                    <span class="mz-tit">{{ t.titulo }}</span>
-                    <span class="mz-tec">{% if t.tecnico_asignado.avatar %}<img src="{{ t.tecnico_asignado.avatar.url }}" alt="">{% endif %}{{ t.tecnico_asignado.nombre }}</span>
-                    <span class="mz-ir">Presionar <span class="chev">▾</span></span>
-                </summary>
-                <form method="post" action="{% url 'tickets:mi_presionar' t.pk %}">
-                    {% csrf_token %}
-                    <textarea name="mensaje" required maxlength="500" placeholder="Ej: Buenas, ¿me ayudas a priorizar este caso? Llevo dos días esperando…"></textarea>
-                    <button type="submit" class="btn btn-primary btn-sm">Enviar mensaje al técnico</button>
-                </form>
-            </details>
-            {% endif %}
-            {% empty %}
-            <p class="mz-vacio">No tienes tickets abiertos para presionar.</p>
-            {% endfor %}
+            <script type="application/json" id="mzData">{{ zona_json|escapejs }}</script>
         </div>
     </section>
     {% endif %}
@@ -403,4 +567,116 @@
 {% endcomment %}
 <script src="{% asset 'js/mi-panel-corp.js' %}"></script>
 <script src="{% asset 'js/voto-tecnicos.js' %}"></script>
+<script src="{% static 'js/vendor/chart.umd.min.js' %}"></script>
+<script>
+/* Dashboard de zona: barras de rendimiento, dona ANS y pie de categorías,
+   con el mismo realce diagonal al hover de los gráficos del panel. */
+(function () {
+    var el = document.getElementById("mzData");
+    if (!el || typeof Chart === "undefined") { return; }
+    var D;
+    try { D = JSON.parse(el.textContent); } catch (e) { return; }
+    if (!D || !D.barras || !(D.barras.labels || []).length) { return; }
+    var _cache = {};
+    var _ctx = null;
+    function hatch(color) {
+        var key = String(color);
+        if (_cache[key]) { return _cache[key]; }
+        if (!_ctx) { _ctx = document.createElement("canvas").getContext("2d"); }
+        var t = document.createElement("canvas");
+        t.width = 10; t.height = 10;
+        var g = t.getContext("2d");
+        g.fillStyle = key;
+        g.fillRect(0, 0, 10, 10);
+        g.strokeStyle = "rgba(255,255,255,.55)";
+        g.lineWidth = 2.5;
+        g.beginPath();
+        g.moveTo(-3, 13); g.lineTo(13, -3);
+        g.moveTo(-3, 3); g.lineTo(3, -3);
+        g.stroke();
+        var p = null;
+        try { p = _ctx.createPattern(t, "repeat"); } catch (e) { p = null; }
+        _cache[key] = p || key;
+        return _cache[key];
+    }
+    function realce(color) {
+        return function (c) {
+            try { return c.active ? hatch(color) : color; }
+            catch (e) { return color; }
+        };
+    }
+    function realceLista(base) {
+        return function (c) {
+            var color = base[c.dataIndex];
+            try { return c.active ? hatch(color) : color; }
+            catch (e) { return color; }
+        };
+    }
+    var ANIM = { duration: 700, easing: "easeOutQuart" };
+    var TRANS = { active: { animation: { duration: 250 } } };
+    function cursor(e, els) {
+        var t = (e && e.native) ? e.native.target : null;
+        if (t) { t.style.cursor = (els && els.length) ? "pointer" : "default"; }
+    }
+    var bCanvas = document.getElementById("mzChartBarras");
+    if (bCanvas) {
+        new Chart(bCanvas.getContext("2d"), {
+            type: "bar",
+            data: {
+                labels: D.barras.labels,
+                datasets: [
+                    { label: "Abiertos", data: D.barras.abiertos, backgroundColor: realce("#2563EB"), borderRadius: 4, hoverBorderWidth: 1 },
+                    { label: "En progreso", data: D.barras.progreso, backgroundColor: realce("#F2A900"), borderRadius: 4, hoverBorderWidth: 1 },
+                    { label: "Resueltos", data: D.barras.resueltos, backgroundColor: realce("#2F7D4F"), borderRadius: 4, hoverBorderWidth: 1 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: ANIM, transitions: TRANS, onHover: cursor,
+                plugins: { legend: { position: "top", labels: { boxWidth: 10, font: { size: 11 } } } },
+                scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+    var aCanvas = document.getElementById("mzChartAns");
+    if (aCanvas && ((D.ans.plazo || 0) + (D.ans.vencidos || 0) > 0)) {
+        new Chart(aCanvas.getContext("2d"), {
+            type: "doughnut",
+            data: {
+                labels: ["En plazo", "Vencidos"],
+                datasets: [{
+                    data: [D.ans.plazo || 0, D.ans.vencidos || 0],
+                    backgroundColor: realceLista(["#2F7D4F", "#D62B1F"]),
+                    borderColor: "#fff", borderWidth: 2, hoverBorderWidth: 3, hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: ANIM, transitions: TRANS, onHover: cursor,
+                cutout: "62%",
+                plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 }, padding: 12 } } }
+            }
+        });
+    }
+    var cCanvas = document.getElementById("mzChartCats");
+    if (cCanvas && (D.categorias.labels || []).length) {
+        var paleta = ["#2563EB", "#D62B1F", "#F2A900", "#2F7D4F", "#6B6259", "#7C3AED"];
+        new Chart(cCanvas.getContext("2d"), {
+            type: "pie",
+            data: {
+                labels: D.categorias.labels,
+                datasets: [{
+                    data: D.categorias.data,
+                    backgroundColor: realceLista(D.categorias.labels.map(function (_, i) { return paleta[i % paleta.length]; })),
+                    borderColor: "#fff", borderWidth: 2, hoverBorderWidth: 3, hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: ANIM, transitions: TRANS, onHover: cursor,
+                plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 }, padding: 10 } } }
+            }
+        });
+    }
+})();
 {% endblock %}
