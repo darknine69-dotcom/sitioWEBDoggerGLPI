@@ -336,6 +336,30 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn("Norte", html)
         self.assertIn("Punto de venta", html)
 
+    def test_agregar_avisa_al_supervisor(self):
+        from apps.notificaciones.models import Notificacion
+
+        self.client.post(reverse("tickets:monitoreo_agregar"), {
+            "observador": self.obs.pk, "email": "nuevo@x.com", "zona": "Norte"})
+        self.assertTrue(Notificacion.objects.filter(
+            usuario=self.obs, titulo__icontains="Norte").exists())
+
+    def test_quitar_avisa_al_supervisor(self):
+        from apps.notificaciones.models import Notificacion
+
+        self.client.post(reverse("tickets:monitoreo_quitar_zona"), {
+            "observador": self.obs.pk, "email": "ana@x.com", "zona": "Norte"})
+        self.assertTrue(Notificacion.objects.filter(
+            usuario=self.obs, titulo__icontains="salió").exists())
+
+    def test_crear_zona_avisa_al_supervisor(self):
+        from apps.notificaciones.models import Notificacion
+
+        self.client.post(reverse("tickets:monitoreo_zona_crear"), {
+            "observador": self.obs.pk, "nombre": "Centro"})
+        self.assertTrue(Notificacion.objects.filter(
+            usuario=self.obs, titulo__icontains="Centro").exists())
+
     def test_admin_crea_carpeta_para_supervisor(self):
         from apps.tickets.models import ZonaObservador
 

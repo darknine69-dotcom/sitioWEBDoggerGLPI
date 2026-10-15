@@ -38,6 +38,25 @@ def _auditar(actor, accion, observador=None, zona_nombre="", detalle=""):
     )
 
 
+def _avisar_supervisor(observador, titulo, mensaje, actor=None):
+    """Avisa por campana al supervisor; nunca rompe el flujo del admin."""
+    try:
+        from apps.notificaciones import services as avisos
+
+        nombre_actor = ""
+        if actor is not None and getattr(actor, "pk", None):
+            nombre_actor = getattr(actor, "nombre", "") or getattr(actor, "email", "")
+        avisos.crear(
+            observador, "sistema", titulo, mensaje,
+            url=reverse("tickets:obs_monitoreo") + "#zonas-monitoreo",
+            icono="i-users",
+            actor=nombre_actor,
+            actor_rol="Administrador",
+        )
+    except Exception:
+        pass
+
+
 def _norm_zona(nombre):
     """Normaliza nombres de zona para comparar (tildes aparte)."""
     return (nombre or "").strip().lower()
@@ -405,38 +424,17 @@ def monitoreo_agregar(request):
         request.user, MonitoreoAuditoria.AGREGAR_LISTA, observador,
         nombre_zona, correo,
     )
+    _avisar_supervisor(
+        observador,
+        f"{correo} entró a tu zona {nombre_zona or 'sin zona'}",
+        f"El administrador la agregó al seguimiento.",
+        request.user,
+    )
 
     # La zona tambien queda asignada al observador para que pueda verla.
     if punto is not None:
         ObservadorPunto.objects.get_or_create(observador=observador, punto=punto)
 
-    return redirect(volver)
-
-
-@admin_required
-@require_POST
-def monitoreo_zona_crear(request):
-    """El admin crea una carpeta de zona para el supervisor.
-
-    Aparece de inmediato en su desplegable de destino, igual que las que
-    crea el propio supervisor.
-    """
-    observador_id = request.POST.get("observador") or ""
-    nombre = (request.POST.get("nombre") or "").strip()[:80]
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
-    observador = Usuario.objects.filter(
-        pk=observador_id, rol=Usuario.Rol.OBSERVADOR
-    ).first() if observador_id.isdigit() else None
-    if observador is None or not nombre:
-        return redirect(volver)
-    zona, creada = ZonaObservador.objects.get_or_create(
-        observador=observador, nombre=nombre)
-    if creada:
-        _auditar(request.user, MonitoreoAuditoria.CREAR_ZONA,
-                 observador, zona.nombre, "")
-        messages.success(request, f"Zona {zona.nombre} creada para {observador.nombre}.")
-    else:
-        messages.info(request, f"La zona {zona.nombre} ya existía.")
     return redirect(volver)
 
 
@@ -471,6 +469,12 @@ def monitoreo_quitar_zona(request):
     elemento.delete()
     _auditar(request.user, MonitoreoAuditoria.QUITAR_MIEMBRO,
              observador, nombre_zona, correo)
+    _avisar_supervisor(
+        observador,
+        f"{correo} salió de tu zona {nombre_zona}",
+        "El administrador la sacó del seguimiento.",
+        request.user,
+    )
     messages.success(request, f"{correo} fuera de la zona {nombre_zona}.")
     return redirect(volver)
 
@@ -592,6 +596,12 @@ def monitoreo_zona_crear(request):
         return redirect(volver)
     ZonaObservador.objects.create(observador=observador, nombre=nombre)
     _auditar(request.user, MonitoreoAuditoria.CREAR_ZONA, observador, nombre, "")
+    _avisar_supervisor(
+        observador,
+        f"Te crearon la zona {nombre}",
+        "El administrador te habilitó una carpeta nueva.",
+        request.user,
+    )
     messages.success(
         request, f"Zona «{nombre}» creada para {observador.nombre}."
     )
