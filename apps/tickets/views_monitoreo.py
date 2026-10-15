@@ -9,10 +9,10 @@ observador los vea en su panel.
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.models import Usuario
 
@@ -436,6 +436,30 @@ def monitoreo_agregar(request):
         ObservadorPunto.objects.get_or_create(observador=observador, punto=punto)
 
     return redirect(volver)
+
+
+@admin_required
+@require_GET
+def monitoreo_cuentas_buscar(request):
+    """Cuentas activas por nombre o correo, para asignar a una zona.
+
+    Devuelve hasta 8 coincidencias (nombre, correo): el desplegable de
+    asignar elige de ahí en vez de pedir el correo a mano.
+    """
+    from django.db.models import Q
+
+    q = (request.GET.get("q") or "").strip()[:120]
+    resultados = []
+    if len(q) >= 2:
+        for u in Usuario.objects.filter(
+            Q(nombre__icontains=q) | Q(email__icontains=q),
+            activo=True, is_active=True,
+        ).order_by("nombre")[:8]:
+            resultados.append({
+                "nombre": u.nombre or u.email,
+                "email": u.email,
+            })
+    return JsonResponse({"ok": True, "cuentas": resultados})
 
 
 @admin_required

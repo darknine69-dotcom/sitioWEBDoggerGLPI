@@ -177,11 +177,15 @@ main.obs-page { font-family: var(--font-corp); }
                         </span>
                     </form>
                     <button type="button" class="mini-icon-btn obs-assign-toggle" data-assign-toggle="asg-{{ z.zona.pk }}" aria-expanded="false" title="Asignar cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-plus"/></svg></button>
-                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form obs-admin-email" id="asg-{{ z.zona.pk }}" hidden>
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form obs-admin-email" id="asg-{{ z.zona.pk }}" data-url-buscar="{% url 'tickets:monitoreo_cuentas_buscar' %}" hidden>
                         {% csrf_token %}
                         <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                        <input type="email" name="email" placeholder="correo@dogger.com.co" aria-label="Correo de la cuenta para {{ z.zona.nombre }}" required>
-                        <button type="submit" class="mini-icon-btn" title="Meter la cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-check"/></svg></button>
+                        <div class="asg-busca">
+                            <input type="search" class="asg-q" placeholder="Nombre o correo…" aria-label="Buscar cuenta para {{ z.zona.nombre }}" autocomplete="off">
+                            <input type="hidden" name="email" class="asg-email">
+                            <div class="asg-sug" hidden></div>
+                        </div>
+                        <button type="submit" class="mini-icon-btn asg-ok" disabled title="Meter la cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-check"/></svg></button>
                     </form>
                 </div>
                 {% for m in z.miembros %}
@@ -470,10 +474,74 @@ main.obs-page { font-family: var(--font-corp); }
                 form.hidden = !abierto;
                 btn.setAttribute("aria-expanded", String(abierto));
                 if (abierto) {
-                    var input = form.querySelector('input[type="email"]');
+                    var input = form.querySelector(".asg-q");
                     if (input) input.focus();
                 }
             });
+        });
+        /* Buscador de cuentas por nombre o correo: el botón se ilumina en
+           verde solo cuando hay una cuenta elegida. */
+        function escAsg(s) {
+            return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+                return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+            });
+        }
+        var asgTimers = {};
+        document.addEventListener("input", function (e) {
+            var q = e.target.closest ? e.target.closest(".asg-q") : null;
+            if (!q) return;
+            var form = q.closest("form");
+            if (!form) return;
+            var sug = form.querySelector(".asg-sug");
+            var email = form.querySelector(".asg-email");
+            var ok = form.querySelector(".asg-ok");
+            if (email) { email.value = ""; }
+            if (ok) { ok.classList.remove("is-ok"); ok.disabled = true; }
+            clearTimeout(asgTimers[form.id]);
+            var texto = q.value.trim();
+            if (texto.length < 2 || !sug) {
+                if (sug) { sug.hidden = true; sug.innerHTML = ""; }
+                return;
+            }
+            asgTimers[form.id] = setTimeout(function () {
+                fetch(form.dataset.urlBuscar + "?q=" + encodeURIComponent(texto), {
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                }).then(function (r) { return r.json(); }).then(function (d) {
+                    var lista = (d && d.cuentas) || [];
+                    if (!lista.length) {
+                        sug.innerHTML = '<p class="sw-dd-empty">Sin coincidencias.</p>';
+                    } else {
+                        sug.innerHTML = lista.map(function (c) {
+                            var ini = ((c.nombre || "?").trim().charAt(0) || "?").toUpperCase();
+                            return '<button type="button" class="sw-dd-row" data-email="' + escAsg(c.email) +
+                                '" data-nombre="' + escAsg(c.nombre) + '">' +
+                                '<span class="sw-dd-ava">' + escAsg(ini) + "</span>" +
+                                '<span class="sw-dd-name">' + escAsg(c.nombre) +
+                                "<small>" + escAsg(c.email) + "</small></span></button>";
+                        }).join("");
+                    }
+                    sug.hidden = false;
+                }).catch(function () { });
+            }, 300);
+        });
+        document.addEventListener("click", function (e) {
+            var row = e.target.closest ? e.target.closest(".asg-sug .sw-dd-row") : null;
+            if (row) {
+                var form = row.closest("form");
+                if (!form) return;
+                var q2 = form.querySelector(".asg-q");
+                var email2 = form.querySelector(".asg-email");
+                var ok2 = form.querySelector(".asg-ok");
+                var sug2 = form.querySelector(".asg-sug");
+                if (email2) { email2.value = row.getAttribute("data-email") || ""; }
+                if (q2) { q2.value = row.getAttribute("data-nombre") || ""; }
+                if (ok2 && email2 && email2.value) { ok2.classList.add("is-ok"); ok2.disabled = false; }
+                if (sug2) { sug2.hidden = true; }
+                return;
+            }
+            if (!e.target.closest || !e.target.closest(".asg-busca")) {
+                document.querySelectorAll(".asg-sug").forEach(function (s) { s.hidden = true; });
+            }
         });
         function confirma(mensaje, form, textoOk, opciones) {
             if (typeof window.DoggerConfirma === "function") {

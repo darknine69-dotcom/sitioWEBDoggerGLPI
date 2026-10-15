@@ -78,6 +78,20 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn("Ningún observador ha creado zonas todavía", html)
 
 
+
+    def test_buscar_cuentas_por_nombre_o_correo(self):
+        url = reverse("tickets:monitoreo_cuentas_buscar")
+        datos = self.client.get(url, {"q": "an"}).json()
+        correos = [c["email"] for c in datos["cuentas"]]
+        self.assertIn("ana@x.com", correos)
+        self.assertEqual(
+            self.client.get(url, {"q": "a"}).json()["cuentas"], [])
+        self.client.force_login(Usuario.objects.create_user(
+            email="t2@x.com", password="x", nombre="T2",
+            rol=Usuario.Rol.TECNICO))
+        self.assertEqual(
+            self.client.get(url, {"q": "an"}).status_code, 403)
+
     def test_filtro_zona_mira_lugares_de_tickets(self):
         url = reverse("tickets:monitoreo_admin")
         ctx = self.client.get(url, {"observador": self.obs.pk}).context

@@ -5823,6 +5823,14 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 /* Badge para quitar de la zona en la tabla de seguimiento. */
 .quitar-badge { border: 1px solid rgba(214,43,31,.35); background: rgba(214,43,31,.07); color: var(--dogger-red); border-radius: 999px; padding: 2px 10px; font-size: 10.5px; font-weight: 800; cursor: pointer; white-space: nowrap; }
 .quitar-badge:hover { background: var(--dogger-red); border-color: var(--dogger-red); color: #fff; }
+/* Buscador de cuentas para asignar a la zona: sugerencias compactas y
+   botón que se ilumina en verde solo con cuenta elegida. */
+.asg-busca { position: relative; flex: 1; min-width: 0; }
+.asg-busca .asg-q { width: 100%; }
+.asg-sug { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-pop); padding: 5px; max-height: 240px; overflow-y: auto; }
+.asg-sug[hidden] { display: none; }
+.mini-icon-btn.asg-ok { opacity: .45; }
+.mini-icon-btn.asg-ok.is-ok { opacity: 1; background: rgba(47,125,79,.14); color: #2F7D4F; border-color: rgba(47,125,79,.45); box-shadow: 0 0 0 3px rgba(47,125,79,.15); }
 
 /* ---- Páginas de error (403, 404, 500): código grande, icono y salidas ---- */
 .error-page { max-width: 620px; margin: 36px auto; text-align: center; padding: 8px 12px 30px; }

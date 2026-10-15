@@ -58,6 +58,7 @@ urlpatterns = [
     path("panel/monitoreo/", views_monitoreo.monitoreo_admin, name="monitoreo_admin"),
     path("panel/monitoreo/agregar/", views_monitoreo.monitoreo_agregar, name="monitoreo_agregar"),
     path("panel/monitoreo/quitar-zona/", views_monitoreo.monitoreo_quitar_zona, name="monitoreo_quitar_zona"),
+    path("panel/monitoreo/cuentas-buscar/", views_monitoreo.monitoreo_cuentas_buscar, name="monitoreo_cuentas_buscar"),
     path("panel/monitoreo/zona-crear/", views_monitoreo.monitoreo_zona_crear, name="monitoreo_zona_crear"),
     path("panel/monitoreo/quitar/<int:pk>/", views_monitoreo.monitoreo_quitar, name="monitoreo_quitar"),
     path("panel/monitoreo/zonas/", views_monitoreo.monitoreo_zonas, name="monitoreo_zonas"),
