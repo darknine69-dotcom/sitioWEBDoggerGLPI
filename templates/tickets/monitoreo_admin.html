@@ -260,10 +260,10 @@ main.obs-page { font-family: var(--font-corp); }
                     {% if zonas %}{% for z in zonas|slice:":4" %}<span class="chip chip-soft" title="{{ z }}">{{ z }}</span>{% endfor %}{% if zonas|length > 4 %}<span class="chip chip-soft" title="{{ zonas|join:', ' }}">+{{ zonas|length|add:"-4" }}</span>{% endif %}
                     {% else %}<em>ninguna todavía</em>{% endif %}
                 </span>
-                {% if zonas_destino %}
+                {% if zonas %}
                 <label class="muted" style="align-self:center;font-size:12px;font-weight:700" for="zonaDestino">En zona:</label>
                 <select name="zona_destino" id="zonaDestino" class="obs-buscador-tipo" aria-label="Zona destino para agregar o quitar">
-                    {% for z in zonas_destino %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
+                    {% for z in zonas %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
                 </select>
                 {% endif %}
             </form>
@@ -362,17 +362,6 @@ main.obs-page { font-family: var(--font-corp); }
                 </table>
             </div>
 
-            <h3 class="obs-bloque-titulo" style="font-size:14px">Zonas del observador</h3>
-            <form method="post" action="{% url 'tickets:monitoreo_zonas' %}" class="obs-filtros" style="margin-bottom:0">
-                {% csrf_token %}
-                <input type="hidden" name="observador" value="{{ observador_id }}">
-                <input type="hidden" name="volver" value="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}">
-                <select name="punto" class="obs-buscador-tipo" aria-label="Zona" required>
-                    {% for z in zonas %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
-                </select>
-                <button type="submit" name="accion" value="asignar" class="btn btn-sm">Asignar zona</button>
-                <button type="submit" name="accion" value="quitar" class="btn btn-outline btn-sm">Quitar zona</button>
-            </form>
         </div>
     </section>
 

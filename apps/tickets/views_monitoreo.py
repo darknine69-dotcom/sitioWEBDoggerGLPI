@@ -190,11 +190,6 @@ def monitoreo_admin(request):
             "estado_sel": estado,
             "zonas": zonas,
             "puntos_ticket": puntos_ticket,
-            "zonas_destino": list(
-                ZonaObservador.objects.filter(observador=observador)
-                .order_by("-creado_en", "-pk")
-                .values_list("nombre", flat=True)[:50]
-            ) if observador else [],
             "zona_elegida": zona_elegida,
             "total": len(filas),
             "zonas_creadas": creadas,
