@@ -69,8 +69,7 @@
         }
         if (confirmOkBtn) {
             var peligro = /eliminar|borra|quedar/iu.test(mensaje || "");
-            var textoBtn = textoOk ||
-                (peligro ? "Sí, eliminar" : "Sí, continuar");
+            var textoBtn = textoOk || "Continuar";
             confirmOkBtn.textContent = textoBtn;
             confirmOkBtn.classList.toggle("btn-danger", peligro);
         }
