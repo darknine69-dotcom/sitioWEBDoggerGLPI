@@ -38,6 +38,11 @@ def _auditar(actor, accion, observador=None, zona_nombre="", detalle=""):
     )
 
 
+def _norm_zona(nombre):
+    """Normaliza nombres de zona para comparar (tildes aparte)."""
+    return (nombre or "").strip().lower()
+
+
 def _zonas_de(observador):
     return list(
         ObservadorPunto.objects.filter(observador=observador)
@@ -84,27 +89,32 @@ def monitoreo_admin(request):
     } if observador else {}
     zona_por_correo = {}
     if observador:
-        carpetas_sup = {
-            n.lower() for n in ZonaObservador.objects.filter(
-                observador=observador).values_list("nombre", flat=True)
-        }
+        carpetas_sup = {}
+        for n in ZonaObservador.objects.filter(
+                observador=observador).values_list("nombre", flat=True):
+            clave = _norm_zona(n)
+            if clave and clave not in carpetas_sup:
+                carpetas_sup[clave] = n.strip()
         for e in ElementoMiLista.objects.filter(observador=observador).select_related("zona", "punto"):
             c = (e.usuario_email or "").strip().lower()
             if not c or c in zona_por_correo:
                 continue
             # Solo carpetas creadas: un punto suelto (ej. "Bogotá") no es zona,
             # salvo que exista la carpeta con ese mismo nombre.
-            if e.zona_id:
-                zona_por_correo[c] = e.zona.nombre
-            elif e.punto_id and (e.punto.nombre or "").lower() in carpetas_sup:
-                zona_por_correo[c] = e.punto.nombre
+            # getattr porque el FK puede estar huérfano en datos viejos.
+            zona_nombre = getattr(e.zona, "nombre", "") if e.zona_id else ""
+            punto_nombre = getattr(e.punto, "nombre", "") if e.punto_id else ""
+            if zona_nombre.strip():
+                zona_por_correo[c] = zona_nombre.strip()
+            elif punto_nombre and _norm_zona(punto_nombre) in carpetas_sup:
+                zona_por_correo[c] = carpetas_sup[_norm_zona(punto_nombre)]
     ya_mis_lista = set(elementos_por_correo)
     zonas_ya = {
-        (e.punto.nombre if e.punto_id else "")
+        (getattr(e.punto, "nombre", "") or "").strip()
         for e in _elementos_de(observador).select_related("punto")
     } if observador else set()
     carpetas_ya = {
-        e.zona.nombre
+        (getattr(e.zona, "nombre", "") or "").strip()
         for e in ElementoMiLista.objects.filter(
             observador=observador).select_related("zona")
         if e.zona_id
@@ -112,20 +122,30 @@ def monitoreo_admin(request):
 
     # Zonas que ve el observador elegido: las asignadas, las de su lista
     # y las carpetas con gente (aunque aún no tengan punto).
-    zonas = sorted(
-        (set(_zonas_de(observador)) | zonas_ya | carpetas_ya) - {""}
-    ) if observador else []
+    _todas = {}
+    for fuente in (set(_zonas_de(observador)), zonas_ya, carpetas_ya):
+        for nombre in fuente:
+            clave = _norm_zona(nombre)
+            if clave and clave not in _todas:
+                _todas[clave] = nombre.strip()
+    zonas = sorted(_todas.values()) if observador else []
     if not zonas:
         zonas = sorted(Punto.objects.values_list("nombre", flat=True))
 
     # Lugares de donde salen los tickets: el filtro "zona" mira orígenes
     # reales (solicitante_punto), no las zonas ya asignadas.
-    puntos_ticket = list(
+    _vistos_pt = set()
+    puntos_ticket = []
+    for p in (
         Ticket.objects.exclude(solicitante_punto__isnull=True)
         .exclude(solicitante_punto="")
         .values_list("solicitante_punto", flat=True)
         .distinct().order_by("solicitante_punto")[:200]
-    )
+    ):
+        nombre = (p or "").strip()
+        if nombre and nombre.lower() not in _vistos_pt:
+            _vistos_pt.add(nombre.lower())
+            puntos_ticket.append(nombre)
     puntos_por_correo = {}
     for email, punto in (
         Ticket.objects.exclude(solicitante_email__isnull=True)
@@ -193,13 +213,15 @@ def monitoreo_admin(request):
     elif estado == "con_tickets":
         filas = [f for f in filas if f["abiertos"] > 0]
 
-    zonas_destino = list(
-        ZonaObservador.objects.filter(observador=observador)
-        .order_by("-creado_en", "-pk")
-        .values_list("nombre", flat=True)[:50]
-    ) if observador else []
-    vistos_destino = {z.lower() for z in zonas_destino}
-    zonas_destino += [p for p in (zonas or []) if p.lower() not in vistos_destino][:50]
+    vistos_destino = set()
+    carpetas_ord = []
+    for n in ZonaObservador.objects.filter(observador=observador).order_by("-creado_en", "-pk").values_list("nombre", flat=True)[:50] if observador else []:
+        clave = _norm_zona(n)
+        if clave and clave not in vistos_destino:
+            vistos_destino.add(clave)
+            carpetas_ord.append(n.strip())
+    zonas_destino = list(carpetas_ord)
+    zonas_destino += [p.strip() for p in (zonas or []) if _norm_zona(p) not in vistos_destino][:50]
     zona_elegida = zona or (zonas_destino[0] if zonas_destino else "")
     creadas = _zonas_creadas_por_observador()
     return render(
