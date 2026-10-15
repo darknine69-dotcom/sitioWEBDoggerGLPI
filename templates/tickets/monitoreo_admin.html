@@ -190,7 +190,7 @@ main.obs-page { font-family: var(--font-corp); }
                         <span class="obs-avatar">{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
                         <span class="obs-miembro-id">
                             <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}: todo lo de esta cuenta">{{ m.nombre }}</a></strong>
-                            <small><svg class="icon"><use href="#i-mail"/></svg> <b>{{ m.email|default:"—" }}</b> · <svg class="icon"><use href="#i-user"/></svg> {{ m.rol }} · <svg class="icon"><use href="#i-wrench"/></svg> {{ m.tecnico }}</small>
+                            <small><svg class="icon"><use href="#i-mail"/></svg> {{ m.email|default:"—" }} · <svg class="icon"><use href="#i-user"/></svg> {{ m.rol }} · <svg class="icon"><use href="#i-wrench"/></svg> {{ m.tecnico }}</small>
                         </span>
                         {% if m.abiertos %}<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>{{ m.abiertos }}</span>{% endif %}
                         <span class="obs-miembro-nums">
