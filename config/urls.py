@@ -19,6 +19,7 @@ urlpatterns = [
 # visible para quien pregunta.
 handler403 = "apps.accounts.views.pagina_no_autorizada"
 handler404 = "apps.accounts.views.pagina_no_encontrada"
+handler500 = "apps.accounts.views.pagina_error"
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

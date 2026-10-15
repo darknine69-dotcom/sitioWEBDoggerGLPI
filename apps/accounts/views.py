@@ -714,15 +714,25 @@ def _enviar_codigo_reset(request, usuario, codigo):
 def pagina_no_autorizada(request, exception=None):
     """403 de la casa: el rol no alcanza para la URL que se pidió.
 
-    Sin esto Django enseña su página gris de "Forbidden", que no dice ni a
-    dónde ir. `forbidden.html` ya explica la situación y ofrece los ajustes.
+    Si el rol cambió en otra pestaña (el admin lo movió de grupo), se
+    ofrece volver a la página del rol actual en vez de dejarlo varado.
     """
-    return render(request, "forbidden.html", status=403)
+    from apps.accounts.routing import landing_por_rol
+
+    usuario = getattr(request, "user", None)
+    destino = landing_por_rol(usuario)
+    return render(request, "forbidden.html",
+                  {"destino_rol": destino}, status=403)
 
 
 def pagina_no_encontrada(request, exception=None):
     """404 de la casa: la URL no existe, con salida al portal y al panel."""
     return render(request, "no_encontrado.html", status=404)
+
+
+def pagina_error(request):
+    """500 de la casa: algo falló sin culpar al usuario ni contar detalles."""
+    return render(request, "error.html", status=500)
 
 
 @login_required

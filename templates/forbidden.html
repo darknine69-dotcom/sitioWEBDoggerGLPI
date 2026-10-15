@@ -1,19 +1,46 @@
 {% extends "base.html" %}
-{% block title %}No tienes acceso{% endblock %}
-{% block header_title %}No tienes acceso{% endblock %}
-{% block header_desc %}Esta sección es para otro tipo de cuenta. Si crees que debería estar disponible para ti, escríbenos y lo revisamos.{% endblock %}
+{% block title %}Sin acceso · Dogger{% endblock %}
+{% block header_title %}Sin acceso{% endblock %}
+{% block header_desc %}Tu cuenta no tiene permiso para esta página.{% endblock %}
 
 {% block content %}
-<main class="wrap">
-    <div class="cat-publico-card" style="max-width:640px">
-        <div class="cat-publico-pie">
-            <a href="{% url 'accounts:ajustes' %}" class="btn btn-outline btn-sm">
-                <svg class="icon icon-sm"><use href="#i-settings"/></svg> Ir a mis ajustes
+<main class="page">
+    <div class="error-page err-403">
+        <span class="error-ico"><svg class="icon"><use href="#i-lock"/></svg></span>
+        <div class="error-code">403</div>
+        <h2>No tienes acceso a esta página</h2>
+        <p>
+            {% if request.user.is_authenticated %}
+            Tu cuenta ({{ request.user.get_rol_display }}) no alcanza para esta sección.
+            Si un administrador cambió tu rol o llegaste por un enlace viejo,
+            vuelve a tu página para seguir trabajando.
+            {% else %}
+            Esta sección es solo para cuentas registradas. Ingresa para continuar.
+            {% endif %}
+        </p>
+        <div class="error-actions">
+            {% if request.user.is_authenticated %}
+            <a href="{{ destino_rol|default:'/' }}" class="btn btn-primary btn-sm">
+                <svg class="icon icon-sm"><use href="#i-home"/></svg> Ir a mi página
             </a>
-            <a href="{% url 'accounts:ver_manual' %}" class="btn btn-outline btn-sm">
-                <svg class="icon icon-sm"><use href="#i-book"/></svg> Ver el manual
+            <a href="{% url 'accounts:perfil' %}" class="btn btn-outline btn-sm">
+                <svg class="icon icon-sm"><use href="#i-user"/></svg> Mi perfil
             </a>
+            <a href="{% url 'accounts:logout' %}" class="btn btn-ghost btn-sm">
+                Salir y entrar de nuevo
+            </a>
+            {% else %}
+            <a href="{% url 'accounts:login_usuario' %}" class="btn btn-primary btn-sm">
+                <svg class="icon icon-sm"><use href="#i-user"/></svg> Ingresar
+            </a>
+            <a href="{% url 'accounts:login_staff' %}" class="btn btn-outline btn-sm">
+                Acceso personal TIC
+            </a>
+            {% endif %}
         </div>
+        {% if request.user.is_authenticated %}
+        <p class="error-hint">¿Crees que deberías entrar? Escríbenos a soporte y lo revisamos.</p>
+        {% endif %}
     </div>
 </main>
 {% endblock %}

@@ -79,6 +79,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "config.middleware.SeguridadHeadersMiddleware",
+    "config.middleware.RolSincronizadoMiddleware",
 ]
 
 if DEBUG:

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Algo falló · Dogger{% endblock %}
+{% block header_title %}Algo falló de nuestro lado{% endblock %}
+{% block header_desc %}No fue tu culpa: ya quedamos avisados si el error persiste.{% endblock %}
+
+{% block content %}
+<main class="page">
+    <div class="error-page err-500">
+        <span class="error-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
+        <div class="error-code">500</div>
+        <h2>Se nos cayó esta página</h2>
+        <p>
+            Intenta recargar en un momento. Si sigue igual, escríbenos
+            contándonos qué estabas haciendo y lo revisamos.
+        </p>
+        <div class="error-actions">
+            <a href="{% url 'tickets:portal' %}" class="btn btn-primary btn-sm">
+                <svg class="icon icon-sm"><use href="#i-home"/></svg> Ir al inicio
+            </a>
+            <a href="{% url 'tickets:faq' %}" class="btn btn-outline btn-sm">
+                <svg class="icon icon-sm"><use href="#i-help"/></svg> Ayuda
+            </a>
+        </div>
+    </div>
+</main>
+{% endblock %}

@@ -4,22 +4,29 @@
 {% block header_desc %}El enlace puede estar mal escrito o la página ya no existe.{% endblock %}
 
 {% block content %}
-<main class="wrap">
-    <div class="cat-publico-card" style="max-width:640px">
-        <div class="cat-publico-pie">
+<main class="page">
+    <div class="error-page err-404">
+        <span class="error-ico"><svg class="icon"><use href="#i-search"/></svg></span>
+        <div class="error-code">404</div>
+        <h2>Esta dirección no lleva a ningún lado</h2>
+        <p>
+            Revisa que el enlace esté completo. Si venías de un aviso o un
+            correo viejo, es posible que ese contenido ya se haya movido.
+        </p>
+        <div class="error-actions">
             {% if request.user.is_authenticated %}
             <a href="{% url 'accounts:perfil' %}" class="btn btn-primary btn-sm">
-                <svg class="icon icon-sm"><use href="#i-home"/></svg> Ir a mi perfil
+                <svg class="icon icon-sm"><use href="#i-home"/></svg> Ir a mi panel
             </a>
-            <a href="{% url 'accounts:ajustes' %}" class="btn btn-outline btn-sm">
-                <svg class="icon icon-sm"><use href="#i-settings"/></svg> Ir a mis ajustes
+            <a href="{% url 'tickets:consultar' %}" class="btn btn-outline btn-sm">
+                <svg class="icon icon-sm"><use href="#i-search"/></svg> Consultar ticket
             </a>
             {% else %}
             <a href="{% url 'tickets:portal' %}" class="btn btn-primary btn-sm">
                 <svg class="icon icon-sm"><use href="#i-home"/></svg> Ir al inicio
             </a>
             <a href="{% url 'tickets:faq' %}" class="btn btn-outline btn-sm">
-                <svg class="icon icon-sm"><use href="#i-book"/></svg> Ver el manual
+                <svg class="icon icon-sm"><use href="#i-help"/></svg> Preguntas frecuentes
             </a>
             {% endif %}
         </div>
