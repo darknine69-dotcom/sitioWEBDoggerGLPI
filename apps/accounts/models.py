@@ -172,6 +172,23 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
             return (parts[0][0] + parts[-1][0]).upper()
         return (self.nombre or "?")[:2].upper()
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # La foto se acota a 512px: un PNG gigante no debe llenar el disco
+        # ni la memoria al servirse en cada vista.
+        if not self.avatar:
+            return
+        try:
+            from PIL import Image
+
+            ruta = self.avatar.path
+            with Image.open(ruta) as img:
+                if max(img.size) > 512:
+                    img.thumbnail((512, 512))
+                    img.save(ruta)
+        except Exception:
+            pass  # Nunca se rompe el guardado por la foto.
+
 
 class ResetPasswordToken(models.Model):
     """Código de un solo uso para restablecer la contraseña olvidada."""

@@ -24,10 +24,17 @@ from .forms import (
 )
 from .models import ResetPasswordToken, Usuario
 from .routing import landing_por_rol
+from .seguridad import bloqueado, ip_del_request, limpiar, registrar_intento
 
 logger = logging.getLogger(__name__)
 
 User = Usuario
+
+
+def _id_intento(request):
+    """Llave anti-fuerza-bruta: IP + cuenta (para no bloquear a todos)."""
+    email = (request.POST.get("username") or "").strip().lower()
+    return f"{ip_del_request(request)}|{email}"
 
 
 def _glpi_available():
@@ -51,6 +58,17 @@ class BaseRoleLoginView(LoginView):
     role_label = "Staff"
     modo_observador = False
 
+    def dispatch(self, request, *args, **kwargs):
+        # Freno temprano: bloqueado ni siquiera llega a hashear.
+        if request.method == "POST" and bloqueado("login", _id_intento(request)):
+            form = self.authentication_form(data=request.POST)
+            form.add_error(
+                None,
+                "Demasiados intentos fallidos. Espera 15 minutos e inténtalo de nuevo.",
+            )
+            return self.render_to_response(self.get_context_data(form=form))
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["login_role"] = self.role_label
@@ -58,6 +76,8 @@ class BaseRoleLoginView(LoginView):
         return context
 
     def form_valid(self, form):
+        # Entró bien: se olvidan los fallos anteriores de esta IP+cuenta.
+        limpiar("login", _id_intento(self.request))
         # Con "Modo Observador" marcado se revisa el rol ANTES de iniciar
         # sesion. form.get_user() solo comprueba las credenciales: no crea
         # sesion ni rota el token CSRF, asi que un rechazo no deja al
@@ -81,6 +101,11 @@ class BaseRoleLoginView(LoginView):
         else:
             self.request.session.set_expiry(1209600)
         return response
+
+    def form_invalid(self, form):
+        # Credenciales malas: se cuenta para el freno de fuerza bruta.
+        registrar_intento("login", _id_intento(self.request))
+        return super().form_invalid(form)
 
     def get_success_url(self):
         # El modo Observador ya está comprobado como rol observador, así que
@@ -574,6 +599,14 @@ def restablecer_password(request):
     correo_mascara = _enmascarar_correo(email)
 
     if request.method == "POST":
+        llave_reset = f"{ip_del_request(request)}|{email}"
+        if bloqueado("reset", llave_reset):
+            messages.error(
+                request,
+                "Demasiados códigos errados. Pide uno nuevo en 30 minutos.",
+            )
+            request.session.pop("reset_pwd_email", None)
+            return redirect("accounts:reset_solicitar")
         form = CodigoResetForm(request.POST)
         if form.is_valid():
             codigo = form.cleaned_data["codigo"]
@@ -587,6 +620,7 @@ def restablecer_password(request):
                 usuario=usuario, codigo=codigo, usado=False
             ).first()
             if not token:
+                registrar_intento("reset", llave_reset, bloqueo_seg=1800)
                 form.add_error("codigo", "El código es incorrecto.")
                 return render(
                     request,
@@ -594,6 +628,7 @@ def restablecer_password(request):
                     {"form": form, "correo_mascara": correo_mascara},
                 )
             if token.expirado:
+                registrar_intento("reset", llave_reset, bloqueo_seg=1800)
                 token.delete()
                 form.add_error("codigo", "El código ha expirado. Solicita uno nuevo.")
                 return render(
@@ -603,6 +638,7 @@ def restablecer_password(request):
                 )
 
             # El código es válido: hábilitalo y fuerza un cambio de contraseña
+            limpiar("reset", llave_reset)
             token.usado = True
             token.save(update_fields=["usado"])
             usuario.set_unusable_password()

@@ -173,8 +173,8 @@
                             {% if ticket.adjuntos.all %}
                             <div class="dash-files">
                                 {% for adj in ticket.adjuntos.all|slice:":3" %}
-                                <a class="dash-thumb" href="{{ adj.archivo.url }}" target="_blank" rel="noopener" title="{{ adj.nombre_original }}">
-                                    {% if adj.es_imagen %}<img src="{{ adj.archivo.url }}" alt="{{ adj.nombre_original }}">{% else %}<svg class="icon"><use href="#i-file"/></svg>{% endif %}
+                                <a class="dash-thumb" href="{% url 'tickets:adjunto' adj.pk %}" target="_blank" rel="noopener" title="{{ adj.nombre_original }}">
+                                    {% if adj.es_imagen %}<img src="{% url 'tickets:adjunto' adj.pk %}" alt="{{ adj.nombre_original }}">{% else %}<svg class="icon"><use href="#i-file"/></svg>{% endif %}
                                 </a>
                                 {% endfor %}
                                 {% if ticket.adjuntos.count > 3 %}

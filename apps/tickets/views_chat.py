@@ -16,6 +16,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
@@ -235,7 +236,7 @@ def chat_hilo(request, pk):
         })
     adjuntos = [
         {"id": a.pk, "nombre": a.nombre_original,
-         "url": a.archivo.url if a.archivo else "",
+         "url": reverse("tickets:adjunto", args=[a.pk]) if a.archivo else "",
          "es_imagen": a.es_imagen,
          "fecha": timezone.localtime(a.fecha_subida).strftime("%d/%m/%Y %H:%M")}
         for a in ticket.adjuntos.all().order_by("fecha_subida", "id")[:20]
@@ -317,7 +318,7 @@ def chat_adjuntar(request, pk):
         "ok": True,
         "adjunto": {
             "id": adjunto.pk, "nombre": adjunto.nombre_original,
-            "url": adjunto.archivo.url if adjunto.archivo else "",
+            "url": reverse("tickets:adjunto", args=[adjunto.pk]),
             "es_imagen": adjunto.es_imagen,
             "fecha": timezone.localtime(adjunto.fecha_subida).strftime("%d/%m/%Y %H:%M"),
         },

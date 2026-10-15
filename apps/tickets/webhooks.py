@@ -117,12 +117,23 @@ def _normalize_event_name(data):
 def glpi_webhook(request):
     """
     Receptor de eventos GLPI (webhooks nativos de GLPI 11).
-    Espera el header X-Dogger-Secret coincidiendo con GLPI_WEBHOOK_SECRET.
-    Si no hay secret configurado, acepta peticiones locales para pruebas.
+    Espera el header X-Dogger-Secret coincidiendo con GLPI_WEBHOOK_SECRET
+    (comparación en tiempo constante). Sin secret configurado se rechaza
+    todo en producción; en DEBUG se acepta local para pruebas.
     """
-    secret_esperado = getattr(settings, "GLPI_WEBHOOK_SECRET", "").strip()
+    import hmac
+
+    from django.conf import settings as dj_settings
+
+    secret_esperado = getattr(dj_settings, "GLPI_WEBHOOK_SECRET", "").strip()
     secret_recibido = request.headers.get("X-Dogger-Secret", "").strip()
-    if secret_esperado and secret_recibido != secret_esperado:
+    if not secret_esperado:
+        if dj_settings.DEBUG:
+            logger.warning("Webhook GLPI sin secret (solo DEBUG local)")
+        else:
+            logger.warning("Webhook GLPI rechazado: sin secret en producción")
+            return HttpResponseForbidden("Webhook no configurado")
+    elif not hmac.compare_digest(secret_recibido, secret_esperado):
         logger.warning("Webhook GLPI rechazado: secret inválido")
         return HttpResponseForbidden("Secret inválido")
 

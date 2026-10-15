@@ -14,13 +14,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
 
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() in ("1", "true", "yes")
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("1", "true", "yes")
 
 # En producción, exigir una SECRET_KEY real (no un placeholder inseguro).
+# Para desarrollo local, DJANGO_DEBUG=True en el .env.
 if not DEBUG and not SECRET_KEY:
     raise RuntimeError(
         "DJANGO_SECRET_KEY es obligatorio cuando DJANGO_DEBUG=False. "
-        "Genera una con: python -c \"import secrets; print(secrets.token_urlsafe(50))\""
+        "En desarrollo usa DJANGO_DEBUG=True; en producción genera una con: "
+        "python -c \"import secrets; print(secrets.token_urlsafe(50))\""
     )
 
 ALLOWED_HOSTS = [
@@ -76,6 +78,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.middleware.SeguridadHeadersMiddleware",
 ]
 
 if DEBUG:
@@ -231,6 +234,13 @@ DOGGER_FONDO_ASINCRONO = os.getenv("DOGGER_FONDO_ASINCRONO", "True").lower() in 
 # ---------------------------------------------------------------------------
 # Seguridad para producción
 # ---------------------------------------------------------------------------
+# Cookies de sesión siempre explícitas (HttpOnly y SameSite los pone Django
+# por defecto, aquí quedan blindados contra un cambio de versión).
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_HTTPONLY = False  # el JS del chat lee el csrftoken de la cookie
+SESSION_COOKIE_AGE = int(os.getenv("DJANGO_SESSION_AGE", "1209600"))
+
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True

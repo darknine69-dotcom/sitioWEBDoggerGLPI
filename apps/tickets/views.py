@@ -1346,7 +1346,7 @@ def usuarios_lista(request):
     import time
     from django.conf import settings as dj_settings
 
-    q = request.GET.get("q", "").strip()
+    q = (request.GET.get("q", "") or "")[:120].strip()
     tab = request.GET.get("rol", "").strip()
 
     # Auto-sincronización con GLPI al abrir el panel (sin pulsar botones).
@@ -1639,7 +1639,7 @@ def usuarios_estado_api(request):
     El panel consulta este endpoint cada pocos segundos para refrescar
     los indicadores de usuarios nuevos y de quienes están usando la web.
     """
-    ids = [int(x) for x in request.GET.get("ids", "").split(",") if x.strip().isdigit()]
+    ids = [int(x) for x in request.GET.get("ids", "").split(",") if x.strip().isdigit()][:200]
     ahora = timezone.now()
     hace_7d = ahora - timedelta(days=7)
     datos = {}
@@ -2378,7 +2378,7 @@ def mi_panel(request):
     )
     total_qs = tickets_qs.count()
     estado_filtro = request.GET.get("estado", "").strip()
-    q_filtro = request.GET.get("q", "").strip()
+    q_filtro = (request.GET.get("q", "") or "")[:120].strip()
     if estado_filtro == Ticket.Estado.RESUELTO:
         # En Mi panel "Resueltas" trae resueltas y cerradas: al marcar
         # resuelto el ticket se cierra, y las cerradas directo también
@@ -3258,7 +3258,7 @@ def lista_tickets(request):
     prioridad = request.GET.get("prioridad", "").strip()
     categoria = request.GET.get("categoria", "").strip()
     tecnico = request.GET.get("tecnico", "").strip() if es_admin else ""
-    q = request.GET.get("q", "").strip()
+    q = (request.GET.get("q", "") or "")[:120].strip()
     solicitante_email = request.GET.get("solicitante_email", "").strip()
     presets_mis = list(PRESETS_MIS)
     presets_mis_map = dict(presets_mis)
@@ -3571,7 +3571,7 @@ def mi_papelera(request):
     restaurable, sin contar en el panel), pero acotada a lo suyo para que
     pueda recuperar sin pedirle permiso a nadie.
     """
-    q = request.GET.get("q", "").strip()
+    q = (request.GET.get("q", "") or "")[:120].strip()
     base = (
         Ticket.en_papelera()
         .filter(solicitante_email=request.user.email)
@@ -3602,7 +3602,7 @@ def mi_papelera(request):
 @admin_required
 def papelera(request):
     """Papelera de reciclaje: tickets eliminados que aún se pueden restaurar."""
-    q = request.GET.get("q", "").strip()
+    q = (request.GET.get("q", "") or "")[:120].strip()
     base = (
         Ticket.en_papelera()
         .select_related("tecnico_asignado", "categoria", "eliminado_por")
@@ -3700,14 +3700,31 @@ def purgar_ticket(request, pk):
     return redirect(next_url)
 
 
-@staff_required
+@login_required
 def ver_adjunto(request, pk):
-    adj = get_object_or_404(TicketAdjunto, pk=pk)
+    """Sirve un adjunto con permiso y disposición segura.
+
+    Solo staff o el dueño del ticket (antes era staff sin revisar el
+    ticket, y el resto del sitio enlazaba el archivo directo sin auth).
+    Las imágenes raster se muestran inline para la vista previa; SVG y
+    el resto fuerzan descarga para que nada se ejecute en el navegador
+    (`?descargar=1` lo fuerza siempre).
+    """
+    adj = get_object_or_404(TicketAdjunto.objects.select_related("ticket"), pk=pk)
+    ticket = adj.ticket
+    u = request.user
+    es_dueno = (ticket.solicitante_email or "").lower() == (getattr(u, "email", "") or "").lower()
+    if not (getattr(u, "es_staff_helpdesk", False) or es_dueno):
+        raise Http404("Archivo no encontrado")
+    if not adj.archivo:
+        raise Http404("Archivo no encontrado en disco")
+    mime = adj.mime_type or "application/octet-stream"
+    forzar = request.GET.get("descargar") == "1" or mime == "image/svg+xml" or not mime.startswith("image/")
     try:
         return FileResponse(
             adj.archivo.open("rb"),
-            content_type=adj.mime_type,
-            as_attachment=False,
+            content_type=mime,
+            as_attachment=forzar,
             filename=adj.nombre_original,
         )
     except FileNotFoundError:
@@ -3778,7 +3795,7 @@ def mi_ticket_info_ajax(request, pk):
     imagenes = [
         {
             "pk": a.pk,
-            "url": a.archivo.url if a.archivo else "",
+            "url": reverse("tickets:adjunto", args=[a.pk]) if a.archivo else "",
             "nombre": a.nombre_original,
         }
         for a in ticket.adjuntos.filter(mime_type__startswith="image/").order_by("fecha_subida")
@@ -4025,8 +4042,8 @@ def panel_tecnico(request):
     """
     tecnico = request.user
     estado = request.GET.get("estado", "").strip()
-    q = request.GET.get("q", "").strip()
-    q_cola = request.GET.get("q_cola", "").strip()
+    q = (request.GET.get("q", "") or "")[:120].strip()
+    q_cola = (request.GET.get("q_cola", "") or "")[:120].strip()
     pp_mis = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
     pp_sol = _resolve_per_page(request, "per_page_sol", PER_PAGE_DEFECTO)
     if q:

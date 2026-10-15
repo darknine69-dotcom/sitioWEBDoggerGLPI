@@ -8,6 +8,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 
 from .sla import horas_por_prioridad, formatear_duracion
+from .cifrado import CampoCifrado
 
 
 class Categoria(models.Model):
@@ -674,13 +675,13 @@ class ConfigSitio(models.Model):
         "URL base de GLPI", max_length=250, blank=True, default="",
         help_text="Vacía = manda el .env (GLPI_BASE_URL).",
     )
-    glpi_app_token = models.CharField(
-        "App token", max_length=250, blank=True, default="",
-        help_text="Vacío = manda el .env (GLPI_APP_TOKEN).",
+    glpi_app_token = CampoCifrado(
+        "App token", blank=True, default="",
+        help_text="Vacío = manda el .env (GLPI_APP_TOKEN). Se guarda cifrado.",
     )
-    glpi_user_token = models.CharField(
-        "User token", max_length=250, blank=True, default="",
-        help_text="Vacío = manda el .env (GLPI_USER_TOKEN).",
+    glpi_user_token = CampoCifrado(
+        "User token", blank=True, default="",
+        help_text="Vacío = manda el .env (GLPI_USER_TOKEN). Se guarda cifrado.",
     )
     glpi_timeout = models.PositiveIntegerField(
         "Timeout (s)", null=True, blank=True, default=None,

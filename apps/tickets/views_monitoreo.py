@@ -53,7 +53,7 @@ def _elementos_de(observador):
 def monitoreo_admin(request):
     """Tabla de usuarios activos para guardarlos en una zona a monitorear."""
     observador_id = (request.GET.get("observador") or "").strip()
-    q = (request.GET.get("q") or "").strip()
+    q = (request.GET.get("q") or "")[:120].strip()
     rol = (request.GET.get("rol") or "").strip()
     zona = (request.GET.get("zona") or "").strip()
     estado = (request.GET.get("estado") or "").strip()

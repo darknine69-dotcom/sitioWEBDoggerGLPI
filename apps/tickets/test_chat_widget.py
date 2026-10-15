@@ -92,6 +92,29 @@ class ChatWidgetTest(TestCase):
                                     content_type="application/pdf")
         self.assertEqual(self.client.post(url, {"archivo": grande}).status_code, 400)
 
+    def test_adjunto_solo_dueno_y_staff(self):
+        from apps.tickets.models import TicketAdjunto
+
+        adj = TicketAdjunto.objects.create(
+            ticket=self.ticket, nombre_original="doc.pdf",
+            archivo=SimpleUploadedFile("doc.pdf", b"%PDF-1.4",
+                                       content_type="application/pdf"),
+            mime_type="application/pdf", tamano_bytes=8,
+            subido_por="ana@x.com",
+        )
+        url = reverse("tickets:adjunto", args=[adj.pk])
+        self.assertEqual(self.client.get(url).status_code, 302)  # anónimo fuera
+        self.client.force_login(self.usuario)  # dueña
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("attachment", r.get("Content-Disposition", ""))
+        otro = Usuario.objects.create_user(
+            email="otro2@x.com", password="x", nombre="Otro", rol=Usuario.Rol.USUARIO)
+        self.client.force_login(otro)  # ajeno
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.client.force_login(self.tec)  # staff sí
+        self.assertEqual(self.client.get(url).status_code, 200)
+
     def test_observador_solo_su_alcance(self):
         self.client.force_login(self.obs)
         datos = self.client.get(reverse("tickets:chat_tickets")).json()

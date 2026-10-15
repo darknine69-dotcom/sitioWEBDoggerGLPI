@@ -116,6 +116,12 @@ class PerfilForm(forms.ModelForm):
             "telefono": forms.TextInput(attrs={"placeholder": "Ej: 310 371 6129"}),
         }
 
+    def clean_avatar(self):
+        foto = self.cleaned_data.get("avatar")
+        if foto and getattr(foto, "size", 0) > 2 * 1024 * 1024:
+            raise forms.ValidationError("La foto no debe pesar más de 2 MB.")
+        return foto
+
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():

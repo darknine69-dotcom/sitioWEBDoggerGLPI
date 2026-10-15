@@ -318,7 +318,7 @@ def panel_observador(request):
     grupos = _contexto_monitoreo(usuario)["grupos"]
     # Buscar y agregar integrado al panel: encuentra cuentas por nombre,
     # correo o ubicación para agregarlas a la lista sin salir de aquí.
-    q_busc = (request.GET.get("q_busc") or "").strip()
+    q_busc = (request.GET.get("q_busc") or "")[:120].strip()
     busqueda = []
     if q_busc:
         ya = {
@@ -374,7 +374,7 @@ def buscar_observador(request):
     observador. Los puntos siguen limitados a los asignados.
     """
     usuario = request.user
-    q = request.GET.get("q", "").strip()
+    q = (request.GET.get("q", "") or "")[:120].strip()
     tipo = request.GET.get("tipo", "todo").strip()
     resultados = {"cuentas": [], "personas": [], "puntos": []}
 
@@ -476,7 +476,7 @@ def usuarios_observador(request):
     mismos tickets, con su técnico y su avance de resolución.
     """
     usuario = request.user
-    q = (request.GET.get("q") or "").strip()
+    q = (request.GET.get("q") or "")[:120].strip()
     rol = (request.GET.get("rol") or "").strip()
     punto = (request.GET.get("punto") or "").strip()
     estado = (request.GET.get("estado") or "").strip()
