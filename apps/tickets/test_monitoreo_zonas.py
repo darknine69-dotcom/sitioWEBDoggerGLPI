@@ -336,6 +336,30 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn("Norte", html)
         self.assertIn("Punto de venta", html)
 
+    def test_admin_crea_carpeta_para_supervisor(self):
+        from apps.tickets.models import ZonaObservador
+
+        url = reverse("tickets:monitoreo_zona_crear")
+        respuesta = self.client.post(url, {
+            "observador": self.obs.pk, "nombre": "Centro"})
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(ZonaObservador.objects.filter(
+            observador=self.obs, nombre="Centro").exists())
+        html = self.client.get(
+            reverse("tickets:monitoreo_admin"),
+            {"observador": self.obs.pk}).content.decode()
+        self.assertIn("Centro", html)
+
+    def test_crear_zona_sin_nombre_no_rompe(self):
+        from apps.tickets.models import ZonaObservador
+
+        n = ZonaObservador.objects.count()
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_crear"),
+            {"observador": self.obs.pk, "nombre": "  "})
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(ZonaObservador.objects.count(), n)
+
 
 @override_settings(STORAGES={
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

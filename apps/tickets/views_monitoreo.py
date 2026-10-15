@@ -84,10 +84,11 @@ def monitoreo_admin(request):
     } if observador else {}
     zona_por_correo = {}
     if observador:
-        for e in ElementoMiLista.objects.filter(observador=observador).select_related("zona", "punto"):
+        for e in ElementoMiLista.objects.filter(observador=observador).select_related("zona"):
             c = (e.usuario_email or "").strip().lower()
-            if c and c not in zona_por_correo:
-                zona_por_correo[c] = (e.zona.nombre if e.zona_id else "") or (e.punto.nombre if e.punto_id else "")
+            # Solo carpetas creadas: un punto suelto (ej. "Bogotá") no es zona.
+            if c and c not in zona_por_correo and e.zona_id:
+                zona_por_correo[c] = e.zona.nombre
     ya_mis_lista = set(elementos_por_correo)
     zonas_ya = {
         (e.punto.nombre if e.punto_id else "")
@@ -340,7 +341,8 @@ def monitoreo_agregar(request):
     punto = None
     carpeta = None
     if nombre_zona:
-        punto, _ = Punto.objects.get_or_create(nombre=nombre_zona[:80])
+        # Sin crear puntos fantasma: solo se enlaza lo que ya existe.
+        punto = Punto.objects.filter(nombre__iexact=nombre_zona).first()
         carpeta = ZonaObservador.objects.filter(
             observador=observador, nombre__iexact=nombre_zona).first()
 
@@ -366,6 +368,33 @@ def monitoreo_agregar(request):
     if punto is not None:
         ObservadorPunto.objects.get_or_create(observador=observador, punto=punto)
 
+    return redirect(volver)
+
+
+@admin_required
+@require_POST
+def monitoreo_zona_crear(request):
+    """El admin crea una carpeta de zona para el supervisor.
+
+    Aparece de inmediato en su desplegable de destino, igual que las que
+    crea el propio supervisor.
+    """
+    observador_id = request.POST.get("observador") or ""
+    nombre = (request.POST.get("nombre") or "").strip()[:80]
+    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    observador = Usuario.objects.filter(
+        pk=observador_id, rol=Usuario.Rol.OBSERVADOR
+    ).first() if observador_id.isdigit() else None
+    if observador is None or not nombre:
+        return redirect(volver)
+    zona, creada = ZonaObservador.objects.get_or_create(
+        observador=observador, nombre=nombre)
+    if creada:
+        _auditar(request.user, MonitoreoAuditoria.CREAR_ZONA,
+                 observador, zona.nombre, "")
+        messages.success(request, f"Zona {zona.nombre} creada para {observador.nombre}.")
+    else:
+        messages.info(request, f"La zona {zona.nombre} ya existía.")
     return redirect(volver)
 
 
