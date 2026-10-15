@@ -461,8 +461,8 @@ def monitoreo_quitar_zona(request):
     if elemento is None:
         messages.info(request, "Esa cuenta ya no está en el seguimiento.")
         return redirect(volver)
-    actual = ((elemento.zona.nombre if elemento.zona_id else "")
-              or (elemento.punto.nombre if elemento.punto_id else ""))
+    actual = ((getattr(elemento.zona, "nombre", "") if elemento.zona_id else "")
+              or (getattr(elemento.punto, "nombre", "") if elemento.punto_id else ""))
     if actual.lower() != nombre_zona.lower():
         messages.info(request, f"{correo} no está en la zona {nombre_zona}.")
         return redirect(volver)
