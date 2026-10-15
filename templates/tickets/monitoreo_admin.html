@@ -255,9 +255,9 @@ main.obs-page { font-family: var(--font-corp); }
                     {% endfor %}
                 </select>
                 <button type="submit" class="btn btn-sm">Cambiar</button>
-                <span class="muted" style="align-self:center">
+                <span class="muted zonas-chips" style="align-self:center">
                     Zonas asignadas:
-                    {% if zonas %}{% for z in zonas %}<span class="chip chip-soft">{{ z }}</span>{% endfor %}
+                    {% if zonas %}{% for z in zonas|slice:":4" %}<span class="chip chip-soft" title="{{ z }}">{{ z }}</span>{% endfor %}{% if zonas|length > 4 %}<span class="chip chip-soft" title="{{ zonas|join:', ' }}">+{{ zonas|length|add:"-4" }}</span>{% endif %}
                     {% else %}<em>ninguna todavía</em>{% endif %}
                 </span>
             </form>
@@ -275,9 +275,9 @@ main.obs-page { font-family: var(--font-corp); }
                     <option value="tecnico"{% if rol_sel == 'tecnico' %} selected{% endif %}>Técnicos</option>
                     <option value="admin"{% if rol_sel == 'admin' %} selected{% endif %}>Administradores</option>
                 </select>
-                <select name="zona" class="obs-buscador-tipo" aria-label="Filtrar por zona">
+                <select name="zona" class="obs-buscador-tipo" aria-label="Filtrar por lugar de los tickets">
                     <option value="">Cualquier zona</option>
-                    {% for z in zonas %}
+                    {% for z in puntos_ticket %}
                     <option value="{{ z }}"{% if zona_sel == z %} selected{% endif %}>{{ z }}</option>
                     {% endfor %}
                 </select>
@@ -315,7 +315,7 @@ main.obs-page { font-family: var(--font-corp); }
                             <td><strong>{% if f.elemento_id %}<a href="{% url 'tickets:monitoreo_cuenta_detalle' f.elemento_id %}" title="Abrir la vista principal de {{ f.nombre }}: todo lo de esta cuenta">{{ f.nombre }}</a>{% else %}{{ f.nombre }}{% endif %}</strong></td>
                             <td>{{ f.email|default:"—" }}</td>
                             <td>{{ f.rol }}</td>
-                            <td>{{ f.ubicacion }}</td>
+                            <td title="Lugares de donde salen sus tickets">{{ f.puntos }}</td>
                             <td class="num">
                                 {% if f.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ f.abiertos }}</span>
                                 {% else %}<span class="muted">0</span>{% endif %}

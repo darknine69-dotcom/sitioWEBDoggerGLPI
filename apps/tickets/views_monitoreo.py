@@ -91,6 +91,27 @@ def monitoreo_admin(request):
     if not zonas:
         zonas = sorted(Punto.objects.values_list("nombre", flat=True))
 
+    # Lugares de donde salen los tickets: el filtro "zona" mira orígenes
+    # reales (solicitante_punto), no las zonas ya asignadas.
+    puntos_ticket = list(
+        Ticket.objects.exclude(solicitante_punto__isnull=True)
+        .exclude(solicitante_punto="")
+        .values_list("solicitante_punto", flat=True)
+        .distinct().order_by("solicitante_punto")[:200]
+    )
+    puntos_por_correo = {}
+    for email, punto in (
+        Ticket.objects.exclude(solicitante_email__isnull=True)
+        .exclude(solicitante_email="")
+        .exclude(solicitante_punto__isnull=True)
+        .exclude(solicitante_punto="")
+        .values_list("solicitante_email", "solicitante_punto")
+        .distinct()[:10000]
+    ):
+        clave = (email or "").strip().lower()
+        if clave:
+            puntos_por_correo.setdefault(clave, set()).add(punto)
+
     usuarios = Usuario.objects.filter(activo=True, is_active=True).exclude(
         pk__in=observers_ids
     )
@@ -101,8 +122,6 @@ def monitoreo_admin(request):
             Q(nombre__icontains=q) | Q(email__icontains=q)
             | Q(ubicacion__icontains=q)
         )
-    if zona:
-        usuarios = usuarios.filter(ubicacion__icontains=zona)
 
     # Tickets por solicitante, para ver a quien hay que mirar.
     abiertos = {
@@ -116,8 +135,15 @@ def monitoreo_admin(request):
     }
 
     filas = []
+    zona_buscada = (zona or "").strip().lower()
     for u in usuarios.order_by("nombre"):
         correo = (u.email or "").strip().lower()
+        puntos = sorted(puntos_por_correo.get(correo, ()))
+        if zona_buscada and zona_buscada not in {p.lower() for p in puntos}:
+            continue
+        puntos_txt = ", ".join(puntos[:2])
+        if len(puntos) > 2:
+            puntos_txt += f" +{len(puntos) - 2}"
         filas.append(
             {
                 "obj": u,
@@ -125,6 +151,7 @@ def monitoreo_admin(request):
                 "email": correo,
                 "rol": u.get_rol_display(),
                 "ubicacion": u.ubicacion or "—",
+                "puntos": puntos_txt or "—",
                 "abiertos": abiertos.get(correo, 0),
                 "ya_agregado": correo in ya_mis_lista,
                 "elemento_id": elementos_por_correo.get(correo),
@@ -153,6 +180,7 @@ def monitoreo_admin(request):
             "zona_sel": zona,
             "estado_sel": estado,
             "zonas": zonas,
+            "puntos_ticket": puntos_ticket,
             "zona_elegida": zona_elegida,
             "total": len(filas),
             "zonas_creadas": creadas,

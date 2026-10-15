@@ -75,6 +75,19 @@ class MonitoreoZonasAdminTest(TestCase):
         html = self.client.get(reverse("tickets:monitoreo_admin")).content.decode()
         self.assertIn("Ningún observador ha creado zonas todavía", html)
 
+
+    def test_filtro_zona_mira_lugares_de_tickets(self):
+        url = reverse("tickets:monitoreo_admin")
+        ctx = self.client.get(url, {"observador": self.obs.pk}).context
+        self.assertIn("Zona Uno", ctx["puntos_ticket"])
+        ctx2 = self.client.get(
+            url, {"observador": self.obs.pk, "zona": "Zona Uno"}).context
+        correos = [f["email"] for f in ctx2["filas"]]
+        self.assertIn("ana@x.com", correos)
+        ctx3 = self.client.get(
+            url, {"observador": self.obs.pk, "zona": "Otro Lado"}).context
+        self.assertNotIn("ana@x.com", [f["email"] for f in ctx3["filas"]])
+
     def test_zona_sigue_visible_si_al_dueno_le_cambian_el_rol(self):
         """La zona se agrupa por quien la creó, no por quien hoy es observador."""
         self.obs.rol = Usuario.Rol.USUARIO
