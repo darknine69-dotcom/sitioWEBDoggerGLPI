@@ -4783,7 +4783,8 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 .btn-cancel:hover { background: #DDD4C4; }
 /* Al seleccionar cada botón de la confirmación se aplica su color. */
 #confirm-cancel:active { background: #57534E; border-color: #57534E; color: #fff; }
-#confirm-ok:hover { filter: brightness(.93); }
+#confirm-ok { background: #E9E2D6; border: 2px solid #D8CFC0; color: var(--ink); box-shadow: none; }
+#confirm-ok:hover { background: var(--dogger-red); border-color: var(--dogger-red); color: #fff; filter: none; }
 #confirm-ok:active { transform: scale(.97); }
 .glpi-live {
     font-size: 11px;
