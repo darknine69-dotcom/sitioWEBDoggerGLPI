@@ -255,16 +255,13 @@ main.obs-page { font-family: var(--font-corp); }
                     {% endfor %}
                 </select>
                 <button type="submit" class="btn btn-sm">Cambiar</button>
-                <span class="muted zonas-chips" style="align-self:center">
-                    Zonas asignadas:
-                    {% if zonas %}{% for z in zonas|slice:":4" %}<span class="chip chip-soft" title="{{ z }}">{{ z }}</span>{% endfor %}{% if zonas|length > 4 %}<span class="chip chip-soft" title="{{ zonas|join:', ' }}">+{{ zonas|length|add:"-4" }}</span>{% endif %}
-                    {% else %}<em>ninguna todavía</em>{% endif %}
-                </span>
-                {% if zonas %}
+                {% if zonas_destino %}
                 <label class="muted" style="align-self:center;font-size:12px;font-weight:700" for="zonaDestino">En zona:</label>
                 <select name="zona_destino" id="zonaDestino" class="obs-buscador-tipo" aria-label="Zona destino para agregar o quitar">
-                    {% for z in zonas %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
+                    {% for z in zonas_destino %}<option value="{{ z }}">{{ z }}</option>{% endfor %}
                 </select>
+                {% else %}
+                <span class="muted" style="align-self:center">Sin zonas creadas todavía.</span>
                 {% endif %}
             </form>
 
@@ -339,7 +336,7 @@ main.obs-page { font-family: var(--font-corp); }
                                     <input type="hidden" name="zona" value="{{ zona_elegida }}" class="zona-destino-val">
                                     <input type="hidden" name="volver"
                                            value="{% url 'tickets:monitoreo_admin' %}?observador={{ observador_id }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if rol_sel %}&amp;rol={{ rol_sel }}{% endif %}{% if zona_sel %}&amp;zona={{ zona_sel|urlencode }}{% endif %}{% if estado_sel %}&amp;estado={{ estado_sel }}{% endif %}">
-                                    <button type="submit" class="btn btn-sm btn-outline" title="Sacar de la zona elegida">Quitar</button>
+                                    <button type="submit" class="quitar-badge" title="Sacar de la zona elegida">Quitar</button>
                                 </form>
                                 {% else %}
                                 <form method="post" action="{% url 'tickets:monitoreo_agregar' %}"

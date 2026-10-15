@@ -174,7 +174,12 @@ def monitoreo_admin(request):
     elif estado == "con_tickets":
         filas = [f for f in filas if f["abiertos"] > 0]
 
-    zona_elegida = zona or (zonas[0] if zonas else "")
+    zonas_destino = list(
+        ZonaObservador.objects.filter(observador=observador)
+        .order_by("-creado_en", "-pk")
+        .values_list("nombre", flat=True)[:50]
+    ) if observador else []
+    zona_elegida = zona or (zonas_destino[0] if zonas_destino else "")
     creadas = _zonas_creadas_por_observador()
     return render(
         request,
@@ -190,6 +195,7 @@ def monitoreo_admin(request):
             "estado_sel": estado,
             "zonas": zonas,
             "puntos_ticket": puntos_ticket,
+            "zonas_destino": zonas_destino,
             "zona_elegida": zona_elegida,
             "total": len(filas),
             "zonas_creadas": creadas,
@@ -332,18 +338,24 @@ def monitoreo_agregar(request):
         return redirect(volver)
 
     punto = None
+    carpeta = None
     if nombre_zona:
         punto, _ = Punto.objects.get_or_create(nombre=nombre_zona[:80])
+        carpeta = ZonaObservador.objects.filter(
+            observador=observador, nombre__iexact=nombre_zona).first()
 
     # Si ya estaba en la lista, se actualiza la zona en vez de duplicarlo.
+    datos = {
+        "tipo": ElementoMiLista.TIPO_USUARIO,
+        "usuario": Usuario.objects.filter(email__iexact=correo).first(),
+        "punto": punto,
+    }
+    if carpeta is not None:
+        datos["zona"] = carpeta
     ElementoMiLista.objects.update_or_create(
         observador=observador,
         usuario_email=correo,
-        defaults={
-            "tipo": ElementoMiLista.TIPO_USUARIO,
-            "usuario": Usuario.objects.filter(email__iexact=correo).first(),
-            "punto": punto,
-        },
+        defaults=datos,
     )
     _auditar(
         request.user, MonitoreoAuditoria.AGREGAR_LISTA, observador,
