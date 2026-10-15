@@ -6908,6 +6908,15 @@ html[style*="--sb-accent"] .notif-head {
 .obs-dot-verde { background: #2F7D4F; box-shadow: 0 0 0 3px rgba(47,125,79,.15); }
 .obs-dot-rojo { background: var(--dogger-red); box-shadow: 0 0 0 3px rgba(214,43,31,.15); }
 .obs-dot-amarillo { background: #D9A436; box-shadow: 0 0 0 3px rgba(217,164,54,.18); }
+.obs-dot-gris { background: #9AA0A6; }
+/* Miembro con foto: punto de presencia en la esquina del avatar. */
+.obs-avatar-foto { position: relative; }
+.obs-avatar-foto .obs-dot { position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border: 2px solid #fff; box-shadow: none; }
+/* Datos del miembro con iconos: correo en negrita junto a su icono. */
+.obs-miembro-datos { display: flex; flex-wrap: wrap; gap: 3px 12px; }
+.obs-dato { display: inline-flex; align-items: center; gap: 5px; }
+.obs-dato .icon { width: 12px; height: 12px; color: var(--ink-muted); flex: none; }
+.obs-dato b { font-weight: 800; color: var(--ink); }
 
 .obs-resumen { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 26px; }
 .obs-kpi {
