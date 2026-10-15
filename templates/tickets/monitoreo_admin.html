@@ -328,7 +328,8 @@ main.obs-page { font-family: var(--font-corp); }
                             <td class="obs-acciones">
                                 {% if f.ya_agregado %}
                                 <span class="obs-pill obs-pill-verde">En la lista</span>
-                                <form method="post" action="{% url 'tickets:monitoreo_quitar_zona' %}"
+                                <form method="post" action="{% url 'tickets:monitoreo_quitar_zona' %}" data-confirm-zona="quitar"
+                                      onsubmit="return confirm('¿Sacar esta cuenta de su zona?')"
                                       style="display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:6px">
                                     {% csrf_token %}
                                     <input type="hidden" name="observador" value="{{ observador_id }}">
@@ -339,7 +340,8 @@ main.obs-page { font-family: var(--font-corp); }
                                     <button type="submit" class="quitar-badge" title="Sacar de la zona elegida">Quitar</button>
                                 </form>
                                 {% else %}
-                                <form method="post" action="{% url 'tickets:monitoreo_agregar' %}"
+                                <form method="post" action="{% url 'tickets:monitoreo_agregar' %}" data-confirm-zona="agregar"
+                                      onsubmit="return confirm('¿Agregar esta cuenta a la zona elegida?')"
                                       style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
                                     {% csrf_token %}
                                     <input type="hidden" name="observador" value="{{ observador_id }}">
@@ -421,13 +423,33 @@ main.obs-page { font-family: var(--font-corp); }
         /* Zona destino: lo elegido manda en los Agregar y Quitar de la tabla. */
         (function () {
             var sel = document.getElementById("zonaDestino");
-            if (!sel) return;
+            function limpio(s) { return String(s == null ? "" : s).replace(/['"]/g, "").trim(); }
+            function refrescarConfirms() {
+                var zona = sel ? limpio(sel.value) : "";
+                document.querySelectorAll("form[data-confirm-zona]").forEach(function (f) {
+                    var accion = f.getAttribute("data-confirm-zona");
+                    var mail = f.querySelector('input[name="email"]');
+                    var email = mail ? limpio(mail.value) : "esta cuenta";
+                    var msg;
+                    if (accion === "agregar") {
+                        msg = "¿Agregar a " + email + " a la zona " + (zona || "elegida") + "?";
+                    } else {
+                        var fila = f.closest("tr");
+                        var badge = fila ? fila.querySelector(".zona-badge") : null;
+                        var real = badge ? limpio(badge.textContent) : "";
+                        msg = "¿Sacar a " + email + (real ? " de la zona " + real : " de su zona") + "?";
+                    }
+                    f.setAttribute("onsubmit", "return confirm('" + msg + "')");
+                });
+            }
+            if (!sel) { refrescarConfirms(); return; }
             var destino = document.getElementById("zonaGuardaEn");
             function sincronizar() {
                 document.querySelectorAll(".zona-destino-val").forEach(function (inp) {
                     inp.value = sel.value;
                 });
                 if (destino) { destino.textContent = sel.value || "la zona elegida"; }
+                refrescarConfirms();
             }
             sel.addEventListener("change", sincronizar);
             sincronizar();
