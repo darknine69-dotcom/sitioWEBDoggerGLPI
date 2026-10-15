@@ -358,8 +358,6 @@ def _zonas_creadas_por_observador():
                     "email": correo,
                     "rol": e.usuario.get_rol_display() if e.usuario_id else "Sin cuenta",
                     "ubicacion": (e.usuario.ubicacion if e.usuario_id else "") or "—",
-                    "avatar": (e.usuario.avatar.url if e.usuario_id and getattr(e.usuario.avatar, "name", "") else ""),
-                    "en_linea": bool(e.usuario_id and getattr(e.usuario, "en_linea", False)),
                     "total": totales.get(correo, 0),
                     "abiertos": abiertos.get(correo, 0),
                     "tecnico": max(cuentas_tec.items(), key=lambda kv: kv[1])[0] if cuentas_tec else "—",

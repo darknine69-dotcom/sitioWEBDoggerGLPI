@@ -187,14 +187,10 @@ main.obs-page { font-family: var(--font-corp); }
                 {% for m in z.miembros %}
                 <article class="obs-miembro">
                     <div class="obs-miembro-top" data-href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}" style="cursor:pointer">
-                        <span class="obs-avatar obs-avatar-foto">{% if m.avatar %}<img src="{{ m.avatar }}" alt="{{ m.nombre }}" class="obs-avatar-img">{% else %}{{ m.nombre|default:"?"|slice:":1"|upper }}{% endif %}<span class="obs-dot {% if m.en_linea %}obs-dot-verde{% else %}obs-dot-gris{% endif %}"></span></span>
+                        <span class="obs-avatar">{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
                         <span class="obs-miembro-id">
                             <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}: todo lo de esta cuenta">{{ m.nombre }}</a></strong>
-                            <small class="obs-miembro-datos">
-                                <span class="obs-dato"><svg class="icon"><use href="#i-mail"/></svg><b>{{ m.email|default:"—" }}</b></span>
-                                <span class="obs-dato"><svg class="icon"><use href="#i-user"/></svg>{{ m.rol }}</span>
-                                <span class="obs-dato"><svg class="icon"><use href="#i-wrench"/></svg>{{ m.tecnico }}</span>
-                            </small>
+                            <small><svg class="icon"><use href="#i-mail"/></svg> <b>{{ m.email|default:"—" }}</b> · <svg class="icon"><use href="#i-user"/></svg> {{ m.rol }} · <svg class="icon"><use href="#i-wrench"/></svg> {{ m.tecnico }}</small>
                         </span>
                         {% if m.abiertos %}<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>{{ m.abiertos }}</span>{% endif %}
                         <span class="obs-miembro-nums">
