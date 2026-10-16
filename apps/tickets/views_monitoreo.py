@@ -78,7 +78,6 @@ def _elementos_de(observador):
     return ElementoMiLista.objects.filter(observador=observador)
 
 
-@admin_required
 def _hace(dt, ahora):
     """Etiqueta relativa corta: hace 5 min, hace 2 h, hace 3 d."""
     segundos = max(0, int((ahora - dt).total_seconds()))
@@ -96,6 +95,7 @@ def _hace(dt, ahora):
     return dt.strftime("%d/%m/%Y")
 
 
+@admin_required
 def monitoreo_admin(request):
     """Tabla de usuarios activos para guardarlos en una zona a monitorear."""
     observador_id = (request.GET.get("observador") or "").strip()
