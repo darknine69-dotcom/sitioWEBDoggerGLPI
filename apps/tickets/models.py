@@ -1170,3 +1170,14 @@ class MonitoreoAuditoria(models.Model):
 
     def __str__(self):
         return f"{self.get_accion_display()} · {self.zona_nombre}"
+
+    @property
+    def clase_accion(self):
+        """Color del badge según lo que pasó: suma, resta o ajuste."""
+        if self.accion in (self.CREAR_ZONA, self.AGREGAR_MIEMBRO,
+                           self.AGREGAR_LISTA, self.ASIGNAR_PUNTO):
+            return "ok"
+        if self.accion in (self.ELIMINAR_ZONA, self.QUITAR_MIEMBRO,
+                           self.QUITAR_LISTA, self.QUITAR_PUNTO):
+            return "no"
+        return "info"

@@ -374,16 +374,21 @@ main.obs-page { font-family: var(--font-corp); }
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
                 <h3>Registro de auditoría</h3>
             </div>
-            <p class="muted" style="margin:0 0 12px;font-size:12.5px">Cambios realizados en el monitoreo: quién, qué y cuándo.</p>
+            <p class="muted" style="margin:0 0 12px;font-size:12.5px">Cambios realizados en el monitoreo: quién, qué y cuándo.
+                <span class="aud-chip"><b>{{ aud_hoy }}</b> hoy</span>
+                <span class="aud-chip"><b>{{ aud_semana }}</b> últimos 7 días</span>
+            </p>
             {% if auditoria %}
             <div class="obs-tabla-wrap tabla-scroll-seis">
                 <table class="obs-tabla">
                     <thead>
                         <tr>
                             <th>Fecha</th>
+                            <th>Hace</th>
                             <th>Acción</th>
                             <th>Zona</th>
                             <th>Supervisor</th>
+                            <th>Cuenta</th>
                             <th>Hecho por</th>
                             <th>Detalle</th>
                         </tr>
@@ -391,11 +396,13 @@ main.obs-page { font-family: var(--font-corp); }
                     <tbody>
                         {% for a in auditoria %}
                         <tr>
-                            <td style="white-space:nowrap">{{ a.fecha|date:"d/m/Y H:i" }}</td>
-                            <td>{{ a.get_accion_display }}</td>
-                            <td><strong>{{ a.zona_nombre|default:"—" }}</strong></td>
-                            <td>{{ a.observador.nombre|default:"—" }}</td>
-                            <td>{{ a.actor.nombre|default:"—" }}</td>
+                            <td style="white-space:nowrap" title="{{ a.fecha|date:'d/m/Y H:i' }}">{{ a.fecha|date:"d/m/Y H:i" }}</td>
+                            <td style="white-space:nowrap"><span class="aud-hace">{{ a.hace }}</span></td>
+                            <td><span class="aud-badge aud-badge-{{ a.clase_accion }}">{{ a.get_accion_display }}</span></td>
+                            <td>{% if a.zona_nombre %}<span class="zona-badge">{{ a.zona_nombre }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td>{% if a.observador %}<span class="aud-quien"><span class="aud-foto">{% if a.observador.avatar %}<img src="{{ a.observador.avatar.url }}" alt="">{% else %}{{ a.observador.nombre|default:"?"|slice:":1"|upper }}{% endif %}</span><span>{{ a.observador.nombre }}<small>{{ a.observador.get_rol_display }}</small></span></span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td>{% if "@" in a.detalle %}<span class="aud-cuenta"><svg class="icon"><use href="#i-mail"/></svg>{{ a.detalle }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td>{% if a.actor %}<span class="aud-quien"><span class="aud-foto">{% if a.actor.avatar %}<img src="{{ a.actor.avatar.url }}" alt="">{% else %}{{ a.actor.nombre|default:"?"|slice:":1"|upper }}{% endif %}</span><span>{{ a.actor.nombre }}</span></span>{% else %}<span class="muted">sistema</span>{% endif %}</td>
                             <td>{{ a.detalle|default:"—" }}</td>
                         </tr>
                         {% endfor %}

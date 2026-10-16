@@ -6,12 +6,15 @@ activos, con filtros, y los guarda en la zona que le toca para que el
 observador los vea en su panel.
 """
 
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.models import Usuario
@@ -76,6 +79,23 @@ def _elementos_de(observador):
 
 
 @admin_required
+def _hace(dt, ahora):
+    """Etiqueta relativa corta: hace 5 min, hace 2 h, hace 3 d."""
+    segundos = max(0, int((ahora - dt).total_seconds()))
+    if segundos < 60:
+        return "ahora mismo"
+    minutos = segundos // 60
+    if minutos < 60:
+        return f"hace {minutos} min"
+    horas = minutos // 60
+    if horas < 24:
+        return f"hace {horas} h"
+    dias = horas // 24
+    if dias < 30:
+        return f"hace {dias} d"
+    return dt.strftime("%d/%m/%Y")
+
+
 def monitoreo_admin(request):
     """Tabla de usuarios activos para guardarlos en una zona a monitorear."""
     observador_id = (request.GET.get("observador") or "").strip()
@@ -261,9 +281,11 @@ def monitoreo_admin(request):
             "zona_elegida": zona_elegida,
             "total": len(filas),
             "zonas_creadas": creadas,
-            "auditoria": list(
-                MonitoreoAuditoria.objects.select_related("actor", "observador")[:20]
-            ),
+            "auditoria": _auditoria_enriquecida(),
+            "aud_hoy": MonitoreoAuditoria.objects.filter(
+                fecha__date=timezone.localdate()).count(),
+            "aud_semana": MonitoreoAuditoria.objects.filter(
+                fecha__gte=timezone.now() - timedelta(days=7)).count(),
             "dash": {
                 "supervisores": len(creadas),
                 "zonas": sum(len(b["zonas"]) for b in creadas),
@@ -276,6 +298,17 @@ def monitoreo_admin(request):
             },
         },
     )
+
+
+def _auditoria_enriquecida(limite=20):
+    """Últimos cambios con etiqueta relativa de tiempo para la tabla."""
+    ahora = timezone.now()
+    filas = list(
+        MonitoreoAuditoria.objects.select_related("actor", "observador")[:limite]
+    )
+    for a in filas:
+        a.hace = _hace(a.fecha, ahora)
+    return filas
 
 
 def _zonas_creadas_por_observador():

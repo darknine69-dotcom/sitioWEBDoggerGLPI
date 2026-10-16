@@ -5820,7 +5820,21 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 .chip-soft { background: #FBF7EF; border: 1px solid var(--line); color: var(--ink); }
 /* Badge con el nombre de la zona en la tabla de seguimiento. */
 .zona-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; background: rgba(37,99,235,.1); color: #1D4ED8; border: 1px solid rgba(37,99,235,.25); }
-/* Badge para quitar de la zona en la tabla de seguimiento. */
+/* Auditoría enriquecida: resumen, badges por acción y quiénes. */
+.aud-chip { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; padding: 2px 10px; border-radius: 999px; background: #FBF7EF; border: 1px solid var(--line); font-size: 11px; font-weight: 600; color: var(--ink-muted); }
+.aud-chip b { color: var(--dogger-red); font-size: 12px; }
+.aud-hace { white-space: nowrap; font-size: 11.5px; font-weight: 700; color: var(--ink-muted); }
+.aud-badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 800; white-space: nowrap; }
+.aud-badge-ok { background: rgba(47,125,79,.13); color: #2F7D4F; }
+.aud-badge-no { background: rgba(214,43,31,.1); color: var(--dogger-red); }
+.aud-badge-info { background: rgba(37,99,235,.1); color: #1D4ED8; }
+.aud-quien { display: inline-flex; align-items: center; gap: 7px; }
+.aud-foto { width: 30px; height: 30px; border-radius: 50%; background: #4F46E5; color: #fff; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; flex: none; }
+.aud-foto img { width: 100%; height: 100%; object-fit: cover; }
+.aud-quien > span:last-child { display: flex; flex-direction: column; line-height: 1.25; font-size: 12.5px; font-weight: 600; }
+.aud-quien small { font-size: 10.5px; color: var(--ink-muted); font-weight: 600; }
+.aud-cuenta { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; }
+.aud-cuenta .icon { width: 12px; height: 12px; color: var(--dogger-red); }
 .quitar-badge { border: 1px solid rgba(214,43,31,.35); background: rgba(214,43,31,.07); color: var(--dogger-red); border-radius: 999px; padding: 2px 10px; font-size: 10.5px; font-weight: 800; cursor: pointer; white-space: nowrap; }
 .quitar-badge:hover { background: var(--dogger-red); border-color: var(--dogger-red); color: #fff; }
 /* Buscador de cuentas para asignar a la zona: sugerencias compactas y
