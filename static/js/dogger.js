@@ -1286,7 +1286,7 @@
         dlg.setAttribute("aria-labelledby", "notifPopVivaTitulo");
         dlg.innerHTML =
             '<form method="dialog" class="notif-popup-form">' +
-            '<button class="notif-popup-x" aria-label="Cerrar">&times;</button>' +
+            '<button type="submit" class="notif-popup-x" aria-label="Cerrar">&times;</button>' +
             '<span class="notif-popup-head">' +
             '<span class="notif-popup-icon" aria-hidden="true">' +
             '<svg class="icon"><use href="#' + esc(n.icono || "i-bell") + '"/></svg></span>' +
@@ -1301,7 +1301,7 @@
                 ? '<a class="btn btn-accent notif-popup-ver" href="' + esc(n.url) + '" data-notif-cerrar>' +
                   'Ver <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg></a>'
                 : "") +
-            '<button class="btn btn-ghost notif-popup-ok" data-notif-cerrar>OK</button>' +
+            '<button type="submit" class="btn notif-popup-ok" data-notif-cerrar>OK</button>' +
             '</div>' +
             (colaEmergente.length
                 ? '<small class="notif-popup-foot notif-popup-faltan">Quedan ' +
@@ -1320,13 +1320,6 @@
         dlg.querySelectorAll("a").forEach(function (a) {
             a.addEventListener("click", function () { pedir(baseDe("data-url-mostrada", n.id)); });
         });
-        /* Asegurar que el botón OK sea visible y funcional */
-        var okBtn = dlg.querySelector(".notif-popup-ok");
-        if (okBtn) {
-            okBtn.style.display = "inline-flex";
-            okBtn.style.visibility = "visible";
-            okBtn.style.opacity = "1";
-        }
     }
 
     function cerrarEmergenteViva(dlg) {

@@ -1,8 +1,11 @@
 """Monitoreo por zonas: el admin ve y administra lo que creó cada supervisor."""
 
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import Usuario
 from apps.tickets.models import (
@@ -61,16 +64,149 @@ class MonitoreoZonasAdminTest(TestCase):
         miembro = bloques[0]["zonas"][0]["miembros"][0]
         self.assertEqual(miembro["email"], "ana@x.com")
         self.assertEqual(miembro["abiertos"], 1)
+        self.assertEqual(miembro["total"], 1)
+        self.assertEqual(len(miembro["tickets"]), 1)
+        self.assertEqual(miembro["tickets"][0]["codigo"], Ticket.objects.first().codigo)
         self.assertEqual(miembro["tecnico"], "Tec")
         html = respuesta.content.decode()
-        self.assertIn("Panel corporativo de supervisores y zonas", html)
+        self.assertNotIn("Panel corporativo de supervisores y zonas", html)
         self.assertIn("Supervisor a cargo", html)
         self.assertIn("ana@x.com", html)
+        self.assertIn('id="monQuitarBtn"', html)
+        self.assertIn("monQuitarSeleccionados", html)
+        self.assertIn("pan-cifras", html)
+        self.assertIn("data-mon-ticket", html)
+        self.assertIn('id="monAlternarZonas"', html)
+        self.assertIn('grid.classList.toggle("is-zonas-plegadas", plegadas)', html)
         dash = respuesta.context["dash"]
         self.assertEqual(dash["supervisores"], 1)
         self.assertEqual(dash["zonas"], 1)
         self.assertEqual(dash["cuentas"], 1)
         self.assertEqual(dash["abiertos"], 1)
+
+    def test_muestra_ans_y_prioridad_en_tarjetas_de_cuenta(self):
+        urgente = Ticket.objects.create(
+            titulo="Urgente vencido", descripcion="d",
+            solicitante_nombre="Ana", solicitante_email="ana@x.com",
+            solicitante_punto="Zona Uno", prioridad=Ticket.Prioridad.URGENTE,
+        )
+        Ticket.objects.filter(pk=urgente.pk).update(
+            fecha_creacion=timezone.now() - timedelta(hours=50),
+            solicitante_email="Ana@X.com",
+        )
+
+        respuesta = self.client.get(reverse("tickets:monitoreo_admin"))
+        miembro = respuesta.context["zonas_creadas"][0]["zonas"][0]["miembros"][0]
+        self.assertEqual(miembro["ans_vencidos"], 1)
+        self.assertEqual(miembro["ans_por_vencer"], 0)
+        self.assertEqual(miembro["urgentes"], 1)
+        self.assertIn(urgente.pk, {t["pk"] for t in miembro["tickets"]})
+        html = respuesta.content.decode()
+        self.assertIn("mon-miembro-ans-vencido", html)
+        self.assertIn("ANS vencido", html)
+        self.assertIn('data-mon-card-view="', html)
+
+    def test_muestra_accion_presionar_en_lugar_de_quitar_si_ans_esta_por_vencer(self):
+        ticket = Ticket.objects.get(solicitante_email="ana@x.com")
+        Ticket.objects.filter(pk=ticket.pk).update(
+            fecha_creacion=timezone.now() - timedelta(hours=ticket.ans_horas - 1)
+        )
+
+        respuesta = self.client.get(reverse("tickets:monitoreo_admin"))
+        miembro = respuesta.context["zonas_creadas"][0]["zonas"][0]["miembros"][0]
+        self.assertEqual(len(miembro["ans_tickets"]), 1)
+        self.assertEqual(miembro["ans_tickets"][0]["pk"], ticket.pk)
+        html = respuesta.content.decode()
+        self.assertIn("data-mon-presionar", html)
+        self.assertIn('id="monPresionarModal"', html)
+        self.assertIn("data-estado=\"por-vencer\"", html)
+
+    def test_admin_presiona_al_tecnico_solo_para_ticket_activo_con_ans_alertable(self):
+        from apps.notificaciones.models import Notificacion
+        from apps.tickets.models import TicketComentario
+
+        ticket = Ticket.objects.get(solicitante_email="ana@x.com")
+        Ticket.objects.filter(pk=ticket.pk).update(
+            fecha_creacion=timezone.now() - timedelta(hours=ticket.ans_horas - 1)
+        )
+
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_presionar", args=[ticket.pk]),
+            {"mensaje": "Priorizar por favor"},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertTrue(
+            TicketComentario.objects.filter(
+                ticket=ticket,
+                usuario=self.admin,
+                comentario="Priorizar por favor",
+                es_presion=True,
+                es_interno=False,
+            ).exists()
+        )
+        self.assertTrue(Notificacion.objects.filter(usuario=self.tec).exists())
+
+        Ticket.objects.filter(pk=ticket.pk).update(estado=Ticket.Estado.RESUELTO)
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_presionar", args=[ticket.pk]),
+            {"mensaje": "Ya no aplica"},
+            follow=True,
+        )
+        self.assertContains(respuesta, "Solo se puede presionar por tickets activos")
+        self.assertFalse(
+            TicketComentario.objects.filter(ticket=ticket, comentario="Ya no aplica").exists()
+        )
+
+    def test_admin_puede_quitar_cuentas_seleccionadas_sin_borrarlas_de_mi_lista(self):
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_miembros_quitar"),
+            {
+                "zona_id": self.zona.pk,
+                "elemento_ids": [self.elemento.pk],
+                "volver": reverse("tickets:monitoreo_admin"),
+            },
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.elemento.refresh_from_db()
+        self.assertIsNone(self.elemento.zona_id)
+        self.assertTrue(
+            ElementoMiLista.objects.filter(
+                pk=self.elemento.pk, observador=self.obs
+            ).exists()
+        )
+
+    def test_quitar_cuenta_de_otra_zona_no_la_mueve(self):
+        otra_zona = ZonaObservador.objects.create(
+            observador=self.obs, nombre="Sur"
+        )
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_miembros_quitar"),
+            {
+                "zona_id": otra_zona.pk,
+                "elemento_ids": [self.elemento.pk],
+                "volver": reverse("tickets:monitoreo_admin"),
+            },
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.elemento.refresh_from_db()
+        self.assertEqual(self.elemento.zona_id, self.zona.pk)
+
+    def test_admin_puede_cambiar_color_de_la_zona_con_la_paleta(self):
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_color", args=[self.zona.pk]),
+            {"color": "#1D4ED8", "volver": reverse("tickets:monitoreo_admin")},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.zona.refresh_from_db()
+        self.assertEqual(self.zona.color, "#1D4ED8")
+
+        respuesta = self.client.post(
+            reverse("tickets:monitoreo_zona_color", args=[self.zona.pk]),
+            {"color": "red", "volver": reverse("tickets:monitoreo_admin")},
+        )
+        self.assertEqual(respuesta.status_code, 404)
+        self.zona.refresh_from_db()
+        self.assertEqual(self.zona.color, "#1D4ED8")
 
     def test_sin_zonas_muestra_aviso(self):
         self.zona.delete()
@@ -146,6 +282,12 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertEqual(
             self.client.post(
                 reverse("tickets:monitoreo_zona_eliminar", args=[self.zona.pk])
+            ).status_code, 403,
+        )
+        self.assertEqual(
+            self.client.post(
+                reverse("tickets:monitoreo_zona_color", args=[self.zona.pk]),
+                {"color": "#1D4ED8"},
             ).status_code, 403,
         )
         self.assertEqual(
@@ -478,8 +620,14 @@ class MonitoreoObservadorDetalleTest(TestCase):
         for texto in (
             "Zonas a cargo", "Carga por zona", "Técnicos que atienden",
             "Resumen por zona", "Estado de tu lista", "obs-dona-svg",
+            "Análisis de tickets", "Solicitudes por categoría",
         ):
             self.assertIn(texto, html)
+        self.assertLess(
+            html.index("Análisis de tickets"),
+            html.index('<section id="por-vencer"'),
+        )
+        self.assertLess(html.index("Solicitudes por categoría"), html.index("Estado de tu lista"))
 
     def test_zonas_a_cargo_bajan_a_las_zonas(self):
         from apps.tickets.models import ZonaObservador

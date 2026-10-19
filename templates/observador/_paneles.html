@@ -14,8 +14,57 @@ encuentra su elemento, el resto de los botones siguen funcionando (Cerrar y
 la papelera se conectan antes de pintar nada).
 {% endcomment %}
 {% if panel.zonas %}
-<div class="pan-grid" data-quitar-varios="{% url 'tickets:obs_quitar_varios' %}">
-    <div class="pan-left">
+<div class="dash-stat-row dash-stat-row--mesas corp-anim pan-indicadores" style="margin-bottom:16px">
+    <a class="dash-stat dash-hov-usuarios" href="#zonas" title="Zonas creadas por ti">
+        <span class="dash-stat-icon">
+            <span class="dash-stat-value">{{ panel.resumen.supervisores }}</span>
+            <span class="dash-stat-glyph"><svg class="icon"><use href="#i-eye"/></svg></span>
+        </span>
+        <span class="dash-stat-body">
+            <span class="dash-stat-label">Supervisores</span>
+            <span class="dash-stat-hint">con zonas creadas</span>
+        </span>
+    </a>
+    <a class="dash-stat dash-hov-zonas" href="#zonas" title="Carpetas de seguimiento">
+        <span class="dash-stat-icon">
+            <span class="dash-stat-value">{{ panel.resumen.zonas }}</span>
+            <span class="dash-stat-glyph"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+        </span>
+        <span class="dash-stat-body">
+            <span class="dash-stat-label">Zonas creadas</span>
+            <span class="dash-stat-hint">carpetas de seguimiento</span>
+        </span>
+    </a>
+    <a class="dash-stat dash-hov-total" href="#zonas" title="Cuentas dentro de tus zonas">
+        <span class="dash-stat-icon">
+            <span class="dash-stat-value">{{ panel.resumen.cuentas }}</span>
+            <span class="dash-stat-glyph"><svg class="icon"><use href="#i-user"/></svg></span>
+        </span>
+        <span class="dash-stat-body">
+            <span class="dash-stat-label">Cuentas en zonas</span>
+            <span class="dash-stat-hint">personas vigiladas</span>
+        </span>
+    </a>
+    <a class="dash-stat dash-hov-abiertos" href="#zonas" title="Tickets por atender en tus zonas">
+        <span class="dash-stat-icon st-ic-abiertos">
+            <span class="dash-stat-value st-abiertos">{{ panel.resumen.abiertos }}</span>
+            <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+        </span>
+        <span class="dash-stat-body">
+            <span class="dash-stat-label">Abiertos en zonas</span>
+            <span class="dash-stat-hint">tickets por atender</span>
+        </span>
+    </a>
+</div>
+<p class="obs-leyenda">
+    <span class="obs-leyenda-item" tabindex="0"><svg class="icon icon-sm" style="color:#2F7D4F"><use href="#i-check-circle"/></svg> Al día<span class="obs-tip">Zona sin tickets abiertos</span></span>
+    <span class="obs-leyenda-item" tabindex="0"><svg class="icon icon-sm" style="color:#C98A12"><use href="#i-clock"/></svg> Pendiente<span class="obs-tip">Zona con tickets abiertos o en progreso</span></span>
+    <span class="obs-leyenda-item" tabindex="0"><svg class="icon icon-sm" style="color:#C8102E"><use href="#i-alert"/></svg> Incidencia<span class="obs-tip">Zona con urgentes abiertos</span></span>
+</p>
+<div class="pan-grid" id="zonas"
+     data-quitar-varios="{% url 'tickets:obs_quitar_varios' %}"
+     data-url-presionar="{% url 'tickets:obs_presionar' 0 %}">
+    <div class="pan-left" id="panLeft">
         <article class="pan-sup">
             <header class="pan-sup-head">
                 <span class="pan-ava">{{ panel.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
@@ -40,9 +89,11 @@ la papelera se conectan antes de pintar nada).
         <div class="pan-right-head">
             <h4>Usuarios en <span id="panRightZona">—</span></h4>
             <span class="muted" id="panSelCount"></span>
-            <button type="button" class="pan-right-x" id="panCerrarX"
-                    title="Cerrar esta lista" aria-label="Cerrar la lista de la zona">
-                <svg class="icon"><use href="#i-x"/></svg>
+            <button type="button" class="pan-right-toggle" id="panAlternarZonas"
+                    aria-expanded="true" aria-controls="panLeft"
+                    title="Plegar la lista de zonas para ampliar los usuarios">
+                <svg class="icon"><use href="#i-layers"/></svg>
+                <span>Plegar zonas</span>
             </button>
         </div>
         <div class="pan-busca">
@@ -53,15 +104,51 @@ la papelera se conectan antes de pintar nada).
             <p class="muted pan-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p>
         </div>
         <div class="pan-right-pie">
-            <button type="button" class="pan-papelera" id="panBorrar" disabled
-                    title="Quitar de tu lista todas las cuentas marcadas con la casilla">
-                <svg class="icon"><use href="#i-trash"/></svg>
-                Quitar <span id="panBorrarN">0</span>
-            </button>
+            <div class="pan-right-actions">
+                <button type="button" class="pan-papelera" id="panBorrar" disabled
+                        title="Quitar de tu lista todas las cuentas marcadas con la casilla">
+                    <svg class="icon"><use href="#i-trash"/></svg>
+                    Quitar <span id="panBorrarN">0</span>
+                </button>
+                <button type="button" class="pan-presionar-footer" id="panPresionar"
+                        title="Presionar al técnico por un ticket vencido"
+                        hidden disabled>
+                    <svg class="icon"><use href="#i-send"/></svg> Presionar
+                </button>
+            </div>
             <button type="button" class="pan-cerrar" id="panCerrar">Cerrar</button>
         </div>
     </aside>
 </div>
+
+<dialog class="pan-presionar-modal" id="panPresionarModal"
+        aria-labelledby="panPresionarTitulo">
+    <form method="post" id="panPresionarForm">
+        {% csrf_token %}
+        <div class="pan-presionar-head">
+            <span class="pan-presionar-icon"><svg class="icon"><use href="#i-send"/></svg></span>
+            <div>
+                <h3 id="panPresionarTitulo">Presionar al técnico</h3>
+                <p id="panPresionarTecnico"></p>
+            </div>
+            <button type="button" class="pan-presionar-x" id="panPresionarCerrar"
+                    aria-label="Cerrar">×</button>
+        </div>
+        <label class="pan-presionar-campo" for="panPresionarTicket">Ticket a priorizar</label>
+        <select id="panPresionarTicket" name="ticket" required></select>
+        <p class="pan-presionar-ticket-info" id="panPresionarInfo"></p>
+        <label class="pan-presionar-campo" for="panPresionarMensaje">Mensaje para el técnico</label>
+        <textarea id="panPresionarMensaje" name="mensaje" maxlength="500" rows="4"
+                  required></textarea>
+        <input type="hidden" name="volver" id="panPresionarVolver">
+        <div class="pan-presionar-actions">
+            <button type="button" class="pan-presionar-cancelar" id="panPresionarCancelar">Cancelar</button>
+            <button type="submit" class="pan-presionar-enviar">
+                <svg class="icon icon-sm"><use href="#i-send"/></svg> Enviar presión
+            </button>
+        </div>
+    </form>
+</dialog>
 
 {{ panel|json_script:"pan-datos" }}
 <script>
@@ -73,10 +160,20 @@ la papelera se conectan antes de pintar nada).
     var contador = document.getElementById("panSelCount");
     var buscar = document.getElementById("panBuscar");
     var cerrar = document.getElementById("panCerrar");
-    var cerrarX = document.getElementById("panCerrarX");
+    var alternarZonas = document.getElementById("panAlternarZonas");
     var papelera = document.getElementById("panBorrar");
     var papeleraN = document.getElementById("panBorrarN");
+    var botonPresionar = document.getElementById("panPresionar");
     var aside = document.getElementById("panRight");
+    var modalPresionar = document.getElementById("panPresionarModal");
+    var formPresionar = document.getElementById("panPresionarForm");
+    var selectPresionar = document.getElementById("panPresionarTicket");
+    var infoPresionar = document.getElementById("panPresionarInfo");
+    var tecnicoPresionar = document.getElementById("panPresionarTecnico");
+    var mensajePresionar = document.getElementById("panPresionarMensaje");
+    var volverPresionar = document.getElementById("panPresionarVolver");
+    var cerrarPresionar = document.getElementById("panPresionarCerrar");
+    var cancelarPresionar = document.getElementById("panPresionarCancelar");
     if (!grid) return;
 
     var panel = null;
@@ -87,6 +184,23 @@ la papelera se conectan antes de pintar nada).
     var actual = null;
 
     var VACIO = '<p class="muted pan-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p>';
+    function actualizaBotonZonas(plegadas) {
+        if (!alternarZonas) return;
+        alternarZonas.setAttribute("aria-expanded", String(!plegadas));
+        alternarZonas.setAttribute(
+            "title",
+            plegadas ? "Mostrar la lista de zonas" : "Plegar la lista de zonas para ampliar los usuarios"
+        );
+        var texto = alternarZonas.querySelector("span");
+        if (texto) texto.textContent = plegadas ? "Mostrar zonas" : "Plegar zonas";
+    }
+    if (alternarZonas) {
+        alternarZonas.addEventListener("click", function () {
+            var plegadas = !grid.classList.contains("is-zonas-plegadas");
+            grid.classList.toggle("is-zonas-plegadas", plegadas);
+            actualizaBotonZonas(plegadas);
+        });
+    }
 
     /* --- Cerrar: conectado el primero, para que el panel siempre se pueda
            retirar aunque el pintado de las falle. Cerrar de verdad retira
@@ -104,10 +218,11 @@ la papelera se conectan antes de pintar nada).
         if (pane) pane.innerHTML = VACIO;
         if (aside) aside.hidden = true;
         grid.classList.add("is-cerrado");
+        grid.classList.remove("is-zonas-plegadas");
+        actualizaBotonZonas(false);
         actualizaPapelera();
     }
     if (cerrar) cerrar.addEventListener("click", limpia);
-    if (cerrarX) cerrarX.addEventListener("click", limpia);
 
     /* --- Papelera: solo con cuentas marcadas que estén en la lista propia. --- */
     function marcadas() {
@@ -120,9 +235,15 @@ la papelera se conectan antes de pintar nada).
         });
     }
     function actualizaPapelera() {
-        var n = marcadas().length;
+        var filas = marcadas();
+        var n = filas.length;
         if (papelera) papelera.disabled = n === 0;
         if (papeleraN) papeleraN.textContent = String(n);
+        var vencidos = ticketsVencidosEnPanel();
+        if (botonPresionar) {
+            botonPresionar.hidden = vencidos.length === 0;
+            botonPresionar.disabled = vencidos.length === 0;
+        }
     }
     if (papelera) {
         papelera.addEventListener("click", function () {
@@ -178,17 +299,92 @@ la papelera se conectan antes de pintar nada).
             return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
         });
     }
-    function accion(u) {
-        var url = u.en_lista ? u.url_quitar : (u.email ? u.url_agregar : "");
-        if (!url) return "";
-        var modo = u.en_lista ? "quitar" : "agregar";
-        var ico = modo === "quitar" ? "#i-trash" : "#i-plus";
-        return '<button type="button" class="pan-user-acc pan-acc-' + modo + '"' +
-            ' data-acc-url="' + esc(url) + '" data-acc-modo="' + modo + '"' +
-            ' title="' + (modo === "quitar" ? "Quitar de mi lista" : "Agregar a mi lista") + '">' +
-            '<svg class="icon icon-sm"><use href="' + ico + '"/></svg> ' +
-            (modo === "quitar" ? "Quitar" : "Agregar") + "</button>";
+    function ticketsVencidosEnPanel() {
+        var tickets = [];
+        if (!pane) return tickets;
+        pane.querySelectorAll(".pan-user-wrap[data-pan-overdue]").forEach(function (wrap) {
+            var datos = wrap.getAttribute("data-pan-overdue");
+            if (!datos) return;
+            try {
+                tickets = tickets.concat(JSON.parse(datos));
+            } catch (error) {
+                console.error("No se pudieron leer los tickets vencidos de la cuenta.", error);
+            }
+        });
+        var vistos = {};
+        return tickets.filter(function (ticket) {
+            if (!ticket || !ticket.pk || vistos[ticket.pk]) return false;
+            vistos[ticket.pk] = true;
+            return true;
+        });
     }
+    function accion(u) {
+        if (u.en_lista) return "";
+        var url = u.email ? u.url_agregar : "";
+        if (!url) return "";
+        return '<button type="button" class="pan-user-acc pan-acc-agregar"' +
+            ' data-acc-url="' + esc(url) + '" data-acc-modo="agregar"' +
+            ' title="Agregar a mi lista">' +
+            '<svg class="icon icon-sm"><use href="#i-plus"/></svg> Agregar</button>';
+    }
+    function abrirPresion(tickets) {
+        if (!modalPresionar || !formPresionar || !selectPresionar || !tickets.length) return;
+        selectPresionar.innerHTML = tickets.map(function (t) {
+            return '<option value="' + esc(t.pk) + '">' + esc(t.codigo) + " · " +
+                esc(t.ans_texto || "Ticket activo") + "</option>";
+        }).join("");
+        if (tecnicoPresionar) {
+            var nombres = tickets.map(function (t) { return t.tecnico; }).filter(function (nombre, i, lista) {
+                return nombre && lista.indexOf(nombre) === i;
+            });
+            tecnicoPresionar.textContent = "Destinatario: " + (nombres.join(", ") || "técnico asignado");
+        }
+        if (volverPresionar) {
+            volverPresionar.value = location.pathname + location.search + location.hash;
+        }
+        var actualizaDetalle = function () {
+            var ticket = tickets.filter(function (t) {
+                return String(t.pk) === selectPresionar.value;
+            })[0];
+            if (!ticket) return;
+            if (infoPresionar) {
+                infoPresionar.textContent = ticket.titulo + " · Técnico: " + ticket.tecnico;
+            }
+            var estado = ticket.ans_estado === "vencido" ? "tiene el ANS vencido" :
+                ticket.ans_estado === "por-vencer" ? "está por vencer según el ANS" :
+                "requiere seguimiento";
+            mensajePresionar.value = "El ticket " + ticket.codigo + " " + estado +
+                ". Por favor, prioriza su atención y actualiza su estado.";
+        };
+        selectPresionar.onchange = actualizaDetalle;
+        actualizaDetalle();
+        var base = grid.getAttribute("data-url-presionar") || "";
+        formPresionar.action = base.replace(/\/0\/?$/, "/" + encodeURIComponent(selectPresionar.value) + "/");
+        selectPresionar.onchange = function () {
+            actualizaDetalle();
+            formPresionar.action = base.replace(
+                /\/0\/?$/, "/" + encodeURIComponent(selectPresionar.value) + "/"
+            );
+        };
+        if (typeof modalPresionar.showModal === "function") modalPresionar.showModal();
+        else modalPresionar.setAttribute("open", "");
+        mensajePresionar.focus();
+    }
+    if (cerrarPresionar) cerrarPresionar.addEventListener("click", function () {
+        if (modalPresionar && modalPresionar.close) modalPresionar.close();
+        else if (modalPresionar) modalPresionar.removeAttribute("open");
+    });
+    if (cancelarPresionar) cancelarPresionar.addEventListener("click", function () {
+        if (modalPresionar && modalPresionar.close) modalPresionar.close();
+        else if (modalPresionar) modalPresionar.removeAttribute("open");
+    });
+    if (modalPresionar) modalPresionar.addEventListener("click", function (ev) {
+        if (ev.target === modalPresionar && modalPresionar.close) modalPresionar.close();
+    });
+    if (botonPresionar) botonPresionar.addEventListener("click", function () {
+        var tickets = ticketsVencidosEnPanel();
+        if (tickets.length) abrirPresion(tickets);
+    });
 
     function pinta(tarjeta) {
         if (!pane) return;
@@ -211,18 +407,45 @@ la papelera se conectan antes de pintar nada).
         }
         pane.innerHTML = vis.map(function (u) {
             var ini = ((u.nombre || "?").trim().charAt(0) || "?").toUpperCase();
+            var ansClase = Number(u.ans_vencidos) > 0 ? "rojo" :
+                u.ans_estado === "por-vencer" ? "amarillo" : "";
+            var semaforo = Number(u.ans_vencidos) > 0 ?
+                '<span class="obs-pill obs-pill-rojo pan-user-ans"><span class="obs-dot obs-dot-rojo"></span>' +
+                    esc(u.ans_vencidos) + ' ANS vencido' + (u.ans_vencidos === 1 ? "" : "s") + '</span>' :
+                u.ans_estado === "por-vencer" ?
+                '<span class="obs-pill obs-pill-amarillo pan-user-ans"><span class="obs-dot obs-dot-amarillo"></span>' +
+                    esc(u.ans_por_vencer) + ' por vencer</span>' :
+                u.abiertos ?
+                '<span class="obs-pill obs-pill-amarillo pan-user-ans"><span class="obs-dot obs-dot-amarillo"></span>' +
+                    esc(u.abiertos) + ' abiertos</span>' :
+                '<span class="obs-pill obs-pill-verde pan-user-ans"><span class="obs-dot obs-dot-verde"></span>Al día</span>';
+            var prioridad = u.urgentes ?
+                '<span class="pan-user-prioridad" title="' + esc(u.urgentes) +
+                    ' ticket' + (u.urgentes === 1 ? "" : "s") + ' urgente' +
+                    (u.urgentes === 1 ? "" : "s") + '"><svg class="icon"><use href="#i-alert"/></svg>' +
+                    esc(u.urgentes) + '</span>' : "";
             /* Solo lo que ya está en la lista se puede borrar con la
                papelera: fuera de ahí esta misma fila ofrece «Agregar». */
             var marca = (u.en_lista && u.elemento_id)
                 ? ' data-elemento="' + esc(u.elemento_id) + '"'
                 : "";
+            var casilla = marca
+                ? '<input type="checkbox" class="pan-user-chk" aria-label="Seleccionar ' +
+                    esc(u.nombre) + ' para quitar de mi lista">'
+                : "";
             /* La ficha de la cuenta, debajo de su fila: los mismos chips de
                color y la misma barra que la página de la zona. */
             var chips = (u.tickets || []).map(function (t) {
+                var ans = t.ans_estado === "vencido" ?
+                    '<small class="pan-ticket-ans is-vencido">ANS vencido</small>' :
+                    t.ans_estado === "por-vencer" ?
+                    '<small class="pan-ticket-ans is-por-vencer">ANS por vencer</small>' : "";
                 return '<span class="obs-ticket t-' + esc(t.estado) + '"' +
                     ' title="' + esc(t.estado_display) + ' · ' + esc(t.fecha) +
-                    (t.tecnico ? ' · ' + esc(t.tecnico) : "") + '">' +
-                    esc(t.codigo) + " <small>" + esc(t.estado_display) + "</small></span>";
+                    (t.tecnico ? ' · ' + esc(t.tecnico) : "") +
+                    (t.ans_texto ? ' · ' + esc(t.ans_texto) : "") + '">' +
+                    esc(t.codigo) + " <small>" + esc(t.estado_display) + "</small>" +
+                    ans + "</span>";
             }).join("");
             var resp = (u.respuestas || []).map(function (r) {
                 return '<li class="pan-resp">' +
@@ -230,13 +453,20 @@ la papelera se conectan antes de pintar nada).
                     (r.fecha ? " · " + esc(r.fecha) : "") + "</strong>" +
                     "<small>" + esc(r.texto) + "</small></li>";
             }).join("");
-            return '<div class="pan-user-wrap pan-user-' + esc(u.estado || "verde") + '">' +
-                '<label class="pan-user"' + marca + ">" +
-                '<input type="checkbox" class="pan-user-chk">' +
+            var vencidos = (u.tickets_presionables || []).filter(function (t) {
+                    return t.ans_estado === "vencido";
+            });
+            return '<div class="pan-user-wrap pan-user-' +
+                    (ansClase || esc(u.estado || "verde")) + '"' +
+                    (vencidos.length && u.en_lista
+                        ? ' data-pan-overdue="' + esc(JSON.stringify(vencidos)) + '"'
+                        : "") + '>' +
+                    '<label class="pan-user"' + marca + ">" +
+            casilla +
                 '<span class="pan-user-ava">' + esc(ini) + "</span>" +
                 '<span class="pan-user-id"><strong>' + esc(u.nombre) + "</strong><small>" +
                     esc(u.email || "sin correo") + "</small></span>" +
-                (u.abiertos ? '<span class="pan-user-ab" title="' + esc(u.abiertos) + ' abiertos">' + esc(u.abiertos) + "</span>" : "") +
+                semaforo + prioridad +
                 '<span class="pan-user-rol">' + esc(u.rol || "Cuenta") + "</span>" +
                 '<a class="pan-user-ficha" href="' + esc(u.url) + '" title="Abrir la ficha de ' + esc(u.nombre) + '">Ver ficha</a>' +
                 accion(u) +
@@ -245,7 +475,9 @@ la papelera se conectan antes de pintar nada).
                     '<span class="pan-cifras">' +
                         '<span class="pan-cifra"><b>' + esc(u.total) + "</b> tickets</span>" +
                         '<span class="pan-cifra s-ab"><b>' + esc(u.abiertos) + "</b> abiertos</span>" +
-                        '<span class="pan-cifra s-ce"><b>' + esc(u.cerrados) + "</b> resueltos</span>" +
+                        '<span class="pan-cifra s-ce"><b>' + esc(u.resueltos) + "</b> resueltos</span>" +
+                        '<span class="pan-cifra s-ce"><b>' + esc(u.cerrados) + "</b> cerrados</span>" +
+                        '<span class="pan-cifra s-vencidos"><b>' + esc(u.ans_vencidos) + "</b> ANS vencidos</span>" +
                         '<span class="pan-cifra"><b>' + esc(u.avance) + "%</b> avance</span>" +
                     "</span>" +
                     (u.total ? '<span class="obs-bar" role="img" aria-label="Avance de ' + esc(u.nombre) + ': ' + esc(u.avance) + ' por ciento">' +

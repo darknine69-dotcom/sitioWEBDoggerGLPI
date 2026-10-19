@@ -4,18 +4,18 @@
 «por vencer» y cuándo ya venció. Este módulo es el que manda los avisos una
 sola vez cuando eso ocurre:
 
-  · correo al técnico asignado, que es quien tiene que resolver,
-  · correo a la persona que abrió el ticket, que es quien está esperando,
-  · campana al observador que supervisa a esa persona, con el enlace a su
-    sección de «Por vencer» para que le presione.
+  · campana y correo al técnico asignado, que es quien tiene que resolver,
+  · campana y correo a la persona que abrió el ticket, que es quien espera,
+  · campana al observador que supervisa a esa persona, con enlace directo al
+    caso para que pueda presionar al técnico.
 
 La marca `Ticket.ans_alertado_en` evita repetir: ni el cron ni el panel vuelven
 a mandar nada mientras exista. Si el ticket se resuelve antes del límite, ya no
 hace falta avisar de nada porque aquí solo se miran abiertos y en progreso.
 
-Dos caminos entran aquí: el comando `avisar_ans_por_vencer` (para el cron) y el
-panel del observador cuando alguien entra, así el sistema no depende de que
-haya un programador configurado.
+Tres caminos entran aquí: el comando `avisar_ans_por_vencer` (para el cron),
+la campana de notificaciones (con revisión periódica) y el panel del
+observador al entrar.
 
 El umbral no se inventa aquí: es el de siempre (25 % del plazo, o las dos
 últimas horas si eso resulta más tarde), el mismo que pinta la etiqueta y hace
@@ -118,25 +118,78 @@ def _url_seccion(nombre="tickets:obs_monitoreo", ancla="#por-vencer"):
     return f"{base.rstrip('/')}{ruta}" if base else ruta
 
 
-def aviso_en_campana(observador, ticket, texto):
-    """Deja el aviso en la campana del observador, uno por ticket."""
+def _aviso_campana(usuario, ticket, texto, *, clave, url):
     from apps.notificaciones.models import Notificacion
     from apps.notificaciones.services import crear
+
+    existente = Notificacion.objects.filter(usuario=usuario, clave=clave).first()
+    if existente:
+        if existente.url != url:
+            existente.url = url
+            existente.save(update_fields=["url"])
+        return None
 
     tecnico = ticket.tecnico_asignado
     nombre_tec = (tecnico.nombre if tecnico else "") or "sin técnico"
     return crear(
-        observador,
+        usuario,
         Notificacion.Tipo.TICKET_RECORDATORIO,
         f"{ticket.codigo} está {texto.lower()}",
         f"{ticket.solicitante_nombre or 'Sin nombre'} · "
         f"{ticket.get_prioridad_display()} · {nombre_tec}",
-        url=_url_seccion(),
+        url=url,
         icono="i-stopwatch",
-        clave=f"ans-{ticket.pk}",
+        clave=clave,
         actor="Sistema ANS",
         actor_rol="Sistema",
     )
+
+
+def avisos_en_campana(ticket, texto, observadores=None):
+    """Notifica en la aplicación al técnico, solicitante y supervisores."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    creadas = []
+    tecnico = ticket.tecnico_asignado
+    if tecnico and getattr(tecnico, "activo", True):
+        aviso = _aviso_campana(
+            tecnico, ticket, texto,
+            clave=f"ans-{ticket.pk}:tecnico",
+            url=reverse("tickets:detalle", args=[ticket.pk]),
+        )
+        if aviso:
+            creadas.append(aviso)
+
+    correo = (ticket.solicitante_email or "").strip()
+    if correo:
+        solicitantes = User.objects.filter(
+            email__iexact=correo,
+            rol=User.Rol.USUARIO,
+            activo=True,
+            is_active=True,
+        )
+        for solicitante in solicitantes:
+            aviso = _aviso_campana(
+                solicitante, ticket, texto,
+                clave=f"ans-{ticket.pk}:solicitante:{solicitante.pk}",
+                url=reverse("tickets:mi_ticket", args=[ticket.pk]),
+            )
+            if aviso:
+                creadas.append(aviso)
+
+    ancla = f"#ans-ticket-{ticket.pk}"
+    if observadores is None:
+        observadores = observadores_de(ticket)
+    for observador in observadores:
+        aviso = _aviso_campana(
+            observador, ticket, texto,
+            clave=f"ans-{ticket.pk}",
+            url=_url_seccion(ancla=ancla),
+        )
+        if aviso:
+            creadas.append(aviso)
+    return creadas
 
 
 def avisar(ticket, observadores=None):
@@ -162,18 +215,27 @@ def avisar(ticket, observadores=None):
         if correo_ans_por_vencer_usuario(ticket, restante):
             enviados += 1
 
-    if observadores is None:
-        observadores = observadores_de(ticket)
     # El texto viene calculado desde la lista; si alguien llama a `avisar`
     # directo, se pide al propio ticket para no dejar el título a medias.
     texto = getattr(ticket, "ans_texto", "") or ticket.datos_ans[1]
-    for observador in observadores:
-        if aviso_en_campana(observador, ticket, texto):
-            enviados += 1
+    notificaciones = avisos_en_campana(ticket, texto, observadores)
+    enviados += len(notificaciones)
 
     ticket.ans_alertado_en = timezone.now()
     ticket.save(update_fields=["ans_alertado_en"])
     return enviados
+
+
+def completar_campanas_pendientes(limite=LIMITE_POR_EJECUCION):
+    """Crea avisos de campana que falten para ANS activos, sin reenviar correo."""
+    tickets = por_vencer(
+        limite=limite,
+        solo_sin_avisar=False,
+    )
+    avisos = []
+    for ticket in tickets:
+        avisos.extend(avisos_en_campana(ticket, ticket.ans_texto))
+    return avisos
 
 
 def revisar_y_avisar(consulta=None, limite=LIMITE_POR_EJECUCION):

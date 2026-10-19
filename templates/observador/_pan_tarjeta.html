@@ -8,8 +8,8 @@ La tarjeta abre la lista de la zona a la derecha; debajo lleva las mismas
 acciones que la página Zonas —Ver, Editar (despliega el nombre) y Borrar—
 para que el icono de la papelera esté siempre al alcance de la zona.
 {% endcomment %}
-<div class="pan-zc-wrap pan-zc-{{ e.estado }}" data-pan-wrap="{{ e.clave }}"{% if e.color %} style="--zc: {{ e.color }}"{% endif %}>
-<button type="button" class="pan-zc pan-zc-{{ e.estado }}" data-pan-clave="{{ e.clave }}" data-pan-nombre="{{ e.nombre }}">
+<div class="pan-zc-wrap pan-zc-{% if e.ans_vencidos %}rojo{% elif e.ans_por_vencer %}amarillo{% else %}{{ e.estado }}{% endif %}" data-pan-wrap="{{ e.clave }}"{% if e.color %} style="--zc: {{ e.color }}"{% endif %}>
+<button type="button" class="pan-zc pan-zc-{% if e.ans_vencidos %}rojo{% elif e.ans_por_vencer %}amarillo{% else %}{{ e.estado }}{% endif %}" data-pan-clave="{{ e.clave }}" data-pan-nombre="{{ e.nombre }}">
     <span class="pan-zc-top">
         <span class="pan-zc-nombre">{{ e.nombre|default:"Sin nombre" }}</span>
         {% if e.fecha %}<span class="pan-zc-fecha">{{ e.fecha }}</span>{% endif %}
@@ -21,7 +21,10 @@ para que el icono de la papelera esté siempre al alcance de la zona.
     <span class="pan-zc-bar"><span style="width: {{ e.avance }}%"></span></span>
     <span class="pan-zc-foot">
         <span class="pan-dot"></span>
-        {% if e.estado == "rojo" %}Incidencia{% elif e.estado == "amarillo" %}Pendiente{% else %}Al día{% endif %}
+        {% if e.ans_vencidos %}{{ e.ans_vencidos }} ANS vencido{{ e.ans_vencidos|pluralize }}
+        {% elif e.ans_por_vencer %}{{ e.ans_por_vencer }} por vencer
+        {% elif e.estado == "rojo" %}Incidencia{% elif e.estado == "amarillo" %}Pendiente{% else %}Al día{% endif %}
+        {% if e.urgentes %}<span class="pan-zc-prioridad" title="{{ e.urgentes }} ticket{{ e.urgentes|pluralize }} urgente{{ e.urgentes|pluralize }}"><svg class="icon"><use href="#i-alert"/></svg>{{ e.urgentes }}</span>{% endif %}
         <b>{{ e.avance }}%</b>
     </span>
 </button>

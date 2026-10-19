@@ -11,6 +11,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.db.models.functions import Lower
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -19,6 +20,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.models import Usuario
 
+from . import ans_avisos
 from .decorators import admin_required
 from .models import (
     ElementoMiLista,
@@ -26,6 +28,7 @@ from .models import (
     ObservadorPunto,
     Punto,
     Ticket,
+    TicketComentario,
     ZonaObservador,
 )
 
@@ -471,6 +474,67 @@ def _zonas_creadas_por_observador():
             if correo in correos and nombre:
                 tecnicos.setdefault(correo, {}).setdefault(nombre, 0)
                 tecnicos[correo][nombre] += 1
+    conteos_ans = {}
+    tickets_ans_por_correo = {}
+    ans_por_ticket = {}
+    if correos:
+        consulta_ans = Ticket.objects.annotate(
+            correo_normalizado=Lower("solicitante_email")
+        ).filter(correo_normalizado__in=correos)
+        tickets_ans = ans_avisos.por_vencer(
+            consulta=consulta_ans,
+            limite=max(consulta_ans.count(), 1),
+            solo_sin_avisar=False,
+        )
+        for ticket in tickets_ans:
+            correo = (ticket.solicitante_email or "").strip().lower()
+            conteos = conteos_ans.setdefault(
+                correo, {"vencidos": 0, "por_vencer": 0}
+            )
+            clave = "vencidos" if ticket.ans_estado == "vencido" else "por_vencer"
+            conteos[clave] += 1
+            ans_por_ticket[ticket.pk] = {
+                "estado": ticket.ans_estado,
+                "texto": ticket.ans_texto,
+            }
+            if ticket.tecnico_asignado_id:
+                tickets_ans_por_correo.setdefault(correo, []).append(
+                    {
+                        "pk": ticket.pk,
+                        "codigo": ticket.codigo,
+                        "titulo": ticket.titulo,
+                        "tecnico": ticket.tecnico_asignado.nombre or ticket.tecnico_asignado.email,
+                        "estado": ticket.ans_estado,
+                        "ans_texto": ticket.ans_texto,
+                    }
+                )
+    detalles_tickets = {}
+    if correos:
+        for ticket in (
+            Ticket.objects.annotate(
+                correo_normalizado=Lower("solicitante_email")
+            ).filter(correo_normalizado__in=correos)
+            .select_related("tecnico_asignado", "categoria")
+            .order_by("-fecha_creacion")
+        ):
+            correo = (ticket.solicitante_email or "").strip().lower()
+            ans = ans_por_ticket.get(ticket.pk)
+            detalles_tickets.setdefault(correo, []).append(
+                {
+                    "pk": ticket.pk,
+                    "codigo": ticket.codigo,
+                    "titulo": ticket.titulo,
+                    "estado": ticket.estado,
+                    "estado_display": ticket.get_estado_display(),
+                    "fecha": timezone.localtime(ticket.fecha_creacion).strftime("%d/%m/%Y"),
+                    "tecnico": (
+                        ticket.tecnico_asignado.nombre
+                        if ticket.tecnico_asignado_id else ""
+                    ),
+                    "ans_estado": ans["estado"] if ans else "",
+                    "ans_texto": ans["texto"] if ans else "",
+                }
+            )
     por_supervisor = {}
     for sup in supervisores:
         por_supervisor[sup.pk] = {
@@ -492,6 +556,17 @@ def _zonas_creadas_por_observador():
         for e in z.elementos.all():
             correo = (e.usuario_email or "").strip().lower()
             cuentas_tec = tecnicos.get(correo, {})
+            tickets = detalles_tickets.get(correo, [])
+            resueltos = sum(
+                1 for ticket in tickets
+                if ticket["estado"] == Ticket.Estado.RESUELTO
+            )
+            cerrados = sum(
+                1 for ticket in tickets
+                if ticket["estado"] == Ticket.Estado.CERRADO
+            )
+            abiertos_cuenta = abiertos.get(correo, 0)
+            total_cuenta = totales.get(correo, 0)
             miembros.append(
                 {
                     "elemento_id": e.pk,
@@ -499,8 +574,19 @@ def _zonas_creadas_por_observador():
                     "email": correo,
                     "rol": e.usuario.get_rol_display() if e.usuario_id else "Sin cuenta",
                     "ubicacion": (e.usuario.ubicacion if e.usuario_id else "") or "—",
-                    "total": totales.get(correo, 0),
-                    "abiertos": abiertos.get(correo, 0),
+                    "total": total_cuenta,
+                    "abiertos": abiertos_cuenta,
+                    "resueltos": resueltos,
+                    "cerrados": cerrados,
+                    "avance": (
+                        int(round(100.0 * (total_cuenta - abiertos_cuenta) / total_cuenta))
+                        if total_cuenta else 0
+                    ),
+                    "urgentes": urgentes.get(correo, 0),
+                    "ans_vencidos": conteos_ans.get(correo, {}).get("vencidos", 0),
+                    "ans_por_vencer": conteos_ans.get(correo, {}).get("por_vencer", 0),
+                    "ans_tickets": tickets_ans_por_correo.get(correo, []),
+                    "tickets": tickets,
                     "tecnico": max(cuentas_tec.items(), key=lambda kv: kv[1])[0] if cuentas_tec else "—",
                 }
             )
@@ -523,6 +609,66 @@ def _zonas_creadas_por_observador():
             }
         )
     return [v for v in por_supervisor.values() if v["zonas"]]
+
+
+@admin_required
+@login_required
+@require_POST
+def monitoreo_zona_color(request, pk):
+    """Actualiza el color de una zona desde la tira del panel administrador."""
+    from apps.tickets.views_observador import PALETA_ZONA
+
+    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    zona = ZonaObservador.objects.filter(pk=pk).first()
+    if zona is None:
+        raise Http404
+    color = (request.POST.get("color") or "").strip().upper()
+    if color and color not in PALETA_ZONA:
+        raise Http404
+    zona.color = color
+    zona.save(update_fields=["color"])
+    return redirect(volver)
+
+
+@admin_required
+@login_required
+@require_POST
+def monitoreo_presionar_tecnico(request, pk):
+    """Permite al administrador enviar una presión visible a un técnico."""
+    from .notifications import notificar_comentario
+
+    try:
+        ticket = Ticket.objects.select_related("tecnico_asignado").get(pk=pk)
+    except (Ticket.DoesNotExist, ValueError, TypeError):
+        raise Http404
+
+    volver = reverse("tickets:monitoreo_admin")
+    mensaje = (request.POST.get("mensaje") or "").strip()[:500]
+    if not mensaje:
+        messages.error(request, "Escribe el mensaje para el técnico.")
+        return redirect(volver)
+    if ticket.estado not in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+        messages.error(request, "Solo se puede presionar por tickets activos.")
+        return redirect(volver)
+    if not ticket.tecnico_asignado_id:
+        messages.error(request, "El ticket no tiene un técnico asignado.")
+        return redirect(volver)
+    estado_ans = ticket.datos_ans[0]
+    if estado_ans not in ans_avisos.AVISABLES:
+        messages.error(request, "El ticket ya no está próximo a vencer ni vencido según su ANS.")
+        return redirect(volver)
+
+    TicketComentario.objects.create(
+        ticket=ticket,
+        usuario=request.user,
+        autor_nombre=request.user.nombre,
+        comentario=mensaje,
+        es_interno=False,
+        es_presion=True,
+    )
+    notificar_comentario(ticket, request.user.nombre, mensaje, actor=request.user)
+    messages.success(request, f"Mensaje enviado al técnico del {ticket.codigo}.")
+    return redirect(volver)
 
 
 @admin_required
@@ -707,8 +853,6 @@ def monitoreo_zona_miembro_quitar(request, pk):
     nombre_zona = elemento.zona.nombre if elemento.zona else ""
     supervisor = elemento.observador
     elemento.zona = None
-    # Si el punto enlazado es la misma zona, también se suelta: si no,
-    # la tabla de agregar lo seguiría mostrando con la zona vieja.
     punto = getattr(elemento, "punto", None)
     if punto is not None and _norm_zona(getattr(punto, "nombre", "")) == _norm_zona(nombre_zona):
         elemento.punto = None
@@ -719,6 +863,46 @@ def monitoreo_zona_miembro_quitar(request, pk):
         request=request, cuenta=elemento.usuario_email or "",
         motivo=_motivo_post(request),
     )
+    return redirect(volver)
+
+
+@admin_required
+@login_required
+@require_POST
+def monitoreo_zona_miembros_quitar(request):
+    """Saca las cuentas seleccionadas de una zona sin borrarlas de la lista."""
+    from django.contrib import messages
+
+    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    zona_id = request.POST.get("zona_id") or ""
+    ids = {valor for valor in request.POST.getlist("elemento_ids") if valor.isdigit()}
+    zona = ZonaObservador.objects.filter(pk=zona_id).first() if zona_id.isdigit() else None
+    if zona is None or not ids:
+        messages.error(request, "Selecciona al menos una cuenta de la zona.")
+        return redirect(volver)
+
+    elementos = list(
+        ElementoMiLista.objects.filter(pk__in=ids, zona=zona)
+        .select_related("observador", "punto")
+    )
+    for elemento in elementos:
+        punto = elemento.punto
+        elemento.zona = None
+        update_fields = ["zona"]
+        if punto is not None and _norm_zona(punto.nombre) == _norm_zona(zona.nombre):
+            elemento.punto = None
+            update_fields.append("punto")
+        elemento.save(update_fields=update_fields)
+        _auditar(
+            request.user, MonitoreoAuditoria.QUITAR_MIEMBRO, elemento.observador,
+            zona.nombre, f"Salió de la zona {zona.nombre}",
+            request=request, cuenta=elemento.usuario_email or "",
+            motivo=_motivo_post(request),
+        )
+    if elementos:
+        messages.success(request, f"Se quitaron {len(elementos)} cuenta(s) de la zona.")
+    else:
+        messages.error(request, "Las cuentas seleccionadas ya no pertenecen a esa zona.")
     return redirect(volver)
 
 

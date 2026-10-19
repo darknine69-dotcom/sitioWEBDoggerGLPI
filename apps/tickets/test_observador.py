@@ -5,10 +5,12 @@ personal se guardaba sin usuario y sin correo, así que el observador perdía
 de vista a quién había agregado y la fila terminaba contando todos los
 tickets de sus zonas.
 """
+from datetime import timedelta
 from io import BytesIO
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from openpyxl import load_workbook
 
 from apps.accounts.models import Usuario
@@ -111,12 +113,95 @@ class ObservadorListaTest(TestCase):
         self.assertIn('class="pan-grid"', html)
         self.assertIn("Mis zonas", html)
         self.assertIn("Supervisor a cargo", html)
-        # La tabla de antes ya no existe.
-        self.assertNotIn("Técnico", html)
+        # La tabla de antes ya no existe; el diálogo de presión al técnico
+        # sí puede mencionar a los destinatarios.
+        self.assertNotIn("<th>Técnico</th>", html)
         # Ni el título, ni los dos grupos que se quitaron.
         self.assertNotIn("Panel corporativo", html)
         self.assertNotIn("Mis puntos", html)
         self.assertNotIn("Sin zona", html)
+
+    def test_panel_mi_lista_muestra_ans_y_prioridad(self):
+        tecnico = Usuario.objects.create_user(
+            email="tec@x.com", password="x", nombre="Técnico Norte",
+            rol=Usuario.Rol.TECNICO,
+        )
+        ticket = self._ticket(
+            "Afectado", "Zona Uno", email="afectado@x.com",
+            prioridad=Ticket.Prioridad.URGENTE,
+        )
+        Ticket.objects.filter(pk=ticket.pk).update(
+            fecha_creacion=timezone.now() - timedelta(hours=50),
+            tecnico_asignado=tecnico,
+            solicitante_email="Afectado@X.com",
+        )
+        self._ticket(
+            "Afectado", "Zona Uno", email="afectado@x.com",
+            estado=Ticket.Estado.RESUELTO,
+        )
+        self._ticket(
+            "Afectado", "Zona Uno", email="afectado@x.com",
+            estado=Ticket.Estado.CERRADO,
+        )
+        self._agregar("afectado@x.com")
+        zona = ZonaObservador.objects.create(
+            observador=self.observador, nombre="Norte",
+        )
+        elemento = ElementoMiLista.objects.get(observador=self.observador)
+        elemento.zona = zona
+        elemento.save(update_fields=["zona"])
+
+        respuesta = self.client.get(reverse("tickets:obs_mi_lista"))
+        panel = respuesta.context["panel"]
+        usuario = panel["zonas"][0]["usuarios"][0]
+        self.assertEqual(usuario["total"], 3)
+        self.assertEqual(usuario["abiertos"], 1)
+        self.assertEqual(usuario["resueltos"], 1)
+        self.assertEqual(usuario["cerrados"], 1)
+        self.assertEqual(usuario["ans_estado"], "vencido")
+        self.assertEqual(usuario["ans_vencidos"], 1)
+        self.assertEqual(usuario["urgentes"], 1)
+        self.assertEqual(usuario["tickets_presionables"][0]["pk"], ticket.pk)
+        self.assertEqual(usuario["tickets_presionables"][0]["ans_estado"], "vencido")
+        self.assertEqual(panel["zonas"][0]["ans_vencidos"], 1)
+        self.assertContains(respuesta, "pan-user-prioridad")
+        self.assertContains(respuesta, "pan-user-ans")
+        self.assertContains(respuesta, "Number(u.ans_vencidos) > 0")
+        self.assertContains(respuesta, "ANS vencidos")
+        self.assertContains(respuesta, 'id="panPresionar"')
+        self.assertContains(respuesta, "data-pan-overdue")
+        self.assertNotContains(respuesta, "data-pan-presionar")
+        self.assertContains(respuesta, "if (u.en_lista) return")
+        self.assertContains(respuesta, 'id="panBorrar"')
+        self.assertContains(respuesta, "panPresionarModal")
+        self.assertContains(respuesta, reverse("tickets:obs_presionar", args=[0]))
+
+    def test_panel_de_punto_muestra_sus_tickets_ans_para_presionar(self):
+        tecnico = Usuario.objects.create_user(
+            email="tec-punto@x.com", password="x", nombre="Técnico Punto",
+            rol=Usuario.Rol.TECNICO,
+        )
+        ticket = self._ticket("Mostrador", "Zona Uno")
+        Ticket.objects.filter(pk=ticket.pk).update(
+            fecha_creacion=timezone.now() - timedelta(hours=50),
+            tecnico_asignado=tecnico,
+        )
+        zona_obs = ZonaObservador.objects.create(
+            observador=self.observador, nombre="Norte"
+        )
+        ElementoMiLista.objects.create(
+            observador=self.observador,
+            tipo=ElementoMiLista.TIPO_PUNTO,
+            punto=self.zona,
+            zona=zona_obs,
+        )
+
+        respuesta = self.client.get(reverse("tickets:obs_mi_lista"))
+        usuario_panel = respuesta.context["panel"]["zonas"][0]["usuarios"][0]
+
+        self.assertEqual(usuario_panel["ans_vencidos"], 1)
+        self.assertEqual(usuario_panel["tickets_presionables"][0]["pk"], ticket.pk)
+        self.assertEqual(usuario_panel["tickets_presionables"][0]["ans_estado"], "vencido")
 
     def test_exportar_no_falla_con_persona_sin_usuario(self):
         self._agregar("afectado@x.com")
@@ -130,12 +215,15 @@ class ObservadorListaTest(TestCase):
         self.assertContains(respuesta, "mio@x.com")
         self.assertNotContains(respuesta, "ajeno@x.com")
 
-    def test_mi_lista_no_arrastra_tickets_de_zona_ajena(self):
+    def test_mi_lista_cuenta_todos_los_tickets_de_sus_cuentas(self):
         self._ticket("Afectado", "Zona Uno", email="afectado@x.com")
         self._ticket("Afectado", "Zona Ajena", email="afectado@x.com")
         self._agregar("afectado@x.com")
         respuesta = self.client.get(reverse("tickets:obs_mi_lista"))
-        self.assertEqual(respuesta.context["filas"][0]["total"], 1)
+        fila = respuesta.context["filas"][0]
+        self.assertEqual(fila["total"], 2)
+        self.assertEqual(fila["abiertos"], 2)
+        self.assertEqual(fila["fuera_puntos"], 0)
 
     def test_otro_observador_no_roba_elementos(self):
         self._agregar("afectado@x.com")
@@ -246,6 +334,16 @@ class ObservadorListaTest(TestCase):
                 "dash-hov-vencidos", "dash-hov-zonas", "dash-hov-progreso",
             },
         )
+
+    def test_monitoreo_usa_kpis_estandar_con_destinos_existentes(self):
+        html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
+        self.assertIn("dash-stat-row--mesas", html)
+        self.assertNotIn("dash-stat-row--obs", html)
+        for destino in ("por-vencer", "resumen-zonas", "estado-lista", "tickets-recientes"):
+            self.assertIn(f'id="{destino}"', html)
+        self.assertIn('href="#tickets-recientes"', html)
+        self.assertIn('href="#resumen-zonas"', html)
+        self.assertIn('href="#estado-lista"', html)
 
     def test_panel_sin_duplicados_y_con_buscador(self):
         html = self.client.get(reverse("tickets:obs_panel")).content.decode()
@@ -790,8 +888,6 @@ class ObservadorIndicadoresSonEnlacesTest(TestCase):
         ]
         for clase, destino in esperado:
             with self.subTest(clase=clase):
-                # «Zonas a cargo» va primero y más grande, así que su etiqueta
-                # lleva además `dash-stat--grande` dentro de la misma clase.
                 self.assertIn(f'{clase}" href="{destino}"', html)
         # Cada destino existe de verdad, aunque no haya nada que enseñar:
         # si no, el enlace se queda sin sitio adónde ir.
@@ -969,6 +1065,7 @@ class ObservadorPapeleraDelPanelTest(TestCase):
         html = self.client.get(reverse("tickets:obs_mi_lista")).content.decode()
         self.assertIn('class="pan-papelera" id="panBorrar" disabled', html)
         self.assertIn('data-quitar-varios=', html)
+        self.assertIn('class="pan-user-chk"', html)
         # Las filas llegan en su JSON con el id con el que se borran, que es
         # lo que la papelera recoge de cada casilla marcada.
         self.assertIn('"elemento_id": %d' % self.suyo.pk, html)
@@ -1093,7 +1190,7 @@ class ZonasConAccionesEnLasTresVistasTest(TestCase):
         html = self.client.get(reverse("tickets:obs_mi_lista")).content.decode()
         self._acciones(html)
         self.assertIn('name="volver" value="/observador/mi-lista/"', html)
-        self.assertIn("panCerrarX", html)
+        self.assertNotIn("panCerrarX", html)
 
     def test_borrar_desde_el_monitoreo_vuelve_al_monitoreo(self):
         ElementoMiLista.objects.create(
@@ -1141,9 +1238,21 @@ class ZonasConAccionesEnLasTresVistasTest(TestCase):
         elegir una tarjeta vuelve. Y la papelera usa la ventana de
         confirmación del aplicativo, no la del navegador."""
         html = self.client.get(reverse("tickets:obs_mi_lista")).content.decode()
+        for indicador in (
+            "Supervisores",
+            "Zonas creadas",
+            "Cuentas en zonas",
+            "Abiertos en zonas",
+            "Al día",
+            "Pendiente",
+            "Incidencia",
+        ):
+            with self.subTest(indicador=indicador):
+                self.assertIn(indicador, html)
         for marca in (
             'id="panCerrar"',
-            'id="panCerrarX"',
+            'id="panAlternarZonas"',
+            'grid.classList.toggle("is-zonas-plegadas", plegadas)',
             'grid.classList.add("is-cerrado")',
             'grid.classList.remove("is-cerrado")',
             "DoggerConfirma",
@@ -1155,6 +1264,9 @@ class ZonasConAccionesEnLasTresVistasTest(TestCase):
         with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
             css = f.read()
         self.assertIn(".pan-grid.is-cerrado", css)
+        self.assertIn(".pan-grid.is-zonas-plegadas .pan-left", css)
+        self.assertIn(".pan-user { display: flex; align-items: center; gap: 9px; flex-wrap: wrap;", css)
+        self.assertIn(".pan-lista { flex: 1 1 auto; min-height: 0;", css)
         self.assertIn(".pan-right[hidden]", css)
 
     def test_sin_volver_sigue_landed_en_las_zonas(self):

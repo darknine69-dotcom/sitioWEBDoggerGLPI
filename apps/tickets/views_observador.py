@@ -17,6 +17,7 @@ from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.db.models.functions import Lower
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -190,7 +191,9 @@ def _resumen_por_correo(usuario, global_scope=False, correos=None):
         else _visible_a_observador(usuario, Ticket.objects.all())
     )
     if correos:
-        base = base.filter(solicitante_email__in=list(correos))
+        base = base.annotate(
+            correo_normalizado=Lower("solicitante_email")
+        ).filter(correo_normalizado__in=list(correos))
 
     def fila(correo):
         return resumen.setdefault(
@@ -626,15 +629,17 @@ def mi_lista_observador(request):
     # tarjetas salían en ceros y el avance en 0% aunque la gente de la zona
     # tuviera tickets: en ese caso se ve todo, como en el resto del módulo.
     # Con puntos asignados el filtro manda, para no arrastrar tickets de
-    # zonas ajenas (véase test_mi_lista_no_arrastra_tickets_de_zona_ajena).
+    # zonas ajenas en las vistas generales. Mi lista es la excepción: cada
+    # cuenta fue agregada explícitamente por el observador y sus cifras deben
+    # reflejar todos sus tickets, igual que el panel de administración.
     filas = _filas_de_mi_lista(
-        usuario, elementos, global_scope=not puntos_del_observador(usuario))
+        usuario, elementos, global_scope=True)
     # Las respuestas visibles del personal viajan en cada fila para que la
     # ficha de la derecha las muestre, igual que en Monitoreo.
     respuestas = _respuestas_por_correo(
         puntos_del_observador(usuario),
         [f["email"] for f in filas if f["email"]], limite=3,
-        global_scope=not puntos_del_observador(usuario),
+        global_scope=True,
     )
     for f in filas:
         f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
@@ -693,7 +698,9 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
         elif e.punto_id:
             consulta = visibles.filter(solicitante_punto=e.punto.nombre)
         tickets = list(
-            consulta.select_related("tecnico_asignado").order_by("-fecha_creacion")[:60]
+            consulta.select_related(
+                "tecnico_asignado", "categoria"
+            ).order_by("-fecha_creacion")[:60]
         )
         estado = ESTADO_VERDE
         orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
@@ -717,20 +724,34 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
                     + (e.usuario.nombre if e.usuario_id else "")
                 ).strip(" ·"),
                 "tickets": tickets,
-                "abiertos": sum(1 for t in tickets if t.estado in _ACTIVOS),
-                "total": len(tickets),
+                "abiertos": r.get(
+                    "abiertos", sum(1 for t in tickets if t.estado in _ACTIVOS)
+                ),
+                "total": r.get("total", len(tickets)),
                 "estado": estado,
                 "tecnico": r.get("tecnico_principal", ""),
                 "tecnicos": r.get("tecnicos", []),
-                "cerrados_total": sum(
-                    1 for t in tickets
-                    if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
+                "resueltos": r.get(
+                    "resueltos",
+                    sum(1 for t in tickets if t.estado == Ticket.Estado.RESUELTO),
+                ),
+                "cerrados": r.get(
+                    "cerrados",
+                    sum(1 for t in tickets if t.estado == Ticket.Estado.CERRADO),
+                ),
+                "cerrados_total": r.get(
+                    "cerrados_total",
+                    sum(
+                        1 for t in tickets
+                        if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
+                    ),
                 ),
                 "avance": r.get("avance", 0),
                 "falta": 100 - r.get("avance", 0),
                 "es_punto": bool(e.punto_id and not e.usuario_id),
                 "telefono": e.usuario.telefono if e.usuario_id else "",
                 "avatar": e.usuario.avatar if e.usuario_id else None,
+                "ans_tickets": [],
             }
         )
     # Tickets de esas mismas cuentas que caen fuera de los puntos asignados:
@@ -739,7 +760,9 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
     correos = [f["email"].strip().lower() for f in filas if (f["email"] or "").strip()]
     fuera = {}
     if correos:
-        consulta_fuera = Ticket.objects.filter(solicitante_email__in=correos)
+        consulta_fuera = Ticket.objects.annotate(
+            correo_normalizado=Lower("solicitante_email")
+        ).filter(correo_normalizado__in=correos)
         if puntos:
             consulta_fuera = consulta_fuera.exclude(solicitante_punto__in=puntos)
         for fila in consulta_fuera.values("solicitante_email").annotate(
@@ -750,6 +773,47 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
         f["fuera_puntos"] = 0 if global_scope else fuera.get(
             (f["email"] or "").strip().lower(), 0
         )
+        correo = (f["email"] or "").strip().lower()
+        f["urgentes"] = resumen.get(correo, {}).get("urgentes", 0)
+        f["ans_vencidos"] = 0
+        f["ans_por_vencer"] = 0
+
+    correos_con_zona = {
+        (f["email"] or "").strip().lower()
+        for f in filas if (f["email"] or "").strip()
+    }
+    filas_por_correo = {
+        (f["email"] or "").strip().lower(): f
+        for f in filas if (f["email"] or "").strip()
+    }
+    filas_por_punto = {
+        f["elemento"].punto.nombre: f
+        for f in filas
+        if f.get("elemento") is not None and f["elemento"].punto_id
+    }
+    puntos_con_zona = set(filas_por_punto)
+    if correos_con_zona or puntos_con_zona:
+        filtro_ans = Q()
+        if correos_con_zona:
+            filtro_ans |= Q(correo_normalizado__in=correos_con_zona)
+        if puntos_con_zona:
+            filtro_ans |= Q(solicitante_punto__in=puntos_con_zona)
+        consulta_ans = visibles.annotate(
+            correo_normalizado=Lower("solicitante_email")
+        ).filter(filtro_ans)
+        for ticket in ans_avisos.por_vencer(
+            consulta=consulta_ans,
+            limite=max(consulta_ans.count(), 1),
+            solo_sin_avisar=False,
+        ):
+            correo = (ticket.solicitante_email or "").strip().lower()
+            fila = filas_por_correo.get(correo) or filas_por_punto.get(
+                ticket.solicitante_punto or ""
+            )
+            if fila is not None:
+                clave = "ans_vencidos" if ticket.ans_estado == "vencido" else "ans_por_vencer"
+                fila[clave] += 1
+                fila["ans_tickets"].append(ticket)
     return filas
 
 
@@ -1176,6 +1240,28 @@ def _panel_de_supervision(usuario, filas):
     cuentas que no están en una zona no entran en el panel.
     """
     orden_estado = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
+    estados_activos = (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
+
+    def _detalle_ticket(t):
+        ans_estado, ans_texto = (
+            t.datos_ans[:2] if t.estado in estados_activos else ("", "")
+        )
+        return {
+            "pk": t.pk,
+            "codigo": t.codigo,
+            "titulo": t.titulo,
+            "estado": t.estado,
+            "estado_display": t.get_estado_display(),
+            "fecha": (
+                t.fecha_creacion.strftime("%d/%m/%Y %H:%M")
+                if t.fecha_creacion else ""
+            ),
+            "tecnico": (
+                t.tecnico_asignado.nombre if t.tecnico_asignado else ""
+            ),
+            "ans_estado": ans_estado,
+            "ans_texto": ans_texto,
+        }
 
     def _tarjeta(clave, nombre, fecha="", pk=None, color=""):
         return {
@@ -1230,6 +1316,26 @@ def _panel_de_supervision(usuario, filas):
             color=zona.color or "",
         ))
         correo = (f.get("email") or "").strip().lower()
+        tickets_panel = {
+            t.pk: t for t in (
+                (f.get("tickets") or []) + (f.get("ans_tickets") or [])
+            )
+        }
+        tickets_recientes = list((f.get("tickets") or [])[:10])
+        vistos_recientes = {t.pk for t in tickets_recientes}
+        tickets_recientes.extend(
+            t for t in (f.get("ans_tickets") or [])
+            if t.pk not in vistos_recientes
+        )
+        tickets_presionables = [
+            _detalle_ticket(t)
+            for t in tickets_panel.values()
+            if t.tecnico_asignado_id and t.estado in estados_activos
+        ]
+        orden_ans = {"vencido": 0, "por-vencer": 1}
+        tickets_presionables.sort(
+            key=lambda t: (orden_ans.get(t["ans_estado"], 2), t["codigo"])
+        )
         tarjeta["usuarios"].append({
             "nombre": f.get("nombre") or correo or "—",
             "email": correo,
@@ -1238,28 +1344,25 @@ def _panel_de_supervision(usuario, filas):
             "estado": f.get("estado") or ESTADO_VERDE,
             "total": f.get("total", 0),
             "abiertos": f.get("abiertos", 0),
-            "cerrados": f.get("cerrados_total", 0),
+            "resueltos": f.get("resueltos", 0),
+            "cerrados": f.get("cerrados", 0),
+            "cerrados_total": f.get("cerrados_total", 0),
             "avance": f.get("avance", 0),
             "falta": f.get("falta", 100 - f.get("avance", 0)),
+            "urgentes": f.get("urgentes", 0),
+            "ans_vencidos": f.get("ans_vencidos", 0),
+            "ans_por_vencer": f.get("ans_por_vencer", 0),
+            "ans_estado": (
+                "vencido" if f.get("ans_vencidos", 0)
+                else "por-vencer" if f.get("ans_por_vencer", 0)
+                else ""
+            ),
             # La ficha de la cuenta, a la vista en el panel: los últimos
             # tickets con su color y las respuestas visibles del personal.
             # Sin esto la fila solo traía el contador y había que abrir la
             # ficha aparte para saber qué hay detrás.
-            "tickets": [
-                {
-                    "codigo": t.codigo,
-                    "estado": t.estado,
-                    "estado_display": t.get_estado_display(),
-                    "fecha": (
-                        t.fecha_creacion.strftime("%d/%m/%Y %H:%M")
-                        if t.fecha_creacion else ""
-                    ),
-                    "tecnico": (
-                        t.tecnico_asignado.nombre if t.tecnico_asignado else ""
-                    ),
-                }
-                for t in (f.get("tickets") or [])[:10]
-            ],
+            "tickets": [_detalle_ticket(t) for t in tickets_recientes],
+            "tickets_presionables": tickets_presionables,
             "respuestas": [
                 {
                     "autor": (
@@ -1290,7 +1393,11 @@ def _panel_de_supervision(usuario, filas):
         tarjeta["cuentas"] = len(cuentas)
         tarjeta["total"] = sum(u["total"] for u in cuentas)
         tarjeta["abiertos"] = sum(u["abiertos"] for u in cuentas)
-        tarjeta["cerrados"] = sum(u["cerrados"] for u in cuentas)
+        tarjeta["cerrados"] = sum(u["cerrados_total"] for u in cuentas)
+        tarjeta["resueltos"] = sum(u["resueltos"] for u in cuentas)
+        tarjeta["urgentes"] = sum(u["urgentes"] for u in cuentas)
+        tarjeta["ans_vencidos"] = sum(u["ans_vencidos"] for u in cuentas)
+        tarjeta["ans_por_vencer"] = sum(u["ans_por_vencer"] for u in cuentas)
         tarjeta["avance"] = (
             int(round(100.0 * tarjeta["cerrados"] / tarjeta["total"]))
             if tarjeta["total"] else 0
@@ -1305,6 +1412,12 @@ def _panel_de_supervision(usuario, filas):
             "nombre": usuario.nombre or usuario.email,
             "email": usuario.email or "",
             "zonas": len(zonas),
+        },
+        "resumen": {
+            "supervisores": int(bool(zonas)),
+            "zonas": len(zonas),
+            "cuentas": sum(z["cuentas"] for z in zonas),
+            "abiertos": sum(z["abiertos"] for z in zonas),
         },
         "zonas": zonas,
     }

@@ -185,7 +185,7 @@
 .dash-compact .dash-stat-icon { width: 34px; height: 34px; border-radius: 9px; }
 .dash-compact .dash-stat-icon .icon { width: 17px; height: 17px; }
 .dash-compact .dash-stat-value { font-size: 18px; }
-.dash-compact .charts-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
+.dash-compact .charts-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 24px; }
 .dash-compact .chart-card { padding: 14px 16px; border-radius: 14px; }
 .dash-compact .chart-card-head { margin-bottom: 10px; }
 .dash-compact .chart-card-head h3 { font-size: 13.5px; }
@@ -398,9 +398,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
     </div>
 
     {% if vista == 'panel' %}
-    <div class="dash-compact">
-        {% comment %}Mismo diseño que los indicadores del administrador (dashboard.html).{% endcomment %}
-        <div class="dash-stat-row dash-stat-row--tec">
+        <div class="dash-stat-row dash-stat-row--tec dash-stat-row--mesas">
             <a class="dash-stat dash-hov-total" href="?vista=mis&amp;sv=todas&amp;rango=" title="Todos tus tickets asignados, de cualquier estado">
                 <span class="dash-stat-icon">
                     <span class="dash-stat-value">{{ stats.total|default:0 }}</span>
@@ -443,6 +441,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
             </a>
         </div>
 
+    <div class="dash-compact">
         {% include "tickets/_dash_widgets.html" %}
     </div>
 

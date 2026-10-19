@@ -65,15 +65,25 @@
 .mon-miembro .mon-m-id strong { display: block; font-size: 12.5px; }
 .mon-miembro .mon-m-id strong a { color: inherit; }
 .mon-miembro .mon-m-id small { color: var(--ink-muted); font-size: 11px; }
+.obs-dashboard-graficas { margin-bottom: 28px; }
+.obs-dashboard-graficas .charts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+.obs-dashboard-graficas .chart-card { padding: 14px 16px; border-radius: 14px; }
+.obs-dashboard-graficas .chart-stage { height: 190px; }
+@media (max-width: 900px) {
+    .obs-dashboard-graficas .charts-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="page obs-page">
 
-    {# Indicadores: el grande de «Zonas a cargo» ocupa la fila entera y, debajo, dos columnas de tres. #}
-    <div class="dash-stat-row dash-stat-row--obs corp-anim" style="margin-bottom:16px">
-        <a class="dash-stat dash-stat--grande dash-hov-zonas" href="#zonas-monitoreo" title="Ir a tus zonas">
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:24px">
+        <a class="dash-stat dash-hov-zonas" href="#zonas-monitoreo" title="Ir a tus zonas">
             <span class="dash-stat-icon">
                 <span class="dash-stat-value">{{ total_zonas|default:0 }}</span>
                 <span class="dash-stat-glyph"><svg class="icon"><use href="#i-map-pin"/></svg></span>
@@ -145,6 +155,14 @@
         </a>
     </div>
 
+    <section class="obs-dashboard-graficas" aria-label="Gráficas de monitoreo">
+        <h2 class="obs-bloque-titulo">Análisis de tickets</h2>
+        <p class="obs-leyenda">Explora la carga y el comportamiento de los tickets de las cuentas que tienes en seguimiento.</p>
+        <div class="dash-compact">
+            {% include "tickets/_dash_widgets.html" %}
+        </div>
+    </section>
+
     {% if por_vencer %}
     <section id="por-vencer" class="obs-bloque corp-anim">
         <h3 class="obs-bloque-titulo">
@@ -155,13 +173,13 @@
         <p class="obs-leyenda">
             Los casos cuyo tiempo de atención (ANS) ya entró en el aviso. El
             cronómetro corre solo, sin recargar. Al entrar la primera vez se
-            avisa una sola vez a cada uno: correo al técnico y a la persona que
-            abrió el ticket, campana aquí. Pulsa el cronómetro si quieres ver
-            qué significa.
+            avisa una sola vez a cada uno: campana y correo al técnico y a la
+            persona que abrió el ticket, y campana aquí. Pulsa el cronómetro
+            si quieres ver qué significa.
         </p>
         <div class="ans-lista">
         {% for t in por_vencer %}
-        <article class="ans-ficha {% if t.ans_estado == 'vencido' %}es-vencido{% else %}es-por-vencer{% endif %}">
+        <article id="ans-ticket-{{ t.pk }}" class="ans-ficha {% if t.ans_estado == 'vencido' %}es-vencido{% else %}es-por-vencer{% endif %}">
             <div class="ans-ficha-top">
                 <span class="ans-ficha-id">{{ t.codigo }}</span>
                 <span class="obs-pill obs-pill-{% if t.ans_estado == 'vencido' %}rojo{% else %}amarillo{% endif %}">{{ t.get_estado_display }}</span>
@@ -295,9 +313,6 @@
             </div>
         </div>
     </div>
-
-    {# Los widgets del tablero del administrador, metidos en la misma tira de gráficas de siempre: mismo diseño, con sus desplegables pequeños y el selector de tipo que aparece al pasar el ratón. #}
-    {% include "tickets/_dash_widgets.html" %}
 
     <section id="zonas-monitoreo" class="obs-bloque">
         <h3 class="obs-bloque-titulo">Zonas</h3>

@@ -44,6 +44,7 @@ class PestanasPanelTest(TestCase):
         for nombre in ("Panel", "Cola de solicitudes", "Mis solicitudes",
                        "Sin asignar"):
             self.assertIn(nombre, html)
+        self.assertIn("dash-stat-row--tec dash-stat-row--mesas", html)
         self.assertNotIn("?vista=corp", html)
         # Sin pestaña "Corporativo" en el panel (el botón del chat flotante
         # sí dice Corporativo: es un <button>, no una pestaña <a>).
@@ -89,6 +90,10 @@ class PestanasPanelTest(TestCase):
         for clase in clases:
             self.assertIn(f".{clase}:hover", css)
         self.assertIn(".dash-stat-row--tec", css)
+        self.assertIn(
+            ".dash-stat:hover .dash-stat-icon .dash-stat-value { color: #fff; }",
+            css,
+        )
 
     def test_sin_asignar_sale_del_lateral(self):
         html_tec = self.client.get(

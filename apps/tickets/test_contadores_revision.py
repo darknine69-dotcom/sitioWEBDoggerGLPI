@@ -10,6 +10,7 @@ Comprueba lo que se pidió de los avisos:
 """
 
 from django.contrib.auth import get_user_model
+from django.contrib.staticfiles import finders
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -125,6 +126,12 @@ class ContadoresPorRevisionTest(TestCase):
         self.assertIn("notif-popup-ver", html)
         self.assertIn("notif-popup-ok", html)
         self.assertIn(">OK<", html)
+        self.assertIn('type="submit" class="btn notif-popup-ok"', html)
+        with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as archivo:
+            css = archivo.read()
+        self.assertIn(".notif-popup-actions .notif-popup-ok {", css)
+        self.assertIn("background: #F5F2EC;", css)
+        self.assertIn("color: #39332D;", css)
         # Se marca como vista para que no vuelva a saltar sola.
         self.assertFalse(
             Notificacion.objects.filter(

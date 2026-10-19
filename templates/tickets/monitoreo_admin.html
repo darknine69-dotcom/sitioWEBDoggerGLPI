@@ -67,7 +67,7 @@ main.obs-page { font-family: var(--font-corp); }
     .obs-admin-form .btn { width: 100%; }
 }
 
-/* ===== Panel corporativo de supervisores y zonas (visor de dos paneles) ===== */
+/* ===== Panel de supervisores y zonas ===== */
 .mon-grid {
     --mon-blue: #1D4ED8;
     --mon-blue-dark: #173FB0;
@@ -79,13 +79,11 @@ main.obs-page { font-family: var(--font-corp); }
     font-family: var(--font-corp);
 }
 @media (max-width: 980px) { .mon-grid { grid-template-columns: minmax(0, 1fr); } }
+.mon-grid.is-zonas-plegadas { grid-template-columns: minmax(0, 1fr); }
+.mon-grid.is-zonas-plegadas .mon-left { display: none; }
+.mon-grid.is-zonas-plegadas .mon-right { position: static; max-height: none; }
 
 .mon-left { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.mon-panel-title { display: flex; align-items: center; gap: 10px; margin: 0 0 2px; }
-.mon-panel-title h3 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: .01em; color: var(--ink); }
-.mon-panel-ico { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 9px; background: #EEF2FF; color: var(--mon-blue); }
-.mon-panel-ico .icon { width: 17px; height: 17px; }
-
 /* Tarjeta vertical de supervisor. */
 .mon-sup { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 4px 16px rgba(23,20,18,.07); padding: 14px 14px 12px; }
 .mon-sup-head { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
@@ -99,17 +97,23 @@ main.obs-page { font-family: var(--font-corp); }
 /* Subtarjetas de zona: verticales, compactas, con borde de estado. */
 .mon-zonas { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
 .mon-sin { grid-column: 1 / -1; }
+.mon-zc-wrap { min-width: 0; position: relative; padding-bottom: 38px; }
 .mon-zc {
     display: flex; flex-direction: column; gap: 7px; text-align: left;
     background: #FCFBF9; border: 1px solid var(--line); border-left: 4px solid var(--line);
-    border-radius: 11px; padding: 10px 12px; cursor: pointer; font: inherit; color: inherit;
+    border-radius: 11px; padding: 10px 12px; cursor: pointer; font: inherit; color: inherit; width: 100%;
     transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
 }
 .mon-zc:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(23,20,18,.10); background: #fff; }
 .mon-zc.is-on { background: #fff; box-shadow: 0 0 0 2px var(--mon-blue), 0 8px 20px rgba(29,78,216,.16); border-color: var(--mon-blue); }
+.mon-zc-wrap[style] .mon-zc { border-left-color: var(--mon-zc-color); }
 .mon-zc-verde { border-left-color: #2F7D4F; }
 .mon-zc-amarillo { border-left-color: #E0A106; }
 .mon-zc-rojo { border-left-color: #D62B1F; }
+.mon-zc-wrap .obs-paleta { z-index: 8; }
+.mon-zc-wrap .obs-rename { padding: 0 10px; }
+.mon-zc-wrap .obs-rename[hidden] { display: none; }
+.mon-zona-acc { right: 8px; bottom: 7px; }
 .mon-zc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .mon-zc-nombre { font-size: 13px; font-weight: 800; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mon-zc-fecha { flex: none; font-size: 10.5px; color: var(--ink-muted); }
@@ -123,21 +127,44 @@ main.obs-page { font-family: var(--font-corp); }
 .mon-dot { width: 8px; height: 8px; border-radius: 50%; background: #2F7D4F; }
 .mon-zc-amarillo .mon-dot { background: #E0A106; }
 .mon-zc-rojo .mon-dot { background: #D62B1F; }
+.mon-zc-prioridad, .mon-prioridad { display: inline-flex; align-items: center; gap: 3px; color: #B42318; font-size: 10.5px; font-weight: 800; }
+.mon-zc-prioridad .icon, .mon-prioridad .icon { width: 13px; height: 13px; }
+.mon-miembro-ans-vencido { border-left: 4px solid #D62B1F !important; background: rgba(214,43,31,.045); }
+.mon-miembro-ans-por-vencer { border-left: 4px solid #E0A106 !important; background: rgba(224,161,6,.06); }
+.mon-ans-badge { flex: none; }
 
 /* Panel derecho: usuarios de la zona elegida. */
 .mon-right { position: sticky; top: 14px; display: flex; flex-direction: column; background: #fff; border: 1px solid #E3E3E3; border-radius: 14px; box-shadow: 0 4px 16px rgba(23,20,18,.08); padding: 14px; max-height: calc(100vh - 40px); font-family: var(--font-corp); }
-.mon-right-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.mon-right-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
 .mon-right-head h4 { margin: 0; font-size: 14px; font-weight: 800; color: var(--ink); }
 .mon-right-head h4 span { color: var(--mon-blue); }
 .mon-right-head .muted { font-size: 11px; }
+.mon-right-toggle {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    flex: none; border: 1px solid var(--line); border-radius: 9px;
+    background: #fff; color: var(--ink-muted); padding: 6px 9px;
+    font: inherit; font-size: 11px; font-weight: 750; cursor: pointer;
+    transition: background .14s ease, color .14s ease, border-color .14s ease;
+}
+.mon-right-toggle:hover { background: #EEF2FF; border-color: #C9D4F8; color: var(--mon-blue); }
+.mon-right-toggle .icon { width: 14px; height: 14px; }
 .mon-busca { position: relative; margin-bottom: 10px; }
 .mon-busca .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--ink-muted); }
 .mon-busca input { width: 100%; font: inherit; font-size: 12.5px; border: 1px solid #DEDEDE; border-radius: 10px; padding: 8px 10px 8px 32px; color: var(--ink); background: #FCFCFC; }
 .mon-busca input:focus { outline: none; border-color: var(--mon-blue); background: #fff; }
 .mon-lista { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
 .mon-vacio { margin: 6px 0; }
-.mon-user { display: flex; align-items: center; gap: 9px; border: 1px solid #ECECEC; border-radius: 11px; padding: 8px 10px; cursor: pointer; transition: border-color .14s ease, background .14s ease; }
+.mon-user { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; min-width: 0; border: 1px solid #ECECEC; border-radius: 11px; padding: 8px 10px; cursor: pointer; transition: border-color .14s ease, background .14s ease; }
 .mon-user:hover { border-color: #C9D4F8; background: #FBFCFF; }
+.mon-user-wrap { display: flex; flex-direction: column; border: 1px solid #ECECEC; border-left: 3px solid #ECECEC; border-radius: 11px; overflow: hidden; transition: border-color .14s ease, background .14s ease; }
+.mon-user-wrap:hover { border-color: #C9D4F8; background: #FBFCFF; }
+.mon-user-wrap > .mon-user { border: 0; border-radius: 0; }
+.mon-user-wrap.mon-user-ans-vencido { border-left-color: #D62B1F; }
+.mon-user-wrap.mon-user-ans-por-vencer { border-left-color: #E0A106; }
+.mon-user-wrap.is-marcado { border-color: var(--mon-blue); background: #FBFCFF; }
+.mon-user-ans-vencido { border-color: rgba(214,43,31,.55); background: rgba(214,43,31,.045); }
+.mon-user-ans-por-vencer { border-color: rgba(224,161,6,.65); background: rgba(224,161,6,.06); }
+.mon-user .obs-pill { font-size: 10px; padding: 2px 7px; }
 .mon-user-chk { flex: none; width: 16px; height: 16px; accent-color: var(--mon-blue); cursor: pointer; }
 .mon-user-ava { flex: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #EEF2FF; color: var(--mon-blue); font-weight: 800; font-size: 13px; }
 .mon-user-id { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -146,7 +173,13 @@ main.obs-page { font-family: var(--font-corp); }
 .mon-user-rol { flex: none; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); background: #F5F2EC; border-radius: 999px; padding: 2px 8px; }
 .mon-user-ficha { flex: none; font-size: 10.5px; font-weight: 800; color: var(--mon-blue); text-decoration: none; }
 .mon-user-ficha:hover { text-decoration: underline; }
-.mon-right-pie { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 10px; border-top: 1px solid #EFEFEF; }
+.mon-user-presionar { display: inline-flex; align-items: center; gap: 3px; border: 0; padding: 0; background: transparent; font: inherit; cursor: pointer; }
+.mon-user-presionar .icon { width: 13px; height: 13px; }
+.mon-right-pie { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid #EFEFEF; }
+.mon-right-pie form { margin: 0; }
+.mon-right-pie .pan-papelera { font: inherit; font-size: 12.5px; font-weight: 800; }
+.mon-right-pie .pan-papelera[hidden] { display: none; }
+.mon-right-pie .mon-cerrar { margin-left: auto; }
 .mon-cerrar { background: var(--mon-blue); color: #fff; border: 0; border-radius: 10px; padding: 8px 22px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; box-shadow: 0 4px 14px rgba(29,78,216,.30); transition: background .15s ease; }
 .mon-cerrar:hover { background: var(--mon-blue-dark); }
 
@@ -281,9 +314,8 @@ main.obs-page { font-family: var(--font-corp); }
             </div>
         </div>
         {% if zonas_creadas %}
-        <div class="mon-grid">
-            <div class="mon-left">
-                <div class="mon-panel-title"><span class="mon-panel-ico"><svg class="icon"><use href="#i-users"/></svg></span><h3>Panel corporativo de supervisores y zonas</h3></div>
+        <div class="mon-grid" data-url-presionar="{% url 'tickets:monitoreo_presionar' 0 %}">
+            <div class="mon-left" id="monLeft">
                 {% for bloque in zonas_creadas %}
                 <article class="mon-sup" data-sup="{{ bloque.supervisor.pk }}">
                     <header class="mon-sup-head">
@@ -297,18 +329,24 @@ main.obs-page { font-family: var(--font-corp); }
                     </header>
                     <div class="mon-zonas">
                         {% for z in bloque.zonas %}
-                        <button type="button" class="mon-zc mon-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %}" data-mon-zona="{{ z.zona.pk }}" data-mon-sup="{{ bloque.supervisor.pk }}" data-mon-nombre="{{ z.zona.nombre }}">
-                            <span class="mon-zc-top">
-                                <span class="mon-zc-nombre">{{ z.zona.nombre }}</span>
-                                <span class="mon-zc-fecha">{{ z.zona.creado_en|date:"d/m/Y" }}</span>
-                            </span>
-                            <span class="mon-zc-meta">
-                                <span><b>{{ z.miembros|length }}</b> cuentas</span>
-                                <span class="mon-zc-tk"><b>{{ z.abiertos }}</b> abiertos / <b>{{ z.cerrados|default:0 }}</b> cerrados</span>
-                            </span>
-                            <span class="mon-zc-bar"><span style="width: {{ z.avance }}%"></span></span>
-                            <span class="mon-zc-foot"><span class="mon-dot"></span>{% if z.urgentes %}Críticos{% elif z.abiertos %}Pendientes{% else %}Al día{% endif %} · {{ z.avance }}%</span>
-                        </button>
+                        <div class="mon-zc-wrap"{% if z.zona.color %} style="--mon-zc-color: {{ z.zona.color }}"{% endif %}>
+                            <button type="button" class="mon-zc mon-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %}" data-mon-zona="{{ z.zona.pk }}" data-mon-sup="{{ bloque.supervisor.pk }}" data-mon-nombre="{{ z.zona.nombre }}">
+                                <span class="mon-zc-top">
+                                    <span class="mon-zc-nombre">{{ z.zona.nombre }}</span>
+                                    <span class="mon-zc-fecha">{{ z.zona.creado_en|date:"d/m/Y" }}</span>
+                                </span>
+                                <span class="mon-zc-meta">
+                                    <span><b>{{ z.miembros|length }}</b> cuentas</span>
+                                    <span class="mon-zc-tk"><b>{{ z.abiertos }}</b> abiertos / <b>{{ z.cerrados|default:0 }}</b> cerrados</span>
+                                </span>
+                                <span class="mon-zc-bar"><span style="width: {{ z.avance }}%"></span></span>
+                                <span class="mon-zc-foot">
+                                    <span class="mon-dot"></span>{% if z.urgentes %}Críticos{% elif z.abiertos %}Pendientes{% else %}Al día{% endif %} · {{ z.avance }}%
+                                    {% if z.urgentes %}<span class="mon-zc-prioridad" title="{{ z.urgentes }} ticket{{ z.urgentes|pluralize }} urgente{{ z.urgentes|pluralize }}"><svg class="icon"><use href="#i-alert"/></svg>{{ z.urgentes }}</span>{% endif %}
+                                </span>
+                            </button>
+                            {% include "observador/_zona_acciones.html" with z=z.zona admin=True %}
+                        </div>
                         {% empty %}
                         <p class="muted mon-sin">Sin zonas.</p>
                         {% endfor %}
@@ -320,12 +358,61 @@ main.obs-page { font-family: var(--font-corp); }
                 <div class="mon-right-head">
                     <h4>Usuarios en <span id="monRightZona">—</span></h4>
                     <span class="muted" id="monSelCount"></span>
+                    <button type="button" class="mon-right-toggle" id="monAlternarZonas"
+                            aria-expanded="true" aria-controls="monLeft"
+                            title="Plegar las zonas para ampliar los usuarios">
+                        <svg class="icon"><use href="#i-layers"/></svg>
+                        <span>Plegar zonas</span>
+                    </button>
                 </div>
                 <div class="mon-busca"><svg class="icon icon-sm"><use href="#i-search"/></svg><input type="search" id="monBuscar" placeholder="Buscar usuario…" aria-label="Buscar usuario" autocomplete="off"></div>
                 <div class="mon-lista" id="monLista"><p class="muted mon-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p></div>
-                <div class="mon-right-pie"><button type="button" class="mon-cerrar" id="monCerrar">Cerrar</button></div>
+                <div class="mon-right-pie">
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembros_quitar' %}"
+                          id="monQuitarSeleccionados" data-motivo-tipo="sacar"
+                          data-motivo-nombre="Quitar las cuentas seleccionadas de la zona">
+                        {% csrf_token %}
+                        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                        <input type="hidden" name="zona_id" id="monQuitarZona">
+                        <span id="monQuitarIds"></span>
+                        <button type="submit" class="pan-papelera" id="monQuitarBtn" hidden disabled>
+                            <svg class="icon"><use href="#i-trash"/></svg> Quitar <span id="monQuitarN">0</span>
+                        </button>
+                    </form>
+                    <button type="button" class="pan-presionar-footer" id="monPresionarSeleccionados" data-mon-presionar
+                            title="Presionar al técnico por un ANS próximo a vencer o vencido"
+                            hidden disabled>
+                        <svg class="icon"><use href="#i-send"/></svg> Presionar
+                    </button>
+                    <button type="button" class="mon-cerrar" id="monCerrar">Cerrar</button>
+                </div>
             </aside>
         </div>
+
+        <dialog class="pan-presionar-modal" id="monPresionarModal" aria-labelledby="monPresionarTitulo">
+            <form method="post" id="monPresionarForm">
+                {% csrf_token %}
+                <div class="pan-presionar-head">
+                    <span class="pan-presionar-icon"><svg class="icon"><use href="#i-send"/></svg></span>
+                    <div>
+                        <h3 id="monPresionarTitulo">Presionar al técnico</h3>
+                        <p id="monPresionarTecnico"></p>
+                    </div>
+                    <button type="button" class="pan-presionar-x" id="monPresionarCerrar" aria-label="Cerrar">×</button>
+                </div>
+                <label class="pan-presionar-campo" for="monPresionarTicket">Ticket a priorizar</label>
+                <select id="monPresionarTicket" name="ticket" required></select>
+                <p class="pan-presionar-ticket-info" id="monPresionarInfo"></p>
+                <label class="pan-presionar-campo" for="monPresionarMensaje">Mensaje para el técnico</label>
+                <textarea id="monPresionarMensaje" name="mensaje" maxlength="500" rows="4" required></textarea>
+                <div class="pan-presionar-actions">
+                    <button type="button" class="pan-presionar-cancelar" id="monPresionarCancelar">Cancelar</button>
+                    <button type="submit" class="pan-presionar-enviar">
+                        <svg class="icon icon-sm"><use href="#i-send"/></svg> Enviar presión
+                    </button>
+                </div>
+            </form>
+        </dialog>
 
         <details class="mon-admin">
             <summary>Administrar zonas (crear, renombrar, cuentas, técnicos)</summary>
@@ -379,26 +466,55 @@ main.obs-page { font-family: var(--font-corp); }
                     </form>
                 </div>
                 {% for m in z.miembros %}
-                <article class="obs-miembro">
+                <article class="obs-miembro{% if m.ans_vencidos %} mon-miembro-ans-vencido{% elif m.ans_por_vencer %} mon-miembro-ans-por-vencer{% endif %}"
+                         data-elemento="{{ m.elemento_id }}" data-total="{{ m.total }}" data-resueltos="{{ m.resueltos }}" data-cerrados="{{ m.cerrados }}" data-avance="{{ m.avance }}"
+                         data-ans-vencidos="{{ m.ans_vencidos }}" data-ans-por-vencer="{{ m.ans_por_vencer }}" data-abiertos="{{ m.abiertos }}" data-urgentes="{{ m.urgentes }}">
                     <div class="obs-miembro-top" data-href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}" style="cursor:pointer">
                         <span class="obs-avatar">{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
                         <span class="obs-miembro-id">
                             <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}: todo lo de esta cuenta">{{ m.nombre }}</a></strong>
                             <small><svg class="icon"><use href="#i-mail"/></svg> {{ m.email|default:"—" }} · <svg class="icon"><use href="#i-user"/></svg> {{ m.rol }} · <svg class="icon"><use href="#i-wrench"/></svg> {{ m.tecnico }}</small>
                         </span>
-                        {% if m.abiertos %}<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>{{ m.abiertos }}</span>{% endif %}
+                        {% if m.ans_vencidos %}
+                        <span class="obs-pill obs-pill-rojo mon-ans-badge" title="{{ m.ans_vencidos }} ticket{{ m.ans_vencidos|pluralize }} con ANS vencido"><span class="obs-dot obs-dot-rojo"></span>{{ m.ans_vencidos }} vencido{{ m.ans_vencidos|pluralize }}</span>
+                        {% elif m.ans_por_vencer %}
+                        <span class="obs-pill obs-pill-amarillo mon-ans-badge" title="{{ m.ans_por_vencer }} ticket{{ m.ans_por_vencer|pluralize }} por vencer según ANS"><span class="obs-dot obs-dot-amarillo"></span>{{ m.ans_por_vencer }} por vencer</span>
+                        {% elif m.abiertos %}
+                        <span class="obs-pill obs-pill-amarillo mon-ans-badge" title="{{ m.abiertos }} tickets abiertos"><span class="obs-dot obs-dot-amarillo"></span>{{ m.abiertos }} abiertos</span>
+                        {% else %}
+                        <span class="obs-pill obs-pill-verde mon-ans-badge"><span class="obs-dot obs-dot-verde"></span>Al día</span>
+                        {% endif %}
+                        {% if m.urgentes %}<span class="mon-prioridad" title="{{ m.urgentes }} ticket{{ m.urgentes|pluralize }} urgente{{ m.urgentes|pluralize }}"><svg class="icon"><use href="#i-alert"/></svg>{{ m.urgentes }}</span>{% endif %}
                         <span class="obs-miembro-nums">
                             <span class="obs-crate" title="Tickets de {{ m.nombre }}: {{ m.total }} en total, {{ m.abiertos }} abiertos">
                                 <span class="obs-crate-seg"><b>{{ m.total }}</b> tickets</span>
                                 <span class="obs-crate-seg s-abiertos"><b>{{ m.abiertos }}</b> abiertos</span>
                             </span>
                         </span>
+                        {% if m.ans_tickets %}
+                        <button type="button" class="pan-presionar-footer" data-mon-presionar title="Presionar al técnico por un ticket próximo a vencer o vencido"><svg class="icon"><use href="#i-send"/></svg> Presionar</button>
+                        {% else %}
                         <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_quitar' m.elemento_id %}" data-sacar-nombre="{{ m.nombre }}" data-sacar-zona="{{ z.zona.nombre }}" data-motivo-tipo="sacar" data-motivo-nombre="Sacar a {{ m.nombre }} de «{{ z.zona.nombre }}»">
                             {% csrf_token %}
                             <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                            <button type="submit" class="mini-icon-btn" title="Sacar de la zona (queda en la lista)" aria-label="Sacar a {{ m.nombre }} de {{ z.zona.nombre }}"><svg class="icon"><use href="#i-x"/></svg></button>
+                            <button type="submit" class="pan-papelera" title="Sacar de la zona (queda en la lista)"><svg class="icon"><use href="#i-trash"/></svg> Quitar</button>
                         </form>
+                        {% endif %}
                     </div>
+                    {% if m.ans_tickets %}
+                    <div hidden>
+                        {% for t in m.ans_tickets %}
+                        <span data-mon-ans-ticket data-pk="{{ t.pk }}" data-codigo="{{ t.codigo }}" data-titulo="{{ t.titulo }}" data-tecnico="{{ t.tecnico }}" data-estado="{{ t.estado }}" data-ans-texto="{{ t.ans_texto }}"></span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if m.tickets %}
+                    <div hidden>
+                        {% for t in m.tickets %}
+                        <span data-mon-ticket data-pk="{{ t.pk }}" data-codigo="{{ t.codigo }}" data-titulo="{{ t.titulo }}" data-estado="{{ t.estado }}" data-estado-display="{{ t.estado_display }}" data-fecha="{{ t.fecha }}" data-tecnico="{{ t.tecnico }}" data-ans-estado="{{ t.ans_estado }}" data-ans-texto="{{ t.ans_texto }}"></span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </article>
                 {% empty %}
                 <p class="muted" style="margin:6px 0">Zona vacía: todavía no tiene cuentas dentro.</p>
@@ -695,9 +811,27 @@ main.obs-page { font-family: var(--font-corp); }
             var contador = document.getElementById("monSelCount");
             var buscar = document.getElementById("monBuscar");
             var cerrar = document.getElementById("monCerrar");
+            var alternarZonas = document.getElementById("monAlternarZonas");
             var botones = grid.querySelectorAll(".mon-zc");
             var actual = null;
 
+            function actualizaBotonZonas(plegadas) {
+                if (!alternarZonas) { return; }
+                alternarZonas.setAttribute("aria-expanded", String(!plegadas));
+                alternarZonas.setAttribute(
+                    "title",
+                    plegadas ? "Mostrar las zonas" : "Plegar las zonas para ampliar los usuarios"
+                );
+                var texto = alternarZonas.querySelector("span");
+                if (texto) { texto.textContent = plegadas ? "Mostrar zonas" : "Plegar zonas"; }
+            }
+            if (alternarZonas) {
+                alternarZonas.addEventListener("click", function () {
+                    var plegadas = !grid.classList.contains("is-zonas-plegadas");
+                    grid.classList.toggle("is-zonas-plegadas", plegadas);
+                    actualizaBotonZonas(plegadas);
+                });
+            }
             function esc(s) {
                 return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
                     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -712,14 +846,125 @@ main.obs-page { font-family: var(--font-corp); }
                     var av = f.querySelector(".obs-avatar");
                     var txt = sm ? sm.textContent.replace(/\s+/g, " ").trim() : "";
                     var partes = txt.split("·");
+                    var vencidos = parseInt(f.getAttribute("data-ans-vencidos") || "0", 10);
+                    var porVencer = parseInt(f.getAttribute("data-ans-por-vencer") || "0", 10);
+                    var abiertos = parseInt(f.getAttribute("data-abiertos") || "0", 10);
+                    var urgentes = parseInt(f.getAttribute("data-urgentes") || "0", 10);
+                    var total = parseInt(f.getAttribute("data-total") || "0", 10);
+                    var resueltos = parseInt(f.getAttribute("data-resueltos") || "0", 10);
+                    var cerrados = parseInt(f.getAttribute("data-cerrados") || "0", 10);
+                    var avance = parseInt(f.getAttribute("data-avance") || "0", 10);
+                    var ansEstado = vencidos ? "vencido" : porVencer ? "por-vencer" : "";
+                    var ansTickets = Array.prototype.map.call(
+                        f.querySelectorAll("[data-mon-ans-ticket]"),
+                        function (t) {
+                            return {
+                                pk: t.getAttribute("data-pk"),
+                                codigo: t.getAttribute("data-codigo"),
+                                titulo: t.getAttribute("data-titulo"),
+                                tecnico: t.getAttribute("data-tecnico"),
+                                estado: t.getAttribute("data-estado"),
+                                texto: t.getAttribute("data-ans-texto")
+                            };
+                        }
+                    );
+                    var tickets = Array.prototype.map.call(
+                        f.querySelectorAll("[data-mon-ticket]"),
+                        function (t) {
+                            return {
+                                pk: t.getAttribute("data-pk"),
+                                codigo: t.getAttribute("data-codigo"),
+                                titulo: t.getAttribute("data-titulo"),
+                                estado: t.getAttribute("data-estado"),
+                                estadoDisplay: t.getAttribute("data-estado-display"),
+                                fecha: t.getAttribute("data-fecha"),
+                                tecnico: t.getAttribute("data-tecnico"),
+                                ansEstado: t.getAttribute("data-ans-estado"),
+                                ansTexto: t.getAttribute("data-ans-texto")
+                            };
+                        }
+                    );
                     return {
+                        elementoId: f.getAttribute("data-elemento"),
                         nombre: a ? a.textContent.trim() : "—",
                         href: a ? a.getAttribute("href") : "#",
                         correo: (partes[0] || "").trim(),
                         rol: (partes[1] || "").trim(),
-                        ava: av ? av.textContent.trim() : "?"
+                        ava: av ? av.textContent.trim() : "?",
+                        ansEstado: ansEstado,
+                        ansVencidos: vencidos,
+                        ansPorVencer: porVencer,
+                        abiertos: abiertos,
+                        total: total,
+                        resueltos: resueltos,
+                        cerrados: cerrados,
+                        avance: avance,
+                        urgentes: urgentes,
+                        ansTickets: ansTickets,
+                        tickets: tickets
                     };
                 });
+            }
+            var quitarForm = document.getElementById("monQuitarSeleccionados");
+            var quitarBtn = document.getElementById("monQuitarBtn");
+            var quitarN = document.getElementById("monQuitarN");
+            var quitarZona = document.getElementById("monQuitarZona");
+            var quitarIds = document.getElementById("monQuitarIds");
+            var presionarSeleccionados = document.getElementById("monPresionarSeleccionados");
+            function filasSeleccionadas() {
+                return Array.prototype.filter.call(
+                    pane.querySelectorAll(".mon-user-wrap"),
+                    function (f) {
+                        var chk = f.querySelector(".mon-user-chk");
+                        return chk && chk.checked;
+                    }
+                );
+            }
+            function actualizaAcciones() {
+                var filas = filasSeleccionadas();
+                if (quitarBtn) {
+                    quitarBtn.disabled = filas.length === 0;
+                    quitarBtn.hidden = filas.length === 0;
+                }
+                if (quitarN) { quitarN.textContent = String(filas.length); }
+                if (quitarZona) {
+                    quitarZona.value = actual ? actual.getAttribute("data-mon-zona") || "" : "";
+                }
+                if (quitarIds) {
+                    quitarIds.innerHTML = filas.map(function (f) {
+                        return '<input type="hidden" name="elemento_ids" value="' +
+                            esc(f.getAttribute("data-elemento")) + '">';
+                    }).join("");
+                }
+                if (quitarForm) {
+                    var nombres = filas.map(function (f) {
+                        var n = f.querySelector(".mon-user-id strong");
+                        return n ? n.textContent.trim() : "";
+                    }).filter(Boolean);
+                    quitarForm.setAttribute(
+                        "data-motivo-nombre",
+                        "Quitar " + (nombres.join(", ") || "las cuentas seleccionadas") +
+                            (actual ? " de «" + (actual.getAttribute("data-mon-nombre") || "la zona") + "»" : "")
+                    );
+                }
+                var puedePresionar = filas.some(function (f) {
+                    return f.querySelector("[data-mon-ans-ticket]");
+                });
+                if (presionarSeleccionados) {
+                    presionarSeleccionados.hidden = !puedePresionar;
+                    presionarSeleccionados.disabled = !puedePresionar;
+                }
+                if (contador && actual) {
+                    var totalFilas = pane.querySelectorAll(".mon-user-wrap").length;
+                    var filtrados = buscar && buscar.value.trim() ?
+                        usuariosDe(actual.getAttribute("data-mon-zona")).filter(function (u) {
+                            var q = buscar.value.toLowerCase().trim();
+                            return (u.nombre + " " + u.correo + " " + u.rol).toLowerCase().indexOf(q) !== -1;
+                        }).length : totalFilas;
+                    contador.textContent = filtrados + " de " +
+                        usuariosDe(actual.getAttribute("data-mon-zona")).length +
+                        (filas.length ? " · " + filas.length + " seleccionada" + (filas.length === 1 ? "" : "s") : "");
+                }
             }
             function pinta(usuarios) {
                 var q = (buscar && buscar.value || "").toLowerCase().trim();
@@ -729,22 +974,128 @@ main.obs-page { font-family: var(--font-corp); }
                 if (contador) { contador.textContent = vis.length + " de " + usuarios.length; }
                 if (!usuarios.length) {
                     pane.innerHTML = '<p class="muted mon-vacio">Esta zona no tiene cuentas todavía.</p>';
+                    actualizaAcciones();
                     return;
                 }
                 if (!vis.length) {
                     pane.innerHTML = '<p class="muted mon-vacio">Sin coincidencias para «' + esc(q) + '».</p>';
+                    actualizaAcciones();
                     return;
                 }
                 pane.innerHTML = vis.map(function (u) {
-                    return '<label class="mon-user">' +
-                        '<input type="checkbox" class="mon-user-chk">' +
-                        '<span class="mon-user-ava">' + esc(u.ava) + "</span>" +
-                        '<span class="mon-user-id"><strong>' + esc(u.nombre) + "</strong><small>" + esc(u.correo) + "</small></span>" +
-                        '<span class="mon-user-rol">' + esc(u.rol || "Usuario") + "</span>" +
-                        '<a class="mon-user-ficha" href="' + esc(u.href) + '" title="Abrir ficha de ' + esc(u.nombre) + '">Ver ficha</a>' +
-                        "</label>";
+                    var estadoClase = u.ansEstado === "vencido" ? " mon-user-ans-vencido" :
+                        u.ansEstado === "por-vencer" ? " mon-user-ans-por-vencer" : "";
+                    var semaforo = u.ansEstado === "vencido" ?
+                        '<span class="obs-pill obs-pill-rojo"><span class="obs-dot obs-dot-rojo"></span>' + u.ansVencidos + ' ANS vencido' + (u.ansVencidos === 1 ? "" : "s") + '</span>' :
+                        u.ansEstado === "por-vencer" ?
+                        '<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>' + u.ansPorVencer + ' por vencer</span>' :
+                        u.abiertos ?
+                        '<span class="obs-pill obs-pill-amarillo"><span class="obs-dot obs-dot-amarillo"></span>' + u.abiertos + ' abiertos</span>' :
+                        '<span class="obs-pill obs-pill-verde"><span class="obs-dot obs-dot-verde"></span>Al día</span>';
+                    var prioridad = u.urgentes ?
+                        '<span class="mon-prioridad" title="' + esc(u.urgentes) + ' ticket' + (u.urgentes === 1 ? "" : "s") + ' urgente' + (u.urgentes === 1 ? "" : "s") + '"><svg class="icon"><use href="#i-alert"/></svg>' + esc(u.urgentes) + '</span>' : "";
+                    var ansData = u.ansTickets.map(function (t) {
+                        return '<span data-mon-ans-ticket data-pk="' + esc(t.pk) + '" data-codigo="' + esc(t.codigo) + '" data-titulo="' + esc(t.titulo) + '" data-tecnico="' + esc(t.tecnico) + '" data-estado="' + esc(t.estado) + '" data-ans-texto="' + esc(t.texto) + '"></span>';
+                    }).join("");
+                    var chips = u.tickets.map(function (t) {
+                        var ans = t.ansEstado === "vencido" ?
+                            '<small class="pan-ticket-ans is-vencido">ANS vencido</small>' :
+                            t.ansEstado === "por-vencer" ?
+                            '<small class="pan-ticket-ans is-por-vencer">ANS por vencer</small>' : "";
+                        return '<span class="obs-ticket t-' + esc(t.estado) + '" title="' +
+                            esc(t.estadoDisplay + " · " + t.fecha +
+                                (t.tecnico ? " · " + t.tecnico : "") +
+                                (t.ansTexto ? " · " + t.ansTexto : "")) + '">' +
+                            esc(t.codigo) + ' <small>' + esc(t.estadoDisplay) + '</small>' + ans + '</span>';
+                    }).join("");
+                    return '<div class="mon-user-wrap' + estadoClase + '" data-elemento="' + esc(u.elementoId) + '">' +
+                        '<label class="mon-user">' +
+                            '<input type="checkbox" class="mon-user-chk" aria-label="Seleccionar ' + esc(u.nombre) + '">' +
+                            '<span class="mon-user-ava">' + esc(u.ava) + "</span>" +
+                            '<span class="mon-user-id"><strong>' + esc(u.nombre) + "</strong><small>" + esc(u.correo) + "</small></span>" +
+                            semaforo + prioridad +
+                            '<span class="mon-user-rol">' + esc(u.rol || "Usuario") + "</span>" +
+                            '<a class="mon-user-ficha" href="' + esc(u.href) + '" title="Abrir ficha de ' + esc(u.nombre) + '">Ver ficha</a>' +
+                        "</label>" +
+                        '<div class="pan-user-datos">' +
+                            '<span class="pan-cifras">' +
+                                '<span class="pan-cifra"><b>' + esc(u.total) + '</b> tickets</span>' +
+                                '<span class="pan-cifra s-ab"><b>' + esc(u.abiertos) + '</b> abiertos</span>' +
+                                '<span class="pan-cifra s-ce"><b>' + esc(u.resueltos) + '</b> resueltos</span>' +
+                                '<span class="pan-cifra s-ce"><b>' + esc(u.cerrados) + '</b> cerrados</span>' +
+                                '<span class="pan-cifra s-vencidos"><b>' + esc(u.ansVencidos) + '</b> ANS vencidos</span>' +
+                                '<span class="pan-cifra"><b>' + esc(u.avance) + '%</b> avance</span>' +
+                            '</span>' +
+                            (u.total ? '<span class="obs-bar" role="img" aria-label="Avance de ' + esc(u.nombre) + ': ' + esc(u.avance) + ' por ciento">' +
+                                '<span class="obs-bar-seg obs-bar-verde" style="flex:' + esc(u.avance) + '"></span>' +
+                                '<span class="obs-bar-seg obs-bar-vacio" style="flex:' + esc(100 - u.avance) + '"></span></span>' : "") +
+                            (chips ? '<div class="obs-tickets pan-tickets">' + chips + "</div>" : "") +
+                        '</div><span hidden>' + ansData + '</span></div>';
                 }).join("");
+                actualizaAcciones();
             }
+            (function configuraPresion() {
+                var modal = document.getElementById("monPresionarModal");
+                var form = document.getElementById("monPresionarForm");
+                var select = document.getElementById("monPresionarTicket");
+                var info = document.getElementById("monPresionarInfo");
+                var tecnico = document.getElementById("monPresionarTecnico");
+                var mensaje = document.getElementById("monPresionarMensaje");
+                var cerrarModal = document.getElementById("monPresionarCerrar");
+                var cancelar = document.getElementById("monPresionarCancelar");
+                var url = grid.getAttribute("data-url-presionar") || "";
+                if (!modal || !form || !select) { return; }
+                function actualizaTicket() {
+                    var opcion = select.options[select.selectedIndex];
+                    info.textContent = opcion ? opcion.getAttribute("data-info") || "" : "";
+                    tecnico.textContent = opcion ? "Técnico asignado: " + (opcion.getAttribute("data-tecnico") || "—") : "";
+                    form.action = opcion && url ? url.replace(/0\/$/, opcion.value + "/") : url;
+                }
+                document.addEventListener("click", function (event) {
+                    var boton = event.target.closest("[data-mon-presionar]");
+                    if (!boton) { return; }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    var filas = boton.id === "monPresionarSeleccionados" ?
+                        filasSeleccionadas() : [boton.closest(".obs-miembro, .mon-user-wrap")];
+                    var tickets = [];
+                    filas.filter(Boolean).forEach(function (fila) {
+                        Array.prototype.forEach.call(
+                            fila.querySelectorAll("[data-mon-ans-ticket]"),
+                            function (t) {
+                                tickets.push({
+                                    pk: t.getAttribute("data-pk"),
+                                    codigo: t.getAttribute("data-codigo"),
+                                    titulo: t.getAttribute("data-titulo"),
+                                    tecnico: t.getAttribute("data-tecnico"),
+                                    estado: t.getAttribute("data-estado"),
+                                    texto: t.getAttribute("data-ans-texto")
+                                });
+                            }
+                        );
+                    });
+                    if (!tickets.length) { return; }
+                    select.innerHTML = tickets.map(function (t) {
+                        var detalle = (t.texto || "") + (t.estado === "vencido" ? " · ANS vencido" : " · ANS por vencer");
+                        return '<option value="' + esc(t.pk) + '" data-tecnico="' + esc(t.tecnico) + '" data-info="' + esc(detalle) + '">' +
+                            esc(t.codigo + " · " + t.titulo) + "</option>";
+                    }).join("");
+                    mensaje.value = "Por favor, prioriza la atención de este ticket: " + tickets[0].codigo + ". Su ANS está " +
+                        (tickets[0].estado === "vencido" ? "vencido" : "próximo a vencer") + ".";
+                    actualizaTicket();
+                    modal.showModal();
+                });
+                select.addEventListener("change", actualizaTicket);
+                if (cerrarModal) { cerrarModal.addEventListener("click", function () { modal.close(); }); }
+                if (cancelar) { cancelar.addEventListener("click", function () { modal.close(); }); }
+            })();
+            pane.addEventListener("change", function (event) {
+                if (event.target.matches(".mon-user-chk")) {
+                    var fila = event.target.closest(".mon-user-wrap");
+                    if (fila) { fila.classList.toggle("is-marcado", event.target.checked); }
+                    actualizaAcciones();
+                }
+            });
             function activa(btn) {
                 botones.forEach(function (b) { b.classList.toggle("is-on", b === btn); });
                 actual = btn;
@@ -755,6 +1106,15 @@ main.obs-page { font-family: var(--font-corp); }
             }
             botones.forEach(function (b) {
                 b.addEventListener("click", function () { activa(b); });
+            });
+            grid.querySelectorAll("[data-mon-card-view]").forEach(function (boton) {
+                boton.addEventListener("click", function () {
+                    var zonaId = boton.getAttribute("data-mon-card-view");
+                    var zona = Array.prototype.find.call(botones, function (b) {
+                        return b.getAttribute("data-mon-zona") === zonaId;
+                    });
+                    if (zona) { activa(zona); }
+                });
             });
             if (buscar) {
                 buscar.addEventListener("input", function () {
@@ -769,10 +1129,29 @@ main.obs-page { font-family: var(--font-corp); }
                     if (rotulo) { rotulo.textContent = "—"; }
                     if (contador) { contador.textContent = ""; }
                     if (buscar) { buscar.value = ""; }
+                    pane.querySelectorAll(".mon-user-chk").forEach(function (check) {
+                        check.checked = false;
+                    });
+                    actualizaAcciones();
+                    grid.classList.remove("is-zonas-plegadas");
+                    actualizaBotonZonas(false);
                     pane.innerHTML = '<p class="muted mon-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p>';
                 });
             }
         })();
+        document.querySelectorAll(".mon-zona-acc [data-renombre]").forEach(function (btn) {
+            var caja = document.getElementById(btn.getAttribute("data-renombre"));
+            if (!caja) { return; }
+            btn.addEventListener("click", function () {
+                var abrir = caja.hidden;
+                caja.hidden = !abrir;
+                btn.setAttribute("aria-expanded", String(abrir));
+                if (abrir) {
+                    var campo = caja.querySelector('input[type="text"]');
+                    if (campo) { campo.focus(); campo.select(); }
+                }
+            });
+        });
 
         /* Zona destino: lo elegido manda en los Agregar y Quitar de la tabla. */
         (function () {

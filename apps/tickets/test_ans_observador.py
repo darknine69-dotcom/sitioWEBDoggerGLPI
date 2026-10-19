@@ -16,6 +16,7 @@ from datetime import timedelta
 from io import StringIO
 
 from django.core import mail
+from django.core.cache import cache
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -62,6 +63,7 @@ class BaseAnsTest(TestCase):
         # Crear usuarios deja su bienvenida en el buzón; no es lo que se
         # prueba aquí, así que se limpia para que los conteos sean solo del ANS.
         mail.outbox.clear()
+        cache.delete("notificaciones:ans_por_vencer:ultima_revision")
         self.client.force_login(self.observador)
 
     def _avisos_ans(self):
@@ -255,8 +257,94 @@ class AvisoDeAnsTest(BaseAnsTest):
         self.assertIn(ticket.codigo, aviso.titulo)
         self.assertEqual(aviso.icono, "i-stopwatch")
         self.assertIn("/observador/monitoreo/", aviso.url)
-        self.assertIn("por-vencer", aviso.url)
+        self.assertIn(f"#ans-ticket-{ticket.pk}", aviso.url)
 
+    def test_la_campana_llega_al_punto_de_venta_y_al_tecnico(self):
+        ticket = self._ticket(horas=HORAS_MEDIA - 0.5)
+        self._entrar()
+        aviso_usuario = Notificacion.objects.get(
+            usuario=self.solicitante,
+            clave=f"ans-{ticket.pk}:solicitante:{self.solicitante.pk}",
+        )
+        aviso_tecnico = Notificacion.objects.get(
+            usuario=self.tecnico, clave=f"ans-{ticket.pk}:tecnico"
+        )
+        self.assertEqual(
+            aviso_usuario.url,
+            reverse("tickets:mi_ticket", args=[ticket.pk]),
+        )
+        self.assertEqual(
+            aviso_tecnico.url,
+            reverse("tickets:detalle", args=[ticket.pk]),
+        )
+        self.assertEqual(aviso_usuario.icono, "i-stopwatch")
+        self.assertEqual(aviso_tecnico.icono, "i-stopwatch")
+
+    def test_la_api_de_la_campana_revisa_ans_sin_abrir_monitoreo(self):
+        ticket = self._ticket(horas=HORAS_MEDIA - 0.5)
+        self.client.get(reverse("notificaciones:api"))
+        self.assertTrue(
+            Notificacion.objects.filter(
+                usuario=self.solicitante,
+                clave=f"ans-{ticket.pk}:solicitante:{self.solicitante.pk}",
+            ).exists()
+        )
+        self.assertTrue(
+            Notificacion.objects.filter(
+                usuario=self.tecnico, clave=f"ans-{ticket.pk}:tecnico"
+            ).exists()
+        )
+        self.assertTrue(
+            Notificacion.objects.filter(
+                usuario=self.observador, clave=f"ans-{ticket.pk}"
+            ).exists()
+        )
+        avisos = self._avisos_ans().count()
+        self.client.get(reverse("notificaciones:api"))
+        self.assertEqual(self._avisos_ans().count(), avisos)
+
+    def test_la_campana_completa_destinatarios_de_ans_ya_marcados(self):
+        ticket = self._ticket(horas=HORAS_MEDIA + 2)
+        ticket.ans_alertado_en = timezone.now()
+        ticket.save(update_fields=["ans_alertado_en"])
+
+        avisos = ans_avisos.completar_campanas_pendientes()
+
+        self.assertEqual(len(avisos), 3)
+        self.assertTrue(
+            Notificacion.objects.filter(
+                usuario=self.solicitante,
+                clave=f"ans-{ticket.pk}:solicitante:{self.solicitante.pk}",
+            ).exists()
+        )
+        self.assertTrue(
+            Notificacion.objects.filter(
+                usuario=self.tecnico, clave=f"ans-{ticket.pk}:tecnico"
+            ).exists()
+        )
+        aviso_obs = Notificacion.objects.get(
+            usuario=self.observador, clave=f"ans-{ticket.pk}"
+        )
+        self.assertTrue(aviso_obs.url.endswith(f"#ans-ticket-{ticket.pk}"))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_aviso_antiguo_del_observador_recibe_enlace_directo_al_ticket(self):
+        ticket = self._ticket(horas=HORAS_MEDIA + 2)
+        ticket.ans_alertado_en = timezone.now()
+        ticket.save(update_fields=["ans_alertado_en"])
+        aviso_obs = Notificacion.objects.create(
+            usuario=self.observador,
+            tipo=Notificacion.Tipo.TICKET_RECORDATORIO,
+            titulo=f"{ticket.codigo} está vencido",
+            mensaje="Aviso de ANS antiguo",
+            url=reverse("tickets:obs_monitoreo") + "#por-vencer",
+            clave=f"ans-{ticket.pk}",
+        )
+
+        ans_avisos.completar_campanas_pendientes()
+
+        aviso_obs.refresh_from_db()
+        self.assertTrue(aviso_obs.url.endswith(f"#ans-ticket-{ticket.pk}"))
     def test_solo_se_avisa_una_vez(self):
         """La segunda pasada no repite nada: correo ni campana."""
         self._ticket(horas=HORAS_MEDIA - 0.5)

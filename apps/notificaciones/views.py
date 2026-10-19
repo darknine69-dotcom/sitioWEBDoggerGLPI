@@ -1,6 +1,9 @@
 """Endpoints de la campana de notificaciones (solo el usuario dueño)."""
 
+import logging
+
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -8,6 +11,26 @@ from django.views.decorators.http import require_POST
 
 from . import services
 from .models import Notificacion
+
+logger = logging.getLogger(__name__)
+ANS_SCAN_CACHE_KEY = "notificaciones:ans_por_vencer:ultima_revision"
+
+
+def _revisar_ans_por_vencer():
+    """Revisa ANS desde la campana sin escanear tickets en cada consulta."""
+    if not cache.add(ANS_SCAN_CACHE_KEY, True, timeout=60):
+        return
+    try:
+        from apps.tickets.ans_avisos import (
+            completar_campanas_pendientes,
+            revisar_y_avisar,
+        )
+
+        completar_campanas_pendientes()
+        revisar_y_avisar()
+    except Exception:
+        cache.delete(ANS_SCAN_CACHE_KEY)
+        logger.exception("No se pudo revisar las alertas tempranas de ANS")
 
 
 @login_required
@@ -66,6 +89,7 @@ def api(request):
     real aunque el ticket se haya cerrado o asignado en otro equipo.
     """
     # Sin cache: es la fuente de verdad en vivo del contador.
+    _revisar_ans_por_vencer()
     services.recordatorios(request.user)
 
     pendientes = services.pendientes_de_emergente(request.user, limite=5)

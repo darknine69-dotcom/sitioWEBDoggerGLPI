@@ -1,14 +1,14 @@
 {% comment %}Ventana emergente: aviso nuevo. Se muestra con <dialog> nativo para que
 Escape y el boton de cerrar funcionen aunque el JS no llegue a cargarse.
-Va centrada en pantalla, con el aviso en grande y dos botones: OK para
-cerrarlo y Ver para ir directo al ticket o a la vista relacionada.{% endcomment %}
+Va centrada, con título, mensaje destacado y acciones claras: OK para cerrarlo
+y Ver para ir directo al ticket o a la vista relacionada.{% endcomment %}
 {% if request.user.is_authenticated and notif_emergente %}
 <dialog class="notif-popup notif-popup-{{ notif_emergente.tipo }}" id="notifPopup"
         data-id="{{ notif_emergente.pk }}"
         data-url="{{ notif_emergente.url|default:'#' }}"
         aria-labelledby="notifPopupTitle">
     <form method="dialog" class="notif-popup-form">
-        <button class="notif-popup-x" aria-label="Cerrar">&times;</button>
+        <button type="submit" class="notif-popup-x" aria-label="Cerrar">&times;</button>
         <span class="notif-popup-head">
             <span class="notif-popup-icon" aria-hidden="true">
                 <svg class="icon"><use href="#{{ notif_emergente.icono|default:'i-bell' }}"/></svg>
@@ -27,7 +27,7 @@ cerrarlo y Ver para ir directo al ticket o a la vista relacionada.{% endcomment 
                 <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg>
             </a>
             {% endif %}
-            <button class="btn btn-ghost notif-popup-ok" data-notif-cerrar>OK</button>
+            <button type="submit" class="btn notif-popup-ok" data-notif-cerrar>OK</button>
         </div>
     </form>
 </dialog>

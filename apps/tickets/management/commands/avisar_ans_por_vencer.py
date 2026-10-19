@@ -24,8 +24,8 @@ from apps.tickets.ans_avisos import (
 class Command(BaseCommand):
     help = (
         "Avisa una sola vez de cada ticket cuyo ANS está por vencer o vencido: "
-        "correo al técnico y a la persona que lo abrió, y campana al "
-        "observador que lo supervisa."
+        "campana y correo al técnico y a la persona que lo abrió, y campana "
+        "al observador que lo supervisa."
     )
 
     def add_arguments(self, parser):
