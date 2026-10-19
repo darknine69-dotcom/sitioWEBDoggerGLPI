@@ -587,17 +587,6 @@ def usuarios_observador(request):
             pk=clave_nueva, observador=usuario
         ).first()
 
-    # «Presionar al técnico»: los técnicos con carga abierta en la lista de
-    # seguimiento, aquí abajo para no tener que ir al Monitoreo.
-    elementos_lista = (
-        ElementoMiLista.objects.filter(observador=usuario)
-        .select_related("usuario", "punto", "zona")
-        .order_by("-creado_en")
-    )
-    presionar = _tecnicos_para_presionar(
-        _filas_de_mi_lista(usuario, elementos_lista, global_scope=True)
-    )
-
     return render(
         request,
         "observador/usuarios.html",
@@ -620,7 +609,6 @@ def usuarios_observador(request):
             "todos_usuarios": todos_usuarios,
             "zonas_obs": zonas_obs,
             "zona_nueva": recien_creada,
-            "presionar": presionar,
         },
     )
 
@@ -634,7 +622,22 @@ def mi_lista_observador(request):
         .select_related("usuario", "punto")
         .order_by("-creado_en")
     )
-    filas = _filas_de_mi_lista(usuario, elementos)
+    # Sin puntos asignados el filtro por puntos devolvería vacío y las
+    # tarjetas salían en ceros y el avance en 0% aunque la gente de la zona
+    # tuviera tickets: en ese caso se ve todo, como en el resto del módulo.
+    # Con puntos asignados el filtro manda, para no arrastrar tickets de
+    # zonas ajenas (véase test_mi_lista_no_arrastra_tickets_de_zona_ajena).
+    filas = _filas_de_mi_lista(
+        usuario, elementos, global_scope=not puntos_del_observador(usuario))
+    # Las respuestas visibles del personal viajan en cada fila para que la
+    # ficha de la derecha las muestre, igual que en Monitoreo.
+    respuestas = _respuestas_por_correo(
+        puntos_del_observador(usuario),
+        [f["email"] for f in filas if f["email"]], limite=3,
+        global_scope=not puntos_del_observador(usuario),
+    )
+    for f in filas:
+        f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
     conteo = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
     for f in filas:
         conteo[f["estado"]] += 1
@@ -1237,6 +1240,38 @@ def _panel_de_supervision(usuario, filas):
             "abiertos": f.get("abiertos", 0),
             "cerrados": f.get("cerrados_total", 0),
             "avance": f.get("avance", 0),
+            "falta": f.get("falta", 100 - f.get("avance", 0)),
+            # La ficha de la cuenta, a la vista en el panel: los últimos
+            # tickets con su color y las respuestas visibles del personal.
+            # Sin esto la fila solo traía el contador y había que abrir la
+            # ficha aparte para saber qué hay detrás.
+            "tickets": [
+                {
+                    "codigo": t.codigo,
+                    "estado": t.estado,
+                    "estado_display": t.get_estado_display(),
+                    "fecha": (
+                        t.fecha_creacion.strftime("%d/%m/%Y %H:%M")
+                        if t.fecha_creacion else ""
+                    ),
+                    "tecnico": (
+                        t.tecnico_asignado.nombre if t.tecnico_asignado else ""
+                    ),
+                }
+                for t in (f.get("tickets") or [])[:10]
+            ],
+            "respuestas": [
+                {
+                    "autor": (
+                        (r.usuario.nombre if r.usuario else "")
+                        or r.autor_nombre or ""
+                    ),
+                    "codigo": r.ticket.codigo if r.ticket_id else "",
+                    "fecha": r.fecha.strftime("%d/%m/%Y %H:%M") if r.fecha else "",
+                    "texto": (r.comentario or "")[:180],
+                }
+                for r in (f.get("respuestas") or [])[:3]
+            ],
             "en_lista": bool(f.get("elemento") or f.get("ya_agregado")),
             "elemento_id": getattr(elemento, "pk", None),
             "url_agregar": reverse("tickets:obs_agregar"),
@@ -1369,11 +1404,14 @@ def presionar_tecnico(request, pk):
 def exportar_observador(request):
     """Descarga la lista del observador como CSV, para el reporte."""
     usuario = request.user
+    # Mismo alcance que la pantalla de Mi lista: el CSV lleva los mismos
+    # números que el supervisor ve, ni uno de más ni uno de menos.
     filas = _filas_de_mi_lista(
         usuario,
         ElementoMiLista.objects.filter(observador=usuario).select_related(
             "usuario", "punto"
         ),
+        global_scope=not puntos_del_observador(usuario),
     )
     respuesta = HttpResponse(content_type="text/csv; charset=utf-8")
     respuesta["Content-Disposition"] = (
@@ -1573,9 +1611,16 @@ def _cuentas_y_tickets_de_zona(zona, limite_tickets=20):
     fichero es exactamente lo que se ve en la página.
     """
     usuario = zona.observador
-    resumen = _resumen_por_correo(usuario)
-    puntos = puntos_del_observador(usuario)
-    visibles = _visible_a_observador(usuario, Ticket.objects.all())
+    # Sin puntos asignados el filtro devolvería vacío y la ficha salía en
+    # ceros y sin tickets: en ese caso se ve todo, igual que en Mi lista. Con
+    # puntos asignados el filtro manda, para no arrastrar tickets de zonas
+    # ajenas.
+    alcance_global = not puntos_del_observador(usuario)
+    resumen = _resumen_por_correo(usuario, global_scope=alcance_global)
+    visibles = (
+        Ticket.objects.all() if alcance_global
+        else _visible_a_observador(usuario, Ticket.objects.all())
+    )
     miembros = (
         zona.elementos.filter(tipo=ElementoMiLista.TIPO_USUARIO)
         .select_related("usuario")
@@ -1609,30 +1654,30 @@ def _cuentas_y_tickets_de_zona(zona, limite_tickets=20):
                 "cerrados_total": r.get("cerrados_total", 0),
                 "estado": r.get("estado", ESTADO_VERDE),
                 "tickets": propios,
-                "respuestas": _respuestas_de_tecnicos(puntos, correo),
+                "respuestas": _respuestas_de_tecnicos(correo, visibles),
             }
         )
     return filas, [t for f in filas for t in f["tickets"]]
 
 
-def _respuestas_de_tecnicos(puntos, correo, limite=3):
+def _respuestas_de_tecnicos(correo, visibles=None, limite=3):
     """Últimas respuestas del personal a los tickets de la persona.
 
     Solo respuestas visibles (no internas) de técnicos o administradores,
-    acotadas a los puntos del observador: sin puntos asignados no se ve
-    nada, igual que en el resto del módulo.
+    sobre los mismos tickets que muestra la ficha: si el observador no tiene
+    puntos asignados se ve todo, y si los tiene solo los de sus puntos.
     """
-    if not correo or not puntos:
+    if not correo:
         return []
+    consulta = TicketComentario.objects.filter(
+        ticket__solicitante_email__iexact=correo,
+        es_interno=False,
+        usuario__rol__in=[Usuario.Rol.TECNICO, Usuario.Rol.ADMIN],
+    )
+    if visibles is not None:
+        consulta = consulta.filter(ticket__in=visibles)
     return list(
-        TicketComentario.objects.filter(
-            ticket__solicitante_email__iexact=correo,
-            ticket__solicitante_punto__in=puntos,
-            es_interno=False,
-            usuario__rol__in=[Usuario.Rol.TECNICO, Usuario.Rol.ADMIN],
-        )
-        .select_related("ticket", "usuario")
-        .order_by("-fecha")[:limite]
+        consulta.select_related("ticket", "usuario").order_by("-fecha")[:limite]
     )
 
 

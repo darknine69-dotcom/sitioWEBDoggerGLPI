@@ -36,8 +36,8 @@ Requiere `filas`, `zonas_obs` y `todos_usuarios` en el contexto.{% endcomment %}
             </thead>
             <tbody>
                 {% for u in filas %}
-                <tr class="obs-fila{% if u.en_lista %} obs-fila-lista{% endif %}{% if forloop.counter0|divisibleby:2 %} is-par{% endif %}">
-                    <td class="obs-cuenta">
+                <tr class="obs-tr{% if u.en_lista %} obs-tr-lista{% endif %}{% if forloop.counter0|divisibleby:2 %} is-par{% endif %}">
+                    <td class="obs-celda-cuenta">
                         <strong>{{ u.nombre }}</strong>
                         {% if u.email %}<small>{{ u.email }}</small>{% endif %}
                     </td>
@@ -66,7 +66,7 @@ Requiere `filas`, `zonas_obs` y `todos_usuarios` en el contexto.{% endcomment %}
                         <span class="obs-pide-zona" title="Primero agrégala a tu lista con el icono de la derecha; después eliges su zona aquí.">Sin zona</span>
                         {% endif %}
                     </td>
-                    <td class="obs-tec">
+                    <td class="obs-celda-tec">
                         {% if u.tecnicos %}
                         <ul class="obs-tecnicos">
                             {% for t in u.tecnicos|slice:":3" %}
@@ -87,7 +87,7 @@ Requiere `filas`, `zonas_obs` y `todos_usuarios` en el contexto.{% endcomment %}
                         {% else %}<span class="muted">0</span>{% endif %}
                     </td>
                     <td class="num">{{ u.total }}</td>
-                    <td class="obs-avance">
+                    <td class="obs-celda-avance">
                         {% if u.total %}
                         <span class="obs-bar" role="img" aria-label="Avance {{ u.avance }} por ciento">
                             <span class="obs-bar-seg obs-bar-verde" style="flex:{{ u.avance }}"></span>

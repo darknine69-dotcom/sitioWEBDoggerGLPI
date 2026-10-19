@@ -216,7 +216,22 @@ la papelera se conectan antes de pintar nada).
             var marca = (u.en_lista && u.elemento_id)
                 ? ' data-elemento="' + esc(u.elemento_id) + '"'
                 : "";
-            return '<label class="pan-user pan-user-' + esc(u.estado || "verde") + marca + '">' +
+            /* La ficha de la cuenta, debajo de su fila: los mismos chips de
+               color y la misma barra que la página de la zona. */
+            var chips = (u.tickets || []).map(function (t) {
+                return '<span class="obs-ticket t-' + esc(t.estado) + '"' +
+                    ' title="' + esc(t.estado_display) + ' · ' + esc(t.fecha) +
+                    (t.tecnico ? ' · ' + esc(t.tecnico) : "") + '">' +
+                    esc(t.codigo) + " <small>" + esc(t.estado_display) + "</small></span>";
+            }).join("");
+            var resp = (u.respuestas || []).map(function (r) {
+                return '<li class="pan-resp">' +
+                    "<strong>" + esc(r.autor) + " · " + esc(r.codigo) +
+                    (r.fecha ? " · " + esc(r.fecha) : "") + "</strong>" +
+                    "<small>" + esc(r.texto) + "</small></li>";
+            }).join("");
+            return '<div class="pan-user-wrap pan-user-' + esc(u.estado || "verde") + '">' +
+                '<label class="pan-user"' + marca + ">" +
                 '<input type="checkbox" class="pan-user-chk">' +
                 '<span class="pan-user-ava">' + esc(ini) + "</span>" +
                 '<span class="pan-user-id"><strong>' + esc(u.nombre) + "</strong><small>" +
@@ -225,7 +240,24 @@ la papelera se conectan antes de pintar nada).
                 '<span class="pan-user-rol">' + esc(u.rol || "Cuenta") + "</span>" +
                 '<a class="pan-user-ficha" href="' + esc(u.url) + '" title="Abrir la ficha de ' + esc(u.nombre) + '">Ver ficha</a>' +
                 accion(u) +
-                "</label>";
+                "</label>" +
+                '<div class="pan-user-datos">' +
+                    '<span class="pan-cifras">' +
+                        '<span class="pan-cifra"><b>' + esc(u.total) + "</b> tickets</span>" +
+                        '<span class="pan-cifra s-ab"><b>' + esc(u.abiertos) + "</b> abiertos</span>" +
+                        '<span class="pan-cifra s-ce"><b>' + esc(u.cerrados) + "</b> resueltos</span>" +
+                        '<span class="pan-cifra"><b>' + esc(u.avance) + "%</b> avance</span>" +
+                    "</span>" +
+                    (u.total ? '<span class="obs-bar" role="img" aria-label="Avance de ' + esc(u.nombre) + ': ' + esc(u.avance) + ' por ciento">' +
+                        '<span class="obs-bar-seg obs-bar-verde" style="flex:' + esc(u.avance) + '"></span>' +
+                        '<span class="obs-bar-seg obs-bar-vacio" style="flex:' + esc(u.falta) + '"></span></span>' : "") +
+                    (chips ? '<div class="obs-tickets pan-tickets">' + chips + "</div>" : "") +
+                    (resp ? '<details class="pan-resp-wrap"><summary>' + u.respuestas.length +
+                        " respuesta" + (u.respuestas.length === 1 ? "" : "s") +
+                        " reciente" + (u.respuestas.length === 1 ? "" : "s") +
+                        ' del personal</summary><ul class="pan-resp-lista">' + resp + "</ul></details>" : "") +
+                "</div>" +
+                "</div>";
         }).join("");
         actualizaPapelera();
     }
@@ -260,7 +292,7 @@ la papelera se conectan antes de pintar nada).
         pane.addEventListener("change", function (ev) {
             var chk = ev.target;
             if (!chk || !chk.classList || !chk.classList.contains("pan-user-chk")) return;
-            var fila = chk.closest(".pan-user");
+            var fila = chk.closest(".pan-user-wrap");
             if (fila) fila.classList.toggle("is-marcado", chk.checked);
             actualizaPapelera();
         });

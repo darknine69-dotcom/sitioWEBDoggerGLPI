@@ -17,9 +17,11 @@
     .obs-filtros .obs-buscador-tipo { flex: 1 1 calc(50% - 4px); }
     .obs-filtros .btn { flex: 1 1 100%; }
     .obs-tabla { min-width: 640px; }
-    .obs-todos .obs-tabla { min-width: 760px; }
+    /* En pantallas de teléfono la tabla se desplaza: la medida mínima la
+       marca la lectura, no el ancho de la ventana. */
+    .obs-todos .obs-tabla { min-width: 560px; }
     .obs-todos .obs-tabla th, .obs-todos .obs-tabla td { padding: 8px 10px; }
-    .obs-cuenta small { max-width: 150px; }
+    .obs-celda-cuenta small { max-width: 150px; }
     .obs-tabla th, .obs-tabla td { padding: 10px 12px; font-size: 12.5px; }
     .obs-tecnicos { flex-direction: column; }
 }
@@ -153,18 +155,6 @@
     </div>
     {% endif %}
     </div>
-
-    <section class="obs-bloque">
-        <h3 class="obs-bloque-titulo">Presionar al técnico</h3>
-        <p class="muted" style="margin:0 0 12px;font-size:12.5px">
-            Los técnicos con tickets abiertos de tu lista. Escríbeles para que cierren
-            lo pendiente: el mensaje va a su correo y aparece en su panel, y aquí lo
-            ves marcado en el ticket.
-        </p>
-        <div class="chart-card">
-            {% include "observador/_presionar.html" %}
-        </div>
-    </section>
 </main>
 
 <!-- Crear zona: misma ventana que la del administrador, pero la zona es

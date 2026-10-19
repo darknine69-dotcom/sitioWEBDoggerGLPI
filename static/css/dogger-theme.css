@@ -7194,22 +7194,32 @@ html[style*="--sb-accent"] .notif-head {
 .obs-filtros-tabla .obs-buscador-campo,
 .obs-filtros-tabla .obs-buscador-tipo { background: #FCFBF8; }
 
-.obs-todos .obs-tabla { min-width: 940px; }
+/* La tabla reparte el ancho disponible entre sus columnas y, si no alcanza
+   (por ejemplo con la letra grande de accesibilidad), se desplaza en
+   horizontal dentro de su marco, sin desbordar la página. No se le fija
+   min-width: una tabla que no cabe estira el contenedor y rompe la
+   maquetación. */
+.obs-todos .obs-tabla { min-width: 0; }
+.obs-todos .obs-tabla td.obs-celda-cuenta { min-width: 150px; }
+/* La cabecera va con el mismo verde que la del administrador. Las columnas
+   se alinean con lo que llevan debajo: la de Cuenta a la izquierda (lleva
+   nombre y correo) y el resto al centro, así «Abiertos», «Tickets», «Zona»
+   y «Acciones» caen justo sobre su dato. El marco redondeado se pinta con
+   border-radius en las esquinas, que es lo que respeta las columnas. */
 .obs-todos .obs-tabla thead th {
     background: #E3F2E6;
-    border-bottom: 2px solid #D8D2C7;
+    border-bottom: 2px solid #C6D9CB;
     font-size: 10.5px;
     text-transform: uppercase;
     letter-spacing: .05em;
     color: #3D4A3F;
     padding: 8px 10px;
     white-space: nowrap;
+    text-align: center;
 }
-.obs-todos .obs-tabla thead tr {
-    outline: 1px solid #D8D2C7;
-    outline-offset: -1px;
-    border-radius: 8px;
-}
+.obs-todos .obs-tabla thead th:first-child { text-align: left; }
+.obs-todos .obs-tabla thead th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.obs-todos .obs-tabla thead th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
 /* Filas compactas, con rayado suave y realce al pasar el mouse para que no
    se vean planas. Cada fila ocupa dos <tr> (la suya y la de su acción), de
    ahí que el rayado venga marcado desde la plantilla y no con nth-child. */
@@ -7219,13 +7229,26 @@ html[style*="--sb-accent"] .notif-head {
     vertical-align: middle;
     border-bottom: 1px solid #F1ECE4;
 }
-tr.obs-fila.is-par { background: #FCFBF8; }
-tr.obs-fila:hover { background: #F5F8FF; }
+/* Ni la fila ni las celdas pueden llevar el nombre de un adorno de otra
+   vista: .obs-fila (la tarjeta de la lista, display:flex) y .obs-cuenta (la
+   tarjeta del panel) se aplicaban aquí y sacaban a la fila y a la celda de
+   la rejilla de la tabla: la fila quedaba como caja flex (todos los datos
+   metidos en la columna Cuenta, que se estiraba 1100px) y las columnas de
+   abajo dejaban de caer sobre su encabezado. La tabla usa ahora nombres
+   propios: obs-tr / obs-tr-lista y obs-celda-cuenta.
+   Blindaje: cada celda vuelve a ser celda de tabla por su posición, aunque
+   otra clase decorativa pida flex o block. */
+.obs-todos .obs-tabla thead th,
+.obs-todos .obs-tabla tbody td {
+    display: table-cell;
+}
+tr.obs-tr.is-par { background: #FCFBF8; }
+tr.obs-tr:hover { background: #F5F8FF; }
 /* Las cuentas que ya se siguen llevan una franja azul a la izquierda. */
-tr.obs-fila-lista td:first-child { box-shadow: inset 3px 0 0 var(--pan-blue, #1D4ED8); }
-.obs-cuenta { display: block; }
-.obs-cuenta strong { display: block; font-size: 13px; color: var(--ink); line-height: 1.2; }
-.obs-cuenta small { display: block; font-size: 11px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 210px; }
+tr.obs-tr-lista td:first-child { box-shadow: inset 3px 0 0 var(--pan-blue, #1D4ED8); }
+/* La celda de Cuenta: nombre y correo apilados, dentro de la rejilla. */
+.obs-celda-cuenta strong { display: block; font-size: 13px; color: var(--ink); line-height: 1.2; }
+.obs-celda-cuenta small { display: block; font-size: 11px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 210px; }
 .obs-rol {
     display: inline-block; font-size: 10.5px; font-weight: 800;
     text-transform: uppercase; letter-spacing: .04em;
@@ -7236,13 +7259,25 @@ tr.obs-fila-lista td:first-child { box-shadow: inset 3px 0 0 var(--pan-blue, #1D
 .obs-rol-observador { background: #F5EFFB; color: #6B3FA0; border-color: #E2D5F5; }
 .obs-rol-admin { background: #FDF0E7; color: #A8551B; border-color: #F5DCC8; }
 .obs-rol-sin-cuenta { background: #F5F2EC; color: var(--ink-muted); }
-.obs-todos .obs-tec { min-width: 130px; }
-.obs-todos .obs-avance small { display: block; font-size: 10.5px; color: var(--ink-muted); margin-top: 2px; }
+/* La celda de Técnico y la de Avance llevan su propio nombre: si se
+   llamaran como los adornos .obs-tec y .obs-avance (que sí son flex) la
+   celda saldría de la rejilla y las columnas de ahí en adelante se
+   corrían de su encabezado. */
+.obs-todos .obs-celda-tec { min-width: 130px; text-align: center; }
+/* Las cifras y el técnico van al centro, igual que su encabezado. */
+.obs-todos .obs-tabla td.num { text-align: center; }
+.obs-todos .obs-tabla td.obs-celda-zona { text-align: center; }
+.obs-todos .obs-tabla td.obs-celda-avance { text-align: center; }
+.obs-todos .obs-celda-avance small { display: block; font-size: 10.5px; color: var(--ink-muted); margin-top: 2px; }
+/* La barra de avance que va DENTRO de la celda: se queda quieta en su
+   columna. Si se estirara, empujaría el ancho de la tabla y obligaría a
+   desplazarla en horizontal. */
+.obs-todos .obs-celda-avance .obs-bar { flex: 0 0 auto; width: 100%; }
 
 /* Zona en línea: se elige y se guarda sola, sin desplegar nada. */
 .obs-zona-form { display: flex; align-items: center; gap: 4px; }
 .obs-zona-sel {
-    max-width: 150px; min-width: 0;
+    max-width: 150px; min-width: 0; flex: 1 1 auto;
     font-size: 12px; padding: 3px 6px;
     border: 1px solid var(--line); border-radius: 7px;
     background: #fff; color: var(--ink-muted); cursor: pointer;
@@ -7264,7 +7299,8 @@ tr.obs-fila-lista td:first-child { box-shadow: inset 3px 0 0 var(--pan-blue, #1D
 
 /* Acciones de las tablas: un grupo de iconos en la celda (la fila no se
    estira) que despliegan debajo la confirmación concreta. */
-.obs-todos .obs-acciones { text-align: right; white-space: nowrap; }
+/* Acciones: iconos y su encabezado al centro de la columna. */
+.obs-todos .obs-tabla .obs-acciones { text-align: center; white-space: nowrap; }
 .obs-acc-icos { display: inline-flex; gap: 5px; justify-content: flex-end; align-items: center; }
 .obs-acc-ico, .obs-acc-lista {
     width: 26px; height: 26px;
@@ -7498,6 +7534,14 @@ button.obs-miembro-top[aria-expanded="false"] .obs-zona-chev { transform: rotate
 .obs-dato b { font-size: 16px; font-family: var(--font-mono); }
 .obs-dato small { display: block; font-size: 11px; color: var(--ink-muted); margin-top: 2px; }
 .obs-tecnicos { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+/* En la tabla de «Todos los usuarios» el técnico se muestra como una línea
+   por persona: el nombre se recorta con puntos suspensivos en vez de
+   estirar la columna (una tabla que se ensancha obliga a desplazarla en
+   horizontal y a perder de vista las columnas de la derecha). */
+.obs-todos .obs-celda-tec .obs-tecnicos { display: block; max-height: 132px; overflow-y: auto; }
+.obs-todos .obs-celda-tec .obs-tecnicos li { display: flex; align-items: baseline; gap: 6px; justify-content: space-between; }
+.obs-todos .obs-celda-tec .obs-tecnico-n { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.obs-todos .obs-celda-tec .obs-tecnico-c { flex: none; }
 .obs-tec { font-size: 10.5px; font-weight: 700; background: #EFF3FF; color: #1D4ED8; border-radius: 999px; padding: 1px 8px; }
 .obs-tickets { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .obs-ticket { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; font-family: var(--font-mono); border-radius: 999px; padding: 2px 9px; border: 1px solid var(--line); background: #fff; }
@@ -7689,6 +7733,10 @@ button.obs-miembro-top[aria-expanded="false"] .obs-zona-chev { transform: rotate
 .pan-busca input:focus { outline: none; border-color: var(--pan-blue); background: #fff; }
 .pan-lista { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
 .pan-vacio { margin: 6px 0; }
+.pan-user-wrap { display: flex; flex-direction: column; border: 1px solid #ECECEC; border-left: 3px solid #ECECEC; border-radius: 11px; overflow: hidden; transition: border-color .14s ease, background .14s ease; }
+.pan-user-wrap:hover { border-color: #C9D4F8; background: #FBFCFF; }
+/* La fila de arriba: sin borde propio, es la cabecera de la tarjeta. */
+.pan-user-wrap > .pan-user { border: 0; border-radius: 0; }
 .pan-user { display: flex; align-items: center; gap: 9px; border: 1px solid #ECECEC; border-left: 3px solid #ECECEC; border-radius: 11px; padding: 8px 10px; cursor: pointer; transition: border-color .14s ease, background .14s ease; }
 .pan-user:hover { border-color: #C9D4F8; background: #FBFCFF; }
 .pan-user-rojo { border-left-color: #D62B1F; }
@@ -7703,6 +7751,21 @@ button.obs-miembro-top[aria-expanded="false"] .obs-zona-chev { transform: rotate
 .pan-user-rol { flex: none; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); background: #F5F2EC; border-radius: 999px; padding: 2px 8px; }
 .pan-user-ficha { flex: none; font-size: 10.5px; font-weight: 800; color: var(--pan-blue); text-decoration: none; }
 .pan-user-ficha:hover { text-decoration: underline; }
+/* Ficha de la cuenta dentro de la tarjeta del panel: mismos chips, cifras
+   y barra que la página de la zona. */
+.pan-user-datos { display: flex; flex-direction: column; gap: 8px; padding: 0 10px 10px; }
+.pan-cifras { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 11px; color: var(--ink-muted); }
+.pan-cifra b { font-size: 12.5px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.pan-cifra.s-ab b { color: #D62B1F; }
+.pan-cifra.s-ce b { color: #2F7D4F; }
+.pan-user-datos .obs-bar { margin-top: 0; }
+.pan-tickets { margin-top: 0; }
+.pan-resp-wrap { font-size: 11.5px; }
+.pan-resp-wrap > summary { cursor: pointer; color: var(--pan-blue, #1D4ED8); font-weight: 700; }
+.pan-resp-lista { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pan-resp { border-left: 2px solid #D9E2FB; padding-left: 8px; }
+.pan-resp strong { display: block; font-size: 10.5px; color: var(--ink-muted); }
+.pan-resp small { display: block; font-size: 11.5px; color: var(--ink); }
 .pan-user-acc { flex: none; font: inherit; font-size: 10.5px; font-weight: 800; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; cursor: pointer; background: #F5F2EC; color: var(--ink-muted); transition: background .14s ease, color .14s ease, border-color .14s ease; }
 .pan-user-acc:hover { background: #EEF2FF; border-color: #C9D4F8; color: var(--pan-blue); }
 .pan-acc-quitar { background: #FEECEB; border-color: rgba(214,43,31,.25); color: #B42318; }
@@ -8665,7 +8728,7 @@ html[data-navcompact="1"] .sidebar-count {
 .pan-papelera:disabled { opacity: .45; cursor: not-allowed; }
 .pan-right-pie { justify-content: space-between; gap: 8px; }
 .pan-sel-count { font-size: 12px; font-weight: 800; color: var(--dogger-red); }
-.pan-user.is-marcado { border-color: var(--pan-blue, #1D4ED8); background: #FBFCFF; }
+.pan-user-wrap.is-marcado, .pan-user.is-marcado { border-color: var(--pan-blue, #1D4ED8); background: #FBFCFF; }
 
 /* ===== Acciones de zona en las tres vistas (Mi lista, Monitoreo, Zonas) ====
    La misma tira debajo de cada tarjeta: Ver, Editar (despliega el campo con
@@ -8807,7 +8870,11 @@ html[data-navcompact="1"] .sidebar-count {
 .obs-zona-cifra.s-resueltos b { color: #2F7D4F; }
 
 .obs-cuentas { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
-.obs-cuenta {
+/* El nombre .obs-cuenta también lo lleva la primera celda de la tabla
+   «Todos los usuarios», así que la tarjeta se acota a su contenedor: sin
+   esto, la celda heredaba display:flex, el borde y el padding de la
+   tarjeta y las columnas se corrían del encabezado. */
+.obs-cuentas .obs-cuenta {
     display: flex; flex-direction: column; gap: 10px;
     background: #fff;
     border: 1px solid var(--line);
@@ -8817,7 +8884,7 @@ html[data-navcompact="1"] .sidebar-count {
     animation: corpUp .4s ease both;
     transition: transform .15s ease, box-shadow .15s ease;
 }
-.obs-cuenta:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(23,20,18,.10); }
+.obs-cuentas .obs-cuenta:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(23,20,18,.10); }
 .obs-cuenta--verde { border-left-color: #2F7D4F; }
 .obs-cuenta--amarillo { border-left-color: #E0A106; }
 .obs-cuenta--rojo { border-left-color: #D62B1F; }
