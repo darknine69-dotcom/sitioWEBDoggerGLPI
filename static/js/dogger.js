@@ -425,6 +425,10 @@
     (function () {
         var body = document.body;
         if (body.getAttribute("data-tooltips") !== "1") return;
+        /* El CSS también pinta un tooltip con ::after/::before para cada
+           [data-tip]. Si ambos quedan activos salen dos globos con el mismo
+           texto, así que aquí se apaga el del CSS. */
+        document.documentElement.setAttribute("data-tipjs", "1");
         var tip = document.createElement("div");
         tip.className = "dogger-tooltip";
         tip.setAttribute("role", "tooltip");
@@ -461,12 +465,27 @@
         window.addEventListener("resize", ocultar);
     })();
 
-    /* ---- Nombre de archivos seleccionados + preview de imagen ---- */
+    /* ---- Nombre de archivos seleccionados + preview de imagen ----
+       Cada archivo elegido sale en un chip con su "×" para quitarlo. El
+       contenedor se busca por id (<input>-preview) o dentro del form-group;
+       si no existe, se crea debajo del campo, para que ningún formulario
+       tenga que acordarse de declararlo. */
     document.querySelectorAll('input[type="file"][multiple], input[type="file"]').forEach(function (input) {
-        input.addEventListener("change", function () {
+        /* El del chat está oculto y sube el archivo solo: ahí no pinta chips. */
+        if (input.hidden) return;
+        function cajaPreview() {
             var box = document.getElementById(input.id + "-preview") ||
                       input.closest(".form-group")?.querySelector(".file-preview");
-            if (!box) return;
+            if (!box) {
+                box = document.createElement("div");
+                box.className = "file-preview";
+                if (input.id) box.id = input.id + "-preview";
+                input.insertAdjacentElement("afterend", box);
+            }
+            return box;
+        }
+        input.addEventListener("change", function () {
+            var box = cajaPreview();
             box.innerHTML = "";
             Array.from(input.files).slice(0, 6).forEach(function (f, idx) {
                 var item = document.createElement("span");

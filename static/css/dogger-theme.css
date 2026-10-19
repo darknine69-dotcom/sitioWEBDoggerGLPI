@@ -6402,6 +6402,11 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
     visibility: visible;
     transform: translateX(-50%) translateY(0);
 }
+/* Cuando el tooltip en JS está activo, el de CSS se apaga: si no, cada
+   [data-tip] pinta dos globos con el mismo texto. Se marca <html> con
+   data-tipjs="1" desde dogger.js. */
+[data-tipjs="1"] [data-tip]::after,
+[data-tipjs="1"] [data-tip]::before { display: none; }
 .ans-note[data-tip]::after,
 .ans-note[data-tip]::before { display: none; }
 .ans-scale { list-style: none; margin: 12px 0 4px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }

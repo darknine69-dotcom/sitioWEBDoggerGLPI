@@ -17,6 +17,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.tickets.forms import TicketForm
 from apps.tickets.models import Ticket
 
 BASE = Path(__file__).resolve().parents[2]
@@ -176,3 +177,80 @@ class AnsEnVivoEnLasVistasTest(TestCase):
         js = (BASE / "static/js/dogger.js").read_text(encoding="utf-8")
         self.assertIn("Cronómetro del ANS", js)
         self.assertIn("[data-ans-live][data-ans-limit]", js)
+
+
+@override_settings(STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})
+class TooltipAnsNoSeDuplicaTest(TestCase):
+    """El ANS tenía dos tooltips: uno del CSS y otro del JS, y salían los dos.
+
+    El de CSS se pinta con ::after/::before para todo [data-tip] y el de JS
+    hace lo propio con un div .dogger-tooltip. Cuando el usuario tiene los
+    tooltips activos, ambos quedaban encendidos y aparecían dos globos con el
+    mismo texto. Se fija que solo pinte uno.
+    """
+
+    def _js(self):
+        return (BASE / "static/js/dogger.js").read_text(encoding="utf-8")
+
+    def _css(self):
+        return (BASE / "static/css/dogger-theme.css").read_text(encoding="utf-8")
+
+    def test_el_js_marca_la_pagina_cuando_el_tooltip_es_suyo(self):
+        self.assertIn('document.documentElement.setAttribute("data-tipjs", "1")', self._js())
+
+    def test_el_css_se_apaga_cuando_el_js_esta_activo(self):
+        css = self._css()
+        self.assertIn("[data-tipjs=\"1\"] [data-tip]::after", css)
+        self.assertIn("[data-tipjs=\"1\"] [data-tip]::before", css)
+
+    def test_el_boton_del_ans_sigue_llevando_su_texto(self):
+        """El apagón no se come el contenido del tooltip del ANS."""
+        nota = (BASE / "templates/tickets/_ans_note.html").read_text(encoding="utf-8")
+        self.assertIn('class="ans-note-help"', nota)
+        self.assertIn("data-tip=", nota)
+        self.assertIn("prioridad y el tiempo máximo", nota)
+
+    def test_el_js_del_tooltip_no_se_duplica_en_dos_bloques(self):
+        """Un solo bloque crea el tooltip de data-tip: si hubiera dos, volvería
+        el doble globo aunque el CSS estuviera apagado."""
+        self.assertEqual(self._js().count('className = "dogger-tooltip"'), 1)
+
+
+@override_settings(STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})
+class AdjuntoConQuitarTest(TestCase):
+    """Al elegir una foto en el formulario del usuario tiene que salir una "×"
+    para deshacer la elección, en el mismo sitio donde se adjunta.
+
+    Los chips ya existían en dogger.js, pero solo se pintaban si la plantilla
+    declaraba un contenedor .file-preview — y ninguna lo hacía, así que la "×"
+    nunca apareció. Ahora el JS crea el contenedor si falta.
+    """
+
+    def _js(self):
+        return (BASE / "static/js/dogger.js").read_text(encoding="utf-8")
+
+    def test_el_js_crea_el_contenedor_si_la_plantilla_no_lo_trae(self):
+        js = self._js()
+        self.assertIn("function cajaPreview()", js)
+        self.assertIn('box.className = "file-preview"', js)
+        self.assertIn('insertAdjacentElement("afterend", box)', js)
+
+    def test_cada_archivo_sale_con_su_boton_de_quitar(self):
+        js = self._js()
+        self.assertIn('btn.className = "file-chip-x"', js)
+        self.assertIn('btn.textContent = "×"', js)
+        # La "×" arma un DataTransfer sin el archivo que se quitó.
+        self.assertIn("new DataTransfer()", js)
+        self.assertIn('input.dispatchEvent(new Event("change", { bubbles: true }))', js)
+
+    def test_el_input_oculto_del_chat_no_recibe_chips(self):
+        """El del chat sube el archivo solo, sin pasar por la bandeja."""
+        self.assertIn("if (input.hidden) return;", self._js())
+        self.assertIn('id="swArchivo" hidden', (
+            BASE / "templates/tickets/_chat_widget.html").read_text(encoding="utf-8"))
+
+    def test_el_campo_de_adjuntos_del_ticket_es_multiple(self):
+        """Tiene que admitir varias fotos para que el chip de "×" tenga sentido."""
+        campo = TicketForm().fields["adjuntos"]
+        self.assertTrue(campo.widget.allow_multiple_selected)
+        self.assertIn("id_adjuntos", str(TicketForm()["adjuntos"]))
