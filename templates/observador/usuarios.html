@@ -5,7 +5,8 @@
 {% block body_class %}observador-shell{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-users"/></svg></span>{% endblock %}
 {% block header_title %}Usuarios{% endblock %}
-{% block header_desc %}Personas con tickets en tus zonas y las que ya están en tu lista.{% endblock %}
+{% block header_desc %}Todas las cuentas y las personas con tickets en tus zonas: con su ubicación, su técnico y su avance.{% endblock %}
+{% block header_actions %}<button type="button" class="btn btn-sm btn-accent" id="cz-abrir"><svg class="icon icon-sm"><use href="#i-plus"/></svg> Crear zona</button>{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -15,9 +16,10 @@
     .obs-filtros .obs-buscador-campo { flex: 1 1 100%; }
     .obs-filtros .obs-buscador-tipo { flex: 1 1 calc(50% - 4px); }
     .obs-filtros .btn { flex: 1 1 100%; }
-    .obs-kpi { flex-direction: column; gap: 8px; }
-    .obs-kpi-n { font-size: 24px; }
     .obs-tabla { min-width: 640px; }
+    .obs-todos .obs-tabla { min-width: 760px; }
+    .obs-todos .obs-tabla th, .obs-todos .obs-tabla td { padding: 8px 10px; }
+    .obs-cuenta small { max-width: 150px; }
     .obs-tabla th, .obs-tabla td { padding: 10px 12px; font-size: 12.5px; }
     .obs-tecnicos { flex-direction: column; }
 }
@@ -34,10 +36,76 @@
 {% block content %}
 <main class="page obs-page">
 
-    <form method="get" class="obs-filtros">
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
+        <a class="dash-stat dash-hov-usuarios" href="#todos-usuarios" title="Bajar a la tabla de todos los usuarios">
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-users"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Personas</span>
+                <span class="dash-stat-hint">
+                    {% if q or rol_sel or punto_sel or estado_sel %}de {{ total_sin_filtro }} en total{% else %}a la vista{% endif %}
+                </span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-total" href="?orden=tickets" title="Ver la tabla con quien tiene más tickets arriba">
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total_tickets }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Tickets</span>
+                <span class="dash-stat-hint">en esta vista</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-abiertos" href="?estado=activos" title="Filtrar la tabla en las cuentas con tickets abiertos">
+            <span class="dash-stat-icon st-ic-abiertos">
+                <span class="dash-stat-value st-abiertos">{{ total_abiertos }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Abiertos</span>
+                <span class="dash-stat-hint">por atender</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-resueltos" href="?orden=avance" title="Ver la tabla con menos avance primero">
+            <span class="dash-stat-icon st-ic-resueltos">
+                <span class="dash-stat-value st-resueltos">{{ avance_global }}%</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Avance</span>
+                <span class="dash-stat-hint">resuelto global</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-progreso" href="?estado=agregados" title="Filtrar la tabla en las cuentas que ya sigues">
+            <span class="dash-stat-icon st-ic-progreso">
+                <span class="dash-stat-value">{{ en_lista }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-star"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">En mi lista</span>
+                <span class="dash-stat-hint">en seguimiento</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-vencidos" href="?estado=alerta" title="Filtrar la tabla en las cuentas con alerta urgente">
+            <span class="dash-stat-icon st-ic-vencidos">
+                <span class="dash-stat-value st-vencidos">{{ conteo.rojo }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Incidencias</span>
+                <span class="dash-stat-hint">con alerta urgente</span>
+            </span>
+        </a>
+    </div>
+
+    <!-- Filtros pegados a la tabla: son los que mandan sobre ella. -->
+    <form method="get" class="obs-filtros obs-filtros-tabla">
         <div class="obs-buscador-campo">
             <svg class="icon"><use href="#i-search"/></svg>
-            <input type="search" data-vivo name="q" value="{{ q }}"
+            <input type="search" name="q" value="{{ q }}"
                    placeholder="Nombre, correo o ubicación" aria-label="Buscar usuario">
         </div>
         <select name="rol" class="obs-buscador-tipo" aria-label="Filtrar por rol">
@@ -49,8 +117,8 @@
         </select>
         <select name="punto" class="obs-buscador-tipo" aria-label="Filtrar por zona">
             <option value="">Cualquier zona</option>
-            {% for p in puntos %}
-            <option value="{{ p }}"{% if punto_sel == p %} selected{% endif %}>{{ p }}</option>
+            {% for z in zonas_obs %}
+            <option value="{{ z.nombre }}"{% if punto_sel == z.nombre %} selected{% endif %}>{{ z.nombre }}</option>
             {% endfor %}
         </select>
         <select name="estado" class="obs-buscador-tipo" aria-label="Filtrar por estado">
@@ -73,98 +141,9 @@
         {% endif %}
     </form>
 
+    <div id="todos-usuarios">
     {% if filas %}
-    <div class="obs-resumen">
-        <div class="obs-kpi">
-            <span class="obs-kpi-n">{{ total }}</span>
-            <span class="obs-kpi-l">
-                {% if q or rol_sel or punto_sel or estado_sel %}de {{ total_sin_filtro }} personas{% else %}Personas{% endif %}
-            </span>
-        </div>
-        <div class="obs-kpi obs-kpi-verde">
-            <span class="obs-kpi-n">{{ conteo.verde }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-verde"></span> Sin pendientes</span>
-        </div>
-        <div class="obs-kpi obs-kpi-amarillo">
-            <span class="obs-kpi-n">{{ conteo.amarillo }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-amarillo"></span> Con tickets activos</span>
-        </div>
-        <div class="obs-kpi obs-kpi-rojo">
-            <span class="obs-kpi-n">{{ conteo.rojo }}</span>
-            <span class="obs-kpi-l"><span class="obs-dot obs-dot-rojo"></span> Incidencias</span>
-        </div>
-    </div>
-
-    <div class="table-card">
-        <div class="table-scroll tabla-scroll-seis" data-filas="6">
-            <table class="obs-tabla">
-                <thead>
-                    <tr>
-                        <th>Usuario</th>
-                        <th>Rol</th>
-                        <th>Zona</th>
-                        <th>Técnico</th>
-                        <th class="num">Abiertos</th>
-                        <th class="num">Tickets</th>
-                        <th>Avance</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for f in filas %}
-                    <tr>
-                        <td>
-                            <strong>{{ f.nombre }}</strong>
-                            <small>{{ f.email|default:"sin correo" }}</small>
-                        </td>
-                        <td>{{ f.rol }}</td>
-                        <td>{{ f.ubicacion }}</td>
-                        <td>
-                            {% if f.tecnicos %}
-                            <ul class="obs-tecnicos">
-                                {% for t in f.tecnicos %}
-                                <li>
-                                    <span class="obs-tecnico-n">{{ t.nombre }}</span>
-                                    <span class="obs-tecnico-c">{{ t.tickets }} ticket{{ t.tickets|pluralize:"s" }}</span>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% elif f.total %}
-                                <span class="muted">Sin asignar</span>
-                            {% else %}
-                                <span class="muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="num">
-                            {% if f.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ f.abiertos }}</span>
-                            {% else %}<span class="muted">0</span>{% endif %}
-                        </td>
-                        <td class="num">{{ f.total }}</td>
-                        <td>
-                            {% if f.total %}
-                            <span class="obs-bar" role="img" aria-label="Avance {{ f.avance }} por ciento">
-                                <span class="obs-bar-seg obs-bar-verde" style="flex:{{ f.avance }}"></span>
-                                <span class="obs-bar-seg obs-bar-vacio" style="flex:{{ f.falta }}"></span>
-                            </span>
-                            <small>{{ f.avance }}% · {{ f.cerrados_total }}/{{ f.total }}</small>
-                            {% else %}<span class="muted">—</span>{% endif %}
-                        </td>
-                        <td class="obs-acciones">
-                            <form method="post" action="{% url 'tickets:obs_agregar' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="email" value="{{ f.email }}">
-                                <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                                <button type="submit" class="btn btn-sm {% if f.ya_agregado %}btn-outline{% else %}btn-accent{% endif %}">
-                                    {% if f.ya_agregado %}En mi lista{% else %}Agregar{% endif %}
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+    {% include "observador/_tabla_usuarios_total.html" %}
     {% else %}
     <div class="obs-vacio">
         <span class="obs-vacio-icon"><svg class="icon"><use href="#i-search"/></svg></span>
@@ -173,6 +152,179 @@
         <a href="{% url 'tickets:obs_usuarios' %}" class="btn btn-sm btn-outline">Limpiar filtros</a>
     </div>
     {% endif %}
-    {% include "observador/_tabla_usuarios_total.html" %}
+    </div>
+
+    <section class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Presionar al técnico</h3>
+        <p class="muted" style="margin:0 0 12px;font-size:12.5px">
+            Los técnicos con tickets abiertos de tu lista. Escríbeles para que cierren
+            lo pendiente: el mensaje va a su correo y aparece en su panel, y aquí lo
+            ves marcado en el ticket.
+        </p>
+        <div class="chart-card">
+            {% include "observador/_presionar.html" %}
+        </div>
+    </section>
 </main>
+
+<!-- Crear zona: misma ventana que la del administrador, pero la zona es
+     del observador que la crea. Pestaña de datos y pestaña de permisos. -->
+<div class="aud-modal" id="cz-modal" hidden>
+    <div class="aud-modal-caja cz-caja" role="dialog" aria-modal="true" aria-labelledby="cz-titulo">
+        <h4 id="cz-titulo">Nueva zona</h4>
+        <p class="muted" id="cz-sub">Se crea a tu nombre. Después le metes cuentas desde la tabla.</p>
+        <div class="cz-tabs" role="tablist">
+            <button type="button" class="cz-tab is-on" data-cz-tab="datos" role="tab">Datos</button>
+            <button type="button" class="cz-tab" data-cz-tab="permisos" role="tab">Permisos</button>
+        </div>
+        <form method="post" action="{% url 'tickets:obs_zona_crear' %}" id="cz-form">
+            {% csrf_token %}
+            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+            <div data-cz-panel="datos">
+            <label class="cz-campo">Nombre de la zona
+                <span class="cz-nombre-fila">
+                    <input type="text" name="nombre" id="cz-nombre" maxlength="80" placeholder="Ej.: Sede norte" autocomplete="off" required>
+                    <span class="cz-check" id="cz-check" hidden title="Nombre válido">✓</span>
+                </span>
+                <small class="cz-error" id="cz-error-nombre" hidden>Escribe un nombre para la zona.</small>
+            </label>
+            </div>
+            <div data-cz-panel="permisos" hidden>
+                <p class="muted">Cómo se avisa y qué puedes hacer en esta zona.</p>
+                <label class="cz-perm"><span><b>Notificaciones por correo</b><small>Avisos de la zona al correo</small></span><input type="checkbox" name="notif_correo" checked></label>
+                <label class="cz-perm"><span><b>Notificaciones emergentes</b><small>Campana en el panel</small></span><input type="checkbox" name="notif_popup" checked></label>
+                <label class="cz-perm"><span><b>Alertas de ANS</b><small>Aviso si el caso se pasa del tiempo</small></span><input type="checkbox" name="alertas_ans" checked></label>
+                <label class="cz-perm"><span><b>Exportar auditoría a Excel</b><small>Con los filtros de arriba</small></span><input type="checkbox" name="perm_exportar" checked></label>
+                <label class="cz-perm"><span><b>Consultar historial de la zona</b><small>Quién agregó o quitó cuentas</small></span><input type="checkbox" name="perm_historial" checked></label>
+            </div>
+            <div class="aud-modal-pie">
+                <button type="button" class="btn btn-sm" id="cz-cancelar">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-accent" id="cz-guardar" disabled>Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Zona recién creada: el siguiente paso es meterle puntos de venta. La
+     aceptación lleva a la tabla, ya filtrada por los que aún no están. -->
+{% if zona_nueva %}
+<div class="aud-modal" id="zona-nueva" hidden>
+    <div class="aud-modal-caja cz-caja" role="dialog" aria-modal="true" aria-labelledby="zn-titulo">
+        <h4 id="zn-titulo">Zona «{{ zona_nueva.nombre }}» creada</h4>
+        <p class="muted">¿Quieres añadirle puntos de venta ahora? Selecciono en la tabla los puntos de venta que aún no sigues, y a cada uno le pones su zona en la columna Zona.</p>
+        <div class="aud-modal-pie">
+            <button type="button" class="btn btn-sm" id="zn-luego">Ahora no</button>
+            <a class="btn btn-sm btn-accent" id="zn-aceptar"
+               href="{% url 'tickets:obs_usuarios' %}?rol=usuario&amp;estado=pendientes#tabla-usuarios">Añadir puntos de venta</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Acciones de la tabla: los iconos despliegan, debajo de la fila, la
+   confirmación concreta. Solo una abierta a la vez, y se cierra al volver a
+   pulsar el mismo icono, con Cancelar, con Esc o al pulsar fuera. */
+(function () {
+    function cierra() {
+        document.querySelectorAll(".obs-acc-detalle").forEach(function (f) {
+            f.hidden = true;
+        });
+        document.querySelectorAll("[data-acc-fila]").forEach(function (b) {
+            b.setAttribute("aria-expanded", "false");
+            b.classList.remove("is-on");
+        });
+    }
+    document.addEventListener("click", function (ev) {
+        if (!ev.target || !ev.target.closest) { cierra(); return; }
+        var destino = ev.target.closest(
+            "[data-acc-fila], [data-acc-cerrar], .obs-acc-detalle"
+        );
+        if (destino && destino.hasAttribute("data-acc-cerrar")) {
+            ev.preventDefault();
+            cierra();
+            return;
+        }
+        if (!destino) { cierra(); return; }
+        var btn = ev.target.closest("[data-acc-fila]");
+        if (!btn) { return; }
+        ev.preventDefault();
+        var eraElMismo = btn.getAttribute("aria-expanded") === "true";
+        cierra();
+        if (eraElMismo) { return; }
+        var fila = document.getElementById(btn.getAttribute("data-acc-fila"));
+        if (!fila) { return; }
+        fila.hidden = false;
+        btn.setAttribute("aria-expanded", "true");
+        btn.classList.add("is-on");
+        var foco = fila.querySelector("select, button:not([data-acc-cerrar])");
+        if (foco) { foco.focus(); }
+    });
+    document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") { cierra(); }
+    });
+})();
+/* Zona creada: se abre sola la ventana que propone meterle puntos de venta. */
+(function () {
+    var modal = document.getElementById("zona-nueva");
+    if (!modal) return;
+    var luego = document.getElementById("zn-luego");
+    function cerrar() { modal.hidden = true; }
+    modal.hidden = false;
+    if (luego) luego.addEventListener("click", cerrar);
+    modal.addEventListener("click", function (e) { if (e.target === modal) cerrar(); });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !modal.hidden) cerrar();
+    });
+})();
+/* Crear zona: la ventana emergente con validación en vivo y pestañas. */
+(function () {
+    var abrir = document.getElementById("cz-abrir");
+    var modal = document.getElementById("cz-modal");
+    var form = document.getElementById("cz-form");
+    var nombre = document.getElementById("cz-nombre");
+    var guardar = document.getElementById("cz-guardar");
+    var check = document.getElementById("cz-check");
+    var err = document.getElementById("cz-error-nombre");
+    if (!abrir || !modal) return;
+    function valida() {
+        var ok = !!(nombre && nombre.value.trim().length);
+        if (guardar) {
+            guardar.disabled = !ok;
+            guardar.classList.toggle("is-ok", !!ok);
+        }
+        if (check) check.hidden = !ok;
+        if (err && nombre) err.hidden = nombre.value.trim().length > 0;
+        return ok;
+    }
+    function cerrar() { modal.hidden = true; }
+    abrir.addEventListener("click", function () {
+        modal.hidden = false;
+        if (nombre) nombre.focus();
+        valida();
+    });
+    var cancelar = document.getElementById("cz-cancelar");
+    if (cancelar) cancelar.addEventListener("click", cerrar);
+    modal.addEventListener("click", function (e) { if (e.target === modal) cerrar(); });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !modal.hidden) cerrar();
+    });
+    if (nombre) nombre.addEventListener("input", valida);
+    if (form) form.addEventListener("submit", function (e) { if (!valida()) e.preventDefault(); });
+    /* Pestañas Datos / Permisos. */
+    document.querySelectorAll("[data-cz-tab]").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+            var cual = tab.getAttribute("data-cz-tab");
+            document.querySelectorAll("[data-cz-tab]").forEach(function (t) {
+                t.classList.toggle("is-on", t === tab);
+            });
+            document.querySelectorAll("[data-cz-panel]").forEach(function (p) {
+                p.hidden = p.getAttribute("data-cz-panel") !== cual;
+            });
+        });
+    });
+})();
+</script>
 {% endblock %}

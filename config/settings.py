@@ -209,6 +209,9 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Versión visible del sistema (auditoría, pie, reportes).
+DOGGER_VERSION = os.getenv("DOGGER_VERSION", "2.0")
+
 # ---------------------------------------------------------------------------
 # Caché y trabajo en segundo plano
 # ---------------------------------------------------------------------------

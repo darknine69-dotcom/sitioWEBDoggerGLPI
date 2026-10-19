@@ -1,0 +1,60 @@
+{% comment %}
+«Presionar al técnico»: los técnicos con carga abierta en la lista del
+observador y, en cada uno, un cuadro de mensaje por ticket. El mensaje se
+va al correo del técnico y aparece en su panel, y el observador lo ve
+marcado en su ticket.
+
+Lo comparten Monitoreo, Panel y Usuarios: la página solo tiene que meter
+`presionar` en el contexto e incluir esta plantilla una sola vez (el
+guion de abajo se conecta una sola vez por página).
+{% endcomment %}
+<div class="act-presionar">
+    {% for e in presionar %}
+    <div class="act-tec is-closed{% if e.tickets|length > 2 %} act-tec-scroll{% endif %}">
+        <div class="act-tec-head" role="button" tabindex="0" aria-expanded="false" data-tec-toggle>
+            <span class="obs-avatar obs-avatar-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
+            <strong>{{ e.tecnico.nombre }}</strong>
+            {% if e.urgentes %}<span class="obs-pill obs-pill-rojo">{{ e.urgentes }} urgente{{ e.urgentes|pluralize }}</span>{% endif %}
+            <small class="muted">{{ e.tickets|length }} abierto{{ e.tickets|length|pluralize }}</small>
+            <svg class="icon icon-sm obs-tec-chevron"><use href="#i-chevron-down"/></svg>
+        </div>
+        <div class="act-tec-tickets" data-tec-body>
+            {% for t in e.tickets %}
+            <form method="post" action="{% url 'tickets:obs_presionar' t.pk %}" class="act-nudge">
+                {% csrf_token %}
+                <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                <span class="obs-ticket t-{{ t.estado }}">{{ t.codigo }}</span>
+                <input type="text" name="mensaje" maxlength="500"
+                       placeholder="Escríbele para que resuelva rápido…"
+                       aria-label="Mensaje para {{ e.tecnico.nombre }} sobre {{ t.codigo }}" required>
+                <button type="submit" class="btn btn-sm" title="Enviar mensaje al técnico">Enviar</button>
+            </form>
+            {% endfor %}
+        </div>
+    </div>
+    {% empty %}
+    <p class="chart-empty">Sin técnicos con carga abierta: todo lo de tu lista está al día.</p>
+    {% endfor %}
+</div>
+<script>
+(function () {
+    var heads = document.querySelectorAll("[data-tec-toggle]");
+    Array.prototype.forEach.call(heads, function (head) {
+        if (head.getAttribute("data-ya-listo")) return;
+        head.setAttribute("data-ya-listo", "1");
+        var body = head.parentElement.querySelector("[data-tec-body]");
+        if (!body) return;
+        head.addEventListener("click", function () {
+            var open = head.getAttribute("aria-expanded") === "true";
+            head.setAttribute("aria-expanded", String(!open));
+            head.parentElement.classList.toggle("is-closed", open);
+        });
+        head.addEventListener("keydown", function (ev) {
+            if (ev.key === "Enter" || ev.key === " ") {
+                ev.preventDefault();
+                head.click();
+            }
+        });
+    });
+})();
+</script>

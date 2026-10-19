@@ -1,0 +1,70 @@
+{% comment %}
+Tira de acciones de cada carpeta (zona) del observador: paleta de color,
+ver, editar el nombre y borrar. Van como iconos pequeños pegados a la
+esquina inferior derecha de la tarjeta, no como botones con texto, para
+que no le roben altura a los datos.
+
+Sirve en las tres vistas de carpetas —Mi lista, Monitoreo y Zonas— y
+espera `z`: una ZonaObservador o un diccionario con pk, nombre y color.
+El campo con el nombre se despliega debajo, dentro de la propia tarjeta.
+{% endcomment %}
+<div class="obs-zona-acc">
+    <button type="button" class="obs-acc obs-acc-ico" data-paleta="pl-{{ z.pk }}"
+            aria-expanded="false" aria-controls="pl-{{ z.pk }}"
+            title="Pintar la carpeta"
+            aria-label="Elegir el color de la carpeta {{ z.nombre }}">
+        <svg class="icon"><use href="#i-droplet"/></svg>
+    </button>
+    <a class="obs-acc obs-acc-ico" href="{% url 'tickets:obs_zona_detalle' z.pk %}"
+       title="Ver la zona y sus cuentas"
+       aria-label="Ver la zona {{ z.nombre }}">
+        <svg class="icon"><use href="#i-eye"/></svg>
+    </a>
+    <button type="button" class="obs-acc obs-acc-ico" data-renombre="rn-{{ z.pk }}"
+            aria-expanded="false" aria-controls="rn-{{ z.pk }}"
+            title="Cambiar el nombre"
+            aria-label="Cambiar el nombre de {{ z.nombre }}">
+        <svg class="icon"><use href="#i-pencil"/></svg>
+    </button>
+    <form method="post" class="obs-acc-form-ico"
+          action="{% url 'tickets:obs_zona_eliminar' z.pk %}"
+          onsubmit="return confirm('¿Borrar esta carpeta? Su gente queda sin zona.')">
+        {% csrf_token %}
+        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+        <button type="submit" class="obs-acc obs-acc-ico obs-acc-borrar"
+                title="Borrar la zona"
+                aria-label="Borrar la zona {{ z.nombre }}">
+            <svg class="icon"><use href="#i-trash"/></svg>
+        </button>
+    </form>
+    <form method="post" class="obs-paleta" id="pl-{{ z.pk }}" hidden
+          action="{% url 'tickets:obs_zona_color' %}">
+        {% csrf_token %}
+        <input type="hidden" name="zona_id" value="{{ z.pk }}">
+        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+        <span class="obs-paleta-tit">Color de la carpeta</span>
+        <span class="obs-paleta-tope">
+            <button type="submit" name="color" value="#D62B1F" class="obs-paleta-pto{% if z.color == '#D62B1F' %} is-on{% endif %}" style="--pto:#D62B1F" title="Rojo" aria-label="Pintar de rojo"></button>
+            <button type="submit" name="color" value="#E0871B" class="obs-paleta-pto{% if z.color == '#E0871B' %} is-on{% endif %}" style="--pto:#E0871B" title="Naranja" aria-label="Pintar de naranja"></button>
+            <button type="submit" name="color" value="#E0A106" class="obs-paleta-pto{% if z.color == '#E0A106' %} is-on{% endif %}" style="--pto:#E0A106" title="Ámbar" aria-label="Pintar de ámbar"></button>
+            <button type="submit" name="color" value="#2F7D4F" class="obs-paleta-pto{% if z.color == '#2F7D4F' %} is-on{% endif %}" style="--pto:#2F7D4F" title="Verde" aria-label="Pintar de verde"></button>
+            <button type="submit" name="color" value="#0E7490" class="obs-paleta-pto{% if z.color == '#0E7490' %} is-on{% endif %}" style="--pto:#0E7490" title="Turquesa" aria-label="Pintar de turquesa"></button>
+            <button type="submit" name="color" value="#1D4ED8" class="obs-paleta-pto{% if z.color == '#1D4ED8' %} is-on{% endif %}" style="--pto:#1D4ED8" title="Azul" aria-label="Pintar de azul"></button>
+            <button type="submit" name="color" value="#6D28D9" class="obs-paleta-pto{% if z.color == '#6D28D9' %} is-on{% endif %}" style="--pto:#6D28D9" title="Violeta" aria-label="Pintar de violeta"></button>
+            <button type="submit" name="color" value="#BE185D" class="obs-paleta-pto{% if z.color == '#BE185D' %} is-on{% endif %}" style="--pto:#BE185D" title="Magenta" aria-label="Pintar de magenta"></button>
+            <button type="submit" name="color" value="#6B6259" class="obs-paleta-pto{% if z.color == '#6B6259' %} is-on{% endif %}" style="--pto:#6B6259" title="Gris" aria-label="Pintar de gris"></button>
+            <button type="submit" name="color" value="#111827" class="obs-paleta-pto{% if z.color == '#111827' %} is-on{% endif %}" style="--pto:#111827" title="Negro" aria-label="Pintar de negro"></button>
+            <button type="submit" name="color" value="" class="obs-paleta-pto is-sin{% if not z.color %} is-on{% endif %}" title="Sin color: la del estado" aria-label="Quitar el color">✕</button>
+        </span>
+    </form>
+</div>
+<form method="post" class="obs-rename" id="rn-{{ z.pk }}" hidden
+      action="{% url 'tickets:obs_zonas' %}">
+    {% csrf_token %}
+    <input type="hidden" name="zona_id" value="{{ z.pk }}">
+    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+    <input type="text" name="nuevo_nombre" value="{{ z.nombre }}" maxlength="80"
+           required aria-label="Nuevo nombre de {{ z.nombre }}"
+           class="obs-buscador-tipo">
+    <button type="submit" class="btn btn-sm btn-ghost" title="Guardar el nombre nuevo">Guardar</button>
+</form>

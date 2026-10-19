@@ -16,7 +16,11 @@ Hay tres capas de palabras, de la más específica a la más general:
   2. PALABRAS_EXCLUYE: contexto que descarta la categoría, para que lo del POS
      no se coma lo de la oficina ("de la oficina" saca las impresoras del POS).
   3. Categorías comodín ("Otros problemas de Siesa", "Otros problemas"): lo que no tiene
-     categoría clara cae en la del dominio, nunca se queda sin rellenar.
+     categoría clara cae en la del dominio, nunca se queda sin rellenar. Son
+     el último recurso: no compiten con una categoría concreta que ya explique
+     el problema, y no ganan puntos por llamarse como el dominio (decir
+     "SIESA" en el texto no dice en qué módulo está el problema; era lo que
+     hacía que siempre saliera recomendado "Otros problemas de Siesa").
 
 El puntaje se calcula aquí y se replica en `static/js/dogger.js`, así que
 cualquier cambio en los pesos debe hacerse en los dos lados.
@@ -682,11 +686,15 @@ def _puntaje(titulo, descripcion, categoria):
     t = _norm(titulo)
     d = _norm(descripcion)
     completo = f"{t} {d}".strip()
-    score = _puntaje_texto(completo, claves, categoria.nombre, categoria.grupo)
+    # El comodín no se lleva el bono de nombre ni de grupo: su nombre es el
+    # dominio entero ("Otros problemas de Siesa"), así que mencionar SIESA en
+    # el reporte le daba puntos que ninguna categoría concreta podía ganar.
+    comodin = _es_comodin(categoria)
+    nombre = "" if comodin else categoria.nombre
+    grupo = "" if comodin else categoria.grupo
+    score = _puntaje_texto(completo, claves, nombre, grupo)
     if t:
-        score += PESO_TITULO * _puntaje_texto(
-            t, claves, categoria.nombre, categoria.grupo
-        )
+        score += PESO_TITULO * _puntaje_texto(t, claves, nombre, grupo)
     # El contexto se mira sobre todo el texto, no campo por campo: que el
     # título diga "sistema" no puede tapar un "no sincroniza" de la descripción.
     return score - _penalizacion(completo, EXCLUYE.get(clave, []))
@@ -725,23 +733,42 @@ def sugerir_categoria(titulo="", descripcion="", excluir=None):
     """
     Devuelve la Categoría más probable según el texto, o None si no hay
     una coincidencia clara (puntaje >= UMBRAL_MINIMO).
+
+    Las categorías comodín ("Otros ...") son el último recurso: un comodín
+    con más puntos no tapa a una categoría concreta que ya explique el
+    problema —para eso la concreta tiene que llegar a UMBRAL_AUTO—, pero si
+    nada concreto puntúa fuerte sigue ganando la de más puntos, sea o no
+    comodín.
     """
     texto = _norm(f"{titulo} {descripcion}")
     if len(texto.strip()) < MIN_CARACTERES:
         return None
-    mejor = None
-    mejor_puntaje = 0
     qs = Categoria.objects.filter(activo=True)
     if excluir:
         qs = qs.exclude(pk=excluir)
+    mejor, mejor_puntaje = None, 0
+    comodin, comodin_puntaje = None, 0
     for cat in qs:
         p = _puntaje(titulo, descripcion, cat)
+        if _es_comodin(cat):
+            if p > comodin_puntaje or (
+                p == comodin_puntaje
+                and comodin is not None
+                and p > 0
+                and _clave_desempate(cat) < _clave_desempate(comodin)
+            ):
+                comodin, comodin_puntaje = cat, p
+            continue
         if p > mejor_puntaje or (
             p == mejor_puntaje and mejor is not None and p > 0 and _clave_desempate(cat) < _clave_desempate(mejor)
         ):
-            mejor = cat
-            mejor_puntaje = p
-    return mejor if mejor_puntaje >= UMBRAL_MINIMO else None
+            mejor, mejor_puntaje = cat, p
+    if mejor is None or mejor_puntaje < UMBRAL_AUTO:
+        if comodin is not None and comodin_puntaje > (mejor_puntaje or 0):
+            mejor, mejor_puntaje = comodin, comodin_puntaje
+    if mejor is not None and mejor_puntaje >= UMBRAL_MINIMO:
+        return mejor
+    return None
 
 
 def que_cubre(grupo, nombre):

@@ -85,6 +85,15 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         default=True,
         help_text="Si está activo, se muestran ventanas de ayuda al pasar el mouse sobre los elementos de la interfaz.",
     )
+    cambio_rol_habilitado = models.BooleanField(
+        "Puede cambiar de rol",
+        default=False,
+        help_text=(
+            "Si está activo, esa persona ve un botón «Cambiar rol» junto a su "
+            "nombre en la barra superior de cualquier vista y puede pasar a otro "
+            "rol sin que el administrador tenga que editar la ficha."
+        ),
+    )
     glpi_user_id = models.PositiveIntegerField(
         "ID usuario GLPI",
         null=True,

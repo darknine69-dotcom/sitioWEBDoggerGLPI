@@ -4,97 +4,172 @@
 {% block body_class %}observador-shell{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-book"/></svg></span>{% endblock %}
 {% block header_title %}Observación{% endblock %}
-{% block header_desc %}Las personas y puntos que agregaste. Puedes quitarlos cuando quieras.{% endblock %}
+{% block header_desc %}Tus zonas con las cuentas que sigues, y el registro de todo lo que ha cambiado. Puedes quitarlas cuando quieras desde el panel.{% endblock %}
 
 {% block content %}
 <main class="page obs-page">
 
-    {% if filas %}
-    <p class="panel-sub" style="margin-bottom:14px">
-        Agregá a quien quieras seguir. Acá ves qué técnico tiene el caso y qué tanto
-        lleva resuelto cada usuario.
-    </p>
-    <div class="table-card">
-        <div class="table-scroll">
-            <table class="obs-tabla">
-                <thead>
-                    <tr>
-                        <th>Usuario</th>
-                        <th>Técnico</th>
-                        <th class="num">Abiertos</th>
-                        <th class="num">Resueltos</th>
-                        <th class="num">Tickets</th>
-                        <th>Avance</th>
-                        <th>Estado</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for f in filas %}
-                    <tr>
-                        <td>
-                            <strong>{{ f.nombre }}</strong>
-                            <small>
-                                {% if f.email %}{{ f.email }}{% endif %}
-                                {% if f.detalle %} · {{ f.detalle }}{% endif %}
-                            </small>
-                        </td>
-                        <td>
-                            {% if f.tecnicos %}
-                            <ul class="obs-tecnicos">
-                                {% for t in f.tecnicos %}
-                                <li>
-                                    <span class="obs-tecnico-n">{{ t.nombre }}</span>
-                                    <span class="obs-tecnico-c">{{ t.tickets }} ticket{{ t.tickets|pluralize:"s" }}</span>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% elif f.total %}
-                                <span class="muted">Sin asignar</span>
-                            {% else %}
-                                <span class="muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="num">
-                            {% if f.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ f.abiertos }}</span>
-                            {% else %}<span class="muted">0</span>{% endif %}
-                        </td>
-                        <td class="num">{{ f.cerrados_total }}</td>
-                        <td class="num">{{ f.total }}</td>
-                        <td>
-                            {% if f.total %}
-                            <span class="obs-bar" role="img" aria-label="Avance {{ f.avance }} por ciento">
-                                <span class="obs-bar-seg obs-bar-verde" style="flex:{{ f.avance }}"></span>
-                                <span class="obs-bar-seg obs-bar-vacio" style="flex:{{ f.falta }}"></span>
-                            </span>
-                            <small>{{ f.avance }}%</small>
-                            {% else %}<span class="muted">—</span>{% endif %}
-                        </td>
-                        <td>
-                            <span class="obs-pill obs-pill-{{ f.estado }}">
-                                <span class="obs-dot obs-dot-{{ f.estado }}"></span>{{ f.estado|capfirst }}
-                            </span>
-                        </td>
-                        <td class="obs-acciones">
-                            <form method="post" action="{% url 'tickets:obs_quitar' f.elemento.pk %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="volver" value="{% url 'tickets:obs_mi_lista' %}">
-                                <button type="submit" class="btn btn-sm btn-ghost" title="Quitar de mi lista">Quitar</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% else %}
+    {% include "observador/_paneles.html" %}
+
+    {% if not panel.zonas %}
     <div class="obs-vacio">
         <span class="obs-vacio-icon"><svg class="icon"><use href="#i-inbox"/></svg></span>
         <strong>Tu lista está vacía</strong>
-        <p>Busca una persona o un punto y agrégalo para monitorearlo.</p>
-        <a href="{% url 'tickets:obs_buscar' %}" class="btn btn-sm">Buscar</a>
+        <p>Crea una zona y agrégle cuentas desde Usuarios para seguirlas.</p>
+        <a href="{% url 'tickets:obs_usuarios' %}" class="btn btn-sm">Ir a Usuarios</a>
     </div>
     {% endif %}
+
+    <!-- Historial de auditoría: la misma tabla del administrador, con sus
+         filtros de búsqueda, fechas, acción y resultado. -->
+    <section id="auditoria" class="obs-bloque">
+        <div class="chart-card aud-card">
+            <div class="chart-card-head">
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
+                <h3>Registro de auditoría</h3>
+            </div>
+            <div class="aud-meta">
+                <span class="aud-meta-item" title="Usuario conectado"><svg class="icon icon-sm"><use href="#i-user"/></svg>{{ request.user.nombre|default:request.user.email }}</span>
+                <span class="aud-meta-item" title="Fecha y hora actual"><svg class="icon icon-sm"><use href="#i-calendar"/></svg>{% now "d/m/Y H:i" %}</span>
+                <span class="aud-chip"><b>{{ aud_hoy }}</b> hoy</span>
+                <span class="aud-chip"><b>{{ aud_semana }}</b> últimos 7 días</span>
+                <span class="aud-estado" title="Estado del sistema"><span class="obs-dot obs-dot-verde"></span>Operativo</span>
+            </div>
+            {% if auditoria %}
+            <div class="aud-controles">
+                <span class="aud-lupa" id="aud-lupa" title="Buscar">
+                    <button type="button" id="aud-lupa-btn" aria-label="Buscar en auditoría"><svg class="icon"><use href="#i-search"/></svg></button>
+                    <input type="search" id="aud-buscar" placeholder="Buscar…" aria-label="Búsqueda rápida en auditoría" autocomplete="off" hidden>
+                    <button type="button" id="aud-lupa-x" aria-label="Limpiar búsqueda" hidden><svg class="icon"><use href="#i-x"/></svg></button>
+                </span>
+                <label class="aud-fecha" title="Desde"><svg class="icon icon-sm"><use href="#i-calendar"/></svg><input type="date" id="aud-f-desde" aria-label="Auditoría desde"></label>
+                <label class="aud-fecha" title="Hasta"><svg class="icon icon-sm"><use href="#i-calendar"/></svg><input type="date" id="aud-f-hasta" aria-label="Auditoría hasta"></label>
+                <select id="aud-f-accion" class="obs-buscador-tipo" aria-label="Filtrar por acción">
+                    <option value="">Todas las acciones</option>
+                    <option value="Zona creada">Zona creada</option>
+                    <option value="Zona renombrada">Zona renombrada</option>
+                    <option value="Zona eliminada">Zona eliminada</option>
+                    <option value="Cuenta agregada a zona">Cuenta agregada a zona</option>
+                    <option value="Cuenta sacada de zona">Cuenta sacada de zona</option>
+                    <option value="Punto asignado">Punto asignado</option>
+                    <option value="Punto quitado">Punto quitado</option>
+                    <option value="Cuenta agregada a la lista">Cuenta agregada a la lista</option>
+                    <option value="Cuenta sacada de la lista">Cuenta sacada de la lista</option>
+                    <option value="Alertas ANS">Alertas ANS</option>
+                </select>
+                <select id="aud-f-resultado" class="obs-buscador-tipo" aria-label="Filtrar por resultado">
+                    <option value="">Todos los resultados</option>
+                    <option value="exito">exito</option>
+                    <option value="error">error</option>
+                    <option value="pendiente">pendiente</option>
+                </select>
+                {% if puede_exportar_auditoria %}
+                <a class="btn btn-excel btn-sm aud-excel"
+                   href="{% url 'tickets:obs_auditoria_exportar' %}"
+                   title="Descargar en Excel la auditoría de tus zonas, con las columnas de siempre">
+                    <svg class="icon"><use href="#i-map-pin"/></svg> Excel
+                </a>
+                {% endif %}
+            </div>
+            {% now "Y-m-d" as hoy_ymd %}
+            <div class="obs-tabla-wrap tabla-scroll-seis">
+                <table class="obs-tabla aud-tabla" id="aud-tabla">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Hace</th>
+                            <th>Acción</th>
+                            <th>Zona</th>
+                            <th>Supervisor</th>
+                            <th>Cuenta</th>
+                            <th>Hecho por</th>
+                            <th>Detalle</th>
+                            <th>Motivo</th>
+                            <th>Resultado</th>
+                            <th>Versión</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in auditoria %}
+                        <tr{% if a.fecha|date:"Y-m-d" == hoy_ymd %} class="aud-reciente"{% endif %}
+                            data-accion="{{ a.get_accion_display }}" data-resultado="{{ a.resultado|default:'' }}" data-fecha="{{ a.fecha|date:'Y-m-d' }}">
+                            <td class="num">#{{ a.pk }}</td>
+                            <td style="white-space:nowrap" title="{{ a.fecha|date:'d/m/Y H:i' }}">{{ a.fecha|date:"d/m/Y H:i" }}</td>
+                            <td style="white-space:nowrap"><span class="aud-hace">{{ a.hace }}</span></td>
+                            <td><span class="aud-badge aud-badge-{{ a.clase_accion }}">{{ a.get_accion_display }}</span></td>
+                            <td>{% if a.zona_nombre %}<span class="zona-badge">{{ a.zona_nombre }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td>{% if a.observador %}<span class="aud-quien"><span class="aud-foto">{% if a.observador.avatar %}<img src="{{ a.observador.avatar.url }}" alt="">{% else %}{{ a.observador.nombre|default:"?"|slice:":1"|upper }}{% endif %}</span><span>{{ a.observador.nombre }}<small>{{ a.observador.get_rol_display }}</small></span></span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td>{% if a.cuenta %}<span class="aud-cuenta"><svg class="icon"><use href="#i-mail"/></svg>{{ a.cuenta }}</span>{% elif "@" in a.detalle %}<span class="aud-cuenta"><svg class="icon"><use href="#i-mail"/></svg>{{ a.detalle }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td>{% if a.actor %}<span class="aud-quien"><span class="aud-foto">{% if a.actor.avatar %}<img src="{{ a.actor.avatar.url }}" alt="">{% else %}{{ a.actor.nombre|default:"?"|slice:":1"|upper }}{% endif %}</span><span>{{ a.actor.nombre }}</span></span>{% else %}<span class="muted">sistema</span>{% endif %}</td>
+                            <td>{{ a.detalle|default:"—" }}{% if a.comentarios %}<br><small class="muted">{{ a.comentarios }}</small>{% endif %}{% if a.ip_origen %}<br><small class="muted"><svg class="icon icon-sm"><use href="#i-ip"/></svg> {{ a.ip_origen }}</small>{% endif %}</td>
+                            <td>{{ a.motivo|default:"—" }}</td>
+                            <td>{% if a.resultado %}<span class="aud-badge aud-badge-{% if a.resultado == 'exito' %}ok{% else %}no{% endif %}">{{ a.resultado }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td>{% if a.version_sistema %}<small class="muted">{{ a.version_sistema }}</small>{% else %}<span class="muted">—</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted" style="margin:0">Todavía no hay cambios registrados.</p>
+            {% endif %}
+        </div>
+    </section>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Historial de auditoría: lupa desplegable y filtros dinámicos sobre la
+   propia tabla, igual que en el panel del administrador. */
+(function () {
+    var lupa = document.getElementById("aud-lupa");
+    var lupaBtn = document.getElementById("aud-lupa-btn");
+    var lupaX = document.getElementById("aud-lupa-x");
+    var buscar = document.getElementById("aud-buscar");
+    var accion = document.getElementById("aud-f-accion");
+    var resultado = document.getElementById("aud-f-resultado");
+    var desde = document.getElementById("aud-f-desde");
+    var hasta = document.getElementById("aud-f-hasta");
+    if (!lupa || !lupaBtn) return;
+
+    function filtrar() {
+        var q = buscar ? buscar.value.trim().toLowerCase() : "";
+        var fa = accion ? accion.value : "";
+        var fr = resultado ? resultado.value : "";
+        var fd = desde && desde.value ? desde.value : "";
+        var fh = hasta && hasta.value ? hasta.value : "";
+        document.querySelectorAll("#aud-tabla tbody tr").forEach(function (tr) {
+            var ok = true;
+            if (fa && tr.getAttribute("data-accion") !== fa) { ok = false; }
+            if (ok && fr && tr.getAttribute("data-resultado") !== fr) { ok = false; }
+            if (ok && (fd || fh)) {
+                var f = tr.getAttribute("data-fecha") || "";
+                if (fd && f < fd) { ok = false; }
+                if (fh && f > fh) { ok = false; }
+            }
+            if (ok && q && tr.textContent.toLowerCase().indexOf(q) === -1) { ok = false; }
+            tr.style.display = ok ? "" : "none";
+        });
+    }
+    lupaBtn.addEventListener("click", function () {
+        lupa.classList.toggle("abierta");
+        var abierta = lupa.classList.contains("abierta");
+        if (buscar) { buscar.hidden = !abierta; if (abierta) { buscar.focus(); } else { buscar.value = ""; } }
+        if (lupaX) { lupaX.hidden = !abierta; }
+        if (!abierta) { filtrar(); }
+    });
+    if (lupaX) {
+        lupaX.addEventListener("click", function () {
+            if (buscar) { buscar.value = ""; buscar.focus(); }
+            filtrar();
+        });
+    }
+    if (buscar) { buscar.addEventListener("input", filtrar); }
+    [accion, resultado, desde, hasta].forEach(function (el) {
+        if (el) { el.addEventListener("change", filtrar); }
+    });
+})();
+</script>
 {% endblock %}

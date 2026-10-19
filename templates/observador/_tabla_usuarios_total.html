@@ -1,71 +1,148 @@
-{% comment %}Tabla de todos los usuarios con acciones para el rol observador:
-ver ficha, agregar/quitar de la lista y asignar zona. Requiere
-`todos_usuarios` y `zonas_obs` en el contexto.{% endcomment %}
-<div class="chart-card" style="margin-bottom:16px">
+{% comment %}Tabla de todos los usuarios del observador: es la única tabla de
+Usuarios. Junta las cuentas del aplicativo con la gente que no tiene cuenta
+pero levantó tickets en sus zonas.
+
+La columna Zona es un selector en línea: se elige y se guarda sola, sin
+desplegar nada. Para poder elegir zona la cuenta tiene que estar en la lista
+de seguimiento primero, y eso se avisa en la propia celda, así que el
+supervisor no tiene que adivinar el orden de los pasos.
+
+La columna Acciones solo lleva los iconos de lista: agregar y quitar. Al
+dar clic despliegan debajo la confirmación concreta, y se cierran al volver
+a pulsar, con Esc o al pulsar fuera.
+
+Requiere `filas`, `zonas_obs` y `todos_usuarios` en el contexto.{% endcomment %}
+<div class="chart-card obs-card-tabla" id="tabla-usuarios">
     <div class="chart-card-head">
         <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
         <h3>Todos los usuarios</h3>
+        <span class="muted obs-conteo">{{ filas|length }} de {{ todos_usuarios|length }} cuenta{{ todos_usuarios|length|pluralize }}</span>
     </div>
-    <div class="table-scroll">
-        <table class="data-table">
+
+    <div class="obs-tabla-wrap tabla-scroll-seis obs-todos">
+        <table class="obs-tabla obs-tabla-acciones">
             <thead>
                 <tr>
                     <th>Cuenta</th>
                     <th>Rol</th>
                     <th>Ubicación</th>
-                    <th class="num">Tickets</th>
-                    <th class="num">Abiertos</th>
+                    <th class="obs-celda-zona">Zona</th>
                     <th>Técnico</th>
-                    <th>Zona</th>
-                    <th>Acciones</th>
+                    <th class="num">Abiertos</th>
+                    <th class="num">Tickets</th>
+                    <th>Avance</th>
+                    <th class="obs-acciones">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                {% for u in todos_usuarios %}
-                <tr>
-                    <td>
-                        <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ u.email|urlencode }}">{{ u.nombre }}</a></strong><br>
-                        <small class="muted">{{ u.email }}</small>
+                {% for u in filas %}
+                <tr class="obs-fila{% if u.en_lista %} obs-fila-lista{% endif %}{% if forloop.counter0|divisibleby:2 %} is-par{% endif %}">
+                    <td class="obs-cuenta">
+                        <strong>{{ u.nombre }}</strong>
+                        {% if u.email %}<small>{{ u.email }}</small>{% endif %}
                     </td>
-                    <td>{{ u.rol }}</td>
-                    <td>{{ u.ubicacion }}</td>
+                    <td><span class="obs-rol obs-rol-{{ u.rol_crudo|default:'sin-cuenta' }}">{{ u.rol }}</span></td>
+                    <td>{{ u.ubicacion|default:"—" }}</td>
+                    <td class="obs-celda-zona">
+                        {% if u.en_lista %}
+                        <form method="post" action="{% url 'tickets:obs_zona_miembro' %}" class="obs-zona-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="elemento" value="{{ u.elemento_id }}">
+                            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                            <select name="zona" class="obs-zona-sel{% if u.zona %} is-puesta{% endif %}"
+                                    onchange="this.form.submit()"
+                                    aria-label="Zona de {{ u.nombre }}">
+                                <option value="">Sin zona</option>
+                                {% for z in zonas_obs %}
+                                <option value="{{ z.pk }}"{% if u.zona and u.zona.pk == z.pk %} selected{% endif %}>{{ z.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="obs-zona-ok"
+                                    title="Guardar la zona" aria-label="Guardar la zona de {{ u.nombre }}">
+                                <svg class="icon"><use href="#i-check"/></svg>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="obs-pide-zona" title="Primero agrégala a tu lista con el icono de la derecha; después eliges su zona aquí.">Sin zona</span>
+                        {% endif %}
+                    </td>
+                    <td class="obs-tec">
+                        {% if u.tecnicos %}
+                        <ul class="obs-tecnicos">
+                            {% for t in u.tecnicos|slice:":3" %}
+                            <li>
+                                <span class="obs-tecnico-n">{{ t.nombre }}</span>
+                                <span class="obs-tecnico-c">{{ t.tickets }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% elif u.total %}
+                            <span class="muted">Sin asignar</span>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="num">
+                        {% if u.abiertos %}<span class="obs-pill obs-pill-amarillo">{{ u.abiertos }}</span>
+                        {% else %}<span class="muted">0</span>{% endif %}
+                    </td>
                     <td class="num">{{ u.total }}</td>
-                    <td class="num">{{ u.abiertos }}{% if u.fuera_puntos %} <small class="muted" title="Tickets suyos fuera de tus puntos asignados">+{{ u.fuera_puntos }} fuera</small>{% endif %}</td>
-                    <td>{{ u.tecnico|default:"—" }}</td>
-                    <td>{{ u.zona.nombre|default:"—" }}</td>
-                    <td>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                    <td class="obs-avance">
+                        {% if u.total %}
+                        <span class="obs-bar" role="img" aria-label="Avance {{ u.avance }} por ciento">
+                            <span class="obs-bar-seg obs-bar-verde" style="flex:{{ u.avance }}"></span>
+                            <span class="obs-bar-seg obs-bar-vacio" style="flex:{{ u.falta }}"></span>
+                        </span>
+                        <small>{{ u.avance }}% · {{ u.cerrados_total }}/{{ u.total }}</small>
+                        {% else %}<span class="muted">—</span>{% endif %}
+                    </td>
+                    <td class="obs-acciones">
+                        <div class="obs-acc-icos" role="group" aria-label="Acciones de {{ u.nombre }}">
                             {% if u.en_lista %}
-                            <form method="post" action="{% url 'tickets:obs_zona_miembro' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="elemento" value="{{ u.elemento_id }}">
-                                <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                                <select name="zona" class="obs-buscador-tipo" aria-label="Zona para {{ u.email }}">
-                                    <option value="">Sin zona</option>
-                                    {% for z in zonas_obs %}
-                                    <option value="{{ z.pk }}"{% if u.zona and u.zona.pk == z.pk %} selected{% endif %}>{{ z.nombre }}</option>
-                                    {% endfor %}
-                                </select>
-                                <button type="submit" class="btn btn-sm btn-outline">Asignar</button>
-                            </form>
-                            <form method="post" action="{% url 'tickets:obs_quitar' u.elemento_id %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                                <button type="submit" class="btn btn-sm btn-ghost">Quitar</button>
-                            </form>
+                            <span class="obs-acc-lista" title="En tu lista de seguimiento">
+                                <svg class="icon"><use href="#i-star"/></svg>
+                            </span>
+                            <button type="button" class="obs-acc-ico obs-acc-ico-qui"
+                                    data-acc-fila="acc-t2-{{ forloop.counter }}"
+                                    aria-expanded="false" aria-controls="acc-t2-{{ forloop.counter }}"
+                                    title="Quitar de mi lista" aria-label="Quitar a {{ u.nombre }} de mi lista">
+                                <svg class="icon"><use href="#i-x"/></svg>
+                            </button>
                             {% else %}
-                            <form method="post" action="{% url 'tickets:obs_agregar' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="email" value="{{ u.email }}">
-                                <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-                                <button type="submit" class="btn btn-sm">Agregar</button>
-                            </form>
+                            <button type="button" class="obs-acc-ico obs-acc-ico-agr"
+                                    data-acc-fila="acc-t2-{{ forloop.counter }}"
+                                    aria-expanded="false" aria-controls="acc-t2-{{ forloop.counter }}"
+                                    title="Agregar a mi lista" aria-label="Agregar a {{ u.nombre }} a mi lista">
+                                <svg class="icon"><use href="#i-plus"/></svg>
+                            </button>
                             {% endif %}
                         </div>
                     </td>
                 </tr>
+                <tr class="obs-acc-detalle" id="acc-t2-{{ forloop.counter }}" hidden>
+                    <td colspan="9">
+                        {% if u.en_lista %}
+                        <form method="post" action="{% url 'tickets:obs_quitar' u.elemento_id %}" class="obs-acc-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                            <span class="obs-acc-txt">¿Quitar a <strong>{{ u.nombre }}</strong> de tu lista de seguimiento?</span>
+                            <button type="submit" class="btn btn-sm btn-outline">Quitar</button>
+                            <button type="button" class="btn btn-sm btn-ghost" data-acc-cerrar>Cancelar</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'tickets:obs_agregar' %}" class="obs-acc-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="email" value="{{ u.email }}">
+                            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                            <span class="obs-acc-txt">Agregar a <strong>{{ u.nombre }}</strong> a tu lista de seguimiento. Después podrás ponerle zona.</span>
+                            <button type="submit" class="btn btn-sm btn-accent">Agregar</button>
+                            <button type="button" class="btn btn-sm btn-ghost" data-acc-cerrar>Cancelar</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
                 {% empty %}
-                <tr class="table-empty"><td colspan="8">No hay cuentas activas.</td></tr>
+                <tr><td colspan="9" class="obs-sin-datos">No hay cuentas activas.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

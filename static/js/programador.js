@@ -121,6 +121,7 @@
                 renderCalendario();
                 renderMatrix();
                 renderListas();
+                renderDispOtros();
                 abrir_destacado();
             })
             .catch(function () { toast("Error al cargar los datos", false); });
@@ -370,6 +371,74 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
                 abrirModalDisp(this.dataset.fecha, null, this.dataset.tec);
             });
         });
+    }
+
+    /* ---------- disponibilidad de los demás técnicos ----------
+       El mismo mes que se está mirando en el calendario: para cada técnico
+       que no es el que entró se listan sus marcas del mes (ausencia, falta
+       o no ausencia) y sus días sin ninguna marca. Lo abre y lo cierra el
+       botón «Disponibilidad de los demás» de los filtros de arriba. */
+    var DISP_LABEL = {
+        ausencia: "Ausencia",
+        falta: "Falta de disponibilidad",
+        no_ausencia: "No ausencia"
+    };
+    var DISP_CLASE = {
+        ausencia: "d-ausencia",
+        falta: "d-falta",
+        no_ausencia: "d-noausencia"
+    };
+
+    function renderDispOtros() {
+        var box = $("dispOtrosLista");
+        if (!box) return;
+        var resumen = $("dispOtrosCount");
+        /* «Los demás» es respecto a quien tiene el panel abierto: si es un
+           técnico se excluye a él (y al que tenga filtrado no le estorba);
+           el administrador no tiene «yo», así que ve a todos. */
+        var mio = state.tecnicoDef || String($("filtroTecnico").value || "");
+        var tecs = (data.tecnicos || []).filter(function (t) { return String(t.id) !== mio; });
+        if (resumen) {
+            resumen.textContent =
+                plural(tecs.length, "técnico", "técnicos") +
+                " · " + MESES[state.mes - 1] + " " + state.anio;
+        }
+        if (!tecs.length) {
+            box.innerHTML = '<div class="prog-event-empty">No hay otros técnicos que mostrar.</div>';
+            return;
+        }
+        var dias = new Date(state.anio, state.mes, 0).getDate();
+        var html = "";
+        tecs.forEach(function (tec) {
+            var marcas = [], d;
+            for (d = 1; d <= dias; d++) {
+                var dd = new Date(state.anio, state.mes - 1, d);
+                var disp = data.disponibilidad[tec.id + "|" + iso(dd)];
+                if (disp) {
+                    marcas.push({ dia: d, dow: dd.getDay(), tipo: disp.tipo, hora: disp.hora, nota: disp.nota });
+                }
+            }
+            html += '<div class="disp-otro">' +
+                '<span class="mx-avatar">' + esc(String(tec.nombre || "?").slice(0, 2).toUpperCase()) + "</span>" +
+                '<span class="disp-otro-id"><strong>' + esc(tec.nombre) + "</strong>" +
+                (tec.activo ? "" : '<small class="mx-offline-tag">sin conexión</small>') + "</span>" +
+                '<span class="disp-otro-marcas">';
+            if (!marcas.length) {
+                html += '<span class="disp-chip d-libre" title="Ni ausencias ni faltas marcadas en este mes">' +
+                    "Sin marcas · disponible todo el mes</span>";
+            } else {
+                marcas.forEach(function (m) {
+                    var etiqueta = DISP_LABEL[m.tipo] || m.tipo || "Marca";
+                    html += '<span class="disp-chip ' + (DISP_CLASE[m.tipo] || "") + '" title="' +
+                        esc(NOMBRES_DIA[m.dow]) + " " + m.dia + " de " + MESES[state.mes - 1] +
+                        (m.hora ? " · desde las " + esc(m.hora) : "") +
+                        (m.nota ? " · " + esc(m.nota) : "") + '">' +
+                        LETRAS[m.dow] + " " + m.dia + " · " + esc(etiqueta) + "</span>";
+                });
+            }
+            html += "</span></div>";
+        });
+        box.innerHTML = html;
     }
 
     /* ---------- listas ---------- */
@@ -647,6 +716,20 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
         });
 
         $("filtroTecnico").addEventListener("change", load);
+
+        /* Campo de disponibilidad de los demás: se abre con el botón de los
+           filtros y se repinta solo al cambiar de mes o de técnico. */
+        var dispOtrosBtn = $("dispOtrosBtn");
+        if (dispOtrosBtn) {
+            dispOtrosBtn.addEventListener("click", function () {
+                var caja = $("dispOtros");
+                if (!caja) return;
+                var abrir = caja.hidden;
+                caja.hidden = !abrir;
+                dispOtrosBtn.setAttribute("aria-expanded", String(abrir));
+                if (abrir) renderDispOtros();
+            });
+        }
 
         $("mesPrev").addEventListener("click", function () { movMes(-1); });
         $("mesNext").addEventListener("click", function () { movMes(1); });

@@ -3,7 +3,8 @@ sus tickets, su avance, sus técnicos y las últimas respuestas.
 Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto.{% endcomment %}
 {% if grupos %}
 {% for g in grupos %}
-<section class="obs-zona-card">
+<section class="obs-zona-card"{% if g.zona.color %} style="--zc: {{ g.zona.color }}"{% endif %}>
+    <div class="obs-zona-acc-wrap{% if not g.zona %} sin-acc{% endif %}">
     <button type="button" class="obs-zona-head" data-zona-toggle="zg-{{ forloop.counter }}" aria-expanded="false" title="Desplegar la lista de usuarios de esta zona">
         <span class="obs-zona-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
         <div class="obs-zona-tit">
@@ -24,6 +25,11 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
         </div>
         <span class="obs-zona-chev" aria-hidden="true">▾</span>
     </button>
+    {% if g.zona %}
+    {# Paleta de color, ver, editar el nombre y borrar: iconos pequeños pegados a la esquina inferior derecha de la tarjeta. #}
+    {% include "observador/_zona_acciones.html" with z=g.zona %}
+    {% endif %}
+    </div>
     <div id="zg-{{ forloop.counter }}" hidden>
     {% for f in g.filas %}
     <article class="obs-miembro">
@@ -92,6 +98,20 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
             body.hidden = abierto;
             var card = btn.closest(".obs-zona-card");
             if (card) card.classList.toggle("is-open", !abierto);
+        });
+    });
+    /* «Editar» de la zona despliega el campo con el nombre en la propia
+       tarjeta, en vez de mandarte a la página de Zonas. */
+    Array.prototype.forEach.call(document.querySelectorAll("[data-renombre]"), function (btn) {
+        var caja = document.getElementById(btn.getAttribute("data-renombre"));
+        if (!caja) return;
+        btn.addEventListener("click", function () {
+            var abrir = caja.hidden;
+            caja.hidden = !abrir;
+            btn.setAttribute("aria-expanded", String(abrir));
+            if (!abrir) return;
+            var campo = caja.querySelector("input[type='text']");
+            if (campo) { campo.focus(); campo.select(); }
         });
     });
 })();

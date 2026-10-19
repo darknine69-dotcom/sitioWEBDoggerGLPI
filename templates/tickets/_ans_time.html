@@ -1,17 +1,32 @@
 {% comment %}
-Contador de ANS de un ticket. Un solo lugar para todas las vistas, con el
-cronómetro en vivo: `data-ans-limit` y `data-ans-aviso` son segundos epoch que
-el JavaScript de dogger.js usa para seguir contando sin recargar la página.
-`data-ans-estado` es el estado con el que se pintó la etiqueta al cargar.
+Contador de ANS de un ticket. Un solo lugar para todas las vistas.
+
+  · `data-ans-live` con `data-ans-limit` y `data-ans-aviso` son segundos epoch
+    que el JavaScript de dogger.js usa para seguir contando sin recargar la
+    página. El mismo reloj reescribe el icono y el color cuando el ticket pasa
+    de «ok» a «por vencer» o a «vencido», así que la etiqueta nunca se queda
+    vieja sin que nadie refresque.
+  · `data-ans-info` convierte la etiqueta en el botón que abre la ventana
+    explicando qué significa ese cronómetro. Solo se pone en las vistas que
+    incluyen `_ans_modal.html`, pasándole `ans_modal=True` en el contexto: en
+    el resto queda inerte y no cambia nada.
 {% endcomment %}
 {% with info=t.datos_ans %}
 {% if info.0 %}
-<span class="ans-time ans-{{ info.0 }}"
-      {% if info.2 %} title="{{ info.2 }}"{% endif %}
-      {% if info.3 %} data-ans-live data-ans-limit="{{ info.3 }}" data-ans-aviso="{{ info.4 }}" data-ans-estado="ok"{% endif %}>
+<span class="ans-time ans-{{ info.0 }}{% if ans_modal %} ans-info{% endif %}"
+      {% if info.2 %}title="{{ info.2 }}"{% endif %}
+      {% if info.3 %}data-ans-live data-ans-limit="{{ info.3 }}" data-ans-aviso="{{ info.4 }}" data-ans-estado="ok"{% endif %}
+      {% if ans_modal %}data-ans-info role="button" tabindex="0"
+            data-ans-codigo="{{ t.codigo }}" data-ans-titulo="{{ t.titulo }}"
+            data-ans-horas="{{ t.ans_horas }}"
+            data-ans-prioridad="{{ t.get_prioridad_display }}"
+            data-ans-tecnico="{{ t.tecnico_asignado.nombre|default:'sin asignar' }}"
+            data-ans-url="{% url 'tickets:mi_ticket' t.pk %}"
+            aria-label="Qué significa el ANS de {{ t.codigo }}"
+      {% endif %}>
     {% if info.0 == 'vencido' %}<svg class="icon icon-sm"><use href="#i-alert"/></svg>
     {% elif info.0 == 'resuelto' %}<svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-    {% else %}<svg class="icon icon-sm"><use href="#i-clock"/></svg>{% endif %}
+    {% else %}<svg class="icon icon-sm"><use href="#i-stopwatch"/></svg>{% endif %}
     <span data-ans-txt>{{ info.1 }}</span>
 </span>
 {% endif %}

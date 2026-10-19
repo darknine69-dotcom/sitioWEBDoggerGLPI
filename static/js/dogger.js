@@ -528,6 +528,7 @@
                 ["rol", "value", "data-fill-rol", "usuario"],
                 ["glpi", "value", "data-fill-glpi", ""],
                 ["activo", "checked", "data-fill-activo", null],
+                ["cambio-rol", "checked", "data-fill-cambio-rol", null],
                 ["telefono", "value", "data-fill-telefono", ""],
                 ["ubicacion", "value", "data-fill-ubicacion", ""],
                 ["pass", "value", "", ""]
@@ -555,6 +556,8 @@
             if (rol) rol.value = btn.getAttribute("data-default-rol") === "tecnico" ? "tecnico" : "usuario";
             var activo = document.getElementById("u-activo");
             if (activo) activo.checked = true;
+            var cambioRol = document.getElementById("u-cambio-rol");
+            if (cambioRol) cambioRol.checked = false;
             var pass = document.getElementById("u-pass");
             if (pass) { pass.value = ""; pass.placeholder = "Obligatoria para cuentas nuevas"; }
         });
@@ -662,6 +665,12 @@
             return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
                 .replace(/[^\w\s]+/g, " ").replace(/\s+/g, " ").trim();
         }
+        /* Las categorias "Otros ..." son el ultimo recurso: no compiten con
+           una categoria concreta ni ganan puntos por llamarse como el
+           dominio. */
+        function esComodin(cat) {
+            return normText(cat.nombre).indexOf("otros ") === 0;
+        }
         function escapeRx(s) {
             return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         }
@@ -681,7 +690,7 @@
             }
             return true;
         }
-        function puntajeTexto(texto, cat) {
+        function puntajeTexto(texto, cat, conNombreGrupo) {
             if (!texto) return 0;
             var score = 0, claves = cat.claves || [], i, k, j, ex;
             for (i = 0; i < claves.length; i++) {
@@ -695,6 +704,10 @@
                     score += PESOS.suelta;
                 }
             }
+            /* El comodin no suma por su nombre ni por su grupo: su nombre es
+               el dominio entero, y decir "siesa" en el texto no dice en que
+               modulo esta el problema. */
+            if (conNombreGrupo === false) return score;
             var n = normText(cat.nombre), g = normText(cat.grupo);
             if (n && new RegExp("\\b" + escapeRx(n) + "\\w*").test(texto)) score += PESOS.nombre;
             if (g && new RegExp("\\b" + escapeRx(g) + "\\w*").test(texto)) score += PESOS.grupo;
@@ -721,17 +734,17 @@
         function puntaje(cat) {
             var t = normText(tituloEl.value), d = normText(descEl ? descEl.value : "");
             var completo = (t + " " + d).trim();
-            var score = puntajeTexto(completo, cat);
-            if (t) score += PESOS.titulo * puntajeTexto(t, cat);
+            var conNg = !esComodin(cat);
+            var score = puntajeTexto(completo, cat, conNg);
+            if (t) score += PESOS.titulo * puntajeTexto(t, cat, conNg);
             return score - penalizacion(completo, cat);
         }
         /* A igual puntaje gana la más urgente y luego la de menor ANS, igual
            que en el servidor: la sugerición no baila con el orden de la base. */
         function mejorDe(candidatos) {
             var best = null, i;
-            /* Las categorias "Otros ..." son el ultimo recurso: a igualdad de
-               puntaje gana la categoria que nombra algo concreto. */
-            function esComodin(cat) { return normText(cat.nombre).indexOf("otros ") === 0; }
+            /* A igualdad de puntaje gana la categoria que nombra algo
+               concreto, nunca el comodin. */
             for (i = 0; i < candidatos.length; i++) {
                 var c = candidatos[i];
                 if (!best || c.score > best.score) { best = c; continue; }
@@ -783,7 +796,18 @@
                 if (score > 0) candidatos.push({ cat: CATS[i], score: score });
             }
             if (!candidatos.length) { hideAll(); return; }
-            var best = mejorDe(candidatos);
+            /* El comodin es el ultimo recurso: no tapa a una categoria
+               concreta que ya explica el problema (para eso la concreta tiene
+               que llegar al umbral de auto). Si nada concreto puntua fuerte,
+               gana la de mas puntos de todas. Espejo de
+               sugerir_categoria() en apps/tickets/sugerencia_categoria.py. */
+            var concretos = candidatos.filter(function (c) { return !esComodin(c.cat); });
+            var mejorConcreto = 0;
+            for (i = 0; i < concretos.length; i++) {
+                if (concretos[i].score > mejorConcreto) mejorConcreto = concretos[i].score;
+            }
+            var base = mejorConcreto >= AUTO_THRESHOLD ? concretos : candidatos;
+            var best = mejorDe(base);
             var actual = catSelEl.value;
 
             var libre = !actual || String(actual) === String(autoAppliedId);
@@ -1540,7 +1564,9 @@
 (function () {
     "use strict";
 
-    var ICONO = { ok: "#i-clock", "por-vencer": "#i-clock", vencido: "#i-alert" };
+    /* El cronómetro es el icono del ANS que corre: solo cambia a alerta cuando
+       el ticket ya venció. */
+    var ICONO = { ok: "#i-stopwatch", "por-vencer": "#i-stopwatch", vencido: "#i-alert" };
     /* Las vistas usan dos prefijos para el mismo color: la etiqueta general
        (ans-ok) y la tarjeta del técnico (tec-ans-ok). Se respeta el que ya
        traiga el elemento para no inventar una clase que no existe en el CSS. */
@@ -1632,4 +1658,157 @@
        corriendo: como cada tick vuelve a buscar en el documento, las cuenta
        sin necesidad de que nadie avise. Al volver a la pestaña se repinta. */
     window.addEventListener("focus", correr);
+})();
+
+/* ------------------------------------------------------------------
+   Ventana del ANS
+   La etiqueta del cronómetro se puede pulsar para que explique qué
+   significa: qué es el ANS, qué plazo le corre a ese ticket, quién
+   responde y qué significa cada color.
+
+   Solo actúa en las páginas que incluyen `_ans_modal.html`: donde no
+   está, las etiquetas siguen siendo texto y este código no hace nada.
+   El texto del reloj se copia de la etiqueta, que es la que sigue
+   corriendo de verdad, así la ventana nunca se contradice con la fila.
+   ------------------------------------------------------------------ */
+(function () {
+    "use strict";
+    var modal = document.getElementById("ansModal");
+    if (!modal) return;
+    var ESTADOS = ["ans-ok", "ans-por-vencer", "ans-vencido"];
+    var abierto = null;
+
+    function escribe(id, valor) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = (valor && valor !== "") ? valor : "—";
+    }
+
+    function estadoDe(etiqueta) {
+        for (var i = 0; i < ESTADOS.length; i++) {
+            if (etiqueta.classList.contains(ESTADOS[i])) return ESTADOS[i];
+        }
+        return "ans-ok";
+    }
+
+    function abre(etiqueta) {
+        var reloj = document.getElementById("ansModalReloj");
+        var estado = estadoDe(etiqueta);
+        if (reloj) {
+            ESTADOS.forEach(function (c) { reloj.classList.remove(c); });
+            reloj.classList.add(estado);
+        }
+        var use = modal.querySelector(".ans-modal-reloj-ico use");
+        if (use) {
+            use.setAttribute("href", estado === "ans-vencido" ? "#i-alert" : "#i-stopwatch");
+        }
+
+        var horas = etiqueta.getAttribute("data-ans-horas");
+        var limite = etiqueta.getAttribute("title") || "";
+
+        escribe("ansModalCodigo", etiqueta.getAttribute("data-ans-codigo"));
+        escribe("ansModalAsunto", etiqueta.getAttribute("data-ans-titulo"));
+        escribe("ansModalDatoTicket", etiqueta.getAttribute("data-ans-codigo"));
+        escribe("ansModalDatoPrioridad", etiqueta.getAttribute("data-ans-prioridad"));
+        escribe("ansModalDatoHoras", horas ? horas + " horas" : "—");
+        escribe("ansModalDatoTecnico", etiqueta.getAttribute("data-ans-tecnico"));
+        /* El detalle que pintaba el servidor tiene la forma
+           "Límite 12/05 09:30 · ANS 2h · Urgente": solo se muestra la primera
+           pieza, el resto ya está en la tabla. */
+        escribe("ansModalDatoLimite", limite.split(" · ")[0].replace("Límite ", ""));
+
+        var hijo = etiqueta.querySelector("[data-ans-txt]");
+        escribe("ansModalRelojTxt", hijo ? hijo.textContent : etiqueta.textContent);
+
+        var enlace = document.getElementById("ansModalEnlace");
+        var url = etiqueta.getAttribute("data-ans-url") || "";
+        if (enlace) {
+            enlace.setAttribute("href", url || "#");
+            enlace.hidden = !url;
+        }
+
+        abierto = etiqueta;
+        modal.hidden = false;
+        var boton = modal.querySelector("[data-ans-cerrar]");
+        if (boton) boton.focus();
+    }
+
+    function cierra() {
+        modal.hidden = true;
+        if (abierto && abierto.focus) abierto.focus();
+        abierto = null;
+    }
+
+    document.addEventListener("click", function (ev) {
+        var origen = ev.target;
+        if (!origen || !origen.closest) return;
+        var etiqueta = origen.closest("[data-ans-info]");
+        if (etiqueta) {
+            ev.preventDefault();
+            abre(etiqueta);
+            return;
+        }
+        if (origen.closest("[data-ans-cerrar]")) {
+            ev.preventDefault();
+            cierra();
+            return;
+        }
+        if (!modal.hidden && origen === modal) cierra();
+    });
+
+    document.addEventListener("keydown", function (ev) {
+        if (modal.hidden) return;
+        if (ev.key === "Escape") {
+            ev.preventDefault();
+            cierra();
+            return;
+        }
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+        var foco = document.activeElement;
+        if (foco && foco.hasAttribute && foco.hasAttribute("data-ans-info")) {
+            ev.preventDefault();
+            abre(foco);
+        }
+    });
+})();
+
+/* =====================================================================
+   DOGGER HELPDESK — PALETA DE COLOR DE LAS CARPETAS DEL OBSERVADOR
+   =====================================================================
+   Cada tarjeta de zona (Mi lista, Monitoreo y Zonas) lleva una gota en su
+   esquina inferior derecha: al pulsarla se despliega la paleta con los
+   diez colores cerrados del servidor más «sin color». Elegir uno manda el
+   formulario y se vuelve a la misma página con la carpeta pintada. Se
+   cierra sola al pulsar fuera o con Esc.
+   ===================================================================== */
+(function () {
+    "use strict";
+
+    function cerrarPaletas(excepto) {
+        var abiertas = document.querySelectorAll(".obs-paleta:not([hidden])");
+        Array.prototype.forEach.call(abiertas, function (caja) {
+            if (excepto && caja.id === excepto) return;
+            caja.hidden = true;
+            var btn = document.querySelector('[data-paleta="' + caja.id + '"]');
+            if (btn) btn.setAttribute("aria-expanded", "false");
+        });
+    }
+
+    document.addEventListener("click", function (ev) {
+        var origen = ev.target;
+        if (!origen || !origen.closest) return;
+        var dentro = origen.closest(".obs-paleta");
+        if (dentro) return;          /* un color: se manda su formulario */
+        var btn = origen.closest("[data-paleta]");
+        if (!btn) { cerrarPaletas(); return; }
+        var caja = document.getElementById(btn.getAttribute("data-paleta"));
+        if (!caja) return;
+        var abrir = caja.hidden;
+        cerrarPaletas(abrir ? caja.id : null);
+        caja.hidden = !abrir;
+        btn.setAttribute("aria-expanded", String(abrir));
+    });
+
+    document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") cerrarPaletas();
+    });
 })();

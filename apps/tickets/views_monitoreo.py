@@ -30,15 +30,98 @@ from .models import (
 )
 
 
-def _auditar(actor, accion, observador=None, zona_nombre="", detalle=""):
-    """Deja constancia de un cambio del monitoreo para el registro visible."""
+def _auditar(actor, accion, observador=None, zona_nombre="", detalle="",
+             request=None, resultado="exito", motivo="", comentarios="",
+             cuenta=""):
+    """Deja constancia de un cambio del monitoreo para el registro visible.
+
+    Guarda IP, resultado, motivo, versión y cuenta cuando se conocen; el
+    motivo sale de la acción si no se indica uno.
+    """
+    from apps.accounts.seguridad import ip_del_request
+
+    if not motivo:
+        motivo = {
+            "agregar_lista": "Seguimiento manual del administrador",
+            "agregar_miembro": "Seguimiento manual del administrador",
+            "quitar_miembro": "Salida del seguimiento",
+            "quitar_lista": "Salida del seguimiento",
+            "crear_zona": "Organización del monitoreo",
+            "renombrar_zona": "Organización del monitoreo",
+            "eliminar_zona": "Limpieza del monitoreo",
+            "asignar_punto": "Cobertura del supervisor",
+            "quitar_punto": "Cobertura del supervisor",
+            "alertas_ans": "Alertas de cumplimiento ANS",
+        }.get(accion, "Gestión del monitoreo")
     return MonitoreoAuditoria.objects.create(
         actor=actor if getattr(actor, "pk", None) else None,
         observador=observador if getattr(observador, "pk", None) else None,
         zona_nombre=(zona_nombre or "")[:80],
         accion=accion,
         detalle=(detalle or "")[:200],
+        cuenta=(cuenta or "")[:150],
+        ip_origen=(ip_del_request(request) if request is not None else "")[:45],
+        resultado=(resultado or "exito")[:10],
+        motivo=motivo[:200],
+        version_sistema=_version_equipo(request),
+        comentarios=comentarios or "",
     )
+
+
+def _version_equipo(request):
+    """Windows del equipo donde se ejecutó la acción (User-Agent).
+
+    Ej: 'Windows 11', 'Windows 10', 'Windows 7'. Si no es Windows,
+    devuelve el SO detectado ('Android', 'Linux', …) o ''.
+    Máx 30 caracteres (columna VersionSistema).
+    """
+    ua = ""
+    try:
+        ua = (request.META.get("HTTP_USER_AGENT") or "") if request is not None else ""
+    except AttributeError:
+        ua = ""
+    bajo = ua.lower()
+    if "windows nt 10.0" in bajo:
+        # Win10 y Win11 reportan NT 10.0; el 11 trae el token 'WindowsWechat'?
+        # Sin JS no se distinguen 100%: se marca 10/11.
+        return "Windows 10/11"
+    if "windows nt 6.3" in bajo:
+        return "Windows 8.1"
+    if "windows nt 6.2" in bajo:
+        return "Windows 8"
+    if "windows nt 6.1" in bajo:
+        return "Windows 7"
+    if "windows" in bajo:
+        return "Windows"
+    for so in ("Android", "iPhone", "iPad", "Mac OS", "Linux"):
+        if so.lower() in bajo:
+            return so
+    return ""
+
+
+MOTIVOS_SACAR = [
+    "Ya no está disponible",
+    "Cambio de cuenta",
+    "Cambio de zona",
+    "Novedad administrativa",
+]
+
+MOTIVOS_INGRESAR = [
+    "Nueva asignación",
+    "Reemplazo",
+    "Cambio de zona",
+    "Retorno / reactivación",
+]
+
+
+def _motivo_post(request):
+    """Motivo que eligió el admin/observador en la ventana emergente.
+
+    Acepta los 4 estándar de sacar/ingresar o un texto libre corto.
+    Vacío = _auditar pone el motivo automático de la acción.
+    """
+    motivo = (request.POST.get("motivo") or "").strip()[:200]
+    return motivo
 
 
 def _avisar_supervisor(observador, titulo, mensaje, actor=None):
@@ -147,6 +230,21 @@ def monitoreo_admin(request):
                 zona_por_correo[c] = zona_nombre.strip()
             elif punto_nombre and _norm_zona(punto_nombre) in carpetas_sup:
                 zona_por_correo[c] = carpetas_sup[_norm_zona(punto_nombre)]
+    # La columna «Zona» refleja a qué zona pertenece cada cuenta aunque la
+    # zona sea de OTRO supervisor: primero manda la del supervisor elegido,
+    # y de ahí se rellena con el resto de zonas creadas del sistema.
+    for correo_e, nombre_z in (
+        ElementoMiLista.objects.exclude(zona__isnull=True)
+        .exclude(usuario_email="")
+        .values_list("usuario_email", "zona__nombre")
+        .iterator()
+    ):
+        c = (correo_e or "").strip().lower()
+        if not c or c in zona_por_correo:
+            continue
+        nombre_z = (nombre_z or "").strip()
+        if nombre_z:
+            zona_por_correo[c] = nombre_z
     ya_mis_lista = set(elementos_por_correo)
     zonas_ya = {
         (getattr(e.punto, "nombre", "") or "").strip()
@@ -336,7 +434,7 @@ def _zonas_creadas_por_observador():
         for z in zonas for e in z.elementos.all()
         if (e.usuario_email or "").strip()
     }
-    totales, abiertos, tecnicos = {}, {}, {}
+    totales, abiertos, urgentes, tecnicos = {}, {}, {}, {}
     if correos:
         for fila in (
             Ticket.objects.exclude(solicitante_email__in=[None, ""])
@@ -353,6 +451,16 @@ def _zonas_creadas_por_observador():
             .annotate(n=Count("pk"))
         ):
             abiertos[(fila["solicitante_email"] or "").strip().lower()] = fila["n"]
+        for fila in (
+            Ticket.objects.filter(
+                estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
+                prioridad=Ticket.Prioridad.URGENTE,
+            )
+            .exclude(solicitante_email__in=[None, ""])
+            .values("solicitante_email")
+            .annotate(n=Count("pk"))
+        ):
+            urgentes[(fila["solicitante_email"] or "").strip().lower()] = fila["n"]
         for t in Ticket.objects.exclude(
             solicitante_email__in=[None, ""]
         ).select_related("tecnico_asignado").only(
@@ -399,12 +507,15 @@ def _zonas_creadas_por_observador():
         miembros.sort(key=lambda m: (-m["abiertos"], m["nombre"].lower()))
         total_zona = sum(m["total"] for m in miembros)
         abiertos_zona = sum(m["abiertos"] for m in miembros)
+        urgentes_zona = sum(urgentes.get(m["email"], 0) for m in miembros)
         por_supervisor[z.observador_id]["zonas"].append(
             {
                 "zona": z,
                 "miembros": miembros,
                 "abiertos": abiertos_zona,
                 "total": total_zona,
+                "cerrados": total_zona - abiertos_zona,
+                "urgentes": urgentes_zona,
                 "avance": (
                     int(round(100.0 * (total_zona - abiertos_zona) / total_zona))
                     if total_zona else 0
@@ -432,6 +543,19 @@ def monitoreo_agregar(request):
     if observador is None or not correo:
         return redirect(volver)
 
+    # Un usuario en zona no entra a otra.
+    if nombre_zona:
+        otra = ElementoMiLista.objects.filter(
+            usuario_email__iexact=correo, zona__isnull=False
+        ).exclude(
+            zona__observador=observador, zona__nombre__iexact=nombre_zona
+        ).select_related("zona").first()
+        if otra is not None:
+            messages.error(
+                request, f"{correo} ya está en la zona «{(otra.zona.nombre if otra.zona else '')}»."
+            )
+            return redirect(volver)
+
     punto = None
     carpeta = None
     if nombre_zona:
@@ -455,7 +579,8 @@ def monitoreo_agregar(request):
     )
     _auditar(
         request.user, MonitoreoAuditoria.AGREGAR_LISTA, observador,
-        nombre_zona, correo,
+        nombre_zona, f"Entró a la zona {nombre_zona or 'sin zona'}",
+        request=request, cuenta=correo, motivo=_motivo_post(request),
     )
     _avisar_supervisor(
         observador,
@@ -482,15 +607,20 @@ def monitoreo_cuentas_buscar(request):
     from django.db.models import Q
 
     q = (request.GET.get("q") or "").strip()[:120]
+    rol = (request.GET.get("rol") or "").strip()
     resultados = []
     if len(q) >= 2:
-        for u in Usuario.objects.filter(
+        consulta = Usuario.objects.filter(
             Q(nombre__icontains=q) | Q(email__icontains=q),
             activo=True, is_active=True,
-        ).order_by("nombre")[:8]:
+        )
+        if rol:
+            consulta = consulta.filter(rol=rol)
+        for u in consulta.order_by("nombre")[:8]:
             resultados.append({
                 "nombre": u.nombre or u.email,
                 "email": u.email,
+                "rol": u.rol,
             })
     return JsonResponse({"ok": True, "cuentas": resultados})
 
@@ -522,7 +652,8 @@ def monitoreo_quitar_zona(request):
                  or (getattr(elemento.punto, "nombre", "") or "").strip())
     elemento.delete()
     _auditar(request.user, MonitoreoAuditoria.QUITAR_MIEMBRO,
-             observador, zona_real, correo)
+             observador, zona_real, f"Salió de la zona {zona_real or 'sin zona'}",
+             request=request, cuenta=correo, motivo=_motivo_post(request))
     _avisar_supervisor(
         observador,
         f"{correo} salió de tu zona {zona_real or 'sin zona'}",
@@ -544,6 +675,11 @@ def monitoreo_quitar(request, pk):
         return redirect(reverse("tickets:monitoreo_admin"))
     observador_id = request.POST.get("observador") or ""
     volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    sacado = ElementoMiLista.objects.filter(
+        pk=pk, observador__pk=observador_id if observador_id.isdigit() else 0
+    ).select_related("zona").first()
+    correo_sacado = (sacado.usuario_email or "") if sacado else ""
+    zona_sacada = (sacado.zona.nombre if sacado and sacado.zona_id else "")
     borrados, _ = ElementoMiLista.objects.filter(
         pk=pk, observador__pk=observador_id if observador_id.isdigit() else 0
     ).delete()
@@ -551,7 +687,9 @@ def monitoreo_quitar(request, pk):
         _auditar(
             request.user, MonitoreoAuditoria.QUITAR_LISTA,
             Usuario.objects.filter(pk=observador_id).first() if observador_id.isdigit() else None,
-            "", f"elemento {pk}",
+            zona_sacada, "Salió del seguimiento",
+            request=request, cuenta=correo_sacado, motivo=_motivo_post(request),
+            comentarios=f"elemento {pk}",
         )
     return redirect(volver)
 
@@ -563,16 +701,23 @@ def monitoreo_zona_miembro_quitar(request, pk):
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
     volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
-    elemento = ElementoMiLista.objects.filter(pk=pk).select_related("zona").first()
+    elemento = ElementoMiLista.objects.filter(pk=pk).select_related("zona", "punto").first()
     if elemento is None or elemento.zona_id is None:
         return redirect(volver)
     nombre_zona = elemento.zona.nombre if elemento.zona else ""
     supervisor = elemento.observador
     elemento.zona = None
-    elemento.save(update_fields=["zona"])
+    # Si el punto enlazado es la misma zona, también se suelta: si no,
+    # la tabla de agregar lo seguiría mostrando con la zona vieja.
+    punto = getattr(elemento, "punto", None)
+    if punto is not None and _norm_zona(getattr(punto, "nombre", "")) == _norm_zona(nombre_zona):
+        elemento.punto = None
+    elemento.save(update_fields=["zona", "punto"])
     _auditar(
         request.user, MonitoreoAuditoria.QUITAR_MIEMBRO, supervisor,
-        nombre_zona, (elemento.usuario_email or ""),
+        nombre_zona, f"Salió de la zona {nombre_zona or 'sin zona'}",
+        request=request, cuenta=elemento.usuario_email or "",
+        motivo=_motivo_post(request),
     )
     return redirect(volver)
 
@@ -588,7 +733,8 @@ def monitoreo_zona_eliminar(request, pk):
     if zona is not None:
         _auditar(
             request.user, MonitoreoAuditoria.ELIMINAR_ZONA, zona.observador,
-            zona.nombre, f"{zona.elementos.count()} cuentas",
+            zona.nombre, f"Zona «{zona.nombre}» eliminada ({zona.elementos.count()} cuentas)",
+            request=request,
         )
         zona.delete()
     return redirect(volver)
@@ -620,7 +766,8 @@ def monitoreo_zona_renombrar(request, pk):
     zona.save(update_fields=["nombre"])
     _auditar(
         request.user, MonitoreoAuditoria.RENOMBRAR_ZONA, zona.observador,
-        nombre, f"antes: {anterior}",
+        nombre, f"Zona «{anterior}» ahora se llama «{nombre}»", request=request,
+        comentarios=f"Nombre anterior: {anterior}",
     )
     messages.success(request, f"Zona «{anterior}» ahora se llama «{nombre}».")
     return redirect(volver)
@@ -651,8 +798,52 @@ def monitoreo_zona_crear(request):
             request, f"{observador.nombre} ya tiene una zona llamada «{nombre}»."
         )
         return redirect(volver)
-    ZonaObservador.objects.create(observador=observador, nombre=nombre)
-    _auditar(request.user, MonitoreoAuditoria.CREAR_ZONA, observador, nombre, "")
+    zona = ZonaObservador.objects.create(
+        observador=observador, nombre=nombre,
+        version_sistema=_version_equipo(request),
+        notif_correo=request.POST.get("notif_correo", "on") == "on",
+        notif_popup=request.POST.get("notif_popup", "on") == "on",
+        perm_exportar=request.POST.get("perm_exportar", "on") == "on",
+        perm_historial=request.POST.get("perm_historial", "on") == "on",
+    )
+    agregados = 0
+    omitidos = []
+    vistos = set()
+    for correo in (request.POST.get("miembros") or "").split(","):
+        correo = correo.strip().lower()[:150]
+        if not correo or "@" not in correo or correo in vistos:
+            continue
+        vistos.add(correo)
+        if len(vistos) > 50:
+            break
+        # Un usuario en zona no entra a otra: se omite y se avisa.
+        otra = ElementoMiLista.objects.filter(
+            usuario_email__iexact=correo, zona__isnull=False
+        ).exclude(zona__pk=zona.pk).select_related("zona").first()
+        if otra is not None:
+            omitidos.append(f"{correo} (ya está en «{(otra.zona.nombre if otra.zona else '')}»)")
+            continue
+        elemento, _ = ElementoMiLista.objects.get_or_create(
+            observador=observador,
+            usuario_email=correo,
+            defaults={
+                "tipo": ElementoMiLista.TIPO_USUARIO,
+                "usuario": Usuario.objects.filter(email__iexact=correo).first(),
+                "zona": zona,
+            },
+        )
+        if elemento.zona_id != zona.pk:
+            elemento.zona = zona
+            elemento.save(update_fields=["zona"])
+        _auditar(
+            request.user, MonitoreoAuditoria.AGREGAR_MIEMBRO, observador,
+            nombre, f"Entró a la zona «{nombre}»",
+            request=request, cuenta=correo,
+        )
+        agregados += 1
+    _auditar(request.user, MonitoreoAuditoria.CREAR_ZONA, observador, nombre,
+             f"Zona «{nombre}» creada para {observador.nombre}",
+             request=request)
     _avisar_supervisor(
         observador,
         f"Te crearon la zona {nombre}",
@@ -661,7 +852,13 @@ def monitoreo_zona_crear(request):
     )
     messages.success(
         request, f"Zona «{nombre}» creada para {observador.nombre}."
+        + (f" ({agregados} cuenta{'s' if agregados != 1 else ''})" if agregados else "")
     )
+    if omitidos:
+        messages.warning(
+            request, "No entraron (ya están en otra zona): " + ", ".join(omitidos[:5])
+            + ("…" if len(omitidos) > 5 else "")
+        )
     return redirect(volver)
 
 
@@ -679,6 +876,15 @@ def monitoreo_zona_miembro_agregar(request, pk):
     if not correo:
         messages.error(request, "Escribe el correo de la cuenta para agregarla.")
         return redirect(volver)
+    # Un usuario en zona no entra a otra.
+    otra = ElementoMiLista.objects.filter(
+        usuario_email__iexact=correo, zona__isnull=False
+    ).exclude(zona__pk=zona.pk).select_related("zona").first()
+    if otra is not None:
+        messages.error(
+            request, f"{correo} ya está en la zona «{(otra.zona.nombre if otra.zona else '')}»."
+        )
+        return redirect(volver)
     elemento, creado = ElementoMiLista.objects.get_or_create(
         observador=zona.observador,
         usuario_email=correo,
@@ -693,7 +899,8 @@ def monitoreo_zona_miembro_agregar(request, pk):
         elemento.save(update_fields=["zona"])
     _auditar(
         request.user, MonitoreoAuditoria.AGREGAR_MIEMBRO, zona.observador,
-        zona.nombre, correo,
+        zona.nombre, f"Entró a la zona «{zona.nombre}»",
+        request=request, cuenta=correo, motivo=_motivo_post(request),
     )
     messages.success(request, f"{correo} quedó en la zona «{zona.nombre}».")
     return redirect(volver)
@@ -820,12 +1027,141 @@ def monitoreo_zonas(request):
         ObservadorPunto.objects.filter(observador=observador, punto=punto).delete()
         _auditar(
             request.user, MonitoreoAuditoria.QUITAR_PUNTO, observador,
-            nombre_zona, "",
+            nombre_zona, f"Punto «{nombre_zona}» quitado a {observador.nombre}",
+            request=request,
         )
     else:
         ObservadorPunto.objects.get_or_create(observador=observador, punto=punto)
         _auditar(
             request.user, MonitoreoAuditoria.ASIGNAR_PUNTO, observador,
-            nombre_zona, "",
+            nombre_zona, f"Punto «{nombre_zona}» asignado a {observador.nombre}",
+            request=request,
         )
     return redirect(volver)
+
+
+@admin_required
+@login_required
+def monitoreo_zona_alertas(request, pk):
+    """Activa/desactiva las alertas ANS de una zona (resaltado de urgentes)."""
+    if request.method != "POST":
+        return redirect(reverse("tickets:monitoreo_admin"))
+    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    zona = ZonaObservador.objects.select_related("observador").filter(pk=pk).first()
+    if zona is None:
+        return redirect(volver)
+    zona.alertas_ans = not zona.alertas_ans
+    zona.save(update_fields=["alertas_ans"])
+    _auditar(
+        request.user, MonitoreoAuditoria.ALERTAS_ANS, zona.observador,
+        zona.nombre,
+        f"Alertas ANS {'activadas' if zona.alertas_ans else 'desactivadas'} en «{zona.nombre}»",
+        request=request,
+    )
+    messages.success(
+        request, f"Alertas ANS {'activadas' if zona.alertas_ans else 'desactivadas'} en «{zona.nombre}»."
+    )
+    return redirect(volver)
+
+
+def _xlsx_auditoria(
+    filas,
+    titulo="Dogger · Auditoría de monitoreo",
+    nombre="dogger_auditoria",
+):
+    """Monta la descarga .xlsx de la auditoría, para los dos paneles.
+
+    Columnas: ID, Fecha, Acción, Zona, Supervisor, Cuenta, Hecho por,
+    Detalle, Motivo, Resultado, IP, Versión. La fila de encabezados lleva
+    autofiltro para filtrar/ordenar dentro de Excel.
+
+    Lo único que cambia de un panel a otro es el conjunto de filas que
+    entra: el del administrador baja todo el registro y el del observador
+    solo lo suyo, pero la hoja que sale es la misma.
+    """
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
+
+    filas = list(filas)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Auditoría"
+    NEGRO = PatternFill(start_color="171412", end_color="171412", fill_type="solid")
+    BLANCO = Font(name="Arial", bold=True, color="FFFFFF", size=11)
+    CUERPO = Font(name="Arial", size=10)
+    fino = Side(style="thin", color="D9CFC2")
+    borde = Border(left=fino, right=fino, top=fino, bottom=fino)
+    zebra = PatternFill(start_color="FBF6EC", end_color="FBF6EC", fill_type="solid")
+
+    headers = [
+        ("ID", 8), ("Fecha", 18), ("Acción", 22), ("Zona", 20),
+        ("Supervisor", 24), ("Cuenta", 30), ("Hecho por", 24),
+        ("Detalle", 44), ("Motivo", 30), ("Resultado", 12),
+        ("IP", 16), ("Versión", 10),
+    ]
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+    ws.cell(row=1, column=1, value=titulo).font = Font(
+        name="Arial", bold=True, color="FFFFFF", size=14
+    )
+    ws.cell(row=1, column=1).fill = NEGRO
+    ws.cell(row=1, column=1).alignment = Alignment(horizontal="center")
+    for i, (encabezado, ancho) in enumerate(headers, start=1):
+        c = ws.cell(row=2, column=i, value=encabezado)
+        c.font = BLANCO
+        c.fill = NEGRO
+        c.border = borde
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        ws.column_dimensions[get_column_letter(i)].width = ancho
+    ws.auto_filter.ref = f"A2:{get_column_letter(len(headers))}2"
+    ws.freeze_panes = "A3"
+    for n, a in enumerate(filas, start=3):
+        vals = [
+            a.pk,
+            timezone.localtime(a.fecha).strftime("%d/%m/%Y %H:%M") if a.fecha else "",
+            a.get_accion_display(),
+            a.zona_nombre or "",
+            getattr(a.observador, "nombre", "") or "",
+            a.cuenta or "",
+            getattr(a.actor, "nombre", "") or "",
+            ((a.detalle or "") + (f" — {a.comentarios}" if a.comentarios else ""))[:500],
+            a.motivo or "",
+            a.resultado or "",
+            a.ip_origen or "",
+            a.version_sistema or "",
+        ]
+        for i, v in enumerate(vals, start=1):
+            c = ws.cell(row=n, column=i, value=v)
+            c.font = CUERPO
+            c.border = borde
+            c.alignment = Alignment(vertical="center", wrap_text=True)
+            if n % 2 == 0:
+                c.fill = zebra
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    nombre_archivo = f"{nombre}_{timezone.localtime(timezone.now()).strftime('%Y%m%d_%H%M')}.xlsx"
+    resp = HttpResponse(
+        buffer.read(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    resp["Content-Disposition"] = f'attachment; filename="{nombre_archivo}"'
+    return resp
+
+
+@admin_required
+@require_GET
+def monitoreo_auditoria_exportar(request):
+    """Descarga **toda** la auditoría de monitoreo en Excel.
+
+    Es el registro completo, sin filtro de zonas: lo ve quien administra el
+    sistema. El observador baja el suyo desde su propia vista.
+    """
+    filas = (
+        MonitoreoAuditoria.objects.select_related("actor", "observador")
+        .order_by("-fecha", "-id")[:2000]
+    )
+    return _xlsx_auditoria(filas)

@@ -491,7 +491,14 @@
     document.addEventListener("click", function (e) {
         if (!e.target.closest(".sw-dd")) { cerrarPaneles(); }
     });
-    document.addEventListener("scroll", function () { cerrarPaneles(); }, true);
+    /* El scroll de adentro del panel es el del desplegable: con varios
+       resultados no caben y hay que poder bajar a verlos, así que no lo
+       cierra. Cualquier otro scroll sí lo cierra. */
+    document.addEventListener("scroll", function (e) {
+        var donde = e.target;
+        if (donde && donde.closest && donde.closest(".sw-dd-panel")) { return; }
+        cerrarPaneles();
+    }, true);
     window.addEventListener("resize", function () { cerrarPaneles(); });
     /* Nombre corto junto al icono: lo elegido en cada desplegable. */
     function pintarUsuarioLabel() {

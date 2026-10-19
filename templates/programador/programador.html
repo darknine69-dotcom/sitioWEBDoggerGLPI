@@ -61,6 +61,20 @@
             </select>
         </label>
         <p class="prog-filters-hint">El filtro de técnico aplica al calendario, a la matriz de disponibilidad y a los nuevos eventos.</p>
+        <button type="button" class="btn btn-outline btn-sm prog-disp-toggle" id="dispOtrosBtn"
+                aria-expanded="false" aria-controls="dispOtros"
+                title="Ver, en el mes de ahora, qué marcas de ausencia o falta tienen los demás técnicos">
+            <svg class="icon"><use href="#i-clock"/></svg> Disponibilidad de los demás
+        </button>
+    </div>
+
+    {# ---- Campo que activa el botón de arriba: quién de los demás está fuera ---- #}
+    <div class="prog-disp-otros" id="dispOtros" hidden>
+        <div class="prog-disp-otros-head">
+            <h4 class="prog-section-title">Disponibilidad de los demás técnicos</h4>
+            <span class="tec-count" id="dispOtrosCount"></span>
+        </div>
+        <div class="prog-disp-otros-lista" id="dispOtrosLista"></div>
     </div>
 
     {# ---- Pestañas ---- #}

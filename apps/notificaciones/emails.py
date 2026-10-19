@@ -218,3 +218,101 @@ def correo_ticket_cerrado(ticket, url_detalle=""):
         html,
         destinatarios,
     )
+
+
+# ------------------------------------------------------ ANS por vencer
+def _ans_texto_y_color(ticket, restante):
+    """(vencido?, línea de tiempo, hora límite) según el ANS del ticket.
+
+    Un solo sitio para que el correo del técnico y el del usuario digan lo
+    mismo: si restante ya es negativo, el ticket venció y el tono cambia.
+    """
+    from apps.tickets.sla import formatear_duracion
+
+    limite = getattr(ticket, "fecha_limite_ans", None)
+    vencido = restante is not None and restante.total_seconds() <= 0
+    if vencido:
+        linea = f"Venció hace {formatear_duracion(-restante)}"
+    else:
+        linea = f"Faltan {formatear_duracion(restante)}"
+    hora = (
+        timezone.localtime(limite).strftime("%d/%m/%Y %H:%M") if limite else ""
+    )
+    return vencido, linea, hora
+
+
+def correo_ans_por_vencer_tecnico(ticket, restante):
+    """Aviso al técnico: su ticket se está pasando del ANS."""
+    tecnico = ticket.tecnico_asignado
+    if not tecnico or not getattr(tecnico, "email", None):
+        return False
+    vencido, linea, hora = _ans_texto_y_color(ticket, restante)
+    html = _render(
+        "ans_por_vencer_tecnico.html",
+        {
+            "ticket": ticket,
+            "tecnico": tecnico,
+            "vencido": vencido,
+            "linea_tiempo": linea,
+            "hora_limite": hora,
+            "url_detalle": _absoluta(
+                reverse("tickets:detalle", args=[ticket.pk])
+            ),
+        },
+    )
+    texto = (
+        f"Hola {getattr(tecnico, 'nombre', '')},\n\n"
+        f"Tu ticket {ticket.codigo} {linea.lower()} para resolverlo.\n"
+        f"Título: {ticket.titulo}\n"
+        f"Prioridad: {ticket.get_prioridad_display()}\n"
+        f"ANS: {ticket.ans_horas} h"
+        + (f" · límite {hora}" if hora else "")
+        + "\n"
+        f"Solicitante: {ticket.solicitante_nombre} ({ticket.solicitante_email})\n\n"
+        "La supervisión ya está mirando este caso.\n\n"
+        f"Detalle: {_absoluta(reverse('tickets:detalle', args=[ticket.pk]))}\n\n"
+        "Dogger · Premium Quality"
+    )
+    return _enviar(
+        f"[Dogger] {'Vencido' if vencido else 'Por vencer'} "
+        f"{ticket.codigo} · {ticket.get_prioridad_display()}",
+        texto,
+        html,
+        [tecnico.email],
+    )
+
+
+def correo_ans_por_vencer_usuario(ticket, restante):
+    """Aviso a la persona que abrió el ticket: su caso va por el límite."""
+    correo = (ticket.solicitante_email or "").strip()
+    if not correo:
+        return False
+    vencido, linea, hora = _ans_texto_y_color(ticket, restante)
+    html = _render(
+        "ans_por_vencer_usuario.html",
+        {
+            "ticket": ticket,
+            "vencido": vencido,
+            "linea_tiempo": linea,
+            "hora_limite": hora,
+            "url_consulta": _absoluta(reverse("tickets:consultar")),
+        },
+    )
+    texto = (
+        f"Hola {ticket.solicitante_nombre},\n\n"
+        f"Tu solicitud {ticket.codigo} {linea.lower()} dentro del tiempo "
+        "comprometido de atención (ANS).\n"
+        f"Título: {ticket.titulo}\n"
+        f"Estado actual: {ticket.get_estado_display()}\n\n"
+        "El caso ya está en manos de soporte y la supervisión está haciendo "
+        "seguimiento para resolverlo a tiempo. Puedes consultar el avance con "
+        f"tu código en:\n{_absoluta(reverse('tickets:consultar'))}\n\n"
+        "Dogger · Premium Quality"
+    )
+    return _enviar(
+        f"Dogger HelpDesk — Tu solicitud {ticket.codigo} va por el límite "
+        "de atención",
+        texto,
+        html,
+        [correo],
+    )

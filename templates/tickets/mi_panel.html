@@ -224,7 +224,7 @@
                 <div class="mz-main">
                     <div class="mz-charts">
                         <div class="mz-chart-card">
-                            <h4><svg class="icon"><use href="#i-chart"/></svg> Rendimiento por zona</h4>
+                            <h4><svg class="icon"><use href="#i-chart"/></svg> <span id="mzTituloBarras">Rendimiento por zona</span></h4>
                             <div class="mz-chart-stage"><canvas id="mzChartBarras"></canvas></div>
                         </div>
                         <div class="mz-chart-card">
@@ -338,7 +338,7 @@
                     </div>
                 </aside>
             </div>
-            <script type="application/json" id="mzData">{{ zona_json|escapejs }}</script>
+            {{ zona_datos|json_script:"mzData" }}
         </div>
     </section>
     {% endif %}
@@ -577,6 +577,11 @@
     var D;
     try { D = JSON.parse(el.textContent); } catch (e) { return; }
     if (!D || !D.barras || !(D.barras.labels || []).length) { return; }
+    /* Sin zonas que rankear el título manda el dato: «Mis tickets por mes». */
+    if (D.barras.titulo) {
+        var tBarras = document.getElementById("mzTituloBarras");
+        if (tBarras) { tBarras.textContent = D.barras.titulo; }
+    }
     var _cache = {};
     var _ctx = null;
     function hatch(color) {

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Mi historial{% endblock %}
+{% block body_class %}lista-page{% endblock %}
+{% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-clock"/></svg></span>{% endblock %}
+{% block header_title %}Historial{% endblock %}
+{% block header_desc %}Todo lo que dejaste hecho en la plataforma: cada respuesta que diste y cada ticket que resolviste.{% endblock %}
+
+{% block extra_css %}
+<style>
+/* El historial es una sola tabla, así que las columnas se reparten por peso
+   y el detalle se corta con puntos suspensivos en vez de estirar la fila. */
+.hist-page .data-table th:nth-child(1) { width: 122px; }
+.hist-page .data-table th:nth-child(2) { width: 112px; }
+.hist-page .data-table th:nth-child(3) { width: 110px; }
+.hist-page .data-table td.det-txt { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-page .data-table td.det-txt:hover { white-space: normal; }
+.hist-filtros { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.hist-busca { position: relative; display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px; }
+.hist-busca svg { position: absolute; left: 11px; color: var(--ink-muted); pointer-events: none; }
+.hist-busca input { width: 100%; height: 38px; padding: 0 12px 0 34px; border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: 13px; background: #fff; }
+.hist-busca input:focus { outline: none; border-color: var(--dogger-red); box-shadow: 0 0 0 3px rgba(200,16,46,.12); }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="page hist-page">
+
+    <div class="dash-stat-row corp-anim" style="margin-bottom:16px">
+        <div class="dash-stat dash-hov-total">
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-clock"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Registros</span>
+                <span class="dash-stat-hint">con el filtro aplicado</span>
+            </span>
+        </div>
+        <div class="dash-stat dash-hov-resueltos">
+            <span class="dash-stat-icon st-ic-resueltos">
+                <span class="dash-stat-value st-resueltos">{{ respuestas_total }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-message"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Respuestas</span>
+                <span class="dash-stat-hint">escritas en los hilos</span>
+            </span>
+        </div>
+        <div class="dash-stat dash-hov-abiertos">
+            <span class="dash-stat-icon st-ic-abiertos">
+                <span class="dash-stat-value st-abiertos">{{ resueltos_total }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Resueltos</span>
+                <span class="dash-stat-hint">tickets que cerraste</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="tabs-bar">
+        <a class="tab-pill {% if tipo == 'todo' %}active{% endif %}" href="?tipo=todo&amp;q={{ q|urlencode }}">Todo</a>
+        <a class="tab-pill {% if tipo == 'respuestas' %}active{% endif %}" href="?tipo=respuestas&amp;q={{ q|urlencode }}">Respuestas</a>
+        <a class="tab-pill {% if tipo == 'resueltos' %}active{% endif %}" href="?tipo=resueltos&amp;q={{ q|urlencode }}">Resueltos</a>
+    </div>
+
+    <form class="hist-filtros" method="get" action="{% url 'tickets:tec_historial' %}">
+        <span class="hist-busca">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código o título del ticket…"
+                   aria-label="Buscar en tu historial">
+        </span>
+        <input type="hidden" name="tipo" value="{{ tipo }}">
+        <button type="submit" class="btn btn-primary">Buscar</button>
+        {% if q %}<a class="link-clear" href="{% url 'tickets:tec_historial' %}?tipo={{ tipo }}">✕ Limpiar</a>{% endif %}
+    </form>
+
+    <div class="table-card">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Qué hizo</th>
+                        <th>Ticket</th>
+                        <th>Título</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for e in entradas %}
+                    <tr>
+                        <td>{{ e.fecha|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if e.tipo == 'resuelto' %}
+                            <span class="obs-pill obs-pill-verde">Resuelto</span>
+                            {% else %}
+                            <span class="obs-pill obs-pill-amarillo">Respuesta</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ e.codigo }}</strong></td>
+                        <td class="det-txt" title="{{ e.titulo }}">{{ e.titulo }}</td>
+                        <td class="det-txt" title="{{ e.texto }}">
+                            {% if e.tipo == 'resuelto' %}Marcado como resuelto{% else %}{{ e.texto }}{% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr class="table-empty">
+                        <td colspan="5">
+                            <p class="empty-hint">
+                                {% if q %}Ningún registro coincide con «{{ q }}».
+                                {% elif tipo == 'resueltos' %}Todavía no has marcado ningún ticket como resuelto.
+                                {% elif tipo == 'respuestas' %}Todavía no has escrito ninguna respuesta en un hilo.
+                                {% else %}Todavía no hay nada registrado de tu trabajo. Cada respuesta que escribas
+                                y cada ticket que resuelvas quedará aquí, con su fecha.{% endif %}
+                            </p>
+                            {% if q %}<a class="btn btn-outline btn-sm" href="{% url 'tickets:tec_historial' %}?tipo={{ tipo }}">Limpiar la búsqueda</a>{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if num_paginas > 1 %}
+    <div class="pagination-links">
+        <span class="pagination-info">Página {{ pagina }} de {{ num_paginas }}</span>
+        {% if tiene_anterior %}
+        <a class="page-pill" href="?tipo={{ tipo }}&amp;q={{ q|urlencode }}&amp;per_page={{ por_pagina }}&amp;page={{ pagina_anterior }}">‹ Anterior</a>
+        {% else %}
+        <span class="page-pill disabled">‹ Anterior</span>
+        {% endif %}
+        <span class="page-pill current">{{ pagina }}</span>
+        {% if tiene_siguiente %}
+        <a class="page-pill" href="?tipo={{ tipo }}&amp;q={{ q|urlencode }}&amp;per_page={{ por_pagina }}&amp;page={{ pagina_siguiente }}">Siguiente ›</a>
+        {% else %}
+        <span class="page-pill disabled">Siguiente ›</span>
+        {% endif %}
+    </div>
+    {% endif %}
+</main>
+{% endblock %}

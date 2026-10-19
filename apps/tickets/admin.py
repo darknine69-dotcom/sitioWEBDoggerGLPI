@@ -75,7 +75,7 @@ class MensajeCorporativoAdmin(admin.ModelAdmin):
 
 @admin.register(MonitoreoAuditoria)
 class MonitoreoAuditoriaAdmin(admin.ModelAdmin):
-    list_display = ("fecha", "accion", "zona_nombre", "actor", "observador")
-    list_filter = ("accion",)
-    search_fields = ("zona_nombre", "detalle", "actor__email", "observador__email")
-    readonly_fields = ("fecha",)
+    list_display = ("fecha", "accion", "zona_nombre", "cuenta", "actor", "observador", "resultado")
+    list_filter = ("accion", "resultado")
+    search_fields = ("zona_nombre", "detalle", "cuenta", "motivo", "actor__email", "observador__email")
+    readonly_fields = ("fecha", "ip_origen", "version_sistema")

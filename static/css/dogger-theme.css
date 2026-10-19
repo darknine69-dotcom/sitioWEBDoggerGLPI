@@ -2504,6 +2504,16 @@ select:focus-visible, textarea:focus-visible {
     font-weight: 800;
     color: var(--dogger-red);
 }
+/* Ojo: `.dash-stat` no se pone oscuro al pasar el ratón — solo se le tiñe el
+   borde (más abajo) y el interior queda en papel claro. Poner el contador en
+   blanco aquí lo hacía invisible justo cuando se le pasaba el ratón. Las
+   tarjetas oscuras de al lado sí se llenan de #171412, por eso ellas sí. */
+.kpi-card:hover { background: #171412; border-color: #171412; }
+.kpi-card:hover .kpi-value { color: #fff; }
+.kpi-card:hover .kpi-label { color: #D8D2C7; }
+.obs-kpi:hover { background: #171412; border-color: #171412; }
+.obs-kpi:hover .obs-kpi-n { color: #fff; }
+.obs-kpi:hover .obs-kpi-l { color: #D8D2C7; }
 
 .kpi-label {
     font-size: 12.5px;
@@ -3265,7 +3275,7 @@ html[style*="--sb-accent"] .sw-fab, html[style*="--sb-accent"] .sw-send { backgr
 .sw-dd-native option { color: #111; }
 /* Panel propio del desplegable: filas compactas con nombre pequeño,
    icono de rol a la izquierda y contador/badge separados a la derecha. */
-.sw-dd-panel { position: fixed; z-index: 9600; min-width: 244px; max-width: 292px; max-height: 302px; overflow-y: auto; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-pop); padding: 5px; font-family: var(--font-corp); }
+.sw-dd-panel { position: fixed; z-index: 9600; min-width: 244px; max-width: 292px; max-height: 302px; overflow-y: auto; overscroll-behavior: contain; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-pop); padding: 5px; font-family: var(--font-corp); }
 .sw-dd-panel[hidden] { display: none; }
 .sw-dd-row { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 8px; padding: 6px 8px; font: inherit; cursor: pointer; }
 .sw-dd-row:hover { background: #FBF7EF; }
@@ -3808,7 +3818,7 @@ a.dash-stat { text-decoration: none; }
     min-width: 0;
     transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
 }
-a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(23, 20, 18, .08); }
+.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(23, 20, 18, .08); }
 .dash-stat-icon {
     position: relative;
     width: 58px;
@@ -3822,7 +3832,7 @@ a.dash-stat:hover { border-color: var(--dogger-red); transform: translateY(-2px)
     color: #111;
     transition: transform .18s ease;
 }
-a.dash-stat:hover .dash-stat-icon { transform: scale(1.06); }
+.dash-stat:hover .dash-stat-icon { transform: scale(1.06); }
 .dash-stat-icon .dash-stat-value { font-size: 18px; font-weight: 800; line-height: 1; letter-spacing: -.01em; }
 .dash-stat-glyph {
     position: absolute; right: -3px; bottom: -3px;
@@ -3858,30 +3868,36 @@ a.dash-stat:hover .dash-stat-icon { transform: scale(1.06); }
 .dash-stat .dash-stat-value.st-vencidos { color: #C6281E; }
 .dash-stat .dash-stat-value.st-sla-ok { color: #16A34A; }
 .dash-stat .dash-stat-value.st-sla-no { color: #C6281E; }
+/* "Por vencer" del panel del observador: el cronómetro del ANS. */
+.dash-stat .dash-stat-value.st-ans { color: #B45309; }
+.st-ic-ans { background: rgba(183,121,31,.14); }
+.st-ic-ans .dash-stat-glyph { background: #B7791F; }
 .dash-stat-hint { font-size: 11.5px; color: #8A8478; font-weight: 600; overflow-wrap: anywhere; }
 /* Cada tarjeta toma el color de su indicador al pasar el mouse. */
-a.dash-hov-total:hover { border-color: #374151; background: rgba(55,65,81,.06); }
-a.dash-hov-total:hover .dash-stat-icon { background: #374151; color: #fff; }
-a.dash-hov-abiertos:hover { border-color: #F97316; background: rgba(249,115,22,.08); }
-a.dash-hov-abiertos:hover .dash-stat-icon { background: #F97316; color: #fff; }
-a.dash-hov-progreso:hover { border-color: #CA8A04; background: rgba(202,138,4,.1); }
-a.dash-hov-progreso:hover .dash-stat-icon { background: #CA8A04; color: #fff; }
-a.dash-hov-resueltos:hover { border-color: #059669; background: rgba(5,150,105,.08); }
-a.dash-hov-resueltos:hover .dash-stat-icon { background: #059669; color: #fff; }
-a.dash-hov-tecnicos:hover { border-color: #4F46E5; background: rgba(79,70,229,.07); }
-a.dash-hov-tecnicos:hover .dash-stat-icon { background: #4F46E5; color: #fff; }
-a.dash-hov-usuarios:hover { border-color: var(--dogger-red); background: rgba(214,43,31,.05); }
-a.dash-hov-usuarios:hover .dash-stat-icon { background: var(--dogger-red); color: #fff; }
-a.dash-hov-zonas:hover { border-color: #7C3AED; background: rgba(124,58,237,.07); }
-a.dash-hov-zonas:hover .dash-stat-icon { background: #7C3AED; color: #fff; }
-a.dash-hov-cerrados:hover { border-color: #374151; background: rgba(55,65,81,.06); }
-a.dash-hov-cerrados:hover .dash-stat-icon { background: #374151; color: #fff; }
-a.dash-hov-vencidos:hover { border-color: #DC2626; background: rgba(220,38,38,.07); }
-a.dash-hov-vencidos:hover .dash-stat-icon { background: #DC2626; color: #fff; }
-a.dash-hov-sla-ok:hover { border-color: #059669; background: rgba(5,150,105,.08); }
-a.dash-hov-sla-ok:hover .dash-stat-icon { background: #059669; color: #fff; }
-a.dash-hov-sla-no:hover { border-color: #F97316; background: rgba(249,115,22,.08); }
-a.dash-hov-sla-no:hover .dash-stat-icon { background: #F97316; color: #fff; }
+.dash-hov-total:hover { border-color: #374151; background: rgba(55,65,81,.06); }
+.dash-hov-total:hover .dash-stat-icon { background: #374151; color: #fff; }
+.dash-hov-abiertos:hover { border-color: #F97316; background: rgba(249,115,22,.08); }
+.dash-hov-abiertos:hover .dash-stat-icon { background: #F97316; color: #fff; }
+.dash-hov-progreso:hover { border-color: #CA8A04; background: rgba(202,138,4,.1); }
+.dash-hov-progreso:hover .dash-stat-icon { background: #CA8A04; color: #fff; }
+.dash-hov-resueltos:hover { border-color: #059669; background: rgba(5,150,105,.08); }
+.dash-hov-resueltos:hover .dash-stat-icon { background: #059669; color: #fff; }
+.dash-hov-tecnicos:hover { border-color: #4F46E5; background: rgba(79,70,229,.07); }
+.dash-hov-tecnicos:hover .dash-stat-icon { background: #4F46E5; color: #fff; }
+.dash-hov-usuarios:hover { border-color: var(--dogger-red); background: rgba(214,43,31,.05); }
+.dash-hov-usuarios:hover .dash-stat-icon { background: var(--dogger-red); color: #fff; }
+.dash-hov-zonas:hover { border-color: #7C3AED; background: rgba(124,58,237,.07); }
+.dash-hov-zonas:hover .dash-stat-icon { background: #7C3AED; color: #fff; }
+.dash-hov-cerrados:hover { border-color: #374151; background: rgba(55,65,81,.06); }
+.dash-hov-cerrados:hover .dash-stat-icon { background: #374151; color: #fff; }
+.dash-hov-vencidos:hover { border-color: #DC2626; background: rgba(220,38,38,.07); }
+.dash-hov-vencidos:hover .dash-stat-icon { background: #DC2626; color: #fff; }
+.dash-hov-ans:hover { border-color: #B7791F; background: rgba(183,121,31,.08); }
+.dash-hov-ans:hover .dash-stat-icon { background: #B7791F; color: #fff; }
+.dash-hov-sla-ok:hover { border-color: #059669; background: rgba(5,150,105,.08); }
+.dash-hov-sla-ok:hover .dash-stat-icon { background: #059669; color: #fff; }
+.dash-hov-sla-no:hover { border-color: #F97316; background: rgba(249,115,22,.08); }
+.dash-hov-sla-no:hover .dash-stat-icon { background: #F97316; color: #fff; }
 /* Tarjeta activa (filtro aplicado): borde del color de su indicador. */
 a.dash-stat.is-active { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 a.dash-hov-total.is-active { border-color: #374151; }
@@ -3907,6 +3923,35 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 /* Rejilla de indicadores: se auto-ajusta al ancho para que nunca se
    apilen en una sola columna ni se descuadren. */
 .dash-stat-row--mesas { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+/* Indicadores del Monitoreo del observador: «Zonas a cargo» ocupa la fila
+   entera y, debajo, dos columnas de tres. Van pequeños y apretados: son
+   una mirada rápida de los números, no un titular. */
+.dash-stat-row--obs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.dash-stat-row--obs .dash-stat { padding: 7px 10px; gap: 9px; border-radius: 10px; }
+.dash-stat-row--obs .dash-stat-icon { width: 36px; height: 36px; border-radius: 9px; }
+.dash-stat-row--obs .dash-stat-icon .dash-stat-value { font-size: 14px; }
+.dash-stat-row--obs .dash-stat-value { font-size: 14px; }
+.dash-stat-row--obs .dash-stat-label { font-size: 11px; }
+.dash-stat-row--obs .dash-stat-hint { font-size: 10px; }
+.dash-stat-row--obs .dash-stat-glyph { width: 16px; height: 16px; }
+.dash-stat-row--obs .dash-stat-glyph .icon { width: 8px; height: 8px; }
+.dash-stat-row--obs .dash-stat--grande { grid-column: 1 / -1; padding: 9px 12px; }
+.dash-stat-row--obs .dash-stat--grande .dash-stat-icon { width: 44px; height: 44px; }
+.dash-stat-row--obs .dash-stat--grande .dash-stat-icon .dash-stat-value,
+.dash-stat-row--obs .dash-stat--grande .dash-stat-value { font-size: 17px; }
+.dash-stat-row--obs .dash-stat--grande .dash-stat-label { font-size: 11.5px; }
+.dash-stat-row--obs .dash-stat--grande .dash-stat-glyph { width: 19px; height: 19px; }
+.dash-stat-row--obs .dash-stat--grande .dash-stat-glyph .icon { width: 10px; height: 10px; }
+@media (max-width: 560px) {
+    .dash-stat-row--obs { grid-template-columns: 1fr; }
+    .dash-stat-row--obs .dash-stat-icon { width: 34px; height: 34px; }
+    .dash-stat-row--obs .dash-stat-value,
+    .dash-stat-row--obs .dash-stat-icon .dash-stat-value { font-size: 13px; }
+    .dash-stat-row--obs .dash-stat--grande .dash-stat-icon { width: 42px; height: 42px; }
+    .dash-stat-row--obs .dash-stat--grande .dash-stat-value,
+    .dash-stat-row--obs .dash-stat--grande .dash-stat-icon .dash-stat-value { font-size: 16px; }
+}
 
 @media (max-width: 960px) {
     .dash-stat-row { grid-template-columns: repeat(2, 1fr); }
@@ -6416,6 +6461,58 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
 .ans-por-vencer { color: #B7791F; }
 .ans-vencido { color: #D62B1F; }
 .ans-resuelto { color: #1D4ED8; }
+/* El cronómetro que ya está por vencer o vencido late: es la señal de que
+   el tiempo sigue corriendo y que alguien tiene que moverse. Solo en esos
+   dos estados, para no restregarle animación a lo que va bien. */
+.ans-por-vencer svg, .ans-vencido svg { animation: ansLate 2s ease-in-out infinite; }
+@keyframes ansLate {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.16); opacity: .72; }
+}
+/* La etiqueta que abre la ventana explicativa: se nota que es un botón sin
+   dejar de leerse como el dato que es. */
+.ans-info { cursor: pointer; border-bottom: 1px dotted currentColor; padding-bottom: 1px; }
+.ans-info:hover { background: rgba(0, 0, 0, .04); }
+.ans-info:focus-visible { outline: 2px solid var(--dogger-red, #C8102E); outline-offset: 2px; border-radius: 4px; }
+
+/* Ventana que explica el ANS de un ticket. */
+.ans-modal-caja { position: relative; border-top-color: #B7791F; }
+.ans-modal-x {
+    position: absolute; top: 10px; right: 10px;
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; color: var(--ink-muted); cursor: pointer;
+}
+.ans-modal-x:hover { background: #F5F2EC; color: var(--ink); }
+.ans-modal-x .icon { width: 14px; height: 14px; }
+.ans-modal-crono { color: #B7791F; }
+.ans-modal-asunto { margin: 4px 0 0; font-size: 13px; font-weight: 600; color: var(--ink-muted); padding-right: 30px; }
+/* El reloj grande, en el color que corresponde al estado actual. */
+.ans-modal-reloj {
+    display: flex; align-items: center; gap: 8px;
+    margin: 12px 0; padding: 12px 14px;
+    border-radius: 10px; border: 1px solid var(--line);
+    background: var(--dogger-paper, #FAF7F2);
+    font-size: 17px; font-weight: 800;
+}
+.ans-modal-reloj.ans-ok { color: #217A3E; background: #F1F8F3; border-color: #CFE7D6; }
+.ans-modal-reloj.ans-por-vencer { color: #8A5A00; background: #FFF7E0; border-color: #F0DFA8; }
+.ans-modal-reloj.ans-vencido { color: #B42318; background: #FDECEA; border-color: #F3C6C1; }
+.ans-modal-reloj-ico { width: 20px; height: 20px; flex: none; }
+.ans-modal-datos { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 12.5px; }
+.ans-modal-datos th {
+    text-align: left; font-weight: 700; color: var(--ink-muted);
+    padding: 4px 10px 4px 0; white-space: nowrap; vertical-align: top; width: 1%;
+}
+.ans-modal-datos td { padding: 4px 0; color: var(--ink); }
+.ans-modal-explica { margin: 0 0 12px; font-size: 12.5px; line-height: 1.6; color: var(--ink-muted); }
+/* La leyenda responde la duda de qué significa cada color. */
+.ans-modal-leyenda {
+    display: flex; flex-wrap: wrap; gap: 6px 14px;
+    padding: 10px 12px; border-radius: 10px;
+    background: var(--dogger-paper, #FAF7F2); border: 1px dashed #D8D2C7;
+}
 
 /* ---- Resumen ANS en el detalle ---- */
 .ans-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 6px 0 16px; }
@@ -6858,6 +6955,12 @@ html[style*="--sb-accent"] .notif-head {
     .notif-popup-actions .btn { flex: 1 1 0; }
 }
 
+.corp-view-toggle { display: inline-flex; padding: 3px; gap: 2px; background: #F4EFE6; border: 1px solid var(--line); border-radius: 10px; }
+.corp-view-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 0; background: transparent; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--ink-muted); cursor: pointer; transition: all .15s ease; font-family: inherit; }
+.corp-view-btn svg { width: 14px; height: 14px; }
+.corp-view-btn:hover { color: var(--ink); }
+.corp-view-btn.is-active { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(23,20,18,.12); }
+
 /* =====================================================================
    Controles táctiles en móvil y tableta
    Los <select> y botones de las gráficas quedaban en 18-27px de alto, por
@@ -6891,6 +6994,9 @@ html[style*="--sb-accent"] .notif-head {
    Módulo del observador: puntos asignados, lista y monitoreo
    ===================================================================== */
 .obs-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Botón de solo icono en la cabecera de una carpeta: cuadrado, sin texto. */
+.obs-btn-ico { padding: 6px 8px; line-height: 1; }
+.obs-btn-ico .icon { width: 16px; height: 16px; }
 
 .obs-tabs {
     display: flex; gap: 6px; flex-wrap: wrap;
@@ -7056,6 +7162,213 @@ html[style*="--sb-accent"] .notif-head {
     text-transform: uppercase; letter-spacing: .04em;
     background: var(--dogger-paper, #FAF7F2);
 }
+#auditoria .obs-tabla thead th {
+    border-bottom: 2px solid #D8D2C7;
+    background: #E3F2E6;
+}
+#agregar .obs-tabla thead th {
+    background: #E3F2E6;
+}
+/* La tabla de "Todos los usuarios" del observador. Se pinta como la del
+   administrador (cabecera verde) pero con las filas compactas: la celda de
+   cuenta lleva nombre y correo juntos, la zona es un selector en línea y
+   las acciones son iconos. */
+.obs-card-tabla { margin-bottom: 16px; }
+.obs-conteo { margin-left: auto; font-size: 12px; white-space: nowrap; }
+
+/* Banda de filtros: caja blanca justo encima de la tabla, para que se vea
+   que son los que mandan sobre ella. */
+.obs-filtros-tabla {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 10px rgba(23,20,18,.04);
+}
+.obs-filtros-tabla .obs-buscador-campo,
+.obs-filtros-tabla .obs-buscador-tipo { background: #FCFBF8; }
+
+.obs-todos .obs-tabla { min-width: 940px; }
+.obs-todos .obs-tabla thead th {
+    background: #E3F2E6;
+    border-bottom: 2px solid #D8D2C7;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #3D4A3F;
+    padding: 8px 10px;
+    white-space: nowrap;
+}
+.obs-todos .obs-tabla thead tr {
+    outline: 1px solid #D8D2C7;
+    outline-offset: -1px;
+    border-radius: 8px;
+}
+/* Filas compactas, con rayado suave y realce al pasar el mouse para que no
+   se vean planas. Cada fila ocupa dos <tr> (la suya y la de su acción), de
+   ahí que el rayado venga marcado desde la plantilla y no con nth-child. */
+.obs-todos .obs-tabla td {
+    padding: 5px 10px;
+    font-size: 12.5px;
+    vertical-align: middle;
+    border-bottom: 1px solid #F1ECE4;
+}
+tr.obs-fila.is-par { background: #FCFBF8; }
+tr.obs-fila:hover { background: #F5F8FF; }
+/* Las cuentas que ya se siguen llevan una franja azul a la izquierda. */
+tr.obs-fila-lista td:first-child { box-shadow: inset 3px 0 0 var(--pan-blue, #1D4ED8); }
+.obs-cuenta { display: block; }
+.obs-cuenta strong { display: block; font-size: 13px; color: var(--ink); line-height: 1.2; }
+.obs-cuenta small { display: block; font-size: 11px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 210px; }
+.obs-rol {
+    display: inline-block; font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .04em;
+    padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+    background: #F2EFE9; color: var(--ink-muted); border: 1px solid var(--line);
+}
+.obs-rol-tecnico { background: #EEF2FF; color: #1D4ED8; border-color: #D3DCFB; }
+.obs-rol-observador { background: #F5EFFB; color: #6B3FA0; border-color: #E2D5F5; }
+.obs-rol-admin { background: #FDF0E7; color: #A8551B; border-color: #F5DCC8; }
+.obs-rol-sin-cuenta { background: #F5F2EC; color: var(--ink-muted); }
+.obs-todos .obs-tec { min-width: 130px; }
+.obs-todos .obs-avance small { display: block; font-size: 10.5px; color: var(--ink-muted); margin-top: 2px; }
+
+/* Zona en línea: se elige y se guarda sola, sin desplegar nada. */
+.obs-zona-form { display: flex; align-items: center; gap: 4px; }
+.obs-zona-sel {
+    max-width: 150px; min-width: 0;
+    font-size: 12px; padding: 3px 6px;
+    border: 1px solid var(--line); border-radius: 7px;
+    background: #fff; color: var(--ink-muted); cursor: pointer;
+}
+.obs-zona-sel.is-puesta { background: #EEF2FF; border-color: #C3D0F8; color: #1D4ED8; font-weight: 700; }
+.obs-zona-ok {
+    width: 24px; height: 24px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); border-radius: 7px;
+    background: #fff; color: var(--ink-muted); cursor: pointer;
+}
+.obs-zona-ok .icon { width: 13px; height: 13px; }
+.obs-zona-ok:hover { background: #E7F6EC; border-color: #2F7D4F; color: #2F7D4F; }
+.obs-pide-zona {
+    display: inline-block; font-size: 11px; color: var(--ink-muted);
+    border: 1px dashed var(--line); border-radius: 999px; padding: 2px 9px;
+    cursor: help;
+}
+
+/* Acciones de las tablas: un grupo de iconos en la celda (la fila no se
+   estira) que despliegan debajo la confirmación concreta. */
+.obs-todos .obs-acciones { text-align: right; white-space: nowrap; }
+.obs-acc-icos { display: inline-flex; gap: 5px; justify-content: flex-end; align-items: center; }
+.obs-acc-ico, .obs-acc-lista {
+    width: 26px; height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); border-radius: 7px;
+    background: #fff; color: var(--ink-muted); cursor: pointer;
+    transition: background .14s ease, color .14s ease, border-color .14s ease;
+}
+.obs-acc-ico .icon, .obs-acc-lista .icon { width: 13px; height: 13px; }
+.obs-acc-ico:hover { background: #F5F2EC; color: var(--ink); }
+.obs-acc-ico.is-on { background: var(--pan-blue, #1D4ED8); border-color: var(--pan-blue, #1D4ED8); color: #fff; }
+.obs-acc-ico-agr:hover { background: #E7F6EC; border-color: #2F7D4F; color: #2F7D4F; }
+.obs-acc-ico-qui:hover { background: #FEECEB; border-color: #D62B1F; color: #B42318; }
+/* La estrella marca que la cuenta ya está en la lista: no es un botón. */
+.obs-acc-lista { background: #FFF7E0; border-color: #F0DFA8; color: #B08900; cursor: default; }
+
+tr.obs-acc-detalle td {
+    background: #F7FAFF;
+    border-top: 0;
+    border-bottom: 1px solid #DCE6F8;
+    box-shadow: inset 3px 0 0 var(--pan-blue, #1D4ED8);
+}
+tr.obs-acc-detalle[hidden] { display: none; }
+.obs-acc-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.obs-acc-txt { font-size: 12.5px; color: var(--ink-muted); }
+.obs-acc-form select { min-width: 170px; }
+#auditoria .obs-tabla thead tr {
+    outline: 1px solid #D8D2C7;
+    outline-offset: -1px;
+    border-radius: 8px;
+}
+.aud-card { font-family: "Inter", "Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+.aud-tabla { font-family: "Inter", "Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+.aud-meta { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 0 0 12px; font-size: 12.5px; }
+.aud-meta-item { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.aud-estado { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #2F7D4F; }
+.aud-controles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
+.aud-lupa { display: inline-flex; align-items: center; gap: 0; border: 1.5px solid #E4DCCC; border-radius: 12px; background: #fff; padding: 2px; transition: border-color .12s, box-shadow .12s; }
+.aud-lupa.abierta { border-color: var(--dogger-red, #C8102E); box-shadow: 0 0 0 2px rgba(200,16,46,.12); }
+.aud-lupa button { border: 0; background: none; cursor: pointer; padding: 6px 8px; color: var(--ink-muted); display: inline-flex; }
+.aud-lupa button:hover { color: var(--dogger-red, #C8102E); }
+.aud-lupa button[hidden] { display: none; }
+.aud-lupa input[type="search"] { border: 0; outline: none; font-size: 13px; font-family: inherit; padding: 6px 4px; width: 170px; background: transparent; }
+.aud-lupa input[type="search"][hidden] { display: none; }
+.aud-fecha { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid #E4DCCC; border-radius: 12px; background: #fff; padding: 6px 10px; font-size: 12.5px; font-weight: 600; color: var(--ink-muted); }
+.aud-fecha input[type="date"] { border: 0; outline: none; font-family: inherit; font-size: 12.5px; background: transparent; }
+.aud-controles .obs-buscador-tipo { border: 1.5px solid #E4DCCC; border-radius: 12px; background: #fff; padding: 7px 10px; font-size: 12.5px; font-weight: 600; font-family: inherit; color: var(--ink, #171412); min-height: 34px; }
+.aud-controles .obs-buscador-tipo:focus { outline: none; border-color: var(--dogger-red, #C8102E); box-shadow: 0 0 0 2px rgba(200,16,46,.12); }
+.aud-controles .btn-excel { border-radius: 12px; padding: 7px 12px; font-size: 12.5px; min-height: 34px; display: inline-flex; align-items: center; gap: 6px; }
+.aud-lupa { min-height: 34px; box-sizing: border-box; }
+#aud-tabla tbody tr.aud-reciente { background: #FDF8EE; }
+#aud-tabla tbody tr.aud-reciente:hover { background: #FAF1DC; }
+.aud-modal { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; background: rgba(23, 20, 18, .5); backdrop-filter: blur(2px); padding: 16px; animation: audFade .15s ease-out; }
+.aud-modal[hidden] { display: none; }
+@keyframes audFade { from { opacity: 0; } to { opacity: 1; } }
+.aud-modal-caja { background: #fff; border-radius: 16px; border-top: 4px solid var(--dogger-red, #C8102E); max-width: 440px; width: 100%; padding: 20px 20px 16px; box-shadow: 0 24px 60px rgba(0,0,0,.3); font-family: "Inter", "Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+.aud-modal-caja h4 { margin: 0; font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.aud-modal-caja h4::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dogger-red, #C8102E); flex: none; }
+#aud-modal-sub { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: var(--ink-muted); background: var(--dogger-paper, #FAF7F2); border: 1px dashed #D8D2C7; border-radius: 10px; padding: 8px 10px; }
+#aud-modal-sub:empty { display: none; }
+.aud-modal-opciones { display: grid; gap: 8px; margin: 14px 0 10px; }
+.aud-motivo-op { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid #E4DCCC; border-radius: 12px; cursor: pointer; font-size: 13.5px; font-weight: 600; transition: border-color .12s, background .12s; }
+.aud-motivo-op:hover { border-color: var(--dogger-red, #C8102E); background: #FFF9F7; }
+.aud-motivo-op:has(input:checked) { border-color: var(--dogger-red, #C8102E); background: #FFF3F1; box-shadow: 0 0 0 1px var(--dogger-red, #C8102E); }
+.aud-motivo-op input { accent-color: #C8102E; width: 16px; height: 16px; flex: none; }
+.aud-modal-libre-titulo { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); margin: 4px 0 6px; }
+#aud-modal-libre { width: 100%; box-sizing: border-box; border: 1.5px solid #E4DCCC; border-radius: 12px; padding: 10px 12px; font-size: 13.5px; font-family: inherit; }
+#aud-modal-libre:focus { outline: none; border-color: var(--dogger-red, #C8102E); box-shadow: 0 0 0 2px rgba(200,16,46,.15); }
+.aud-modal-pie { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.cz-caja { max-width: 520px; max-height: 88vh; overflow: auto; font-family: "Inter", "Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+.cz-campo { display: grid; gap: 6px; margin-top: 12px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); }
+.cz-campo input[type="text"], .cz-campo input[type="search"], .cz-campo select { text-transform: none; letter-spacing: 0; font-size: 13.5px; font-weight: 500; border: 1.5px solid #E4DCCC; border-radius: 12px; padding: 9px 12px; font-family: inherit; width: 100%; box-sizing: border-box; color: #171412; }
+.cz-campo input:focus, .cz-campo select:focus { outline: none; border-color: #C8102E; box-shadow: 0 0 0 2px rgba(200,16,46,.12); }
+.cz-nombre-fila { display: flex; gap: 8px; align-items: center; }
+.cz-nombre-fila input { flex: 1; }
+.cz-check { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex: none; border-radius: 50%; background: #2F7D4F; color: #fff; font-weight: 800; }
+.cz-check[hidden] { display: none; }
+.cz-error { color: #C8102E; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.cz-error[hidden] { display: none; }
+.cz-sug { position: relative; }
+#cz-bloque-usuarios { position: relative; }
+.cz-sug:not([hidden]) { position: absolute; top: 100%; left: 0; right: 0; z-index: 60; max-height: 180px; overflow: auto; border: 1.5px solid #E4DCCC; border-radius: 12px; margin-top: 4px; background: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+.cz-tabs { display: flex; gap: 6px; margin-top: 12px; }
+.cz-tab { flex: 1; border: 1.5px solid #E4DCCC; background: #fff; border-radius: 12px; padding: 8px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; color: var(--ink-muted); }
+.cz-tab.is-on { border-color: var(--dogger-red, #C8102E); color: var(--dogger-red, #C8102E); background: #FFF3F1; }
+.cz-desplegable { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cz-toggle { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 1.5px solid #C9C2B4; background: #fff; color: #8A8378; font-weight: 800; cursor: pointer; font-size: 14px; line-height: 1; }
+.cz-toggle.is-on { background: #2F7D4F; border-color: #2F7D4F; color: #fff; }
+.cz-perm { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 2px; border-bottom: 1px solid #EDE6D8; cursor: pointer; }
+.cz-perm:last-of-type { border-bottom: 0; }
+.cz-perm:hover b { color: var(--dogger-red, #C8102E); }
+.cz-perm span { display: grid; gap: 2px; }
+.cz-perm b { font-size: 13.5px; }
+.cz-perm small { color: var(--ink-muted); font-size: 12px; }
+.cz-perm input { width: 20px; height: 20px; accent-color: #2F7D4F; flex: none; }
+.cz-perm-lista { margin: 12px 0 0; padding-left: 18px; font-size: 13px; display: grid; gap: 6px; }
+.cz-elegidos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cz-chip { display: inline-flex; align-items: center; gap: 6px; background: #FAF7F2; border: 1px solid #D8D2C7; border-radius: 20px; padding: 4px 6px 4px 10px; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.cz-chip small { color: var(--ink-muted); font-weight: 500; }
+.cz-chip button { border: 0; background: none; cursor: pointer; font-size: 15px; line-height: 1; color: var(--ink-muted); padding: 2px 6px; }
+.cz-chip button:hover { color: #C8102E; }
+.cz-tecs { border: 1.5px solid #E4DCCC; border-radius: 12px; padding: 10px 12px; }
+.cz-tecs-lista { display: grid; gap: 6px; margin-top: 8px; max-height: 150px; overflow: auto; }
+.cz-tec { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; cursor: pointer; }
+.cz-tec small { color: var(--ink-muted); font-weight: 500; }
+.cz-tec input { accent-color: #C8102E; width: 16px; height: 16px; }
+#cz-guardar:disabled { opacity: .45; cursor: not-allowed; }
+#cz-guardar.is-ok { background: #2F7D4F; border-color: #2F7D4F; }
+#cz-guardar.is-ok::after { content: " \2713"; font-weight: 800; }
 .obs-tabla tbody tr:last-child td { border-bottom: 0; }
 .obs-tabla tbody tr:hover { background: rgba(250,247,242,.7); }
 .obs-tabla td strong { display: block; }
@@ -7076,12 +7389,47 @@ html[style*="--sb-accent"] .notif-head {
 .obs-pill-verde { background: rgba(47,125,79,.13); color: #2F7D4F; }
 .obs-pill-amarillo { background: rgba(217,164,54,.18); color: #8A6212; }
 .obs-pill-rojo { background: rgba(214,43,31,.12); color: var(--dogger-red-dark, #A81E18); }
+/* Fichas de seguimiento: las mismas tarjetas del monitoreo del observador y
+   del técnico. Están aquí y no en la plantilla porque las usan dos vistas. */
+.ans-lista { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+.ans-ficha { display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid var(--line); border-left: 4px solid #B7791F; border-radius: 10px; padding: 10px 12px; box-shadow: 0 1px 3px rgba(23,20,18,.05); animation: corpUp .4s ease both; font-family: var(--font-corp); }
+.ans-ficha.es-vencido { border-left-color: #D62B1F; }
+.ans-ficha-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ans-ficha-id { font-weight: 800; font-size: 13px; font-family: var(--font-mono); color: var(--dogger-red); }
+.ans-ficha-top .ans-time { margin-left: auto; }
+.ans-ficha-desc { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ans-ficha-meta { font-size: 11.5px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.ans-ficha-meta b { color: var(--ink); }
+.ans-ficha-pie { display: flex; align-items: center; gap: 8px; border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 2px; }
+.ans-ficha-pie .act-nudge { margin: 0; flex: 1; }
+.ans-ficha-detalle { flex: none; font-size: 11.5px; font-weight: 700; color: var(--dogger-red); text-decoration: none; }
+.ans-ficha-detalle:hover { text-decoration: underline; }
+/* Presión de los supervisores: mismo dibujo que la ficha ANS pero en azul,
+   para que al técnico se le distinga de un vistazo lo que le piden de lo
+   que se le está venciendo. */
+.pres-lista { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+.pres-ficha { display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid var(--line); border-left: 4px solid #47599B; border-radius: 10px; padding: 10px 12px; box-shadow: 0 1px 3px rgba(23,20,18,.05); animation: corpUp .4s ease both; font-family: var(--font-corp); }
+.pres-ficha-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pres-ficha-id { font-weight: 800; font-size: 13px; font-family: var(--font-mono); color: #35478A; }
+.pres-ficha-quien { margin-left: auto; font-size: 11.5px; font-weight: 700; color: #47599B; }
+.pres-ficha-cita { font-size: 13px; line-height: 1.5; color: var(--ink); background: #F4F6FC; border-radius: 8px; padding: 8px 10px; }
+.pres-ficha-meta { font-size: 11.5px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.pres-ficha-meta b { color: var(--ink); }
+.pres-ficha-pie { display: flex; align-items: center; gap: 8px; border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 2px; }
+.pres-ficha-pie .ans-ficha-detalle { color: #47599B; }
 /* Monitoreo por zonas: tarjetas con su gente y su detalle completo. */
 .obs-avance { display: flex; align-items: center; gap: 8px; min-width: 140px; flex: 1; }
 .obs-avance-bar { flex: 1; height: 8px; border-radius: 999px; background: #F1EDE6; overflow: hidden; }
 .obs-avance-bar span { display: block; height: 100%; border-radius: 999px; background: #2F7D4F; }
 .obs-avance-num { font-size: 12px; font-weight: 800; color: #2F7D4F; white-space: nowrap; }
-.obs-zona-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 18px; overflow: hidden; }
+/* Sin `overflow: hidden`: la paleta de color de la esquina se despliega
+   por encima del borde de la tarjeta y no se puede recortar. La esquina
+   redonda la pone ahora la propia cabecera. */
+.obs-zona-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 18px; }
+.obs-zona-card > .obs-zona-acc-wrap > .obs-zona-head { border-radius: 7px 7px 0 0; }
+.obs-zona-card > div:not(.obs-zona-acc-wrap) { border-radius: 0 0 7px 7px; overflow: hidden; }
+.obs-zona-acciones { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-left: 8px; }
+@media (max-width: 640px) { .obs-zona-acciones { margin-left: 0; width: 100%; } }
 .obs-zona-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px; background: #F0EBE3; border-bottom: 1px solid var(--line); }
 button.obs-zona-head { width: 100%; font: inherit; text-align: left; cursor: pointer; border: 0; border-bottom: 1px solid var(--line); color: inherit; }
 button.obs-zona-head:hover { background: #E8E2D6; }
@@ -7126,6 +7474,13 @@ button.obs-miembro-top[aria-expanded="false"] .obs-zona-chev { transform: rotate
 .obs-leyenda-item .obs-tip { position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%) translateY(4px); background: #241F1C; color: #fff; font-size: 11px; font-weight: 600; padding: 5px 11px; border-radius: 8px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease; z-index: 60; box-shadow: var(--shadow-pop); }
 .obs-leyenda-item .obs-tip::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #241F1C; }
 .obs-leyenda-item:hover .obs-tip, .obs-leyenda-item:focus-within .obs-tip { opacity: 1; transform: translateX(-50%); }
+.obs-ayuda { margin: 0 0 12px; font-size: 12px; }
+.obs-ayuda summary { cursor: pointer; font-weight: 700; color: var(--ink-muted); list-style: none; background: none; border: 0; padding: 0; }
+.obs-ayuda summary:hover { color: var(--dogger-red, #C8102E); text-decoration: underline; }
+.obs-ayuda summary::-webkit-details-marker { display: none; }
+.obs-ayuda[open] { flex-basis: 100%; }
+.obs-ayuda[open] summary { margin-bottom: 6px; }
+.obs-ayuda p { margin: 0; font-size: 12.5px; color: var(--ink-muted); }
 .obs-avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; background: #EEE9DB; color: #6B6259; font-weight: 800; font-size: 14px; overflow: hidden; }
 .obs-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 .icon-xs { width: 12px; height: 12px; vertical-align: -1px; }
@@ -7241,6 +7596,121 @@ button.obs-miembro-top[aria-expanded="false"] .obs-zona-chev { transform: rotate
 .obs-vacio-icon .icon { width: 26px; height: 26px; }
 .obs-vacio strong { font-size: 15px; }
 .obs-vacio p { margin: 0; font-size: 13px; color: var(--ink-muted); max-width: 44ch; }
+
+/* ===== Panel corporativo de zonas y puntos (visor de dos paneles) =====
+   Mismo armazón que el panel de zonas del administrador (mon-*), en versión
+   del supervisor: a la izquierda sus zonas y sus puntos con sus cuentas; a la
+   derecha, al elegir una tarjeta, las cuentas de esa zona o de ese punto. */
+.pan-grid {
+    --pan-blue: #1D4ED8;
+    --pan-blue-dark: #173FB0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 22px;
+    font-family: var(--font-corp);
+}
+@media (max-width: 980px) { .pan-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.pan-left { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+
+/* Tarjeta vertical del supervisor. */
+.pan-sup { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 4px 16px rgba(23,20,18,.07); padding: 14px 14px 12px; }
+.pan-sup-head { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; flex-wrap: wrap; }
+.pan-ava { flex: none; width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #EEF2FF, #DDE5FF); color: var(--pan-blue); font-weight: 800; font-size: 16px; border: 1px solid #D3DCFB; }
+.pan-sup-id { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 1px; }
+.pan-sup-id strong { font-size: 14px; color: var(--ink); }
+.pan-sup-id small { font-size: 11.5px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pan-rol { align-self: flex-start; margin-top: 2px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--pan-blue); background: #EEF2FF; border-radius: 999px; padding: 2px 9px; }
+.pan-sup-n { flex: none; align-self: flex-start; font-size: 11.5px; font-weight: 800; color: var(--ink-muted); background: #F5F2EC; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+
+.pan-sub-tit { display: flex; align-items: center; gap: 6px; margin: 12px 0 7px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+
+/* Subtarjetas de zona: verticales, compactas, con borde de estado. */
+/* Mis zonas de Mi lista: dos tarjetas en fila y su propio scroll para que
+   la columna no se alargue sin fin; en pantallas estrechas queda una
+   sola y sigue desplazándose igual. */
+.pan-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    max-height: 452px;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: 2px 5px 2px 2px;
+    scrollbar-width: thin;
+    scrollbar-color: #D8D2C7 transparent;
+}
+.pan-cards::-webkit-scrollbar { width: 8px; height: 8px; }
+.pan-cards::-webkit-scrollbar-thumb { background: #D8D2C7; border-radius: 999px; }
+.pan-cards::-webkit-scrollbar-track { background: transparent; }
+.pan-zc {
+    display: flex; flex-direction: column; gap: 7px; text-align: left;
+    background: #FCFBF9; border: 1px solid var(--line); border-left: 4px solid var(--line);
+    border-radius: 11px; padding: 10px 12px; cursor: pointer; font: inherit; color: inherit;
+    transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+}
+.pan-zc:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(23,20,18,.10); background: #fff; }
+.pan-zc.is-on { background: #fff; box-shadow: 0 0 0 2px var(--pan-blue), 0 8px 20px rgba(29,78,216,.16); border-color: var(--pan-blue); }
+.pan-zc-verde { border-left-color: #2F7D4F; }
+.pan-zc-amarillo { border-left-color: #E0A106; }
+.pan-zc-rojo { border-left-color: #D62B1F; }
+.pan-zc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.pan-zc-nombre { font-size: 13px; font-weight: 800; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pan-zc-fecha { flex: none; font-size: 10.5px; color: var(--ink-muted); }
+.pan-zc-meta { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--ink-muted); }
+.pan-zc-meta b { color: var(--ink); }
+.pan-zc-cuentas, .pan-zc-est { display: inline-flex; align-items: center; gap: 5px; }
+.pan-zc-bar { display: block; height: 6px; border-radius: 999px; background: #EDE7DC; overflow: hidden; }
+.pan-zc-bar > span { display: block; height: 100%; border-radius: 999px; background: #2F7D4F; }
+.pan-zc-amarillo .pan-zc-bar > span { background: #E0A106; }
+.pan-zc-rojo .pan-zc-bar > span { background: #D62B1F; }
+.pan-zc-foot { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--ink-muted); }
+.pan-zc-foot b { margin-left: auto; color: var(--ink); font-family: var(--font-mono); }
+.pan-dot { width: 8px; height: 8px; border-radius: 50%; background: #2F7D4F; flex: none; }
+.pan-zc-amarillo .pan-dot { background: #E0A106; }
+.pan-zc-rojo .pan-dot { background: #D62B1F; }
+
+/* Panel derecho: usuarios de la zona o del punto elegido. */
+.pan-right { position: sticky; top: 14px; display: flex; flex-direction: column; background: #fff; border: 1px solid #E3E3E3; border-radius: 14px; box-shadow: 0 4px 16px rgba(23,20,18,.08); padding: 14px; max-height: calc(100vh - 40px); font-family: var(--font-corp); }
+.pan-right-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.pan-right-head h4 { margin: 0; font-size: 14px; font-weight: 800; color: var(--ink); }
+.pan-right-head h4 span { color: var(--pan-blue); }
+.pan-right-head .muted { font-size: 11px; }
+.pan-busca { position: relative; margin-bottom: 10px; }
+.pan-busca .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--ink-muted); }
+.pan-busca input { width: 100%; font: inherit; font-size: 12.5px; border: 1px solid #DEDEDE; border-radius: 10px; padding: 8px 10px 8px 32px; color: var(--ink); background: #FCFCFC; }
+.pan-busca input:focus { outline: none; border-color: var(--pan-blue); background: #fff; }
+.pan-lista { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
+.pan-vacio { margin: 6px 0; }
+.pan-user { display: flex; align-items: center; gap: 9px; border: 1px solid #ECECEC; border-left: 3px solid #ECECEC; border-radius: 11px; padding: 8px 10px; cursor: pointer; transition: border-color .14s ease, background .14s ease; }
+.pan-user:hover { border-color: #C9D4F8; background: #FBFCFF; }
+.pan-user-rojo { border-left-color: #D62B1F; }
+.pan-user-amarillo { border-left-color: #E0A106; }
+.pan-user-verde { border-left-color: #2F7D4F; }
+.pan-user-chk { flex: none; width: 16px; height: 16px; accent-color: var(--pan-blue); cursor: pointer; }
+.pan-user-ava { flex: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #EEF2FF; color: var(--pan-blue); font-weight: 800; font-size: 13px; }
+.pan-user-id { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pan-user-id strong { font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pan-user-id small { font-size: 11px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pan-user-ab { flex: none; font-size: 10.5px; font-weight: 800; font-family: var(--font-mono); color: #B42318; background: #FEECEB; border-radius: 999px; padding: 2px 7px; }
+.pan-user-rol { flex: none; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); background: #F5F2EC; border-radius: 999px; padding: 2px 8px; }
+.pan-user-ficha { flex: none; font-size: 10.5px; font-weight: 800; color: var(--pan-blue); text-decoration: none; }
+.pan-user-ficha:hover { text-decoration: underline; }
+.pan-user-acc { flex: none; font: inherit; font-size: 10.5px; font-weight: 800; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; cursor: pointer; background: #F5F2EC; color: var(--ink-muted); transition: background .14s ease, color .14s ease, border-color .14s ease; }
+.pan-user-acc:hover { background: #EEF2FF; border-color: #C9D4F8; color: var(--pan-blue); }
+.pan-acc-quitar { background: #FEECEB; border-color: rgba(214,43,31,.25); color: #B42318; }
+.pan-acc-quitar:hover { background: #FDDCDA; border-color: #D62B1F; color: #B42318; }
+.pan-right-pie { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 10px; border-top: 1px solid #EFEFEF; }
+.pan-cerrar { background: var(--pan-blue); color: #fff; border: 0; border-radius: 10px; padding: 8px 22px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; box-shadow: 0 4px 14px rgba(29,78,216,.30); transition: background .15s ease; }
+.pan-cerrar:hover { background: var(--pan-blue-dark); }
+
+@media (max-width: 640px) {
+    .pan-right { position: static; max-height: none; }
+    .pan-cards { grid-template-columns: 1fr; }
+    .pan-sup-id { min-width: 0; }
+}
 
 /* Al imprimir sale solo el reporte, sin menus ni botones. */
 @media print {
@@ -7571,6 +8041,55 @@ html[data-navcompact="1"] .sidebar-foot { display: none; }
 .topbar .user-chip:hover { background: rgba(255, 255, 255, .17); border-color: rgba(255, 255, 255, .3); }
 .topbar .user-chip small { color: rgba(239, 233, 225, .6); }
 .topbar .user-chip-chevron { stroke: rgba(239, 233, 225, .65); }
+/* Botón «Cambiar rol»: solo existe en las cuentas que el administrador marcó
+   en su ficha. Va junto a la tarjeta del usuario, en la barra superior de
+   cualquier vista, y abre la ventana para elegir el rol nuevo. */
+.rol-cambio-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, .18); border-radius: 999px;
+  background: rgba(255, 255, 255, .1);
+  color: #EFE9E1;
+  font-family: inherit; font-size: 12px; font-weight: 700; letter-spacing: .02em;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.rol-cambio-btn .icon { width: 14px; height: 14px; flex: none; }
+.rol-cambio-btn:hover { background: rgba(255, 255, 255, .19); border-color: rgba(255, 255, 255, .34); transform: translateY(-1px); }
+.rol-cambio-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+/* Encabezado claro (portal y login): el botón va con los colores de siempre. */
+.brand-header .rol-cambio-btn { background: #F5F2EC; border-color: var(--line); color: var(--ink); }
+.brand-header .rol-cambio-btn:hover { background: #EBE6DD; border-color: #D8D2C7; }
+/* Ventana de cambio de rol. */
+.rol-modal-box { max-width: 460px; }
+.rol-modal-nota { margin: 0 0 12px; font-size: 12.5px; line-height: 1.55; color: var(--ink-muted); }
+.rol-modal-opciones { display: grid; gap: 8px; }
+.rol-op {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: #fff; cursor: pointer;
+  transition: border-color .12s ease, background .12s ease;
+}
+.rol-op:hover { background: var(--dogger-paper, #FAF7F2); }
+.rol-op:has(input:checked) { border-color: var(--dogger-red, #C8102E); background: rgba(200, 16, 46, .04); }
+.rol-op input { margin: 3px 0 0; min-width: 16px; height: 16px; accent-color: var(--dogger-red, #C8102E); }
+.rol-op-txt { min-width: 0; }
+.rol-op-txt strong { display: block; font-size: 13.5px; }
+.rol-op-txt small { display: block; font-size: 12px; line-height: 1.45; color: var(--ink-muted); }
+.rol-op-actual {
+  margin-left: auto; flex: none; align-self: center;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--dogger-red, #C8102E);
+}
+/* Casillero con ayuda debajo: el renglón no puede ir centrado porque la
+   ayuda ocupa varias líneas. */
+.form-check-row:has(.form-check-hint) { align-items: flex-start; }
+.form-check-row:has(.form-check-hint) input[type="checkbox"] { margin-top: 2px; }
+.form-check-hint {
+  display: block; max-width: 48ch;
+  font-weight: 400; font-size: 11.5px; line-height: 1.45; color: var(--ink-muted); margin-top: 2px;
+}
 .topbar-titles { min-width: 0; }
 .topbar-titles h1 {
   margin: 2px 0 0;
@@ -8029,3 +8548,326 @@ html[data-navcompact="1"] .sidebar-count {
     background: rgba(0, 0, 0, .06);
     font-size: 13px;
 }
+
+/* =====================================================================
+   Monitoreo del técnico, zonas del observador y panel de cuentas
+   ===================================================================== */
+
+/* Pastillas de filtro de la tabla de tickets. Son el destino de los
+   indicadores de arriba: cuando la llegada viene de un enlace (#f-abiertos)
+   la pastilla se queda marcada, que es la manera de ver en qué se ha
+   parado la lista. */
+.obs-fchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.obs-fchip:hover { border-color: var(--dogger-red); color: var(--dogger-red); }
+.obs-fchip.is-on { background: #171412; border-color: #171412; color: #fff; }
+.obs-fchip.is-on .icon { color: #fff; }
+.obs-fchip:focus-visible { outline: 2px solid var(--dogger-red); outline-offset: 2px; }
+
+/* Ficha de la zona que tiene puestos los ojos en el técnico. Lleva icono
+   de zona y dos cifras: lo que ha presionado y lo que tiene encima. */
+.obs-tarjeta--vigila { border-left-color: #7C3AED; }
+.obs-tarjeta-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: rgba(124, 58, 237, .12);
+    color: #6D28D9;
+    margin-bottom: 3px;
+}
+.obs-tarjeta-cifras { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+.obs-tarjeta-cifra {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    background: #F4F1EA;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 9px;
+}
+.obs-tarjeta-cifra b { color: var(--ink); font-weight: 800; }
+.zona-badge .icon { width: 11px; height: 11px; flex: none; }
+
+/* Acciones de cada tarjeta de la página Zonas: ver, editar (despliega el
+   campo del nombre) y borrar, con icono y sin depender de leer el texto. */
+.obs-tarjeta-acc { display: flex; gap: 6px; margin-top: 9px; }
+.obs-tarjeta-acc form,
+.obs-tarjeta-acc > a { display: flex; flex: 1; margin: 0; min-width: 0; }
+.obs-acc {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 100%;
+    padding: 7px 8px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.obs-acc .icon { width: 14px; height: 14px; }
+.obs-acc:hover { border-color: var(--pan-blue, #1D4ED8); color: var(--pan-blue, #1D4ED8); }
+.obs-acc-borrar:hover { border-color: var(--dogger-red); color: var(--dogger-red); background: rgba(214, 43, 31, .07); }
+.obs-rename { display: flex; gap: 6px; margin-top: 7px; min-width: 0; }
+.obs-rename[hidden] { display: none; }
+.obs-rename input { flex: 1; min-width: 0; }
+
+/* Botón de Excel de la auditoría del observador: el mismo verde de siempre,
+   con el icono de zona para que se vea de qué van esas filas. */
+.aud-excel { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Papelera del panel derecho de Mi lista. Se activa solo con cuentas
+   marcadas y repite en el diálogo cuántas se van. */
+.pan-papelera {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 800;
+    border: 1px solid rgba(214, 43, 31, .28);
+    border-radius: 10px;
+    padding: 8px 14px;
+    background: #FEECEB;
+    color: #B42318;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+.pan-papelera .icon { width: 15px; height: 15px; }
+.pan-papelera:hover:not(:disabled) { background: #FDDCDA; border-color: var(--dogger-red); }
+.pan-papelera:disabled { opacity: .45; cursor: not-allowed; }
+.pan-right-pie { justify-content: space-between; gap: 8px; }
+.pan-sel-count { font-size: 12px; font-weight: 800; color: var(--dogger-red); }
+.pan-user.is-marcado { border-color: var(--pan-blue, #1D4ED8); background: #FBFCFF; }
+
+/* ===== Acciones de zona en las tres vistas (Mi lista, Monitoreo, Zonas) ====
+   La misma tira debajo de cada tarjeta: Ver, Editar (despliega el campo con
+   el nombre ahí mismo) y Borrar, con su icono. La papelera es la de siempre,
+   así que está al alcance de una o de varias zonas sin ir a otra página. */
+/* ===== Tira de acciones: iconos pequeños en la esquina inferior derecha
+   de cada tarjeta de carpeta (paleta, ver, editar y borrar). ==== */
+.pan-zc-wrap { display: flex; flex-direction: column; min-width: 0; position: relative; padding-bottom: 34px; }
+.pan-zc-wrap.is-on .pan-zc { box-shadow: 0 0 0 2px var(--pan-blue, #1D4ED8), 0 8px 20px rgba(29,78,216,.16); border-color: var(--pan-blue, #1D4ED8); }
+/* El contenedor da el marco de posición a la tira: en Monitoreo la tira
+   cae en su propia banda blanca bajo la cabecera, así no se monta ni sobre
+   la flecha de desplegar ni sobre los números. */
+.obs-zona-acc-wrap { position: relative; padding-bottom: 38px; border-radius: 7px; }
+.obs-zona-acc-wrap.sin-acc { padding-bottom: 0; }
+.obs-zona-acc {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 2px 8px rgba(23, 20, 18, .12);
+}
+.pan-zc-wrap.is-on .obs-zona-acc { border-color: var(--pan-blue, #1D4ED8); }
+.obs-zona-acc form { margin: 0; display: flex; }
+.obs-zona-acc .obs-acc-ico {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 50%;
+    flex: none;
+}
+.obs-zona-acc .obs-acc-ico .icon { width: 13px; height: 13px; }
+.obs-zona-acc [data-paleta][aria-expanded="true"] {
+    background: var(--dogger-red);
+    border-color: var(--dogger-red);
+    color: #fff;
+}
+/* La paleta se despliega por encima de la tira. */
+.obs-paleta {
+    position: absolute;
+    right: -2px;
+    bottom: calc(100% + 6px);
+    width: max-content;
+    max-width: 224px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin: 0;
+    padding: 10px 11px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(23, 20, 18, .18);
+    z-index: 6;
+}
+.obs-paleta[hidden] { display: none; }
+.obs-paleta-tit {
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ink-muted);
+}
+.obs-paleta-tope { display: flex; flex-wrap: wrap; gap: 6px; }
+.obs-paleta-pto {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(23, 20, 18, .14);
+    background: var(--pto, #fff);
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+.obs-paleta-pto:hover { transform: scale(1.16); }
+.obs-paleta-pto.is-on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--pto, var(--ink)); }
+.obs-paleta-pto.is-sin {
+    background: #fff;
+    color: var(--ink-muted);
+    font-size: 11px;
+    line-height: 1;
+}
+.obs-paleta-pto.is-sin.is-on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ink-muted); }
+/* Color elegido en la paleta: pinta la esquina de la tarjeta y su barra. */
+.pan-zc-wrap[style*="--zc"] .pan-zc { border-left-color: var(--zc); }
+.pan-zc-wrap[style*="--zc"] .pan-zc-bar > span { background: var(--zc); }
+.obs-zona-card[style*="--zc"] { border-left: 4px solid var(--zc); }
+.obs-zona-card[style*="--zc"] .obs-zona-ico { background: rgba(0, 0, 0, .04); color: var(--zc); }
+.obs-tarjeta--zona[style*="--zc"] { border-left: 4px solid var(--zc); }
+.obs-tarjeta--zona[style*="--zc"] .obs-tarjeta-ico { color: #fff; background: var(--zc); }
+/* Deja el hueco de abajo para que la tira de iconos no tape los datos. */
+.obs-tarjeta--zona { padding-bottom: 46px; }
+
+/* ===== «Ver la zona y sus cuentas»: la carpeta de un vistazo arriba y
+   sus cuentas en tarjetas de abajo. ==== */
+.obs-zona-ficha {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--zc, #6B6259);
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    animation: corpUp .4s ease both;
+}
+.obs-zona-ficha.es-verde { border-left-color: #2F7D4F; }
+.obs-zona-ficha.es-amarillo { border-left-color: #E0A106; }
+.obs-zona-ficha.es-rojo { border-left-color: #D62B1F; }
+.obs-zona-ficha[style*="--zc"] { border-left-color: var(--zc); }
+.obs-zona-ficha-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.obs-zona-ficha-ico {
+    width: 46px; height: 46px; border-radius: 13px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #F1EDE6; color: var(--dogger-red);
+}
+.obs-zona-ficha[style*="--zc"] .obs-zona-ficha-ico { background: var(--zc); color: #fff; }
+.obs-zona-ficha-ico .icon { width: 22px; height: 22px; }
+.obs-zona-ficha-id { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.obs-zona-ficha-id strong { font-size: 19px; }
+.obs-zona-ficha-id small { color: var(--ink-muted); font-size: 12.5px; }
+.obs-zona-ficha-cifras { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 11px; }
+.obs-zona-cifra {
+    display: inline-flex; align-items: baseline; gap: 5px;
+    padding: 5px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #FBFAF7;
+}
+.obs-zona-cifra b { font-size: 17px; font-weight: 800; }
+.obs-zona-cifra small { font-size: 11px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
+.obs-zona-cifra.s-abiertos b { color: #D62B1F; }
+.obs-zona-cifra.s-resueltos b { color: #2F7D4F; }
+
+.obs-cuentas { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+.obs-cuenta {
+    display: flex; flex-direction: column; gap: 10px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--line);
+    border-radius: 13px;
+    padding: 13px 15px;
+    animation: corpUp .4s ease both;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.obs-cuenta:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(23,20,18,.10); }
+.obs-cuenta--verde { border-left-color: #2F7D4F; }
+.obs-cuenta--amarillo { border-left-color: #E0A106; }
+.obs-cuenta--rojo { border-left-color: #D62B1F; }
+.obs-cuenta-top { display: flex; align-items: center; gap: 10px; }
+.obs-cuenta-id { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.obs-cuenta-id strong { font-size: 14.5px; }
+.obs-cuenta-id strong a { color: var(--ink); }
+.obs-cuenta-id strong a:hover { color: var(--dogger-red); }
+.obs-cuenta-id small { color: var(--ink-muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.obs-cuenta-cifras { display: flex; flex-wrap: wrap; gap: 6px; }
+.obs-cuenta-pie { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.obs-cuenta-sacar { margin: 0; }
+.obs-cuenta-nota { margin: 0; font-size: 12px; color: var(--ink-muted); }
+.obs-cuenta-resp { border-top: 1px dashed var(--line); padding-top: 8px; }
+.obs-cuenta-resp > summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--ink-muted);
+}
+.obs-cuenta-resp > summary:hover { color: var(--dogger-red); }
+.obs-cuenta-resp[open] > summary { margin-bottom: 8px; }
+@media (max-width: 560px) {
+    .obs-cuentas { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* La X de la cabecera del panel derecho: segunda manera de retirarlo, junto
+   al «Cerrar» de abajo. */
+.pan-right-x {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink-muted);
+    cursor: pointer;
+}
+.pan-right-x .icon { width: 14px; height: 14px; }
+.pan-right-x:hover { border-color: var(--dogger-red); color: var(--dogger-red); background: #FEECEB; }
+
+/* Icono en los botones de cada fila del panel derecho. */
+.pan-user-acc { display: inline-flex; align-items: center; gap: 4px; }
+.pan-user-acc .icon { width: 12px; height: 12px; }
+
+/* En pantalla estrecha el panel derecho se va debajo de las tarjetas y deja
+   de estar pegado, para que la papelera y Cerrar se vean sin desplazar. */
+@media (max-width: 980px) { .pan-right { position: static; max-height: none; } }
+
+/* «Cerrar» de verdad retira el panel: la columna de las tarjetas ocupa todo
+   y al elegir una zona vuelve a aparecer. */
+.pan-right[hidden] { display: none; }
+.pan-grid.is-cerrado { grid-template-columns: minmax(0, 1fr); }

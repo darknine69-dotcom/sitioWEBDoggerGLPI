@@ -63,7 +63,7 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertEqual(miembro["abiertos"], 1)
         self.assertEqual(miembro["tecnico"], "Tec")
         html = respuesta.content.decode()
-        self.assertIn("Zonas creadas por los observadores", html)
+        self.assertIn("Panel corporativo de supervisores y zonas", html)
         self.assertIn("Supervisor a cargo", html)
         self.assertIn("ana@x.com", html)
         dash = respuesta.context["dash"]
@@ -352,6 +352,29 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn("Norte", html)
         self.assertIn("Punto de venta", html)
 
+    def test_badge_de_zona_de_otro_supervisor_tambien_se_ve(self):
+        """La columna Zona muestra la zona de la cuenta aunque sea de otro
+        supervisor distinto al elegido en el filtro."""
+        from apps.tickets.models import ElementoMiLista, ZonaObservador
+
+        otro = Usuario.objects.create_user(
+            email="obs2@x.com", password="x", nombre="Sup2",
+            rol=Usuario.Rol.OBSERVADOR,
+        )
+        beto = Usuario.objects.create_user(
+            email="beto@x.com", password="x", nombre="Beto",
+            rol=Usuario.Rol.USUARIO,
+        )
+        zona2 = ZonaObservador.objects.create(observador=otro, nombre="Sin Fin")
+        ElementoMiLista.objects.create(
+            observador=otro, tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario=beto, usuario_email="beto@x.com", zona=zona2,
+        )
+        html = self.client.get(
+            reverse("tickets:monitoreo_admin"),
+            {"observador": self.obs.pk}).content.decode()
+        self.assertIn("Sin Fin", html)
+
     def test_agregar_avisa_al_supervisor(self):
         from apps.notificaciones.models import Notificacion
 
@@ -476,7 +499,13 @@ class MonitoreoObservadorDetalleTest(TestCase):
         # La cuenta principal lleva a su ficha.
         self.assertIn("/observador/usuarios/?q=ana%40x.com", html)
 
-    def test_sin_zona_no_es_grupo_y_sale_en_todos(self):
+    def test_sin_zona_se_muestra_como_grupo_para_que_cuadre_el_total(self):
+        """Lo que no está en ninguna carpeta sale en su propio grupo.
+
+        Si no aparecía en ninguna parte, el indicador de Cuentas —que suma
+        toda la lista— decía una más de las que se veían en las tarjetas y
+        en el Resumen por zona.
+        """
         Usuario.objects.create_user(
             email="ana@x.com", password="x", nombre="Ana",
             rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
@@ -484,14 +513,22 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self._ticket("ana@x.com")
         self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
         respuesta = self.client.get(reverse("tickets:obs_monitoreo"))
-        self.assertEqual(respuesta.context["grupos"], [])
-        self.assertNotIn("<strong>Sin zona</strong>", respuesta.content.decode())
+        grupos = respuesta.context["grupos"]
+        self.assertEqual(len(grupos), 1)
+        self.assertIsNone(grupos[0]["zona"])
+        self.assertEqual(grupos[0]["filas"][0]["email"], "ana@x.com")
+        html = respuesta.content.decode()
+        self.assertIn("<strong>Sin zona</strong>", html)
+        # La suma del Resumen por zona cuadra con el indicador de Cuentas.
+        self.assertEqual(
+            sum(len(g["filas"]) for g in grupos), respuesta.context["total"]
+        )
         todos = respuesta.context["todos_usuarios"]
         ana = [u for u in todos if u["email"] == "ana@x.com"]
         self.assertEqual(len(ana), 1)
         self.assertTrue(ana[0]["en_lista"])
-        self.assertIn("Actividad reciente", respuesta.content.decode())
-        self.assertNotIn("Todos los usuarios", respuesta.content.decode())
+        self.assertIn("Actividad reciente", html)
+        self.assertNotIn("Todos los usuarios", html)
 
     def test_miembro_muestra_datos_reales_aunque_sean_de_otro_punto(self):
         from apps.tickets.models import ZonaObservador
@@ -688,3 +725,199 @@ class MonitoreoObservadorDetalleTest(TestCase):
             {"comentario": "Hola"},
         )
         self.assertEqual(respuesta.status_code, 404)
+
+
+@override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
+class PanelSupervisorTest(TestCase):
+    """Mi lista trae el panel de dos columnas, con sus zonas y sus puntos a
+    la izquierda y los usuarios de lo que se elija a la derecha. Monitoreo y
+    Usuarios se quedan con lo suyo, sin ese panel."""
+
+    def setUp(self):
+        self.obs = Usuario.objects.create_user(
+            email="obs@x.com", password="x", nombre="Sup",
+            rol=Usuario.Rol.OBSERVADOR,
+        )
+        self.tec = Usuario.objects.create_user(
+            email="tec@x.com", password="x", nombre="Tec", rol=Usuario.Rol.TECNICO
+        )
+        self.cuenta = Usuario.objects.create_user(
+            email="ana@x.com", password="x", nombre="Ana",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        self.punto = Punto.objects.create(nombre="Zona Uno")
+        ObservadorPunto.objects.create(observador=self.obs, punto=self.punto)
+        self.zona = ZonaObservador.objects.create(observador=self.obs, nombre="Norte")
+        self.client.force_login(self.obs)
+
+    def _ticket(self, email="ana@x.com", punto="Zona Uno"):
+        return Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email=email, solicitante_punto=punto,
+            estado=Ticket.Estado.ABIERTO, tecnico_asignado=self.tec,
+        )
+
+    def _agregar(self, email="ana@x.com", zona=None):
+        self.client.post(reverse("tickets:obs_agregar"), {"email": email})
+        if zona is not None:
+            elemento = ElementoMiLista.objects.get(
+                observador=self.obs, usuario_email=email
+            )
+            elemento.zona = zona
+            elemento.save()
+
+    def test_el_panel_esta_solo_en_mi_lista(self):
+        html = self.client.get(reverse("tickets:obs_mi_lista")).content.decode()
+        # El panel ya no lleva título, solo la tarjeta del supervisor.
+        self.assertNotIn("Panel corporativo de zonas y puntos", html)
+        self.assertIn("Supervisor a cargo", html)
+        self.assertIn('class="pan-grid"', html)
+        self.assertIn("Buscar usuario", html)
+        self.assertIn("Cerrar", html)
+
+        # Monitoreo y Usuarios no lo traen: cada uno sigue con lo suyo.
+        for nombre_vista in ("obs_monitoreo", "obs_usuarios"):
+            with self.subTest(vista=nombre_vista):
+                respuesta = self.client.get(reverse(f"tickets:{nombre_vista}"))
+                self.assertEqual(respuesta.status_code, 200)
+                html = respuesta.content.decode()
+                self.assertNotIn('class="pan-grid"', html)
+                self.assertNotIn("Panel corporativo de zonas y puntos", html)
+                self.assertNotIn("Supervisor a cargo", html)
+                self.assertNotIn('id="panRight"', html)
+
+    def test_la_cuenta_de_mi_lista_sale_en_su_zona(self):
+        self._ticket()
+        self._agregar(zona=self.zona)
+        respuesta = self.client.get(reverse("tickets:obs_mi_lista"))
+        panel = respuesta.context["panel"]
+        self.assertEqual([z["nombre"] for z in panel["zonas"]], ["Norte"])
+        self.assertEqual(panel["zonas"][0]["cuentas"], 1)
+        self.assertEqual(panel["zonas"][0]["abiertos"], 1)
+        self.assertEqual(panel["zonas"][0]["estado"], "amarillo")
+        self.assertIn("ana@x.com", panel["zonas"][0]["usuarios"][0]["email"])
+        html = respuesta.content.decode()
+        self.assertIn('data-pan-nombre="Norte"', html)
+
+    def test_el_punto_asignado_ya_no_se_pinta_en_mi_lista(self):
+        """Mi lista ya no pinta «Mis puntos» ni «Sin zona»: solo zonas."""
+        self._ticket()
+        self._agregar()
+        html = self.client.get(reverse("tickets:obs_mi_lista")).content.decode()
+        self.assertIn("Mis zonas", html)
+        self.assertIn('data-pan-nombre="Norte"', html)
+        self.assertNotIn("Mis puntos", html)
+        self.assertNotIn("Sin zona", html)
+        self.assertNotIn('data-pan-nombre="Zona Uno"', html)
+
+    def test_una_zona_sin_cuentas_sigue_visible(self):
+        panel = self.client.get(
+            reverse("tickets:obs_mi_lista")
+        ).context["panel"]
+        self.assertEqual(panel["zonas"][0]["nombre"], "Norte")
+        self.assertEqual(panel["zonas"][0]["cuentas"], 0)
+        self.assertEqual(panel["zonas"][0]["estado"], "verde")
+
+    def test_los_datos_van_en_json_para_el_buscador_de_la_derecha(self):
+        self._ticket()
+        self._agregar(zona=self.zona)
+        html = self.client.get(reverse("tickets:obs_mi_lista")).content.decode()
+        self.assertIn('id="pan-datos"', html)
+        self.assertIn("ana@x.com", html)
+
+@override_settings(STORAGES={
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+})
+class PanelSupervisorDosPanelesTest(TestCase):
+    """El mismo visor de dos columnas que el admin, pero en Mi lista y solo
+    con lo del supervisor: zonas y puntos a la izquierda, sus usuarios a la
+    derecha. Monitoreo y Usuarios se quedan sin él."""
+
+    def setUp(self):
+        self.obs = Usuario.objects.create_user(
+            email="obs@x.com", password="x", nombre="Sup", rol=Usuario.Rol.OBSERVADOR
+        )
+        self.tec = Usuario.objects.create_user(
+            email="tec@x.com", password="x", nombre="Tec", rol=Usuario.Rol.TECNICO
+        )
+        self.ana = Usuario.objects.create_user(
+            email="ana@x.com", password="x", nombre="Ana",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        self.beto = Usuario.objects.create_user(
+            email="beto@x.com", password="x", nombre="Beto",
+            rol=Usuario.Rol.USUARIO, ubicacion="Zona Uno",
+        )
+        punto = Punto.objects.create(nombre="Zona Uno")
+        ObservadorPunto.objects.create(observador=self.obs, punto=punto)
+        self.zona = ZonaObservador.objects.create(observador=self.obs, nombre="Norte")
+        self.client.force_login(self.obs)
+
+        # Ana sí está en la lista y en la zona; Beto solo tiene tickets.
+        self._ticket(self.ana)
+        self.client.post(reverse("tickets:obs_agregar"), {"email": "ana@x.com"})
+        elemento = ElementoMiLista.objects.get(observador=self.obs)
+        elemento.zona = self.zona
+        elemento.save()
+        self._ticket(self.beto)
+
+    def _ticket(self, usuario):
+        return Ticket.objects.create(
+            titulo="T", descripcion="d",
+            solicitante_nombre=usuario.nombre, solicitante_email=usuario.email,
+            solicitante_punto=usuario.ubicacion,
+            estado=Ticket.Estado.ABIERTO, tecnico_asignado=self.tec,
+        )
+
+    def test_solo_mi_lista_trae_el_panel_de_dos_columnas(self):
+        respuesta = self.client.get(reverse("tickets:obs_mi_lista"))
+        self.assertEqual(respuesta.status_code, 200)
+        panel = respuesta.context["panel"]
+        self.assertEqual([z["nombre"] for z in panel["zonas"]], ["Norte"])
+        # El panel ya no agrupa por punto: solo zonas.
+        self.assertNotIn("puntos", panel)
+        self.assertNotIn("sin_zona", panel)
+        self.assertEqual(panel["zonas"][0]["cuentas"], 1)
+        self.assertEqual(panel["supervisor"]["nombre"], "Sup")
+        html = respuesta.content.decode()
+        self.assertIn('class="pan-grid"', html)
+        self.assertNotIn("Panel corporativo de zonas y puntos", html)
+        self.assertIn("Supervisor a cargo", html)
+        self.assertIn("Mis zonas", html)
+        self.assertNotIn("Mis puntos", html)
+        self.assertIn('data-pan-nombre="Norte"', html)
+        self.assertNotIn('data-pan-nombre="Zona Uno"', html)
+        self.assertIn("Buscar usuario", html)
+        self.assertIn('id="panRight"', html)
+
+        # Ni Monitoreo ni Usuarios lo traen.
+        for vista in ("obs_monitoreo", "obs_usuarios"):
+            with self.subTest(vista=vista):
+                otro = self.client.get(reverse("tickets:" + vista))
+                self.assertEqual(otro.status_code, 200)
+                self.assertNotIn('class="pan-grid"', otro.content.decode())
+
+    def test_el_panel_de_la_derecha_trae_a_sus_usuarios_en_json(self):
+        html = self.client.get(reverse("tickets:obs_mi_lista")).content.decode()
+        self.assertIn('id="pan-datos"', html)
+        self.assertIn("ana@x.com", html)
+        self.assertIn("Supervisor a cargo", html)
+
+    def test_el_panel_no_quita_nada_de_lo_que_ya_habia(self):
+        html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
+        # El tablero de siempre sigue completo, sin el panel encima.
+        self.assertIn("Zonas a cargo", html)
+        self.assertIn("resuelto global", html)
+        self.assertNotIn('class="pan-grid"', html)
+        # Y el texto largo de ayuda de las zonas, intacto.
+        self.assertIn("Cada supervisor a cargo con sus zonas", html)
+
+    def test_en_usuarios_sigue_la_tabla_de_todos(self):
+        html = self.client.get(reverse("tickets:obs_usuarios")).content.decode()
+        self.assertNotIn('class="pan-grid"', html)
+        self.assertIn("Todos los usuarios", html)
+        self.assertIn("beto@x.com", html)

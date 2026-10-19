@@ -171,6 +171,13 @@ class Ticket(models.Model):
     # campo es lo que permite mostrar el distintivo "Resuelto" con verdad y
     # filtrar por "Resueltas" sin incluir los que solo se cerraron.
     fecha_resolucion = models.DateTimeField(null=True, blank=True)
+    # --- ANS: cuándo se avisó por última vez de que el ticket iba a vencer ---
+    # Un solo aviso por ticket. Ni el cron ni el panel vuelven a mandar nada
+    # mientras esta marca exista, así el técnico, el usuario y el observador
+    # no reciben el mismo correo cada vez que alguien mira el tablero.
+    ans_alertado_en = models.DateTimeField(
+        "Aviso ANS enviado", null=True, blank=True, db_index=True
+    )
     # --- Papelera: el borrado es lógico, se puede restaurar ---
     eliminado_en = models.DateTimeField(
         "Eliminado", null=True, blank=True, db_index=True
@@ -474,6 +481,16 @@ class TicketComentario(models.Model):
     es_interno = models.BooleanField(
         default=False,
         help_text="Si es True, solo lo ve el staff",
+    )
+    # Los mensajes de "presionar al técnico" guardan aquí que lo son. El
+    # comentario de por sí es uno más del hilo, y sin esta marca no había
+    # forma de contarlos ni de separarlos en el panel de monitoreo del
+    # técnico, que quiere ver aparte la presión que recibe.
+    es_presion = models.BooleanField(
+        "Mensaje de presión",
+        default=False,
+        help_text="Si está activo, el mensaje fue escrito desde el botón de "
+        "presionar al técnico (observador o punto de venta).",
     )
     fecha = models.DateTimeField(auto_now_add=True)
 
@@ -998,7 +1015,43 @@ class ZonaObservador(models.Model):
     nombre = models.CharField(
         "Nombre de la zona", max_length=80, db_column="Nombre"
     )
+    color = models.CharField(
+        "Color de la carpeta", max_length=7, blank=True, default="",
+        db_column="Color",
+        help_text="Color que eligió el observador para su carpeta (hex).",
+    )
     creado_en = models.DateTimeField(auto_now_add=True, db_column="CreadoEn")
+    version_sistema = models.CharField(
+        "Versión del sistema", max_length=30, blank=True, default="",
+        db_column="VersionSistema",
+        help_text="Versión asociada a la zona, la define el administrador.",
+    )
+    notif_correo = models.BooleanField(
+        "Notificaciones por correo", default=True, db_column="NotifCorreo",
+    )
+    notif_popup = models.BooleanField(
+        "Notificaciones emergentes", default=True, db_column="NotifPopup",
+    )
+    sup_version = models.CharField(
+        "Windows del supervisor", max_length=30, blank=True, default="",
+        db_column="SupVersion",
+        help_text="Windows del equipo del supervisor, se actualiza cuando actúa en la zona.",
+    )
+    sup_ip = models.CharField(
+        "IP del supervisor", max_length=45, blank=True, default="",
+        db_column="SupIp",
+        help_text="IP del supervisor, se actualiza cuando actúa en la zona.",
+    )
+    perm_exportar = models.BooleanField(
+        "Exportar auditoría", default=True, db_column="PermExportar",
+    )
+    perm_historial = models.BooleanField(
+        "Consultar historial", default=True, db_column="PermHistorial",
+    )
+    alertas_ans = models.BooleanField(
+        "Alertas ANS", default=False, db_column="AlertasAns",
+        help_text="Resalta la zona cuando hay urgentes abiertos.",
+    )
 
     class Meta:
         db_table = "ZonasObservador"
@@ -1121,6 +1174,7 @@ class MonitoreoAuditoria(models.Model):
     QUITAR_PUNTO = "quitar_punto"
     AGREGAR_LISTA = "agregar_lista"
     QUITAR_LISTA = "quitar_lista"
+    ALERTAS_ANS = "alertas_ans"
     ACCION_CHOICES = (
         (CREAR_ZONA, "Zona creada"),
         (RENOMBRAR_ZONA, "Zona renombrada"),
@@ -1131,6 +1185,7 @@ class MonitoreoAuditoria(models.Model):
         (QUITAR_PUNTO, "Punto quitado"),
         (AGREGAR_LISTA, "Cuenta agregada a la lista"),
         (QUITAR_LISTA, "Cuenta sacada de la lista"),
+        (ALERTAS_ANS, "Alertas ANS"),
     )
 
     actor = models.ForeignKey(
@@ -1159,6 +1214,32 @@ class MonitoreoAuditoria(models.Model):
     )
     detalle = models.CharField(
         "Detalle", max_length=200, blank=True, default="", db_column="Detalle"
+    )
+    cuenta = models.CharField(
+        "Cuenta afectada", max_length=150, blank=True, default="",
+        db_column="Cuenta",
+        help_text="Correo o nombre involucrado, cuando aplica.",
+    )
+    ip_origen = models.CharField(
+        "IP de origen", max_length=45, blank=True, default="",
+        db_column="IpOrigen",
+    )
+    resultado = models.CharField(
+        "Resultado", max_length=10, blank=True, default="exito",
+        db_column="Resultado",
+        help_text="exito, error o pendiente.",
+    )
+    motivo = models.CharField(
+        "Motivo", max_length=200, blank=True, default="",
+        db_column="Motivo",
+    )
+    version_sistema = models.CharField(
+        "Versión", max_length=30, blank=True, default="",
+        db_column="VersionSistema",
+    )
+    comentarios = models.TextField(
+        "Comentarios", blank=True, default="",
+        db_column="Comentarios",
     )
     fecha = models.DateTimeField(auto_now_add=True, db_column="Fecha")
 

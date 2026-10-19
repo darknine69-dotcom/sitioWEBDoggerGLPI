@@ -6,6 +6,7 @@
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-eye"/></svg></span>{% endblock %}
 {% block header_title %}Monitoreo por zona{% endblock %}
 {% block header_desc %}Tablero de lo que vigila cada supervisor: sus zonas, sus cuentas y su estado. Desde aquí se administra todo.{% endblock %}
+{% block header_actions %}<button type="button" class="btn btn-sm btn-accent" id="cz-abrir"><svg class="icon icon-sm"><use href="#i-plus"/></svg> Crear zona</button>{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -65,6 +66,101 @@ main.obs-page { font-family: var(--font-corp); }
     .obs-admin-form { flex-direction: column; }
     .obs-admin-form .btn { width: 100%; }
 }
+
+/* ===== Panel corporativo de supervisores y zonas (visor de dos paneles) ===== */
+.mon-grid {
+    --mon-blue: #1D4ED8;
+    --mon-blue-dark: #173FB0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 22px;
+    font-family: var(--font-corp);
+}
+@media (max-width: 980px) { .mon-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.mon-left { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.mon-panel-title { display: flex; align-items: center; gap: 10px; margin: 0 0 2px; }
+.mon-panel-title h3 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: .01em; color: var(--ink); }
+.mon-panel-ico { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 9px; background: #EEF2FF; color: var(--mon-blue); }
+.mon-panel-ico .icon { width: 17px; height: 17px; }
+
+/* Tarjeta vertical de supervisor. */
+.mon-sup { background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 4px 16px rgba(23,20,18,.07); padding: 14px 14px 12px; }
+.mon-sup-head { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
+.mon-ava { flex: none; width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #EEF2FF, #DDE5FF); color: var(--mon-blue); font-weight: 800; font-size: 16px; border: 1px solid #D3DCFB; }
+.mon-sup-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.mon-sup-id strong { font-size: 14px; color: var(--ink); }
+.mon-sup-id small { font-size: 11.5px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mon-rol { align-self: flex-start; margin-top: 2px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--mon-blue); background: #EEF2FF; border-radius: 999px; padding: 2px 9px; }
+.mon-sup-n { flex: none; align-self: flex-start; font-size: 11.5px; font-weight: 800; color: var(--ink-muted); background: #F5F2EC; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+
+/* Subtarjetas de zona: verticales, compactas, con borde de estado. */
+.mon-zonas { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.mon-sin { grid-column: 1 / -1; }
+.mon-zc {
+    display: flex; flex-direction: column; gap: 7px; text-align: left;
+    background: #FCFBF9; border: 1px solid var(--line); border-left: 4px solid var(--line);
+    border-radius: 11px; padding: 10px 12px; cursor: pointer; font: inherit; color: inherit;
+    transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+}
+.mon-zc:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(23,20,18,.10); background: #fff; }
+.mon-zc.is-on { background: #fff; box-shadow: 0 0 0 2px var(--mon-blue), 0 8px 20px rgba(29,78,216,.16); border-color: var(--mon-blue); }
+.mon-zc-verde { border-left-color: #2F7D4F; }
+.mon-zc-amarillo { border-left-color: #E0A106; }
+.mon-zc-rojo { border-left-color: #D62B1F; }
+.mon-zc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.mon-zc-nombre { font-size: 13px; font-weight: 800; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mon-zc-fecha { flex: none; font-size: 10.5px; color: var(--ink-muted); }
+.mon-zc-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--ink-muted); }
+.mon-zc-meta b { color: var(--ink); }
+.mon-zc-bar { display: block; height: 6px; border-radius: 999px; background: #EDE7DC; overflow: hidden; }
+.mon-zc-bar > span { display: block; height: 100%; border-radius: 999px; background: #2F7D4F; }
+.mon-zc-amarillo .mon-zc-bar > span { background: #E0A106; }
+.mon-zc-rojo .mon-zc-bar > span { background: #D62B1F; }
+.mon-zc-foot { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--ink-muted); }
+.mon-dot { width: 8px; height: 8px; border-radius: 50%; background: #2F7D4F; }
+.mon-zc-amarillo .mon-dot { background: #E0A106; }
+.mon-zc-rojo .mon-dot { background: #D62B1F; }
+
+/* Panel derecho: usuarios de la zona elegida. */
+.mon-right { position: sticky; top: 14px; display: flex; flex-direction: column; background: #fff; border: 1px solid #E3E3E3; border-radius: 14px; box-shadow: 0 4px 16px rgba(23,20,18,.08); padding: 14px; max-height: calc(100vh - 40px); font-family: var(--font-corp); }
+.mon-right-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.mon-right-head h4 { margin: 0; font-size: 14px; font-weight: 800; color: var(--ink); }
+.mon-right-head h4 span { color: var(--mon-blue); }
+.mon-right-head .muted { font-size: 11px; }
+.mon-busca { position: relative; margin-bottom: 10px; }
+.mon-busca .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--ink-muted); }
+.mon-busca input { width: 100%; font: inherit; font-size: 12.5px; border: 1px solid #DEDEDE; border-radius: 10px; padding: 8px 10px 8px 32px; color: var(--ink); background: #FCFCFC; }
+.mon-busca input:focus { outline: none; border-color: var(--mon-blue); background: #fff; }
+.mon-lista { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
+.mon-vacio { margin: 6px 0; }
+.mon-user { display: flex; align-items: center; gap: 9px; border: 1px solid #ECECEC; border-radius: 11px; padding: 8px 10px; cursor: pointer; transition: border-color .14s ease, background .14s ease; }
+.mon-user:hover { border-color: #C9D4F8; background: #FBFCFF; }
+.mon-user-chk { flex: none; width: 16px; height: 16px; accent-color: var(--mon-blue); cursor: pointer; }
+.mon-user-ava { flex: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #EEF2FF; color: var(--mon-blue); font-weight: 800; font-size: 13px; }
+.mon-user-id { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mon-user-id strong { font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mon-user-id small { font-size: 11px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mon-user-rol { flex: none; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); background: #F5F2EC; border-radius: 999px; padding: 2px 8px; }
+.mon-user-ficha { flex: none; font-size: 10.5px; font-weight: 800; color: var(--mon-blue); text-decoration: none; }
+.mon-user-ficha:hover { text-decoration: underline; }
+.mon-right-pie { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 10px; border-top: 1px solid #EFEFEF; }
+.mon-cerrar { background: var(--mon-blue); color: #fff; border: 0; border-radius: 10px; padding: 8px 22px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; box-shadow: 0 4px 14px rgba(29,78,216,.30); transition: background .15s ease; }
+.mon-cerrar:hover { background: var(--mon-blue-dark); }
+
+/* Bloque de administración plegado (mantiene todo lo de antes). */
+.mon-admin { margin-top: 4px; }
+.mon-admin > summary { cursor: pointer; font-size: 12.5px; font-weight: 800; color: var(--ink-muted); list-style: none; padding: 9px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.mon-admin > summary:hover { color: var(--dogger-red); border-color: var(--dogger-red); }
+.mon-admin > summary::-webkit-details-marker { display: none; }
+.mon-admin[open] > summary { margin-bottom: 12px; border-radius: 10px; }
+
+@media (max-width: 640px) {
+    .mon-right { position: static; max-height: none; }
+    .mon-zonas { grid-template-columns: 1fr; }
+}
 </style>
 {% endblock %}
 
@@ -115,30 +211,124 @@ main.obs-page { font-family: var(--font-corp); }
     </div>
 
     <section id="zonas" class="obs-bloque">
-        <h3 class="obs-bloque-titulo">Zonas creadas por los observadores</h3>
         <p class="obs-leyenda">
-            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-verde"></span> Al día<span class="obs-tip">Zona sin tickets abiertos</span></span>
-            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-amarillo"></span> Pendiente<span class="obs-tip">Zona con tickets abiertos o en progreso</span></span>
-            <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-rojo"></span> Incidencia<span class="obs-tip">Zona con urgentes abiertos</span></span>
+            <span class="obs-leyenda-item" tabindex="0"><svg class="icon icon-sm" style="color:#2F7D4F"><use href="#i-check-circle"/></svg> Al día<span class="obs-tip">Zona sin tickets abiertos</span></span>
+            <span class="obs-leyenda-item" tabindex="0"><svg class="icon icon-sm" style="color:#C98A12"><use href="#i-clock"/></svg> Pendiente<span class="obs-tip">Zona con tickets abiertos o en progreso</span></span>
+            <span class="obs-leyenda-item" tabindex="0"><svg class="icon icon-sm" style="color:#C8102E"><use href="#i-alert"/></svg> Incidencia<span class="obs-tip">Zona con urgentes abiertos</span></span>
         </p>
-        <p class="muted" style="margin:0 0 12px;font-size:12.5px">Cada supervisor a cargo con sus zonas, las cuentas que metió en cada una y su estado. Se administra desde aquí: se crea la zona, se le asignan cuentas, se saca una cuenta o se elimina la zona (la gente no se borra). Dale clic al nombre de una cuenta para ver su ficha completa.</p>
-        <form method="post" action="{% url 'tickets:monitoreo_zona_crear' %}" class="obs-filtros obs-admin-crear">
-            {% csrf_token %}
-            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
-            <label>Supervisor
-                <select name="observador" class="obs-buscador-tipo" style="min-width:200px" required>
-                    <option value="">Elige…</option>
-                    {% for pk, nombre in observadores %}
-                    <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label style="flex:1">Nueva zona
-                <input type="text" name="nombre" maxlength="80" placeholder="Ej.: Sede norte" class="obs-buscador-tipo" style="width:100%" required>
-            </label>
-            <button type="submit" class="btn btn-sm btn-accent" style="align-self:flex-end"><svg class="icon icon-sm"><use href="#i-plus"/></svg> Crear zona</button>
-        </form>
+        <details class="obs-ayuda">
+            <summary>¿Cómo se administra?</summary>
+            <p>Cada supervisor a cargo con sus zonas, las cuentas que metió en cada una y su estado. Se crea la zona, se le asignan cuentas, se saca una cuenta o se elimina la zona (la gente no se borra). Dale clic al nombre de una cuenta para ver su ficha completa.</p>
+        </details>
+        <div class="aud-modal" id="cz-modal" hidden>
+            <div class="aud-modal-caja cz-caja" role="dialog" aria-modal="true" aria-labelledby="cz-titulo">
+                <h4 id="cz-titulo">Nueva zona</h4>
+                <p class="muted" id="cz-sub">Se crea para el supervisor elegido, con sus cuentas y técnicos.</p>
+                <div class="cz-tabs" role="tablist">
+                    <button type="button" class="cz-tab is-on" data-cz-tab="datos" role="tab">Datos</button>
+                    <button type="button" class="cz-tab" data-cz-tab="permisos" role="tab">Permisos</button>
+                </div>
+                <form method="post" action="{% url 'tickets:monitoreo_zona_crear' %}" id="cz-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                    <input type="hidden" name="miembros" id="cz-miembros" value="">
+                    <div data-cz-panel="datos">
+                    <label class="cz-campo">Nombre de la zona
+                        <span class="cz-nombre-fila">
+                            <input type="text" name="nombre" id="cz-nombre" maxlength="80" placeholder="Ej.: Sede norte" autocomplete="off" required>
+                            <span class="cz-check" id="cz-check" hidden title="Nombre válido">✓</span>
+                        </span>
+                        <small class="cz-error" id="cz-error-nombre" hidden>Escribe un nombre para la zona.</small>
+                    </label>
+                    <label class="cz-campo">Supervisor de la zona
+                        <select name="observador" id="cz-supervisor" required>
+                            <option value="">Elige…</option>
+                            {% for pk, nombre in observadores %}
+                            <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <div class="cz-campo"><span class="cz-desplegable">Agregar usuarios
+                        <button type="button" class="cz-toggle" data-cz-toggle="cz-bloque-usuarios" aria-expanded="false" title="Desplegar buscador">✓</button></span>
+                        <div id="cz-bloque-usuarios" hidden>
+                            <input type="search" id="cz-buscar" placeholder="Buscar por correo o nombre…" autocomplete="off" data-url-buscar="{% url 'tickets:monitoreo_cuentas_buscar' %}">
+                            <div class="asg-sug cz-sug" id="cz-sug" hidden></div>
+                            <div class="cz-elegidos" id="cz-elegidos"></div>
+                        </div>
+                    </div>
+                    <fieldset class="cz-campo"><span class="cz-desplegable">Técnico encargado de <b id="cz-zona-nombre">la zona</b>
+                        <button type="button" class="cz-toggle" data-cz-toggle="cz-bloque-tecs" aria-expanded="false" title="Desplegar buscador">✓</button></span>
+                        <div id="cz-bloque-tecs" hidden>
+                            <input type="search" id="cz-buscar-tec" placeholder="Buscar técnico…" autocomplete="off" data-url-buscar="{% url 'tickets:monitoreo_cuentas_buscar' %}">
+                            <div class="cz-tecs-lista" id="cz-tecs"><p class="muted">Escribe para buscar técnicos activos.</p></div>
+                        </div>
+                    </fieldset>
+                    </div>
+                    <div data-cz-panel="permisos" hidden>
+                        <p class="muted">Permisos del administrador en esta zona.</p>
+                        <label class="cz-perm"><span><b>Notificaciones por correo</b><small>Avisos de la zona al correo</small></span><input type="checkbox" name="notif_correo" checked></label>
+                        <label class="cz-perm"><span><b>Notificaciones emergentes</b><small>Campana en el panel</small></span><input type="checkbox" name="notif_popup" checked></label>
+                        <label class="cz-perm"><span><b>Crear / eliminar la zona</b><small>Incluido por rol administrador</small></span><input type="checkbox" checked disabled></label>
+                        <label class="cz-perm"><span><b>Asignar / quitar usuarios y técnicos</b><small>Incluido por rol administrador</small></span><input type="checkbox" checked disabled></label>
+                        <label class="cz-perm"><span><b>Exportar auditoría a Excel con filtros</b><small><a href="{% url 'tickets:monitoreo_auditoria_exportar' %}">descargar</a></small></span><input type="checkbox" name="perm_exportar" checked></label>
+                        <label class="cz-perm"><span><b>Consultar historial de la zona</b><small><a href="#auditoria" id="cz-ver-historial">ver registro</a></small></span><input type="checkbox" name="perm_historial" checked></label>
+                    </div>
+                    <div class="aud-modal-pie">
+                        <button type="button" class="btn btn-sm" id="cz-cancelar">Cancelar</button>
+                        <button type="submit" class="btn btn-sm btn-accent" id="cz-guardar" disabled>Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
         {% if zonas_creadas %}
+        <div class="mon-grid">
+            <div class="mon-left">
+                <div class="mon-panel-title"><span class="mon-panel-ico"><svg class="icon"><use href="#i-users"/></svg></span><h3>Panel corporativo de supervisores y zonas</h3></div>
+                {% for bloque in zonas_creadas %}
+                <article class="mon-sup" data-sup="{{ bloque.supervisor.pk }}">
+                    <header class="mon-sup-head">
+                        <span class="mon-ava">{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
+                        <div class="mon-sup-id">
+                            <strong>{{ bloque.supervisor.nombre }}</strong>
+                            <small>{{ bloque.supervisor.email|default:"—" }}</small>
+                            <span class="mon-rol">{% if bloque.supervisor.rol == 'observador' %}Supervisor a cargo{% else %}{{ bloque.supervisor.get_rol_display }}{% endif %}</span>
+                        </div>
+                        <span class="mon-sup-n">{{ bloque.zonas|length }} zona{{ bloque.zonas|length|pluralize }}</span>
+                    </header>
+                    <div class="mon-zonas">
+                        {% for z in bloque.zonas %}
+                        <button type="button" class="mon-zc mon-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %}" data-mon-zona="{{ z.zona.pk }}" data-mon-sup="{{ bloque.supervisor.pk }}" data-mon-nombre="{{ z.zona.nombre }}">
+                            <span class="mon-zc-top">
+                                <span class="mon-zc-nombre">{{ z.zona.nombre }}</span>
+                                <span class="mon-zc-fecha">{{ z.zona.creado_en|date:"d/m/Y" }}</span>
+                            </span>
+                            <span class="mon-zc-meta">
+                                <span><b>{{ z.miembros|length }}</b> cuentas</span>
+                                <span class="mon-zc-tk"><b>{{ z.abiertos }}</b> abiertos / <b>{{ z.cerrados|default:0 }}</b> cerrados</span>
+                            </span>
+                            <span class="mon-zc-bar"><span style="width: {{ z.avance }}%"></span></span>
+                            <span class="mon-zc-foot"><span class="mon-dot"></span>{% if z.urgentes %}Críticos{% elif z.abiertos %}Pendientes{% else %}Al día{% endif %} · {{ z.avance }}%</span>
+                        </button>
+                        {% empty %}
+                        <p class="muted mon-sin">Sin zonas.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            <aside class="mon-right" id="monRight" aria-live="polite">
+                <div class="mon-right-head">
+                    <h4>Usuarios en <span id="monRightZona">—</span></h4>
+                    <span class="muted" id="monSelCount"></span>
+                </div>
+                <div class="mon-busca"><svg class="icon icon-sm"><use href="#i-search"/></svg><input type="search" id="monBuscar" placeholder="Buscar usuario…" aria-label="Buscar usuario" autocomplete="off"></div>
+                <div class="mon-lista" id="monLista"><p class="muted mon-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p></div>
+                <div class="mon-right-pie"><button type="button" class="mon-cerrar" id="monCerrar">Cerrar</button></div>
+            </aside>
+        </div>
+
+        <details class="mon-admin">
+            <summary>Administrar zonas (crear, renombrar, cuentas, técnicos)</summary>
         {% for bloque in zonas_creadas %}
         <div class="obs-sup-tit">
             <span class="obs-avatar">{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
@@ -177,7 +367,7 @@ main.obs-page { font-family: var(--font-corp); }
                         </span>
                     </form>
                     <button type="button" class="mini-icon-btn obs-assign-toggle" data-assign-toggle="asg-{{ z.zona.pk }}" aria-expanded="false" title="Asignar cuenta a {{ z.zona.nombre }}" aria-label="Asignar cuenta a {{ z.zona.nombre }}"><svg class="icon"><use href="#i-plus"/></svg></button>
-                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form obs-admin-email" id="asg-{{ z.zona.pk }}" data-url-buscar="{% url 'tickets:monitoreo_cuentas_buscar' %}" hidden>
+                    <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_agregar' z.zona.pk %}" class="obs-admin-form obs-admin-email" id="asg-{{ z.zona.pk }}" data-url-buscar="{% url 'tickets:monitoreo_cuentas_buscar' %}" data-motivo-tipo="ingresar" data-motivo-nombre="Meter cuenta a «{{ z.zona.nombre }}»" hidden>
                         {% csrf_token %}
                         <input type="hidden" name="volver" value="{{ request.get_full_path }}">
                         <div class="asg-busca">
@@ -203,7 +393,7 @@ main.obs-page { font-family: var(--font-corp); }
                                 <span class="obs-crate-seg s-abiertos"><b>{{ m.abiertos }}</b> abiertos</span>
                             </span>
                         </span>
-                        <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_quitar' m.elemento_id %}" data-sacar-nombre="{{ m.nombre }}" data-sacar-zona="{{ z.zona.nombre }}">
+                        <form method="post" action="{% url 'tickets:monitoreo_zona_miembro_quitar' m.elemento_id %}" data-sacar-nombre="{{ m.nombre }}" data-sacar-zona="{{ z.zona.nombre }}" data-motivo-tipo="sacar" data-motivo-nombre="Sacar a {{ m.nombre }} de «{{ z.zona.nombre }}»">
                             {% csrf_token %}
                             <input type="hidden" name="volver" value="{{ request.get_full_path }}">
                             <button type="submit" class="mini-icon-btn" title="Sacar de la zona (queda en la lista)" aria-label="Sacar a {{ m.nombre }} de {{ z.zona.nombre }}"><svg class="icon"><use href="#i-x"/></svg></button>
@@ -215,6 +405,16 @@ main.obs-page { font-family: var(--font-corp); }
                 {% endfor %}
                 <div class="obs-admin-foot">
                     <small class="muted">{{ z.miembros|length }} cuenta{{ z.miembros|length|pluralize }} en total</small>
+                    <span class="obs-zona-acciones">
+                        <a class="btn btn-sm" href="{% url 'tickets:lista' %}?zona={{ z.zona.nombre|urlencode }}" title="Ver tickets con punto {{ z.zona.nombre }}">Ver tickets</a>
+                        <a class="btn btn-sm" href="{% url 'tickets:usuarios' %}?rol=tecnico" title="Reasignar técnico desde Usuarios y técnicos">Reasignar técnico</a>
+                        <a class="btn btn-excel btn-sm" href="{% url 'tickets:exportar_reportes' %}" title="Exportar reporte en Excel"><svg class="icon"><use href="#i-excel"/></svg> Excel</a>
+                        <form method="post" action="{% url 'tickets:monitoreo_zona_alertas' z.zona.pk %}" style="display:inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                            <button type="submit" class="btn btn-sm{% if z.zona.alertas_ans %} btn-accent{% endif %}" title="{% if z.zona.alertas_ans %}Desactivar{% else %}Activar{% endif %} alertas ANS de {{ z.zona.nombre }}">ANS {% if z.zona.alertas_ans %}ON{% else %}OFF{% endif %}</button>
+                        </form>
+                    </span>
                     <form method="post" action="{% url 'tickets:monitoreo_zona_eliminar' z.zona.pk %}" style="margin-left:auto" data-eliminar-zona="{{ z.zona.nombre }}" data-eliminar-n="{{ z.miembros|length }}">
                         {% csrf_token %}
                         <input type="hidden" name="volver" value="{{ request.get_full_path }}">
@@ -225,6 +425,7 @@ main.obs-page { font-family: var(--font-corp); }
         </section>
         {% endfor %}
         {% endfor %}
+        </details>
         {% else %}
         <div class="obs-vacio">
             <span class="obs-vacio-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
@@ -332,8 +533,7 @@ main.obs-page { font-family: var(--font-corp); }
                             <td class="obs-acciones">
                                 {% if f.ya_agregado %}
                                 <span class="obs-pill obs-pill-verde">En la lista</span>
-                                <form method="post" action="{% url 'tickets:monitoreo_quitar_zona' %}" data-confirm-zona="quitar"
-                                      onsubmit="return confirm('¿Sacar esta cuenta de su zona?')"
+                                <form method="post" action="{% url 'tickets:monitoreo_quitar_zona' %}" data-confirm-zona="quitar" data-motivo-tipo="sacar" data-motivo-nombre="Sacar cuenta de su zona"
                                       style="display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:6px">
                                     {% csrf_token %}
                                     <input type="hidden" name="observador" value="{{ observador_id }}">
@@ -344,8 +544,7 @@ main.obs-page { font-family: var(--font-corp); }
                                     <button type="submit" class="quitar-badge" title="Sacar de la zona elegida">Quitar</button>
                                 </form>
                                 {% else %}
-                                <form method="post" action="{% url 'tickets:monitoreo_agregar' %}" data-confirm-zona="agregar"
-                                      onsubmit="return confirm('¿Agregar esta cuenta a la zona elegida?')"
+                                <form method="post" action="{% url 'tickets:monitoreo_agregar' %}" data-confirm-zona="agregar" data-motivo-tipo="ingresar" data-motivo-nombre="Agregar cuenta a la zona elegida"
                                       style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
                                     {% csrf_token %}
                                     <input type="hidden" name="observador" value="{{ observador_id }}">
@@ -369,20 +568,54 @@ main.obs-page { font-family: var(--font-corp); }
     </section>
 
     <section id="auditoria" class="obs-bloque">
-        <div class="chart-card">
+        <div class="chart-card aud-card">
             <div class="chart-card-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
                 <h3>Registro de auditoría</h3>
             </div>
-            <p class="muted" style="margin:0 0 12px;font-size:12.5px">Cambios realizados en el monitoreo: quién, qué y cuándo.
+            <div class="aud-meta">
+                <span class="aud-meta-item" title="Usuario conectado"><svg class="icon icon-sm"><use href="#i-user"/></svg>{{ request.user.nombre|default:request.user.email }}</span>
+                <span class="aud-meta-item" title="Fecha y hora actual"><svg class="icon icon-sm"><use href="#i-calendar"/></svg>{% now "d/m/Y H:i" %}</span>
                 <span class="aud-chip"><b>{{ aud_hoy }}</b> hoy</span>
                 <span class="aud-chip"><b>{{ aud_semana }}</b> últimos 7 días</span>
-            </p>
+                <span class="aud-estado" title="Estado del sistema"><span class="obs-dot obs-dot-verde"></span>Operativo</span>
+            </div>
             {% if auditoria %}
+            <div class="aud-controles">
+                <span class="aud-lupa" id="aud-lupa" title="Buscar">
+                    <button type="button" id="aud-lupa-btn" aria-label="Buscar en auditoría"><svg class="icon"><use href="#i-search"/></svg></button>
+                    <input type="search" id="aud-buscar" placeholder="Buscar…" aria-label="Búsqueda rápida en auditoría" autocomplete="off" hidden>
+                    <button type="button" id="aud-lupa-x" aria-label="Limpiar búsqueda" hidden><svg class="icon"><use href="#i-x"/></svg></button>
+                </span>
+                <label class="aud-fecha" title="Desde"><svg class="icon icon-sm"><use href="#i-calendar"/></svg><input type="date" id="aud-f-desde" aria-label="Auditoría desde"></label>
+                <label class="aud-fecha" title="Hasta"><svg class="icon icon-sm"><use href="#i-calendar"/></svg><input type="date" id="aud-f-hasta" aria-label="Auditoría hasta"></label>
+                <select id="aud-f-accion" class="obs-buscador-tipo" aria-label="Filtrar por acción">
+                    <option value="">Todas las acciones</option>
+                    <option value="Zona creada">Zona creada</option>
+                    <option value="Zona renombrada">Zona renombrada</option>
+                    <option value="Zona eliminada">Zona eliminada</option>
+                    <option value="Cuenta agregada a zona">Cuenta agregada a zona</option>
+                    <option value="Cuenta sacada de zona">Cuenta sacada de zona</option>
+                    <option value="Punto asignado">Punto asignado</option>
+                    <option value="Punto quitado">Punto quitado</option>
+                    <option value="Cuenta agregada a la lista">Cuenta agregada a la lista</option>
+                    <option value="Cuenta sacada de la lista">Cuenta sacada de la lista</option>
+                    <option value="Alertas ANS">Alertas ANS</option>
+                </select>
+                <select id="aud-f-resultado" class="obs-buscador-tipo" aria-label="Filtrar por resultado">
+                    <option value="">Todos los resultados</option>
+                    <option value="exito">exito</option>
+                    <option value="error">error</option>
+                    <option value="pendiente">pendiente</option>
+                </select>
+                <a class="btn btn-excel btn-sm" href="{% url 'tickets:monitoreo_auditoria_exportar' %}" title="Descargar auditoría en Excel con filtros"><svg class="icon"><use href="#i-excel"/></svg> Excel</a>
+            </div>
+            {% now "Y-m-d" as hoy_ymd %}
             <div class="obs-tabla-wrap tabla-scroll-seis">
-                <table class="obs-tabla">
+                <table class="obs-tabla aud-tabla" id="aud-tabla">
                     <thead>
                         <tr>
+                            <th>ID</th>
                             <th>Fecha</th>
                             <th>Hace</th>
                             <th>Acción</th>
@@ -391,19 +624,27 @@ main.obs-page { font-family: var(--font-corp); }
                             <th>Cuenta</th>
                             <th>Hecho por</th>
                             <th>Detalle</th>
+                            <th>Motivo</th>
+                            <th>Resultado</th>
+                            <th>Versión</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for a in auditoria %}
-                        <tr>
+                        <tr{% if a.fecha|date:"Y-m-d" == hoy_ymd %} class="aud-reciente"{% endif %}
+                            data-accion="{{ a.get_accion_display }}" data-resultado="{{ a.resultado|default:'' }}" data-fecha="{{ a.fecha|date:'Y-m-d' }}">
+                            <td class="num">#{{ a.pk }}</td>
                             <td style="white-space:nowrap" title="{{ a.fecha|date:'d/m/Y H:i' }}">{{ a.fecha|date:"d/m/Y H:i" }}</td>
                             <td style="white-space:nowrap"><span class="aud-hace">{{ a.hace }}</span></td>
                             <td><span class="aud-badge aud-badge-{{ a.clase_accion }}">{{ a.get_accion_display }}</span></td>
                             <td>{% if a.zona_nombre %}<span class="zona-badge">{{ a.zona_nombre }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
                             <td>{% if a.observador %}<span class="aud-quien"><span class="aud-foto">{% if a.observador.avatar %}<img src="{{ a.observador.avatar.url }}" alt="">{% else %}{{ a.observador.nombre|default:"?"|slice:":1"|upper }}{% endif %}</span><span>{{ a.observador.nombre }}<small>{{ a.observador.get_rol_display }}</small></span></span>{% else %}<span class="muted">—</span>{% endif %}</td>
-                            <td>{% if "@" in a.detalle %}<span class="aud-cuenta"><svg class="icon"><use href="#i-mail"/></svg>{{ a.detalle }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td>{% if a.cuenta %}<span class="aud-cuenta"><svg class="icon"><use href="#i-mail"/></svg>{{ a.cuenta }}</span>{% elif "@" in a.detalle %}<span class="aud-cuenta"><svg class="icon"><use href="#i-mail"/></svg>{{ a.detalle }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
                             <td>{% if a.actor %}<span class="aud-quien"><span class="aud-foto">{% if a.actor.avatar %}<img src="{{ a.actor.avatar.url }}" alt="">{% else %}{{ a.actor.nombre|default:"?"|slice:":1"|upper }}{% endif %}</span><span>{{ a.actor.nombre }}</span></span>{% else %}<span class="muted">sistema</span>{% endif %}</td>
-                            <td>{{ a.detalle|default:"—" }}</td>
+                            <td>{{ a.detalle|default:"—" }}{% if a.comentarios %}<br><small class="muted">{{ a.comentarios }}</small>{% endif %}{% if a.ip_origen %}<br><small class="muted"><svg class="icon icon-sm"><use href="#i-ip"/></svg> {{ a.ip_origen }}</small>{% endif %}</td>
+                            <td>{{ a.motivo|default:"—" }}</td>
+                            <td>{% if a.resultado %}<span class="aud-badge aud-badge-{% if a.resultado == 'exito' %}ok{% else %}no{% endif %}">{{ a.resultado }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td>{% if a.version_sistema %}<small class="muted">{{ a.version_sistema }}</small>{% else %}<span class="muted">—</span>{% endif %}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -414,6 +655,20 @@ main.obs-page { font-family: var(--font-corp); }
             {% endif %}
         </div>
     </section>
+
+    <div class="aud-modal" id="aud-modal-motivo" hidden>
+        <div class="aud-modal-caja" role="dialog" aria-modal="true" aria-labelledby="aud-modal-titulo">
+            <h4 id="aud-modal-titulo">Motivo</h4>
+            <p class="muted" id="aud-modal-sub"></p>
+            <div class="aud-modal-opciones" id="aud-modal-opciones"></div>
+            <p class="aud-modal-libre-titulo">Otro motivo</p>
+            <input type="text" id="aud-modal-libre" class="obs-buscador" placeholder="Escríbelo aquí… tiene prioridad sobre la opción marcada" maxlength="200" aria-label="Otro motivo">
+            <div class="aud-modal-pie">
+                <button type="button" class="btn btn-sm" id="aud-modal-cancelar">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-accent" id="aud-modal-ok">Confirmar</button>
+            </div>
+        </div>
+    </div>
     {% endif %}
 
     <script>
@@ -431,26 +686,112 @@ main.obs-page { font-family: var(--font-corp); }
                 body.hidden = abierto;
             });
         });
+        /* Panel corporativo: clic en una zona pinta a la derecha sus usuarios. */
+        (function () {
+            var grid = document.querySelector(".mon-grid");
+            if (!grid) { return; }
+            var pane = document.getElementById("monLista");
+            var rotulo = document.getElementById("monRightZona");
+            var contador = document.getElementById("monSelCount");
+            var buscar = document.getElementById("monBuscar");
+            var cerrar = document.getElementById("monCerrar");
+            var botones = grid.querySelectorAll(".mon-zc");
+            var actual = null;
+
+            function esc(s) {
+                return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+                    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+                });
+            }
+            function usuariosDe(pk) {
+                var card = document.getElementById("za-" + pk);
+                var filas = card ? card.querySelectorAll(".obs-miembro") : [];
+                return Array.prototype.map.call(filas, function (f) {
+                    var a = f.querySelector(".obs-miembro-top a");
+                    var sm = f.querySelector(".obs-miembro-id small");
+                    var av = f.querySelector(".obs-avatar");
+                    var txt = sm ? sm.textContent.replace(/\s+/g, " ").trim() : "";
+                    var partes = txt.split("·");
+                    return {
+                        nombre: a ? a.textContent.trim() : "—",
+                        href: a ? a.getAttribute("href") : "#",
+                        correo: (partes[0] || "").trim(),
+                        rol: (partes[1] || "").trim(),
+                        ava: av ? av.textContent.trim() : "?"
+                    };
+                });
+            }
+            function pinta(usuarios) {
+                var q = (buscar && buscar.value || "").toLowerCase().trim();
+                var vis = usuarios.filter(function (u) {
+                    return !q || (u.nombre + " " + u.correo + " " + u.rol).toLowerCase().indexOf(q) !== -1;
+                });
+                if (contador) { contador.textContent = vis.length + " de " + usuarios.length; }
+                if (!usuarios.length) {
+                    pane.innerHTML = '<p class="muted mon-vacio">Esta zona no tiene cuentas todavía.</p>';
+                    return;
+                }
+                if (!vis.length) {
+                    pane.innerHTML = '<p class="muted mon-vacio">Sin coincidencias para «' + esc(q) + '».</p>';
+                    return;
+                }
+                pane.innerHTML = vis.map(function (u) {
+                    return '<label class="mon-user">' +
+                        '<input type="checkbox" class="mon-user-chk">' +
+                        '<span class="mon-user-ava">' + esc(u.ava) + "</span>" +
+                        '<span class="mon-user-id"><strong>' + esc(u.nombre) + "</strong><small>" + esc(u.correo) + "</small></span>" +
+                        '<span class="mon-user-rol">' + esc(u.rol || "Usuario") + "</span>" +
+                        '<a class="mon-user-ficha" href="' + esc(u.href) + '" title="Abrir ficha de ' + esc(u.nombre) + '">Ver ficha</a>' +
+                        "</label>";
+                }).join("");
+            }
+            function activa(btn) {
+                botones.forEach(function (b) { b.classList.toggle("is-on", b === btn); });
+                actual = btn;
+                if (rotulo) { rotulo.textContent = btn.getAttribute("data-mon-nombre") || "—"; }
+                var us = usuariosDe(btn.getAttribute("data-mon-zona"));
+                if (buscar) { buscar.value = ""; }
+                pinta(us);
+            }
+            botones.forEach(function (b) {
+                b.addEventListener("click", function () { activa(b); });
+            });
+            if (buscar) {
+                buscar.addEventListener("input", function () {
+                    if (!actual) { return; }
+                    pinta(usuariosDe(actual.getAttribute("data-mon-zona")));
+                });
+            }
+            if (cerrar) {
+                cerrar.addEventListener("click", function () {
+                    botones.forEach(function (b) { b.classList.remove("is-on"); });
+                    actual = null;
+                    if (rotulo) { rotulo.textContent = "—"; }
+                    if (contador) { contador.textContent = ""; }
+                    if (buscar) { buscar.value = ""; }
+                    pane.innerHTML = '<p class="muted mon-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p>';
+                });
+            }
+        })();
+
         /* Zona destino: lo elegido manda en los Agregar y Quitar de la tabla. */
         (function () {
-            var sel = document.getElementById("zonaDestino");
-            function limpio(s) { return String(s == null ? "" : s).replace(/['"]/g, "").trim(); }
+            var sel = document.getElementById("zonaDestino");            function limpio(s) { return String(s == null ? "" : s).replace(/['"]/g, "").trim(); }
             function refrescarConfirms() {
                 var zona = sel ? limpio(sel.value) : "";
                 document.querySelectorAll("form[data-confirm-zona]").forEach(function (f) {
                     var accion = f.getAttribute("data-confirm-zona");
                     var mail = f.querySelector('input[name="email"]');
                     var email = mail ? limpio(mail.value) : "esta cuenta";
-                    var msg;
+                    f.removeAttribute("onsubmit");
                     if (accion === "agregar") {
-                        msg = "¿Agregar a " + email + " a la zona " + (zona || "elegida") + "?";
+                        f.setAttribute("data-motivo-nombre", "Agregar a " + email + " a " + (zona || "la zona elegida"));
                     } else {
                         var fila = f.closest("tr");
                         var badge = fila ? fila.querySelector(".zona-badge") : null;
                         var real = badge ? limpio(badge.textContent) : "";
-                        msg = "¿Sacar a " + email + (real ? " de la zona " + real : " de su zona") + "?";
+                        f.setAttribute("data-motivo-nombre", "Sacar a " + email + (real ? " de " + real : " de su zona"));
                     }
-                    f.setAttribute("onsubmit", "return confirm('" + msg + "')");
                 });
             }
             if (!sel) { refrescarConfirms(); return; }
@@ -572,18 +913,6 @@ main.obs-page { font-family: var(--font-corp); }
                 );
             });
         });
-        /* Sacar: la cuenta queda en la lista, sin zona. */
-        document.querySelectorAll("[data-sacar-nombre]").forEach(function (form) {
-            form.addEventListener("submit", function (e) {
-                e.preventDefault();
-                confirma(
-                    "¿Sacar a " + form.getAttribute("data-sacar-nombre") +
-                    " de «" + form.getAttribute("data-sacar-zona") + "»?",
-                    form, "Sí, sacar",
-                    { titulo: "Sacar de la zona", icono: "#i-x", nota: "Queda en la lista del supervisor, sin zona. Sus tickets no se tocan." }
-                );
-            });
-        });
         /* Eliminar: la gente no se borra, los tickets tampoco. */
         document.querySelectorAll("[data-eliminar-zona]").forEach(function (form) {
             form.addEventListener("submit", function (e) {
@@ -596,6 +925,290 @@ main.obs-page { font-family: var(--font-corp); }
                 );
             });
         });
+        /* Motivos estándar: ventana emergente para sacar/ingresar. */
+        var MOTIVOS = {
+            sacar: ["Ya no está disponible", "Cambio de cuenta", "Cambio de zona", "Novedad administrativa"],
+            ingresar: ["Nueva asignación", "Reemplazo", "Cambio de zona", "Retorno / reactivación"]
+        };
+        var modal = document.getElementById("aud-modal-motivo");
+        var modalTitulo = document.getElementById("aud-modal-titulo");
+        var modalSub = document.getElementById("aud-modal-sub");
+        var modalOps = document.getElementById("aud-modal-opciones");
+        var modalLibre = document.getElementById("aud-modal-libre");
+        var formPendiente = null;
+        function cerrarModal() { if (modal) { modal.hidden = true; formPendiente = null; } }
+        var btnCerrar = document.getElementById("aud-modal-cancelar");
+        var btnOk = document.getElementById("aud-modal-ok");
+        if (btnCerrar) { btnCerrar.addEventListener("click", cerrarModal); }
+        if (modal) { modal.addEventListener("click", function (e) { if (e.target === modal) { cerrarModal(); } }); }
+        if (btnOk) {
+            btnOk.addEventListener("click", function () {
+                if (!formPendiente) { return; }
+                var sel = modalOps ? modalOps.querySelector('input[name="motivo-op"]:checked') : null;
+                var libre = modalLibre ? modalLibre.value.trim() : "";
+                var motivo = libre || (sel ? sel.value : "");
+                var hidden = formPendiente.querySelector('input[name="motivo"]');
+                if (!hidden) {
+                    hidden = document.createElement("input");
+                    hidden.type = "hidden";
+                    hidden.name = "motivo";
+                    formPendiente.appendChild(hidden);
+                }
+                hidden.value = motivo.slice(0, 200);
+                var f = formPendiente;
+                formPendiente = null;
+                modal.hidden = true;
+                f.submit();
+            });
+        }
+        document.querySelectorAll("[data-motivo-tipo]").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                if (form.querySelector('input[name="motivo"]')) { return; }
+                e.preventDefault();
+                var tipo = form.getAttribute("data-motivo-tipo") || "sacar";
+                var lista = MOTIVOS[tipo] || MOTIVOS.sacar;
+                formPendiente = form;
+                if (modalTitulo) { modalTitulo.textContent = tipo === "ingresar" ? "Motivo del ingreso" : "Motivo de la salida"; }
+                if (modalSub) {
+                    var sub = form.getAttribute("data-motivo-nombre") || "";
+                    var mailIn = form.querySelector('input[name="email"]');
+                    var mailVal = mailIn ? String(mailIn.value || "").replace(/['"]/g, "").trim() : "";
+                    if (mailVal) {
+                        if (tipo === "ingresar") {
+                            var zn = form.querySelector('input[name="zona"]');
+                            var znVal = zn ? String(zn.value || "").trim() : "";
+                            sub = mailVal + (znVal ? " → " + znVal : "");
+                        } else if (sub.indexOf(mailVal) === -1) {
+                            sub = (sub ? sub + " · " : "") + mailVal;
+                        }
+                    }
+                    modalSub.textContent = sub;
+                }
+                if (modalOps) {
+                    modalOps.innerHTML = "";
+                    lista.forEach(function (m, i) {
+                        var lab = document.createElement("label");
+                        lab.className = "aud-motivo-op";
+                        var radio = document.createElement("input");
+                        radio.type = "radio";
+                        radio.name = "motivo-op";
+                        radio.value = m;
+                        if (i === 0) { radio.checked = true; }
+                        lab.appendChild(radio);
+                        lab.appendChild(document.createTextNode(" " + m));
+                        modalOps.appendChild(lab);
+                    });
+                }
+                if (modalLibre) { modalLibre.value = ""; }
+                if (modal) { modal.hidden = false; }
+            });
+        });
+        /* Lupa desplegable de la auditoría. */
+        var audLupa = document.getElementById("aud-lupa");
+        var audLupaBtn = document.getElementById("aud-lupa-btn");
+        var audLupaX = document.getElementById("aud-lupa-x");
+        if (audLupaBtn && audLupa) {
+            audLupaBtn.addEventListener("click", function () {
+                audLupa.classList.toggle("abierta");
+                var input = document.getElementById("aud-buscar");
+                if (audLupa.classList.contains("abierta")) {
+                    if (input) { input.hidden = false; input.focus(); }
+                    if (audLupaX) { audLupaX.hidden = false; }
+                } else {
+                    if (input) { input.hidden = true; input.value = ""; }
+                    if (audLupaX) { audLupaX.hidden = true; }
+                    filtrarAuditoria();
+                }
+            });
+        }
+        if (audLupaX) {
+            audLupaX.addEventListener("click", function () {
+                var input = document.getElementById("aud-buscar");
+                if (input) { input.value = ""; input.focus(); }
+                filtrarAuditoria();
+            });
+        }
+        /* Filtros dinámicos + búsqueda rápida + rango de fechas. */
+        var audBuscar = document.getElementById("aud-buscar");
+        var audAccion = document.getElementById("aud-f-accion");
+        var audResultado = document.getElementById("aud-f-resultado");
+        var audDesde = document.getElementById("aud-f-desde");
+        var audHasta = document.getElementById("aud-f-hasta");
+        function filtrarAuditoria() {
+            var q = audBuscar ? audBuscar.value.trim().toLowerCase() : "";
+            var fa = audAccion ? audAccion.value : "";
+            var fr = audResultado ? audResultado.value : "";
+            var fd = audDesde && audDesde.value ? audDesde.value : "";
+            var fh = audHasta && audHasta.value ? audHasta.value : "";
+            document.querySelectorAll("#aud-tabla tbody tr").forEach(function (tr) {
+                var ok = true;
+                if (fa && tr.getAttribute("data-accion") !== fa) { ok = false; }
+                if (ok && fr && tr.getAttribute("data-resultado") !== fr) { ok = false; }
+                if (ok && (fd || fh)) {
+                    var f = tr.getAttribute("data-fecha") || "";
+                    if (fd && f < fd) { ok = false; }
+                    if (fh && f > fh) { ok = false; }
+                }
+                if (ok && q && tr.textContent.toLowerCase().indexOf(q) === -1) { ok = false; }
+                tr.style.display = ok ? "" : "none";
+            });
+        }
+        if (audBuscar) { audBuscar.addEventListener("input", filtrarAuditoria); }
+        if (audAccion) { audAccion.addEventListener("change", filtrarAuditoria); }
+        if (audResultado) { audResultado.addEventListener("change", filtrarAuditoria); }
+        if (audDesde) { audDesde.addEventListener("change", filtrarAuditoria); }
+        if (audHasta) { audHasta.addEventListener("change", filtrarAuditoria); }
+        /* Crear zona: botón que despliega el modal, validación en vivo. */
+        var czAbrir = document.getElementById("cz-abrir");
+        var czModal = document.getElementById("cz-modal");
+        var czForm = document.getElementById("cz-form");
+        var czNombre = document.getElementById("cz-nombre");
+        var czSup = document.getElementById("cz-supervisor");
+        var czGuardar = document.getElementById("cz-guardar");
+        var czCheck = document.getElementById("cz-check");
+        var czErr = document.getElementById("cz-error-nombre");
+        var czElegidos = document.getElementById("cz-elegidos");
+        var czMiembros = document.getElementById("cz-miembros");
+        var czPick = {};
+        function czValida() {
+            var ok = czNombre && czNombre.value.trim().length > 0 && czSup && czSup.value;
+            if (czGuardar) {
+                czGuardar.disabled = !ok;
+                czGuardar.classList.toggle("is-ok", !!ok);
+            }
+            if (czCheck) { czCheck.hidden = !ok; }
+            if (czErr && czNombre) { czErr.hidden = czNombre.value.trim().length > 0; }
+            return !!ok;
+        }
+        function czPintaElegidos() {
+            if (!czElegidos) { return; }
+            var keys = Object.keys(czPick);
+            czElegidos.innerHTML = keys.length ? keys.map(function (em) {
+                return '<span class="cz-chip">' + escAsg(czPick[em]) + "<small>" + escAsg(em) + '</small><button type="button" data-quitar="' + escAsg(em) + '" aria-label="Quitar">×</button></span>';
+            }).join("") : '<span class="muted">Sin cuentas elegidas.</span>';
+            if (czMiembros) { czMiembros.value = keys.join(","); }
+        }
+        if (czAbrir && czModal) {
+            czAbrir.addEventListener("click", function () {
+                czModal.hidden = false;
+                if (czNombre) { czNombre.focus(); }
+                czValida();
+            });
+        }
+        var czCancelar = document.getElementById("cz-cancelar");
+        if (czCancelar && czModal) { czCancelar.addEventListener("click", function () { czModal.hidden = true; }); }
+        if (czModal) { czModal.addEventListener("click", function (e) { if (e.target === czModal) { czModal.hidden = true; } }); }
+        if (czNombre) { czNombre.addEventListener("input", czValida); }
+        if (czSup) { czSup.addEventListener("change", czValida); }
+        /* Pestañas Datos / Permisos del modal. */
+        document.querySelectorAll("[data-cz-tab]").forEach(function (tab) {
+            tab.addEventListener("click", function () {
+                document.querySelectorAll("[data-cz-tab]").forEach(function (t) { t.classList.toggle("is-on", t === tab); });
+                var cual = tab.getAttribute("data-cz-tab");
+                document.querySelectorAll("[data-cz-panel]").forEach(function (p) { p.hidden = p.getAttribute("data-cz-panel") !== cual; });
+            });
+        });
+        /* Palomitas que despliegan cada buscador + nombre vivo de la zona. */
+        var czZonaNombre = document.getElementById("cz-zona-nombre");
+        function czNombreZona() {
+            var n = czNombre ? czNombre.value.trim() : "";
+            if (czZonaNombre) { czZonaNombre.textContent = n ? "«" + n + "»" : "la zona"; }
+        }
+        if (czNombre) { czNombre.addEventListener("input", czNombreZona); }
+        document.querySelectorAll("[data-cz-toggle]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var box = document.getElementById(btn.getAttribute("data-cz-toggle"));
+                if (!box) { return; }
+                box.hidden = !box.hidden;
+                btn.setAttribute("aria-expanded", String(!box.hidden));
+                btn.classList.toggle("is-on", !box.hidden);
+                if (!box.hidden) {
+                    var inp = box.querySelector("input[type='search']");
+                    if (inp) { inp.focus(); }
+                }
+            });
+        });
+        var czVerHist = document.getElementById("cz-ver-historial");
+        if (czVerHist && czModal) { czVerHist.addEventListener("click", function () { czModal.hidden = true; }); }
+        if (czElegidos) {
+            czElegidos.addEventListener("click", function (e) {
+                var b = e.target.closest ? e.target.closest("[data-quitar]") : null;
+                if (!b) { return; }
+                delete czPick[b.getAttribute("data-quitar")];
+                czPintaElegidos();
+            });
+        }
+        function czBuscar(inputId, sugId, soloTec) {
+            var inp = document.getElementById(inputId);
+            var sug = document.getElementById(sugId);
+            if (!inp || !sug) { return; }
+            var t = null;
+            inp.addEventListener("input", function () {
+                clearTimeout(t);
+                var texto = inp.value.trim();
+                if (texto.length < 2) { sug.hidden = true; sug.innerHTML = ""; return; }
+                t = setTimeout(function () {
+                    var url = inp.dataset.urlBuscar + "?q=" + encodeURIComponent(texto) + (soloTec ? "&rol=tecnico" : "");
+                    fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } }).then(function (r) { return r.json(); }).then(function (d) {
+                        var lista = (d && d.cuentas) || [];
+                        if (!lista.length) { sug.innerHTML = '<p class="sw-dd-empty">Sin coincidencias.</p>'; }
+                        else {
+                            sug.innerHTML = lista.map(function (c) {
+                                var ya = czPick[c.email] ? " ✓" : "";
+                                return '<button type="button" class="sw-dd-row" data-email="' + escAsg(c.email) + '" data-nombre="' + escAsg(c.nombre) + '">' +
+                                    '<span class="sw-dd-name">' + escAsg(c.nombre) + ya + "<small>" + escAsg(c.email) + "</small></span></button>";
+                            }).join("");
+                        }
+                        sug.hidden = false;
+                    }).catch(function () { });
+                }, 300);
+            });
+            sug.addEventListener("click", function (e) {
+                var row = e.target.closest ? e.target.closest(".sw-dd-row") : null;
+                if (!row) { return; }
+                var em = row.getAttribute("data-email") || "";
+                if (em && !czPick[em]) { czPick[em] = row.getAttribute("data-nombre") || em; }
+                inp.value = "";
+                sug.hidden = true;
+                czPintaElegidos();
+            });
+        }
+        czBuscar("cz-buscar", "cz-sug", false);
+        (function czTecs() {
+            var inp = document.getElementById("cz-buscar-tec");
+            var box = document.getElementById("cz-tecs");
+            if (!inp || !box) { return; }
+            var t = null;
+            inp.addEventListener("input", function () {
+                clearTimeout(t);
+                var texto = inp.value.trim();
+                if (texto.length < 2) { box.innerHTML = '<p class="muted">Escribe para buscar técnicos activos.</p>'; return; }
+                t = setTimeout(function () {
+                    fetch(inp.dataset.urlBuscar + "?q=" + encodeURIComponent(texto) + "&rol=tecnico", { headers: { "X-Requested-With": "XMLHttpRequest" } }).then(function (r) { return r.json(); }).then(function (d) {
+                        var lista = (d && d.cuentas) || [];
+                        box.innerHTML = lista.length ? lista.map(function (c) {
+                            var on = czPick[c.email] ? " checked" : "";
+                            return '<label class="cz-tec"><input type="checkbox" data-tec-email="' + escAsg(c.email) + '" data-tec-nombre="' + escAsg(c.nombre) + '"' + on + "> " + escAsg(c.nombre) + "<small>" + escAsg(c.email) + "</small></label>";
+                        }).join("") : '<p class="muted">Sin técnicos con ese nombre o correo.</p>';
+                    }).catch(function () { });
+                }, 300);
+            });
+            box.addEventListener("change", function (e) {
+                var cb = e.target.closest ? e.target.closest("[data-tec-email]") : null;
+                if (!cb) { return; }
+                var em = cb.getAttribute("data-tec-email") || "";
+                if (cb.checked) { czPick[em] = cb.getAttribute("data-tec-nombre") || em; }
+                else { delete czPick[em]; }
+                czPintaElegidos();
+            });
+        })();
+        if (czForm) {
+            czForm.addEventListener("submit", function (e) {
+                if (!czValida()) { e.preventDefault(); return; }
+                czPintaElegidos();
+            });
+            czPintaElegidos();
+        }
     })();
     </script>
 </main>

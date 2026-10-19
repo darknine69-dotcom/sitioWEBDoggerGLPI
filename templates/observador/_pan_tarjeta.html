@@ -1,0 +1,32 @@
+{% comment %}
+Una tarjeta de zona dentro del panel de dos columnas del supervisor
+(véase _paneles.html). Espera `e`, la entrada que arma
+_panel_de_supervision en views_observador: pk, clave, nombre, fecha,
+cuentas, tickets abiertos/cerrados, avance, estado y sus usuarios.
+
+La tarjeta abre la lista de la zona a la derecha; debajo lleva las mismas
+acciones que la página Zonas —Ver, Editar (despliega el nombre) y Borrar—
+para que el icono de la papelera esté siempre al alcance de la zona.
+{% endcomment %}
+<div class="pan-zc-wrap pan-zc-{{ e.estado }}" data-pan-wrap="{{ e.clave }}"{% if e.color %} style="--zc: {{ e.color }}"{% endif %}>
+<button type="button" class="pan-zc pan-zc-{{ e.estado }}" data-pan-clave="{{ e.clave }}" data-pan-nombre="{{ e.nombre }}">
+    <span class="pan-zc-top">
+        <span class="pan-zc-nombre">{{ e.nombre|default:"Sin nombre" }}</span>
+        {% if e.fecha %}<span class="pan-zc-fecha">{{ e.fecha }}</span>{% endif %}
+    </span>
+    <span class="pan-zc-meta">
+        <span class="pan-zc-cuentas"><svg class="icon icon-sm"><use href="#i-users"/></svg> <b>{{ e.cuentas }}</b> cuenta{{ e.cuentas|pluralize }}</span>
+        <span class="pan-zc-est"><b>{{ e.abiertos }}</b> abiertos · <b>{{ e.cerrados }}</b> cerrados</span>
+    </span>
+    <span class="pan-zc-bar"><span style="width: {{ e.avance }}%"></span></span>
+    <span class="pan-zc-foot">
+        <span class="pan-dot"></span>
+        {% if e.estado == "rojo" %}Incidencia{% elif e.estado == "amarillo" %}Pendiente{% else %}Al día{% endif %}
+        <b>{{ e.avance }}%</b>
+    </span>
+</button>
+{% if e.pk %}
+{# La misma tira de iconos de las otras vistas de carpetas: paleta, ver, editar el nombre y borrar, pegados a la esquina inferior derecha. #}
+{% include "observador/_zona_acciones.html" with z=e %}
+{% endif %}
+</div>

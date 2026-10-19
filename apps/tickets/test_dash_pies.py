@@ -258,16 +258,33 @@ class PapeleraTest(SmokeTestCase):
         self.client.post(reverse("tickets:purgar", args=[self.ticket.pk]))
         self.assertFalse(Ticket.con_eliminados.filter(pk=self.ticket.pk).exists())
 
-    def test_la_papelera_solo_la_ve_el_admin(self):
+    def test_la_papelera_la_ve_el_staff_y_no_el_punto_de_venta(self):
+        """La comparten administrador y técnico: los dos gestionan tickets.
+
+        El punto de venta no entra aquí — lo suyo es `mi_papelera`, que solo
+        le muestra lo que él mismo canceló.
+        """
         self.ticket.mandar_a_la_papelera(self.admin)
         url = reverse("tickets:papelera")
+
         self.client.force_login(self.tecnico)
-        self.assertEqual(self.client.get(url).status_code, 403)
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, self.ticket.codigo)
+        self.assertEqual(resp.context["total"], 1)
+
         self.client.force_login(self.admin)
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, self.ticket.codigo)
         self.assertEqual(resp.context["total"], 1)
+
+        punto = Usuario.objects.create_user(
+            email="pv@x.com", password="x", nombre="Punto", rol=Usuario.Rol.USUARIO
+        )
+        self.client.force_login(punto)
+        self.client.raise_request_exception = False
+        self.assertEqual(self.client.get(url).status_code, 403)
 
     def test_el_ticket_eliminado_desaparece_de_la_lista_y_del_detalle(self):
         self.client.force_login(self.admin)

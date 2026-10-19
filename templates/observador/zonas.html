@@ -19,7 +19,7 @@
 
     <div class="obs-bloque">
         <h3 class="obs-bloque-titulo">Crear zona</h3>
-        <form method="post" class="obs-filtros">
+        <form method="post" class="obs-filtros" id="crear-zona">
             {% csrf_token %}
             <div class="obs-buscador-campo">
                 <svg class="icon"><use href="#i-folder"/></svg>
@@ -36,25 +36,14 @@
         <h3 class="obs-bloque-titulo">Tus zonas</h3>
         <div class="obs-tarjetas">
             {% for t in tarjetas %}
-            <article class="obs-tarjeta">
+            <article class="obs-tarjeta obs-tarjeta--zona"{% if t.zona.color %} style="--zc: {{ t.zona.color }}"{% endif %}>
+                <span class="obs-tarjeta-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
                 <strong class="obs-tarjeta-nombre">
                     <a href="{% url 'tickets:obs_zona_detalle' t.zona.pk %}">{{ t.zona.nombre }}</a>
                 </strong>
                 <span class="obs-tarjeta-dato">{{ t.personas }} persona{{ t.personas|pluralize }} · {{ t.abiertos }} abierto{{ t.abiertos|pluralize }}</span>
-                <span class="obs-tarjeta-dato">
-                    <a href="{% url 'tickets:obs_zona_detalle' t.zona.pk %}" class="btn btn-sm">Ver</a>
-                </span>
-                <form method="post" class="obs-filtros">
-                    {% csrf_token %}
-                    <input type="hidden" name="zona_id" value="{{ t.zona.pk }}">
-                    <input type="text" name="nuevo_nombre" value="{{ t.zona.nombre }}" maxlength="80" required
-                           aria-label="Renombrar {{ t.zona.nombre }}" class="obs-buscador-tipo" style="min-width:0;flex:1">
-                    <button type="submit" class="btn btn-sm btn-ghost" title="Guardar el nombre nuevo">Renombrar</button>
-                </form>
-                <form method="post" action="{% url 'tickets:obs_zona_eliminar' t.zona.pk %}" onsubmit="return confirm('¿Borrar esta zona? Su gente queda sin zona.')">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-ghost" title="Borrar la zona">Borrar</button>
-                </form>
+                {# Paleta de color, ver, editar el nombre y borrar: iconos pegados a la esquina inferior derecha de la tarjeta. #}
+                {% include "observador/_zona_acciones.html" with z=t.zona %}
             </article>
             {% endfor %}
         </div>
@@ -110,4 +99,26 @@
         {% endif %}
     </div>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* «Editar» de cada tarjeta de zona despliega el campo con el nombre en
+   lugar de mandarte a otra página: se corrige y se guarda ahí mismo. */
+(function () {
+    var botones = document.querySelectorAll("[data-renombre]");
+    Array.prototype.forEach.call(botones, function (btn) {
+        var caja = document.getElementById(btn.getAttribute("data-renombre"));
+        if (!caja) return;
+        btn.addEventListener("click", function () {
+            var abrir = caja.hidden;
+            caja.hidden = !abrir;
+            btn.setAttribute("aria-expanded", String(abrir));
+            if (!abrir) return;
+            var campo = caja.querySelector("input[type='text']");
+            if (campo) { campo.focus(); campo.select(); }
+        });
+    });
+})();
+</script>
 {% endblock %}

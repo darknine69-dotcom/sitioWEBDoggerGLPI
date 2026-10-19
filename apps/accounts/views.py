@@ -418,6 +418,58 @@ def tour_preferencia(request):
 
 @login_required
 @require_POST
+def cambiar_rol_cuenta(request):
+    """Cambia el rol de la propia cuenta, si el administrador lo habilitó.
+
+    Es la contraparte del casillero «Cambiar de rol» de la ficha del panel:
+    quien tiene `cambio_rol_habilitado` encendido ve el botón junto a su
+    nombre en la barra superior de cualquier vista, y con esto pasa al rol
+    que elija. Solo se puede usar sobre uno mismo: nadie cambia el rol de
+    otra persona desde aquí, eso sigue siendo del panel del administrador.
+
+    Al terminar se manda al panel del rol nuevo, que es el destino que decide
+    `landing_por_rol`, el mismo que usa el login.
+    """
+    user = request.user
+    if not getattr(user, "cambio_rol_habilitado", False):
+        messages.error(request, "Tu cuenta no tiene habilitado cambiar de rol.")
+        return redirect(landing_por_rol(user))
+
+    nuevo = (request.POST.get("rol") or "").strip()
+    if nuevo not in dict(Usuario.Rol.choices):
+        messages.error(request, "Ese rol no existe.")
+        return redirect(landing_por_rol(user))
+
+    if nuevo == user.rol:
+        messages.info(request, f"Ya tienes el rol {user.get_rol_display()}.")
+        return redirect(landing_por_rol(user))
+
+    # Mismo guardia que la eliminación de cuentas: no se puede dejar al sistema
+    # sin administrador. El rol de administrador sale solo desde la ficha.
+    if user.rol == Usuario.Rol.ADMIN and nuevo != Usuario.Rol.ADMIN:
+        restantes = Usuario.objects.filter(
+            rol=Usuario.Rol.ADMIN, activo=True
+        ).exclude(pk=user.pk).count()
+        if restantes == 0:
+            messages.error(
+                request,
+                "No puedes salir del rol administrador: eres el único "
+                "administrador activo. Pasa el rol a otra cuenta primero.",
+            )
+            return redirect(landing_por_rol(user))
+
+    anterior = user.get_rol_display()
+    user.rol = nuevo
+    user.is_staff = nuevo in (Usuario.Rol.ADMIN, Usuario.Rol.TECNICO)
+    user.save(update_fields=["rol", "is_staff"])
+    messages.success(
+        request, f"Tu rol cambió de {anterior} a {user.get_rol_display()}."
+    )
+    return redirect(landing_por_rol(user))
+
+
+@login_required
+@require_POST
 def tooltips_preferencia(request):
     """Activa o desactiva los tooltips de ayuda de la cuenta."""
     user = request.user

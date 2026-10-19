@@ -448,3 +448,53 @@
 }
 .ev-cuerpo:empty { display: none; }
 .prog-modal .corp-field .corp-ayuda { color: var(--ink-muted); }
+
+/* ---- Disponibilidad de los demás técnicos (campo que abre el botón de
+        los filtros): una fila por técnico con sus marcas del mes. ---- */
+.prog-disp-toggle { margin-left: auto; align-self: flex-end; }
+.prog-disp-toggle[aria-expanded="true"] {
+    background: var(--dogger-red);
+    border-color: var(--dogger-red);
+    color: #fff;
+    box-shadow: var(--shadow-card);
+}
+.prog-disp-otros {
+    margin: 0 0 14px;
+    padding: 14px 16px;
+    background: var(--dogger-paper);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--dogger-red);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card);
+    animation: corpUp .3s ease both;
+}
+.prog-disp-otros[hidden] { display: none; }
+.prog-disp-otros-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 6px;
+}
+.prog-disp-otros-head .prog-section-title { font-size: 16px; }
+.prog-disp-otros-head .tec-count { font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.disp-otro {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 9px 0; border-bottom: 1px dashed var(--line);
+}
+.disp-otro:last-child { border-bottom: 0; padding-bottom: 2px; }
+.disp-otro-id { display: flex; align-items: center; gap: 8px; min-width: 190px; flex: 0 1 230px; }
+.disp-otro-id strong { font-size: 13.5px; }
+.disp-otro-marcas { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1 1 260px; min-width: 0; }
+.disp-chip {
+    display: inline-flex; align-items: center;
+    font-size: 11.5px; font-weight: 700;
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 3px 9px; background: #fff; color: var(--ink);
+    white-space: nowrap;
+}
+.disp-chip.d-ausencia { background: #FDECEB; border-color: #EF9A9A; color: #B0231E; }
+.disp-chip.d-falta { background: #26262B; border-color: #111014; color: #fff; }
+.disp-chip.d-noausencia { background: #FEF6D8; border-color: #E7C86A; color: #8A6100; }
+.disp-chip.d-libre { background: #E9F6EE; border-color: #9BD3B0; color: #1F6B45; }
+@media (max-width: 700px) {
+    .prog-disp-toggle { margin-left: 0; width: 100%; }
+    .disp-otro-id { flex-basis: 100%; min-width: 0; }
+}

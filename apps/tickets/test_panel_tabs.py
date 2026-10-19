@@ -83,9 +83,11 @@ class PestanasPanelTest(TestCase):
         )
         with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as f:
             css = f.read()
-        # Cada clase del HTML tiene su regla :hover en el CSS.
+        # Cada clase del HTML tiene su regla :hover en el CSS. El selector
+        # no lleva el `a.` delante: los indicadores son enlaces, pero el
+        # hover vale igual si alguna vista los pinta como caja.
         for clase in clases:
-            self.assertIn(f"a.{clase}:hover", css)
+            self.assertIn(f".{clase}:hover", css)
         self.assertIn(".dash-stat-row--tec", css)
 
     def test_sin_asignar_sale_del_lateral(self):

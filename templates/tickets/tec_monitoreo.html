@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}Dogger · Monitoreo del técnico{% endblock %}
+{% block body_class %}lista-page{% endblock %}
+{% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-eye"/></svg></span>{% endblock %}
+{% block header_title %}Monitoreo{% endblock %}
+{% block header_desc %}De qué zona salen tus supervisores, la presión que te dejan y los tickets que se te van del tiempo de atención (ANS).{% endblock %}
+
+{% block content %}
+<main class="page">
+
+    {% comment %}
+    Cada indicador lleva a lo que nombra, dentro de esta misma página: los
+    de tickets bajan a la tabla y ahí dejan el filtro puesto (véase el
+    script del final), y los demás a su sección.
+    {% endcomment %}
+    <div class="dash-stat-row corp-anim" style="margin-bottom:16px">
+        <a class="dash-stat dash-hov-total" href="#f-asignados" title="Ir a la lista de tus tickets asignados">
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total_asignados }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Asignados</span>
+                <span class="dash-stat-hint">clic para verlos</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-abiertos" href="#f-abiertos" title="Ir a la lista dejándola filtrada en abiertos">
+            <span class="dash-stat-icon st-ic-abiertos">
+                <span class="dash-stat-value st-abiertos">{{ total_abiertos }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Abiertos</span>
+                <span class="dash-stat-hint">clic para filtrarlos</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-ans" href="#por-vencer" title="Ir a los tickets por vencer">
+            <span class="dash-stat-icon st-ic-ans">
+                <span class="dash-stat-value st-ans">{{ total_por_vencer|add:total_vencidos }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-stopwatch"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Por vencer</span>
+                <span class="dash-stat-hint">{% if total_vencidos %}{{ total_vencidos }} ya venció{% else %}tiempo del ANS{% endif %}</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-vencidos" href="#por-vencer" title="Ir a los tickets cuyo plazo ya pasó">
+            <span class="dash-stat-icon st-ic-vencidos">
+                <span class="dash-stat-value st-vencidos">{{ total_vencidos }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Vencidos</span>
+                <span class="dash-stat-hint">ya pasó el plazo</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-tecnicos" href="#presion" title="Ir a la presión de tus supervisores">
+            <span class="dash-stat-icon st-ic-resueltos">
+                <span class="dash-stat-value st-resueltos">{{ total_presiones }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-message"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Presiones</span>
+                <span class="dash-stat-hint">de tus supervisores</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-resueltos" href="#f-resueltos-hoy" title="Ir a la lista dejándola filtrada en los de hoy">
+            <span class="dash-stat-icon st-ic-resueltos">
+                <span class="dash-stat-value st-resueltos">{{ resueltos_hoy }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Resueltos hoy</span>
+                <span class="dash-stat-hint">clic para filtrarlos</span>
+            </span>
+        </a>
+    </div>
+
+    <section id="zonas-que-vigilan" class="obs-bloque corp-anim">
+        <h3 class="obs-bloque-titulo">Zonas que te monitorean</h3>
+        <p class="obs-leyenda">
+            De qué carpeta sale la mirada sobre lo tuyo. Una tarjeta por zona:
+            quién la supervisa, quién te ha presionado desde ella y cuántos de
+            tus tickets tiene encima. Las fichas de aquí abajo llevan la misma
+            etiqueta en cada caso.
+        </p>
+        {% if zonas_mirada %}
+        <div class="obs-tarjetas">
+            {% for f in zonas_mirada %}
+            <article class="obs-tarjeta obs-tarjeta--vigila">
+                <span class="obs-tarjeta-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+                <strong class="obs-tarjeta-nombre">{{ f.zona.nombre }}</strong>
+                <span class="obs-tarjeta-dato">
+                Supervisa <b>{{ f.zona.observador.nombre|default:f.zona.observador.email|default:"sin asignar" }}</b>
+                </span>
+                {% if f.quien %}
+                <span class="obs-tarjeta-dato">Te presionaron: {{ f.quien|join:", " }}</span>
+                {% endif %}
+                <span class="obs-tarjeta-cifras">
+                    <span class="obs-tarjeta-cifra"><b>{{ f.presiones }}</b> presión{{ f.presiones|pluralize }}</span>
+                    <span class="obs-tarjeta-cifra"><b>{{ f.tickets }}</b> ticket{{ f.tickets|pluralize }}</span>
+                </span>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="obs-tarjeta-dato">
+            Ninguna zona tiene hoy vista sobre tus tickets: te presionan sin
+            carpeta asignada o tus puntos de venta todavía no están en
+            ninguna. Cuando entren aparecerán aquí.
+        </p>
+        {% endif %}
+    </section>
+
+    {% if presiones %}
+    <section id="presion" class="obs-bloque corp-anim">
+        <h3 class="obs-bloque-titulo">Presión de tus supervisores</h3>
+        <p class="obs-leyenda">
+            Mensajes que te dejaron los observadores y las personas de tus
+            puntos desde el botón de «presionar». Si un caso aparece más de una
+            vez es que lo están pidiendo más de una vez. Al lado de cada uno
+            está la zona desde la que llega.
+        </p>
+        <div class="pres-lista">
+        {% for m in presiones %}
+        <article class="pres-ficha">
+            <div class="pres-ficha-top">
+                <span class="pres-ficha-id">{{ m.ticket.codigo }}</span>
+                <span class="obs-pill obs-pill-{% if m.ticket.ans_estado == 'vencido' %}rojo{% elif m.ticket.ans_estado == 'por-vencer' %}amarillo{% else %}verde{% endif %}">{{ m.ticket.get_estado_display }}</span>
+                {% for z in m.zonas %}<span class="zona-badge"><svg class="icon icon-xs"><use href="#i-map-pin"/></svg>{{ z.nombre }}</span>{% endfor %}
+                <span class="pres-ficha-quien">
+                    {{ m.autor_nombre|default:m.usuario.nombre|default:"Sin nombre" }}
+                    {% if m.usuario %}· {{ m.usuario.get_rol_display }}{% endif %}
+                </span>
+            </div>
+            <span class="pres-ficha-cita">«{{ m.comentario|truncatechars:220 }}»</span>
+            <span class="pres-ficha-meta">
+                <span><b>{{ m.ticket.titulo }}</b></span>
+                {% if m.ticket.solicitante_punto %}<span>{{ m.ticket.solicitante_punto }}</span>{% endif %}
+                <span>{{ m.fecha|date:"d/m/Y H:i" }}</span>
+            </span>
+            <div class="pres-ficha-pie">
+                <a class="ans-ficha-detalle" href="{% url 'tickets:detalle' m.ticket.pk %}">Abrir el ticket ›</a>
+            </div>
+        </article>
+        {% endfor %}
+        </div>
+    </section>
+    {% else %}
+    <section id="presion" class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Presión de tus supervisores</h3>
+        <p class="obs-leyenda">
+            Nadie te ha presionado todavía. Cuando un observador o una persona
+            de tus puntos use el botón de «presionar», el mensaje aparecerá
+            aquí y también en la campana.
+        </p>
+    </section>
+    {% endif %}
+
+    {% if por_vencer %}
+    <section id="por-vencer" class="obs-bloque corp-anim">
+        <h3 class="obs-bloque-titulo">
+            Por vencer
+            {% if total_vencidos %}<span class="obs-pill obs-pill-rojo">{{ total_vencidos }} vencido{{ total_vencidos|pluralize }}</span>{% endif %}
+            {% if total_por_vencer %}<span class="obs-pill obs-pill-amarillo">{{ total_por_vencer }} por vencer</span>{% endif %}
+        </h3>
+        <p class="obs-leyenda">
+            Tus tickets cuyo tiempo de atención (ANS) ya entró en el aviso o se
+            pasó. El cronómetro corre solo, sin recargar. Pulsa el cronómetro si
+            quieres ver qué significa y cuánto falta.
+        </p>
+        <div class="ans-lista">
+        {% for t in por_vencer %}
+        <article class="ans-ficha {% if t.ans_estado == 'vencido' %}es-vencido{% else %}es-por-vencer{% endif %}">
+            <div class="ans-ficha-top">
+                <span class="ans-ficha-id">{{ t.codigo }}</span>
+                <span class="obs-pill obs-pill-{% if t.ans_estado == 'vencido' %}rojo{% else %}amarillo{% endif %}">{{ t.get_estado_display }}</span>
+                {% for z in t.zonas %}<span class="zona-badge"><svg class="icon icon-xs"><use href="#i-map-pin"/></svg>{{ z.nombre }}</span>{% endfor %}
+                {% include "tickets/_ans_time.html" with t=t %}
+            </div>
+            <span class="ans-ficha-desc">{{ t.titulo }}</span>
+            <span class="ans-ficha-meta">
+                <span><b>{{ t.solicitante_nombre|default:"Sin nombre" }}</b></span>
+                {% if t.solicitante_punto %}<span>{{ t.solicitante_punto }}</span>{% endif %}
+                <span>{{ t.get_prioridad_display }}</span>
+                <span>{{ t.categoria|default:"" }}</span>
+            </span>
+            <div class="ans-ficha-pie">
+                <a class="ans-ficha-detalle" href="{% url 'tickets:detalle' t.pk %}">Abrir el ticket ›</a>
+            </div>
+        </article>
+        {% endfor %}
+        </div>
+    </section>
+    {% else %}
+    <section id="por-vencer" class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Por vencer</h3>
+        <p class="obs-leyenda">
+            Ninguno de tus tickets está a punto de vencer. Aquí aparecerán en
+            cuanto alguno entre en el aviso del ANS.
+        </p>
+    </section>
+    {% endif %}
+
+    <section id="tickets" class="obs-bloque corp-anim">
+        <h3 class="obs-bloque-titulo">Tus tickets</h3>
+        <p class="obs-leyenda">
+            Todo lo que está a tu nombre. Los indicadores de arriba bajan
+            aquí y dejan el filtro puesto; también puedes cambiarlo a mano.
+            Se muestran los {{ tickets_lista|length }} más recientes.
+        </p>
+        <div class="obs-filtros obs-filtros-tabla">
+            <button type="button" class="obs-fchip is-on" id="f-asignados" data-filtro="" title="Quitar el filtro">
+                <svg class="icon icon-sm"><use href="#i-ticket"/></svg> Asignados · {{ total_asignados }}
+            </button>
+            <button type="button" class="obs-fchip" id="f-abiertos" data-filtro="abierto" title="Dejar solo los abiertos y en progreso">
+                <svg class="icon icon-sm"><use href="#i-alert"/></svg> Abiertos · {{ total_abiertos }}
+            </button>
+            <button type="button" class="obs-fchip" id="f-resueltos-hoy" data-filtro="hoy" title="Dejar solo los resueltos de hoy">
+                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg> Resueltos hoy · {{ resueltos_hoy }}
+            </button>
+        </div>
+        {% if tickets_lista %}
+        <div class="obs-tabla-wrap">
+            <table class="obs-tabla" id="tabla-tec">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Estado</th>
+                        <th>Prioridad</th>
+                        <th>Actualizado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tickets_lista %}
+                    <tr data-grupo="{% if t.estado == 'abierto' or t.estado == 'en-progreso' %}abierto{% else %}cerrado{% endif %}" data-hoy="{% if t.resuelto_hoy %}1{% endif %}">
+                        <td><a href="{% url 'tickets:detalle' t.pk %}">{{ t.codigo }}</a></td>
+                        <td>{{ t.titulo|truncatechars:80 }}</td>
+                        <td><span class="obs-pill obs-pill-{% if t.estado == 'abierto' %}rojo{% elif t.estado == 'en-progreso' %}amarillo{% else %}verde{% endif %}">{{ t.get_estado_display }}</span></td>
+                        <td>{{ t.get_prioridad_display }}</td>
+                        <td style="white-space:nowrap">{{ t.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="obs-tarjeta-dato">No tienes tickets a tu nombre todavía.</p>
+        {% endif %}
+        <p class="obs-vacio" id="tec-tabla-vacio" hidden>Sin tickets que cumplan ese filtro.</p>
+    </section>
+
+    {% include "tickets/_ans_modal.html" %}
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* El filtro de la tabla se mueve detrás del indicador: al pulsar
+   «Abiertos» el enlace deja #f-abiertos en la barra y aquí se traduce eso
+   en quitar filas de la lista. También se atiende `hashchange`, por si se
+   pega un enlace o se usa el botón de atrás del navegador. */
+(function () {
+    var zona = document.getElementById("tickets");
+    if (!zona) return;
+    var filtros = Array.prototype.slice.call(zona.querySelectorAll("[data-filtro]"));
+    if (!filtros.length) return;
+    var tabla = document.getElementById("tabla-tec");
+    var filas = tabla
+        ? Array.prototype.slice.call(tabla.querySelectorAll("tbody tr"))
+        : [];
+    var vacio = document.getElementById("tec-tabla-vacio");
+
+    function aplicar(clase) {
+        var visibles = 0;
+        filas.forEach(function (tr) {
+            var ok = true;
+            if (clase === "abierto") { ok = tr.getAttribute("data-grupo") === "abierto"; }
+            else if (clase === "hoy") { ok = tr.getAttribute("data-hoy") === "1"; }
+            tr.style.display = ok ? "" : "none";
+            if (ok) visibles += 1;
+        });
+        filtros.forEach(function (b) {
+            b.classList.toggle("is-on", (b.getAttribute("data-filtro") || "") === (clase || ""));
+        });
+        if (vacio && filas.length) vacio.hidden = visibles > 0;
+    }
+
+    function claseDelHash() {
+        var marca = location.hash || "";
+        if (marca.indexOf("#f-") !== 0) return null;
+        var alvo = null;
+        try { alvo = document.querySelector(marca); } catch (e) { alvo = null; }
+        if (!alvo || !alvo.hasAttribute("data-filtro")) return null;
+        return alvo.getAttribute("data-filtro");
+    }
+
+    filtros.forEach(function (b) {
+        b.addEventListener("click", function () {
+            var clase = b.getAttribute("data-filtro") || "";
+            aplicar(clase);
+            if (history.replaceState) {
+                history.replaceState(
+                    null, "",
+                    clase ? "#" + b.id : location.pathname + location.search
+                );
+            }
+        });
+    });
+
+    window.addEventListener("hashchange", function () {
+        var clase = claseDelHash();
+        if (clase !== null) aplicar(clase);
+    });
+
+    var inicial = claseDelHash();
+    aplicar(inicial === null ? "" : inicial);
+})();
+</script>
+{% endblock %}

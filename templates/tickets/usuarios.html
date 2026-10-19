@@ -442,6 +442,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                                             data-fill-nombre="{{ u.nombre }}" data-fill-email="{{ u.email }}"
                                             data-fill-rol="{{ u.rol }}" data-fill-glpi="{{ u.glpi_user_id|default_if_none:'' }}"
                                             data-fill-activo="{{ u.activo|yesno:'1,0' }}" data-fill-pk="{{ u.pk }}"
+                                            data-fill-cambio-rol="{{ u.cambio_rol_habilitado|yesno:'1,0' }}"
                                             data-fill-telefono="{{ u.telefono|default:'' }}" data-fill-ubicacion="{{ u.ubicacion|default:'' }}">
                                         <svg class="icon"><use href="#i-edit"/></svg> Editar cuenta
                                     </button>
@@ -580,6 +581,14 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                 <div class="form-group span-2 form-check-row">
                     <input type="checkbox" name="activo" id="u-activo" checked>
                     <label for="u-activo">Cuenta activa (puede iniciar sesión)</label>
+                </div>
+                <div class="form-group span-2 form-check-row">
+                    <input type="checkbox" name="cambio_rol_habilitado" id="u-cambio-rol">
+                    <label for="u-cambio-rol">
+                        Cambiar de rol
+                        <small class="form-check-hint">Le aparece un botón junto a su nombre en la barra
+                        superior para que cambie de rol desde cualquier vista.</small>
+                    </label>
                 </div>
                 <div class="modal-actions">
                     <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>

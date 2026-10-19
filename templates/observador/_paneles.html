@@ -1,0 +1,295 @@
+{% comment %}
+Panel de dos columnas del supervisor, con el mismo armazón que el panel de
+zonas del administrador: a la izquierda sus zonas con sus cuentas y su estado,
+más las acciones de Ver, Editar y Borrar de cada zona; a la derecha, al elegir
+una tarjeta, las cuentas de esa zona, con su buscador, sus casillas y su
+papelera.
+
+Solo lo usa Mi lista. Se le quitó el título y los grupos de puntos y de
+Sin zona: lo único que se pinta son las zonas. Requiere `panel` en el
+contexto (véase _panel_de_supervision en views_observador).
+
+El guion de abajo se parte en trozos con su propia guarda: si alguno no
+encuentra su elemento, el resto de los botones siguen funcionando (Cerrar y
+la papelera se conectan antes de pintar nada).
+{% endcomment %}
+{% if panel.zonas %}
+<div class="pan-grid" data-quitar-varios="{% url 'tickets:obs_quitar_varios' %}">
+    <div class="pan-left">
+        <article class="pan-sup">
+            <header class="pan-sup-head">
+                <span class="pan-ava">{{ panel.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
+                <div class="pan-sup-id">
+                    <strong>{{ panel.supervisor.nombre }}</strong>
+                    <small>{{ panel.supervisor.email|default:"—" }}</small>
+                    <span class="pan-rol">Supervisor a cargo</span>
+                </div>
+                <span class="pan-sup-n">{{ panel.zonas|length }} zona{{ panel.zonas|length|pluralize }}</span>
+            </header>
+
+            <p class="pan-sub-tit"><svg class="icon icon-sm"><use href="#i-map-pin"/></svg> Mis zonas</p>
+            <div class="pan-cards">
+                {% for e in panel.zonas %}
+                {% include "observador/_pan_tarjeta.html" %}
+                {% endfor %}
+            </div>
+        </article>
+    </div>
+
+    <aside class="pan-right" id="panRight" aria-live="polite">
+        <div class="pan-right-head">
+            <h4>Usuarios en <span id="panRightZona">—</span></h4>
+            <span class="muted" id="panSelCount"></span>
+            <button type="button" class="pan-right-x" id="panCerrarX"
+                    title="Cerrar esta lista" aria-label="Cerrar la lista de la zona">
+                <svg class="icon"><use href="#i-x"/></svg>
+            </button>
+        </div>
+        <div class="pan-busca">
+            <svg class="icon icon-sm"><use href="#i-search"/></svg>
+            <input type="search" id="panBuscar" placeholder="Buscar usuario…" aria-label="Buscar usuario" autocomplete="off">
+        </div>
+        <div class="pan-lista" id="panLista">
+            <p class="muted pan-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p>
+        </div>
+        <div class="pan-right-pie">
+            <button type="button" class="pan-papelera" id="panBorrar" disabled
+                    title="Quitar de tu lista todas las cuentas marcadas con la casilla">
+                <svg class="icon"><use href="#i-trash"/></svg>
+                Quitar <span id="panBorrarN">0</span>
+            </button>
+            <button type="button" class="pan-cerrar" id="panCerrar">Cerrar</button>
+        </div>
+    </aside>
+</div>
+
+{{ panel|json_script:"pan-datos" }}
+<script>
+(function () {
+    var grid = document.querySelector(".pan-grid");
+    var raw = document.getElementById("pan-datos");
+    var pane = document.getElementById("panLista");
+    var rotulo = document.getElementById("panRightZona");
+    var contador = document.getElementById("panSelCount");
+    var buscar = document.getElementById("panBuscar");
+    var cerrar = document.getElementById("panCerrar");
+    var cerrarX = document.getElementById("panCerrarX");
+    var papelera = document.getElementById("panBorrar");
+    var papeleraN = document.getElementById("panBorrarN");
+    var aside = document.getElementById("panRight");
+    if (!grid) return;
+
+    var panel = null;
+    try { panel = raw ? JSON.parse(raw.textContent) : null; } catch (e) { panel = null; }
+    var porClave = {};
+    (((panel && panel.zonas) || [])).forEach(function (z) { porClave[z.clave] = z; });
+    var botones = grid.querySelectorAll("[data-pan-clave]");
+    var actual = null;
+
+    var VACIO = '<p class="muted pan-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p>';
+
+    /* --- Cerrar: conectado el primero, para que el panel siempre se pueda
+           retirar aunque el pintado de las falle. Cerrar de verdad retira
+           el panel, no solo vacía la lista: al elegir una tarjeta vuelve. --- */
+    function limpia() {
+        Array.prototype.forEach.call(botones, function (b) {
+            b.classList.remove("is-on");
+            var w = b.closest(".pan-zc-wrap");
+            if (w) w.classList.remove("is-on");
+        });
+        actual = null;
+        if (rotulo) rotulo.textContent = "—";
+        if (contador) contador.textContent = "";
+        if (buscar) buscar.value = "";
+        if (pane) pane.innerHTML = VACIO;
+        if (aside) aside.hidden = true;
+        grid.classList.add("is-cerrado");
+        actualizaPapelera();
+    }
+    if (cerrar) cerrar.addEventListener("click", limpia);
+    if (cerrarX) cerrarX.addEventListener("click", limpia);
+
+    /* --- Papelera: solo con cuentas marcadas que estén en la lista propia. --- */
+    function marcadas() {
+        if (!pane) return [];
+        return Array.prototype.slice.call(
+            pane.querySelectorAll(".pan-user[data-elemento]")
+        ).filter(function (fila) {
+            var chk = fila.querySelector(".pan-user-chk");
+            return chk && chk.checked;
+        });
+    }
+    function actualizaPapelera() {
+        var n = marcadas().length;
+        if (papelera) papelera.disabled = n === 0;
+        if (papeleraN) papeleraN.textContent = String(n);
+    }
+    if (papelera) {
+        papelera.addEventListener("click", function () {
+            var filas = marcadas();
+            if (!filas.length) return;
+            var una = filas.length === 1;
+            var destino = grid.getAttribute("data-quitar-varios");
+            if (!destino) return;
+            var texto = "¿Quitar " + filas.length +
+                (una ? " cuenta" : " cuentas") + " de tu lista?";
+            var quita = function () {
+                envia(destino, [
+                    ["volver", location.pathname + location.search]
+                ].concat(filas.map(function (f) {
+                    return ["elementos", f.getAttribute("data-elemento")];
+                })));
+            };
+            /* La ventana de confirmación del aplicativo: la misma que usa
+               el resto de botones, y que no depende del `confirm` del
+               navegador. */
+            if (typeof window.DoggerConfirma === "function") {
+                window.DoggerConfirma(texto, quita, "Quitar", {
+                    titulo: "Quitar de tu lista",
+                    icono: "#i-trash",
+                    nota: "Solo se sacan de aquí: la persona y sus tickets siguen donde están."
+                });
+                return;
+            }
+            if (window.confirm && !window.confirm(texto)) return;
+            quita();
+        });
+    }
+
+    /* --- Formulario a mano, con el token de la propia página. --- */
+    function envia(destino, campos) {
+        var meta = document.querySelector('meta[name="csrfmiddlewaretoken"]');
+        var form = document.createElement("form");
+        form.method = "post";
+        form.action = destino;
+        campos.forEach(function (par) {
+            var i = document.createElement("input");
+            i.type = "hidden";
+            i.name = par[0];
+            i.value = par[1];
+            form.appendChild(i);
+        });
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+    }
+    function accion(u) {
+        var url = u.en_lista ? u.url_quitar : (u.email ? u.url_agregar : "");
+        if (!url) return "";
+        var modo = u.en_lista ? "quitar" : "agregar";
+        var ico = modo === "quitar" ? "#i-trash" : "#i-plus";
+        return '<button type="button" class="pan-user-acc pan-acc-' + modo + '"' +
+            ' data-acc-url="' + esc(url) + '" data-acc-modo="' + modo + '"' +
+            ' title="' + (modo === "quitar" ? "Quitar de mi lista" : "Agregar a mi lista") + '">' +
+            '<svg class="icon icon-sm"><use href="' + ico + '"/></svg> ' +
+            (modo === "quitar" ? "Quitar" : "Agregar") + "</button>";
+    }
+
+    function pinta(tarjeta) {
+        if (!pane) return;
+        var usuarios = (tarjeta && tarjeta.usuarios) || [];
+        var q = (buscar && buscar.value || "").toLowerCase().trim();
+        var vis = usuarios.filter(function (u) {
+            return !q || ((u.nombre || "") + " " + (u.email || "") + " " + (u.rol || ""))
+                .toLowerCase().indexOf(q) !== -1;
+        });
+        if (contador) contador.textContent = vis.length + " de " + usuarios.length;
+        if (!usuarios.length) {
+            pane.innerHTML = '<p class="muted pan-vacio">Esta zona todavía no tiene cuentas.</p>';
+            actualizaPapelera();
+            return;
+        }
+        if (!vis.length) {
+            pane.innerHTML = '<p class="muted pan-vacio">Sin coincidencias para «' + esc(q) + '».</p>';
+            actualizaPapelera();
+            return;
+        }
+        pane.innerHTML = vis.map(function (u) {
+            var ini = ((u.nombre || "?").trim().charAt(0) || "?").toUpperCase();
+            /* Solo lo que ya está en la lista se puede borrar con la
+               papelera: fuera de ahí esta misma fila ofrece «Agregar». */
+            var marca = (u.en_lista && u.elemento_id)
+                ? ' data-elemento="' + esc(u.elemento_id) + '"'
+                : "";
+            return '<label class="pan-user pan-user-' + esc(u.estado || "verde") + marca + '">' +
+                '<input type="checkbox" class="pan-user-chk">' +
+                '<span class="pan-user-ava">' + esc(ini) + "</span>" +
+                '<span class="pan-user-id"><strong>' + esc(u.nombre) + "</strong><small>" +
+                    esc(u.email || "sin correo") + "</small></span>" +
+                (u.abiertos ? '<span class="pan-user-ab" title="' + esc(u.abiertos) + ' abiertos">' + esc(u.abiertos) + "</span>" : "") +
+                '<span class="pan-user-rol">' + esc(u.rol || "Cuenta") + "</span>" +
+                '<a class="pan-user-ficha" href="' + esc(u.url) + '" title="Abrir la ficha de ' + esc(u.nombre) + '">Ver ficha</a>' +
+                accion(u) +
+                "</label>";
+        }).join("");
+        actualizaPapelera();
+    }
+
+    function activa(btn) {
+        Array.prototype.forEach.call(botones, function (b) {
+            b.classList.toggle("is-on", b === btn);
+            var w = b.closest(".pan-zc-wrap");
+            if (w) w.classList.toggle("is-on", b === btn);
+        });
+        actual = btn;
+        if (aside) aside.hidden = false;
+        grid.classList.remove("is-cerrado");
+        if (rotulo) rotulo.textContent = btn.getAttribute("data-pan-nombre") || "—";
+        if (buscar) buscar.value = "";
+        pinta(porClave[btn.getAttribute("data-pan-clave")]);
+    }
+
+    /* Tarjetas de zona: delegado en el panel, así funcionan aunque se
+       repinten. */
+    grid.addEventListener("click", function (ev) {
+        var btn = ev.target.closest ? ev.target.closest("[data-pan-clave]") : null;
+        if (btn) activa(btn);
+    });
+    if (buscar) {
+        buscar.addEventListener("input", function () {
+            if (!actual) return;
+            pinta(porClave[actual.getAttribute("data-pan-clave")]);
+        });
+    }
+    if (pane) {
+        pane.addEventListener("change", function (ev) {
+            var chk = ev.target;
+            if (!chk || !chk.classList || !chk.classList.contains("pan-user-chk")) return;
+            var fila = chk.closest(".pan-user");
+            if (fila) fila.classList.toggle("is-marcado", chk.checked);
+            actualizaPapelera();
+        });
+        /* Agregar o quitar de mi lista sin salir del panel. */
+        pane.addEventListener("click", function (ev) {
+            var btn = ev.target.closest ? ev.target.closest("[data-acc-url]") : null;
+            if (!btn) return;
+            var url = btn.getAttribute("data-acc-url");
+            if (!url) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            envia(url, [["volver", location.pathname + location.search]]);
+        });
+    }
+
+    /* «Editar» de la zona: el campo con el nombre se despliega en la
+       propia tarjeta, igual que en la página Zonas. */
+    Array.prototype.forEach.call(document.querySelectorAll("[data-renombre]"), function (btn) {
+        var caja = document.getElementById(btn.getAttribute("data-renombre"));
+        if (!caja) return;
+        btn.addEventListener("click", function () {
+            var abrir = caja.hidden;
+            caja.hidden = !abrir;
+            btn.setAttribute("aria-expanded", String(abrir));
+            if (!abrir) return;
+            var campo = caja.querySelector("input[type='text']");
+            if (campo) { campo.focus(); campo.select(); }
+        });
+    });
+})();
+</script>
+{% endif %}

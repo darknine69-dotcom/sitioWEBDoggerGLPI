@@ -23,50 +23,62 @@
 
     <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:18px">
         <a class="dash-stat dash-hov-usuarios" href="{% url 'tickets:obs_usuarios' %}">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total_personas }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-users"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Puntos de venta</span>
-                <span class="dash-stat-value">{{ total_personas }}</span>
                 <span class="dash-stat-hint">en tus puntos</span>
             </span>
         </a>
         <a class="dash-stat dash-hov-total" href="{% url 'tickets:obs_monitoreo' %}">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total_tickets }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Tickets</span>
-                <span class="dash-stat-value">{{ total_tickets }}</span>
                 <span class="dash-stat-hint">en tus puntos</span>
             </span>
         </a>
         <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:obs_usuarios' %}?estado=activos">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <span class="dash-stat-icon st-ic-abiertos">
+                <span class="dash-stat-value st-abiertos">{{ abiertos|default:0 }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Abiertos</span>
-                <span class="dash-stat-value st-abiertos">{{ abiertos|default:0 }}</span>
                 <span class="dash-stat-hint">por atender</span>
             </span>
         </a>
         <a class="dash-stat dash-hov-vencidos" href="{% url 'tickets:obs_usuarios' %}?estado=alerta">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            <span class="dash-stat-icon st-ic-vencidos">
+                <span class="dash-stat-value st-vencidos">{{ personas_en_alerta }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Incidencias</span>
-                <span class="dash-stat-value st-vencidos">{{ personas_en_alerta }}</span>
                 <span class="dash-stat-hint">personas con alerta</span>
             </span>
         </a>
         <a class="dash-stat dash-hov-zonas" href="{% url 'tickets:obs_zonas' %}">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total_zonas }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Zonas</span>
-                <span class="dash-stat-value">{{ total_zonas }}</span>
                 <span class="dash-stat-hint">bajo observación</span>
             </span>
         </a>
         <a class="dash-stat dash-hov-progreso" href="{% url 'tickets:obs_mi_lista' %}">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
+            <span class="dash-stat-icon st-ic-progreso">
+                <span class="dash-stat-value st-progreso">{{ mi_lista_total|default:0 }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-layers"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Mi lista</span>
-                <span class="dash-stat-value st-progreso">{{ mi_lista_total|default:0 }}</span>
                 <span class="dash-stat-hint">en seguimiento</span>
             </span>
         </a>
@@ -143,6 +155,18 @@
             <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-rojo"></span> Incidencia<span class="obs-tip">Urgentes abiertos</span></span>
         </p>
         {% include "observador/_grupos_monitoreo.html" %}
+    </section>
+
+    <section class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Presionar al técnico</h3>
+        <p class="muted" style="margin:0 0 12px;font-size:12.5px">
+            Los técnicos con tickets abiertos de tu lista. Escríbeles para que cierren
+            lo pendiente: el mensaje va a su correo y aparece en su panel, y aquí lo
+            ves marcado en el ticket.
+        </p>
+        <div class="chart-card">
+            {% include "observador/_presionar.html" %}
+        </div>
     </section>
 
     <section class="obs-bloque">

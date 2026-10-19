@@ -479,7 +479,10 @@ def chat_estado(request):
         aplicadas = MigrationRecorder.Migration.objects.filter(
             app="tickets"
         ).values_list("name", flat=True)
-        info["migraciones_tickets"] = sorted(aplicadas)[-8:]
+        # Todas las aplicadas, sin cortar: el diagnóstico sirve para ver el
+        # estado real, y una ventana fija deja de servir cada vez que se
+        # agrega una migración.
+        info["migraciones_tickets"] = sorted(aplicadas)
     except Exception as exc:  # noqa: BLE001
         info["migraciones_tickets"] = f"ERROR: {exc.__class__.__name__}: {exc}"
     return JsonResponse(info)

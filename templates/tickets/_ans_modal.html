@@ -1,0 +1,56 @@
+{% comment %}
+Ventana que explica el ANS de un ticket, para que la etiqueta con el cronómetro
+no sea un misterio: qué es el ANS, qué plazo le corre a ese ticket, quién
+responde y qué significa cada color.
+
+Se incluye una sola vez por página, en las vistas del observador. Se rellena
+desde la etiqueta pulsada, la que lleva `data-ans-info` en `_ans_time.html`,
+así que no hace falta que la vista pase nada por el contexto.
+{% endcomment %}
+<div class="ans-modal aud-modal" id="ansModal" hidden>
+    <div class="aud-modal-caja ans-modal-caja" role="dialog" aria-modal="true"
+         aria-labelledby="ansModalTitulo" aria-describedby="ansModalExplica">
+        <button type="button" class="ans-modal-x" data-ans-cerrar aria-label="Cerrar la ventana">
+            <svg class="icon"><use href="#i-x"/></svg>
+        </button>
+
+        <h4 id="ansModalTitulo">
+            <svg class="icon ans-modal-crono"><use href="#i-stopwatch"/></svg>
+            <span>ANS de <span id="ansModalCodigo">—</span></span>
+        </h4>
+        <p class="ans-modal-asunto" id="ansModalAsunto">—</p>
+
+        <div class="ans-modal-reloj" id="ansModalReloj">
+            <svg class="icon ans-modal-reloj-ico"><use href="#i-stopwatch"/></svg>
+            <span id="ansModalRelojTxt">—</span>
+        </div>
+
+        <table class="ans-modal-datos">
+            <tbody>
+                <tr><th scope="row">Ticket</th><td id="ansModalDatoTicket">—</td></tr>
+                <tr><th scope="row">Prioridad</th><td id="ansModalDatoPrioridad">—</td></tr>
+                <tr><th scope="row">Plazo ANS</th><td id="ansModalDatoHoras">—</td></tr>
+                <tr><th scope="row">Límite</th><td id="ansModalDatoLimite">—</td></tr>
+                <tr><th scope="row">Quién responde</th><td id="ansModalDatoTecnico">—</td></tr>
+            </tbody>
+        </table>
+
+        <p class="ans-modal-explica" id="ansModalExplica">
+            El ANS (Acuerdo de Nivel de Servicio) es el tiempo máximo que Dogger
+            se compromete a resolver una solicitud de esa prioridad. El
+            cronómetro arranca al abrir el ticket y corre solo: si se le pasa,
+            la supervisión lo ve al instante y le recuerda al técnico.
+        </p>
+
+        <div class="ans-modal-leyenda">
+            <span class="ans-time ans-ok"><svg class="icon icon-sm"><use href="#i-stopwatch"/></svg> Dentro de plazo</span>
+            <span class="ans-time ans-por-vencer"><svg class="icon icon-sm"><use href="#i-stopwatch"/></svg> Por vencer</span>
+            <span class="ans-time ans-vencido"><svg class="icon icon-sm"><use href="#i-alert"/></svg> Vencido</span>
+        </div>
+
+        <div class="aud-modal-pie">
+            <button type="button" class="btn btn-sm" data-ans-cerrar>Cerrar</button>
+            <a class="btn btn-sm btn-accent" id="ansModalEnlace" href="#">Abrir el ticket</a>
+        </div>
+    </div>
+</div>

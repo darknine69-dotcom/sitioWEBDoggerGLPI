@@ -71,59 +71,136 @@
 {% block content %}
 <main class="page obs-page">
 
-    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
-        <a class="dash-stat dash-hov-zonas" href="#zonas-monitoreo" title="Bajar a ver cuántos usuarios hay en cada zona" data-tip="Ver las zonas y sus usuarios">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+    {# Indicadores: el grande de «Zonas a cargo» ocupa la fila entera y, debajo, dos columnas de tres. #}
+    <div class="dash-stat-row dash-stat-row--obs corp-anim" style="margin-bottom:16px">
+        <a class="dash-stat dash-stat--grande dash-hov-zonas" href="#zonas-monitoreo" title="Ir a tus zonas">
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total_zonas|default:0 }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Zonas a cargo</span>
-                <span class="dash-stat-value">{{ total_zonas|default:0 }}</span>
-                <span class="dash-stat-hint">clic para ver usuarios</span>
+                <span class="dash-stat-hint">tus carpetas con gente dentro · clic para verlas</span>
             </span>
         </a>
-        <div class="dash-stat dash-hov-total" data-tip="Total de tickets de tu lista">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+        <a class="dash-stat dash-hov-total" href="#tickets-recientes" title="Ir a los tickets de tu lista">
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total_tickets }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Tickets</span>
-                <span class="dash-stat-value">{{ total_tickets }}</span>
                 <span class="dash-stat-hint">de tu lista</span>
             </span>
-        </div>
-        <div class="dash-stat dash-hov-abiertos" data-tip="Tickets abiertos por atender">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+        </a>
+        <a class="dash-stat dash-hov-abiertos" href="#resumen-zonas" title="Ir al resumen por zona, columna Abiertos">
+            <span class="dash-stat-icon st-ic-abiertos">
+                <span class="dash-stat-value st-abiertos">{{ total_abiertos }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Abiertos</span>
-                <span class="dash-stat-value st-abiertos">{{ total_abiertos }}</span>
                 <span class="dash-stat-hint">por atender</span>
             </span>
-        </div>
-        <div class="dash-stat dash-hov-resueltos" data-tip="Porcentaje de tickets resueltos">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+        </a>
+        <a class="dash-stat dash-hov-ans" href="#por-vencer" title="Ir a los tickets por vencer">
+            <span class="dash-stat-icon st-ic-ans">
+                <span class="dash-stat-value st-ans">{{ total_por_vencer|add:total_vencidos }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-stopwatch"/></svg></span>
+            </span>
+            <span class="dash-stat-body">
+                <span class="dash-stat-label">Por vencer</span>
+                <span class="dash-stat-hint">{% if total_vencidos %}{{ total_vencidos }} ya venció{% else %}tiempo del ANS{% endif %}</span>
+            </span>
+        </a>
+        <a class="dash-stat dash-hov-resueltos" href="#resumen-zonas" title="Ir al resumen por zona, columna Avance">
+            <span class="dash-stat-icon st-ic-resueltos">
+                <span class="dash-stat-value st-resueltos">{{ avance_global }}%</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Avance</span>
-                <span class="dash-stat-value st-resueltos">{{ avance_global }}%</span>
                 <span class="dash-stat-hint">resuelto global</span>
             </span>
-        </div>
-        <div class="dash-stat dash-hov-usuarios" data-tip="Cuentas en tu lista de monitoreo">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-user"/></svg></span>
+        </a>
+        <a class="dash-stat dash-hov-usuarios" href="#resumen-zonas" title="Ir al resumen por zona, columna Cuentas">
+            <span class="dash-stat-icon">
+                <span class="dash-stat-value">{{ total }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-user"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Cuentas</span>
-                <span class="dash-stat-value">{{ total }}</span>
-                <span class="dash-stat-hint">en tu lista</span>
+                <span class="dash-stat-hint">de tus zonas y sin zona</span>
             </span>
-        </div>
-        <div class="dash-stat dash-hov-vencidos" data-tip="Cuentas con incidencias urgentes">
-            <span class="dash-stat-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+        </a>
+        <a class="dash-stat dash-hov-vencidos" href="#estado-lista" title="Ir al reparto de tu lista, donde está Incidencias">
+            <span class="dash-stat-icon st-ic-vencidos">
+                <span class="dash-stat-value st-vencidos">{{ conteo.rojo }}</span>
+                <span class="dash-stat-glyph"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+            </span>
             <span class="dash-stat-body">
                 <span class="dash-stat-label">Incidencias</span>
-                <span class="dash-stat-value st-vencidos">{{ conteo.rojo }}</span>
                 <span class="dash-stat-hint">en alerta</span>
             </span>
-        </div>
+        </a>
     </div>
 
+    {% if por_vencer %}
+    <section id="por-vencer" class="obs-bloque corp-anim">
+        <h3 class="obs-bloque-titulo">
+            Por vencer
+            {% if total_vencidos %}<span class="obs-pill obs-pill-rojo">{{ total_vencidos }} vencido{{ total_vencidos|pluralize }}</span>{% endif %}
+            {% if total_por_vencer %}<span class="obs-pill obs-pill-amarillo">{{ total_por_vencer }} por vencer</span>{% endif %}
+        </h3>
+        <p class="obs-leyenda">
+            Los casos cuyo tiempo de atención (ANS) ya entró en el aviso. El
+            cronómetro corre solo, sin recargar. Al entrar la primera vez se
+            avisa una sola vez a cada uno: correo al técnico y a la persona que
+            abrió el ticket, campana aquí. Pulsa el cronómetro si quieres ver
+            qué significa.
+        </p>
+        <div class="ans-lista">
+        {% for t in por_vencer %}
+        <article class="ans-ficha {% if t.ans_estado == 'vencido' %}es-vencido{% else %}es-por-vencer{% endif %}">
+            <div class="ans-ficha-top">
+                <span class="ans-ficha-id">{{ t.codigo }}</span>
+                <span class="obs-pill obs-pill-{% if t.ans_estado == 'vencido' %}rojo{% else %}amarillo{% endif %}">{{ t.get_estado_display }}</span>
+                {% include "tickets/_ans_time.html" with t=t %}
+            </div>
+            <span class="ans-ficha-desc">{{ t.titulo }}</span>
+            <span class="ans-ficha-meta">
+                <span><b>{{ t.solicitante_nombre|default:"Sin nombre" }}</b></span>
+                {% if t.solicitante_punto %}<span>{{ t.solicitante_punto }}</span>{% endif %}
+                <span>Técnico: {{ t.tecnico_asignado.nombre|default:"sin asignar" }}</span>
+                <span>{{ t.get_prioridad_display }}</span>
+            </span>
+            <div class="ans-ficha-pie">
+                <form method="post" action="{% url 'tickets:obs_presionar' t.pk %}" class="act-nudge">
+                    {% csrf_token %}
+                    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+                    <input type="text" name="mensaje" maxlength="500"
+                           placeholder="Recuérdaselo para que lo cierre…"
+                           aria-label="Mensaje para el técnico de {{ t.codigo }}" required>
+                    <button type="submit" class="btn btn-sm">Presionar</button>
+                </form>
+                <a class="ans-ficha-detalle" href="{% url 'tickets:mi_ticket' t.pk %}">detalles ›</a>
+            </div>
+        </article>
+        {% endfor %}
+        </div>
+    </section>
+    {% else %}
+    <section id="por-vencer" class="obs-bloque">
+        <h3 class="obs-bloque-titulo">Por vencer</h3>
+        <p class="obs-leyenda">
+            Ninguno de los tickets de tu lista está a punto de vencer. Aquí
+            aparecerán en cuanto alguno entre en el aviso del ANS.
+        </p>
+    </section>
+    {% endif %}
+
     <div class="charts-grid">
-        <div class="chart-card">
+        <div class="chart-card" id="estado-lista">
             <div class="chart-card-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-chart"/></svg></span>
                 <h3>Estado de tu lista</h3>
@@ -183,7 +260,7 @@
             <p class="chart-empty">Nadie atendiendo todavía.</p>
             {% endfor %}
         </div>
-        <div class="chart-card">
+        <div class="chart-card" id="resumen-zonas">
             <div class="chart-card-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
                 <h3>Resumen por zona</h3>
@@ -203,7 +280,7 @@
                     <tbody>
                         {% for g in grupos %}
                         <tr>
-                            <td><strong>{{ g.zona.nombre }}</strong></td>
+                            <td><strong>{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</strong></td>
                             <td class="num">{{ g.filas|length }}</td>
                             <td class="num">{{ g.total_tickets }}</td>
                             <td class="num">{{ g.abiertos }}</td>
@@ -219,6 +296,9 @@
         </div>
     </div>
 
+    {# Los widgets del tablero del administrador, metidos en la misma tira de gráficas de siempre: mismo diseño, con sus desplegables pequeños y el selector de tipo que aparece al pasar el ratón. #}
+    {% include "tickets/_dash_widgets.html" %}
+
     <section id="zonas-monitoreo" class="obs-bloque">
         <h3 class="obs-bloque-titulo">Zonas</h3>
         <p class="obs-leyenda">
@@ -226,18 +306,22 @@
             <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-amarillo"></span> Pendiente<span class="obs-tip">Abiertos o en progreso</span></span>
             <span class="obs-leyenda-item" tabindex="0"><span class="obs-dot obs-dot-rojo"></span> Incidencia<span class="obs-tip">Urgentes abiertos</span></span>
         </p>
+        <details class="obs-ayuda">
+            <summary>¿Cómo se administra?</summary>
+            <p>Cada supervisor a cargo con sus zonas, las cuentas que metió en cada una y su estado. Tú creas tus zonas en «Zonas», metes a quien quieras seguir desde tu lista y sacas los que ya no necesites (la gente no se borra). Dale clic al nombre de una cuenta para ver su ficha completa.</p>
+        </details>
     {% include "observador/_grupos_monitoreo.html" %}
     </section>
 
     <section class="obs-bloque">
         <h3 class="obs-bloque-titulo">Actividad reciente</h3>
     <div class="charts-grid">
-        <div class="chart-card">
+        <div class="chart-card" id="tickets-recientes">
             <div class="chart-card-head obs-tickets-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 <h3>Tickets recientes</h3>
-                <button type="button" class="chart-refresh-btn" id="actBtnBuscar" title="Buscar en tickets recientes" aria-label="Buscar en tickets recientes" aria-expanded="false" data-tip="Abrir el buscador de tickets recientes"><svg class="icon"><use href="#i-search"/></svg></button>
-                <button type="button" class="chart-refresh-btn" id="actRecargar" title="Recargar tickets recientes" aria-label="Recargar tickets recientes" data-tip="Recargar la lista de tickets recientes"><svg class="icon"><use href="#i-refresh"/></svg></button>
+                <button type="button" class="chart-refresh-btn" id="actBtnBuscar" title="Buscar en tickets recientes" aria-label="Buscar en tickets recientes" aria-expanded="false"><svg class="icon"><use href="#i-search"/></svg></button>
+                <button type="button" class="chart-refresh-btn" id="actRecargar" title="Recargar tickets recientes" aria-label="Recargar tickets recientes"><svg class="icon"><use href="#i-refresh"/></svg></button>
             </div>
             <div class="act-buscador" id="actBuscadorBox" hidden>
                 <input type="search" id="actBuscar" placeholder="Buscar por código, título o usuario…" aria-label="Buscar en tickets recientes">
@@ -248,6 +332,7 @@
                 <div class="act-ticket-top">
                     <span class="act-ticket-id">{{ t.codigo }}</span>
                     <span class="obs-pill obs-pill-{% if t.estado == 'abierto' %}rojo{% elif t.estado == 'en-progreso' %}amarillo{% else %}verde{% endif %}">{{ t.get_estado_display }}</span>
+                    {% if t.info_ans.0 %}{% include "tickets/_ans_time.html" with t=t %}{% endif %}
                     <span class="act-ticket-fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</span>
                 </div>
                 <span class="act-ticket-desc">{{ t.titulo }}</span>
@@ -267,7 +352,7 @@
             <div class="chart-card-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-send"/></svg></span>
                 <h3>Presionar al técnico</h3>
-                <button type="button" class="chart-refresh-btn" id="actBtnBuscarTec" title="Buscar en solicitudes por técnico" aria-label="Buscar en solicitudes por técnico" aria-expanded="false" data-tip="Abrir el buscador de solicitudes por técnico"><svg class="icon"><use href="#i-search"/></svg></button>
+                <button type="button" class="chart-refresh-btn" id="actBtnBuscarTec" title="Buscar en solicitudes por técnico" aria-label="Buscar en solicitudes por técnico" aria-expanded="false"><svg class="icon"><use href="#i-search"/></svg></button>
             </div>
             <div class="act-buscador" id="actBuscadorTecBox" hidden>
                 <input type="search" id="actBuscarTec" placeholder="Buscar por técnico o código de ticket…" aria-label="Buscar en solicitudes por técnico">
@@ -373,5 +458,6 @@
         });
     })();
     </script>
+    {% include "tickets/_ans_modal.html" %}
 </main>
 {% endblock %}

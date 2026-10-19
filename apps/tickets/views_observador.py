@@ -12,6 +12,8 @@ aunque manipule la URL no llega a ver zonas ajenas.
 """
 
 import csv
+import logging
+from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
@@ -19,9 +21,11 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_GET
 
 from apps.accounts.models import Usuario
 
+from . import ans_avisos
 from .models import (
     ElementoMiLista,
     MonitoreoAuditoria,
@@ -31,15 +35,39 @@ from .models import (
     TicketComentario,
     ZonaObservador,
 )
-from .views_monitoreo import _auditar
+from .views_monitoreo import (
+    _auditar,
+    _auditoria_enriquecida,
+    _motivo_post,
+    _version_equipo,
+    _xlsx_auditoria,
+)
 
 # Estados que el observador monitorea: verde activo, rojo incidencia, amarillo pendiente.
 ESTADO_VERDE = "verde"
 ESTADO_ROJO = "rojo"
 ESTADO_AMARILLO = "amarillo"
 
+# Paleta cerrada de las carpetas: el color viaja en el formulario y aquí se
+# valida contra la lista, así una carpeta no puede quedarse con cualquier
+# texto dentro de un atributo de estilo.
+PALETA_ZONA = (
+    "#D62B1F",  # rojo
+    "#E0871B",  # naranja
+    "#E0A106",  # ámbar
+    "#2F7D4F",  # verde
+    "#0E7490",  # turquesa
+    "#1D4ED8",  # azul
+    "#6D28D9",  # violeta
+    "#BE185D",  # magenta
+    "#6B6259",  # gris
+    "#111827",  # negro
+)
+
 _ACTIVOS = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
 _URGENTE = Ticket.Prioridad.URGENTE
+
+logger = logging.getLogger(__name__)
 
 
 def solo_observador(vista):
@@ -141,7 +169,7 @@ def _resumen_por_punto(usuario):
     return [por_punto[p] for p in puntos]
 
 
-def _resumen_por_correo(usuario, global_scope=False):
+def _resumen_por_correo(usuario, global_scope=False, correos=None):
     """Acumula, por correo, los tickets de las zonas del observador.
 
     De cada persona deja cuántos tickets lleva, cuántos se resolvieron y qué
@@ -151,6 +179,9 @@ def _resumen_por_correo(usuario, global_scope=False):
     Con global_scope=True cuenta todos los tickets de cada correo, sin
     importar el punto: se usa para la gente que ya está en la lista del
     observador, a la que se le muestran sus datos reales.
+
+    Con correos=[] se limita a esos correos, para no recorrer la tabla
+    entera cuando solo se necesitan las cuentas de la lista.
     """
     resumen = {}
     base = (
@@ -158,6 +189,8 @@ def _resumen_por_correo(usuario, global_scope=False):
         if global_scope
         else _visible_a_observador(usuario, Ticket.objects.all())
     )
+    if correos:
+        base = base.filter(solicitante_email__in=list(correos))
 
     def fila(correo):
         return resumen.setdefault(
@@ -314,8 +347,11 @@ def panel_observador(request):
 
     total_tickets = visibles.count()
     # El panel es el monitoreo: los mismos grupos por zona con el detalle
-    # completo de usuarios, tickets, técnicos y respuestas.
-    grupos = _contexto_monitoreo(usuario)["grupos"]
+    # completo de usuarios, tickets, técnicos y respuestas. De una misma
+    # pasada salen también la actividad reciente y «Presionar», que el
+    # panel enseña al final.
+    contexto_mon = _contexto_monitoreo(usuario)
+    grupos = contexto_mon["grupos"]
     # Buscar y agregar integrado al panel: encuentra cuentas por nombre,
     # correo o ubicación para agregarlas a la lista sin salir de aquí.
     q_busc = (request.GET.get("q_busc") or "")[:120].strip()
@@ -361,6 +397,10 @@ def panel_observador(request):
             "q_busc": q_busc,
             "busqueda": busqueda,
             "grupos": grupos,
+            # Lo mismo que en Monitoreo: los técnicos con carga abierta y lo
+            # último que pasó en la lista, para presionar sin cambiar de vista.
+            "presionar": contexto_mon["presionar"],
+            "actividad": contexto_mon["actividad"],
         },
     )
 
@@ -468,12 +508,13 @@ def buscar_observador(request):
 
 @solo_observador
 def usuarios_observador(request):
-    """Tabla de las personas que el observador tiene a la vista.
+    """Tabla única de las personas que el observador tiene a la vista.
 
-    Salen las que levantaron tickets en sus zonas y las que ya están en su
-    lista personal, no todas las cuentas de la organización: así el
-    observador no ve a nadie de fuera de sus puntos. Los números son de esos
-    mismos tickets, con su técnico y su avance de resolución.
+    Es la tabla de «Todos los usuarios»: junta las cuentas del aplicativo
+    con la gente que no tiene cuenta pero levantó tickets en sus zonas, y
+    sobre esa lista mandan el buscador y los filtros de arriba. Así no hay
+    dos tablas contando lo mismo, y cada fila lleva su ubicación, su
+    técnico, sus abiertos, sus tickets y su avance.
     """
     usuario = request.user
     q = (request.GET.get("q") or "")[:120].strip()
@@ -482,49 +523,11 @@ def usuarios_observador(request):
     estado = (request.GET.get("estado") or "").strip()
     orden = (request.GET.get("orden") or "nombre").strip()
 
-    ya_en_lista = {
-        (e.usuario_email or "").strip().lower()
-        for e in ElementoMiLista.objects.filter(observador=usuario)
-        if (e.usuario_email or "").strip()
-    }
     resumen = _resumen_por_correo(usuario)
-    cuentas = {
-        (u.email or "").strip().lower(): u
-        for u in Usuario.objects.filter(activo=True, is_active=True)
-    }
-
-    filas = []
-    for correo in sorted(set(resumen) | ya_en_lista):
-        r = resumen.get(correo, {})
-        u = cuentas.get(correo)
-        puntos = r.get("puntos", [])
-        filas.append(
-            {
-                "obj": u,
-                "nombre": (u.nombre if u else "") or r.get("nombre") or correo,
-                "email": correo,
-                "rol": u.get_rol_display() if u else "Sin cuenta",
-                "rol_crudo": u.rol if u else "",
-                "ubicacion": (
-                    (u.ubicacion if u else "")
-                    or (puntos[0] if puntos else "")
-                    or "—"
-                ),
-                "tecnico": r.get("tecnico_principal", ""),
-                "tecnicos": r.get("tecnicos", []),
-                "total": r.get("total", 0),
-                "abiertos": r.get("abiertos", 0),
-                "urgentes": r.get("urgentes", 0),
-                "cerrados_total": r.get("cerrados_total", 0),
-                "avance": r.get("avance", 0),
-                "falta": 100 - r.get("avance", 0),
-                "estado": r.get("estado", ESTADO_VERDE),
-                "ya_agregado": correo in ya_en_lista,
-                "puntos": puntos,
-            }
-        )
-
-    total_sin_filtro = len(filas)
+    # La tabla es única: la lista completa manda y encima mandan los filtros.
+    todos_usuarios, zonas_obs = _tabla_todos_usuarios(usuario, resumen)
+    total_sin_filtro = len(todos_usuarios)
+    filas = list(todos_usuarios)
 
     if rol:
         filas = [f for f in filas if f["rol_crudo"] == rol]
@@ -537,7 +540,15 @@ def usuarios_observador(request):
             or buscar in f["ubicacion"].lower()
         ]
     if punto:
-        filas = [f for f in filas if punto in (f["ubicacion"], *(f["puntos"] or []))]
+        busco = punto.strip().lower()
+        filas = [
+            f for f in filas
+            if busco in {
+                ((f["zona"].nombre if f["zona"] else "") or "").strip().lower(),
+                (f["ubicacion"] or "").strip().lower(),
+                *((p or "").strip().lower() for p in (f["puntos"] or [])),
+            }
+        ]
     if estado == "activos":
         filas = [f for f in filas if f["abiertos"] > 0]
     elif estado == "alerta":
@@ -564,7 +575,29 @@ def usuarios_observador(request):
     for f in filas:
         conteo[f["estado"]] += 1
 
-    todos_usuarios, zonas_obs = _tabla_todos_usuarios(usuario, resumen)
+    total_tickets = sum(f["total"] for f in filas)
+    cerrados = sum(f["cerrados_total"] for f in filas)
+
+    # La zona recién creada (si venimos de crearla): Usuarios se abre con la
+    # ventana que propone meterle puntos de venta.
+    recien_creada = None
+    clave_nueva = (request.GET.get("zona_nueva") or "").strip()
+    if clave_nueva.isdigit():
+        recien_creada = ZonaObservador.objects.filter(
+            pk=clave_nueva, observador=usuario
+        ).first()
+
+    # «Presionar al técnico»: los técnicos con carga abierta en la lista de
+    # seguimiento, aquí abajo para no tener que ir al Monitoreo.
+    elementos_lista = (
+        ElementoMiLista.objects.filter(observador=usuario)
+        .select_related("usuario", "punto", "zona")
+        .order_by("-creado_en")
+    )
+    presionar = _tecnicos_para_presionar(
+        _filas_de_mi_lista(usuario, elementos_lista, global_scope=True)
+    )
+
     return render(
         request,
         "observador/usuarios.html",
@@ -573,14 +606,21 @@ def usuarios_observador(request):
             "conteo": conteo,
             "total": len(filas),
             "total_sin_filtro": total_sin_filtro,
+            "total_tickets": total_tickets,
+            "total_abiertos": sum(f["abiertos"] for f in filas),
+            "avance_global": (
+                int(round(100.0 * cerrados / total_tickets)) if total_tickets else 0
+            ),
+            "en_lista": sum(1 for f in filas if f["ya_agregado"]),
             "q": q,
             "rol_sel": rol,
             "punto_sel": punto,
             "estado_sel": estado,
             "orden_sel": orden if orden in ("nombre", "abiertos", "tickets", "avance") else "nombre",
-            "puntos": puntos_del_observador(usuario),
             "todos_usuarios": todos_usuarios,
             "zonas_obs": zonas_obs,
+            "zona_nueva": recien_creada,
+            "presionar": presionar,
         },
     )
 
@@ -601,7 +641,25 @@ def mi_lista_observador(request):
     return render(
         request,
         "observador/mi_lista.html",
-        {"filas": filas, "conteo": conteo, "total": len(filas)},
+        {
+            "filas": filas,
+            "conteo": conteo,
+            "total": len(filas),
+            "panel": _panel_de_supervision(usuario, filas),
+            # El botón de Excel solo aparece si alguna de sus zonas tiene la
+            # casilla «Exportar auditoría» marcada: el permiso lo pone la
+            # zona al crearse, no la persona.
+            "puede_exportar_auditoria": ZonaObservador.objects.filter(
+                observador=usuario, perm_exportar=True
+            ).exists(),
+            # Historial igual que el del administrador: todos los registros,
+            # con sus contadores de hoy y de la semana.
+            "auditoria": _auditoria_enriquecida(),
+            "aud_hoy": MonitoreoAuditoria.objects.filter(
+                fecha__date=timezone.localdate()).count(),
+            "aud_semana": MonitoreoAuditoria.objects.filter(
+                fecha__gte=timezone.now() - timedelta(days=7)).count(),
+        },
     )
 
 
@@ -741,6 +799,40 @@ def quitar_mi_lista(request, pk):
 
 
 @solo_observador
+def quitar_varios_mi_lista(request):
+    """Saca de la lista personal todas las cuentas marcadas en el panel.
+
+    El panel de la derecha deja marcar con la casilla de cada fila y aquí
+    se bajan de golpe. Solo puede tocar las suyas: el filtro
+    `observador=request.user` es lo que impide que, manipulando la
+    petición, se quiten filas de la lista de otro supervisor.
+    """
+    from django.contrib import messages
+
+    if request.method != "POST":
+        raise Http404
+    ids = []
+    for valor in request.POST.getlist("elementos"):
+        try:
+            ids.append(int(valor))
+        except (TypeError, ValueError):
+            continue
+    quitados = 0
+    if ids:
+        quitados = ElementoMiLista.objects.filter(
+            pk__in=ids, observador=request.user
+        ).delete()[0]
+
+    if quitados == 1:
+        messages.success(request, "Se quitó 1 cuenta de tu lista.")
+    elif quitados:
+        messages.success(request, f"Se quitaron {quitados} cuentas de tu lista.")
+    else:
+        messages.warning(request, "No había ninguna cuenta tuya entre las marcadas.")
+    return redirect(request.POST.get("volver") or reverse("tickets:obs_mi_lista"))
+
+
+@solo_observador
 def monitorear_observador(request):
     """Monitoreo: la lista con sus indicadores y las acciones de reporte.
 
@@ -819,9 +911,16 @@ def _tecnicos_para_presionar(filas):
 def _tabla_todos_usuarios(usuario, resumen):
     """Todas las cuentas del aplicativo, con acciones para este rol.
 
-    El observador ve cada cuenta con sus números (acotados a sus puntos),
-    su zona si ya está en su lista, y puede verla, agregarla/quitarla y
-    meterla a una zona sin salir de aquí.
+    Es la única tabla de Usuarios: junta las cuentas registradas con la
+    gente que no tiene cuenta pero sí levantó tickets en las zonas del
+    observador o ya está en su lista, para que nadie se pierda.
+
+    Cada fila lleva su ubicación (la de la cuenta o, si la cuenta no la
+    tiene, el punto del ticket), su técnico, sus abiertos, su total y su
+    avance. Quien ya está en la lista del observador se le muestran sus
+    datos reales —todos sus tickets, aunque caigan fuera de los puntos
+    asignados— igual que en Mi lista: es gente que él puso ahí para
+    seguirla. El resto se queda con lo que hay en sus puntos.
     """
     elementos = {
         (e.usuario_email or "").strip().lower(): e
@@ -832,39 +931,66 @@ def _tabla_todos_usuarios(usuario, resumen):
     zonas = list(
         ZonaObservador.objects.filter(observador=usuario).order_by("nombre")
     )
-    puntos = puntos_del_observador(usuario)
     cuentas = list(
         Usuario.objects.filter(activo=True, is_active=True).order_by("nombre")
     )
-    fuera = {}
-    correos = [(u.email or "").strip().lower() for u in cuentas]
-    correos = [c for c in correos if c]
-    if correos:
-        consulta = Ticket.objects.filter(solicitante_email__in=correos)
-        if puntos:
-            consulta = consulta.exclude(solicitante_punto__in=puntos)
-        for fila in consulta.values("solicitante_email").annotate(n=Count("pk")):
-            fuera[(fila["solicitante_email"] or "").strip().lower()] = fila["n"]
+    # Los que siguen al observador tienen sus datos reales, como en Mi lista.
+    resumen_lista = (
+        _resumen_por_correo(
+            usuario, global_scope=True, correos=list(elementos)
+        )
+        if elementos
+        else {}
+    )
+
+    def fila_de(correo, u, e):
+        r = (resumen_lista.get(correo) if e is not None else None) or resumen.get(
+            correo, {}
+        )
+        puntos_de = r.get("puntos", [])
+        return {
+            "nombre": (u.nombre if u else "") or r.get("nombre") or correo,
+            "email": correo,
+            "obj": u,
+            "rol": u.get_rol_display() if u else "Sin cuenta",
+            "rol_crudo": u.rol if u else "",
+            # La ubicación de la cuenta, y si no la tiene, la del ticket.
+            "ubicacion": (
+                (u.ubicacion if u else "")
+                or (puntos_de[0] if puntos_de else "")
+                or "—"
+            ),
+            "puntos": puntos_de,
+            "en_lista": e is not None,
+            "ya_agregado": e is not None,
+            "elemento": e,
+            "elemento_id": e.pk if e else None,
+            "zona": e.zona if e else None,
+            "total": r.get("total", 0),
+            "abiertos": r.get("abiertos", 0),
+            "urgentes": r.get("urgentes", 0),
+            "cerrados_total": r.get("cerrados_total", 0),
+            "avance": r.get("avance", 0),
+            "falta": 100 - r.get("avance", 0),
+            "estado": r.get("estado", ESTADO_VERDE),
+            "tecnico": r.get("tecnico_principal", ""),
+            "tecnicos": r.get("tecnicos", []),
+        }
+
     filas = []
     for u in cuentas:
         correo = (u.email or "").strip().lower()
-        e = elementos.get(correo)
-        r = resumen.get(correo, {})
-        filas.append(
-            {
-                "nombre": u.nombre or u.email,
-                "email": correo,
-                "rol": u.get_rol_display(),
-                "ubicacion": u.ubicacion or "—",
-                "en_lista": e is not None,
-                "elemento_id": e.pk if e else None,
-                "zona": e.zona if e else None,
-                "total": r.get("total", 0),
-                "abiertos": r.get("abiertos", 0),
-                "tecnico": r.get("tecnico_principal", ""),
-                "fuera_puntos": fuera.get(correo, 0),
-            }
-        )
+        filas.append(fila_de(correo, u, elementos.get(correo) if correo else None))
+    # Sin cuenta registrada: los que tienen tickets en mis zonas o están en
+    # mi lista. Antes solo salían en la otra tabla, que ya no existe.
+    correos_cuenta = {
+        (u.email or "").strip().lower() for u in cuentas if (u.email or "").strip()
+    }
+    extra = set(resumen) | {
+        c for c in elementos if c not in correos_cuenta
+    }
+    for correo in sorted(extra - correos_cuenta):
+        filas.append(fila_de(correo, None, elementos.get(correo)))
     return filas, zonas
 
 
@@ -890,10 +1016,12 @@ def _contexto_monitoreo(usuario):
     )
     for f in filas:
         f["respuestas"] = respuestas.get((f["email"] or "").strip().lower(), [])
-    grupos = _grupos_por_zona(filas)
     total_tickets = sum(f["total"] for f in filas)
     resumen = _resumen_por_correo(usuario)
     todos_usuarios, zonas_obs = _tabla_todos_usuarios(usuario, resumen)
+    # Las zonas se siembran aunque estén vacías: una recién creada tiene que
+    # verse en el monitoreo desde el principio, no cuando alguien entre.
+    grupos = _grupos_por_zona(filas, zonas_obs)
     top_tecnicos = {}
     for f in filas:
         for t in f.get("tecnicos", []):
@@ -910,6 +1038,34 @@ def _contexto_monitoreo(usuario):
         {"color": "#D9A436", "pct": pct_a, "offset": 25.0 - pct_v},
         {"color": "#D62B1F", "pct": pct_r, "offset": 25.0 - pct_v - pct_a},
     ]
+    # ANS: lo que se le está yendo del plazo. El panel manda los avisos que
+    # falten aunque nadie haya programado el cron —una sola vez por ticket,
+    # la marca del ticket lo evita— y encima enseña el listado entero: lo ya
+    # avisado no desaparece, porque sigue sin resolverse.
+    consulta_ans = ans_avisos.tickets_del_observador(usuario, alertas=True)
+    try:
+        ans_avisos.revisar_y_avisar(consulta=consulta_ans)
+    except Exception:  # noqa: BLE001 - un correo malo no puede tumbar el panel
+        logger.exception("No se pudieron mandar los avisos de ANS")
+    listado_ans = ans_avisos.por_vencer(
+        consulta=consulta_ans, solo_sin_avisar=False
+    )
+    # El mismo tablero del administrador, acotado a lo que este observador
+    # ve: mismas gráficas y mismos tipos de gráfico al acercar el ratón,
+    # sin salirse de sus puntos asignados.
+    from .views import (  # noqa: PLC0415 - import tardío a propósito
+        _ALCANCES_20_DIAS,
+        _ALCANCES_TORTAS,
+        _build_tecnico_dashboard,
+    )
+
+    try:
+        dash_json = _build_tecnico_dashboard(
+            consulta=_visible_a_observador(usuario, Ticket.objects.all())
+        )
+    except Exception:  # noqa: BLE001 - una gráfica no tumbará el tablero
+        logger.exception("No se pudo armar el tablero del observador")
+        dash_json = "{}"
     return {
         "filas": filas,
         "conteo": conteo,
@@ -932,26 +1088,55 @@ def _contexto_monitoreo(usuario):
             [g["total_tickets"] for g in grupos] + [0]
         ),
         "max_tec_tickets": max([n for _, n in top_tecnicos] + [0]),
+        # Sección de ANS del Monitoreo.
+        "por_vencer": listado_ans,
+        "total_por_vencer": sum(
+            1 for t in listado_ans if t.ans_estado == "por-vencer"
+        ),
+        "total_vencidos": sum(
+            1 for t in listado_ans if t.ans_estado == "vencido"
+        ),
+        # Las etiquetas de ANS abren la ventana explicativa: las dos vistas
+        # que usan este contexto la incluyen.
+        "ans_modal": True,
+        # Widgets del tablero del administrador (pivote y gráficos con su
+        # selector de tipo), acotados a la mirada del observador.
+        "dash_json": dash_json,
+        "alcances_tortas": _ALCANCES_TORTAS,
+        "alcances_20dias": _ALCANCES_20_DIAS,
     }
 
 
-def _grupos_por_zona(filas):
-    """Agrupa las filas por zona, con sus totales y su estado global."""
+def _grupos_por_zona(filas, zonas=()):
+    """Agrupa las filas por zona, con sus totales y su estado global.
+
+    Las zonas del supervisor se siembran aunque aún no tengan a nadie: una
+    zona recién creada tiene que verse en el monitoreo desde el principio,
+    igual que en el tablero del administrador.
+
+    Las cuentas que todavía no están en ninguna zona van en un grupo
+    «Sin zona» al final. Sin ese grupo el indicador de Cuentas —que cuenta
+    toda la lista— no cuadraba con la suma de la tabla ni con las
+    tarjetas: alguien sin carpeta no aparecía en ninguna parte.
+    """
     grupos = []
     por_zona = {}
+    sin_zona = {"zona": None, "filas": []}
+    for z in zonas:
+        if z is not None and z.pk is not None:
+            por_zona[z.pk] = {"zona": z, "filas": []}
     for f in filas:
         zona = (f["elemento"].zona if f["elemento"] else None)
         if zona is None:
-            # Sin zona no se muestra como grupo: esas cuentas salen en la
-            # tabla de todos los usuarios, donde se les asigna su zona.
+            sin_zona["filas"].append(f)
             continue
         clave = zona.pk
         if clave not in por_zona:
             por_zona[clave] = {"zona": zona, "filas": []}
         por_zona[clave]["filas"].append(f)
     orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
-    for clave in sorted(por_zona):
-        grupo = por_zona[clave]
+
+    def _de_totales(grupo):
         grupo["abiertos"] = sum(f["abiertos"] for f in grupo["filas"])
         grupo["total_tickets"] = sum(f["total"] for f in grupo["filas"])
         grupo["cerrados"] = sum(f["cerrados_total"] for f in grupo["filas"])
@@ -963,8 +1148,131 @@ def _grupos_por_zona(filas):
         for f in grupo["filas"]:
             if orden[f["estado"]] > orden[grupo["estado"]]:
                 grupo["estado"] = f["estado"]
+
+    for clave in sorted(por_zona):
+        grupo = por_zona[clave]
+        _de_totales(grupo)
         grupos.append(grupo)
+    if sin_zona["filas"]:
+        _de_totales(sin_zona)
+        grupos.append(sin_zona)
     return grupos
+
+
+def _panel_de_supervision(usuario, filas):
+    """Tarjetas del panel de dos columnas de Mi lista: solo las zonas
+    creadas por el observador, cada una con sus cuentas, su estado y su
+    avance.
+
+    Es el mismo armazón que usa el administrador en su panel de zonas: a la
+    izquierda el supervisor con lo que tiene a cargo y, al elegir una tarjeta,
+    a la derecha las cuentas de esa zona. Los datos viajan en JSON para que
+    el buscador de la derecha funcione sin volver al servidor.
+
+    Ni los puntos asignados ni el grupo «Sin zona» hacen tarjeta: las
+    cuentas que no están en una zona no entran en el panel.
+    """
+    orden_estado = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
+
+    def _tarjeta(clave, nombre, fecha="", pk=None, color=""):
+        return {
+            "clave": clave,
+            "pk": pk,
+            "nombre": nombre,
+            "fecha": fecha,
+            "color": color,
+            "usuarios": [],
+            "cuentas": 0,
+            "total": 0,
+            "abiertos": 0,
+            "cerrados": 0,
+            "avance": 0,
+            "estado": ESTADO_VERDE,
+        }
+
+    zonas = []
+    por_clave = {}
+
+    def _mete(tarjeta):
+        if tarjeta["clave"] in por_clave:
+            return por_clave[tarjeta["clave"]]
+        zonas.append(tarjeta)
+        por_clave[tarjeta["clave"]] = tarjeta
+        return tarjeta
+
+    for z in (
+        ZonaObservador.objects.filter(observador=usuario)
+        .order_by("-creado_en", "-pk")
+        .values("pk", "nombre", "creado_en", "color")
+    ):
+        _mete(_tarjeta(
+            f"z{z['pk']}",
+            (z["nombre"] or "").strip(),
+            z["creado_en"].strftime("%d/%m/%Y") if z.get("creado_en") else "",
+            pk=z["pk"],
+            color=z["color"] or "",
+        ))
+    for f in filas:
+        elemento = f.get("elemento")
+        zona = getattr(elemento, "zona", None) if elemento is not None else None
+        if zona is None or not (zona.nombre or "").strip():
+            # Sin zona propia no hay tarjeta: el panel ya no agrupa por punto
+            # ni tiene grupo «Sin zona». Esas cuentas siguen saliendo en
+            # Usuarios y en el resto de tablas de siempre.
+            continue
+        tarjeta = _mete(_tarjeta(
+            f"z{zona.pk}", zona.nombre.strip(),
+            zona.creado_en.strftime("%d/%m/%Y") if zona.creado_en else "",
+            pk=zona.pk,
+            color=zona.color or "",
+        ))
+        correo = (f.get("email") or "").strip().lower()
+        tarjeta["usuarios"].append({
+            "nombre": f.get("nombre") or correo or "—",
+            "email": correo,
+            "rol": f.get("rol")
+                   or ("Punto de venta" if f.get("es_punto") else "Cuenta"),
+            "estado": f.get("estado") or ESTADO_VERDE,
+            "total": f.get("total", 0),
+            "abiertos": f.get("abiertos", 0),
+            "cerrados": f.get("cerrados_total", 0),
+            "avance": f.get("avance", 0),
+            "en_lista": bool(f.get("elemento") or f.get("ya_agregado")),
+            "elemento_id": getattr(elemento, "pk", None),
+            "url_agregar": reverse("tickets:obs_agregar"),
+            "url_quitar": (
+                reverse("tickets:obs_quitar", args=[elemento.pk])
+                if getattr(elemento, "pk", None) else ""
+            ),
+            "url": (
+                reverse("tickets:obs_usuarios") + "?q=" + correo
+                if correo else reverse("tickets:obs_usuarios")
+            ),
+        })
+
+    for tarjeta in zonas:
+        cuentas = tarjeta["usuarios"]
+        tarjeta["cuentas"] = len(cuentas)
+        tarjeta["total"] = sum(u["total"] for u in cuentas)
+        tarjeta["abiertos"] = sum(u["abiertos"] for u in cuentas)
+        tarjeta["cerrados"] = sum(u["cerrados"] for u in cuentas)
+        tarjeta["avance"] = (
+            int(round(100.0 * tarjeta["cerrados"] / tarjeta["total"]))
+            if tarjeta["total"] else 0
+        )
+        tarjeta["estado"] = ESTADO_VERDE
+        for u in cuentas:
+            if orden_estado.get(u["estado"], 0) > orden_estado[tarjeta["estado"]]:
+                tarjeta["estado"] = u["estado"]
+
+    return {
+        "supervisor": {
+            "nombre": usuario.nombre or usuario.email,
+            "email": usuario.email or "",
+            "zonas": len(zonas),
+        },
+        "zonas": zonas,
+    }
 
 
 def _respuestas_por_correo(puntos, correos, limite=2, global_scope=False):
@@ -1030,7 +1338,19 @@ def presionar_tecnico(request, pk):
             observador=usuario, usuario_email__iexact=ticket.solicitante_email
         ).exists()
     )
-    if (ticket.solicitante_punto or "") not in puntos and not en_lista:
+    # También quien está en la lista por punto: esos tickets no llevan correo,
+    # así que la comprobación por correo solo no los alcanzaba.
+    en_punto_de_lista = bool(
+        ticket.solicitante_punto
+        and ElementoMiLista.objects.filter(
+            observador=usuario, punto__nombre=ticket.solicitante_punto
+        ).exists()
+    )
+    if (
+        (ticket.solicitante_punto or "") not in puntos
+        and not en_lista
+        and not en_punto_de_lista
+    ):
         raise Http404
     TicketComentario.objects.create(
         ticket=ticket,
@@ -1038,6 +1358,7 @@ def presionar_tecnico(request, pk):
         autor_nombre=usuario.nombre,
         comentario=mensaje,
         es_interno=False,
+        es_presion=True,
     )
     notificar_comentario(ticket, usuario.nombre, mensaje, actor=usuario)
     messages.success(request, f"Mensaje enviado al técnico del {ticket.codigo}.")
@@ -1066,6 +1387,50 @@ def exportar_observador(request):
 
 
 # ------------------------------------------------------------------- zonas
+@solo_observador
+def zona_crear_observador(request):
+    """Crea una zona propia del observador desde el panel de Usuarios.
+
+    Misma mecánica que la del administrador: ventana emergente con las
+    notificaciones de la zona, validación de nombre repetido y aviso por
+    toast al crear o al fallar. Vuelve a la vista que lo abrió.
+    """
+    from django.contrib import messages
+
+    if request.method != "POST":
+        return redirect("tickets:obs_usuarios")
+    usuario = request.user
+    volver = request.POST.get("volver") or reverse("tickets:obs_usuarios")
+    nombre = (request.POST.get("nombre") or "").strip()[:80]
+    if not nombre:
+        messages.error(request, "Ponle un nombre a la zona para crearla.")
+        return redirect(volver)
+    if ZonaObservador.objects.filter(
+        observador=usuario, nombre__iexact=nombre
+    ).exists():
+        messages.error(request, f"Ya tienes una zona llamada «{nombre}».")
+        return redirect(volver)
+    zona = ZonaObservador.objects.create(
+        observador=usuario,
+        nombre=nombre,
+        version_sistema=(_version_equipo(request) or "")[:30],
+        # La casilla viene marcada por defecto: si no está en el POST, apagó.
+        notif_correo=request.POST.get("notif_correo") == "on",
+        notif_popup=request.POST.get("notif_popup") == "on",
+        perm_exportar=request.POST.get("perm_exportar") == "on",
+        perm_historial=request.POST.get("perm_historial") == "on",
+        alertas_ans=request.POST.get("alertas_ans") == "on",
+    )
+    _auditar(usuario, MonitoreoAuditoria.CREAR_ZONA, usuario, nombre, "")
+    _marca_equipo_supervisor(zona, request)
+    messages.success(
+        request, f"Zona «{zona.nombre}» creada. Ya puedes meterle cuentas."
+    )
+    # El siguiente paso es meterle puntos de venta: Usuarios se abre con la
+    # ventana de la zona recién creada ya puesta.
+    return redirect(f"{reverse('tickets:obs_usuarios')}?zona_nueva={zona.pk}")
+
+
 @solo_observador
 def zonas_observador(request):
     """Zonas propias del observador: carpetas con nombre para agrupar gente.
@@ -1100,7 +1465,10 @@ def zonas_observador(request):
                     usuario, MonitoreoAuditoria.RENOMBRAR_ZONA, usuario,
                     nuevo, f"antes: {anterior}",
                 )
-                return redirect("tickets:obs_zonas")
+                _marca_equipo_supervisor(zona, request)
+                return redirect(
+                    request.POST.get("volver") or reverse("tickets:obs_zonas")
+                )
             nombre = ""
         else:
             nombre = (request.POST.get("nombre") or "").strip()[:80]
@@ -1115,6 +1483,7 @@ def zonas_observador(request):
                 _auditar(
                     usuario, MonitoreoAuditoria.CREAR_ZONA, usuario, nombre, "",
                 )
+                _marca_equipo_supervisor(zona, request)
                 return redirect("tickets:obs_zona_detalle", pk=zona.pk)
     resumen = _resumen_por_correo(usuario)
     zonas = list(
@@ -1165,8 +1534,48 @@ def zona_detalle_observador(request, pk):
         zona = ZonaObservador.objects.get(pk=pk, observador=usuario)
     except ZonaObservador.DoesNotExist:
         raise Http404
+    filas, _ = _cuentas_y_tickets_de_zona(zona)
+    # Resumen de la carpeta: lo primero que se ve de la zona.
+    total_tickets = sum(f["total"] for f in filas)
+    orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
+    estado_zona = ESTADO_VERDE
+    for f in filas:
+        if orden[f["estado"]] > orden[estado_zona]:
+            estado_zona = f["estado"]
+    resumen = {
+        "cuentas": len(filas),
+        "total": total_tickets,
+        "abiertos": sum(f["abiertos"] for f in filas),
+        "resueltos": sum(f["cerrados_total"] for f in filas),
+        "avance": (
+            int(round(100.0 * sum(f["cerrados_total"] for f in filas) / total_tickets))
+            if total_tickets else 0
+        ),
+        "estado": estado_zona,
+    }
+    resumen["falta"] = 100 - resumen["avance"]
+    return render(
+        request,
+        "observador/zona_detalle.html",
+        {"zona": zona, "filas": filas, "resumen": resumen},
+    )
+
+
+def _cuentas_y_tickets_de_zona(zona, limite_tickets=20):
+    """Cada cuenta de la zona con sus números y sus últimos tickets.
+
+    Los tickets viajan en la fila porque las tarjetas de «Sus cuentas» los
+    muestran uno a uno (el mismo chip que Monitoreo): sin ellos solo se ve
+    el contador y no se sabe qué hay detrás. El alcance es el de siempre
+    del módulo, acotado a los puntos del observador.
+
+    Lo comparten la pantalla de la carpeta y su Excel: así lo que baja el
+    fichero es exactamente lo que se ve en la página.
+    """
+    usuario = zona.observador
     resumen = _resumen_por_correo(usuario)
     puntos = puntos_del_observador(usuario)
+    visibles = _visible_a_observador(usuario, Ticket.objects.all())
     miembros = (
         zona.elementos.filter(tipo=ElementoMiLista.TIPO_USUARIO)
         .select_related("usuario")
@@ -1176,6 +1585,16 @@ def zona_detalle_observador(request, pk):
     for e in miembros:
         correo = (e.usuario_email or "").strip().lower()
         r = resumen.get(correo, {})
+        propios = []
+        if correo:
+            consulta = (
+                visibles.filter(solicitante_email__iexact=correo)
+                .select_related("tecnico_asignado")
+                .order_by("-fecha_creacion")
+            )
+            if limite_tickets:
+                consulta = consulta[:limite_tickets]
+            propios = list(consulta)
         filas.append(
             {
                 "elemento": e,
@@ -1189,12 +1608,11 @@ def zona_detalle_observador(request, pk):
                 "falta": 100 - r.get("avance", 0),
                 "cerrados_total": r.get("cerrados_total", 0),
                 "estado": r.get("estado", ESTADO_VERDE),
+                "tickets": propios,
                 "respuestas": _respuestas_de_tecnicos(puntos, correo),
             }
         )
-    return render(
-        request, "observador/zona_detalle.html", {"zona": zona, "filas": filas}
-    )
+    return filas, [t for f in filas for t in f["tickets"]]
 
 
 def _respuestas_de_tecnicos(puntos, correo, limite=3):
@@ -1216,6 +1634,27 @@ def _respuestas_de_tecnicos(puntos, correo, limite=3):
         .select_related("ticket", "usuario")
         .order_by("-fecha")[:limite]
     )
+
+
+def _marca_equipo_supervisor(zona, request):
+    """Guarda Windows e IP del supervisor cuando actúa en su zona."""
+    if zona is None or getattr(zona, "pk", None) is None:
+        return
+    try:
+        from apps.accounts.seguridad import ip_del_request
+        ver = (_version_equipo(request) or "")[:30]
+        ip = (ip_del_request(request) or "")[:45]
+    except Exception:
+        return
+    cambios = {}
+    if ver and zona.sup_version != ver:
+        cambios["sup_version"] = ver
+    if ip and zona.sup_ip != ip:
+        cambios["sup_ip"] = ip
+    if cambios:
+        for k, v in cambios.items():
+            setattr(zona, k, v)
+        zona.save(update_fields=list(cambios))
 
 
 @solo_observador
@@ -1241,14 +1680,20 @@ def zona_miembro_asignar(request):
         _auditar(
             usuario, MonitoreoAuditoria.AGREGAR_MIEMBRO, usuario,
             elemento.zona.nombre, (elemento.usuario_email or ""),
+            cuenta=(elemento.usuario_email or ""),
+            motivo=_motivo_post(request),
         )
+        _marca_equipo_supervisor(elemento.zona, request)
     else:
         if elemento.zona_id:
             _auditar(
                 usuario, MonitoreoAuditoria.QUITAR_MIEMBRO, usuario,
                 (elemento.zona.nombre if elemento.zona else ""),
                 (elemento.usuario_email or ""),
+                cuenta=(elemento.usuario_email or ""),
+                motivo=_motivo_post(request),
             )
+            _marca_equipo_supervisor(elemento.zona, request)
         elemento.zona = None
     elemento.save(update_fields=["zona"])
     return redirect(request.POST.get("volver") or reverse("tickets:obs_zonas"))
@@ -1268,4 +1713,207 @@ def zona_eliminar(request, pk):
         zona.nombre, "",
     )
     zona.delete()
-    return redirect("tickets:obs_zonas")
+    return redirect(request.POST.get("volver") or reverse("tickets:obs_zonas"))
+
+
+@solo_observador
+def zona_color(request):
+    """Pinta una carpeta con el color que se eligió en su paleta (solo POST).
+
+    El color solo se admite si viene de la paleta cerrada de arriba: lo que
+    llegue de otro lado no se guarda ni se refleja en el estilo.
+    """
+    if request.method != "POST":
+        raise Http404
+    try:
+        zona = ZonaObservador.objects.get(
+            pk=request.POST.get("zona_id"), observador=request.user
+        )
+    except (ZonaObservador.DoesNotExist, ValueError, TypeError):
+        raise Http404
+    color = (request.POST.get("color") or "").strip().upper()
+    if color and color not in PALETA_ZONA:
+        raise Http404
+    zona.color = color
+    zona.save(update_fields=["color"])
+    return redirect(request.POST.get("volver") or reverse("tickets:obs_zonas"))
+
+
+@solo_observador
+@require_GET
+def obs_auditoria_exportar(request):
+    """Descarga en Excel la auditoría de las propias zonas.
+
+    El permiso lo tiene la zona, no la persona: cada zona se creó con su
+    casilla «Exportar auditoría» y solo las que la llevan marcada entran en
+    el fichero. Si una zona la tiene quitada se queda fuera aunque el
+    supervisor sea el mismo que pide la descarga, y si no queda ninguna
+    con permiso no hay descarga.
+
+    Las filas sin zona son las que dejó el propio observador fuera de una
+    carpeta concreta (agregar o quitar cuentas de su lista): esas sí son
+    suyas. Las de zonas ajenas no se cuelan.
+    """
+    from django.contrib import messages
+
+    zonas = list(ZonaObservador.objects.filter(observador=request.user))
+    permitidas = [(z.nombre or "").strip() for z in zonas if z.perm_exportar]
+    bloqueadas = [
+        (z.nombre or "").strip()
+        for z in zonas
+        if not z.perm_exportar and (z.nombre or "").strip()
+    ]
+    if not permitidas:
+        messages.error(
+            request,
+            "Ninguna de tus zonas tiene permiso para exportar la auditoría.",
+        )
+        return redirect(reverse("tickets:obs_mi_lista"))
+
+    consulta = MonitoreoAuditoria.objects.all()
+    if bloqueadas:
+        # El «no» de la zona manda sobre las filas suyas también: el permiso
+        # se quitó en la carpeta, no en la persona.
+        consulta = consulta.exclude(zona_nombre__in=bloqueadas)
+    filas = (
+        consulta.filter(
+            Q(zona_nombre__in=permitidas)
+            | Q(observador=request.user, zona_nombre="")
+        )
+        .select_related("actor", "observador")
+        .order_by("-fecha", "-id")[:2000]
+    )
+    return _xlsx_auditoria(
+        filas,
+        titulo="Dogger · Auditoría de tus zonas",
+        nombre="dogger_auditoria_tus_zonas",
+    )
+
+
+def _xlsx_zona(zona, filas, tickets, nombre="dogger_zona"):
+    """Monta la descarga .xlsx de una carpeta: su resumen, sus cuentas y sus tickets.
+
+    Dos hojas: «Zona» con el pulso arriba y una fila por cuenta, y «Tickets»
+    con el detalle uno a uno. El formato es el mismo que el de la auditoría
+    (encabezado negro, zebra y autofiltro) para que todas las descargas del
+    módulo se vean de la misma familia.
+    """
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
+
+    NEGRO = PatternFill(start_color="171412", end_color="171412", fill_type="solid")
+    BLANCO = Font(name="Arial", bold=True, color="FFFFFF", size=11)
+    CUERPO = Font(name="Arial", size=10)
+    fino = Side(style="thin", color="D9CFC2")
+    borde = Border(left=fino, right=fino, top=fino, bottom=fino)
+    zebra = PatternFill(start_color="FBF6EC", end_color="FBF6EC", fill_type="solid")
+
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    def _hoja(titulo, encabezados, cuerpo, nombre_hoja):
+        ws = wb.create_sheet(nombre_hoja)
+        ws.merge_cells(
+            start_row=1, start_column=1, end_row=1, end_column=len(encabezados)
+        )
+        celda = ws.cell(row=1, column=1, value=titulo)
+        celda.font = Font(name="Arial", bold=True, color="FFFFFF", size=14)
+        celda.fill = NEGRO
+        celda.alignment = Alignment(horizontal="center")
+        for i, (texto, ancho) in enumerate(encabezados, start=1):
+            celda = ws.cell(row=2, column=i, value=texto)
+            celda.font = BLANCO
+            celda.fill = NEGRO
+            celda.border = borde
+            celda.alignment = Alignment(
+                horizontal="center", vertical="center", wrap_text=True
+            )
+            ws.column_dimensions[get_column_letter(i)].width = ancho
+        ws.auto_filter.ref = f"A2:{get_column_letter(len(encabezados))}2"
+        ws.freeze_panes = "A3"
+        for n, valores in enumerate(cuerpo, start=3):
+            for i, valor in enumerate(valores, start=1):
+                celda = ws.cell(row=n, column=i, value=valor)
+                celda.font = CUERPO
+                celda.border = borde
+                if n % 2:
+                    celda.fill = zebra
+        return ws
+
+    _hoja(
+        f"Dogger · Zona {zona.nombre}",
+        [
+            ("Cuenta", 30), ("Correo", 34), ("Tickets", 9),
+            ("Abiertos", 10), ("Resueltos", 10), ("Avance", 9),
+            ("Estado", 11),
+        ],
+        [
+            [
+                f["nombre"],
+                f["email"],
+                f["total"],
+                f["abiertos"],
+                f["cerrados_total"],
+                f"{f['avance']}%",
+                (f["estado"] or "").capitalize(),
+            ]
+            for f in filas
+        ],
+        "Zona",
+    )
+    _hoja(
+        f"Dogger · Tickets de {zona.nombre}",
+        [
+            ("Código", 12), ("Cuenta", 30), ("Título", 52), ("Estado", 14),
+            ("Técnico", 26), ("Creado", 18),
+        ],
+        [
+            [
+                t.codigo,
+                (t.solicitante_nombre or t.solicitante_email or ""),
+                (t.titulo or "")[:200],
+                t.get_estado_display(),
+                (t.tecnico_asignado.nombre or t.tecnico_asignado.email or "")
+                if t.tecnico_asignado_id else "Sin asignar",
+                timezone.localtime(t.fecha_creacion).strftime("%d/%m/%Y %H:%M")
+                if t.fecha_creacion else "",
+            ]
+            for t in tickets
+        ],
+        "Tickets",
+    )
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    respuesta = HttpResponse(
+        buffer.getvalue(),
+        content_type=(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ),
+    )
+    clave = "".join(c for c in (zona.nombre or "zona") if c.isalnum()) or "zona"
+    respuesta["Content-Disposition"] = f'attachment; filename="{nombre}_{clave}.xlsx"'
+    return respuesta
+
+
+@solo_observador
+def zona_excel_observador(request, pk):
+    """Excel de la carpeta: su resumen, sus cuentas y sus tickets.
+
+    Es lo mismo que se ve en la pantalla de la zona, bajado a una hoja de
+    cálculo para llevarlo a la junta o adjuntarlo. El permiso «Exportar
+    auditoría» no entra aquí: eso gobierna el historial de acciones, no los
+    datos de la propia carpeta, que el observador ya tiene a la vista.
+    """
+    usuario = request.user
+    try:
+        zona = ZonaObservador.objects.get(pk=pk, observador=usuario)
+    except ZonaObservador.DoesNotExist:
+        raise Http404
+    filas, tickets = _cuentas_y_tickets_de_zona(zona, limite_tickets=500)
+    return _xlsx_zona(zona, filas, tickets)
