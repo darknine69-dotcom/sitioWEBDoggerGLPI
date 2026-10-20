@@ -401,6 +401,45 @@ def monitoreo_admin(request):
     )
 
 
+@admin_required
+def monitoreo_zona_detalle(request, pk):
+    """Abre en modo de solo lectura las cuentas de una zona para el admin."""
+    try:
+        zona = ZonaObservador.objects.select_related("observador").get(pk=pk)
+    except ZonaObservador.DoesNotExist:
+        raise Http404
+
+    from .views_observador import _cuentas_y_tickets_de_zona
+
+    filas, _ = _cuentas_y_tickets_de_zona(zona, global_scope=True)
+    total_tickets = sum(fila["total"] for fila in filas)
+    orden = {"verde": 0, "amarillo": 1, "rojo": 2}
+    estado = "verde"
+    for fila in filas:
+        if orden[fila["estado"]] > orden[estado]:
+            estado = fila["estado"]
+    resumen = {
+        "cuentas": len(filas),
+        "total": total_tickets,
+        "abiertos": sum(fila["abiertos"] for fila in filas),
+        "resueltos": sum(fila["cerrados_total"] for fila in filas),
+        "avance": (
+            int(round(
+                100.0 * sum(fila["cerrados_total"] for fila in filas)
+                / total_tickets
+            ))
+            if total_tickets else 0
+        ),
+        "estado": estado,
+    }
+    resumen["falta"] = 100 - resumen["avance"]
+    return render(
+        request,
+        "observador/zona_detalle.html",
+        {"zona": zona, "filas": filas, "resumen": resumen, "admin": True},
+    )
+
+
 def _auditoria_enriquecida(limite=20):
     """Últimos cambios con etiqueta relativa de tiempo para la tabla."""
     ahora = timezone.now()

@@ -7,7 +7,7 @@
     if (!dataEl) return;
     var D = null;
     try { D = JSON.parse(dataEl.textContent); } catch (e) { console.error('dashData inválido', e); }
-    if (!D || !D.pivot) return;
+    if (!D) return;
 
     var SERIE = D.colores_serie || {
         entrante: '#2563EB', completado: '#2F7D4F', vencido: '#D62B1F', riesgo: '#F2A900'
@@ -590,7 +590,9 @@
         var body = document.getElementById("pivotBody");
         document.getElementById("pivotCol1").textContent = meta.label;
         document.getElementById("pivotDimLabel").textContent = meta.label.toLowerCase();
-        var rows = meta.rows.filter(function (r) { return r.total > 0 || r.vencido > 0; });
+        var rows = meta.rows.filter(function (r) {
+            return meta.aggregate_only || r.total > 0 || r.vencido > 0;
+        });
         var pop0 = document.getElementById("pivotPop");
         if (pop0) pop0.remove();
         if (!rows.length) {
@@ -613,6 +615,7 @@
         }).join('');
         html += '<tr class="pivot-total-row"><td>' + esc(tot.label) + '</td><td class="num">' + tot.abrir + '</td><td class="num">' + tot.espera + '</td><td class="num col-vencido">' + (tot.vencido ? '<span class="badge-vencido">' + tot.vencido + '</span>' : '—') + '</td><td class="num">' + tot.cerrado + '</td><td class="num"><strong>' + tot.resueltos + '</strong></td></tr>';
         body.innerHTML = html;
+        if (meta.aggregate_only) return;
         Array.prototype.forEach.call(body.rows, function (tr, i) {
             if (!rows[i]) return;
             var lead = tr.querySelector('.pivot-lead');

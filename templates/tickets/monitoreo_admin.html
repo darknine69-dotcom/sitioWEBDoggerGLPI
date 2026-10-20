@@ -1107,15 +1107,6 @@ main.obs-page { font-family: var(--font-corp); }
             botones.forEach(function (b) {
                 b.addEventListener("click", function () { activa(b); });
             });
-            grid.querySelectorAll("[data-mon-card-view]").forEach(function (boton) {
-                boton.addEventListener("click", function () {
-                    var zonaId = boton.getAttribute("data-mon-card-view");
-                    var zona = Array.prototype.find.call(botones, function (b) {
-                        return b.getAttribute("data-mon-zona") === zonaId;
-                    });
-                    if (zona) { activa(zona); }
-                });
-            });
             if (buscar) {
                 buscar.addEventListener("input", function () {
                     if (!actual) { return; }

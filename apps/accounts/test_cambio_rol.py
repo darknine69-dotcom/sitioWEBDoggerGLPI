@@ -153,7 +153,41 @@ class BotonCambiarRolTest(TestCase):
         )
         self.persona.refresh_from_db()
         self.assertEqual(self.persona.rol, Usuario.Rol.USUARIO)
+        self.assertEqual(self.persona.rol_base, Usuario.Rol.TECNICO)
         self.assertEqual(respuesta["Location"], reverse("tickets:mi_panel"))
+
+    def test_insignias_muestran_rol_base_y_vista_activa_y_permiten_regresar(self):
+        self._encender()
+        self.client.post(
+            reverse("accounts:cambiar_rol"), {"rol": Usuario.Rol.USUARIO}
+        )
+
+        html = self.client.get(reverse("accounts:perfil")).content.decode()
+        self.assertIn("Base: Técnico", html)
+        self.assertIn("Activo: Punto de venta", html)
+        self.assertIn("Rol base: Técnico", html)
+
+        self.client.post(
+            reverse("accounts:cambiar_rol"), {"rol": Usuario.Rol.TECNICO}
+        )
+        self.persona.refresh_from_db()
+        self.assertEqual(self.persona.rol, Usuario.Rol.TECNICO)
+        self.assertEqual(self.persona.rol_base, Usuario.Rol.TECNICO)
+
+    def test_edicion_administrativa_actualiza_el_rol_base(self):
+        self._encender()
+        self.client.force_login(self.admin)
+        self.client.post(reverse("tickets:usuario_guardar"), {
+            "pk": self.persona.pk,
+            "nombre": self.persona.nombre,
+            "email": self.persona.email,
+            "rol": Usuario.Rol.OBSERVADOR,
+            "activo": "on",
+            "cambio_rol_habilitado": "on",
+        })
+        self.persona.refresh_from_db()
+        self.assertEqual(self.persona.rol, Usuario.Rol.OBSERVADOR)
+        self.assertEqual(self.persona.rol_base, Usuario.Rol.OBSERVADOR)
 
     def test_el_rol_nuevo_se_ve_en_la_barra(self):
         self._encender()

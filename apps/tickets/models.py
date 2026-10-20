@@ -18,6 +18,12 @@ class Categoria(models.Model):
     """
     grupo = models.CharField("Grupo", max_length=50)
     nombre = models.CharField("Nombre", max_length=80)
+    descripcion = models.TextField(
+        "Qué significa esta subcategoría",
+        blank=True,
+        default="",
+        help_text="Explica qué problemas incluye y cuándo se debe elegir.",
+    )
     activo = models.BooleanField(default=True)
     prioridad_default = models.CharField(
         "Prioridad por defecto (ANS)",
@@ -75,6 +81,19 @@ class Categoria(models.Model):
             {"grupo": grupo, "subcategorias": subs, "total": sum(s.tickets_count for s in subs)}
             for grupo, subs in arbol.items()
         ]
+
+
+class CategoriaGrupo(models.Model):
+    nombre = models.CharField("Categoría principal", max_length=50, unique=True)
+
+    class Meta:
+        db_table = "CategoriaGrupos"
+        verbose_name = "Categoría principal"
+        verbose_name_plural = "Categorías principales"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
 
 
 class TicketActivosManager(models.Manager):

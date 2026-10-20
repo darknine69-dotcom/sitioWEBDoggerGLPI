@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 import re
 
-from .models import Categoria, Ticket, TicketComentario
+from .models import Categoria, CategoriaGrupo, Ticket, TicketComentario
 from .sugerencia_categoria import sugerir_categoria
 
 User = get_user_model()
@@ -200,21 +200,64 @@ class TicketEdicionForm(forms.ModelForm):
 class CategoriaForm(forms.ModelForm):
     class Meta:
         model = Categoria
-        fields = ["grupo", "nombre", "prioridad_default", "ans_horas", "glpi_category_id", "tecnico_default"]
+        fields = [
+            "grupo",
+            "nombre",
+            "descripcion",
+            "prioridad_default",
+            "ans_horas",
+            "glpi_category_id",
+            "tecnico_default",
+        ]
         widgets = {
             "grupo": forms.TextInput(
                 attrs={"list": "lista-grupos", "placeholder": "Ej: SIESA ERP"}
             ),
             "nombre": forms.TextInput(attrs={"placeholder": "Ej: Facturación electrónica"}),
+            "descripcion": forms.Textarea(
+                attrs={
+                    "rows": 2,
+                    "placeholder": "Describe qué casos corresponden a esta subcategoría",
+                }
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        grupos = set(CategoriaGrupo.objects.values_list("nombre", flat=True))
+        grupos.update(Categoria.objects.values_list("grupo", flat=True).distinct())
+        opciones_grupo = sorted(grupos, key=str.casefold)
+        self.fields["grupo"] = forms.ChoiceField(
+            label="Categoría principal",
+            choices=[("", "— Selecciona una categoría principal —")]
+            + [(grupo, grupo) for grupo in opciones_grupo],
+        )
         self.fields["tecnico_default"].queryset = User.objects.filter(
             activo=True, rol__in=["admin", "tecnico"]
         ).order_by("nombre")
         self.fields["tecnico_default"].required = False
         self.fields["glpi_category_id"].required = False
+
+
+class CategoriaGrupoForm(forms.ModelForm):
+    class Meta:
+        model = CategoriaGrupo
+        fields = ["nombre"]
+        widgets = {
+            "nombre": forms.TextInput(
+                attrs={"placeholder": "Ej: Infraestructura", "maxlength": 50}
+            ),
+        }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data["nombre"].strip()
+        if CategoriaGrupo.objects.filter(nombre__iexact=nombre).exists():
+            raise forms.ValidationError("Ya existe una categoría principal con ese nombre.")
+        if Categoria.objects.filter(grupo__iexact=nombre).exists():
+            raise forms.ValidationError(
+                "Ese nombre ya está en uso por un grupo con subcategorías."
+            )
+        return nombre
 
 
 class UsuarioPanelForm(forms.Form):

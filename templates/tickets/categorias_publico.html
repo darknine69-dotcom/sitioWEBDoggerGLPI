@@ -3,7 +3,7 @@
 {% block nav_mi_panel %}{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-folder"/></svg></span>{% endblock %}
 {% block header_title %}Categorías{% endblock %}
-{% block header_desc %}Estas son las {{ total_categorias }} categorías en {{ total_grupos }} grupos. Cada una dice qué cubre, para que elijas la que mejor describa tu problema.{% endblock %}
+{% block header_desc %}Consulta las {{ total_categorias }} subcategorías organizadas en {{ total_grupos }} grupos y revisa qué incluye cada una.{% endblock %}
 
 {% block content %}
 <main class="page">
@@ -18,7 +18,7 @@
                 <span class="cat-resumen-t">grupos</span>
             </div>
             <p class="cat-resumen-pie">
-                Cada una trae su prioridad y su tiempo de respuesta. Abre un grupo con el
+                Cada una muestra su significado, prioridad y tiempo de respuesta. Abre un grupo con el
                 <span class="cat-sign">+</span> y mira qué cubre antes de reportar.
             </p>
         </div>
@@ -65,9 +65,11 @@
                                 <li><span>La atiende</span><strong>{% if sub.tecnico_default %}{{ sub.tecnico_default.nombre }}{% else %}Equipo de soporte{% endif %}</strong></li>
                                 <li><span>Ya reportado</span><strong>{{ sub.tickets_count }} solicitud{{ sub.tickets_count|pluralize }}</strong></li>
                             </ul>
+                            {% if request.user.rol != 'observador' %}
                             <a class="btn btn-accent btn-sm" href="{{ sub.clave_crear }}">
                                 <svg class="icon icon-sm"><use href="#i-ticket"/></svg> Crear solicitud aquí
                             </a>
+                            {% endif %}
                         </div>
                     </li>
                     {% endfor %}

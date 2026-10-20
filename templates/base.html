@@ -173,6 +173,10 @@
                     {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} avisos por ver</span>{% endif %}
                 </a>
+                <a href="{% url 'tickets:categorias_arbol' %}" class="sidebar-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %} data-title="Categorías">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
+                    <span class="sidebar-label">Categorías</span>
+                </a>
             </div>
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Agenda</p>
@@ -273,6 +277,10 @@
                     {% if menu_mios %}<span class="sidebar-count" data-nivel="bajo">{{ menu_mios }}</span>{% endif %}
                     {% if menu_mios %}<span class="nav-count-sr">{{ menu_mios }} elementos en tu lista</span>{% endif %}
                 </a>
+                <a href="{% url 'tickets:categorias_publico' %}" class="sidebar-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %} data-title="Categorías">
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
+                    <span class="sidebar-label">Categorías</span>
+                </a>
             </div>
             {% endif %}
 
@@ -339,7 +347,17 @@
                     {% else %}
                     <span class="user-avatar">{{ request.user.iniciales }}</span>
                     {% endif %}
-                    <span class="user-chip-text">{{ request.user.nombre }} <small>· {{ request.user.get_rol_display }}</small></span>
+                    <span class="user-chip-text">
+                        {{ request.user.nombre }} <small>· {{ request.user.get_rol_display }}</small>
+                        {% if request.user.cambio_rol_habilitado and request.user.rol_base %}
+                        <span class="rol-badges" aria-label="Roles de la cuenta">
+                            <span class="rol-badge rol-badge-base" title="Rol que se conserva">Base: {{ request.user.get_rol_base_display }}</span>
+                            {% if request.user.rol != request.user.rol_base %}
+                            <span class="rol-badge rol-badge-activo" title="Vista seleccionada">Activo: {{ request.user.get_rol_display }}</span>
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                    </span>
                     <svg class="user-chip-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <div class="user-dropdown" id="userDropdown" role="menu">
@@ -935,9 +953,14 @@
             <form method="post" action="{% url 'accounts:cambiar_rol' %}" class="modal-body rol-modal-form">
                 {% csrf_token %}
                 <p class="rol-modal-nota">
-                    Tu cuenta tiene habilitado cambiar de rol. Al hacerlo, la página se
-                    recarga en el panel del rol nuevo y ahí te quedas.
+                    Elige una vista. Tu rol base se conserva y no se reemplaza al cambiar.
                 </p>
+                {% if request.user.rol_base %}
+                <div class="rol-modal-badges" aria-label="Roles de la cuenta">
+                    <span class="rol-badge rol-badge-base">Rol base: {{ request.user.get_rol_base_display }}</span>
+                    <span class="rol-badge rol-badge-activo">Vista activa: {{ request.user.get_rol_display }}</span>
+                </div>
+                {% endif %}
                 <div class="rol-modal-opciones">
                     <label class="rol-op {% if request.user.rol == 'admin' %}es-actual{% endif %}">
                         <input type="radio" name="rol" value="admin" required
@@ -945,6 +968,7 @@
                         <span class="rol-op-txt">
                             <strong>Administrador</strong>
                             <small>Mesa de control: cuentas, reportes, zonas y todo el sistema.</small>
+                            {% if request.user.rol_base == 'admin' %}<span class="rol-badge rol-badge-base">Rol base</span>{% endif %}
                         </span>
                         {% if request.user.rol == 'admin' %}<span class="rol-op-actual">Tu rol actual</span>{% endif %}
                     </label>
@@ -954,6 +978,7 @@
                         <span class="rol-op-txt">
                             <strong>Técnico</strong>
                             <small>Atiende los tickets asignados y responde a quien los reportó.</small>
+                            {% if request.user.rol_base == 'tecnico' %}<span class="rol-badge rol-badge-base">Rol base</span>{% endif %}
                         </span>
                         {% if request.user.rol == 'tecnico' %}<span class="rol-op-actual">Tu rol actual</span>{% endif %}
                     </label>
@@ -963,6 +988,7 @@
                         <span class="rol-op-txt">
                             <strong>Punto de venta</strong>
                             <small>Reporta incidencias de su punto y sigue sus tickets.</small>
+                            {% if request.user.rol_base == 'usuario' %}<span class="rol-badge rol-badge-base">Rol base</span>{% endif %}
                         </span>
                         {% if request.user.rol == 'usuario' %}<span class="rol-op-actual">Tu rol actual</span>{% endif %}
                     </label>
@@ -972,6 +998,7 @@
                         <span class="rol-op-txt">
                             <strong>Observador</strong>
                             <small>Supervisa zonas, cuentas y tiempos de atención (ANS).</small>
+                            {% if request.user.rol_base == 'observador' %}<span class="rol-badge rol-badge-base">Rol base</span>{% endif %}
                         </span>
                         {% if request.user.rol == 'observador' %}<span class="rol-op-actual">Tu rol actual</span>{% endif %}
                     </label>

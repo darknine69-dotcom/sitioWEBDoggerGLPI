@@ -11,6 +11,11 @@
 <main class="page obs-page">
     <div class="page-head">
         <div class="obs-head-actions">
+            {% if admin %}
+            <a href="{% url 'tickets:monitoreo_admin' %}#zonas" class="btn btn-outline btn-sm">
+                <svg class="icon"><use href="#i-arrow-left"/></svg> Volver al monitoreo
+            </a>
+            {% else %}
             <a href="{% url 'tickets:obs_zonas' %}#crear-zona" class="btn btn-outline btn-sm">
                 <svg class="icon"><use href="#i-plus"/></svg> Crear zona
             </a>
@@ -21,6 +26,7 @@
             <a href="{% url 'tickets:obs_zona_excel' zona.pk %}" class="btn btn-excel btn-sm">
                 <svg class="icon"><use href="#i-excel"/></svg> Excel
             </a>
+            {% endif %}
         </div>
     </div>
 
@@ -32,7 +38,7 @@
             <div class="obs-zona-ficha-id">
                 <strong>{{ zona.nombre }}</strong>
                 <small>
-                    Creada por ti{% if zona.creado_en %} el {{ zona.creado_en|date:"d/m/Y" }}{% endif %}
+                    {% if admin %}Creada por {{ zona.observador.nombre|default:zona.observador.email }}{% else %}Creada por ti{% endif %}{% if zona.creado_en %} el {{ zona.creado_en|date:"d/m/Y" }}{% endif %}
                     · {{ resumen.cuentas }} cuenta{{ resumen.cuentas|pluralize }} siguiendo
                 </small>
             </div>
@@ -59,10 +65,14 @@
     <section class="obs-bloque">
         <h3 class="obs-bloque-titulo">Sus cuentas</h3>
         <p class="obs-leyenda">
+            {% if admin %}
+            Cuentas asignadas a esta zona y sus tickets.
+            {% else %}
             Una tarjeta por persona de la zona con sus números y las últimas
             respuestas del personal. Dale clic a una respuesta para leerla
             entera; usa «Sacar de la zona» para dejar de seguirla aquí (la
             persona no se borra de tu lista).
+            {% endif %}
         </p>
         <div class="obs-cuentas">
         {% for f in filas %}
@@ -76,7 +86,11 @@
                         {% endif %}
                     </span>
                     <div class="obs-cuenta-id">
+                        {% if admin %}
+                        <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' f.elemento.pk %}" title="Abrir ficha de {{ f.nombre }}">{{ f.nombre }}</a></strong>
+                        {% else %}
                         <strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ f.email|urlencode }}" title="Abrir su ficha">{{ f.nombre }}</a></strong>
+                        {% endif %}
                         <small>
                             <svg class="icon icon-xs"><use href="#i-mail"/></svg> {{ f.email|default:"Sin correo" }}
                         </small>
@@ -114,7 +128,7 @@
                     <span class="obs-cuenta-nota">
                         {% if f.respuestas %}{{ f.respuestas|length }} respuesta{{ f.respuestas|length|pluralize }} reciente{{ f.respuestas|length|pluralize }} del personal{% else %}Sin respuestas visibles todavía{% endif %}
                     </span>
-                    <form method="post" action="{% url 'tickets:obs_zona_miembro' %}" class="obs-cuenta-sacar">
+                    {% if not admin %}<form method="post" action="{% url 'tickets:obs_zona_miembro' %}" class="obs-cuenta-sacar">
                         {% csrf_token %}
                         <input type="hidden" name="elemento" value="{{ f.elemento.pk }}">
                         <input type="hidden" name="zona" value="">
@@ -122,7 +136,7 @@
                         <button type="submit" class="btn btn-sm btn-ghost" title="Dejar de seguirla en esta zona">
                             <svg class="icon"><use href="#i-x"/></svg> Sacar de la zona
                         </button>
-                    </form>
+                    </form>{% endif %}
                 </div>
 
                 {% if f.respuestas %}

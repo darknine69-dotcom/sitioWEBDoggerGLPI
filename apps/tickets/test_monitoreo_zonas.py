@@ -78,11 +78,56 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn("data-mon-ticket", html)
         self.assertIn('id="monAlternarZonas"', html)
         self.assertIn('grid.classList.toggle("is-zonas-plegadas", plegadas)', html)
+        self.assertIn(
+            f'href="{reverse("tickets:monitoreo_zona_detalle", args=[self.zona.pk])}"',
+            html,
+        )
+        self.assertIn('target="_blank" rel="noopener noreferrer"', html)
+        self.assertIn(f'id="za-{self.zona.pk}"', html)
+        self.assertNotIn('data-mon-card-view=', html)
         dash = respuesta.context["dash"]
         self.assertEqual(dash["supervisores"], 1)
         self.assertEqual(dash["zonas"], 1)
         self.assertEqual(dash["cuentas"], 1)
         self.assertEqual(dash["abiertos"], 1)
+
+    def test_ojito_abre_detalle_de_cuentas_de_zona_en_modo_lectura(self):
+        respuesta = self.client.get(
+            reverse("tickets:monitoreo_zona_detalle", args=[self.zona.pk])
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context["admin"])
+        self.assertEqual(respuesta.context["resumen"]["cuentas"], 1)
+        html = respuesta.content.decode()
+        self.assertIn("Cuentas asignadas a esta zona", html)
+        self.assertIn("ana@x.com", html)
+        self.assertIn(Ticket.objects.first().codigo, html)
+        self.assertIn(
+            reverse("tickets:monitoreo_cuenta_detalle", args=[self.elemento.pk]),
+            html,
+        )
+        self.assertIn(
+            f'href="{reverse("tickets:monitoreo_admin")}#zonas"',
+            html,
+        )
+        self.assertNotIn("Sacar de la zona", html)
+        self.assertNotIn("Crear zona", html)
+
+    def test_detalle_admin_no_permite_acceso_a_tecnico_ni_zona_inexistente(self):
+        self.client.force_login(self.tec)
+        self.assertEqual(
+            self.client.get(
+                reverse("tickets:monitoreo_zona_detalle", args=[self.zona.pk])
+            ).status_code,
+            403,
+        )
+        self.client.force_login(self.admin)
+        self.assertEqual(
+            self.client.get(
+                reverse("tickets:monitoreo_zona_detalle", args=[999999])
+            ).status_code,
+            404,
+        )
 
     def test_muestra_ans_y_prioridad_en_tarjetas_de_cuenta(self):
         urgente = Ticket.objects.create(
@@ -104,7 +149,10 @@ class MonitoreoZonasAdminTest(TestCase):
         html = respuesta.content.decode()
         self.assertIn("mon-miembro-ans-vencido", html)
         self.assertIn("ANS vencido", html)
-        self.assertIn('data-mon-card-view="', html)
+        self.assertIn(
+            f'href="{reverse("tickets:monitoreo_zona_detalle", args=[self.zona.pk])}"',
+            html,
+        )
 
     def test_muestra_accion_presionar_en_lugar_de_quitar_si_ans_esta_por_vencer(self):
         ticket = Ticket.objects.get(solicitante_email="ana@x.com")

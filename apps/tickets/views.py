@@ -11,7 +11,8 @@ from django.contrib.auth import get_user_model, login as auth_login
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
-from django.db.models import CharField, Count, F, Prefetch, Q, Value
+from django.db import IntegrityError, transaction
+from django.db.models import CharField, Count, F, Min, Prefetch, Q, Value
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.utils import timezone
@@ -51,6 +52,7 @@ from .exports import generar_excel_reportes, generar_excel_tickets
 from .forms import (
     AsignarTecnicoForm,
     CategoriaForm,
+    CategoriaGrupoForm,
     ComentarioForm,
     ConsultaTicketForm,
     TicketEdicionForm,
@@ -60,6 +62,7 @@ from .forms import (
 from .context_processors import _tipos_por_revisar
 from .models import (
     Categoria,
+    CategoriaGrupo,
     ElementoMiLista,
     GlpiEvento,
     Ticket,
@@ -69,7 +72,7 @@ from .models import (
     ZonaObservador,
 )
 from .notifications import notificar_comentario, notificar_ticket_actualizado, notificar_ticket_creado
-from .sla import horas_por_prioridad, orden_prioridad_annotation
+from .sla import formatear_duracion, horas_por_prioridad, orden_prioridad_annotation
 from .services.glpi_client import (
     GlpiClient,
     GlpiError,
@@ -410,7 +413,9 @@ def _agrupar_vencidos(tickets, dimension):
     return [v for v in agg.values()]
 
 
-def _build_tecnico_dashboard(tecnico_id=None, consulta=None):
+def _build_tecnico_dashboard(
+    tecnico_id=None, consulta=None, incluir_pivot=True, puntos_pivot=None
+):
     """
     Datos JSON para el rediseño del Panel Técnico.
 
@@ -462,13 +467,24 @@ def _build_tecnico_dashboard(tecnico_id=None, consulta=None):
         return [t for t in base if t.estado in estados]
 
     # --- Tabla dinámica pivote -------------------------------------------
-    def _pivot(dimension, sort_key=None, limite=40):
+    def _pivot(
+        dimension, sort_key=None, limite=40, base=None, semillas=None,
+        incluir_detalle=True,
+    ):
         rows = {}
-        for t in tickets:
+
+        def _fila(clave, label):
+            return {
+                "clave": clave, "label": label, "abrir": 0, "espera": 0,
+                "vencido": 0, "riesgo": 0, "cerrado": 0, "resueltos": 0,
+                "total": 0, "categorias": [], "_cats": set(), "tickets": [],
+            }
+
+        for clave, label in semillas or ():
+            rows[clave] = _fila(clave, label)
+        for t in tickets if base is None else base:
             clave, label = dimension(t)
-            fila = rows.setdefault(
-                clave, {"clave": clave, "label": label, "abrir": 0, "espera": 0, "vencido": 0, "riesgo": 0, "cerrado": 0, "resueltos": 0, "total": 0, "categorias": [], "_cats": set(), "tickets": []}
-            )
+            fila = rows.setdefault(clave, _fila(clave, label))
             fila["total"] += 1
             if t.estado == Ticket.Estado.ABIERTO:
                 fila["abrir"] += 1
@@ -479,7 +495,7 @@ def _build_tecnico_dashboard(tecnico_id=None, consulta=None):
             elif t.estado == Ticket.Estado.CERRADO:
                 fila["cerrado"] += 1
             ans = t.info_ans[0]
-            if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+            if incluir_detalle and t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
                 if ans == "vencido":
                     fila["vencido"] += 1
                 elif ans == "por-vencer":
@@ -489,7 +505,7 @@ def _build_tecnico_dashboard(tecnico_id=None, consulta=None):
                     cat = f"{t.categoria.grupo or ''} › {t.categoria.nombre or ''}".strip(" ›") or "Sin categoría"
                 if cat not in fila["_cats"] and len(fila["_cats"]) < 8:
                     fila["_cats"].add(cat)
-            if len(fila["tickets"]) < limite:
+            if incluir_detalle and len(fila["tickets"]) < limite:
                 fila["tickets"].append(
                     {
                         "id": t.pk,
@@ -534,6 +550,21 @@ def _build_tecnico_dashboard(tecnico_id=None, consulta=None):
             return (t.categoria_id, f"{grupo} › {nombre}".strip(" ›"))
         return ("__sin", "Sin categoría")
 
+    def dim_punto(t):
+        nombre = (t.solicitante_punto or "").strip()
+        return (nombre.casefold(), nombre or "Sin punto")
+
+    puntos_pivot = [
+        nombre.strip() for nombre in (puntos_pivot or ()) if nombre and nombre.strip()
+    ]
+    puntos_tickets = []
+    if puntos_pivot:
+        puntos_tickets = list(
+            Ticket.objects.filter(solicitante_punto__in=puntos_pivot)
+            .select_related("categoria", "tecnico_asignado")
+            .order_by("fecha_creacion")
+        )
+
     pivot = {
         "dimensiones": {
             "tecnico": {
@@ -564,6 +595,17 @@ def _build_tecnico_dashboard(tecnico_id=None, consulta=None):
             "categoria": {
                 "label": "Categoría",
                 "rows": _pivot(dim_categoria, sort_key=lambda r: r["label"].lower()),
+            },
+            "punto": {
+                "label": "Punto de venta",
+                "aggregate_only": True,
+                "rows": _pivot(
+                    dim_punto,
+                    sort_key=lambda r: r["label"].casefold(),
+                    base=puntos_tickets,
+                    semillas=[(nombre.casefold(), nombre) for nombre in puntos_pivot],
+                    incluir_detalle=False,
+                ),
             },
         },
         "columnas": ["abrir", "espera", "vencido", "cerrado", "resueltos"],
@@ -768,7 +810,7 @@ def _build_tecnico_dashboard(tecnico_id=None, consulta=None):
 
     return json.dumps(
         {
-            "pivot": pivot,
+            "pivot": pivot if incluir_pivot else None,
             "pie_modo": pie_modo,
             "pie_prioridad": pie_prioridad_por_alcance,
             "pie_categoria": pie_categoria_por_alcance,
@@ -852,7 +894,7 @@ def paginate_recent_tickets(request, queryset, page_param="page_recientes", per_
     paginator = Paginator(
         queryset.annotate(
             _prioridad_orden=orden_prioridad_annotation()
-        ).order_by("_prioridad_orden", "-fecha_creacion"),
+        ).order_by("-fecha_creacion", "_prioridad_orden", "-pk"),
         pp,
     )
     page_number = request.GET.get(page_param, 1)
@@ -1229,18 +1271,37 @@ def categorias_arbol(request):
     for grupo in arbol:
         grupo["cubre"] = que_cubre_grupo(grupo["grupo"])
         for sub in grupo["subcategorias"]:
-            sub.cubre = que_cubre(sub.grupo, sub.nombre)
+            significado_existente = que_cubre(sub.grupo, sub.nombre)
+            sub.cubre = sub.descripcion or significado_existente
+            sub.descripcion_edicion = sub.descripcion or significado_existente
+    grupos_en_arbol = {grupo["grupo"].casefold() for grupo in arbol}
+    for categoria_grupo in CategoriaGrupo.objects.all():
+        if categoria_grupo.nombre.casefold() not in grupos_en_arbol:
+            arbol.append({
+                "grupo": categoria_grupo.nombre,
+                "subcategorias": [],
+                "total": 0,
+                "cubre": que_cubre_grupo(categoria_grupo.nombre),
+            })
+    arbol.sort(key=lambda grupo: grupo["grupo"].casefold())
+    nombres_grupo = set(
+        CategoriaGrupo.objects.values_list("nombre", flat=True)
+    )
+    nombres_grupo.update(
+        Categoria.objects.order_by("grupo").values_list("grupo", flat=True)
+    )
     return render(
         request,
         "tickets/categorias.html",
         {
             "arbol": arbol,
             "inactivos": Categoria.objects.filter(activo=False).order_by("grupo", "nombre"),
-            "grupos_existentes": (
-                Categoria.objects.order_by("grupo")
-                .values_list("grupo", flat=True).distinct()
-            ),
+            "grupos_existentes": sorted(nombres_grupo, key=str.casefold),
             "form": CategoriaForm(),
+            "grupo_form": CategoriaGrupoForm(),
+            "total_grupos": CategoriaGrupo.objects.count(),
+            "total_subcategorias_activas": Categoria.objects.filter(activo=True).count(),
+            "total_subcategorias_inactivas": Categoria.objects.filter(activo=False).count(),
             "prioridad_choices": Ticket.Prioridad.choices,
             "tecnicos": User.objects.filter(
                 activo=True, rol__in=["admin", "tecnico"]
@@ -1251,15 +1312,38 @@ def categorias_arbol(request):
 
 @staff_required
 @require_POST
+def categoria_grupo_crear(request):
+    form = CategoriaGrupoForm(request.POST)
+    if form.is_valid():
+        grupo = form.save()
+        messages.success(
+            request,
+            f"Categoría principal «{grupo.nombre}» creada. Ya puedes agregarle subcategorías.",
+        )
+    else:
+        errores = " ".join("; ".join(e) for e in form.errors.values())
+        messages.error(request, f"Revisa los datos: {errores}")
+    return redirect("tickets:categorias_arbol")
+
+
+def _asegurar_categoria_grupo(nombre):
+    grupo = CategoriaGrupo.objects.filter(nombre__iexact=nombre).first()
+    return grupo or CategoriaGrupo.objects.create(nombre=nombre)
+
+
+@staff_required
+@require_POST
 def categoria_crear(request):
     form = CategoriaForm(request.POST)
     if form.is_valid():
         categoria = form.save(commit=False)
         categoria.activo = True
         try:
-            categoria.save()
+            with transaction.atomic():
+                _asegurar_categoria_grupo(categoria.grupo)
+                categoria.save()
             messages.success(request, f"Categoría '{categoria}' creada.")
-        except Exception:
+        except IntegrityError:
             messages.error(request, "Ya existe esa subcategoría en el grupo.")
     else:
         errores = " ".join("; ".join(e) for e in form.errors.values())
@@ -1267,7 +1351,7 @@ def categoria_crear(request):
     return redirect("tickets:categorias_arbol")
 
 
-@staff_required
+@admin_required
 @require_POST
 def categoria_toggle(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
@@ -1295,6 +1379,7 @@ def categoria_actualizar(request, pk):
         return redirect("tickets:categorias_arbol")
     categoria.nombre = nombre
     categoria.grupo = grupo
+    categoria.descripcion = request.POST.get("descripcion", "").strip()
     categoria.glpi_category_id = int(glpi_id) if glpi_id.isdigit() else None
     categoria.tecnico_default_id = int(tecnico_id) if tecnico_id.isdigit() else None
     prioridad = request.POST.get("prioridad_default", "").strip()
@@ -1303,12 +1388,14 @@ def categoria_actualizar(request, pk):
     ans_horas = request.POST.get("ans_horas", "").strip()
     if ans_horas.isdigit() and int(ans_horas) > 0:
         categoria.ans_horas = int(ans_horas)
-    categoria.save()
+    with transaction.atomic():
+        _asegurar_categoria_grupo(grupo)
+        categoria.save()
     messages.success(request, f"Categoría actualizada: {categoria}.")
     return redirect("tickets:categorias_arbol")
 
 
-@staff_required
+@admin_required
 @require_POST
 def categoria_eliminar(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
@@ -1870,6 +1957,8 @@ def usuario_crear_glpi(request, pk):
 
 
 def _aplicar_usuario_panel(user, form, password):
+    rol_anterior = user.rol
+    cambio_rol_anterior = user.cambio_rol_habilitado
     user.nombre = form.cleaned_data["nombre"]
     user.email = form.cleaned_data["email"]
     user.rol = form.cleaned_data["rol"]
@@ -1884,6 +1973,10 @@ def _aplicar_usuario_panel(user, form, password):
     user.cambio_rol_habilitado = form.cleaned_data.get(
         "cambio_rol_habilitado", False
     )
+    if not user.cambio_rol_habilitado:
+        user.rol_base = ""
+    elif user.rol != rol_anterior or not cambio_rol_anterior or not user.rol_base:
+        user.rol_base = user.rol
     if user.rol in ("admin", "tecnico"):
         user.is_staff = True
     else:
@@ -2434,17 +2527,32 @@ def _zona_dashboard(user, zonas_info):
     return {"zonas": zonas, "alertas": alertas[:8], "totales": totales}
 
 
-def _zona_dashboard_ctx(user):
+def _zona_dashboard_ctx(user, zona_grafica=""):
     """Contexto del dashboard de zona del usuario (vacío para otros roles)."""
     vacio = {"zona_dashboard": {"zonas": [], "alertas": [],
                                 "totales": {"abiertos": 0, "vencidos": 0,
                                             "en_progreso": 0, "prom_h": None,
                                             "avance": 0}},
              "zona_json": "{}",
-             "zona_datos": {}}
+             "zona_datos": {},
+             "mi_zona": {"zonas": [], "supervisores": [], "equipo": [],
+                         "equipo_extra": 0},
+             "dash_json": "{}",
+             "zona_grafica": "todas",
+             "zona_grafica_total": 0,
+             "zonas_graficas": [],
+             "alcances_tortas": tuple(
+                 alcance for alcance in _ALCANCES_TORTAS
+                 if alcance[0] != "eliminados"
+             ),
+             "alcances_20dias": tuple(
+                 alcance for alcance in _ALCANCES_20_DIAS
+                 if alcance[0] != "eliminados"
+             )}
     if getattr(user, "rol", None) != "usuario":
         return vacio
-    zd = _zona_dashboard(user, _mi_zona_supervisor(user)["zonas"])
+    mi_zona = _mi_zona_supervisor(user)
+    zd = _zona_dashboard(user, mi_zona["zonas"])
     if zd["zonas"]:
         datos = {
             "barras": {
@@ -2465,14 +2573,70 @@ def _zona_dashboard_ctx(user):
         # tickets, mes a mes.
         propio = _dashboard_de_mis_tickets(user)
         if not propio:
-            return vacio
-        zd, datos = propio
+            zd, datos = vacio["zona_dashboard"], {}
+        else:
+            zd, datos = propio
+    nombres_zona = sorted(
+        {z["nombre"] for z in mi_zona["zonas"] if z.get("nombre")},
+        key=str.casefold,
+    )
+    from apps.tickets.models import ElementoMiLista, ObservadorPunto
+
+    correo = (getattr(user, "email", "") or "").strip()
+    supervisores_ids = set(
+        ObservadorPunto.objects.filter(
+            punto__nombre__in=nombres_zona
+        ).values_list("observador_id", flat=True)
+    )
+    if correo:
+        supervisores_ids.update(
+            ElementoMiLista.objects.filter(
+                tipo=ElementoMiLista.TIPO_USUARIO,
+                usuario_email__iexact=correo,
+            ).values_list("observador_id", flat=True)
+        )
+    puntos_pivot = list(
+        ObservadorPunto.objects.filter(
+            observador_id__in=supervisores_ids,
+            punto__activo=True,
+        )
+        .order_by("punto__nombre")
+        .values_list("punto__nombre", flat=True)
+        .distinct()
+    )
+    zona_seleccionada = next(
+        (
+            nombre for nombre in nombres_zona
+            if nombre.casefold() == (zona_grafica or "").strip().casefold()
+        ),
+        "",
+    )
+    tickets_propios = Ticket.objects.filter(
+        solicitante_email__iexact=(getattr(user, "email", "") or "").strip()
+    )
+    if zona_seleccionada:
+        tickets_propios = tickets_propios.filter(
+            solicitante_punto__iexact=zona_seleccionada
+        )
+    zona_grafica_total = tickets_propios.count()
+    dash_json = _build_tecnico_dashboard(
+        consulta=tickets_propios,
+        incluir_pivot=True,
+        puntos_pivot=puntos_pivot,
+    )
     return {"zona_dashboard": zd,
             # zona_json sigue viajando por si algo lo lee, pero la plantilla
             # se lleva el dict: el JSON se imprime con json_script, no a
             # mano, para que Chart.js siempre reciba JSON de verdad.
             "zona_json": json.dumps(datos, ensure_ascii=False),
-            "zona_datos": datos}
+            "zona_datos": datos,
+            "mi_zona": mi_zona,
+            "dash_json": dash_json,
+            "zona_grafica": zona_seleccionada or "todas",
+            "zona_grafica_total": zona_grafica_total,
+            "zonas_graficas": nombres_zona,
+            "alcances_tortas": vacio["alcances_tortas"],
+            "alcances_20dias": vacio["alcances_20dias"]}
 
 
 def _zona_categorias(zonas, tope=6):
@@ -2625,9 +2789,14 @@ def mi_presionar_zona(request):
     else:
         titulo = f"{u.nombre or u.email} presiona la {zona}"
     for d in dests:
+        destino = (
+            f"{reverse('tickets:monitoreo_admin')}#zonas"
+            if d.rol == Usuario.Rol.ADMIN
+            else f"{landing_por_rol(d)}#zonas"
+        )
         avisos.crear(
             d, "sistema", titulo, mensaje,
-            url=f"{landing_por_rol(d)}#zonas",
+            url=destino,
             icono="i-alert",
             actor=u.nombre or u.email,
             actor_rol="Punto de venta",
@@ -2742,7 +2911,7 @@ def mi_panel(request):
     pp_mp = _resolve_per_page(request, "per_page", PER_PAGE_DEFECTO)
     page_obj = _paginar(
         tickets_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
-            "_prioridad_orden", "-fecha_creacion"
+            "-fecha_creacion", "_prioridad_orden", "-pk"
         ),
         request,
         per_page_default=pp_mp,
@@ -2770,14 +2939,16 @@ def mi_panel(request):
             "cat_sugerencias_json": json.dumps(claves_para_json(), ensure_ascii=False),
             "puede_calificar_tecnicos": puede_calificar(request.user),
             "tecnicos_activos": mapeados_del_tecnico(request.user),
-            "mi_zona": _mi_zona_supervisor(request.user),
             "mis_abiertos": list(
                 Ticket.objects.select_related("tecnico_asignado").filter(
                     solicitante_email=request.user.email,
                     estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
                 ).order_by("-fecha_creacion")[:10]
             ),
-            **_zona_dashboard_ctx(request.user),
+            **_zona_dashboard_ctx(
+                request.user,
+                (request.GET.get("zona_grafica") or "").strip()[:80],
+            ),
             **dashboard_context,
         },
     )
@@ -3295,7 +3466,7 @@ def dashboard(request):
     tickets = list(
         tickets_qs.annotate(
             _prioridad_orden=orden_prioridad_annotation()
-        ).order_by("_prioridad_orden", "-fecha_creacion")[:200]
+        ).order_by("-fecha_creacion", "_prioridad_orden", "-pk")[:200]
     )
     pp_recientes = _resolve_per_page(request, "per_page_recientes", PER_PAGE_DEFECTO)
     recientes_page = paginate_recent_tickets(request, tickets_qs, per_page=pp_recientes)
@@ -3633,7 +3804,13 @@ def lista_tickets(request):
 
     qs = _filtrar_estado(qs, estado)
     if prioridad:
-        qs = qs.filter(prioridad=prioridad)
+        if prioridad == "alta,urgente":
+            qs = qs.filter(
+                estado__in=abiertos,
+                prioridad__in=[Ticket.Prioridad.ALTA, Ticket.Prioridad.URGENTE],
+            )
+        else:
+            qs = qs.filter(prioridad=prioridad)
     if categoria:
         qs = qs.filter(categoria_id=categoria)
     if tecnico:
@@ -3659,7 +3836,7 @@ def lista_tickets(request):
         pp_lista = 0
     page_obj = _paginar(
         qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
-            "_prioridad_orden", "-fecha_creacion"
+            "-fecha_creacion", "_prioridad_orden", "-pk"
         ),
         request,
         per_page_default=pp_lista,
@@ -4427,7 +4604,7 @@ def panel_tecnico(request):
         Ticket.objects.select_related("categoria", "tecnico_asignado")
         .exclude(estado=Ticket.Estado.CERRADO)
         .annotate(_prioridad_orden=orden_prioridad_annotation())
-        .order_by("_prioridad_orden", "-fecha_creacion")
+        .order_by("-fecha_creacion", "_prioridad_orden", "-pk")
     )
     if q_cola:
         match_cola = re.match(r"^HD-(\d+)$", q_cola.upper())
@@ -4452,7 +4629,7 @@ def panel_tecnico(request):
 
     page_obj = _paginar(
         qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
-            "_prioridad_orden", "-fecha_creacion"
+            "-fecha_creacion", "_prioridad_orden", "-pk"
         ),
         request,
         per_page_default=pp_mis,
@@ -4484,7 +4661,7 @@ def panel_tecnico(request):
             tecnico_asignado__isnull=True,
         )
         .annotate(_prioridad_orden=orden_prioridad_annotation())
-        .order_by("_prioridad_orden", "-fecha_creacion")
+        .order_by("-fecha_creacion", "_prioridad_orden", "-pk")
     )
     sin_count = sin_qs.count()
     sin_page = (
@@ -4575,7 +4752,7 @@ def panel_tecnico(request):
     if mias:
         mis_qs = mis_qs.filter(tecnico_asignado=tecnico)
     mis_qs = mis_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
-        "_prioridad_orden", "-fecha_creacion"
+        "-fecha_creacion", "_prioridad_orden", "-pk"
     )
     mis_count = mis_qs.count()
     if vista == "mis" and not ticket_pk:
@@ -4606,7 +4783,7 @@ def panel_tecnico(request):
             tarjetas = list(
                 _paginar(
                     mis_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
-                        "_prioridad_orden", "-fecha_creacion"
+                        "-fecha_creacion", "_prioridad_orden", "-pk"
                     ),
                     request,
                     per_page_default=pp_mis,
@@ -5056,7 +5233,7 @@ def _historial_fuentes(tecnico, tipo="todo", q=""):
     Con dos consultas aparte cada una se ordena en la sentencia que le toca
     y no hay nada anidado.
     """
-    campos = ("fecha", "codigo", "titulo", "texto", "tipo", "tid")
+    campos = ("fecha", "codigo", "titulo", "texto", "tipo", "tid", "registro_pk")
     palabras = q.split()[:5]
 
     mensajes = TicketComentario.objects.filter(
@@ -5081,6 +5258,7 @@ def _historial_fuentes(tecnico, tipo="todo", q=""):
             texto=F("comentario"),
             tipo=Value("respuesta"),
             tid=F("ticket_id"),
+            registro_pk=F("pk"),
         )
         .order_by("-fecha")
         .values(*campos)
@@ -5091,6 +5269,7 @@ def _historial_fuentes(tecnico, tipo="todo", q=""):
             texto=Value("Marcado como resuelto", output_field=CharField()),
             tipo=Value("resuelto"),
             tid=F("pk"),
+            registro_pk=F("pk"),
         )
         .order_by("-fecha")
         .values(*campos)
@@ -5117,6 +5296,82 @@ def _pagina_historial(mensajes, resueltos, tipo, desde, hasta):
     filas = list(mensajes[:hasta]) + list(resueltos[:hasta])
     filas.sort(key=lambda e: e["fecha"] or timezone.now(), reverse=True)
     return filas[desde:hasta]
+
+
+def _enriquecer_entradas_historial(entradas):
+    """Añade a cada acción los datos disponibles de su ticket."""
+    ticket_ids = {entrada["tid"] for entrada in entradas}
+    if not ticket_ids:
+        return entradas
+
+    tickets = {
+        ticket.pk: ticket
+        for ticket in Ticket.objects.filter(pk__in=ticket_ids).select_related(
+            "categoria", "tecnico_asignado"
+        )
+    }
+    primeras_acciones = dict(
+        TicketComentario.objects.filter(
+            ticket_id__in=ticket_ids,
+            usuario__rol__in=(Usuario.Rol.ADMIN, Usuario.Rol.TECNICO),
+        )
+        .values("ticket_id")
+        .annotate(fecha_primera=Min("fecha"))
+        .values_list("ticket_id", "fecha_primera")
+    )
+
+    for entrada in entradas:
+        ticket = tickets.get(entrada["tid"])
+        if not ticket:
+            entrada.update({
+                "registro_id": f"ACC-{entrada['registro_pk']:06d}",
+                "accion": "Respuesta" if entrada["tipo"] == "respuesta" else "Cierre",
+                "solicitante": "No disponible",
+                "tecnico": "No asignado",
+                "supervisor": "No registrado",
+                "estado_actual": "No disponible",
+                "categoria": "No especificada",
+                "prioridad_sla": "No disponible",
+                "tiempo_respuesta": "No disponible",
+                "tiempo_resolucion": "No disponible",
+                "version_sistema": "No registrada",
+            })
+            continue
+
+        fecha_primera = primeras_acciones.get(ticket.pk)
+        fecha_finalizacion = ticket.fecha_cierre or ticket.fecha_resolucion
+        categoria = ticket.categoria
+        entrada.update({
+            "registro_id": (
+                f"COM-{entrada['registro_pk']:06d}"
+                if entrada["tipo"] == "respuesta"
+                else f"RES-{entrada['registro_pk']:06d}"
+            ),
+            "accion": "Respuesta" if entrada["tipo"] == "respuesta" else "Cierre / resolución",
+            "solicitante": ticket.solicitante_nombre or ticket.solicitante_email or "No registrado",
+            "tecnico": (
+                ticket.tecnico_asignado.nombre or ticket.tecnico_asignado.email
+                if ticket.tecnico_asignado else "No asignado"
+            ),
+            "supervisor": "No registrado para este ticket",
+            "estado_actual": ticket.get_estado_display(),
+            "categoria": (
+                f"{categoria.grupo} › {categoria.nombre}" if categoria else "Sin categoría"
+            ),
+            "prioridad_sla": (
+                f"{ticket.get_prioridad_display()} · {ticket.ans_horas or horas_por_prioridad(ticket.prioridad)} h"
+            ),
+            "tiempo_respuesta": (
+                formatear_duracion(fecha_primera - ticket.fecha_creacion)
+                if fecha_primera and ticket.fecha_creacion else "Sin respuesta registrada"
+            ),
+            "tiempo_resolucion": (
+                formatear_duracion(fecha_finalizacion - ticket.fecha_creacion)
+                if fecha_finalizacion and ticket.fecha_creacion else "Aún sin resolver"
+            ),
+            "version_sistema": "No registrada en el ticket",
+        })
+    return entradas
 
 
 HISTORIAL_POR_PAGINA = 20
@@ -5168,6 +5423,7 @@ def tec_historial(request):
     entradas = _pagina_historial(
         mensajes, resueltos, tipo, desde, desde + por_pagina
     )
+    entradas = _enriquecer_entradas_historial(entradas)
 
     resueltos_total = (
         Ticket.objects.filter(
@@ -5395,14 +5651,17 @@ def categorias_publico(request):
     Es la versión de solo lectura del árbol que ve el administrador: sirve
     para que cualquiera sepa en qué casillar reportar antes de crear el ticket.
     """
+    if request.user.rol == Usuario.Rol.TECNICO:
+        return redirect("tickets:categorias_arbol")
+
     arbol = Categoria.arbol()
     inactivas = list(Categoria.objects.filter(activo=False).order_by("grupo", "nombre"))
-    # La línea de "qué cubre" vive en el código, no en la base: se arma aquí
-    # para que la vista muestre siempre el mismo texto que ve el sugeridor.
+    # Prioriza el significado que definió el administrador; el catálogo de
+    # descripciones queda como respaldo para categorías aún no personalizadas.
     for grupo in arbol:
         grupo["cubre"] = que_cubre_grupo(grupo["grupo"])
         for sub in grupo["subcategorias"]:
-            sub.cubre = que_cubre(sub.grupo, sub.nombre)
+            sub.cubre = sub.descripcion or que_cubre(sub.grupo, sub.nombre)
             sub.clave_crear = f"{reverse('tickets:crear_ticket')}?categoria={sub.pk}"
     return render(
         request,

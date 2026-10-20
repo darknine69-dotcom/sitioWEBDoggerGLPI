@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import (
     Categoria,
+    CategoriaGrupo,
     ElementoMiLista,
     MensajeCorporativo,
     MonitoreoAuditoria,
@@ -17,6 +18,11 @@ class CategoriaAdmin(admin.ModelAdmin):
     list_filter = ("grupo", "activo")
     search_fields = ("nombre", "grupo")
     list_editable = ("tecnico_default",)
+
+
+@admin.register(CategoriaGrupo)
+class CategoriaGrupoAdmin(admin.ModelAdmin):
+    search_fields = ("nombre",)
 
 
 class AdjuntoInline(admin.TabularInline):

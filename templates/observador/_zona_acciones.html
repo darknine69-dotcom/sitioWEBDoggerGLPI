@@ -16,11 +16,12 @@ El campo con el nombre se despliega debajo, dentro de la propia tarjeta.
         <svg class="icon"><use href="#i-droplet"/></svg>
     </button>
     {% if admin %}
-    <button type="button" class="obs-acc obs-acc-ico" data-mon-card-view="{{ z.pk }}"
+    <a class="obs-acc obs-acc-ico" href="{% url 'tickets:monitoreo_zona_detalle' z.pk %}"
+       target="_blank" rel="noopener noreferrer"
             title="Ver las cuentas de la zona"
             aria-label="Ver las cuentas de la zona {{ z.nombre }}">
         <svg class="icon"><use href="#i-eye"/></svg>
-    </button>
+    </a>
     {% else %}
     <a class="obs-acc obs-acc-ico" href="{% url 'tickets:obs_zona_detalle' z.pk %}"
        title="Ver la zona y sus cuentas"

@@ -27,7 +27,7 @@ def orden_prioridad_annotation():
     """
     Anotación de Django para ordenar por prioridad (urgente -> baja).
     Uso: Ticket.objects.annotate(_prioridad_orden=orden_prioridad_annotation())
-         .order_by("_prioridad_orden", "-fecha_creacion")
+         .order_by("-fecha_creacion", "_prioridad_orden", "-pk")
     """
     return Case(
         *[When(prioridad=p, then=Value(i)) for i, p in enumerate(PRIORIDAD_ORDEN)],

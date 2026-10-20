@@ -170,6 +170,61 @@ class TicketCerradoTest(BaseNotificaciones):
 
 
 class RecordatoriosTest(BaseNotificaciones):
+    def test_aviso_de_prioridad_alta_o_urgente_abre_la_lista_filtrada(self):
+        from django.contrib.auth import get_user_model
+
+        admin = get_user_model().objects.create_user(
+            email="admin@dogger.com.co",
+            password="Admin123!",
+            nombre="Admin",
+            rol=get_user_model().Rol.ADMIN,
+        )
+        asignado = self.ticket(titulo="Alta asignado")
+        sin_asignar = self.ticket(
+            titulo="Urgente sin asignar",
+            prioridad=Ticket.Prioridad.URGENTE,
+            tecnico_asignado=None,
+        )
+        self.ticket(titulo="Baja activa", prioridad=Ticket.Prioridad.BAJA)
+        cerrada = self.ticket(titulo="Urgente cerrada", prioridad=Ticket.Prioridad.URGENTE)
+        cerrada.estado = Ticket.Estado.CERRADO
+        cerrada.save(update_fields=["estado"])
+
+        servicios = services.recordatorios(admin)
+        aviso = next(n for n in servicios if n.clave.startswith("rec:urgentes:"))
+        self.assertEqual(aviso.titulo, "2 tickets de prioridad alta o urgente")
+        self.assertEqual(
+            aviso.url,
+            reverse("tickets:lista") + "?prioridad=alta,urgente",
+        )
+
+        self.client.force_login(admin)
+        respuesta = self.client.get(aviso.url)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(
+            {ticket.pk for ticket in respuesta.context["tickets"]},
+            {asignado.pk, sin_asignar.pk},
+        )
+        self.assertContains(respuesta, "Alta o urgente")
+
+    def test_aviso_prioritario_del_tecnico_solo_cuenta_sus_tickets(self):
+        self.ticket(titulo="Alta asignado al técnico")
+        self.ticket(
+            titulo="Urgente asignado a otro",
+            prioridad=Ticket.Prioridad.URGENTE,
+            tecnico_asignado=None,
+        )
+        aviso = next(
+            n for n in services.recordatorios(self.tecnico)
+            if n.clave.startswith("rec:urgentes:")
+        )
+
+        self.assertEqual(aviso.titulo, "1 ticket de prioridad alta o urgente")
+        self.assertEqual(
+            aviso.url,
+            reverse("tickets:lista") + "?prioridad=alta,urgente",
+        )
+
     def test_tecnico_con_ticket_activo(self):
         self.ticket()
         nuevas = services.recordatorios(self.tecnico)

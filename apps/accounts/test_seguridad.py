@@ -26,6 +26,19 @@ class ThrottleTest(TestCase):
         limpiar("t", "yo")
         self.assertFalse(bloqueado("t", "yo"))
 
+    def test_login_acepta_correo_con_mayusculas(self):
+        identidad = "127.0.0.1|seg@x.com"
+        limpiar("login", identidad)
+        respuesta = self.client.post(
+            reverse("accounts:login_usuario"),
+            {"username": "SEG@X.COM", "password": "Secreta123"},
+        )
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(respuesta["Location"], reverse("tickets:mi_panel"))
+        self.assertEqual(
+            self.client.session.get("_auth_user_id"), str(self.user.pk)
+        )
+
     def test_login_se_bloquea_a_los_6_fallos(self):
         url = reverse("accounts:login_usuario")
         datos = {"username": "seg@x.com", "password": "mala"}

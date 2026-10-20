@@ -222,6 +222,19 @@
     /* Delegado en document: tambien abre los botones que llegan por AJAX
        (como "Asignar tarea" dentro de la ficha expandida de usuarios). */
     document.addEventListener("click", function (e) {
+        var passwordToggle = e.target.closest("[data-password-toggle]");
+        if (passwordToggle) {
+            var passwordInput = document.getElementById(
+                passwordToggle.getAttribute("data-password-toggle")
+            );
+            if (passwordInput) {
+                var mostrar = passwordInput.type === "password";
+                passwordInput.type = mostrar ? "text" : "password";
+                passwordToggle.textContent = mostrar ? "Ocultar" : "Mostrar";
+                passwordToggle.setAttribute("aria-pressed", String(mostrar));
+            }
+            return;
+        }
         var btn = e.target.closest("[data-open-modal]");
         if (!btn) return;
         e.preventDefault();

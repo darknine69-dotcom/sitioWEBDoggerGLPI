@@ -6,51 +6,48 @@
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-folder"/></svg></span>{% endblock %}
 {% block header_title %}Categorías{% endblock %}
 {% block header_desc %}Organiza las solicitudes por grupo y subcategoría · sincronizado con GLPI.{% endblock %}
+{% block header_actions %}
+<button type="button" class="btn btn-primary btn-sm" data-inline-toggle="formCategoriaGrupo">
+    <svg class="icon"><use href="#i-plus"/></svg> Crear categoría
+</button>
+{% endblock %}
 
 {% block content %}
 <main class="page">
 
+    <section class="cat-stats" aria-label="Resumen de categorías">
+        <article class="cat-stat cat-stat-main">
+            <span class="cat-stat-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
+            <span><strong>{{ total_grupos }}</strong><small>Categorías principales</small></span>
+        </article>
+        <article class="cat-stat cat-stat-active">
+            <span class="cat-stat-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
+            <span><strong>{{ total_subcategorias_activas }}</strong><small>Subcategorías activas</small></span>
+        </article>
+        <article class="cat-stat cat-stat-inactive">
+            <span class="cat-stat-icon"><svg class="icon"><use href="#i-eye"/></svg></span>
+            <span><strong>{{ total_subcategorias_inactivas }}</strong><small>Subcategorías ocultas</small></span>
+        </article>
+    </section>
+
     <div class="cats-manager">
 
-        <form method="post" action="{% url 'tickets:categoria_crear' %}" class="cat-new-form">
+        <form method="post" action="{% url 'tickets:categoria_grupo_crear' %}" id="formCategoriaGrupo" class="cat-new-form cat-new-group-form">
             {% csrf_token %}
-            <strong class="cat-new-title"><svg class="icon"><use href="#i-plus"/></svg> Nueva subcategoría</strong>
-            <p class="panel-sub sub-note">Si el grupo ya existe se agrega ahí; si no, se crea uno nuevo.</p>
-            <div class="row">
+            <div class="cat-form-heading">
+                <span class="cat-form-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
                 <div>
-                    <label for="id_grupo">Grupo (categoría principal)</label>
-                    <input list="lista-grupos" name="grupo" id="id_grupo" required
-                           placeholder="Ej: Infraestructura">
-                    <datalist id="lista-grupos">
-                        {% for g in grupos_existentes %}<option value="{{ g }}"></option>{% endfor %}
-                    </datalist>
+                    <strong class="cat-new-title">Nueva categoría principal</strong>
+                    <p class="panel-sub sub-note">Crea un grupo para organizar subcategorías. La categoría principal no aparecerá como opción para crear tickets.</p>
                 </div>
-                <div>
-                    <label for="id_nombre">Nombre de la subcategoría</label>
-                    {{ form.nombre }}
+            </div>
+            <div class="cat-form-fields cat-group-fields">
+                <div class="cat-field">
+                    <label for="{{ grupo_form.nombre.id_for_label }}">Nombre de la categoría</label>
+                    {{ grupo_form.nombre }}
+                    {{ grupo_form.nombre.errors }}
                 </div>
-                <div>
-                    <label for="id_glpi_category_id">ID categoría GLPI (opcional)</label>
-                    {{ form.glpi_category_id }}
-                </div>
-                <div>
-                    <label for="id_tecnico_default">Técnico por defecto</label>
-                    {{ form.tecnico_default }}
-                </div>
-                <div>
-                    <label for="id_prioridad_default">Prioridad ANS</label>
-                    <select name="prioridad_default" id="id_prioridad_default">
-                        {% for val, label in prioridad_choices %}
-                        <option value="{{ val }}" {% if form.prioridad_default.value == val or form.prioridad_default.initial == val %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label for="id_ans_horas">Horas ANS</label>
-                    <input type="number" name="ans_horas" id="id_ans_horas" min="1" step="1"
-                           value="{{ form.ans_horas.value|default:24 }}" placeholder="Ej: 24">
-                </div>
-                <button type="submit" class="btn btn-primary btn-sm">Crear</button>
+                <button type="submit" class="btn btn-primary">Crear categoría</button>
             </div>
         </form>
 
@@ -66,22 +63,26 @@
                     <svg class="icon"><use href="#i-chevron-down"/></svg>
                 </button>
             </div>
+            <div class="cat-group-content">
             <table class="cat-sub-table">
                 <tbody>
                     {% for sub in grupo.subcategorias %}
                     <tr>
                         <td class="cat-sub-name">
-                            {{ sub.nombre }}
+                            <strong class="cat-sub-title">{{ sub.nombre }}</strong>
                             {% if sub.cubre %}<span class="cat-sub-cubre">{{ sub.cubre }}</span>{% endif %}
-                            {% if sub.glpi_category_id %}<span class="meta-pill meta-glpi ml-6">GLPI #{{ sub.glpi_category_id }}</span>{% endif %}
-                            <span class="meta-pill meta-{{ sub.prioridad_default }} ml-6">{{ sub.get_prioridad_default_display }}</span>
-                            <span class="meta-pill ml-6">ANS {{ sub.ans_horas }}h</span>
-                            {% if sub.tecnico_default %}<span class="file-chip ml-6"><svg class="icon icon-sm"><use href="#i-wrench"/></svg> {{ sub.tecnico_default.nombre }}</span>{% endif %}
+                            <span class="cat-sub-badges">
+                                {% if sub.glpi_category_id %}<span class="meta-pill meta-glpi">GLPI #{{ sub.glpi_category_id }}</span>{% endif %}
+                                <span class="meta-pill meta-{{ sub.prioridad_default }}">{{ sub.get_prioridad_default_display }}</span>
+                                <span class="meta-pill meta-ans">ANS {{ sub.ans_horas }}h</span>
+                                {% if sub.tecnico_default %}<span class="file-chip"><svg class="icon icon-sm"><use href="#i-wrench"/></svg> {{ sub.tecnico_default.nombre }}</span>{% endif %}
+                            </span>
                         </td>
                         <td class="cat-count-cell">{{ sub.tickets_count }} ticket{{ sub.tickets_count|pluralize }}</td>
                         <td class="cat-actions-cell">
                             <div class="cat-actions">
                                 <button type="button" class="mini-btn" data-inline-toggle="editar-cat-{{ sub.pk }}"><svg class="icon icon-sm"><use href="#i-edit"/></svg> Editar</button>
+                                {% if request.user.rol == 'admin' %}
                                 <form method="post" action="{% url 'tickets:categoria_toggle' sub.pk %}" class="inline-form">
                                     {% csrf_token %}
                                     <button type="submit" class="mini-btn ok" title="Ocultar del portal">Desactivar</button>
@@ -91,6 +92,7 @@
                                     {% csrf_token %}
                                     <button type="submit" class="mini-btn danger"><svg class="icon icon-sm"><use href="#i-trash"/></svg></button>
                                 </form>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -98,8 +100,17 @@
                         <td colspan="3">
                             <form method="post" action="{% url 'tickets:categoria_actualizar' sub.pk %}" id="editar-cat-{{ sub.pk }}" class="inline-edit">
                                 {% csrf_token %}
-                                <input type="text" name="grupo" value="{{ sub.grupo }}" placeholder="Grupo" required>
+                                <select name="grupo" required>
+                                    {% for g in grupos_existentes %}
+                                    <option value="{{ g }}" {% if sub.grupo == g %}selected{% endif %}>{{ g }}</option>
+                                    {% endfor %}
+                                </select>
                                 <input type="text" name="nombre" value="{{ sub.nombre }}" placeholder="Nombre" required>
+                                <label class="cat-edit-description">
+                                    <span>Qué significa esta subcategoría</span>
+                                    <textarea name="descripcion" rows="2" placeholder="Edita qué casos cubre y cuándo elegirla">{{ sub.descripcion_edicion }}</textarea>
+                                    <small>Modifica el significado actual; si lo dejas vacío, se usará la descripción sugerida del catálogo.</small>
+                                </label>
                                 <select name="prioridad_default">
                                     {% for val, label in prioridad_choices %}
                                     <option value="{{ val }}" {% if sub.prioridad_default == val %}selected{% endif %}>{{ label }}</option>
@@ -113,8 +124,10 @@
                                     <option value="{{ t.pk }}" {% if sub.tecnico_default_id == t.pk %}selected{% endif %}>{{ t.nombre }}</option>
                                     {% endfor %}
                                 </select>
-                                <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
-                                <button type="button" class="btn btn-outline btn-sm" data-inline-toggle="editar-cat-{{ sub.pk }}">Cancelar</button>
+                                <div class="inline-edit-actions">
+                                    <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                                    <button type="button" class="btn btn-outline btn-sm" data-inline-toggle="editar-cat-{{ sub.pk }}">Cancelar</button>
+                                </div>
                             </form>
                         </td>
                     </tr>
@@ -123,12 +136,69 @@
                     {% endfor %}
                 </tbody>
             </table>
+            <div class="cat-group-create">
+                <button type="button" class="btn btn-outline btn-sm" data-inline-toggle="crear-sub-{{ forloop.counter }}">
+                    <svg class="icon icon-sm"><use href="#i-plus"/></svg> Nueva subcategoría
+                </button>
+                <form method="post" action="{% url 'tickets:categoria_crear' %}" id="crear-sub-{{ forloop.counter }}" class="cat-inline-create">
+                    {% csrf_token %}
+                    <div class="cat-inline-create-head">
+                        <strong>Nueva subcategoría en {{ grupo.grupo }}</strong>
+                        <span>Completa los datos y guarda para agregarla a esta categoría.</span>
+                    </div>
+                    <div class="cat-inline-create-fields">
+                        <label>
+                            <span>Categoría principal</span>
+                            <select name="grupo" required>
+                                {% for g in grupos_existentes %}
+                                <option value="{{ g }}" {% if grupo.grupo == g %}selected{% endif %}>{{ g }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Nombre de subcategoría</span>
+                            <input type="text" name="nombre" maxlength="80" placeholder="Ej: Red inalámbrica" required>
+                        </label>
+                        <label class="cat-inline-description">
+                            <span>Qué significa esta subcategoría</span>
+                            <textarea name="descripcion" rows="2" placeholder="Explica qué casos incluye y cuándo elegirla"></textarea>
+                        </label>
+                        <label>
+                            <span>Prioridad ANS</span>
+                            <select name="prioridad_default">
+                                {% for val, label in prioridad_choices %}
+                                <option value="{{ val }}" {% if val == 'media' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            <span>Horas ANS</span>
+                            <input type="number" name="ans_horas" min="1" step="1" value="24" required>
+                        </label>
+                        <label>
+                            <span>ID categoría GLPI</span>
+                            <input type="number" name="glpi_category_id" min="1" placeholder="Opcional">
+                        </label>
+                        <label>
+                            <span>Técnico por defecto</span>
+                            <select name="tecnico_default">
+                                <option value="">— Sin asignación predeterminada —</option>
+                                {% for tecnico in tecnicos %}
+                                <option value="{{ tecnico.pk }}">{{ tecnico.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm">Guardar subcategoría</button>
+                    </div>
+                </form>
+            </div>
+            </div>
         </div>
         {% empty %}
         <p class="chart-empty">No hay categorías activas todavía. Crea la primera arriba.</p>
         {% endfor %}
 
-        {% if inactivos %}
+        {% if request.user.rol == 'admin' and inactivos %}
         <details class="cat-inactivos">
             <summary><svg class="icon icon-sm"><use href="#i-folder"/></svg> Categorías desactivadas ({{ inactivos|length }}) — ocultas en el portal</summary>
             <div class="cat-inactivos-body">

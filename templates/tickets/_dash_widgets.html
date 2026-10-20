@@ -2,6 +2,7 @@
 {# ---- Widgets gráficos del Panel Técnico / Administrador ---- #}
 {# Depende de: dash_json en el contexto, chart.umd.min.js y panel-dash.js #}
 <div class="charts-grid">
+    {% if not solo_graficas %}
     <div class="chart-card" data-pivot-card data-detalle-url="{% url 'tickets:detalle' 0 %}">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
@@ -35,6 +36,7 @@
             </table>
         </div>
     </div>
+    {% endif %}
     <div class="chart-card chart-modal" data-widget="categoria">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
@@ -56,6 +58,37 @@
             <ul class="pie-legend" data-pie-legend></ul>
         </div>
     </div>
+    {% if mostrar_puntos_pivot %}
+    <div class="chart-card" data-pivot-card data-detalle-url="{% url 'tickets:detalle' 0 %}">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <h3>Solicitudes por <em id="pivotDimLabel">punto de venta</em></h3>
+            <label class="dash-select dash-select-solo">
+                <span>Ver por</span>
+                <select id="pivotDim">
+                    <option value="punto" selected>Punto de venta</option>
+                </select>
+            </label>
+        </div>
+        <div class="table-scroll">
+            <table class="data-table pivot-table" id="pivotTable">
+                <thead>
+                    <tr>
+                        <th id="pivotCol1">Punto de venta</th>
+                        <th class="num">Abrir</th>
+                        <th class="num">En Progreso</th>
+                        <th class="num col-vencido">Vencido</th>
+                        <th class="num">Cerrado</th>
+                        <th class="num">Resuelto</th>
+                    </tr>
+                </thead>
+                <tbody id="pivotBody">
+                    <tr class="table-empty"><td colspan="6">Sin datos todavía.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <div class="charts-grid">

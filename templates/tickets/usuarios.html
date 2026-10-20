@@ -9,6 +9,8 @@
 
 {% block extra_css %}
 <style>
+.u-password-control { display: flex; align-items: center; gap: 8px; }
+.u-password-control input { flex: 1; min-width: 0; }
 .usuarios-page .brand-titles { display: none; }
 /* Scroll vertical fino al lado de la tabla (se resalta al pasar el ratón).
    El alto lo pone .tabla-scroll-seis, que deja seis filas a la vista. */
@@ -575,8 +577,13 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                 </div>
                 <div class="form-group span-2">
                     <label for="u-pass">Contraseña</label>
-                    <input type="password" name="password1" id="u-pass" autocomplete="new-password"
-                           placeholder="{% if not q %}Obligatoria para cuentas nuevas{% endif %}Dejar vacía = sin cambios">
+                    <div class="u-password-control">
+                        <input type="password" name="password1" id="u-pass" autocomplete="new-password"
+                               placeholder="{% if not q %}Obligatoria para cuentas nuevas{% endif %}Dejar vacía = sin cambios">
+                        <button type="button" class="btn btn-cancel btn-sm" data-password-toggle="u-pass"
+                                aria-controls="u-pass" aria-pressed="false">Mostrar</button>
+                    </div>
+                    <small class="form-check-hint">La contraseña guardada no se puede consultar. En edición, déjala vacía para conservarla; solo se actualiza al escribir una nueva.</small>
                 </div>
                 <div class="form-group span-2 form-check-row">
                     <input type="checkbox" name="activo" id="u-activo" checked>

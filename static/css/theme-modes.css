@@ -297,10 +297,15 @@ html[data-theme="dark"] { color-scheme: dark; }
 }
 [data-theme="dark"] .cat-toggle { background: #241D17; border-color: #453B31; color: var(--ink-muted); }
 [data-theme="dark"] .cat-toggle:hover { background: #2E2620; border-color: var(--dogger-red); color: var(--dogger-red); }
-[data-theme="dark"] .cat-count-badge { background: #241D17; color: #C9BEAF; border-color: #453B31; }
+[data-theme="dark"] .cat-count-badge { background: linear-gradient(135deg, rgba(214, 43, 31, .2), rgba(242, 169, 0, .12)); color: #F2C5A5; border-color: rgba(242, 169, 0, .24); }
 [data-theme="dark"] .cat-chip-inactivo { background: #241D17; border-color: #453B31; color: var(--ink); }
-[data-theme="dark"] .meta-pill { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .08); color: var(--ink); }
-[data-theme="dark"] .file-chip { background: #241D17; color: #C9BEAF; border-color: #453B31; }
+[data-theme="dark"] .cat-sub-badges > .meta-urgente { background: rgba(214, 43, 31, .22); border-color: rgba(214, 43, 31, .36); color: #FFB4AA; }
+[data-theme="dark"] .cat-sub-badges > .meta-alta { background: rgba(242, 101, 34, .19); border-color: rgba(242, 101, 34, .34); color: #FFC29A; }
+[data-theme="dark"] .cat-sub-badges > .meta-media { background: rgba(187, 139, 0, .2); border-color: rgba(242, 169, 0, .3); color: #F2D98C; }
+[data-theme="dark"] .cat-sub-badges > .meta-baja { background: rgba(47, 125, 79, .23); border-color: rgba(47, 125, 79, .35); color: #A8DEB6; }
+[data-theme="dark"] .cat-sub-badges > .meta-glpi { background: rgba(62, 105, 166, .22); border-color: rgba(91, 144, 209, .34); color: #B4D2FF; }
+[data-theme="dark"] .cat-sub-badges > .meta-ans { background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .1); color: #D1C7B8; }
+[data-theme="dark"] .cat-sub-badges > .file-chip { background: rgba(53, 94, 120, .24); color: #B9DDF2; border-color: rgba(104, 154, 184, .3); }
 
 /* Página de usuarios */
 [data-theme="dark"] .live-head-item { background: #241D17; }

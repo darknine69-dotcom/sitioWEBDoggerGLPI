@@ -476,10 +476,13 @@ def recordatorios(usuario, forzar=False):
             )
         )
 
-        urgentes = Ticket.objects.filter(
+        prioritarios = Ticket.objects.filter(
             estado__in=abiertos,
             prioridad__in=["urgente", "alta"],
-        ).count()
+        )
+        if not es_admin:
+            prioritarios = prioritarios.filter(tecnico_asignado=usuario)
+        urgentes = prioritarios.count()
         nuevas.append(
             sincronizar(
                 usuario,
@@ -489,7 +492,7 @@ def recordatorios(usuario, forzar=False):
                 if urgentes else "",
                 "Atiende primero los casos con mayor impacto."
                 if urgentes else "",
-                url=reverse("tickets:sin_asignar"),
+                url=reverse("tickets:lista") + "?prioridad=alta,urgente",
             )
         )
     elif usuario.rol == User.Rol.USUARIO:

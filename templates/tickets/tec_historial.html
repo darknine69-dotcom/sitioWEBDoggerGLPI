@@ -8,13 +8,29 @@
 
 {% block extra_css %}
 <style>
-/* El historial es una sola tabla, así que las columnas se reparten por peso
-   y el detalle se corta con puntos suspensivos en vez de estirar la fila. */
-.hist-page .data-table th:nth-child(1) { width: 122px; }
-.hist-page .data-table th:nth-child(2) { width: 112px; }
-.hist-page .data-table th:nth-child(3) { width: 110px; }
-.hist-page .data-table td.det-txt { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hist-page .data-table td.det-txt:hover { white-space: normal; }
+.hist-page .hist-table { width: 100%; min-width: 2280px; table-layout: fixed; }
+.hist-page .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.hist-page .hist-table th { white-space: normal; vertical-align: bottom; }
+.hist-page .hist-table th:nth-child(1), .hist-page .hist-table td:nth-child(1) { width: 155px; }
+.hist-page .hist-table th:nth-child(2), .hist-page .hist-table td:nth-child(2) { width: 130px; }
+.hist-page .hist-table th:nth-child(3), .hist-page .hist-table td:nth-child(3) { width: 160px; }
+.hist-page .hist-table th:nth-child(4), .hist-page .hist-table td:nth-child(4) { width: 120px; }
+.hist-page .hist-table th:nth-child(5), .hist-page .hist-table td:nth-child(5) { width: 210px; }
+.hist-page .hist-table th:nth-child(6), .hist-page .hist-table td:nth-child(6) { width: 260px; }
+.hist-page .hist-table th:nth-child(7), .hist-page .hist-table td:nth-child(7) { width: 170px; }
+.hist-page .hist-table th:nth-child(8), .hist-page .hist-table td:nth-child(8) { width: 170px; }
+.hist-page .hist-table th:nth-child(9), .hist-page .hist-table td:nth-child(9) { width: 190px; }
+.hist-page .hist-table th:nth-child(10), .hist-page .hist-table td:nth-child(10) { width: 130px; }
+.hist-page .hist-table th:nth-child(11), .hist-page .hist-table td:nth-child(11) { width: 190px; }
+.hist-page .hist-table th:nth-child(12), .hist-page .hist-table td:nth-child(12) { width: 160px; }
+.hist-page .hist-table th:nth-child(13), .hist-page .hist-table td:nth-child(13) { width: 160px; }
+.hist-page .hist-table th:nth-child(14), .hist-page .hist-table td:nth-child(14) { width: 180px; }
+.hist-page .hist-table th:nth-child(15), .hist-page .hist-table td:nth-child(15) { width: 180px; }
+.hist-page .hist-table th:nth-child(16), .hist-page .hist-table td:nth-child(16) { width: 230px; }
+.hist-page .hist-table tbody td { vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
+.hist-page .hist-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--dogger-cream) 38%, white); }
+.hist-page .hist-table tbody tr:hover { background: var(--dogger-cream); }
+.hist-page .hist-table .hist-cell-strong { color: var(--ink); font-weight: 650; }
 .hist-filtros { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .hist-busca { position: relative; display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px; }
 .hist-busca svg { position: absolute; left: 11px; color: var(--ink-muted); pointer-events: none; }
@@ -78,36 +94,56 @@
 
     <div class="table-card">
         <div class="table-scroll">
-            <table class="data-table">
+            <table class="data-table hist-table">
                 <thead>
                     <tr>
-                        <th>Fecha</th>
-                        <th>Qué hizo</th>
+                        <th>Fecha y hora</th>
+                        <th>ID registro</th>
+                        <th>Acción</th>
                         <th>Ticket</th>
                         <th>Título</th>
                         <th>Detalle</th>
+                        <th>Usuario solicitante</th>
+                        <th>Técnico asignado</th>
+                        <th>Supervisor responsable</th>
+                        <th>Estado actual</th>
+                        <th>Categoría</th>
+                        <th>Prioridad / SLA</th>
+                        <th>Tiempo de respuesta</th>
+                        <th>Tiempo total de resolución</th>
+                        <th>Versión del sistema</th>
+                        <th>Comentarios adicionales</th>
                     </tr>
                 </thead>
                 <tbody>
                 {% for e in entradas %}
                     <tr>
-                        <td>{{ e.fecha|date:"d/m/Y H:i" }}</td>
+                        <td class="hist-cell-strong">{{ e.fecha|date:"d/m/Y H:i:s" }}</td>
+                        <td><strong class="hist-cell-strong">{{ e.registro_id }}</strong></td>
                         <td>
                             {% if e.tipo == 'resuelto' %}
-                            <span class="obs-pill obs-pill-verde">Resuelto</span>
+                            <span class="obs-pill obs-pill-verde">{{ e.accion }}</span>
                             {% else %}
-                            <span class="obs-pill obs-pill-amarillo">Respuesta</span>
+                            <span class="obs-pill obs-pill-amarillo">{{ e.accion }}</span>
                             {% endif %}
                         </td>
-                        <td><strong>{{ e.codigo }}</strong></td>
-                        <td class="det-txt" title="{{ e.titulo }}">{{ e.titulo }}</td>
-                        <td class="det-txt" title="{{ e.texto }}">
-                            {% if e.tipo == 'resuelto' %}Marcado como resuelto{% else %}{{ e.texto }}{% endif %}
-                        </td>
+                        <td><strong class="hist-cell-strong">{{ e.codigo }}</strong></td>
+                        <td>{{ e.titulo }}</td>
+                        <td>{{ e.texto }}</td>
+                        <td>{{ e.solicitante }}</td>
+                        <td>{{ e.tecnico }}</td>
+                        <td>{{ e.supervisor }}</td>
+                        <td>{{ e.estado_actual }}</td>
+                        <td>{{ e.categoria }}</td>
+                        <td>{{ e.prioridad_sla }}</td>
+                        <td>{{ e.tiempo_respuesta }}</td>
+                        <td>{{ e.tiempo_resolucion }}</td>
+                        <td>{{ e.version_sistema }}</td>
+                        <td>{% if e.tipo == 'respuesta' %}{{ e.texto }}{% else %}Sin comentarios{% endif %}</td>
                     </tr>
                 {% empty %}
                     <tr class="table-empty">
-                        <td colspan="5">
+                        <td colspan="16">
                             <p class="empty-hint">
                                 {% if q %}Ningún registro coincide con «{{ q }}».
                                 {% elif tipo == 'resueltos' %}Todavía no has marcado ningún ticket como resuelto.

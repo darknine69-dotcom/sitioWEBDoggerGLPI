@@ -210,6 +210,9 @@
             {% for val, label in prioridades %}
             <option value="{{ val }}" {% if filtro_prioridad == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
+            {% if filtro_prioridad == "alta,urgente" %}
+            <option value="alta,urgente" selected>Alta o urgente</option>
+            {% endif %}
         </select>
         {% if es_admin %}
         <select name="categoria" data-autosubmit>

@@ -459,11 +459,15 @@ def cambiar_rol_cuenta(request):
             return redirect(landing_por_rol(user))
 
     anterior = user.get_rol_display()
+    if not user.rol_base:
+        user.rol_base = user.rol
     user.rol = nuevo
     user.is_staff = nuevo in (Usuario.Rol.ADMIN, Usuario.Rol.TECNICO)
-    user.save(update_fields=["rol", "is_staff"])
+    user.save(update_fields=["rol", "rol_base", "is_staff"])
     messages.success(
-        request, f"Tu rol cambió de {anterior} a {user.get_rol_display()}."
+        request,
+        f"Vista cambiada de {anterior} a {user.get_rol_display()}; "
+        f"tu rol base sigue siendo {user.get_rol_base_display()}.",
     )
     return redirect(landing_por_rol(user))
 

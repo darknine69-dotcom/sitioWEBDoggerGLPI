@@ -11,6 +11,8 @@ def avatar_upload_to(instance, filename):
 
 
 class UsuarioManager(BaseUserManager):
+    def get_by_natural_key(self, username):
+        return self.get(email__iexact=username.strip())
     def create_user(self, email, nombre, password=None, **extra):
         if not email:
             raise ValueError("El correo es obligatorio")
@@ -59,6 +61,14 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         max_length=20,
         choices=Rol.choices,
         default=Rol.TECNICO,
+    )
+    rol_base = models.CharField(
+        "Rol base",
+        max_length=20,
+        choices=Rol.choices,
+        blank=True,
+        default="",
+        help_text="Rol original que se conserva cuando la cuenta cambia de vista.",
     )
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)

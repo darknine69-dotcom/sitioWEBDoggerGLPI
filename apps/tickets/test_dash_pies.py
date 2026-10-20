@@ -368,6 +368,24 @@ class FiltroResueltasTest(SmokeTestCase):
         self.assertEqual(r.status_code, 200)
         return r.content.decode()
 
+    def test_lista_muestra_primero_el_ticket_mas_reciente(self):
+        nuevo = self._ticket(
+            Ticket.Estado.ABIERTO, Ticket.Prioridad.BAJA, "Nuevo"
+        )
+        antiguo_urgente = self._ticket(
+            Ticket.Estado.ABIERTO, Ticket.Prioridad.URGENTE, "Antiguo urgente"
+        )
+        Ticket.objects.filter(pk=antiguo_urgente.pk).update(
+            fecha_creacion=timezone.now() - timedelta(days=2)
+        )
+
+        respuesta = self.client.get(
+            reverse("tickets:lista"), {"per_page": 0}
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context["tickets"][0].pk, nuevo.pk)
+
     def test_marcar_resuelto_cierra_el_ticket(self):
         t = self._ticket(Ticket.Estado.EN_PROGRESO, "ZK-Progreso")
         r = self.client.post(

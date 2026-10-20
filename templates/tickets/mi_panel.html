@@ -87,6 +87,64 @@
 .mz-chart-card h4 { margin: 0 0 8px; font-size: 12.5px; display: flex; align-items: center; gap: 7px; color: var(--ink); }
 .mz-chart-card h4 .icon { width: 14px; height: 14px; color: var(--dogger-red); }
 .mz-chart-stage { height: 220px; position: relative; }
+.mz-grafica-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+.mz-grafica-toolbar > div { display: flex; flex-direction: column; gap: 3px; }
+.mz-grafica-toolbar > div strong { font-size: 14px; color: var(--ink); }
+.mz-grafica-toolbar > div small { font-size: 12px; color: var(--ink-muted); }
+.mz-grafica-filtro { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mz-grafica-filtro .dash-select { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-muted); }
+.mz-grafica-filtro select { max-width: min(280px, 65vw); font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 10px; background: var(--dogger-paper); color: var(--ink); cursor: pointer; }
+.mz-grafica-filtro select:focus { outline: none; border-color: var(--dogger-red); }
+.mz-grafica-filtro button { white-space: nowrap; }
+.mz-main .dash-head-tools { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.mz-main .chart-card-head .dash-select { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-muted); }
+.mz-main .chart-card-head .dash-select select { font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 9px; background: var(--dogger-paper); color: var(--ink); cursor: pointer; }
+.mz-main .chart-card-head .dash-select select:focus { outline: none; border-color: var(--dogger-red); }
+.mz-main .chart-switch { position: relative; }
+.mz-main .chart-switch-btn { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12px; font-weight: 700; color: var(--dogger-red-dark); background: rgba(214,43,31,.07); border: 1px solid rgba(214,43,31,.2); border-radius: 999px; padding: 5px 10px; cursor: pointer; transition: background .15s ease; }
+.mz-main .chart-switch-btn:hover, .mz-main .chart-switch[data-open] .chart-switch-btn { background: rgba(214,43,31,.14); }
+.mz-main .chart-switch-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; background: var(--dogger-paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(29,27,22,.16); padding: 8px; min-width: 176px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.mz-main .chart-switch-menu[hidden] { display: none; }
+.mz-main .chart-switch-menu button { display: flex; align-items: center; gap: 7px; font: inherit; font-size: 12px; color: var(--ink); background: transparent; border: 0; border-radius: 8px; padding: 6px 8px; cursor: pointer; text-align: left; }
+.mz-main .chart-switch-menu button:hover { background: var(--dogger-cream); }
+.mz-main .chart-switch-menu button.is-active { background: rgba(214,43,31,.1); color: var(--dogger-red-dark); font-weight: 800; }
+.mz-main .chart-switch-menu .csm-prev { width: 20px; height: 14px; flex: none; opacity: .85; }
+.mz-main .chart-stage { height: 220px; position: relative; }
+.mz-main .chart-stage.canvas-sm { height: 200px; }
+.mz-main .chart-stage .chart-count { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.mz-main .chart-stage .chart-count strong { font-size: 40px; font-weight: 800; font-family: var(--font-mono); color: var(--ink); line-height: 1; }
+.mz-main .chart-stage .chart-count small { color: var(--ink-muted); font-size: 13px; }
+.mz-main .pie-flex { display: grid; grid-template-columns: minmax(0, 1fr) 145px; gap: 10px; align-items: center; }
+.mz-main .pie-legend { list-style: none; margin: 0; padding: 0 4px 0 0; display: flex; flex-direction: column; gap: 7px; max-height: 220px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; }
+.mz-main .pie-legend li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink); border-radius: 8px; padding: 4px 6px; cursor: default; transition: background .12s ease; min-width: 0; }
+.mz-main .pie-legend .pl-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mz-main .pie-legend li:hover, .mz-main .pie-legend li.is-hi { background: var(--dogger-cream); }
+.mz-main .pie-legend li:hover .pl-name, .mz-main .pie-legend li.is-hi .pl-name { text-decoration: underline; text-decoration-color: var(--seg, currentColor); text-decoration-thickness: 2px; text-underline-offset: 3px; font-weight: 700; }
+.mz-main .pie-legend .pl-dot { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.mz-main .pie-legend .pl-pct { margin-left: auto; font-weight: 800; font-family: var(--font-mono); color: var(--ink); }
+.mz-main .pie-legend .pl-val { font-family: var(--font-mono); font-weight: 700; color: var(--ink-muted); }
+.mz-main .pie-legend::-webkit-scrollbar { width: 6px; }
+.mz-main .pie-legend::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+.mz-main .pie-legend::-webkit-scrollbar-track { background: transparent; }
+.mz-main .dash-legend { display: flex; flex-wrap: wrap; gap: 10px; margin: -2px 0 8px; }
+.mz-main .dl-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-muted); }
+.mz-main .dl-item::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+.mz-main .dl-entrante::before { background: #2563EB; }
+.mz-main .dl-completado::before, .mz-main .dl-ok::before { background: #2F7D4F; }
+.mz-main .dl-vencido::before, .mz-main .dl-brecha::before { background: #D62B1F; }
+.mz-main .dl-riesgo::before { background: #F2A900; }
+.mz-main .dash-compact .charts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+.mz-main .dash-compact .chart-card { padding: 14px 16px; border-radius: 14px; min-width: 0; }
+.mz-main .dash-compact .chart-card-head { margin-bottom: 10px; }
+.mz-main .dash-compact .chart-card-head h3 { font-size: 13.5px; }
+.mz-main .dash-compact .chart-head-icon { width: 26px; height: 26px; }
+.mz-main .dash-compact .chart-head-icon svg { width: 14px; height: 14px; }
+.mz-main .dash-compact .chart-stage { height: 210px; }
+.mz-main .dash-compact .chart-stage.canvas-sm { height: 200px; }
+.mz-main .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr) 145px; gap: 10px; }
+.mz-main .dash-compact .pie-legend li { font-size: 12px; gap: 7px; padding: 4px 6px; }
+.mz-main .dash-compact .dash-head-tools { opacity: 1; }
+.mz-main .dash-compact .chart-stage .chart-count strong { font-size: 40px; }
 .mz-zonacard { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: #fff; }
 .mz-zonacard-head { display: flex; align-items: center; gap: 10px; }
 .mz-zonacard-head > div { min-width: 0; }
@@ -127,6 +185,13 @@
 }
 @media (max-width: 560px) {
     .mz-charts { grid-template-columns: 1fr; }
+    .mz-main .dash-compact .charts-grid { grid-template-columns: minmax(0, 1fr); }
+    .mz-main .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr); }
+    .mz-main .dash-compact .pie-legend { max-height: none; padding: 0; }
+    .mz-main .dash-compact .chart-stage, .mz-main .dash-compact .chart-stage.canvas-sm { height: 190px; }
+    .mz-main .dash-head-tools { width: 100%; justify-content: flex-start; }
+    .mz-main .chart-card-head .dash-select { width: 100%; }
+    .mz-grafica-filtro { width: 100%; }
     .mz-zonacard-grid, .mz-detalle { grid-template-columns: 1fr; }
     .mz-chart-stage { height: 200px; }
 }
@@ -222,19 +287,27 @@
             {% endwith %}
             <div class="mz-dash">
                 <div class="mz-main">
-                    <div class="mz-charts">
-                        <div class="mz-chart-card">
-                            <h4><svg class="icon"><use href="#i-chart"/></svg> <span id="mzTituloBarras">Rendimiento por zona</span></h4>
-                            <div class="mz-chart-stage"><canvas id="mzChartBarras"></canvas></div>
+                    <div class="mz-grafica-toolbar">
+                        <div>
+                            <strong>Solicitudes por zona y estado</strong>
+                            <small>{{ zona_grafica_total }} ticket{{ zona_grafica_total|pluralize }} incluido{{ zona_grafica_total|pluralize }}</small>
                         </div>
-                        <div class="mz-chart-card">
-                            <h4><svg class="icon"><use href="#i-check-circle"/></svg> Cumplimiento ANS</h4>
-                            <div class="mz-chart-stage"><canvas id="mzChartAns"></canvas></div>
-                        </div>
-                        <div class="mz-chart-card">
-                            <h4><svg class="icon"><use href="#i-folder"/></svg> Incidencias frecuentes</h4>
-                            <div class="mz-chart-stage"><canvas id="mzChartCats"></canvas></div>
-                        </div>
+                        <form method="get" class="mz-grafica-filtro">
+                            {% for key, value in request.GET.items %}
+                                {% if key != "zona_grafica" %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}
+                            {% endfor %}
+                            <label class="dash-select" for="mzZonaGrafica">Analizar</label>
+                            <select id="mzZonaGrafica" name="zona_grafica">
+                                <option value="todas"{% if zona_grafica == "todas" %} selected{% endif %}>Todos mis tickets</option>
+                                {% for nombre in zonas_graficas %}
+                                <option value="{{ nombre }}"{% if zona_grafica == nombre %} selected{% endif %}>{{ nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-outline btn-sm">Aplicar</button>
+                        </form>
+                    </div>
+                    <div class="dash-compact">
+                        {% include "tickets/_dash_widgets.html" with solo_graficas=True mostrar_puntos_pivot=True %}
                     </div>
                     {% for z in zona_dashboard.zonas %}
                     <div class="mz-zonacard" id="mz-det-{{ forloop.counter }}">
@@ -338,7 +411,6 @@
                     </div>
                 </aside>
             </div>
-            {{ zona_datos|json_script:"mzData" }}
         </div>
     </section>
     {% endif %}
@@ -567,20 +639,35 @@
 {% endcomment %}
 <script src="{% asset 'js/mi-panel-corp.js' %}"></script>
 <script src="{% asset 'js/voto-tecnicos.js' %}"></script>
-<script src="{% static 'js/vendor/chart.umd.min.js' %}"></script>
 <script>
 /* Dashboard de zona: barras de rendimiento, dona ANS y pie de categorías,
    con el mismo realce diagonal al hover de los gráficos del panel. */
 (function () {
     var el = document.getElementById("mzData");
-    if (!el || typeof Chart === "undefined") { return; }
+    if (!el) { return; }
+    var ChartConstructor = window.Chart;
+    if (typeof ChartConstructor !== "function") {
+        console.error("No se pudieron cargar las gráficas de acompañamiento: Chart.js no está disponible.");
+        return;
+    }
     var D;
-    try { D = JSON.parse(el.textContent); } catch (e) { return; }
-    if (!D || !D.barras || !(D.barras.labels || []).length) { return; }
+    try {
+        D = JSON.parse(el.textContent);
+    } catch (e) {
+        console.error("No se pudieron leer los datos de las gráficas de acompañamiento.", e);
+        return;
+    }
+    if (!D) {
+        console.error("No se recibieron datos para las gráficas de acompañamiento.");
+        return;
+    }
+    var barras = D.barras || {};
+    var ans = D.ans || {};
+    var categorias = D.categorias || {};
     /* Sin zonas que rankear el título manda el dato: «Mis tickets por mes». */
-    if (D.barras.titulo) {
+    if (barras.titulo) {
         var tBarras = document.getElementById("mzTituloBarras");
-        if (tBarras) { tBarras.textContent = D.barras.titulo; }
+        if (tBarras) { tBarras.textContent = barras.titulo; }
     }
     var _cache = {};
     var _ctx = null;
@@ -624,15 +711,15 @@
         if (t) { t.style.cursor = (els && els.length) ? "pointer" : "default"; }
     }
     var bCanvas = document.getElementById("mzChartBarras");
-    if (bCanvas) {
-        new Chart(bCanvas.getContext("2d"), {
+    if (bCanvas && (barras.labels || []).length) {
+        new ChartConstructor(bCanvas.getContext("2d"), {
             type: "bar",
             data: {
-                labels: D.barras.labels,
+                labels: barras.labels,
                 datasets: [
-                    { label: "Abiertos", data: D.barras.abiertos, backgroundColor: realce("#2563EB"), borderRadius: 4, hoverBorderWidth: 1 },
-                    { label: "En progreso", data: D.barras.progreso, backgroundColor: realce("#F2A900"), borderRadius: 4, hoverBorderWidth: 1 },
-                    { label: "Resueltos", data: D.barras.resueltos, backgroundColor: realce("#2F7D4F"), borderRadius: 4, hoverBorderWidth: 1 }
+                    { label: "Abiertos", data: barras.abiertos || [], backgroundColor: realce("#2563EB"), borderRadius: 4, hoverBorderWidth: 1 },
+                    { label: "En progreso", data: barras.progreso || [], backgroundColor: realce("#F2A900"), borderRadius: 4, hoverBorderWidth: 1 },
+                    { label: "Resueltos", data: barras.resueltos || [], backgroundColor: realce("#2F7D4F"), borderRadius: 4, hoverBorderWidth: 1 }
                 ]
             },
             options: {
@@ -644,13 +731,13 @@
         });
     }
     var aCanvas = document.getElementById("mzChartAns");
-    if (aCanvas && ((D.ans.plazo || 0) + (D.ans.vencidos || 0) > 0)) {
-        new Chart(aCanvas.getContext("2d"), {
+    if (aCanvas && ((ans.plazo || 0) + (ans.vencidos || 0) > 0)) {
+        new ChartConstructor(aCanvas.getContext("2d"), {
             type: "doughnut",
             data: {
                 labels: ["En plazo", "Vencidos"],
                 datasets: [{
-                    data: [D.ans.plazo || 0, D.ans.vencidos || 0],
+                    data: [ans.plazo || 0, ans.vencidos || 0],
                     backgroundColor: realceLista(["#2F7D4F", "#D62B1F"]),
                     borderColor: "#fff", borderWidth: 2, hoverBorderWidth: 3, hoverOffset: 8
                 }]
@@ -664,15 +751,15 @@
         });
     }
     var cCanvas = document.getElementById("mzChartCats");
-    if (cCanvas && (D.categorias.labels || []).length) {
+    if (cCanvas && (categorias.labels || []).length) {
         var paleta = ["#2563EB", "#D62B1F", "#F2A900", "#2F7D4F", "#6B6259", "#7C3AED"];
-        new Chart(cCanvas.getContext("2d"), {
+        new ChartConstructor(cCanvas.getContext("2d"), {
             type: "pie",
             data: {
-                labels: D.categorias.labels,
+                labels: categorias.labels,
                 datasets: [{
-                    data: D.categorias.data,
-                    backgroundColor: realceLista(D.categorias.labels.map(function (_, i) { return paleta[i % paleta.length]; })),
+                    data: categorias.data || [],
+                    backgroundColor: realceLista(categorias.labels.map(function (_, i) { return paleta[i % paleta.length]; })),
                     borderColor: "#fff", borderWidth: 2, hoverBorderWidth: 3, hoverOffset: 8
                 }]
             },
@@ -684,4 +771,5 @@
         });
     }
 })();
+</script>
 {% endblock %}

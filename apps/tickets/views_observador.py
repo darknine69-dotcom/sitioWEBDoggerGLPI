@@ -1712,7 +1712,7 @@ def zona_detalle_observador(request, pk):
     )
 
 
-def _cuentas_y_tickets_de_zona(zona, limite_tickets=20):
+def _cuentas_y_tickets_de_zona(zona, limite_tickets=20, global_scope=None):
     """Cada cuenta de la zona con sus números y sus últimos tickets.
 
     Los tickets viajan en la fila porque las tarjetas de «Sus cuentas» los
@@ -1728,7 +1728,10 @@ def _cuentas_y_tickets_de_zona(zona, limite_tickets=20):
     # ceros y sin tickets: en ese caso se ve todo, igual que en Mi lista. Con
     # puntos asignados el filtro manda, para no arrastrar tickets de zonas
     # ajenas.
-    alcance_global = not puntos_del_observador(usuario)
+    alcance_global = (
+        not puntos_del_observador(usuario)
+        if global_scope is None else global_scope
+    )
     resumen = _resumen_por_correo(usuario, global_scope=alcance_global)
     visibles = (
         Ticket.objects.all() if alcance_global

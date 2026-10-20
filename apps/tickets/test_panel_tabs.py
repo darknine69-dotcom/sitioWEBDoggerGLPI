@@ -6,9 +6,12 @@
 - La calificación del técnico va al pie del menú lateral.
 """
 
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import Usuario
 from apps.tickets.models import CalificacionTecnico, Ticket
@@ -29,7 +32,13 @@ class PestanasPanelTest(TestCase):
         )
         self.client.force_login(self.tec)
 
-    def _ticket(self, codigo, tecnico=None, estado=Ticket.Estado.ABIERTO):
+    def _ticket(
+        self,
+        codigo,
+        tecnico=None,
+        estado=Ticket.Estado.ABIERTO,
+        prioridad=Ticket.Prioridad.MEDIA,
+    ):
         return Ticket.objects.create(
             codigo=codigo,
             titulo=f"T {codigo}",
@@ -37,6 +46,7 @@ class PestanasPanelTest(TestCase):
             solicitante_email="p@x.com",
             tecnico_asignado=tecnico,
             estado=estado,
+            prioridad=prioridad,
         )
 
     def test_pestanas_sin_corporativo(self):
@@ -70,6 +80,28 @@ class PestanasPanelTest(TestCase):
         self.assertNotIn("HD-8004", html)
         self.assertIn(
             reverse("tickets:panel_tecnico_tomar", args=[libre.pk]), html
+        )
+
+    def test_sin_asignar_prioriza_fecha_reciente_sobre_prioridad(self):
+        nuevo = self._ticket(
+            "HD-8005", prioridad=Ticket.Prioridad.BAJA
+        )
+        antiguo_urgente = self._ticket(
+            "HD-8006", prioridad=Ticket.Prioridad.URGENTE
+        )
+        Ticket.objects.filter(pk=antiguo_urgente.pk).update(
+            fecha_creacion=timezone.now() - timedelta(days=2)
+        )
+
+        respuesta = self.client.get(
+            reverse("tickets:panel_tecnico"),
+            {"vista": "sin", "per_page_sol": 0},
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(
+            respuesta.context["sin_page"].object_list[0].pk,
+            nuevo.pk,
         )
 
     def test_hover_con_el_color_del_indicador(self):

@@ -21,7 +21,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import Usuario
-from apps.tickets.models import ElementoMiLista, Punto, Ticket, TicketComentario, ZonaObservador
+from apps.tickets.models import Categoria, ElementoMiLista, Punto, Ticket, TicketComentario, ZonaObservador
 
 HORAS_MEDIA = 12  # prioridad media: 12 h de ANS
 
@@ -109,6 +109,7 @@ class MenuTecnicoTest(BaseTecnicoTest):
         self.assertIn(reverse("tickets:tec_monitoreo"), html)
         self.assertIn(reverse("tickets:tec_historial"), html)
         self.assertIn(reverse("tickets:papelera"), html)
+        self.assertIn(reverse("tickets:categorias_arbol"), html)
         self.assertIn("Seguimiento", html)
 
     def test_el_punto_de_venta_no_ve_esas_secciones(self):
@@ -116,12 +117,89 @@ class MenuTecnicoTest(BaseTecnicoTest):
         html = self.client.get(reverse("tickets:mi_panel")).content.decode()
         self.assertNotIn(reverse("tickets:tec_historial"), html)
         self.assertNotIn(reverse("tickets:tec_monitoreo"), html)
+        self.assertIn(reverse("tickets:categorias_publico"), html)
 
     def test_el_observador_no_ve_esas_secciones(self):
         self.client.force_login(self.observador)
         html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
         self.assertNotIn(reverse("tickets:tec_historial"), html)
         self.assertNotIn(reverse("tickets:tec_monitoreo"), html)
+        self.assertIn(reverse("tickets:categorias_publico"), html)
+
+    def test_el_tecnico_puede_crear_y_editar_categorias(self):
+        pantalla = self.client.get(reverse("tickets:categorias_arbol"))
+        self.assertEqual(pantalla.status_code, 200)
+        self.assertContains(pantalla, "Crear categoría")
+
+        creada = self.client.post(
+            reverse("tickets:categoria_grupo_crear"),
+            {"nombre": "Categoría del técnico"},
+        )
+        self.assertEqual(creada.status_code, 302)
+        pantalla = self.client.get(reverse("tickets:categorias_arbol"))
+        self.assertContains(pantalla, "Categoría del técnico")
+        self.assertContains(pantalla, "Nueva subcategoría")
+
+        creada = self.client.post(
+            reverse("tickets:categoria_crear"),
+            {
+                "grupo": "Categoría del técnico",
+                "nombre": "Subcategoría del técnico",
+                "descripcion": "Detalle creado por técnico.",
+                "prioridad_default": "media",
+                "ans_horas": 12,
+                "glpi_category_id": "",
+                "tecnico_default": "",
+            },
+        )
+        self.assertEqual(creada.status_code, 302)
+        categoria = Categoria.objects.get(nombre="Subcategoría del técnico")
+        editada = self.client.post(
+            reverse("tickets:categoria_actualizar", args=[categoria.pk]),
+            {
+                "grupo": categoria.grupo,
+                "nombre": categoria.nombre,
+                "descripcion": "Detalle editado por técnico.",
+                "prioridad_default": "alta",
+                "ans_horas": 8,
+                "glpi_category_id": "",
+                "tecnico_default": "",
+            },
+        )
+        self.assertEqual(editada.status_code, 302)
+        categoria.refresh_from_db()
+        self.assertEqual(categoria.descripcion, "Detalle editado por técnico.")
+        self.assertEqual(categoria.prioridad_default, "alta")
+
+    def test_el_enlace_publico_de_categorias_lleva_al_tecnico_a_gestion(self):
+        respuesta = self.client.get(reverse("tickets:categorias_publico"))
+        self.assertRedirects(respuesta, reverse("tickets:categorias_arbol"))
+
+    def test_el_tecnico_no_puede_desactivar_ni_eliminar_categorias(self):
+        categoria = Categoria.objects.create(
+            grupo="Protección",
+            nombre="Protección de prueba",
+        )
+        self.client.raise_request_exception = False
+
+        self.assertEqual(
+            self.client.post(
+                reverse("tickets:categoria_toggle", args=[categoria.pk])
+            ).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.post(
+                reverse("tickets:categoria_eliminar", args=[categoria.pk])
+            ).status_code,
+            403,
+        )
+
+    def test_observador_consulta_categorias_sin_accion_para_crear_ticket(self):
+        self.client.force_login(self.observador)
+        respuesta = self.client.get(reverse("tickets:categorias_publico"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertNotContains(respuesta, "Crear solicitud aquí")
 
 
 # =====================================================================
@@ -177,6 +255,46 @@ class PapeleraTecnicoTest(BaseTecnicoTest):
 # Historial
 # =====================================================================
 class HistorialTecnicoTest(BaseTecnicoTest):
+    def test_historial_enriquece_respuestas_y_cierres_con_ficha_de_trazabilidad(self):
+        ticket = self._ticket(codigo="HD-0102", prioridad=Ticket.Prioridad.ALTA)
+        ticket.fecha_creacion = timezone.now() - timedelta(hours=3)
+        ticket.save(update_fields=["fecha_creacion"])
+        comentario = self._responder(ticket, texto="Se actualizó el sistema.")
+
+        ticket.estado = Ticket.Estado.RESUELTO
+        ticket.fecha_resolucion = timezone.now()
+        ticket.fecha_cierre = ticket.fecha_resolucion
+        ticket.save(update_fields=["estado", "fecha_resolucion", "fecha_cierre"])
+
+        respuesta = self.client.get(
+            reverse("tickets:tec_historial"), {"tipo": "respuestas"}
+        )
+        entrada_respuesta = respuesta.context["entradas"][0]
+        self.assertEqual(entrada_respuesta["registro_id"], f"COM-{comentario.pk:06d}")
+        self.assertEqual(entrada_respuesta["accion"], "Respuesta")
+        self.assertEqual(entrada_respuesta["solicitante"], "Ana")
+        self.assertEqual(entrada_respuesta["tecnico"], "Técnico Uno")
+        self.assertEqual(entrada_respuesta["estado_actual"], "Resuelto")
+        self.assertIn("3h", entrada_respuesta["tiempo_respuesta"])
+        self.assertEqual(entrada_respuesta["version_sistema"], "No registrada en el ticket")
+        self.assertContains(respuesta, "Fecha y hora")
+        self.assertContains(respuesta, "Supervisor responsable")
+        self.assertContains(respuesta, "Tiempo total de resolución")
+        self.assertContains(respuesta, "Comentarios adicionales")
+        self.assertContains(respuesta, "Usuario solicitante")
+        self.assertContains(respuesta, "Técnico asignado")
+        self.assertContains(respuesta, "Prioridad / SLA")
+        self.assertContains(respuesta, "Versión del sistema")
+        self.assertNotContains(respuesta, "Ver ficha y detalle")
+
+        cierre = self.client.get(
+            reverse("tickets:tec_historial"), {"tipo": "resueltos"}
+        )
+        entrada_cierre = cierre.context["entradas"][0]
+        self.assertEqual(entrada_cierre["registro_id"], f"RES-{ticket.pk:06d}")
+        self.assertEqual(entrada_cierre["accion"], "Cierre / resolución")
+        self.assertIn("3h", entrada_cierre["tiempo_resolucion"])
+
     def test_ve_los_tickets_que_resolvio(self):
         self._ticket(codigo="HD-0100", estado=Ticket.Estado.RESUELTO)
         html = self.client.get(reverse("tickets:tec_historial")).content.decode()
@@ -385,6 +503,21 @@ class HistorialTecnicoTest(BaseTecnicoTest):
 # Monitoreo
 # =====================================================================
 class MonitoreoTecnicoTest(BaseTecnicoTest):
+    def test_muestra_resumen_visual_priorizando_alertas_ans(self):
+        self._ticket(codigo="HD-1998", horas=20)
+        self._ticket(codigo="HD-1999", horas=10)
+
+        respuesta = self.client.get(reverse("tickets:tec_monitoreo"))
+        html = respuesta.content.decode()
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Resumen de atención")
+        self.assertContains(respuesta, "Atención prioritaria")
+        self.assertContains(respuesta, "1 ticket con el ANS vencido")
+        self.assertContains(respuesta, "is-vencido")
+        self.assertContains(respuesta, "tec-monitor-section")
+        self.assertContains(respuesta, "tec-monitor-overview")
+
     def test_cuenta_los_tickets_por_vencer(self):
         self._ticket(codigo="HD-2000", horas=10)   # dentro del aviso
         self._ticket(codigo="HD-2001", horas=20)   # ya se pasó
