@@ -5,6 +5,7 @@ personal se guardaba sin usuario y sin correo, así que el observador perdía
 de vista a quién había agregado y la fila terminaba contando todos los
 tickets de sus zonas.
 """
+import json
 from datetime import timedelta
 from io import BytesIO
 
@@ -339,11 +340,75 @@ class ObservadorListaTest(TestCase):
         html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
         self.assertIn("dash-stat-row--mesas", html)
         self.assertNotIn("dash-stat-row--obs", html)
-        for destino in ("por-vencer", "resumen-zonas", "estado-lista", "tickets-recientes"):
+        for destino in ("por-vencer", "analisis-tickets", "tickets-recientes"):
             self.assertIn(f'id="{destino}"', html)
         self.assertIn('href="#tickets-recientes"', html)
-        self.assertIn('href="#resumen-zonas"', html)
-        self.assertIn('href="#estado-lista"', html)
+        self.assertIn('href="#analisis-tickets"', html)
+        for nombre in (
+            "Estado de tu lista", "Carga por zona", "Técnicos que atienden",
+            "Resumen por zona",
+        ):
+            self.assertIn(nombre, html)
+        self.assertIn('data-obs-selector', html)
+
+    def test_graficas_monitoreo_se_filtran_por_carpeta_y_muestran_tipos_compartidos(self):
+        zona = ZonaObservador.objects.create(
+            observador=self.observador, nombre="Balcones2"
+        )
+        ElementoMiLista.objects.create(
+            observador=self.observador,
+            tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario_email="ana@x.com",
+            zona=zona,
+        )
+        ElementoMiLista.objects.create(
+            observador=self.observador,
+            tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario_email="luis@x.com",
+            zona=zona,
+        )
+        self._ticket("Ana", "Punto Ajeno", email="ana@x.com")
+        self._ticket("Luis", "Otro Punto", email="luis@x.com")
+        self._ticket("Fuera", "Punto Ajeno", email="fuera@x.com")
+        vencido = self._ticket("Ana", "Punto Ajeno", email="ana@x.com")
+        Ticket.objects.filter(pk=vencido.pk).update(
+            fecha_creacion=timezone.now() - timedelta(days=5)
+        )
+
+        respuesta = self.client.get(
+            reverse("tickets:obs_monitoreo"),
+            {"zona_grafica": "Balcones2"},
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context["zona_grafica"], "Balcones2")
+        self.assertEqual(respuesta.context["zona_grafica_total"], 3)
+        self.assertEqual(respuesta.context["total_zonas"], 1)
+        self.assertEqual(respuesta.context["total"], 2)
+        self.assertEqual(respuesta.context["total_tickets"], 3)
+        self.assertEqual(respuesta.context["total_vencidos"], 1)
+        self.assertEqual(respuesta.context["total_incidentes"], 1)
+        grupo = next(
+            grupo for grupo in respuesta.context["grupos"]
+            if grupo["zona"] == zona
+        )
+        self.assertEqual(grupo["total_tickets"], 3)
+        datos = json.loads(respuesta.context["dash_json"])
+        self.assertEqual(
+            sum(fila["value"] for fila in datos["pie_categoria"]["todas"]),
+            3,
+        )
+        self.assertEqual(
+            sum(datos["observador"]["estado_lista"]["datasets"][0]["data"]),
+            3,
+        )
+        global_respuesta = self.client.get(reverse("tickets:obs_monitoreo"))
+        self.assertEqual(global_respuesta.context["zona_grafica_total"], 3)
+        html = respuesta.content.decode()
+        self.assertIn('id="obsZonaGrafica"', html)
+        self.assertIn('value="Balcones2" selected', html)
+        for widget in ("categoria", "prioridad", "linea", "comp20", "sla"):
+            self.assertIn(f'data-widget="{widget}"', html)
+        self.assertIn("data-switch", html)
 
     def test_panel_sin_duplicados_y_con_buscador(self):
         html = self.client.get(reverse("tickets:obs_panel")).content.decode()
@@ -880,11 +945,11 @@ class ObservadorIndicadoresSonEnlacesTest(TestCase):
         esperado = [
             ("dash-hov-zonas", "#zonas-monitoreo"),
             ("dash-hov-total", "#tickets-recientes"),
-            ("dash-hov-abiertos", "#resumen-zonas"),
+            ("dash-hov-abiertos", "#analisis-tickets"),
             ("dash-hov-ans", "#por-vencer"),
-            ("dash-hov-resueltos", "#resumen-zonas"),
-            ("dash-hov-usuarios", "#resumen-zonas"),
-            ("dash-hov-vencidos", "#estado-lista"),
+            ("dash-hov-resueltos", "#analisis-tickets"),
+            ("dash-hov-usuarios", "#analisis-tickets"),
+            ("dash-hov-vencidos", "#analisis-tickets"),
         ]
         for clase, destino in esperado:
             with self.subTest(clase=clase):
@@ -892,7 +957,7 @@ class ObservadorIndicadoresSonEnlacesTest(TestCase):
         # Cada destino existe de verdad, aunque no haya nada que enseñar:
         # si no, el enlace se queda sin sitio adónde ir.
         for ancla in ('id="zonas-monitoreo"', 'id="tickets-recientes"',
-                      'id="resumen-zonas"', 'id="estado-lista"',
+                      'id="analisis-tickets"',
                       'id="por-vencer"'):
             with self.subTest(ancla=ancla):
                 self.assertIn(ancla, html)
@@ -1114,7 +1179,7 @@ class ObservadorZonasConIconosTest(TestCase):
 
     def test_cada_zona_lleva_icono_y_sus_acciones(self):
         html = self.client.get(reverse("tickets:obs_zonas")).content.decode()
-        self.assertIn('class="obs-tarjeta-ico"', html)
+        self.assertIn('class="obs-zona-card-ico"', html)
         self.assertIn("#i-map-pin", html)
         self.assertIn(f'data-renombre="rn-{self.zona.pk}"', html)
         self.assertIn("#i-pencil", html)

@@ -7,6 +7,16 @@
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-chart"/></svg></span>{% endblock %}
 {% block header_title %}Reportes{% endblock %}
 {% block header_desc %}Comparativos por técnico, categoría y usuario.{% endblock %}
+{% block header_actions %}
+<details class="rpt-export-menu rpt-export-menu--header">
+    <summary><svg class="icon"><use href="#i-download"/></svg> Exportar informe <svg class="icon"><use href="#i-chevron-down"/></svg></summary>
+    <div class="rpt-export-options">
+        <a href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}"><svg class="icon"><use href="#i-excel"/></svg><span>Reporte completo<small>Resumen, técnicos, usuarios y gráficas.</small></span></a>
+        <a href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}{% if querystring %}&amp;{% endif %}seccion=tecnicos"><svg class="icon"><use href="#i-users"/></svg><span>Reporte por técnico<small>Desempeño, asignación y resolución.</small></span></a>
+        <a href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}{% if querystring %}&amp;{% endif %}seccion=usuarios"><svg class="icon"><use href="#i-user"/></svg><span>Reporte por usuario<small>Solicitudes y actividad por usuario.</small></span></a>
+    </div>
+</details>
+{% endblock %}
 
 {% block extra_css %}
 {% load static asset %}
@@ -15,7 +25,54 @@
 /* ============ Reportes corporativos · tema Dogger ============ */
 /* Los estilos de gráficos (.chart-stage, .charts-grid, .chart-card) viven en
    mi-panel-corp.css: no se repiten aquí para no romper el tamaño. */
+.rpt-kpis { margin: 0 0 24px; }
+.rpt-kpis .dash-stat-row { grid-template-columns:repeat(4,minmax(0,1fr)) !important; gap:22px !important; }
+.rpt-kpis .dash-stat { position:relative; display:block!important; box-sizing:border-box!important; height:188px!important; min-height:188px!important; padding:20px!important; overflow:hidden; border-radius:22px!important; box-shadow:0 8px 20px var(--kpi-shadow)!important; }
+.rpt-kpis .dash-stat::before { display:none!important; }
+.rpt-kpis .dash-stat-icon { position:absolute!important; top:20px!important; left:20px!important; width:58px!important; height:58px!important; border-radius:18px!important; box-shadow:0 8px 15px var(--kpi-shadow)!important; }
+.rpt-kpis .dash-stat-glyph .icon { width:30px!important; height:30px!important; }
+.rpt-kpis .dash-stat-icon .dash-stat-value { position:absolute!important; top:42px!important; left:72px!important; color:#0F172A!important; font:700 36px/1 var(--font-sans)!important; letter-spacing:-.04em; white-space:nowrap; }
+.rpt-kpis .dash-stat-label { top:24px!important; left:92px!important; max-width:calc(100% - 110px)!important; color:#0F172A!important; font:600 14px/1.25 var(--font-sans)!important; }
+.rpt-kpis .dash-stat-hint { bottom:17px!important; left:20px!important; max-width:calc(100% - 68px)!important; color:#64748B!important; font:400 12px/1.25 var(--font-sans)!important; }
+.rpt-kpis .dash-stat-hint::before { width:9px!important; height:9px!important; flex-basis:9px!important; box-shadow:none!important; }
+.rpt-kpis .dash-stat-trend { top:64px!important; right:17px!important; min-width:0!important; padding:4px 7px!important; }
+.rpt-kpis .dash-stat-trend b { display:block; font-size:11px!important; font-weight:600!important; }.rpt-kpis .dash-stat-trend small { display:block!important; margin-top:2px; color:#64748B!important; font:400 8px/1 var(--font-sans)!important; white-space:nowrap; }
+.rpt-kpi-spark { position:absolute; top:108px; right:20px; left:20px; height:36px; color:var(--kpi-color); }.rpt-kpi-spark svg { display:block; width:100%; height:100%; overflow:visible; }.rpt-kpi-spark .spark-fill { fill:currentColor; opacity:.12; }.rpt-kpi-spark .spark-line { fill:none; stroke:currentColor; stroke-width:2.25; stroke-linecap:round; stroke-linejoin:round; }.rpt-kpi-spark .spark-dot { fill:currentColor; opacity:.65; }.rpt-kpi-spark.is-empty { display:grid; place-items:center start; color:#94A3B8; font:400 11px/1 var(--font-sans); }
+@media(max-width:1199px){.rpt-kpis .dash-stat-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:620px){.rpt-kpis .dash-stat-row{grid-template-columns:1fr!important;gap:16px!important}.rpt-kpis .dash-stat{height:184px!important;min-height:184px!important}}
+.rpt-section-head { display:flex; align-items:center; gap:8px; margin:0 0 12px; color:#18243B; font:700 15px var(--font-display); }
+.rpt-section-head > span { display:grid; place-items:center; width:28px; height:28px; border-radius:8px; background:#FFF0F1; color:#E12633; }
+.rpt-section-head .icon { width:16px; height:16px; }
+.rpt-section { margin:0 0 22px; }
+.rpt-section .charts-grid { margin:0; }
+.charts-grid--three { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+.rpt-kpis .st-ic-tiempo { background:#7C3AED !important; }
+.rpt-kpis .st-ic-reabiertos { background:#64748B !important; }
+.rpt-kpis .st-ic-usuarios { background:#EF476F !important; }
+.rpt-kpis .st-ic-tecnicos { background:#2563EB !important; }
+.rpt-kpis .dash-hov-violet { --kpi-color:#7C3AED; --kpi-tint:#F6F2FF; --kpi-shadow:rgba(124,58,237,.18); }
+.rpt-kpis .dash-hov-sla-ok { --kpi-color:#2563EB; --kpi-tint:#EFF6FF; --kpi-shadow:rgba(37,99,235,.16); }
+.rpt-kpis .dash-hov-slate { --kpi-color:#64748B; --kpi-tint:#F3F6FA; --kpi-shadow:rgba(100,116,139,.15); }
+.rpt-kpis .dash-hov-users { --kpi-color:#EF476F; --kpi-tint:#FFF2F5; --kpi-shadow:rgba(239,71,111,.16); }
+.rpt-kpis .dash-hov-tecnicos { --kpi-color:#2563EB; --kpi-tint:#EFF6FF; --kpi-shadow:rgba(37,99,235,.16); }
+@media (max-width: 980px) { .charts-grid--three { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .charts-grid--three { grid-template-columns:1fr; } }
 .rpt-filterbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin: 0 0 14px; }
+.rpt-filter-panel { display:grid; grid-template-columns:repeat(6,minmax(130px,1fr)) auto; align-items:end; gap:12px; margin:0 0 18px; padding:14px; border:1px solid #E2E8F0; border-radius:14px; background:#fff; box-shadow:0 3px 14px rgba(15,23,42,.04); }
+.rpt-filter-panel .rpt-periodos { grid-column:1/-1; margin:0; }
+.rpt-filter-panel .rpt-fld { min-width:0; flex:auto; }
+.rpt-filter-panel .rpt-fld select,.rpt-filter-panel .rpt-fld input[type="date"],.rpt-filter-panel .rpt-persona-input input { min-height:38px; box-sizing:border-box; border-color:#DCE5F0; border-radius:9px; font-size:12px; }
+.rpt-filter-panel .rpt-actions { margin:0; flex-wrap:nowrap; }
+.rpt-filter-reset { display:grid; width:40px; height:40px; place-items:center; border:1px solid #E2E8F0; border-radius:10px; color:#64748B; text-decoration:none; }.rpt-filter-reset:hover{border-color:#FCA5A5;background:#FFF5F5;color:#DC2626}.rpt-filter-reset .icon{width:18px;height:18px}
+.rpt-export-menu--header { position:relative; z-index:40; }.rpt-export-menu--header .rpt-export-options { z-index:60; }
+/* El orden visual sigue la jerarquía del reporte: acción, filtros, resumen y análisis. */
+.page.page-corporate { display:flex; flex-direction:column; }
+.page.page-corporate > #rptFiltros { order:1; }
+.page.page-corporate > .rpt-kpis { order:2; }
+.page.page-corporate > .rpt-filtros-activos { order:3; }
+.page.page-corporate > .rpt-section { order:4; }
+.page.page-corporate > .rpt-tech-report { order:5; }
+.page.page-corporate > .rpt-user-report { order:6; }
+@media(max-width:1120px){.rpt-filter-panel{grid-template-columns:repeat(3,minmax(0,1fr)) auto}}@media(max-width:680px){.rpt-filter-panel{grid-template-columns:1fr 1fr}.rpt-filter-panel .rpt-periodos{grid-column:1/-1}.rpt-filter-panel .rpt-persona,.rpt-filter-panel .rpt-actions{grid-column:1/-1}.rpt-filter-panel .rpt-actions .btn{flex:1}}
 .rpt-fld { display: flex; flex-direction: column; gap: 4px; min-width: 150px; flex: 1 1 165px; }
 .rpt-fld label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: var(--ink-muted); }
 .rpt-fld select, .rpt-fld input[type="date"] {
@@ -88,6 +145,45 @@
 .rpt-persona { position: relative; flex: 1 1 250px; max-width: 360px; }
 .rpt-persona-input { position: relative; }
 .rpt-persona-input input { width: 100%; box-sizing: border-box; padding-right: 32px; }
+.rpt-filter-panel .rpt-persona {
+    /* En la grilla del reporte se comporta como cualquier otro filtro. */
+    display: flex;
+    flex: none;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    align-self: stretch;
+}
+.rpt-filter-panel .rpt-persona > label {
+    display: block;
+    min-height: 13px;
+    margin: 0;
+    line-height: 1.15;
+}
+.rpt-filter-panel .rpt-persona-input {
+    width: 100%;
+    min-width: 0;
+}
+.rpt-filter-panel .rpt-persona-input input[type="text"] {
+    display: block;
+    width: 100%;
+    height: 38px;
+    min-height: 38px !important;
+    margin: 0;
+    padding: 0 34px 0 12px;
+    border: 1px solid #DCE5F0 !important;
+    border-radius: 9px !important;
+    background: #fff;
+    color: var(--ink);
+    font-size: 12px !important;
+    line-height: 38px;
+    box-shadow: none;
+    outline: none;
+}
+.rpt-filter-panel .rpt-persona-input input[type="text"]:focus {
+    border-color: var(--dogger-red) !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, .10);
+}
 .rpt-persona-clear {
     position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
     border: 0; background: transparent; color: var(--ink-muted); font-size: 16px;
@@ -131,23 +227,29 @@
     .rpt-fld { flex: 1 1 100%; }
     .rpt-actions { margin-left: 0; }
 }
+
+/* Exportación y análisis: una acción principal, el resto es contexto. */
+.rpt-export-panel{display:flex;align-items:center;gap:18px;margin:0 0 20px;padding:18px 20px;border:1px solid #E7EAF0;border-radius:16px;background:linear-gradient(105deg,#fff 0%,#FFF8F8 100%);box-shadow:0 4px 18px rgba(20,35,63,.05)}.rpt-export-icon{display:grid;place-items:center;width:46px;height:46px;flex:none;border-radius:13px;background:#EAF7EF;color:#18834A}.rpt-export-icon .icon{width:24px;height:24px}.rpt-export-copy{min-width:0;flex:1}.rpt-export-copy h2{margin:0;color:#1F2B40;font:700 17px var(--font-display)}.rpt-export-copy p{margin:4px 0 0;color:#728097;font-size:12px}.rpt-export-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.rpt-export-meta span{padding:4px 8px;border-radius:999px;background:#F1F4F8;color:#506078;font:600 10px var(--font-body)}.rpt-export-panel .btn{min-height:42px;white-space:nowrap}.rpt-periodos{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}.rpt-periodos button{min-height:30px;padding:0 10px;border:1px solid #E1E6EE;border-radius:8px;background:#fff;color:#53627A;font:600 11px var(--font-body);cursor:pointer}.rpt-periodos button:hover{border-color:#E3262D;background:#FFF5F5;color:#D92C33}.rpt-chart-tools{display:flex;align-items:center;gap:7px;margin-left:auto}.rpt-chart-select{min-height:30px;padding:4px 27px 4px 9px;border:1px solid #E1E6EE;border-radius:8px;background:#fff;color:#42516A;font:600 11px var(--font-body);cursor:pointer}.rpt-chart-info{position:relative}.rpt-chart-info summary{display:grid;place-items:center;width:30px;height:30px;border:1px solid #E1E6EE;border-radius:8px;background:#fff;color:#64748B;cursor:pointer;list-style:none}.rpt-chart-info summary::-webkit-details-marker{display:none}.rpt-chart-info summary .icon{width:15px}.rpt-chart-info div{position:absolute;z-index:25;top:36px;right:0;width:220px;padding:10px 11px;border:1px solid #E3E7EE;border-radius:10px;background:#fff;box-shadow:0 12px 28px rgba(20,35,63,.16);color:#65748B;font-size:11px;line-height:1.4}.rpt-chart-info strong{display:block;margin-bottom:3px;color:#27344B;font-size:11px}.rpt-table-card{padding:0!important;overflow:hidden;border:1px solid #E5EAF1;border-radius:14px;background:#fff;box-shadow:0 4px 18px rgba(20,35,63,.04)}.rpt-table-card .chart-card-head{min-height:60px;margin:0!important;padding:0 16px;border-bottom:1px solid #E9EDF3}.rpt-table-card .rpt-searchbar{padding:12px 16px;margin:0;border-bottom:1px solid #EEF1F5}.rpt-table-card .data-table thead th{background:#F5F7FA;color:#61708A;font-size:11px}.rpt-table-card .data-table tbody td{padding:12px 14px}.rpt-table-card .data-table tbody tr:hover{background:#F6F8FC;box-shadow:inset 3px 0 0 #4F7DF3}.rpt-table-card .rpt-pager{padding:12px 16px 14px}.rpt-table-card .table-scroll{margin:0}@media(max-width:760px){.rpt-export-panel{align-items:flex-start;flex-wrap:wrap;padding:15px}.rpt-export-panel .btn{width:100%;justify-content:center}.rpt-chart-tools{margin-left:0}.chart-card-head{flex-wrap:wrap}.rpt-table-card .chart-card-head{padding:12px 14px}.rpt-table-card .rpt-searchbar{padding:10px 14px}}
+.rpt-periodos { flex: 1 1 100%; }
+
+/* Reporte operativo por técnico */
+.rpt-export-menu{position:relative;flex:none}.rpt-export-menu summary{display:flex;align-items:center;gap:8px;min-height:42px;padding:0 15px;border:0;border-radius:10px;background:#16834a;color:#fff;box-shadow:0 7px 16px rgba(24,131,74,.22);font:700 12px var(--font-body);cursor:pointer;list-style:none}.rpt-export-menu summary::-webkit-details-marker{display:none}.rpt-export-menu summary .icon{width:17px;height:17px}.rpt-export-menu[open] summary{background:#126c3d}.rpt-export-options{position:absolute;z-index:30;right:0;top:49px;width:254px;padding:7px;border:1px solid #E1E7EF;border-radius:12px;background:#fff;box-shadow:0 15px 34px rgba(17,35,63,.17)}.rpt-export-options a{display:flex;align-items:flex-start;gap:9px;padding:10px;border-radius:8px;color:#26354F;font:600 12px var(--font-body);text-decoration:none}.rpt-export-options a:hover{background:#F3F7F5;color:#16834A}.rpt-export-options .icon{width:17px;color:#16834A;flex:none}.rpt-export-options small{display:block;margin-top:2px;color:#7B8799;font:400 10px var(--font-body)}
+.rpt-tech-report{margin-top:26px;padding:0;overflow:hidden;border:1px solid #E4EAF2;border-radius:16px;background:#fff;box-shadow:0 5px 22px rgba(20,35,63,.05)}.rpt-tech-head{display:flex;align-items:center;gap:14px;padding:20px 22px 15px;border-bottom:1px solid #EDF0F4}.rpt-tech-head-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:#FFE6E7;color:#DD1F2B}.rpt-tech-head-icon .icon{width:25px;height:25px}.rpt-tech-title{min-width:0;flex:1}.rpt-tech-title h2{margin:0;color:#16233C;font:700 23px var(--font-display)}.rpt-tech-title p{margin:3px 0 0;color:#748199;font-size:13px}.rpt-tech-range{display:flex;align-items:center;gap:7px;padding:10px 12px;border:1px solid #E2E7EF;border-radius:10px;background:#fff;color:#52627C;font:600 12px var(--font-body)}.rpt-tech-range .icon{width:17px;color:#596B89}.rpt-tech-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:16px 22px}.rpt-tech-kpi{display:flex;align-items:center;gap:13px;min-height:94px;padding:16px;border:1px solid #E7ECF2;border-radius:13px;background:#fff}.rpt-tech-kpi .rpt-tech-kpi-icon{display:grid;place-items:center;width:47px;height:47px;border-radius:12px;color:#fff;background:#E51F2B}.rpt-tech-kpi .icon{width:24px;height:24px}.rpt-tech-kpi.is-blue .rpt-tech-kpi-icon{background:#2563EB}.rpt-tech-kpi.is-green .rpt-tech-kpi-icon{background:#10A15B}.rpt-tech-kpi.is-amber .rpt-tech-kpi-icon{background:#F5A719}.rpt-tech-kpi small{display:block;color:#697891;font:600 11px var(--font-body)}.rpt-tech-kpi b{display:block;color:#18243B;font:700 28px var(--font-mono)}.rpt-tech-kpi em{font-style:normal;color:#78869B;font-size:11px}.rpt-tech-kpi .rpt-positive{display:inline-block;margin-left:6px;padding:3px 6px;border-radius:999px;background:#E6F8EF;color:#169556;font:700 10px var(--font-body)}.rpt-tech-controls{display:flex;align-items:end;gap:12px;padding:0 22px 16px}.rpt-tech-search{position:relative;flex:1}.rpt-tech-search .icon{position:absolute;left:14px;top:50%;width:18px;transform:translateY(-50%);color:#667792}.rpt-tech-search input{width:100%;height:45px;padding:0 14px 0 42px;border:1px solid #DFE6EF;border-radius:10px;background:#fff;color:#26354C;font:500 13px var(--font-body);outline:none}.rpt-tech-search input:focus{border-color:#D82532;box-shadow:0 0 0 3px rgba(216,37,50,.09)}.rpt-tech-select{display:grid;gap:4px;min-width:174px}.rpt-tech-select label{padding-left:2px;color:#718099;font:600 10px var(--font-body)}.rpt-tech-select select{height:45px;padding:0 31px 0 12px;border:1px solid #DFE6EF;border-radius:10px;background-color:#fff;color:#27364D;font:600 13px var(--font-body);cursor:pointer}.rpt-tech-filter{display:grid;place-items:center;width:45px;height:45px;border:1px solid #DFE6EF;border-radius:10px;background:#fff;color:#52637E;cursor:pointer}.rpt-tech-filter:hover{background:#FFF5F5;color:#DA2430}.rpt-tech-filter .icon{width:19px}.rpt-tech-table{width:100%;border-collapse:collapse}.rpt-tech-table th{padding:13px 15px;background:#F5F7FA;color:#64738D;text-align:left;white-space:nowrap;font:700 11px var(--font-body)}.rpt-tech-table th.num,.rpt-tech-table td.num{text-align:center}.rpt-tech-table td{padding:11px 15px;border-top:1px solid #EDF0F4;color:#26354B;font-size:13px;vertical-align:middle}.rpt-tech-table tbody tr:hover{background:#FBFCFE}.rpt-tech-person{display:flex;align-items:center;gap:10px;min-width:180px}.rpt-tech-avatar{display:grid;place-items:center;width:34px;height:34px;overflow:hidden;border-radius:10px;background:linear-gradient(135deg,#EF6B77,#D82230);color:#fff;font:700 13px var(--font-body)}.rpt-tech-avatar img{width:100%;height:100%;object-fit:cover}.rpt-tech-person b{font:700 14px var(--font-body)}.rpt-tech-top{display:inline-block;margin-left:5px;padding:3px 6px;border:1px solid #F8D27D;border-radius:999px;background:#FFF8E7;color:#B8790B;font:700 10px var(--font-body)}.rpt-tech-resolved{color:#129158;font:700 15px var(--font-mono)}.rpt-tech-progress{display:flex;align-items:center;gap:8px;min-width:145px}.rpt-tech-progress-track{width:100px;height:8px;overflow:hidden;border-radius:99px;background:#E9EDF3}.rpt-tech-progress-track span{display:block;height:100%;border-radius:inherit;background:#EB2634}.rpt-tech-progress b{color:#5A6B84;font:700 12px var(--font-mono)}.rpt-tech-time{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:9px;background:#EAF9F0;color:#168D52;font:700 11px var(--font-mono);white-space:nowrap}.rpt-tech-time.is-amber{background:#FFF8E7;color:#B57609}.rpt-tech-time.is-red{background:#FFF0F1;color:#DE3340}.rpt-tech-time.is-empty{background:#F0F3F7;color:#718098}.rpt-tech-time .icon{width:15px}.rpt-tech-status{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:#E8F8EE;color:#168D52;font:700 11px var(--font-body);white-space:nowrap}.rpt-tech-status:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}.rpt-tech-status.is-inactive{background:#F1F3F6;color:#64748B}.rpt-tech-status.is-unassigned{background:#F0F2F6;color:#64748B}.rpt-tech-action{display:grid;place-items:center;width:31px;height:31px;margin:auto;border:1px solid #E4E9F0;border-radius:8px;background:#fff;color:#53647E}.rpt-tech-action .icon{width:16px}@media(max-width:960px){.rpt-tech-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.rpt-tech-head{flex-wrap:wrap}.rpt-tech-range{order:3}.rpt-tech-controls{flex-wrap:wrap}.rpt-tech-search{min-width:100%;flex-basis:100%}}@media(max-width:600px){.rpt-tech-head,.rpt-tech-kpis,.rpt-tech-controls{padding-left:14px;padding-right:14px}.rpt-tech-kpis{grid-template-columns:1fr}.rpt-tech-title h2{font-size:19px}.rpt-tech-select{min-width:calc(50% - 6px);flex:1}.rpt-tech-filter{flex:none}.rpt-tech-table th,.rpt-tech-table td{padding-left:11px;padding-right:11px}.rpt-tech-progress{min-width:126px}.rpt-tech-progress-track{width:76px}}
+.rpt-tech-action{cursor:pointer}.rpt-tech-action:hover,.rpt-tech-action.is-open{border-color:#F1C6CA;background:#FFF4F5;color:#D92532}.rpt-tech-menu-panel{position:fixed;z-index:1100;width:236px;padding:6px;border:1px solid #E2E6EC;border-radius:12px;background:#fff;box-shadow:0 12px 32px rgba(21,34,55,.16);color:#17253D}.rpt-tech-menu-head{display:flex;align-items:center;gap:8px;padding:7px 8px 9px;border-bottom:1px solid #E8EBF0}.rpt-tech-menu-head>.icon{width:18px;height:18px;color:#606B7A}.rpt-tech-menu-head div{min-width:0;flex:1}.rpt-tech-menu-head b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 13px var(--font-body)}.rpt-tech-menu-head small{display:block;margin-top:1px;color:#78849A;font-size:10px}.rpt-tech-menu-status{padding:3px 7px;border-radius:999px;background:#E6F8ED;color:#118751;font:700 9px var(--font-body)}.rpt-tech-menu-status.is-muted{background:#F0F2F5;color:#6B778B}.rpt-tech-menu-links{padding:3px 0}.rpt-tech-menu-links a{display:grid;grid-template-columns:17px 1fr;column-gap:8px;align-items:center;padding:7px 8px;border-radius:8px;color:#1D293B;text-decoration:none}.rpt-tech-menu-links a:hover{background:#FFF5F5;color:#D92532}.rpt-tech-menu-links .icon{width:16px;height:16px;color:#687384}.rpt-tech-menu-links a:hover .icon{color:#D92532}.rpt-tech-menu-links strong{font:600 12px var(--font-body);white-space:nowrap}.rpt-tech-menu-links small{display:none}.rpt-tech-menu-reassign{padding:4px 0 0;border-top:1px solid #E8EBF0}.rpt-tech-menu-reassign a{color:#445166}.rpt-tech-menu-reassign a:hover{background:#F7F8FA;color:#D92532}@media(max-width:600px){.rpt-tech-menu-panel{width:min(236px,calc(100vw - 24px))}}
+.rpt-user-report{margin-top:26px;overflow:hidden;border:1px solid #E4EAF2;border-radius:16px;background:#fff;box-shadow:0 5px 22px rgba(20,35,63,.05)}.rpt-user-head{display:flex;align-items:center;gap:11px;padding:17px 20px 13px;border-bottom:1px solid #EDF0F4}.rpt-user-head-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:#FFE7E8;color:#DC2430}.rpt-user-head-icon .icon{width:20px}.rpt-user-head h2{margin:0;color:#16233C;font:700 19px var(--font-display)}.rpt-user-head p{margin:2px 0 0;color:#78869B;font-size:12px}.rpt-user-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:15px 20px}.rpt-user-kpi{display:flex;align-items:center;gap:11px;min-height:76px;padding:12px;border:1px solid #E6EBF1;border-radius:12px;background:#fff}.rpt-user-kpi-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:11px;background:#E71F2D;color:#fff}.rpt-user-kpi:nth-child(2) .rpt-user-kpi-icon{background:#2673EF}.rpt-user-kpi:nth-child(3) .rpt-user-kpi-icon{background:#0FA35D}.rpt-user-kpi:nth-child(4) .rpt-user-kpi-icon{background:#F6A91B}.rpt-user-kpi .icon{width:21px}.rpt-user-kpi small{display:block;color:#748198;font:600 10px var(--font-body)}.rpt-user-kpi b{display:block;color:#1B2942;font:700 24px var(--font-mono)}.rpt-user-kpi em{font-style:normal;color:#7C889D;font-size:10px}.rpt-user-controls{display:flex;align-items:end;gap:10px;padding:0 20px 15px}.rpt-user-search{position:relative;flex:1}.rpt-user-search .icon{position:absolute;left:13px;top:50%;width:17px;transform:translateY(-50%);color:#64758F}.rpt-user-search input{width:100%;height:43px;padding:0 13px 0 40px;border:1px solid #DFE6EF;border-radius:10px;background:#fff;font:500 13px var(--font-body);outline:none}.rpt-user-search input:focus{border-color:#DB2531;box-shadow:0 0 0 3px rgba(219,37,49,.09)}.rpt-user-select{display:grid;gap:4px;min-width:128px}.rpt-user-select span{padding-left:2px;color:#758299;font:600 10px var(--font-body)}.rpt-user-select select{height:43px;padding:0 27px 0 11px;border:1px solid #DFE6EF;border-radius:10px;background:#fff;color:#29374F;font:600 12px var(--font-body)}.rpt-user-table{width:100%;border-collapse:collapse}.rpt-user-table th{padding:12px 13px;background:#F5F7FA;color:#687791;text-align:left;white-space:nowrap;font:700 10px var(--font-body)}.rpt-user-table td{padding:10px 13px;border-top:1px solid #EDF0F4;color:#2B394F;font-size:12px}.rpt-user-table th.num,.rpt-user-table td.num{text-align:center}.rpt-user-table tbody tr:hover{background:#FBFCFE}.rpt-user-person{display:flex;align-items:center;gap:9px;min-width:165px}.rpt-user-avatar{display:grid;place-items:center;width:33px;height:33px;overflow:hidden;border-radius:50%;background:linear-gradient(135deg,#F05E6A,#D92735);color:#fff;font:700 13px var(--font-mono)}.rpt-user-avatar img{width:100%;height:100%;object-fit:cover}.rpt-user-person b{font:700 13px var(--font-body)}.rpt-user-email{color:#748198}.rpt-user-ok{color:#139259;font:700 13px var(--font-mono)}.rpt-user-last{display:inline-flex;padding:5px 9px;border-radius:999px;background:#FFF5E3;color:#896617;font:700 11px var(--font-body)}.rpt-user-last.is-abierto{background:#FFF0F1;color:#D92B36}.rpt-user-last.is-progreso{background:#FFF6E2;color:#AF7507}.rpt-user-state{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#E7F8EE;color:#168D52;font:700 11px var(--font-body)}.rpt-user-state:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}.rpt-user-state.is-inactive,.rpt-user-state.is-unknown{background:#F0F2F5;color:#66758C}.rpt-user-action{display:grid;place-items:center;width:30px;height:30px;margin:auto;border:1px solid #E2E8F0;border-radius:8px;background:#fff;color:#566780;cursor:pointer}.rpt-user-action:hover{background:#FFF4F5;border-color:#F3C4C8;color:#DB2531}@media(max-width:960px){.rpt-user-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.rpt-user-controls{flex-wrap:wrap}.rpt-user-search{min-width:100%;flex-basis:100%}}@media(max-width:600px){.rpt-user-head,.rpt-user-kpis,.rpt-user-controls{padding-left:14px;padding-right:14px}.rpt-user-kpis{grid-template-columns:1fr}.rpt-user-select{min-width:calc(50% - 5px);flex:1}.rpt-user-table th,.rpt-user-table td{padding-left:10px;padding-right:10px}}
+.rpt-table-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-top:1px solid #EDF0F4;background:#fff}.rpt-table-summary{color:#66758D;font:600 12px var(--font-body)}.rpt-table-pagination{display:flex;align-items:center;gap:7px}.rpt-page-size{height:36px;padding:0 28px 0 10px;border:1px solid #E0E6EE;border-radius:8px;background:#fff;color:#33425B;font:600 12px var(--font-body)}.rpt-page-button{display:grid;place-items:center;width:36px;height:36px;border:1px solid #E0E6EE;border-radius:8px;background:#fff;color:#6D7B91;cursor:pointer}.rpt-page-button .icon{width:16px}.rpt-page-button:not(:disabled):hover{border-color:#D52431;background:#FFF5F5;color:#D52431}.rpt-page-button:disabled{opacity:.45;cursor:not-allowed}.rpt-page-numbers{display:flex;align-items:center;gap:5px}.rpt-page-number{display:grid;place-items:center;min-width:36px;height:36px;padding:0 8px;border:1px solid #E0E6EE;border-radius:8px;background:#fff;color:#52617A;font:700 12px var(--font-mono);cursor:pointer}.rpt-page-number.is-active{border-color:#E3242C;background:#E3242C;color:#fff;box-shadow:0 5px 12px rgba(227,36,44,.2)}@media(max-width:600px){.rpt-table-footer{align-items:flex-start;flex-direction:column;padding:12px 14px}.rpt-table-pagination{width:100%;justify-content:flex-end}.rpt-page-size{margin-right:auto}}
+/* Indicadores de reportes: misma tarjeta analítica usada en todos los paneles. */
+.rpt-tech-kpis,.rpt-user-kpis{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;padding:20px 22px}.rpt-tech-kpi,.rpt-user-kpi{--rpt-kpi:#DD2030;--rpt-tint:#FFF2F4;--rpt-shadow:rgba(221,32,48,.17);position:relative;isolation:isolate;display:block;min-height:204px;padding:26px 28px;overflow:hidden;border:1px solid color-mix(in srgb,var(--rpt-kpi) 13%,#fff);border-radius:24px;background:linear-gradient(135deg,#fff,var(--rpt-tint));box-shadow:0 13px 28px var(--rpt-shadow);transition:transform .2s ease,box-shadow .2s ease}.rpt-tech-kpi:hover,.rpt-user-kpi:hover{transform:translateY(-4px);box-shadow:0 19px 36px var(--rpt-shadow)}.rpt-tech-kpi::before,.rpt-user-kpi::before{position:absolute;z-index:-1;right:27px;bottom:59px;left:27px;height:52px;border-bottom:3px solid color-mix(in srgb,var(--rpt-kpi) 70%,#fff);border-radius:48% 52% 10px 10px / 70% 64% 10px 10px;background:linear-gradient(174deg,transparent 38%,color-mix(in srgb,var(--rpt-kpi) 14%,transparent) 40%,color-mix(in srgb,var(--rpt-kpi) 5%,transparent));clip-path:polygon(0 68%,13% 62%,25% 28%,39% 48%,54% 18%,67% 43%,81% 30%,100% 3%,100% 100%,0 100%);content:""}.rpt-tech-kpi::after,.rpt-user-kpi::after{position:absolute;right:24px;bottom:18px;display:grid;width:38px;height:38px;place-items:center;border-radius:50%;background:#fff;box-shadow:0 5px 13px rgba(31,42,68,.12);color:var(--rpt-kpi);content:"›";font:700 32px/1 var(--font-body)}.rpt-tech-kpi .rpt-tech-kpi-icon,.rpt-user-kpi .rpt-user-kpi-icon{position:absolute;top:26px;left:28px;display:grid;width:68px;height:68px;place-items:center;border-radius:20px;background:var(--rpt-kpi)!important;box-shadow:0 11px 18px var(--rpt-shadow);color:#fff}.rpt-tech-kpi .icon,.rpt-user-kpi .icon{width:34px;height:34px}.rpt-tech-kpi>span:last-child,.rpt-user-kpi>span:last-child{display:block}.rpt-tech-kpi small,.rpt-user-kpi small{position:absolute;top:31px;left:116px;max-width:calc(100% - 138px);overflow:hidden;color:#223755;font:600 16px/1.2 var(--font-display);text-overflow:ellipsis;white-space:nowrap}.rpt-tech-kpi b,.rpt-user-kpi b{position:absolute;top:80px;left:116px;color:#0C1930;font:700 38px/1 var(--font-mono);letter-spacing:-.06em}.rpt-tech-kpi em,.rpt-user-kpi em{position:absolute;bottom:29px;left:28px;max-width:calc(100% - 90px);overflow:hidden;color:#263750;font:500 14px/1.2 var(--font-body);text-overflow:ellipsis;white-space:nowrap}.rpt-tech-kpi em::before,.rpt-user-kpi em::before{display:inline-block;width:11px;height:11px;margin-right:9px;border-radius:50%;background:var(--rpt-kpi);box-shadow:0 0 0 4px color-mix(in srgb,var(--rpt-kpi) 12%,transparent);content:""}.rpt-tech-kpi.is-blue,.rpt-user-kpi:nth-child(2){--rpt-kpi:#146FEA;--rpt-tint:#EFF7FF;--rpt-shadow:rgba(20,111,234,.17)}.rpt-tech-kpi.is-green,.rpt-user-kpi:nth-child(3){--rpt-kpi:#08A65B;--rpt-tint:#ECFBF4;--rpt-shadow:rgba(8,166,91,.17)}.rpt-tech-kpi.is-amber,.rpt-user-kpi:nth-child(4){--rpt-kpi:#F2A000;--rpt-tint:#FFF8E9;--rpt-shadow:rgba(242,160,0,.18)}.rpt-tech-kpi .rpt-positive{position:static;margin-left:7px;vertical-align:middle;color:#138B51;background:#E1F8EB;font:700 11px var(--font-body);letter-spacing:0}@media(max-width:760px){.rpt-tech-kpis,.rpt-user-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}.rpt-tech-kpi,.rpt-user-kpi{min-height:178px;padding:20px;border-radius:20px}.rpt-tech-kpi .rpt-tech-kpi-icon,.rpt-user-kpi .rpt-user-kpi-icon{top:20px;left:20px;width:54px;height:54px;border-radius:16px}.rpt-tech-kpi .icon,.rpt-user-kpi .icon{width:28px;height:28px}.rpt-tech-kpi small,.rpt-user-kpi small{top:24px;left:86px;font-size:13px}.rpt-tech-kpi b,.rpt-user-kpi b{top:66px;left:86px;font-size:29px}.rpt-tech-kpi em,.rpt-user-kpi em{bottom:24px;left:20px;font-size:11px}.rpt-tech-kpi::before,.rpt-user-kpi::before{right:20px;bottom:51px;left:20px;height:42px}.rpt-tech-kpi::after,.rpt-user-kpi::after{right:15px;bottom:15px;width:32px;height:32px;font-size:26px}}@media(max-width:500px){.rpt-tech-kpis,.rpt-user-kpis{grid-template-columns:1fr}}
+.rpt-tech-kpi,.rpt-user-kpi{box-sizing:border-box;height:204px;min-height:204px}@media(max-width:760px){.rpt-tech-kpi,.rpt-user-kpi{height:178px;min-height:178px}}
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="page page-corporate">
-    <section class="dash-hero">
-        <div class="dash-hero-kicker">
-            <span class="dash-hero-meta">
-                <svg class="icon icon-xs"><use href="#i-clock"/></svg>
-                {% now "l d/m/Y" %} · en vivo
-                <a class="dash-refresh" href="{% url 'tickets:reportes' %}" title="Actualizar">
-                    <svg class="icon icon-sm"><use href="#i-refresh"/></svg>
-                </a>
-            </span>
-        </div>
+    <section class="rpt-kpis" aria-label="Indicadores del reporte">
+        <h2 class="rpt-section-head"><span><svg class="icon"><use href="#i-chart"/></svg></span>1. Resumen ejecutivo</h2>
         <div class="dash-stat-row">
-            <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}" title="Tickets incluidos según los filtros aplicados">
+            <a class="dash-stat dash-hov-total" data-rpt-kpi="total" href="{% url 'tickets:lista' %}" title="Tickets incluidos según los filtros aplicados">
                 <span class="dash-stat-icon">
                     <span class="dash-stat-value">{{ kpis.total }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
@@ -157,7 +259,7 @@
                     <span class="dash-stat-hint">{{ filtros_txt }}</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?estado=abierto" title="Solicitudes recién creadas, pendientes de atención">
+            <a class="dash-stat dash-hov-abiertos" data-rpt-kpi="abiertas" href="{% url 'tickets:lista' %}?estado=abierto" title="Solicitudes recién creadas, pendientes de atención">
                 <span class="dash-stat-icon st-ic-abiertos">
                     <span class="dash-stat-value st-abiertos">{{ kpis.abiertos }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
@@ -167,7 +269,7 @@
                     <span class="dash-stat-hint">en espera de atención</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-progreso" href="{% url 'tickets:lista' %}?estado=en-progreso" title="Solicitudes que ya están siendo atendidas">
+            <a class="dash-stat dash-hov-progreso" data-rpt-kpi="progreso" href="{% url 'tickets:lista' %}?estado=en-progreso" title="Solicitudes que ya están siendo atendidas">
                 <span class="dash-stat-icon st-ic-progreso">
                     <span class="dash-stat-value st-progreso">{{ kpis.en_progreso }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span>
@@ -177,7 +279,7 @@
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-resueltos" href="{% url 'tickets:lista' %}?estado=resuelto" title="Solicitudes resueltas o cerradas">
+            <a class="dash-stat dash-hov-resueltos" data-rpt-kpi="resueltas" href="{% url 'tickets:lista' %}?estado=resuelto" title="Solicitudes resueltas o cerradas">
                 <span class="dash-stat-icon st-ic-resueltos">
                     <span class="dash-stat-value st-resueltos">{{ kpis.resueltos_cerrados }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
@@ -187,26 +289,16 @@
                     <span class="dash-stat-hint">{{ kpis.cerrados }} cerrados</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-cerrados" href="{% url 'tickets:lista' %}?estado=cerrado" title="Solicitudes cerradas definitivamente">
-                <span class="dash-stat-icon st-ic-cerrados">
-                    <span class="dash-stat-value st-cerrados">{{ kpis.cerrados }}</span>
-                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-lock"/></svg></span>
+            <span class="dash-stat dash-hov-violet" title="Promedio calculado entre la creación y la resolución o cierre">
+                <span class="dash-stat-icon st-ic-tiempo">
+                    <span class="dash-stat-value">{% if kpis.prom_h is not None %}{{ kpis.prom_h|floatformat:-2 }} h{% else %}—{% endif %}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-clock"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
-                    <span class="dash-stat-label">Cerrados</span>
-                    <span class="dash-stat-hint">finalizados</span>
+                    <span class="dash-stat-label">Tiempo prom. resolución</span>
+                    <span class="dash-stat-hint">Promedio del período</span>
                 </span>
-            </a>
-            <a class="dash-stat dash-hov-vencidos" href="{% url 'tickets:lista' %}" title="Abiertos o en progreso cuyo ANS ya venció">
-                <span class="dash-stat-icon st-ic-vencidos">
-                    <span class="dash-stat-value st-vencidos">{{ kpis.vencidos }}</span>
-                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-x-circle"/></svg></span>
-                </span>
-                <span class="dash-stat-body">
-                    <span class="dash-stat-label">Vencidos (ANS)</span>
-                    <span class="dash-stat-hint">fuera de tiempo límite</span>
-                </span>
-            </a>
+            </span>
             <a class="dash-stat dash-hov-sla-ok" href="{% url 'tickets:lista' %}" title="Tickets en curso dentro del tiempo límite de atención">
                 <span class="dash-stat-icon st-ic-sla-ok">
                     <span class="dash-stat-value st-sla-ok">{{ kpis.sla_ok }}</span>
@@ -227,10 +319,47 @@
                     <span class="dash-stat-hint">por fuera del plazo</span>
                 </span>
             </a>
+            <span class="dash-stat dash-hov-slate" title="El historial no registra reaperturas como una métrica independiente">
+                <span class="dash-stat-icon st-ic-reabiertos">
+                    <span class="dash-stat-value">—</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-refresh"/></svg></span>
+                </span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Tickets reabiertos</span>
+                    <span class="dash-stat-hint">Sin datos registrados</span>
+                </span>
+            </span>
+            <a class="dash-stat dash-hov-users" href="{% url 'tickets:usuarios' %}" title="Usuarios con tickets en el período filtrado">
+                <span class="dash-stat-icon st-ic-usuarios">
+                    <span class="dash-stat-value">{{ usuarios|length }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-users"/></svg></span>
+                </span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Total usuarios</span>
+                    <span class="dash-stat-hint">Con solicitudes en el período</span>
+                </span>
+            </a>
+            <a class="dash-stat dash-hov-tecnicos" href="{% url 'tickets:usuarios' %}?rol=tecnico" title="Técnicos con tickets en el período filtrado">
+                <span class="dash-stat-icon st-ic-tecnicos">
+                    <span class="dash-stat-value">{{ total_tecnicos }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span>
+                </span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Total técnicos</span>
+                    <span class="dash-stat-hint">Con actividad en el período</span>
+                </span>
+            </a>
         </div>
     </section>
 
-    <form class="table-toolbar rpt-filterbar" method="get" id="rptFiltros">
+    <form class="rpt-filter-panel rpt-filterbar" method="get" id="rptFiltros" aria-label="Filtros del reporte">
+        <div class="rpt-periodos" aria-label="Rangos rápidos">
+            <button type="button" data-rpt-period="month">Este mes</button>
+            <button type="button" data-rpt-period="30d">Últimos 30 días</button>
+            <button type="button" data-rpt-period="quarter">Este trimestre</button>
+            <button type="button" data-rpt-period="year">Este año</button>
+            <button type="button" data-rpt-period="clear">Todo el tiempo</button>
+        </div>
         <div class="rpt-fld">
             <label for="fDesde">Desde</label>
             <input type="date" id="fDesde" name="desde" value="{{ f.desde|date:'Y-m-d'|default:'' }}">
@@ -275,10 +404,7 @@
         </div>
         <div class="rpt-actions">
             <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-search"/></svg> Aplicar filtros</button>
-            <a class="btn btn-excel btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Descarga el reporte del rango seleccionado con los filtros aplicados">
-                <svg class="icon"><use href="#i-excel"/></svg> Descargar en Excel
-            </a>
-            <a class="link-clear" href="{% url 'tickets:reportes' %}">Limpiar</a>
+            <a class="rpt-filter-reset" href="{% url 'tickets:reportes' %}" title="Limpiar filtros" aria-label="Limpiar filtros"><svg class="icon"><use href="#i-refresh"/></svg></a>
         </div>
     </form>
 
@@ -287,134 +413,152 @@
         <span>{{ filtros_txt }}</span>
     </div>
 
+    <section class="rpt-section" aria-labelledby="rptTrendTitle">
+        <h2 class="rpt-section-head" id="rptTrendTitle"><span><svg class="icon"><use href="#i-chart"/></svg></span>2. Tendencia de tickets</h2>
     <div class="charts-grid">
         <div class="chart-card">
             <div class="chart-card-head">
-                <span class="chart-head-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
-                <h3>Comparativo por técnico</h3>
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-chart"/></svg></span>
+                <h3>Tickets creados vs. resueltos</h3>
+                <div class="rpt-chart-tools"><details class="rpt-chart-info"><summary title="Información del gráfico"><svg class="icon"><use href="#i-info"/></svg></summary><div><strong>Lectura rápida</strong>La serie usa las fechas reales de creación y finalización de los tickets filtrados.</div></details></div>
             </div>
             <div class="chart-stage" id="tecChartBox"><canvas id="tecChart"></canvas></div>
             <div class="rpt-empty rpt-hidden" id="tecEmpty">No hay tickets en el rango seleccionado.</div>
         </div>
         <div class="chart-card">
             <div class="chart-card-head">
-                <span class="chart-head-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
-                <h3>Distribución por categoría</h3>
+                <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <h3>Tickets por estado</h3>
+                <div class="rpt-chart-tools"><details class="rpt-chart-info"><summary title="Información del gráfico"><svg class="icon"><use href="#i-info"/></svg></summary><div><strong>Lectura rápida</strong>Haz clic en una barra para consultar el estado correspondiente.</div></details></div>
             </div>
             <div class="chart-stage" id="catChartBox"><canvas id="catChart"></canvas></div>
             <div class="rpt-empty rpt-hidden" id="catEmpty">No hay categorías en el rango seleccionado.</div>
         </div>
     </div>
+    </section>
 
-    <div class="chart-card mesa-tec-card">
-        <div class="chart-card-head">
-            <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
-            <h3>Reporte por técnico</h3>
-            <a class="btn btn-excel btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Exportar estos datos a Excel">
-                <svg class="icon"><use href="#i-excel"/></svg> Excel
-            </a>
+    <section class="rpt-section" aria-labelledby="rptDistributionTitle">
+        <h2 class="rpt-section-head" id="rptDistributionTitle"><span><svg class="icon"><use href="#i-chart"/></svg></span>3. Distribución de tickets</h2>
+        <div class="charts-grid charts-grid--three">
+            <div class="chart-card"><div class="chart-card-head"><span class="chart-head-icon"><svg class="icon"><use href="#i-folder"/></svg></span><h3>Por categoría</h3></div><div class="chart-stage"><canvas id="distCategoryChart"></canvas></div><div class="rpt-empty rpt-hidden" id="distCategoryEmpty">No hay categorías en el rango seleccionado.</div></div>
+            <div class="chart-card"><div class="chart-card-head"><span class="chart-head-icon"><svg class="icon"><use href="#i-alert"/></svg></span><h3>Por prioridad</h3></div><div class="chart-stage"><canvas id="distPriorityChart"></canvas></div><div class="rpt-empty rpt-hidden" id="distPriorityEmpty">No hay prioridades en el rango seleccionado.</div></div>
+            <div class="chart-card"><div class="chart-card-head"><span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span><h3>Por origen</h3></div><div class="chart-stage"><canvas id="distOriginChart"></canvas></div><div class="rpt-empty rpt-hidden" id="distOriginEmpty">No hay canales de origen en el rango seleccionado.</div></div>
+        </div>
+    </section>
+
+    <section class="rpt-tech-report" aria-labelledby="rptTechTitle">
+        <header class="rpt-tech-head">
+            <span class="rpt-tech-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+            <div class="rpt-tech-title"><h2 id="rptTechTitle">4. Rendimiento por técnico</h2><p>Resumen del rendimiento y estado de los técnicos en la mesa de ayuda.</p></div>
+            <span class="rpt-tech-range"><svg class="icon"><use href="#i-calendar"/></svg>{% if f.desde or f.hasta %}{{ f.desde|date:"d/m/Y"|default:"Inicio" }} – {{ f.hasta|date:"d/m/Y"|default:"Hoy" }}{% else %}Todo el tiempo{% endif %}</span>
+        </header>
+        <div class="rpt-tech-controls">
+            <label class="rpt-tech-search"><svg class="icon"><use href="#i-search"/></svg><input id="tecBuscar" type="search" placeholder="Buscar técnico…" aria-label="Buscar técnico"></label>
+            <label class="rpt-tech-select"><span>Estado</span><select id="tecEstado"><option value="">Todos</option><option value="activo">Activo</option><option value="inactivo">Inactivo</option><option value="sin_asignar">Sin asignar</option></select></label>
+            <label class="rpt-tech-select"><span>Ordenar por</span><select id="tecOrden"><option value="asignados">Asignados</option><option value="resueltos">Resueltos</option><option value="progreso">En curso</option><option value="porcentaje">% resueltos</option><option value="tiempo">Tiempo resolución</option></select></label>
+            <button class="rpt-tech-filter" type="button" id="tecReset" title="Restablecer filtros" aria-label="Restablecer filtros"><svg class="icon"><use href="#i-filter"/></svg></button>
         </div>
         <div class="table-scroll">
-            <table class="data-table mesa-tec-table rpt-table">
-                <thead>
-                    <tr>
-                        <th>Técnico</th>
-                        <th class="num">Asignados</th>
-                        <th class="num">Resueltos/Cerrados</th>
-                        <th class="num">En curso</th>
-                        <th>% Resueltos</th>
-                        <th class="num">T. prom. resolución</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <table class="rpt-tech-table">
+                <thead><tr><th>#</th><th>Técnico</th><th class="num">Asignados</th><th class="num">Resueltos / cerrados</th><th class="num">En curso</th><th>% resueltos</th><th class="num">T. prom. resolución</th><th>Estado</th><th aria-label="Acciones"></th></tr></thead>
+                <tbody id="tecTbody">
                     {% for r in tecnicos %}
-                    <tr>
-                        <td>
-                            {{ r.nombre }}{% if forloop.first and r.nombre != 'Sin asignar' %}<span class="rpt-top">Top</span>{% endif %}
-                        </td>
-                        <td class="num"><strong>{{ r.asignados }}</strong></td>
-                        <td class="num"><span style="color:#2F7D4F;font-weight:700">{{ r.resueltos }}</span></td>
-                        <td class="num">{{ r.en_curso }}</td>
-                        <td>
-                            <span class="rpt-progress"><span style="width:{{ r.pct_resueltos }}%"></span></span>
-                            <span class="rpt-pct">{{ r.pct_resueltos }}%</span>
-                        </td>
-                        <td class="num">{% if r.prom_h is not None %}{{ r.prom_h|floatformat:-2 }} h{% else %}—{% endif %}</td>
+                    <tr data-buscar="{{ r.nombre|lower }}" data-estado="{% if r.sin_asignar %}sin_asignar{% elif r.activo %}activo{% else %}inactivo{% endif %}" data-asignados="{{ r.asignados }}" data-resueltos="{{ r.resueltos }}" data-progreso="{{ r.en_curso }}" data-porcentaje="{{ r.pct_resueltos }}" data-tiempo="{{ r.prom_h|default:-1 }}">
+                        <td class="num"><strong>{{ forloop.counter }}</strong></td>
+                        <td><span class="rpt-tech-person"><span class="rpt-tech-avatar">{% if r.avatar %}<img src="{{ r.avatar.url }}" alt="{{ r.nombre }}">{% else %}{{ r.nombre|slice:":1"|upper }}{% endif %}</span><span><b>{{ r.nombre }}</b>{% if forloop.first and not r.sin_asignar %}<span class="rpt-tech-top">Top</span>{% endif %}</span></span></td>
+                        <td class="num"><strong>{{ r.asignados }}</strong></td><td class="num"><span class="rpt-tech-resolved">{{ r.resueltos }}</span></td><td class="num">{{ r.en_curso }}</td>
+                        <td><span class="rpt-tech-progress"><span class="rpt-tech-progress-track"><span style="width:{{ r.pct_resueltos }}%"></span></span><b>{{ r.pct_resueltos }}%</b></span></td>
+                        <td class="num"><span class="rpt-tech-time {% if r.prom_h is None %}is-empty{% elif r.prom_h > 168 %}is-red{% elif r.prom_h > 72 %}is-amber{% endif %}"><svg class="icon"><use href="#i-clock"/></svg>{% if r.prom_h is not None %}{{ r.prom_h|floatformat:-2 }} h{% else %}—{% endif %}</span></td>
+                        <td><span class="rpt-tech-status {% if r.sin_asignar %}is-unassigned{% elif not r.activo %}is-inactive{% endif %}">{% if r.sin_asignar %}Sin asignar{% elif r.activo %}Activo{% else %}Inactivo{% endif %}</span></td>
+                        <td>{% if r.pk %}<button type="button" class="rpt-tech-action" data-tech-menu data-name="{{ r.nombre }}" data-status="{% if r.activo %}Activo{% else %}Inactivo{% endif %}" data-profile="{% url 'tickets:usuarios' %}?rol=tecnico&amp;q={{ r.nombre|urlencode }}&amp;abrir={{ r.pk }}" data-tickets="{% url 'tickets:lista' %}?tecnico={{ r.pk }}" data-performance="{% url 'tickets:reportes' %}?tecnico={{ r.pk }}" data-history="{% url 'tickets:usuarios' %}?rol=tecnico&amp;q={{ r.nombre|urlencode }}&amp;abrir={{ r.pk }}&amp;ficha_tab=tickets" data-export="{% url 'tickets:exportar_reportes' %}?tecnico={{ r.pk }}&amp;seccion=tecnicos" data-reassign="{% url 'tickets:lista' %}?tecnico={{ r.pk }}" aria-label="Acciones para {{ r.nombre }}" title="Acciones"><svg class="icon"><use href="#i-ellipsis"/></svg></button>{% else %}<span class="rpt-tech-action" title="No hay técnico asignado"><svg class="icon"><use href="#i-ellipsis"/></svg></span>{% endif %}</td>
                     </tr>
-                    {% empty %}
-                    <tr class="table-empty"><td colspan="6">Sin tickets en el rango seleccionado.</td></tr>
-                    {% endfor %}
+                    {% empty %}<tr class="table-empty"><td colspan="9">Sin tickets en el rango seleccionado.</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+        <footer class="rpt-table-footer" id="tecPager"><span class="rpt-table-summary" id="tecPageSummary">—</span><div class="rpt-table-pagination"><select class="rpt-page-size" id="tecPerPage" aria-label="Técnicos por página"><option value="5">5 por página</option><option value="10" selected>10 por página</option><option value="20">20 por página</option></select><button class="rpt-page-button" type="button" id="tecPrev" aria-label="Página anterior"><svg class="icon"><use href="#i-arrow-left"/></svg></button><span class="rpt-page-numbers" id="tecPageNumbers"></span><button class="rpt-page-button" type="button" id="tecNext" aria-label="Página siguiente"><svg class="icon"><use href="#i-arrow-right"/></svg></button></div></footer>
+    </section>
 
-    <div class="chart-card mesa-tec-card">
-        <div class="chart-card-head">
-            <span class="chart-head-icon"><svg class="icon"><use href="#i-user"/></svg></span>
-            <h3>Reporte por usuario</h3>
-            <a class="btn btn-excel btn-sm" href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}" title="Exportar los reportes individuales a Excel">
-                <svg class="icon"><use href="#i-excel"/></svg> Excel
-            </a>
+    <section class="rpt-user-report" aria-labelledby="rptUserTitle">
+        <header class="rpt-user-head"><span class="rpt-user-head-icon"><svg class="icon"><use href="#i-user"/></svg></span><div><h2 id="rptUserTitle">5. Rendimiento por usuario</h2><p>Actividad y resultados de las solicitudes creadas por cada usuario.</p></div></header>
+        <div class="rpt-user-controls">
+            <label class="rpt-user-search"><svg class="icon"><use href="#i-search"/></svg><input type="search" id="usuBuscar" placeholder="Buscar por nombre, correo o usuario…" aria-label="Buscar usuario"></label>
+            <label class="rpt-user-select"><span>Estado</span><select id="usuEstado"><option value="">Todos</option><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></label>
+            <label class="rpt-user-select"><span>Último estado</span><select id="usuUltimoEstado"><option value="">Todos</option><option value="abierto">Abierto</option><option value="en-progreso">En progreso</option><option value="resuelto">Resuelto</option><option value="cerrado">Cerrado</option></select></label>
+            <label class="rpt-user-select"><span>Ordenar por</span><select id="usuOrden"><option value="creados">Tickets</option><option value="abiertos">Abiertos</option><option value="resueltos">Resueltos</option><option value="cerrados">Cerrados</option><option value="tiempo">Tiempo</option></select></label>
         </div>
-        <div class="rpt-searchbar">
-            <div class="search-field">
-                <svg class="icon"><use href="#i-search"/></svg>
-                <input type="search" id="usuBuscar" placeholder="Buscar usuario por nombre o correo…">
-            </div>
-            <span class="rpt-searchcount" id="usuCount">—</span>
-        </div>
-        <div class="table-scroll">
-            <table class="data-table mesa-tec-table rpt-table">
-                <thead>
-                    <tr>
-                        <th>Usuario</th>
-                        <th>Correo</th>
-                        <th class="num">Creados</th>
-                        <th class="num">Abiertos</th>
-                        <th class="num">Resueltos</th>
-                        <th class="num">Cerrados</th>
-                        <th>Último estado</th>
-                        <th class="num">T. prom. resolución</th>
-                    </tr>
-                </thead>
-                <tbody id="usuTbody">
-                    {% for u in usuarios %}
-                    <tr data-buscar="{{ u.nombre|lower }} {{ u.email|default:''|lower }}">
-                        <td><strong>{{ u.nombre }}</strong></td>
-                        <td class="muted">{{ u.email|default:"—" }}</td>
-                        <td class="num"><strong>{{ u.creados }}</strong></td>
-                        <td class="num muted">{{ u.abiertos }}</td>
-                        <td class="num" style="color:#2F7D4F">{{ u.resueltos }}</td>
-                        <td class="num muted">{{ u.cerrados }}</td>
-                        <td>
-                            <span class="rpt-badge-estado rpt-badge-{{ u.ultimo_estado|lower|cut:' ' }}">{{ u.ultimo_estado|default:"—" }}</span>
-                        </td>
-                        <td class="num">{% if u.prom_h is not None %}{{ u.prom_h|floatformat:-2 }} h{% else %}—{% endif %}</td>
-                    </tr>
-                    {% empty %}
-                    <tr class="table-empty"><td colspan="8">Sin tickets en el rango seleccionado.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="rpt-pager rpt-hidden" id="usuPager">
-            <button type="button" class="btn btn-outline btn-sm" id="usuPrev">Anterior</button>
-            <span id="usuPageInfo">1 / 1</span>
-            <button type="button" class="btn btn-outline btn-sm" id="usuNext">Siguiente</button>
-        </div>
-    </div>
+        <div class="table-scroll"><table class="rpt-user-table"><thead><tr><th>#</th><th>Usuario</th><th>Correo</th><th class="num">Tickets</th><th class="num">Abiertos</th><th class="num">Resueltos</th><th class="num">Cerrados</th><th>Último estado</th><th class="num">T. prom. resolución</th><th>Estado</th><th aria-label="Acciones"></th></tr></thead><tbody id="usuTbody">
+            {% for u in usuarios %}
+            <tr data-buscar="{{ u.nombre|lower }} {{ u.email|default:''|lower }}" data-estado="{% if u.activo == False %}inactivo{% else %}activo{% endif %}" data-ultimo="{% if u.ultimo_estado|lower == 'en progreso' %}en-progreso{% else %}{{ u.ultimo_estado|lower }}{% endif %}" data-creados="{{ u.creados }}" data-abiertos="{{ u.abiertos }}" data-resueltos="{{ u.resueltos }}" data-cerrados="{{ u.cerrados }}" data-tiempo="{{ u.prom_h|default:-1 }}">
+                <td class="num"><strong>{{ forloop.counter }}</strong></td><td><span class="rpt-user-person"><span class="rpt-user-avatar">{% if u.avatar %}<img src="{{ u.avatar.url }}" alt="{{ u.nombre }}">{% else %}{{ u.nombre|slice:":1"|upper }}{% endif %}</span><b>{{ u.nombre }}</b></span></td><td class="rpt-user-email">{{ u.email|default:"—" }}</td><td class="num"><strong>{{ u.creados }}</strong></td><td class="num">{{ u.abiertos }}</td><td class="num"><span class="rpt-user-ok">{{ u.resueltos }}</span></td><td class="num">{{ u.cerrados }}</td><td><span class="rpt-user-last {% if u.ultimo_estado|lower == 'abierto' %}is-abierto{% elif u.ultimo_estado|lower == 'en progreso' %}is-progreso{% endif %}">{{ u.ultimo_estado|default:"—" }}</span></td><td class="num"><span class="rpt-tech-time {% if u.prom_h is None %}is-empty{% elif u.prom_h > 168 %}is-red{% elif u.prom_h > 72 %}is-amber{% endif %}"><svg class="icon"><use href="#i-clock"/></svg>{% if u.prom_h is not None %}{{ u.prom_h|floatformat:-2 }} h{% else %}—{% endif %}</span></td><td><span class="rpt-user-state {% if u.activo == False %}is-inactive{% elif u.activo is None %}is-unknown{% endif %}">{% if u.activo == False %}Inactivo{% elif u.activo is None %}Sin cuenta{% else %}Activo{% endif %}</span></td><td>{% if u.email %}<a class="rpt-user-action" href="{% url 'tickets:lista' %}?solicitante_email={{ u.email|urlencode }}" title="Ver tickets"><svg class="icon"><use href="#i-ellipsis"/></svg></a>{% endif %}</td>
+            </tr>{% empty %}<tr class="table-empty"><td colspan="11">Sin tickets en el rango seleccionado.</td></tr>{% endfor %}
+        </tbody></table></div>
+        <footer class="rpt-table-footer" id="usuPager"><span class="rpt-table-summary" id="usuPageSummary">—</span><div class="rpt-table-pagination"><select class="rpt-page-size" id="usuPerPage" aria-label="Usuarios por página"><option value="5">5 por página</option><option value="10" selected>10 por página</option><option value="20">20 por página</option></select><button class="rpt-page-button" type="button" id="usuPrev" aria-label="Página anterior"><svg class="icon"><use href="#i-arrow-left"/></svg></button><span class="rpt-page-numbers" id="usuPageNumbers"></span><button class="rpt-page-button" type="button" id="usuNext" aria-label="Página siguiente"><svg class="icon"><use href="#i-arrow-right"/></svg></button></div></footer>
+    </section>
 </main>
 {% endblock %}
 
 
 {% block extra_js %}
+<span id="rptUserMenuRoutes" hidden data-users-url="{% url 'tickets:usuarios' %}" data-reports-url="{% url 'tickets:reportes' %}" data-export-url="{% url 'tickets:exportar_reportes' %}"></span>
+{{ usuarios_glpi|json_script:"rptUserGlpiMap" }}
+{{ kpi_historico|json_script:"rptKpiHistorico" }}
 <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20261402"></script>
 <script>
+(function () {
+    var source = document.getElementById("rptKpiHistorico");
+    if (!source) return;
+    var history = JSON.parse(source.textContent || "{}");
+    var labels = history.labels || [], series = history.series || {}, trends = history.tendencias || {};
+    document.querySelectorAll("[data-rpt-kpi]").forEach(function (card) {
+        var key = card.dataset.rptKpi, values = series[key], trend = trends[key];
+        if (trend) {
+            var chip = document.createElement("span");
+            chip.className = "dash-stat-trend " + trend.clase;
+            chip.innerHTML = "<b></b><small>vs. 7 días previos</small>";
+            chip.querySelector("b").textContent = trend.texto;
+            card.appendChild(chip);
+        }
+        var spark = document.createElement("span");
+        spark.className = "rpt-kpi-spark";
+        if (!Array.isArray(values) || !values.some(function (value) { return value > 0; })) {
+            spark.classList.add("is-empty"); spark.textContent = "Sin actividad en 7 días"; card.appendChild(spark); return;
+        }
+        var max = Math.max.apply(null, values.concat([1]));
+        var points = values.map(function (value, index) { return (index * (236 / Math.max(1, values.length - 1)) + 2).toFixed(1) + "," + (34 - value / max * 27).toFixed(1); });
+        var dots = values.map(function (value, index) { var point = points[index].split(","); return '<circle class="spark-dot" cx="' + point[0] + '" cy="' + point[1] + '" r="2.2"><title>' + (labels[index] || "") + ": " + value + " tickets</title></circle>"; }).join("");
+        spark.innerHTML = '<svg viewBox="0 0 240 36" preserveAspectRatio="none" aria-hidden="true"><polygon class="spark-fill" points="2,36 ' + points.join(" ") + ' 238,36"/><polyline class="spark-line" points="' + points.join(" ") + '"/>' + dots + "</svg>";
+        card.appendChild(spark);
+    });
+})();
+
 (function () {
     // Autosubmit de los filtros por selección
     document.querySelectorAll(".rpt-autosubmit").forEach(function (sel) {
         sel.addEventListener("change", function () { sel.form.submit(); });
+    });
+
+    function fechaISO(fecha) {
+        return fecha.getFullYear() + "-" + String(fecha.getMonth() + 1).padStart(2, "0") + "-" + String(fecha.getDate()).padStart(2, "0");
+    }
+    document.querySelectorAll("[data-rpt-period]").forEach(function (boton) {
+        boton.addEventListener("click", function () {
+            var desde = document.getElementById("fDesde");
+            var hasta = document.getElementById("fHasta");
+            var hoy = new Date();
+            var tipo = boton.getAttribute("data-rpt-period");
+            if (tipo === "clear") { desde.value = ""; hasta.value = ""; }
+            else {
+                var inicio = new Date(hoy);
+                if (tipo === "month") inicio.setDate(1);
+                if (tipo === "30d") inicio.setDate(hoy.getDate() - 29);
+                if (tipo === "quarter") inicio.setMonth(Math.floor(hoy.getMonth() / 3) * 3, 1);
+                if (tipo === "year") inicio.setMonth(0, 1);
+                desde.value = fechaISO(inicio);
+                hasta.value = fechaISO(hoy);
+            }
+            document.getElementById("rptFiltros").submit();
+        });
     });
 
     // ---- Buscador unificado de persona (técnico o usuario) ----
@@ -561,18 +705,23 @@
         if (t) { t.style.cursor = (els && els.length) ? "pointer" : "default"; }
     }
 
-    // ---- Gráfico de barras: comparativo por técnico ----
-    var tec = JSON.parse('{{ tec_chart_json|escapejs }}');
+    // ---- Tendencia real: creados y finalizados por fecha ----
+    var resumenGraficos = JSON.parse('{{ graficos_reportes_json|escapejs }}');
+    var tec = resumenGraficos.tendencia || {};
     var tecBox = document.getElementById("tecChartBox");
     var tecEmpty = document.getElementById("tecEmpty");
     if (tec && tec.labels && tec.labels.length) {
-        new Chart(document.getElementById("tecChart"), {
-            type: "bar",
+        var tecChart = null;
+        function renderTecChart(tipo) {
+            if (tecChart) tecChart.destroy();
+            var esArea = tipo === "area";
+            tecChart = new Chart(document.getElementById("tecChart"), {
+            type: esArea ? "line" : tipo,
             data: {
                 labels: tec.labels,
                 datasets: [
-                    { label: "Asignados", data: tec.asignados, backgroundColor: rptRealce("rgba(214,43,31,.85)"), borderRadius: 4, barPercentage: .7, hoverBorderWidth: 1 },
-                    { label: "Resueltos", data: tec.resueltos, backgroundColor: rptRealce("rgba(47,125,79,.85)"), borderRadius: 4, barPercentage: .7, hoverBorderWidth: 1 }
+                    { label: "Creados", data: tec.creados, backgroundColor: rptRealce("rgba(214,43,31,.85)"), borderColor: "#D62B1F", fill: esArea, tension: .35, borderRadius: 4, barPercentage: .7, pointRadius: 3, pointHoverRadius: 6, hoverBorderWidth: 1 },
+                    { label: "Resueltos", data: tec.resueltos, backgroundColor: rptRealce("rgba(47,125,79,.85)"), borderColor: "#2F7D4F", fill: esArea, tension: .35, borderRadius: 4, barPercentage: .7, pointRadius: 3, pointHoverRadius: 6, hoverBorderWidth: 1 }
                 ]
             },
             options: {
@@ -581,21 +730,13 @@
                 animation: RPT_ANIM,
                 transitions: RPT_TRANS,
                 onHover: rptCursor,
-                indexAxis: tec.labels.length > 6 ? "y" : "x",
+                indexAxis: tipo === "bar" && tec.labels.length > 6 ? "y" : "x",
                 plugins: {
                     legend: { position: "top", labels: { boxWidth: 10, font: { size: 11 } } },
                     tooltip: {
                         callbacks: {
                             title: function (items) { return items[0].label || ""; },
-                            afterBody: function (items) {
-                                var det = (tec.detalle || {})[items[0] && items[0].label];
-                                if (!det) return [];
-                                return det.map(function (d) {
-                                    var partes = [d[0], d[1], d[2]];
-                                    if (d[3]) partes.push(d[3]);
-                                    return partes.join(" · ");
-                                });
-                            }
+                            label: function (item) { return " " + item.dataset.label + ": " + item.parsed.y + " ticket(s)"; }
                         }
                     }
                 },
@@ -605,18 +746,25 @@
                 }
             }
         });
+        }
+        renderTecChart("line");
+        var tecType = document.getElementById("tecChartType");
+        if (tecType) tecType.addEventListener("change", function () { renderTecChart(tecType.value); });
     } else {
         tecBox.classList.add("rpt-hidden");
         tecEmpty.classList.remove("rpt-hidden");
     }
 
-    // ---- Gráfico circular: distribución por categoría ----
-    var cat = JSON.parse('{{ categorias_pie_json|escapejs }}');
+    // ---- Gráfico de barras: estados reales de los tickets filtrados ----
+    var cat = resumenGraficos.estado || {};
     var catBox = document.getElementById("catChartBox");
     var catEmpty = document.getElementById("catEmpty");
     if (cat && cat.labels && cat.labels.length) {
-        new Chart(document.getElementById("catChart"), {
-            type: "doughnut",
+        var catChart = null;
+        function renderCatChart(tipo) {
+            if (catChart) catChart.destroy();
+            catChart = new Chart(document.getElementById("catChart"), {
+            type: tipo,
             data: {
                 labels: cat.labels,
                 datasets: [{ data: cat.data, backgroundColor: rptRealceLista(cat.colores), borderColor: "#fff", borderWidth: 2, hoverBorderWidth: 3, hoverOffset: 8 }]
@@ -627,31 +775,189 @@
                 animation: RPT_ANIM,
                 transitions: RPT_TRANS,
                 onHover: rptCursor,
-                cutout: "62%",
+                cutout: tipo === "doughnut" ? "62%" : 0,
                 plugins: {
-                    legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 }, padding: 12 } },
+                    legend: { display: tipo !== "bar", position: "bottom", labels: { boxWidth: 10, font: { size: 11 }, padding: 12 } },
                     tooltip: {
                         callbacks: {
                             title: function (items) { return items[0].label || ""; },
-                            label: function (item) { return " " + item.parsed + " ticket(s)"; },
-                            afterBody: function (items) {
-                                var det = (cat.detalle || {})[items[0] && items[0].label];
-                                if (!det) return [];
-                                return det.map(function (d) {
-                                    var partes = [d[0], d[1], d[2]];
-                                    if (d[3]) partes.push(d[3]);
-                                    return partes.join(" · ");
-                                });
-                            }
+                            label: function (item) { return " " + item.label + ": " + item.parsed.y + " ticket(s)"; }
                         }
                     }
                 }
             }
         });
+        }
+        renderCatChart("bar");
+        var catType = document.getElementById("catChartType");
+        if (catType) catType.addEventListener("change", function () { renderCatChart(catType.value); });
     } else {
         catBox.classList.add("rpt-hidden");
         catEmpty.classList.remove("rpt-hidden");
     }
+})();
+
+// ---- Donas de distribución: categoría, prioridad y canal de ingreso ----
+(function () {
+    if (typeof Chart === "undefined") return;
+    var data = JSON.parse('{{ graficos_reportes_json|escapejs }}');
+    var categorias = JSON.parse('{{ categorias_pie_json|escapejs }}');
+    function renderDistribution(canvasId, emptyId, source) {
+        var canvas = document.getElementById(canvasId);
+        var empty = document.getElementById(emptyId);
+        if (!canvas || !source || !source.labels || !source.labels.length || !source.data.some(function (v) { return v > 0; })) {
+            if (canvas) canvas.closest(".chart-stage").classList.add("rpt-hidden");
+            if (empty) empty.classList.remove("rpt-hidden");
+            return;
+        }
+        new Chart(canvas, {
+            type: "doughnut",
+            data: { labels: source.labels, datasets: [{ data: source.data, backgroundColor: source.colores, borderColor: "#fff", borderWidth: 2, hoverOffset: 8 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: "62%",
+                animation: { duration: 500, easing: "easeOutQuart" },
+                plugins: {
+                    legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 }, padding: 10 } },
+                    tooltip: { callbacks: { label: function (item) {
+                        var total = item.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                        var pct = total ? Math.round(item.parsed / total * 100) : 0;
+                        return " " + item.label + ": " + item.parsed + " (" + pct + "%)";
+                    } } }
+                }
+            }
+        });
+    }
+    renderDistribution("distCategoryChart", "distCategoryEmpty", categorias);
+    renderDistribution("distPriorityChart", "distPriorityEmpty", data.prioridad);
+    renderDistribution("distOriginChart", "distOriginEmpty", data.origen);
+})();
+
+// ---- Búsqueda, estado y orden para el reporte por técnico ----
+(function () {
+    var tbody = document.getElementById("tecTbody");
+    if (!tbody) return;
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr[data-buscar]"));
+    var search = document.getElementById("tecBuscar");
+    var estado = document.getElementById("tecEstado");
+    var orden = document.getElementById("tecOrden");
+    var reset = document.getElementById("tecReset");
+    var perPage = document.getElementById("tecPerPage");
+    var pageSummary = document.getElementById("tecPageSummary");
+    var pageNumbers = document.getElementById("tecPageNumbers");
+    var prevBtn = document.getElementById("tecPrev");
+    var nextBtn = document.getElementById("tecNext");
+    var page = 1;
+
+    function render() {
+        var q = (search.value || "").trim().toLowerCase();
+        var e = estado.value;
+        var visibles = rows.filter(function (row) {
+            var coincideTexto = !q || (row.getAttribute("data-buscar") || "").indexOf(q) !== -1;
+            var coincideEstado = !e || row.getAttribute("data-estado") === e;
+            return coincideTexto && coincideEstado;
+        });
+        var campo = orden.value;
+        visibles.sort(function (a, b) {
+            return Number(b.getAttribute("data-" + campo) || -1) - Number(a.getAttribute("data-" + campo) || -1);
+        });
+        var per = Number(perPage.value);
+        var pages = Math.max(1, Math.ceil(visibles.length / per));
+        if (page > pages) page = pages;
+        var start = (page - 1) * per;
+        var slice = visibles.slice(start, start + per);
+        rows.forEach(function (row) { row.classList.add("rpt-hidden"); });
+        visibles.forEach(function (row) { tbody.appendChild(row); });
+        slice.forEach(function (row) { row.classList.remove("rpt-hidden"); });
+        var noMatch = document.getElementById("tecNoMatch");
+        if (noMatch) noMatch.remove();
+        if (!visibles.length && rows.length) {
+            noMatch = document.createElement("tr");
+            noMatch.id = "tecNoMatch";
+            noMatch.className = "table-empty";
+            noMatch.innerHTML = '<td colspan="9">No hay técnicos que coincidan con los filtros.</td>';
+            tbody.appendChild(noMatch);
+        }
+        var fin = Math.min(start + per, visibles.length);
+        pageSummary.textContent = visibles.length ? "Mostrando " + (start + 1) + " – " + fin + " de " + visibles.length + " técnicos" : "Sin técnicos";
+        pageNumbers.innerHTML = "";
+        for (var n = 1; n <= pages; n++) {
+            var number = document.createElement("button");
+            number.type = "button"; number.className = "rpt-page-number" + (n === page ? " is-active" : ""); number.textContent = n;
+            (function (target) { number.addEventListener("click", function () { page = target; render(); }); })(n);
+            pageNumbers.appendChild(number);
+        }
+        prevBtn.disabled = page <= 1;
+        nextBtn.disabled = page >= pages;
+    }
+    search.addEventListener("input", function () { page = 1; render(); });
+    estado.addEventListener("change", function () { page = 1; render(); });
+    orden.addEventListener("change", function () { page = 1; render(); });
+    perPage.addEventListener("change", function () { page = 1; render(); });
+    prevBtn.addEventListener("click", function () { if (page > 1) { page--; render(); } });
+    nextBtn.addEventListener("click", function () { page++; render(); });
+    reset.addEventListener("click", function () { search.value = ""; estado.value = ""; orden.value = "asignados"; page = 1; render(); });
+    if (rows.length) render();
+})();
+
+// ---- Menú contextual de acciones por técnico ----
+(function () {
+    var panel = null;
+    var activeButton = null;
+    function closeMenu() {
+        if (panel) { panel.remove(); panel = null; }
+        if (activeButton) { activeButton.classList.remove("is-open"); activeButton.setAttribute("aria-expanded", "false"); activeButton = null; }
+    }
+    function positionMenu(button) {
+        var rect = button.getBoundingClientRect();
+        var width = Math.min(236, window.innerWidth - 24);
+        var left = Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12));
+        var top = rect.bottom + 8;
+        panel.style.left = left + "px";
+        panel.style.top = top + "px";
+        var panelRect = panel.getBoundingClientRect();
+        if (panelRect.bottom > window.innerHeight - 12) {
+            panel.style.top = Math.max(12, rect.top - panelRect.height - 8) + "px";
+        }
+    }
+    document.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-tech-menu]");
+        if (button) {
+            event.preventDefault();
+            if (activeButton === button) { closeMenu(); return; }
+            closeMenu();
+            activeButton = button;
+            button.classList.add("is-open");
+            button.setAttribute("aria-expanded", "true");
+            panel = document.createElement("aside");
+            panel.className = "rpt-tech-menu-panel";
+            panel.setAttribute("role", "menu");
+            panel.innerHTML = '<div class="rpt-tech-menu-head"><svg class="icon"><use href="#i-user"/></svg><div><b></b><small>Acciones del técnico</small></div><span class="rpt-tech-menu-status"></span></div>' +
+                '<nav class="rpt-tech-menu-links"><a role="menuitem"><svg class="icon"><use href="#i-eye"/></svg><span><strong>Ver perfil del técnico</strong><small>Información y estadísticas</small></span></a>' +
+                '<a role="menuitem"><svg class="icon"><use href="#i-ticket"/></svg><span><strong>Ver tickets asignados</strong><small>Pendientes, en curso y cerrados</small></span></a>' +
+                '<a role="menuitem" href="#rptTechTitle"><svg class="icon"><use href="#i-chart"/></svg><span><strong>Ver rendimiento</strong><small>Métricas e historial</small></span></a>' +
+                '<a role="menuitem"><svg class="icon"><use href="#i-clock"/></svg><span><strong>Historial de actividad</strong><small>Acciones y tiempos registrados</small></span></a>' +
+                '<a role="menuitem"><svg class="icon"><use href="#i-download"/></svg><span><strong>Exportar reporte</strong><small>Descargar informe individual</small></span></a></nav>' +
+                '<nav class="rpt-tech-menu-links rpt-tech-menu-reassign"><a role="menuitem"><svg class="icon"><use href="#i-share"/></svg><span><strong>Reasignar tickets</strong><small>Acción exclusiva del administrador</small></span></a></nav>';
+            panel.querySelector(".rpt-tech-menu-head b").textContent = button.dataset.name;
+            var status = panel.querySelector(".rpt-tech-menu-status");
+            status.textContent = button.dataset.status;
+            if (button.dataset.status !== "Activo") status.classList.add("is-muted");
+            var links = panel.querySelectorAll("a[role=menuitem]");
+            links[0].href = button.dataset.profile;
+            links[1].href = button.dataset.tickets;
+            links[2].href = button.dataset.performance;
+            links[3].href = button.dataset.history;
+            links[4].href = button.dataset.export;
+            links[5].href = button.dataset.reassign;
+            document.body.appendChild(panel);
+            positionMenu(button);
+            return;
+        }
+        if (panel && !event.target.closest(".rpt-tech-menu-panel")) closeMenu();
+    });
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeMenu(); });
+    window.addEventListener("resize", function () { if (panel && activeButton) positionMenu(activeButton); });
+    window.addEventListener("scroll", closeMenu, true);
 })();
 
 // ---- Buscador + paginación (5 por página) en la tabla por usuario ----
@@ -659,25 +965,36 @@
     var tbody = document.getElementById("usuTbody");
     var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr[data-buscar]"));
     var search = document.getElementById("usuBuscar");
-    var count = document.getElementById("usuCount");
-    var pager = document.getElementById("usuPager");
-    var pageInfo = document.getElementById("usuPageInfo");
+    var estado = document.getElementById("usuEstado");
+    var ultimoEstado = document.getElementById("usuUltimoEstado");
+    var orden = document.getElementById("usuOrden");
+    var perPage = document.getElementById("usuPerPage");
+    var pageSummary = document.getElementById("usuPageSummary");
+    var pageNumbers = document.getElementById("usuPageNumbers");
     var prevBtn = document.getElementById("usuPrev");
     var nextBtn = document.getElementById("usuNext");
-    var PER = 5;
     var page = 1;
 
     function render() {
         var q = (search.value || "").trim().toLowerCase();
         var filtered = rows.filter(function (r) {
-            return !q || (r.getAttribute("data-buscar") || "").indexOf(q) !== -1;
+            var coincideTexto = !q || (r.getAttribute("data-buscar") || "").indexOf(q) !== -1;
+            var coincideEstado = !estado.value || r.getAttribute("data-estado") === estado.value;
+            var coincideUltimo = !ultimoEstado.value || r.getAttribute("data-ultimo") === ultimoEstado.value;
+            return coincideTexto && coincideEstado && coincideUltimo;
         });
-        var pages = Math.max(1, Math.ceil(filtered.length / PER));
+        var campo = orden.value;
+        filtered.sort(function (a, b) {
+            return Number(b.getAttribute("data-" + campo) || -1) - Number(a.getAttribute("data-" + campo) || -1);
+        });
+        var per = Number(perPage.value);
+        var pages = Math.max(1, Math.ceil(filtered.length / per));
         if (page > pages) page = pages;
-        var start = (page - 1) * PER;
-        var slice = filtered.slice(start, start + PER);
+        var start = (page - 1) * per;
+        var slice = filtered.slice(start, start + per);
 
         rows.forEach(function (r) { r.classList.add("rpt-hidden"); });
+        filtered.forEach(function (r) { tbody.appendChild(r); });
         slice.forEach(function (r) { r.classList.remove("rpt-hidden"); });
 
         var noMatch = document.getElementById("usuNoMatch");
@@ -686,30 +1003,133 @@
             noMatch = document.createElement("tr");
             noMatch.id = "usuNoMatch";
             noMatch.className = "table-empty";
-            noMatch.innerHTML = '<td colspan="8">Sin resultados para «' + search.value.trim() + "».</td>";
+            noMatch.innerHTML = '<td colspan="11">Sin resultados para «' + search.value.trim() + "».</td>";
             tbody.appendChild(noMatch);
         }
 
-        count.textContent = (filtered.length === rows.length)
-            ? rows.length + " usuario(s)"
-            : filtered.length + " de " + rows.length + " usuario(s)";
-
-        if (pages > 1) {
-            pager.classList.remove("rpt-hidden");
-            pageInfo.textContent = page + " / " + pages;
-        } else {
-            pager.classList.add("rpt-hidden");
-            pageInfo.textContent = "";
+        var fin = Math.min(start + per, filtered.length);
+        pageSummary.textContent = filtered.length ? "Mostrando " + (start + 1) + " – " + fin + " de " + filtered.length + " usuarios" : "Sin usuarios";
+        pageNumbers.innerHTML = "";
+        for (var n = 1; n <= pages; n++) {
+            var number = document.createElement("button");
+            number.type = "button"; number.className = "rpt-page-number" + (n === page ? " is-active" : ""); number.textContent = n;
+            (function (target) { number.addEventListener("click", function () { page = target; render(); }); })(n);
+            pageNumbers.appendChild(number);
         }
         prevBtn.disabled = page <= 1;
         nextBtn.disabled = page >= pages;
     }
 
     search.addEventListener("input", function () { page = 1; render(); });
+    estado.addEventListener("change", function () { page = 1; render(); });
+    ultimoEstado.addEventListener("change", function () { page = 1; render(); });
+    orden.addEventListener("change", function () { page = 1; render(); });
+    perPage.addEventListener("change", function () { page = 1; render(); });
     prevBtn.addEventListener("click", function () { if (page > 1) { page--; render(); } });
-    nextBtn.addEventListener("click", function () { if (page < Math.max(1, Math.ceil(rows.length / PER))) { page++; render(); } });
+    nextBtn.addEventListener("click", function () { page++; render(); });
 
     if (rows.length) render();
+})();
+
+// ---- Menú contextual de acciones por usuario ----
+(function () {
+    var panel = null;
+    var activeButton = null;
+    var routes = document.getElementById("rptUserMenuRoutes");
+    var glpiMap = {};
+    try { glpiMap = JSON.parse(document.getElementById("rptUserGlpiMap").textContent || "{}"); } catch (error) { glpiMap = {}; }
+
+    function closeMenu() {
+        if (panel) { panel.remove(); panel = null; }
+        if (activeButton) {
+            activeButton.classList.remove("is-open");
+            activeButton.setAttribute("aria-expanded", "false");
+            activeButton = null;
+        }
+    }
+    function positionMenu(button) {
+        var rect = button.getBoundingClientRect();
+        var width = Math.min(236, window.innerWidth - 24);
+        var left = Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12));
+        var top = rect.bottom + 8;
+        panel.style.left = left + "px";
+        panel.style.top = top + "px";
+        var panelRect = panel.getBoundingClientRect();
+        if (panelRect.bottom > window.innerHeight - 12) {
+            panel.style.top = Math.max(12, rect.top - panelRect.height - 8) + "px";
+        }
+    }
+    function urlConUsuario(base, email, extra) {
+        return base + "?usuario=" + encodeURIComponent(email) + (extra || "");
+    }
+
+    document.addEventListener("click", function (event) {
+        var button = event.target.closest(".rpt-user-action");
+        if (button) {
+            event.preventDefault();
+            if (activeButton === button) { closeMenu(); return; }
+            closeMenu();
+
+            var row = button.closest("tr");
+            var name = row.querySelector(".rpt-user-person b").textContent.trim();
+            var email = row.querySelector(".rpt-user-email").textContent.trim();
+            var status = row.querySelector(".rpt-user-state").textContent.trim();
+            var tickets = button.href;
+            var profile = routes.dataset.usersUrl + "?rol=usuario&q=" + encodeURIComponent(email);
+            var history = profile + "&ficha_tab=tickets";
+            var statistics = urlConUsuario(routes.dataset.reportsUrl, email, "#rptUserTitle");
+            var exportUrl = urlConUsuario(routes.dataset.exportUrl, email, "&seccion=usuarios");
+            var glpiUrl = glpiMap[email.toLowerCase()] || "";
+
+            activeButton = button;
+            button.classList.add("is-open");
+            button.setAttribute("aria-expanded", "true");
+            panel = document.createElement("aside");
+            panel.className = "rpt-tech-menu-panel rpt-user-menu-panel";
+            panel.setAttribute("role", "menu");
+            panel.innerHTML = '<div class="rpt-tech-menu-head"><svg class="icon"><use href="#i-user"/></svg><div><b></b><small>Acciones del usuario</small></div><span class="rpt-tech-menu-status"></span></div>' +
+                '<nav class="rpt-tech-menu-links"><a role="menuitem"><svg class="icon"><use href="#i-eye"/></svg><span><strong>Ver perfil del usuario</strong><small>Información y datos de contacto</small></span></a>' +
+                '<a role="menuitem"><svg class="icon"><use href="#i-ticket"/></svg><span><strong>Ver tickets creados</strong><small>Abiertos, resueltos y cerrados</small></span></a>' +
+                '<a role="menuitem"><svg class="icon"><use href="#i-chart"/></svg><span><strong>Ver estadísticas</strong><small>Actividad y métricas individuales</small></span></a>' +
+                '<a role="menuitem"><svg class="icon"><use href="#i-clock"/></svg><span><strong>Historial de actividad</strong><small>Seguimiento y cambios de tickets</small></span></a>' +
+                '<a role="menuitem"><svg class="icon"><use href="#i-download"/></svg><span><strong>Exportar reporte</strong><small>Descargar PDF o Excel</small></span></a></nav>' +
+                '<nav class="rpt-tech-menu-links rpt-tech-menu-reassign"><a role="menuitem"><svg class="icon"><use href="#i-external"/></svg><span><strong>Ver usuario en GLPI</strong><small>Disponible si está vinculado a GLPI</small></span></a></nav>';
+            panel.querySelector(".rpt-tech-menu-head b").textContent = name;
+            var state = panel.querySelector(".rpt-tech-menu-status");
+            state.textContent = status;
+            if (status !== "Activo") state.classList.add("is-muted");
+            var links = panel.querySelectorAll("a[role=menuitem]");
+            links[0].href = profile;
+            links[1].href = tickets;
+            links[2].href = statistics;
+            links[3].href = history;
+            links[4].href = exportUrl;
+            if (glpiUrl) {
+                links[5].href = glpiUrl;
+                links[5].target = "_blank";
+                links[5].rel = "noopener";
+            } else {
+                links[5].closest("nav").remove();
+            }
+            document.body.appendChild(panel);
+            positionMenu(button);
+            return;
+        }
+        if (panel && !event.target.closest(".rpt-user-menu-panel")) closeMenu();
+    });
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeMenu(); });
+    window.addEventListener("resize", function () { if (panel && activeButton) positionMenu(activeButton); });
+    window.addEventListener("scroll", closeMenu, true);
+})();
+
+// Los dos reportes empiezan con cinco filas, conservando las opciones del selector.
+(function () {
+    ["tecPerPage", "usuPerPage"].forEach(function (id) {
+        var select = document.getElementById(id);
+        if (!select) return;
+        select.value = "5";
+        select.dispatchEvent(new Event("change"));
+    });
 })();
 </script>
 {% endblock %}

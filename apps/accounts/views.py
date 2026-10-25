@@ -10,6 +10,7 @@ from django.shortcuts import redirect, render, reverse
 from django.views import View
 from django.views.decorators.http import require_POST
 from datetime import timedelta
+import json
 import logging
 import os
 
@@ -272,6 +273,16 @@ def ajustes_cuenta(request):
     else:
         form = PerfilForm(instance=user)
 
+    from .atajos import (
+        ICONOS_ENLACE,
+        POR_ROL,
+        disponibles_para,
+        normaliza_enlaces,
+    )
+
+    elegidos = list(getattr(user, "atajos_rapidos", None) or [])
+    if not elegidos:
+        elegidos = list(POR_ROL.get(user.rol, ()))
     ctx = {
         "form": form,
         "glpi_enabled": glpi_enabled,
@@ -279,6 +290,12 @@ def ajustes_cuenta(request):
         # Manual de uso: la vista previa y el archivo de Word del rol.
         "manual_disponible": archivo_manual(user.rol) is not None,
         "manual_archivo": nombre_manual(user.rol),
+        # Personalización del botón X: qué atajos del catálogo puede marcar
+        # este rol, cuáles tiene elegidos y los enlaces propios guardados.
+        "atajos_catalogo": disponibles_para(user.rol),
+        "atajos_elegidos": elegidos,
+        "atajos_enlaces": normaliza_enlaces(getattr(user, "atajos_enlaces", None)),
+        "atajos_iconos": ICONOS_ENLACE,
     }
     if user.rol == "admin":
         from apps.tickets.models import ConfigSitio
@@ -889,6 +906,45 @@ def configuracion_pagina(request):
     if siguiente.startswith("/"):
         return redirect(siguiente)
     return redirect(reverse("accounts:ajustes") + "#" + request.POST.get("volver", "pagina"))
+
+
+@login_required
+@require_POST
+def guardar_atajos(request):
+    """Guarda los atajos del botón X: catálogo elegido + enlaces propios.
+
+    Cada persona personaliza su propio botón desde Ajustes de cuenta. Las
+    claves que no pertenezcan a su rol se descartan; los enlaces se limpian y
+    se limitan (véase normaliza_enlaces). Si la petición es AJAX se responde
+    en JSON para pintar el botón sin recargar; si no, se vuelve a Ajustes.
+    """
+    from .atajos import disponibles_para, normaliza_enlaces
+
+    user = request.user
+    rol = getattr(user, "rol", "") or ""
+    validas = {e[0] for e in disponibles_para(rol)}
+
+    crudas = request.POST.getlist("atajos")
+    elegidos = [c for c in crudas if c in validas]
+    user.atajos_rapidos = elegidos if elegidos else []
+
+    # Los enlaces propios llegan como JSON en un campo oculto.
+    enlaces = []
+    crudo_enlaces = request.POST.get("enlaces", "")
+    if crudo_enlaces:
+        try:
+            enlaces = normaliza_enlaces(json.loads(crudo_enlaces))
+        except (TypeError, ValueError):
+            enlaces = []
+    user.atajos_enlaces = enlaces
+    user.save(update_fields=["atajos_rapidos", "atajos_enlaces"])
+
+    if request.POST.get("ajax") == "1":
+        from .atajos import para_usuario
+
+        return JsonResponse({"ok": True, "atajos": para_usuario(user)})
+    messages.success(request, "Tus atajos quedaron guardados.")
+    return redirect(reverse("accounts:ajustes") + "#atajos")
 
 
 # =====================================================================

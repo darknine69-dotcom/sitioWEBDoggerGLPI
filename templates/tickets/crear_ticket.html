@@ -13,35 +13,66 @@
         <div class="panel ticket-form-panel">
             <form method="post" enctype="multipart/form-data" class="user-ticket-form form-grid">
                 {% csrf_token %}
-                <h3 class="form-section-title"><span class="form-section-num">1</span> Información del ticket</h3>
+                <h3 class="form-section-title form-step-report"><span class="form-section-num">1</span> Cuéntanos qué pasó</h3>
                 {% for field in form %}
-                {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
                 {% if field.name == 'categoria' %}
-                <p class="cat-note span-2">
-                    <svg class="icon icon-sm"><use href="#i-help"/></svg>
-                    <span>La categoría se selecciona <strong>automáticamente</strong> mientras escribes el título o la descripción. Siempre puedes cambiarla manualmente.</span>
-                </p>
-                <p id="cat-auto-hint" class="cat-auto-hint span-2" hidden>
-                    <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
-                    <span>Categoría asignada automáticamente según tu descripción: <strong id="cat-auto-name"></strong>. Si prefieres otra, puedes cambiarla.</span>
-                    <button type="button" class="btn btn-outline btn-sm" data-suggest-focus>Cambiar categoría</button>
-                </p>
-                <div id="cat-suggest" class="cat-suggest span-2" hidden>
-                    <svg class="icon icon-sm"><use href="#i-help"/></svg>
-                    <span class="cat-suggest-text">Según tu descripción, probablemente sea la categoría <strong id="cat-suggest-name"></strong></span>
-                    <span class="cat-suggest-actions">
-                        <button type="button" class="btn btn-primary btn-sm" data-suggest-apply>Usar esta categoría</button>
-                        <button type="button" class="btn btn-outline btn-sm" data-suggest-dismiss>Descartar</button>
-                    </span>
+                <h3 class="form-section-title form-step-analysis"><span class="form-section-num">2</span> Dogger analiza tu solicitud</h3>
+                <div class="form-group span-2 auto-category-field">
+                    {{ field }}
+                    <section class="auto-category-card" aria-live="polite">
+                        <div class="auto-category-card-head">
+                            <span class="auto-category-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+                            <span>
+                                <strong>Dogger analiza tu solicitud</strong>
+                                <small>La categoría se asigna automáticamente según lo que describas.</small>
+                            </span>
+                            <span class="auto-category-lock" title="Asignación automática"><svg class="icon icon-sm"><use href="#i-lock"/></svg> Automática</span>
+                        </div>
+                        <div class="auto-category-result">
+                            <p id="cat-analysis-pending" class="cat-analysis-pending">
+                                <svg class="icon icon-sm"><use href="#i-search"/></svg>
+                                <span>Escribe el asunto y los detalles para identificar la incidencia.</span>
+                            </p>
+                            <p id="cat-auto-hint" class="cat-auto-hint" hidden>
+                                <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                                <span>Categoría detectada <strong id="cat-auto-name"></strong></span>
+                            </p>
+                            <div id="cat-suggest" class="cat-suggest" hidden>
+                                <span class="cat-search-spinner" role="img" aria-label="Buscando categoría"></span>
+                                <span class="cat-suggest-text">Estamos revisando los detalles para asignar la categoría más adecuada.</span>
+                            </div>
+                            <div id="cat-auto-meta" class="auto-category-meta" hidden>
+                                <span><small>Prioridad</small><strong id="cat-auto-priority"></strong></span>
+                                <span><small>ANS estimado</small><strong id="cat-auto-ans"></strong></span>
+                                <span><small>Asignación</small><strong id="cat-auto-tech-name">Técnico disponible</strong></span>
+                            </div>
+                            <div id="cat-auto-techs" class="auto-category-techs" hidden>
+                                <div class="auto-category-techs-head"><span>Equipo disponible ahora</span><small>La asignación se confirma al enviar</small></div>
+                                <div class="auto-category-techs-list">
+                                    {% for tecnico in tecnicos_disponibles %}
+                                    <span class="auto-tech-profile" data-auto-tech="{{ tecnico.id }}" title="{{ tecnico.nombre }} · {{ tecnico.carga }} ticket{{ tecnico.carga|pluralize }} activo{{ tecnico.carga|pluralize }}">
+                                        {% if tecnico.avatar %}<img src="{{ tecnico.avatar }}" alt="{{ tecnico.nombre }}">{% else %}<b>{{ tecnico.iniciales }}</b>{% endif %}
+                                    </span>
+                                    {% empty %}<span class="auto-tech-empty">Estamos buscando un técnico disponible.</span>{% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    {% if field.errors %}<div class="field-error">{{ field.errors|join:", " }}</div>{% endif %}
                 </div>
-                {% endif %}
-                {% if field.name == 'solicitante_nombre' %}
-                <h3 class="form-section-title"><span class="form-section-num">2</span> Tus datos</h3>
+                {% elif field.name == 'solicitante_punto' %}
+                <h3 class="form-section-title form-step-location"><span class="form-section-num">3</span> Ubicación del problema</h3>
+                {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
+                {% elif field.name == 'solicitante_nombre' %}
+                <h3 class="form-section-title form-step-confirm"><span class="form-section-num">4</span> Confirma y envía</h3>
+                {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
+                {% else %}
+                {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
                 {% endif %}
                 {% endfor %}
                 <div class="ticket-form-actions span-2">
-                    <span class="ticket-form-footnote"><svg class="icon icon-sm"><use href="#i-info"/></svg> Al enviar verás el resumen del ticket y el técnico asignado.</span>
-                    <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+                    <span class="ticket-form-footnote"><svg class="icon icon-sm"><use href="#i-info"/></svg> Se asignará al técnico disponible con menor carga.</span>
+                    <button type="submit" class="btn btn-primary">Enviar incidencia</button>
                 </div>
             </form>
         </div>
@@ -61,4 +92,5 @@
 </main>
 
 <script type="application/json" id="dogger-cat-keywords">{{ cat_sugerencias_json|safe }}</script>
+<script type="application/json" id="dogger-tecnicos-disponibles">{{ tecnicos_disponibles_json|safe }}</script>
 {% endblock %}

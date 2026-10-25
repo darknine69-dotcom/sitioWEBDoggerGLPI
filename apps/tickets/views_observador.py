@@ -12,7 +12,9 @@ aunque manipule la URL no llega a ver zonas ajenas.
 """
 
 import csv
+import json
 import logging
+from collections import Counter
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
@@ -114,6 +116,15 @@ def _estado_de(ticket, ahora):
     """Traduce un ticket al color del panel de monitoreo."""
     if ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
         return ESTADO_VERDE
+    # Una solicitud activa que ya superó su ANS es una incidencia aunque su
+    # prioridad original no fuese urgente. Antes solo se marcaban en rojo las
+    # urgentes abiertas y se escondían varios vencimientos reales.
+    if (
+        ticket.estado in _ACTIVOS
+        and ticket.fecha_limite_ans
+        and ahora >= ticket.fecha_limite_ans
+    ):
+        return ESTADO_ROJO
     if ticket.prioridad == _URGENTE and ticket.estado == Ticket.Estado.ABIERTO:
         return ESTADO_ROJO
     if ticket.estado == Ticket.Estado.EN_PROGRESO:
@@ -353,7 +364,9 @@ def panel_observador(request):
     # completo de usuarios, tickets, técnicos y respuestas. De una misma
     # pasada salen también la actividad reciente y «Presionar», que el
     # panel enseña al final.
-    contexto_mon = _contexto_monitoreo(usuario)
+    contexto_mon = _contexto_monitoreo(
+        usuario, (request.GET.get("zona_grafica") or "").strip()[:80]
+    )
     grupos = contexto_mon["grupos"]
     # Buscar y agregar integrado al panel: encuentra cuentas por nombre,
     # correo o ubicación para agregarlas a la lista sin salir de aquí.
@@ -688,7 +701,9 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
     resumen = _resumen_por_correo(usuario, global_scope=global_scope)
     filas = []
     for e in elementos:
-        correo = (e.usuario_email or "").strip().lower()
+        correo = (
+            e.usuario_email or (e.usuario.email if e.usuario_id else "")
+        ).strip().lower()
         consulta = visibles
         if correo:
             consulta = visibles.filter(
@@ -709,6 +724,24 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
             if orden[est] > orden[estado]:
                 estado = est
         r = resumen.get(correo, {})
+        tecnico_principal = r.get("tecnico_principal", "")
+        avatares_tecnicos = {
+            ticket.tecnico_asignado.nombre: ticket.tecnico_asignado.avatar
+            for ticket in tickets
+            if ticket.tecnico_asignado_id and ticket.tecnico_asignado.nombre
+        }
+        tecnicos = [
+            {**tecnico, "avatar": avatares_tecnicos.get(tecnico["nombre"])}
+            for tecnico in r.get("tecnicos", [])
+        ]
+        tecnico_objeto = next(
+            (
+                ticket.tecnico_asignado for ticket in tickets
+                if ticket.tecnico_asignado_id
+                and ticket.tecnico_asignado.nombre == tecnico_principal
+            ),
+            None,
+        )
         filas.append(
             {
                 "elemento": e,
@@ -729,8 +762,11 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
                 ),
                 "total": r.get("total", len(tickets)),
                 "estado": estado,
-                "tecnico": r.get("tecnico_principal", ""),
-                "tecnicos": r.get("tecnicos", []),
+                "tecnico": tecnico_principal,
+                "tecnico_avatar": (
+                    tecnico_objeto.avatar if tecnico_objeto and tecnico_objeto.avatar else None
+                ),
+                "tecnicos": tecnicos,
                 "resueltos": r.get(
                     "resueltos",
                     sum(1 for t in tickets if t.estado == Ticket.Estado.RESUELTO),
@@ -852,6 +888,23 @@ def agregar_mi_lista(request):
     else:
         return redirect(reverse("tickets:obs_buscar"))
 
+    # Desde Gestionar zona la búsqueda incorpora la cuenta directamente a la
+    # carpeta actual, sin obligar al observador a abandonar esta pantalla.
+    zona_id = (request.POST.get("zona") or "").strip()
+    if zona_id:
+        try:
+            zona = ZonaObservador.objects.get(pk=int(zona_id), observador=usuario)
+        except (ZonaObservador.DoesNotExist, ValueError, TypeError):
+            raise Http404
+        elemento.zona = zona
+        elemento.save(update_fields=["zona"])
+        _auditar(
+            usuario, MonitoreoAuditoria.AGREGAR_MIEMBRO, usuario,
+            zona.nombre, (elemento.usuario_email or ""),
+            cuenta=(elemento.usuario_email or ""), motivo=_motivo_post(request),
+        )
+        _marca_equipo_supervisor(zona, request)
+
     destino = request.POST.get("volver") or reverse("tickets:obs_mi_lista")
     return redirect(destino)
 
@@ -908,7 +961,9 @@ def monitorear_observador(request):
     muestre el detalle completo y no solo una tabla plana.
     """
     usuario = request.user
-    contexto = _contexto_monitoreo(usuario)
+    contexto = _contexto_monitoreo(
+        usuario, (request.GET.get("zona_grafica") or "").strip()[:80]
+    )
     return render(request, "observador/monitoreo.html", contexto)
 
 
@@ -1061,7 +1116,7 @@ def _tabla_todos_usuarios(usuario, resumen):
     return filas, zonas
 
 
-def _contexto_monitoreo(usuario):
+def _contexto_monitoreo(usuario, zona_grafica=""):
     """Filas, grupos por zona y totales de la lista del observador.
 
     Lo comparten el Monitoreo y el Panel: el panel es el monitoreo, con
@@ -1114,9 +1169,10 @@ def _contexto_monitoreo(usuario):
         ans_avisos.revisar_y_avisar(consulta=consulta_ans)
     except Exception:  # noqa: BLE001 - un correo malo no puede tumbar el panel
         logger.exception("No se pudieron mandar los avisos de ANS")
-    listado_ans = ans_avisos.por_vencer(
-        consulta=consulta_ans, solo_sin_avisar=False
-    )
+    # Esta consulta se usa únicamente para avisar según la configuración de
+    # alertas de cada carpeta. La lista y los indicadores se recalculan abajo
+    # con la carpeta seleccionada, incluso si no tiene avisos activados.
+    ans_avisos.por_vencer(consulta=consulta_ans, solo_sin_avisar=False)
     # El mismo tablero del administrador, acotado a lo que este observador
     # ve: mismas gráficas y mismos tipos de gráfico al acercar el ratón,
     # sin salirse de sus puntos asignados.
@@ -1126,31 +1182,196 @@ def _contexto_monitoreo(usuario):
         _build_tecnico_dashboard,
     )
 
-    try:
-        dash_json = _build_tecnico_dashboard(
-            consulta=_visible_a_observador(usuario, Ticket.objects.all())
+    zona_seleccionada = next(
+        (
+            zona for zona in zonas_obs
+            if zona.nombre.casefold() == zona_grafica.casefold()
+        ),
+        None,
+    )
+    elementos_analisis = elementos
+    if zona_seleccionada:
+        elementos_analisis = ElementoMiLista.objects.filter(
+            observador=usuario,
+            zona=zona_seleccionada,
+            tipo=ElementoMiLista.TIPO_USUARIO,
+        ).select_related("usuario", "punto")
+        alcance_zona = Q()
+        tiene_alcance = False
+        for correo in elementos_analisis.exclude(
+            usuario_email=""
+        ).values_list("usuario_email", flat=True):
+            alcance_zona |= Q(solicitante_email__iexact=correo.strip())
+            tiene_alcance = True
+        for correo in elementos_analisis.exclude(
+            usuario__email__isnull=True
+        ).values_list("usuario__email", flat=True):
+            if correo and correo.strip():
+                alcance_zona |= Q(solicitante_email__iexact=correo.strip())
+                tiene_alcance = True
+        for nombre_punto in elementos_analisis.filter(
+            punto__isnull=False
+        ).values_list("punto__nombre", flat=True):
+            alcance_zona |= Q(solicitante_punto__iexact=nombre_punto)
+            tiene_alcance = True
+        tickets_graficas = (
+            Ticket.objects.filter(alcance_zona)
+            if tiene_alcance else Ticket.objects.none()
         )
+    else:
+        miembros_seguidos = ElementoMiLista.objects.filter(
+            observador=usuario,
+            tipo=ElementoMiLista.TIPO_USUARIO,
+        ).select_related("usuario", "punto")
+        alcance_general = Q()
+        tiene_alcance_general = False
+        for correo in miembros_seguidos.exclude(
+            usuario_email=""
+        ).values_list("usuario_email", flat=True):
+            alcance_general |= Q(solicitante_email__iexact=correo.strip())
+            tiene_alcance_general = True
+        for correo in miembros_seguidos.exclude(
+            usuario__email__isnull=True
+        ).values_list("usuario__email", flat=True):
+            if correo and correo.strip():
+                alcance_general |= Q(solicitante_email__iexact=correo.strip())
+                tiene_alcance_general = True
+        for punto in puntos_del_observador(usuario):
+            alcance_general |= Q(solicitante_punto__iexact=punto)
+            tiene_alcance_general = True
+        tickets_graficas = (
+            Ticket.objects.filter(alcance_general)
+            if tiene_alcance_general else Ticket.objects.none()
+        )
+    try:
+        dash_json = _build_tecnico_dashboard(consulta=tickets_graficas)
     except Exception:  # noqa: BLE001 - una gráfica no tumbará el tablero
         logger.exception("No se pudo armar el tablero del observador")
         dash_json = "{}"
+    # Los cuatro resúmenes propios del observador viajan dentro del mismo
+    # contrato de datos de Chart.js. Así se pueden alternar en las tarjetas
+    # superiores y no quedan como bloques aislados sin el estilo del tablero.
+    tickets_analisis = list(
+        tickets_graficas.select_related("categoria", "tecnico_asignado")
+    )
+    conteo_graficas = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
+    ahora_graficas = timezone.now()
+    por_punto = {}
+    por_tecnico = Counter()
+    for ticket in tickets_analisis:
+        conteo_graficas[_estado_de(ticket, ahora_graficas)] += 1
+        punto = (ticket.solicitante_punto or "Sin zona").strip() or "Sin zona"
+        fila = por_punto.setdefault(punto, {"tickets": 0, "abiertos": 0})
+        fila["tickets"] += 1
+        if ticket.estado in _ACTIVOS:
+            fila["abiertos"] += 1
+        if ticket.tecnico_asignado_id:
+            por_tecnico[ticket.tecnico_asignado.nombre] += 1
+
+    # Estos son los valores de la cabecera y de ANS. No se derivan de las
+    # filas globales: deben representar exactamente la carpeta elegida (o el
+    # conjunto completo si se eligió "Todas mis zonas").
+    ahora_indicadores = timezone.now()
+    listado_ans = ans_avisos.por_vencer(
+        consulta=tickets_graficas, limite=None, solo_sin_avisar=False
+    )
+    total_tickets_indicadores = len(tickets_analisis)
+    total_abiertos_indicadores = sum(
+        ticket.estado in _ACTIVOS for ticket in tickets_analisis
+    )
+    total_cerrados_indicadores = sum(
+        ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
+        for ticket in tickets_analisis
+    )
+    correos_indicadores = set()
+    for elemento in elementos_analisis:
+        correo = elemento.usuario_email or (
+            elemento.usuario.email if elemento.usuario_id else ""
+        )
+        correo = (correo or "").strip().lower()
+        if correo:
+            correos_indicadores.add(correo)
+    total_cuentas_indicadores = (
+        len(correos_indicadores) if zona_seleccionada else len(filas)
+    )
+    puntos_ordenados = sorted(por_punto, key=lambda p: (-por_punto[p]["tickets"], p.casefold()))
+    tecnicos_ordenados = sorted(por_tecnico.items(), key=lambda item: (-item[1], item[0].casefold()))[:8]
+    observador_graficas = {
+        "estado_lista": {
+            "labels": ["Activos", "Pendientes", "Incidencias"],
+            "datasets": [{"label": "Tickets", "data": [conteo_graficas[ESTADO_VERDE], conteo_graficas[ESTADO_AMARILLO], conteo_graficas[ESTADO_ROJO]], "colors": ["#2F7D4F", "#D9A436", "#D62B1F"]}],
+        },
+        "carga_zona": {
+            "labels": puntos_ordenados,
+            "datasets": [
+                {"label": "Tickets", "data": [por_punto[p]["tickets"] for p in puntos_ordenados], "color": "#4F46E5"},
+                {"label": "Abiertos", "data": [por_punto[p]["abiertos"] for p in puntos_ordenados], "color": "#F97316"},
+            ],
+        },
+        "tecnicos": {
+            "labels": [nombre for nombre, _ in tecnicos_ordenados],
+            "datasets": [{"label": "Tickets asignados", "data": [total for _, total in tecnicos_ordenados], "color": "#1D4ED8"}],
+        },
+        "resumen_zona": {
+            "labels": puntos_ordenados,
+            "datasets": [
+                {"label": "Tickets", "data": [por_punto[p]["tickets"] for p in puntos_ordenados], "color": "#6D28D9"},
+                {"label": "Abiertos", "data": [por_punto[p]["abiertos"] for p in puntos_ordenados], "color": "#D62B1F"},
+            ],
+        },
+    }
+    try:
+        datos_dash = json.loads(dash_json)
+        datos_dash["observador"] = observador_graficas
+        dash_json = json.dumps(datos_dash, ensure_ascii=False)
+    except (TypeError, ValueError):
+        pass
+    zona_activa = next(
+        (
+            grupo for grupo in grupos
+            if zona_seleccionada and grupo["zona"] and grupo["zona"].pk == zona_seleccionada.pk
+        ),
+        next((grupo for grupo in grupos if grupo["zona"] is not None), None),
+    )
+    presionar = _tecnicos_para_presionar(filas)
+    max_carga_tecnico = max([len(e["tickets"]) for e in presionar] + [0])
+    for entrada in presionar:
+        ocupacion = (
+            int(round(100.0 * len(entrada["tickets"]) / max_carga_tecnico))
+            if max_carga_tecnico else 0
+        )
+        entrada["ocupacion"] = ocupacion
+        entrada["ocupacion_nivel"] = (
+            "alta" if ocupacion >= 75 else
+            "media" if ocupacion >= 45 else
+            "baja" if ocupacion > 0 else "sin-carga"
+        )
     return {
         "filas": filas,
         "conteo": conteo,
-        "total": len(filas),
+        "total": total_cuentas_indicadores,
         "grupos": grupos,
-        "total_zonas": sum(1 for g in grupos if g["zona"] is not None),
-        "total_tickets": total_tickets,
-        "total_abiertos": sum(f["abiertos"] for f in filas),
+        "total_zonas": 1 if zona_seleccionada else sum(1 for g in grupos if g["zona"] is not None),
+        "total_tickets": total_tickets_indicadores,
+        "total_abiertos": total_abiertos_indicadores,
         "avance_global": (
-            int(round(100.0 * sum(f["cerrados_total"] for f in filas) / total_tickets))
-            if total_tickets else 0
+            int(round(100.0 * total_cerrados_indicadores / total_tickets_indicadores))
+            if total_tickets_indicadores else 0
         ),
+        "total_incidentes": conteo_graficas[ESTADO_ROJO],
         "top_tecnicos": top_tecnicos,
         "dona": dona,
         "todos_usuarios": todos_usuarios,
         "zonas_obs": zonas_obs,
+        "zona_activa": zona_activa,
+        # El carrusel del monitoreo usa los mismos grupos ya calculados: no
+        # altera el alcance del observador ni vuelve a consultar los tickets.
+        "zonas_carrusel": [grupo for grupo in grupos if grupo["zona"] is not None],
         "actividad": _actividad_reciente(filas),
-        "presionar": _tecnicos_para_presionar(filas),
+        "presionar": presionar,
+        # La ocupación se expresa frente a la carga más alta del equipo que
+        # atiende esta lista; no existe una capacidad fija por técnico.
+        "max_carga_tecnico": max_carga_tecnico,
         "max_zona_tickets": max(
             [g["total_tickets"] for g in grupos] + [0]
         ),
@@ -1171,6 +1392,9 @@ def _contexto_monitoreo(usuario):
         "dash_json": dash_json,
         "alcances_tortas": _ALCANCES_TORTAS,
         "alcances_20dias": _ALCANCES_20_DIAS,
+        "zonas_graficas": zonas_obs,
+        "zona_grafica": zona_seleccionada.nombre if zona_seleccionada else "",
+        "zona_grafica_total": tickets_graficas.count(),
     }
 
 
@@ -1636,9 +1860,26 @@ def zonas_observador(request):
                 )
                 _marca_equipo_supervisor(zona, request)
                 return redirect("tickets:obs_zona_detalle", pk=zona.pk)
-    resumen = _resumen_por_correo(usuario)
     zonas = list(
-        ZonaObservador.objects.filter(observador=usuario).prefetch_related("elementos")
+        ZonaObservador.objects.filter(observador=usuario).prefetch_related(
+            "elementos__usuario"
+        )
+    )
+    correos_zona = {
+        correo
+        for zona in zonas
+        for elemento in zona.elementos.all()
+        if elemento.tipo == ElementoMiLista.TIPO_USUARIO
+        for correo in [
+            (
+                elemento.usuario_email
+                or (elemento.usuario.email if elemento.usuario_id else "")
+            ).strip().lower()
+        ]
+        if correo
+    }
+    resumen = _resumen_por_correo(
+        usuario, global_scope=True, correos=sorted(correos_zona)
     )
     tarjetas = []
     for zona in zonas:
@@ -1646,11 +1887,45 @@ def zonas_observador(request):
             e for e in zona.elementos.all()
             if e.tipo == ElementoMiLista.TIPO_USUARIO
         ]
-        abiertos = sum(
-            resumen.get((e.usuario_email or "").strip().lower(), {}).get("abiertos", 0)
-            for e in miembros
-        )
-        tarjetas.append({"zona": zona, "personas": len(miembros), "abiertos": abiertos})
+        # Cifras de la carpeta sumando las cuentas que tiene dentro: es lo
+        # que da «los datos completos» de cada punto de venta de un vistazo.
+        total = abiertos = progreso = resueltos = urgentes = puntos_n = 0
+        tecnicos = {}
+        for e in miembros:
+            correo = (
+                e.usuario_email
+                or (e.usuario.email if e.usuario_id else "")
+            ).strip().lower()
+            r = resumen.get(correo, {})
+            total += r.get("total", 0)
+            abiertos += r.get("abiertos", 0)
+            progreso += r.get("en_progreso", 0)
+            resueltos += r.get("cerrados_total", 0)
+            urgentes += r.get("urgentes", 0)
+            if r.get("puntos"):
+                puntos_n = max(puntos_n, len(r.get("puntos") or []))
+            for tec in r.get("tecnicos") or []:
+                tecnicos[tec["nombre"]] = tecnicos.get(tec["nombre"], 0) + tec["tickets"]
+        avance = int(round(100.0 * resueltos / total)) if total else 0
+        tarjetas.append({
+            "zona": zona,
+            "personas": len(miembros),
+            "abiertos": abiertos,
+            "total": total,
+            "progreso": progreso,
+            "resueltos": resueltos,
+            "urgentes": urgentes,
+            "avance": avance,
+            "falta": 100 - avance,
+            "puntos_n": puntos_n,
+            "tecnicos": [
+                {"nombre": nombre, "tickets": cuentas}
+                for nombre, cuentas in sorted(
+                    tecnicos.items(), key=lambda kv: (-kv[1], kv[0])
+                )
+            ][:4],
+            "estado": ESTADO_AMARILLO if abiertos else ESTADO_VERDE,
+        })
     sin_zona = (
         ElementoMiLista.objects.filter(
             observador=usuario,
@@ -1676,16 +1951,15 @@ def zonas_observador(request):
 def zona_detalle_observador(request, pk):
     """Seguimiento por zona: su gente, sus tickets y las respuestas.
 
-    Cada persona trae sus números (acotados a los puntos del observador,
-    como en el resto del módulo) y las últimas respuestas que le dieron
-    los técnicos a sus tickets.
+    Las cuentas asignadas explícitamente a la carpeta se siguen globalmente,
+    incluso si alguno de sus tickets pertenece a otro punto.
     """
     usuario = request.user
     try:
         zona = ZonaObservador.objects.get(pk=pk, observador=usuario)
     except ZonaObservador.DoesNotExist:
         raise Http404
-    filas, _ = _cuentas_y_tickets_de_zona(zona)
+    filas, _ = _cuentas_y_tickets_de_zona(zona, global_scope=True)
     # Resumen de la carpeta: lo primero que se ve de la zona.
     total_tickets = sum(f["total"] for f in filas)
     orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
@@ -1705,10 +1979,55 @@ def zona_detalle_observador(request, pk):
         "estado": estado_zona,
     }
     resumen["falta"] = 100 - resumen["avance"]
+    agregar_q = (request.GET.get("agregar_q") or "").strip()[:120]
+    candidatos = []
+    if agregar_q:
+        ya_en_zona = {
+            (elemento.usuario_email or "").strip().lower()
+            for elemento in zona.elementos.filter(tipo=ElementoMiLista.TIPO_USUARIO)
+        }
+        for cuenta in Usuario.objects.filter(activo=True, is_active=True).filter(
+            Q(nombre__icontains=agregar_q) | Q(email__icontains=agregar_q)
+            | Q(ubicacion__icontains=agregar_q)
+        ).order_by("nombre")[:12]:
+            correo = (cuenta.email or "").strip().lower()
+            if correo and correo not in ya_en_zona:
+                candidatos.append({"nombre": cuenta.nombre or correo, "email": correo, "ubicacion": cuenta.ubicacion})
+    tecnicos = {}
+    for fila in filas:
+        for tecnico in fila["tecnicos"]:
+            registro = tecnicos.setdefault(
+                tecnico["nombre"],
+                {"nombre": tecnico["nombre"], "tickets": 0, "abiertos": 0,
+                 "avatar": tecnico.get("avatar")},
+            )
+            registro["tickets"] += tecnico["tickets"]
+            if not registro.get("avatar") and tecnico.get("avatar"):
+                registro["avatar"] = tecnico["avatar"]
+        for ticket in fila["tickets"]:
+            if ticket.tecnico_asignado_id and ticket.estado in _ACTIVOS:
+                nombre = (ticket.tecnico_asignado.nombre or "").strip()
+                if nombre in tecnicos:
+                    tecnicos[nombre]["abiertos"] += 1
+    alertas = [ticket for fila in filas for ticket in fila["ans_tickets"]]
     return render(
         request,
         "observador/zona_detalle.html",
-        {"zona": zona, "filas": filas, "resumen": resumen},
+        {
+            "zona": zona,
+            "filas": filas,
+            "resumen": resumen,
+            "tecnicos_zona": sorted(
+                tecnicos.values(), key=lambda tecnico: (-tecnico["abiertos"], -tecnico["tickets"], tecnico["nombre"])
+            ),
+            "alertas_zona": sorted(
+                alertas, key=lambda ticket: (ticket.ans_estado != "vencido", ticket.fecha_limite_ans or timezone.now())
+            ),
+            "ans_vencidos": sum(1 for ticket in alertas if ticket.ans_estado == "vencido"),
+            "ans_por_vencer": sum(1 for ticket in alertas if ticket.ans_estado == "por-vencer"),
+            "agregar_q": agregar_q,
+            "candidatos": candidatos,
+        },
     )
 
 
@@ -1717,34 +2036,45 @@ def _cuentas_y_tickets_de_zona(zona, limite_tickets=20, global_scope=None):
 
     Los tickets viajan en la fila porque las tarjetas de «Sus cuentas» los
     muestran uno a uno (el mismo chip que Monitoreo): sin ellos solo se ve
-    el contador y no se sabe qué hay detrás. El alcance es el de siempre
-    del módulo, acotado a los puntos del observador.
+    el contador y no se sabe qué hay detrás. Al seguir cuentas de una carpeta,
+    se muestran todos los tickets de esas cuentas, aunque sean de otros puntos.
 
     Lo comparten la pantalla de la carpeta y su Excel: así lo que baja el
     fichero es exactamente lo que se ve en la página.
     """
     usuario = zona.observador
-    # Sin puntos asignados el filtro devolvería vacío y la ficha salía en
-    # ceros y sin tickets: en ese caso se ve todo, igual que en Mi lista. Con
-    # puntos asignados el filtro manda, para no arrastrar tickets de zonas
-    # ajenas.
+    # Las cuentas agregadas explícitamente a una carpeta se siguen por su
+    # correo; sus tickets no dependen de los puntos asignados al observador.
     alcance_global = (
         not puntos_del_observador(usuario)
         if global_scope is None else global_scope
     )
-    resumen = _resumen_por_correo(usuario, global_scope=alcance_global)
     visibles = (
         Ticket.objects.all() if alcance_global
         else _visible_a_observador(usuario, Ticket.objects.all())
     )
-    miembros = (
+    miembros = list(
         zona.elementos.filter(tipo=ElementoMiLista.TIPO_USUARIO)
         .select_related("usuario")
         .order_by("usuario_email")
     )
+    correos_miembros = [
+        (
+            elemento.usuario_email
+            or (elemento.usuario.email if elemento.usuario_id else "")
+        ).strip().lower()
+        for elemento in miembros
+    ]
+    resumen = _resumen_por_correo(
+        usuario,
+        global_scope=alcance_global,
+        correos=correos_miembros,
+    )
     filas = []
     for e in miembros:
-        correo = (e.usuario_email or "").strip().lower()
+        correo = (
+            e.usuario_email or (e.usuario.email if e.usuario_id else "")
+        ).strip().lower()
         r = resumen.get(correo, {})
         propios = []
         if correo:
@@ -1771,8 +2101,45 @@ def _cuentas_y_tickets_de_zona(zona, limite_tickets=20, global_scope=None):
                 "estado": r.get("estado", ESTADO_VERDE),
                 "tickets": propios,
                 "respuestas": _respuestas_de_tecnicos(correo, visibles),
+                "tecnicos": [
+                    {
+                        **tecnico,
+                        "avatar": next(
+                            (
+                                ticket.tecnico_asignado.avatar
+                                for ticket in propios
+                                if ticket.tecnico_asignado_id
+                                and ticket.tecnico_asignado.nombre == tecnico["nombre"]
+                                and ticket.tecnico_asignado.avatar
+                            ),
+                            None,
+                        ),
+                    }
+                    for tecnico in r.get("tecnicos", [])
+                ],
+                "ans_tickets": [],
+                "ans_vencidos": 0,
+                "ans_por_vencer": 0,
             }
         )
+    # Un solo barrido de ANS para la carpeta completa: las alertas de la zona
+    # y las de cada punto salen exactamente del mismo conjunto de tickets.
+    por_correo = {fila["email"]: fila for fila in filas if fila["email"]}
+    if por_correo:
+        consulta_ans = visibles.annotate(
+            correo_normalizado=Lower("solicitante_email")
+        ).filter(correo_normalizado__in=list(por_correo))
+        for ticket in ans_avisos.por_vencer(
+            consulta=consulta_ans, limite=None, solo_sin_avisar=False
+        ):
+            fila = por_correo.get((ticket.solicitante_email or "").strip().lower())
+            if fila is None:
+                continue
+            fila["ans_tickets"].append(ticket)
+            if ticket.ans_estado == "vencido":
+                fila["ans_vencidos"] += 1
+            else:
+                fila["ans_por_vencer"] += 1
     return filas, [t for f in filas for t in f["tickets"]]
 
 
@@ -2076,5 +2443,7 @@ def zona_excel_observador(request, pk):
         zona = ZonaObservador.objects.get(pk=pk, observador=usuario)
     except ZonaObservador.DoesNotExist:
         raise Http404
-    filas, tickets = _cuentas_y_tickets_de_zona(zona, limite_tickets=500)
+    filas, tickets = _cuentas_y_tickets_de_zona(
+        zona, limite_tickets=500, global_scope=True
+    )
     return _xlsx_zona(zona, filas, tickets)

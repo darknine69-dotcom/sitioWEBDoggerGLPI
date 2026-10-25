@@ -132,6 +132,26 @@ class ChatWidgetTest(TestCase):
             200,
         )
 
+    def test_observador_ve_usuario_asociado_por_clave_foranea(self):
+        ElementoMiLista.objects.create(
+            observador=self.obs,
+            tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario=self.usuario,
+        )
+        ticket_fuera_de_punto = Ticket.objects.create(
+            titulo="Cuenta asociada", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email=self.usuario.email, solicitante_punto="Zona Ajena",
+        )
+        self.client.force_login(self.obs)
+        tickets = self.client.get(reverse("tickets:chat_tickets")).json()["tickets"]
+        self.assertIn(ticket_fuera_de_punto.codigo, [ticket["codigo"] for ticket in tickets])
+        self.assertEqual(
+            self.client.get(
+                reverse("tickets:chat_hilo", args=[ticket_fuera_de_punto.pk])
+            ).status_code,
+            200,
+        )
+
     def test_tecnico_y_admin_gestionan(self):
         self.client.force_login(self.tec)
         self.assertEqual(
@@ -187,3 +207,41 @@ class ChatWidgetTest(TestCase):
         ningunos = self.client.get(
             reverse("tickets:chat_tickets") + "?usuario=nadie@x.com").json()["tickets"]
         self.assertEqual(ningunos, [])
+
+    def test_chat_tickets_dice_el_tecnico_asignado(self):
+        """El buscador del chat responde «quién atiende este ticket»: cada
+        ticket trae el nombre del técnico y vacío cuando no hay ninguno."""
+        self.client.force_login(self.tec)
+        por_codigo = {
+            t["codigo"]: t
+            for t in self.client.get(reverse("tickets:chat_tickets")).json()["tickets"]
+        }
+        con_tec = por_codigo[self.ticket.codigo]
+        self.assertEqual(con_tec["tecnico"], "Tec")
+        self.assertEqual(con_tec["tecnico_email"], "tec@x.com")
+        sin_tec = por_codigo[self.ajeno.codigo]
+        self.assertEqual(sin_tec["tecnico"], "")
+        self.assertEqual(sin_tec["tecnico_email"], "")
+
+    def test_buscar_tickets_tecnico_por_codigo_y_tecnico(self):
+        """La lupa del botón X busca por código, título, estado o técnico y
+        devuelve el enlace al detalle con el técnico asignado."""
+        self.client.force_login(self.tec)
+        url = reverse("tickets:buscar_tickets_tecnico")
+
+        por_codigo = self.client.get(url, {"q": self.ticket.codigo}).json()
+        self.assertTrue(por_codigo["ok"])
+        aciertos = {t["codigo"]: t for t in por_codigo["tickets"]}
+        self.assertIn(self.ticket.codigo, aciertos)
+        self.assertEqual(aciertos[self.ticket.codigo]["tecnico"], "Tec")
+        self.assertEqual(
+            aciertos[self.ticket.codigo]["url"],
+            reverse("tickets:detalle", args=[self.ticket.pk]),
+        )
+
+        # Buscar por el nombre del técnico también lo encuentra.
+        por_tec = self.client.get(url, {"q": "Tec"}).json()["tickets"]
+        self.assertIn(self.ticket.codigo, {t["codigo"] for t in por_tec})
+
+        # Menos de dos letras no consulta nada.
+        self.assertEqual(self.client.get(url, {"q": "T"}).json()["tickets"], [])

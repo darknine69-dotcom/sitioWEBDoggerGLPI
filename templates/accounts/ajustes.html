@@ -46,6 +46,10 @@
                     <svg class="icon icon-sm"><use href="#i-bell"/></svg>
                     Notificaciones
                 </a>
+                <a href="#atajos" class="settings-nav-link" data-settings-tab="atajos">
+                    <svg class="icon icon-sm"><use href="#i-grid"/></svg>
+                    Atajos
+                </a>
                 {% if request.user.es_staff_helpdesk %}
                 <a href="#glpi" class="settings-nav-link" data-settings-tab="glpi">
                     <svg class="icon icon-sm"><use href="#i-external"/></svg>
@@ -318,6 +322,69 @@
                 </div>
             </section>
 
+            <!-- ATAJOS DEL BOTÓN X -->
+            <section id="atajos" class="settings-panel" data-settings-panel="atajos">
+                <div class="settings-panel-header">
+                    <h3>Atajos del botón X</h3>
+                    <p>Elige qué sale al abrir el botón flotante y añade tus propios enlaces.</p>
+                </div>
+                <form method="post" action="{% url 'accounts:guardar_atajos' %}" class="settings-form" id="axAjustesForm">
+                    {% csrf_token %}
+                    <div class="notif-item">
+                        <div class="notif-info">
+                            <strong>Atajos del sistema</strong>
+                            <small>Marca los accesos que quieres tener a un toque. El buscador de tickets por técnico siempre está disponible.</small>
+                        </div>
+                    </div>
+                    <div class="ax-ajustes-catalogo">
+                        {% for clave, etiqueta, icono, vista, roles in atajos_catalogo %}
+                        <label class="ax-ajustes-op">
+                            <input type="checkbox" name="atajos" value="{{ clave }}"
+                                   {% if clave in atajos_elegidos %}checked{% endif %}>
+                            <span class="ax-ajustes-ico"><svg class="icon icon-sm"><use href="#{{ icono|default:'i-link' }}"/></svg></span>
+                            <span class="ax-ajustes-nombre">{{ etiqueta }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="notif-item" style="margin-top:14px;">
+                        <div class="notif-info">
+                            <strong>Mis enlaces</strong>
+                            <small>Agrega enlaces propios (una URL, un nombre y un icono). Aparecen al final del menú del botón X.</small>
+                        </div>
+                        <button type="button" class="btn btn-outline btn-sm" id="axEnlaceNuevo">
+                            <svg class="icon icon-sm"><use href="#i-plus"/></svg> Añadir enlace
+                        </button>
+                    </div>
+                    <div class="ax-ajustes-enlaces" id="axEnlacesLista"></div>
+                    <input type="hidden" name="enlaces" id="axEnlacesJson">
+
+                    <div class="settings-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <svg class="icon icon-sm"><use href="#i-check"/></svg> Guardar atajos
+                        </button>
+                    </div>
+                </form>
+
+                {# Plantilla de una fila de enlace propio: la usa el JS de abajo. #}
+                <template id="axEnlaceFila">
+                    <div class="ax-ajustes-enlace">
+                        <span class="ax-ajustes-ico"><svg class="icon icon-sm"><use href="#i-link"/></svg></span>
+                        <input type="text" class="ax-enlace-nombre" placeholder="Nombre" maxlength="60">
+                        <input type="url" class="ax-enlace-url" placeholder="https://…" maxlength="400">
+                        <select class="ax-enlace-icono" aria-label="Icono del enlace">
+                            {% for ico in atajos_iconos %}
+                            <option value="{{ ico }}">{{ ico }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="ax-ajustes-quitar" aria-label="Quitar enlace">
+                            <svg class="icon icon-sm"><use href="#i-x"/></svg>
+                        </button>
+                    </div>
+                </template>
+                {{ atajos_enlaces|json_script:"axEnlacesIniciales" }}
+            </section>
+
             <!-- GLPI (staff: admin y técnicos) -->
             {% if request.user.es_staff_helpdesk %}
             <section id="glpi" class="settings-panel" data-settings-panel="glpi">
@@ -401,7 +468,7 @@
                                        {% if config_sitio.panel_mostrar_actividad_glpi %}checked{% endif %}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="cfg-label">Mostrar actividad</span>
+                            <span class="cfg-label">Mostrar actividad reciente GLPI y su chat</span>
                         </div>
                     </form>
                     </div>
@@ -456,7 +523,7 @@
                                    {% if config_sitio.panel_mostrar_actividad_glpi %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                        <span class="cfg-label">Actividad GLPI</span>
+                            <span class="cfg-label">Actividad reciente GLPI y su chat</span>
                     </div>
                     <div class="cfg-row">
                         <label class="toggle-switch">
@@ -621,6 +688,62 @@
             if (typeof dlg.close === "function") { dlg.close(); } else { dlg.removeAttribute("open"); }
         }
     });
+})();
+
+/* Editor de enlaces propios del botón X: filas que se añaden, se quitan y
+   se serializan al campo oculto «enlaces» antes de guardar. */
+(function () {
+    "use strict";
+    var form = document.getElementById("axAjustesForm");
+    var lista = document.getElementById("axEnlacesLista");
+    var json = document.getElementById("axEnlacesJson");
+    var tpl = document.getElementById("axEnlaceFila");
+    var boton = document.getElementById("axEnlaceNuevo");
+    if (!form || !lista || !json || !tpl || !boton) { return; }
+
+    var iniciales = [];
+    var datos = document.getElementById("axEnlacesIniciales");
+    if (datos) {
+        try { iniciales = JSON.parse(datos.textContent) || []; } catch (e) { iniciales = []; }
+    }
+    if (!Array.isArray(iniciales)) { iniciales = []; }
+
+    function agrega(datos) {
+        var fila = tpl.content.firstElementChild.cloneNode(true);
+        if (datos) {
+            fila.querySelector(".ax-enlace-nombre").value = datos.nombre || "";
+            fila.querySelector(".ax-enlace-url").value = datos.url || "";
+            var sel = fila.querySelector(".ax-enlace-icono");
+            if (datos.icono) { sel.value = datos.icono; }
+            var uso = fila.querySelector("use");
+            if (uso && datos.icono) { uso.setAttribute("href", "#" + datos.icono); }
+        }
+        fila.querySelector(".ax-ajustes-quitar").addEventListener("click", function () {
+            fila.remove();
+        });
+        var sel2 = fila.querySelector(".ax-enlace-icono");
+        sel2.addEventListener("change", function () {
+            var uso2 = fila.querySelector("use");
+            if (uso2) { uso2.setAttribute("href", "#" + sel2.value); }
+        });
+        lista.appendChild(fila);
+    }
+
+    function recoge() {
+        var salida = [];
+        lista.querySelectorAll(".ax-ajustes-enlace").forEach(function (fila) {
+            var nombre = fila.querySelector(".ax-enlace-nombre").value.trim();
+            var url = fila.querySelector(".ax-enlace-url").value.trim();
+            if (!nombre || !url) { return; }
+            var icono = fila.querySelector(".ax-enlace-icono").value;
+            salida.push({ nombre: nombre, url: url, icono: icono });
+        });
+        return salida;
+    }
+
+    iniciales.forEach(agrega);
+    boton.addEventListener("click", function () { agrega(null); });
+    form.addEventListener("submit", function () { json.value = JSON.stringify(recoge()); });
 })();
 </script>
 {% endblock %}

@@ -117,11 +117,24 @@ class TicketForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, permitir_modo=False, **kwargs):
+    def __init__(self, *args, permitir_modo=False, categoria_automatica=False, **kwargs):
         self._modo_fijo = None
+        # Las cuentas solicitantes no clasifican el incidente: Dogger lo hace
+        # a partir del asunto y la descripción para conservar una asignación
+        # consistente. El staff sigue teniendo el selector disponible.
+        self._categoria_automatica = categoria_automatica
         super().__init__(*args, **kwargs)
         self.fields["categoria"] = _campo_categoria(required=False)
-        self.fields["categoria"].empty_label = "— Selecciona categoria —"
+        self.fields["categoria"].empty_label = "— Categoría en análisis automático —"
+        if self._categoria_automatica:
+            self.fields["categoria"].widget.attrs.update(
+                {
+                    "disabled": "disabled",
+                    "aria-disabled": "true",
+                    "class": "categoria-automatica",
+                    "title": "Dogger asigna esta categoría automáticamente.",
+                }
+            )
         self.fields["solicitante_email"].required = False
         self.fields["solicitante_punto"].required = False
         if not permitir_modo:
@@ -155,13 +168,14 @@ class TicketForm(forms.ModelForm):
         cleaned = super().clean()
         if "modo" in cleaned:
             cleaned["modo"] = cleaned.get("modo") or Ticket.Modo.WEB
-        if not cleaned.get("categoria"):
+        if self._categoria_automatica or not cleaned.get("categoria"):
             sugerida = sugerir_categoria(
                 titulo=cleaned.get("titulo", ""),
                 descripcion=cleaned.get("descripcion", ""),
             )
-            if sugerida:
-                cleaned["categoria"] = sugerida
+            # Aunque alguien modifique el HTML del navegador, una cuenta
+            # solicitante no puede forzar otra categoría en el POST.
+            cleaned["categoria"] = sugerida
         return cleaned
 
     def save(self, commit=True):

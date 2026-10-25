@@ -3,7 +3,7 @@ sus tickets, su avance, sus técnicos y las últimas respuestas.
 Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto.{% endcomment %}
 {% if grupos %}
 {% for g in grupos %}
-<section class="obs-zona-card"{% if g.zona.color %} style="--zc: {{ g.zona.color }}"{% endif %}>
+<section class="obs-zona-card obs-zona-monitor-card obs-zona-monitor-card--{{ g.estado }}"{% if g.zona.color %} style="--zc: {{ g.zona.color }}"{% endif %}>
     <div class="obs-zona-acc-wrap{% if not g.zona %} sin-acc{% endif %}">
     <button type="button" class="obs-zona-head" data-zona-toggle="zg-{{ forloop.counter }}" aria-expanded="false" title="Desplegar la lista de usuarios de esta zona">
         <span class="obs-zona-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
@@ -15,6 +15,9 @@ Lo usan el Monitoreo y el Panel del observador. Requiere `grupos` en el contexto
                  · <svg class="icon icon-sm" style="vertical-align:-2px"><use href="#i-user"/></svg> <b>{{ g.filas|length }}</b> usuario{{ g.filas|length|pluralize }}
             </small>
         </div>
+        <span class="obs-zona-health obs-pill obs-pill-{{ g.estado }}">
+            <span class="obs-dot obs-dot-{{ g.estado }}"></span>{{ g.estado|capfirst }}
+        </span>
         <div class="obs-zona-stats">
             <span class="obs-crate-global" title="Total global de la zona: suma de sus usuarios">
                 <span class="obs-crate-seg"><b>{{ g.total_tickets }}</b> tickets</span>

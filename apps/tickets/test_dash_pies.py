@@ -74,6 +74,23 @@ class DashPiesTest(SmokeTestCase):
         pri = self._mapa(d["pie_prioridad"]["todas"])
         self.assertEqual(pri, {"Baja": 1, "Alta": 1})
 
+    def test_pivote_cuenta_resuelta_por_marca_y_cerrada_por_estado(self):
+        """Una resolución actual queda cerrada, pero conserva ambas métricas."""
+        resuelta = self._ticket(
+            Ticket.Estado.CERRADO, Ticket.Prioridad.ALTA, self.cat_a, "Resuelta"
+        )
+        resuelta.fecha_resolucion = timezone.now()
+        resuelta.save(update_fields=["fecha_resolucion"])
+        self._ticket(
+            Ticket.Estado.CERRADO, Ticket.Prioridad.MEDIA, self.cat_a, "Cerrada"
+        )
+
+        filas = self._dash()["pivot"]["dimensiones"]["categoria"]["rows"]
+        fila = next(f for f in filas if f["label"] == "SIESA › Facturación")
+        self.assertEqual(fila["cerrado"], 2)
+        self.assertEqual(fila["resueltos"], 1)
+        self.assertTrue(next(t for t in fila["tickets"] if t["id"] == resuelta.pk)["resuelto"])
+
     def test_cada_ambito_solo_muestra_su_estado(self):
         self._ticket(Ticket.Estado.ABIERTO, Ticket.Prioridad.URGENTE, self.cat_a, "A1")
         self._ticket(Ticket.Estado.EN_PROGRESO, Ticket.Prioridad.ALTA, self.cat_a, "P1")

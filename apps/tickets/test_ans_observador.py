@@ -430,6 +430,11 @@ class ReglaDelUmbralTest(BaseAnsTest):
         self.assertEqual(ticket.info_ans[0], "por-vencer")
         self.assertEqual([t.pk for t in ans_avisos.por_vencer()], [ticket.pk])
 
+    def test_mas_de_dos_horas_no_avisa_aunque_haya_consumido_un_cuarto(self):
+        ticket = self._ticket(horas=HORAS_MEDIA - 2.5)
+        self.assertEqual(ticket.info_ans[0], "ok")
+        self.assertEqual(ans_avisos.por_vencer(), [])
+
     def test_despues_del_limite_es_vencido(self):
         ticket = self._ticket(horas=HORAS_MEDIA + 1)
         self.assertEqual(ticket.info_ans[0], "vencido")

@@ -25,6 +25,181 @@
 /* ---- Indicadores (estadísticas) ---- */
 .tickets-stats { margin: 6px 0 12px; }
 
+/* Filtros y listado de Tickets: composición compacta de dos filas. */
+.lista-page .ticket-filter-panel { display: block; margin: 18px 0 16px; padding: 16px; border: 1px solid #E2E8F0; border-radius: 16px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.04); }
+.lista-page .ticket-filter-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.lista-page .ticket-filter-row + .ticket-filter-row { margin-top: 12px; }
+.lista-page .ticket-filter-row .search-field { flex: 1 1 300px; min-width: 220px; height: 40px; }
+.lista-page .ticket-filter-row select { height: 40px; min-width: 156px; border: 1px solid #E2E8F0; border-radius: 10px; background: #fff; color: #0F172A; font: 500 13px/1.2 var(--font-sans); }
+.lista-page .ticket-filter-row .mias-check { height: 40px; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; color: #475569; font: 500 13px/1 var(--font-sans); }
+.lista-page .ticket-filter-row .btn { height: 40px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; font: 500 13px/1 var(--font-sans); }
+.lista-page .ticket-filter-row .toolbar-count { margin-left: auto; color: #64748B; white-space: nowrap; font: 400 12px/1 var(--font-sans); }
+.lista-page .ticket-filter-row .btn-excel { background: #16824B; border-color: #16824B; color: #fff; }
+.lista-page .ticket-filter-row .link-clear { font: 500 12px/1 var(--font-sans); white-space: nowrap; }
+
+.ticket-listing-card { overflow: visible; border: 1px solid #E2E8F0; border-radius: 18px; background: #fff; box-shadow: 0 6px 18px rgba(15,23,42,.045); }
+.ticket-listing-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #E2E8F0; }
+.ticket-listing-head .head-icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; background: #FFF0F2; color: var(--dogger-red); }
+.ticket-listing-head .head-icon .icon { width: 17px; height: 17px; }
+.ticket-listing-head h2 { margin: 0; color: #0F172A; font: 600 16px/1.2 var(--font-sans); }
+.ticket-total-badge { padding: 3px 8px; border-radius: 999px; background: #FEE2E2; color: #DC2626; font: 600 12px/1 var(--font-sans); }
+.ticket-listing-head .corp-view-toggle { margin-left: auto; }
+.ticket-listing-more { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #E2E8F0; border-radius: 9px; color: #64748B; background: #fff; }
+.ticket-listing-more .icon { width: 18px; height: 18px; }
+.table-customize { position: relative; }
+.ticket-listing-more:hover, .ticket-listing-more[aria-expanded="true"] { border-color: #FCA5A5; background: #FFF5F5; color: #DC2626; }
+.table-customize-menu { position: absolute; z-index: 30; top: calc(100% + 8px); right: 0; width: 216px; padding: 12px; border: 1px solid #E2E8F0; border-radius: 12px; background: #fff; box-shadow: 0 14px 30px rgba(15,23,42,.16); color: #0F172A; }
+.table-customize-menu[hidden] { display: none; }
+.table-customize-menu strong { display: block; margin-bottom: 10px; font: 600 13px/1.2 var(--font-sans); }
+.table-customize-caption { display: block; margin: 10px 0 6px; color: #64748B; font: 600 11px/1 var(--font-sans); text-transform: uppercase; letter-spacing: .04em; }
+.table-customize-menu label { display: flex; align-items: center; gap: 7px; padding: 5px 3px; color: #475569; font: 500 12px/1.2 var(--font-sans); cursor: pointer; }
+.table-customize-menu input { accent-color: #DC2626; }
+.table-density { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.table-density button, .table-customize-reset { border: 1px solid #E2E8F0; border-radius: 7px; background: #fff; color: #475569; font: 500 11px/1 var(--font-sans); cursor: pointer; }
+.table-density button { height: 28px; }
+.table-density button.is-active { border-color: #FCA5A5; background: #FFF1F2; color: #DC2626; }
+.table-customize-reset { width: 100%; height: 30px; margin-top: 12px; }
+.table-customize-reset:hover { background: #F8FAFC; color: #0F172A; }
+.ticket-table.is-compact td { height: 44px; padding-top: 5px; padding-bottom: 5px; }
+.ticket-table.is-hidden-categoria th:nth-child(4), .ticket-table.is-hidden-categoria td:nth-child(4), .ticket-table.is-hidden-tecnico th:nth-child(7), .ticket-table.is-hidden-tecnico td:nth-child(7), .ticket-table.is-hidden-creacion th:nth-child(8), .ticket-table.is-hidden-creacion td:nth-child(8), .ticket-table.is-hidden-vencimiento th:nth-child(9), .ticket-table.is-hidden-vencimiento td:nth-child(9), .ticket-table.is-hidden-tiempo th:nth-child(10), .ticket-table.is-hidden-tiempo td:nth-child(10) { display: none; }
+.ticket-table-wrap { overflow-x: auto; }
+.ticket-table { width: 100%; min-width: 1100px; border-collapse: collapse; font-family: var(--font-sans); }
+.ticket-table th { height: 40px; padding: 0 12px; background: #F1F5F9; color: #64748B; font-size: 12px; font-weight: 600; text-align: left; white-space: nowrap; }
+.ticket-table td { height: 54px; padding: 8px 12px; border-bottom: 1px solid #EDF1F5; color: #475569; font-size: 12.5px; vertical-align: middle; }
+.ticket-table tbody tr { transition: background .18s ease; }
+.ticket-table tbody tr:hover { background: #F8FAFC; }
+.ticket-table-code { color: #D9232E; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.ticket-table-subject { display: block; max-width: 240px; overflow: hidden; color: #0F172A; font-weight: 500; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.ticket-table-category, .ticket-table-tech { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
+.ticket-table-category .icon { width: 14px; height: 14px; color: #2563EB; flex: none; }
+.ticket-tech-avatar { display: grid; width: 24px; height: 24px; flex: none; place-items: center; overflow: hidden; border-radius: 50%; background: #E2E8F0; color: #475569; font-size: 10px; font-weight: 700; }
+.ticket-tech-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ticket-deadline { display: flex; flex-direction: column; gap: 3px; min-width: 110px; }
+.ticket-deadline small { color: #64748B; font-size: 11px; }
+.ticket-table .ans-time { width: max-content; max-width: 150px; font-size: 11px; }
+.ticket-row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.ticket-table .ticket-row-actions .btn {
+    display: inline-grid !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    padding: 0 !important;
+    place-items: center;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    color: #64748B !important;
+    transition: border-color .18s ease, color .18s ease, background .18s ease, transform .18s ease;
+}
+.ticket-table .ticket-row-actions .btn:hover,
+.ticket-table .ticket-row-actions .btn[aria-expanded="true"] {
+    border-color: #FCA5A5 !important;
+    background: #FFF5F5 !important;
+    color: #DC2626 !important;
+    transform: translateY(-1px);
+}
+.ticket-table .ticket-row-actions .btn .icon { width: 17px !important; height: 17px !important; }
+.ticket-listing-card .ty-results { margin: 0; padding: 14px; }
+.ticket-listing-card .ty-grid { display: none; }
+.ticket-listing-card .ty-results[data-view="grid"] .ticket-table-wrap { display: none; }
+.ticket-listing-card .ty-results[data-view="grid"] .ty-grid { display: grid; }
+@media (max-width: 1100px) { .lista-page .ticket-filter-row { flex-wrap: wrap; } .lista-page .ticket-filter-row .toolbar-count { margin-left: 0; } }
+@media (max-width: 700px) { .lista-page .ticket-filter-panel { padding: 14px; } .lista-page .ticket-filter-row { display: grid; grid-template-columns: 1fr 1fr; } .lista-page .ticket-filter-row .search-field, .lista-page .ticket-filter-row select, .lista-page .ticket-filter-row .toolbar-count { width: 100%; min-width: 0; } .lista-page .ticket-filter-row .search-field { grid-column: 1 / -1; } .ticket-listing-head { flex-wrap: wrap; } .ticket-listing-head .corp-view-toggle { margin-left: 0; } }
+.lista-page .tickets-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 22px !important;
+    align-items: start;
+}
+.lista-page .tickets-kpis .ticket-kpi {
+    position: relative;
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100%;
+    height: 188px !important;
+    min-height: 188px !important;
+    padding: 20px !important;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--kpi-color) 14%, #fff) !important;
+    border-radius: 22px !important;
+    box-shadow: 0 8px 20px var(--kpi-shadow) !important;
+    text-decoration: none;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.lista-page .tickets-kpis .ticket-kpi:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 25px var(--kpi-shadow) !important;
+}
+.lista-page .tickets-kpis .ticket-kpi::before,
+.lista-page .tickets-kpis .ticket-kpi::after { display: none !important; }
+.lista-page .tickets-kpis .dash-stat-icon {
+    position: absolute !important;
+    top: 20px;
+    left: 20px;
+    width: 58px !important;
+    height: 58px !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 15px var(--kpi-shadow) !important;
+}
+.lista-page .tickets-kpis .dash-stat-glyph .icon { width: 30px !important; height: 30px !important; }
+.lista-page .tickets-kpis .dash-stat-icon .dash-stat-value {
+    position: absolute !important;
+    top: 42px !important;
+    left: 72px !important;
+    color: #0F172A !important;
+    font: 700 36px/1 var(--font-sans) !important;
+    letter-spacing: -.04em;
+}
+.lista-page .tickets-kpis .dash-stat-label {
+    top: 24px !important;
+    left: 92px !important;
+    max-width: calc(100% - 110px) !important;
+    color: #0F172A !important;
+    font: 600 14px/1.25 var(--font-sans) !important;
+    letter-spacing: 0 !important;
+}
+.lista-page .tickets-kpis .dash-stat-hint {
+    bottom: 17px !important;
+    left: 20px !important;
+    max-width: calc(100% - 68px) !important;
+    color: #64748B !important;
+    font: 400 12px/1.25 var(--font-sans) !important;
+}
+.lista-page .tickets-kpis .dash-stat-hint::before { width: 9px !important; height: 9px !important; flex-basis: 9px !important; box-shadow: none !important; }
+.lista-page .tickets-kpis .dash-stat-trend {
+    top: 64px !important;
+    right: 17px !important;
+    min-width: 0 !important;
+    padding: 4px 7px !important;
+    font-family: var(--font-sans) !important;
+}
+.lista-page .tickets-kpis .dash-stat-trend b { display: block; font-size: 11px !important; font-weight: 600 !important; }
+.lista-page .tickets-kpis .dash-stat-trend small { display: block !important; margin-top: 2px; color: #64748B !important; font: 400 8px/1 var(--font-sans) !important; white-space: nowrap; }
+.ticket-kpi-spark { position: absolute; top: 108px; right: 20px; left: 20px; height: 36px; color: var(--kpi-color); }
+.ticket-kpi-spark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ticket-kpi-spark .spark-fill { fill: currentColor; opacity: .12; }
+.ticket-kpi-spark .spark-line { fill: none; stroke: currentColor; stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 260; animation: ticket-spark-draw .45s ease-out both; }
+.ticket-kpi-spark .spark-dot { fill: currentColor; opacity: .65; transition: r .18s ease, opacity .18s ease; }
+.ticket-kpi:hover .spark-dot { r: 4.5; opacity: 1; }
+.ticket-kpi-spark.is-bars rect { fill: currentColor; opacity: .55; transform-origin: bottom; animation: ticket-bar-rise .4s ease-out both; }
+.ticket-kpi-spark.is-bars rect:hover { opacity: 1; }
+.ticket-kpi-spark.is-empty { display: grid; place-items: center start; color: #94A3B8; font: 400 11px/1 var(--font-sans); }
+.ticket-kpi-go { position: absolute; right: 17px; bottom: 13px; display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 4px 11px rgba(15,23,42,.12); color: var(--kpi-color); }
+.ticket-kpi-go .icon { width: 20px; height: 20px; }
+@keyframes ticket-spark-draw { from { stroke-dashoffset: 260; opacity: .25; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes ticket-bar-rise { from { transform: scaleY(.15); opacity: .15; } to { transform: scaleY(1); opacity: .55; } }
+@media (max-width: 1199px) { .lista-page .tickets-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+@media (max-width: 620px) {
+    .lista-page .tickets-kpis { grid-template-columns: minmax(0, 1fr) !important; gap: 16px !important; }
+    .lista-page .tickets-kpis .ticket-kpi { height: 184px !important; min-height: 184px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .lista-page .tickets-kpis .ticket-kpi,
+    .ticket-kpi-spark .spark-line,
+    .ticket-kpi-spark.is-bars rect { transition: none !important; animation: none !important; }
+}
+
 /* ---- Tarjetas ---- */
 .ty-results { margin-top: 16px; }
 .ty-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
@@ -126,86 +301,111 @@
 {% block content %}
 <main class="page">
     <div class="tickets-stats">
-        <div class="dash-stat-row dash-stat-row--mesas">
-            <a class="dash-stat dash-hov-total {% if not filtro_estado and sv == 'todas' %}is-active{% endif %}" href="{% url 'tickets:lista' %}" title="Todos los tickets">
+        <div class="dash-stat-row dash-stat-row--mesas tickets-kpis">
+            <a class="dash-stat ticket-kpi dash-hov-total {% if not filtro_estado and sv == 'todas' %}is-active{% endif %}" href="{{ ticket_kpi_urls.total }}" title="Ver todos los tickets">
                 <span class="dash-stat-icon">
                     <span class="dash-stat-value">{{ stats.total|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
-                    <span class="dash-stat-label">Total</span>
+                    <span class="dash-stat-label">Total de tickets</span>
+                    <span class="dash-stat-hint">Todos los tickets</span>
                 </span>
+                {% with trend=ticket_kpi_historico.tendencias.total %}{% if trend %}<span class="dash-stat-trend {{ trend.clase }}"><b>{{ trend.texto }}</b><small>vs. 7 días previos</small></span>{% endif %}{% endwith %}
+                <span class="ticket-kpi-spark" data-ticket-spark="total" aria-label="Actividad de tickets creados en los últimos siete días"></span>
+                <span class="ticket-kpi-go" aria-hidden="true"><svg class="icon"><use href="#i-arrow-right"/></svg></span>
             </a>
-            <a class="dash-stat dash-hov-abiertos {% if filtro_estado == 'abierto' %}is-active{% endif %}" href="?estado=abierto" title="Solo solicitudes abiertas (pendientes de atención)">
+            <a class="dash-stat ticket-kpi dash-hov-abiertos {% if filtro_estado == 'abierto' %}is-active{% endif %}" href="{{ ticket_kpi_urls.abiertas }}" title="Ver solicitudes abiertas">
                 <span class="dash-stat-icon st-ic-abiertos">
                     <span class="dash-stat-value st-abiertos">{{ stats.abiertas|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Abiertas</span>
+                    <span class="dash-stat-hint">Pendientes de atención</span>
                 </span>
+                {% with trend=ticket_kpi_historico.tendencias.abiertas %}{% if trend %}<span class="dash-stat-trend {{ trend.clase }}"><b>{{ trend.texto }}</b><small>vs. 7 días previos</small></span>{% endif %}{% endwith %}
+                <span class="ticket-kpi-spark" data-ticket-spark="abiertas" aria-label="Actividad de tickets abiertos en los últimos siete días"></span>
+                <span class="ticket-kpi-go" aria-hidden="true"><svg class="icon"><use href="#i-arrow-right"/></svg></span>
             </a>
-            <a class="dash-stat dash-hov-progreso {% if filtro_estado == 'en-progreso' %}is-active{% endif %}" href="?estado=en-progreso" title="Solo solicitudes en progreso (siendo atendidas)">
+            <a class="dash-stat ticket-kpi dash-hov-progreso {% if filtro_estado == 'en-progreso' %}is-active{% endif %}" href="{{ ticket_kpi_urls.progreso }}" title="Ver solicitudes en progreso">
                 <span class="dash-stat-icon st-ic-progreso">
                     <span class="dash-stat-value st-progreso">{{ stats.progreso|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">En progreso</span>
+                    <span class="dash-stat-hint">En atención técnica</span>
                 </span>
+                {% with trend=ticket_kpi_historico.tendencias.progreso %}{% if trend %}<span class="dash-stat-trend {{ trend.clase }}"><b>{{ trend.texto }}</b><small>vs. 7 días previos</small></span>{% endif %}{% endwith %}
+                <span class="ticket-kpi-spark" data-ticket-spark="progreso" aria-label="Actividad de tickets en progreso en los últimos siete días"></span>
+                <span class="ticket-kpi-go" aria-hidden="true"><svg class="icon"><use href="#i-arrow-right"/></svg></span>
             </a>
-            <a class="dash-stat dash-hov-resueltos {% if filtro_estado == 'resuelto' %}is-active{% endif %}" href="?estado=resuelto" title="Solo solicitudes resueltas">
+            <a class="dash-stat ticket-kpi dash-hov-resueltos {% if filtro_estado == 'resuelto' %}is-active{% endif %}" href="{{ ticket_kpi_urls.resueltas }}" title="Ver solicitudes resueltas">
                 <span class="dash-stat-icon st-ic-resueltos">
                     <span class="dash-stat-value st-resueltos">{{ stats.resueltas|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Resueltas</span>
+                    <span class="dash-stat-hint">Resueltas en el período</span>
                 </span>
+                {% with trend=ticket_kpi_historico.tendencias.resueltas %}{% if trend %}<span class="dash-stat-trend {{ trend.clase }}"><b>{{ trend.texto }}</b><small>vs. 7 días previos</small></span>{% endif %}{% endwith %}
+                <span class="ticket-kpi-spark" data-ticket-spark="resueltas" aria-label="Actividad de tickets resueltos en los últimos siete días"></span>
+                <span class="ticket-kpi-go" aria-hidden="true"><svg class="icon"><use href="#i-arrow-right"/></svg></span>
             </a>
-            <a class="dash-stat dash-hov-cerrados {% if filtro_estado == 'cerrado' %}is-active{% endif %}" href="?estado=cerrado" title="Solo solicitudes cerradas">
+            <a class="dash-stat ticket-kpi dash-hov-cerrados {% if filtro_estado == 'cerrado' %}is-active{% endif %}" href="{{ ticket_kpi_urls.cerradas }}" title="Ver solicitudes cerradas">
                 <span class="dash-stat-icon st-ic-cerrados">
                     <span class="dash-stat-value st-cerrados">{{ stats.cerradas|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-lock"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Cerradas</span>
+                    <span class="dash-stat-hint">Finalizadas</span>
                 </span>
+                {% with trend=ticket_kpi_historico.tendencias.cerradas %}{% if trend %}<span class="dash-stat-trend {{ trend.clase }}"><b>{{ trend.texto }}</b><small>vs. 7 días previos</small></span>{% endif %}{% endwith %}
+                <span class="ticket-kpi-spark" data-ticket-spark="cerradas" aria-label="Actividad de tickets cerrados en los últimos siete días"></span>
+                <span class="ticket-kpi-go" aria-hidden="true"><svg class="icon"><use href="#i-arrow-right"/></svg></span>
             </a>
-            <a class="dash-stat dash-hov-sla-no {% if sv == 'no-asignadas' %}is-active{% endif %}" href="?sv=no-asignadas" title="Solicitudes abiertas sin técnico asignado: admin las asigna, el técnico puede tomarlas">
+            <a class="dash-stat ticket-kpi dash-hov-sla-no {% if sv == 'no-asignadas' %}is-active{% endif %}" href="{{ ticket_kpi_urls.sin_asignar }}" title="Ver solicitudes sin técnico asignado">
                 <span class="dash-stat-icon st-ic-sla-no">
                     <span class="dash-stat-value st-sla-no">{{ stats.sin_asignar|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-inbox"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
                     <span class="dash-stat-label">Sin asignar</span>
+                    <span class="dash-stat-hint">Requieren un técnico</span>
                 </span>
+                {% with trend=ticket_kpi_historico.tendencias.sin_asignar %}{% if trend %}<span class="dash-stat-trend {{ trend.clase }}"><b>{{ trend.texto }}</b><small>vs. 7 días previos</small></span>{% endif %}{% endwith %}
+                <span class="ticket-kpi-spark" data-ticket-spark="sin_asignar" aria-label="Actividad de tickets sin asignar en los últimos siete días"></span>
+                <span class="ticket-kpi-go" aria-hidden="true"><svg class="icon"><use href="#i-arrow-right"/></svg></span>
             </a>
         </div>
     </div>
 
-    <form method="get" class="table-toolbar filterbar" id="filtrosTickets">
+    <form method="get" class="table-toolbar filterbar ticket-filter-panel" id="filtrosTickets">
+        <div class="ticket-filter-row ticket-filter-row--primary">
         <label class="search-field">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
             <input type="search" data-vivo data-vivo-contenedor=".ty-grid" name="q" value="{{ q }}" placeholder="Buscar por código HD o título…" />
         </label>
-        <select name="sv" data-autosubmit aria-label="Vista">
+        <select name="sv" data-custom-dropdown aria-label="Tipo de solicitud">
             {% for val, label in presets_mis %}
             <option value="{{ val }}" {% if sv == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-        <select name="rango" data-autosubmit aria-label="Rango de fechas">
+        <select name="rango" data-custom-dropdown aria-label="Rango de fechas">
             {% for val, label in rangos_mis %}
             <option value="{{ val }}" {% if rango == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-        <select name="estado" data-autosubmit>
+        <select name="estado" data-custom-dropdown aria-label="Estado">
             <option value="">Todos los estados</option>
             {% for val, label in estados %}
             <option value="{{ val }}" {% if filtro_estado == val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-        <select name="prioridad" data-autosubmit>
+        <select name="prioridad" data-custom-dropdown aria-label="Prioridad">
             <option value="">Todas las prioridades</option>
             {% for val, label in prioridades %}
             <option value="{{ val }}" {% if filtro_prioridad == val %}selected{% endif %}>{{ label }}</option>
@@ -214,14 +414,16 @@
             <option value="alta,urgente" selected>Alta o urgente</option>
             {% endif %}
         </select>
+        </div>
+        <div class="ticket-filter-row ticket-filter-row--secondary">
         {% if es_admin %}
-        <select name="categoria" data-autosubmit>
+        <select name="categoria" data-custom-dropdown aria-label="Categoría">
             <option value="">Todas las categorías</option>
             {% for c in categorias %}
             <option value="{{ c.pk }}" {% if filtro_categoria|stringformat:"s" == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.grupo }} › {{ c.nombre }}</option>
             {% endfor %}
         </select>
-        <select name="tecnico" data-autosubmit>
+        <select name="tecnico" data-custom-dropdown aria-label="Técnico">
             <option value="">Todos los técnicos</option>
             {% for t in tecnicos %}
             <option value="{{ t.pk }}" {% if filtro_tecnico|stringformat:"s" == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nombre }}</option>
@@ -229,7 +431,7 @@
         </select>
         {% endif %}
         <label class="mias-check">
-            <input type="checkbox" name="mias" value="1" {% if mias %}checked{% endif %} onchange="this.form.submit()">
+            <input type="checkbox" name="mias" value="1" {% if mias %}checked{% endif %}>
             Solo las mías
         </label>
         <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
@@ -244,9 +446,64 @@
         <a class="btn btn-excel btn-sm btn-danger-outline" href="{% url 'tickets:exportar_admin' %}?{{ querystring }}"><svg class="icon"><use href="#i-excel"/></svg> Excel</a>
         {% endif %}
         <span class="toolbar-count">{{ total_resultados }} ticket{{ total_resultados|pluralize }} · página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+        </div>
     </form>
 
+    <section class="ticket-listing-card" aria-labelledby="ticketListingTitle">
+        <header class="ticket-listing-head">
+            <span class="head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
+            <h2 id="ticketListingTitle">Listado de tickets</h2>
+            <span class="ticket-total-badge">{{ total_resultados }}</span>
+            <div class="corp-view-toggle" role="group" aria-label="Vista del listado">
+                <button type="button" class="corp-view-btn" data-view="grid">Tarjetas</button>
+                <button type="button" class="corp-view-btn is-active" data-view="lista">Vista de tabla</button>
+            </div>
+            <div class="table-customize">
+                <button type="button" class="ticket-listing-more" id="ticketTableCustomize" aria-label="Personalizar tabla" aria-haspopup="true" aria-expanded="false" aria-controls="ticketTableCustomizeMenu"><svg class="icon"><use href="#i-ellipsis"/></svg></button>
+                <section class="table-customize-menu" id="ticketTableCustomizeMenu" hidden aria-label="Personalizar tabla">
+                    <strong>Personalizar tabla</strong>
+                    <span class="table-customize-caption">Columnas visibles</span>
+                    <label><input type="checkbox" data-ticket-column="categoria" checked> Categoría</label>
+                    <label><input type="checkbox" data-ticket-column="tecnico" checked> Técnico</label>
+                    <label><input type="checkbox" data-ticket-column="creacion" checked> Creación</label>
+                    <label><input type="checkbox" data-ticket-column="vencimiento" checked> Vencimiento</label>
+                    <label><input type="checkbox" data-ticket-column="tiempo" checked> Tiempo ANS</label>
+                    <span class="table-customize-caption">Densidad</span>
+                    <div class="table-density" role="group" aria-label="Densidad de filas">
+                        <button type="button" data-ticket-density="comfortable">Cómoda</button>
+                        <button type="button" data-ticket-density="compact">Compacta</button>
+                    </div>
+                    <button type="button" class="table-customize-reset" data-ticket-table-reset>Restaurar predeterminado</button>
+                </section>
+            </div>
+        </header>
     <div class="ty-results" id="tyResults" data-view="lista">
+        <div class="ticket-table-wrap">
+            <table class="ticket-table">
+                <thead><tr>
+                    <th><input type="checkbox" aria-label="Seleccionar todos los tickets"></th><th>Código</th><th>Asunto</th><th>Categoría</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Creación</th><th>Vencimiento</th><th>Tiempo ANS</th><th>Acciones</th>
+                </tr></thead>
+                <tbody>
+                {% for t in tickets %}
+                    <tr>
+                        <td><input type="checkbox" aria-label="Seleccionar {{ t.codigo }}"></td>
+                        <td><a class="ticket-table-code" href="{% url 'tickets:detalle' t.pk %}">{{ t.codigo }}</a></td>
+                        <td><a class="ticket-table-subject" href="{% url 'tickets:detalle' t.pk %}" title="{{ t.titulo }}">{{ t.titulo }}</a></td>
+                        <td><span class="ticket-table-category"><svg class="icon"><use href="#i-folder"/></svg>{{ t.categoria.nombre|default:"Sin categoría" }}</span></td>
+                        <td><span class="ty-prio ty-prio-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span></td>
+                        <td>{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
+                        <td><span class="ticket-table-tech"><span class="ticket-tech-avatar">{% if t.tecnico_asignado and t.tecnico_asignado.avatar %}<img src="{{ t.tecnico_asignado.avatar.url }}" alt="">{% elif t.tecnico_asignado %}{{ t.tecnico_asignado.iniciales }}{% else %}<svg class="icon"><use href="#i-user"/></svg>{% endif %}</span>{{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</span></td>
+                        <td>{{ t.fecha_creacion|date:"d/m/Y" }}<br><small>{{ t.fecha_creacion|date:"H:i" }}</small></td>
+                        <td><span class="ticket-deadline">{% if t.fecha_limite_ans %}<span>{{ t.fecha_limite_ans|date:"d/m/Y H:i" }}</span>{% else %}<span>—</span>{% endif %}{% include "tickets/_ans_time.html" with t=t %}</span></td>
+                        <td>{% include "tickets/_ans_time.html" with t=t %}</td>
+                        <td><span class="ticket-row-actions"><a class="btn btn-sm btn-outline" title="Ver detalle" href="{% url 'tickets:detalle' t.pk %}"><svg class="icon icon-sm"><use href="#i-eye"/></svg></a>{% if es_admin %}<button type="button" class="btn btn-sm btn-outline actions-trigger" title="Acciones" aria-label="Acciones de {{ t.codigo }}" aria-haspopup="true" aria-expanded="false" data-estado-url="{% url 'tickets:cambiar_estado' t.pk %}" data-eliminar-url="{% url 'tickets:eliminar' t.pk %}" data-codigo="{{ t.codigo }}" data-estado-actual="{{ t.estado }}"><svg class="icon icon-sm"><use href="#i-ellipsis"/></svg></button>{% endif %}</span></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="11" class="table-empty">No hay tickets que coincidan con los filtros.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
         <div class="ty-grid">
             {% for t in tickets %}
             <article class="ty-card">
@@ -299,22 +556,20 @@
             {% endfor %}
         </div>
     </div>
+    </section>
 
     {% if page_obj.paginator.count > 0 %}
     <div class="pagination-bar">
         <div class="per-page-bar">
-            <label for="perPageLista">Filas:</label>
+            <label for="perPageLista">Por página:</label>
             <select id="perPageLista" data-per-page-param="per_page">
-                <option value="6" {% if per_page == 6 %}selected{% endif %}>6</option>
                 <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
-                <option value="9" {% if per_page == 9 %}selected{% endif %}>9</option>
                 <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
                 <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
                 <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
-                <option value="0" {% if per_page == 0 %}selected{% endif %}>Todas</option>
             </select>
         </div>
-        <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} resultados</span>
+        <span class="pagination-info">Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} resultados</span>
         <div class="pagination-links">
             {% if page_obj.has_previous %}
             <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
@@ -338,6 +593,50 @@
     {% endif %}
 </main>
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+{{ ticket_kpi_historico|json_script:"ticketKpiHistorico" }}
+<script>
+(function () {
+    var source = document.getElementById('ticketKpiHistorico');
+    if (!source) return;
+    var history = JSON.parse(source.textContent || '{}');
+    var labels = history.labels || [];
+    var series = history.series || {};
+    var bars = {abiertas: true, progreso: true, sin_asignar: true};
+
+    document.querySelectorAll('[data-ticket-spark]').forEach(function (stage) {
+        var key = stage.getAttribute('data-ticket-spark');
+        var values = series[key];
+        if (!Array.isArray(values) || !values.length || !values.some(function (value) { return value > 0; })) {
+            stage.classList.add('is-empty');
+            stage.textContent = 'Sin actividad en 7 días';
+            return;
+        }
+        var max = Math.max.apply(null, values.concat([1]));
+        stage.tabIndex = 0;
+        stage.title = 'Tendencia de los últimos 7 días';
+        if (bars[key]) {
+            stage.classList.add('is-bars');
+            var width = 240 / values.length;
+            var rects = values.map(function (value, index) {
+                var height = Math.max(2, Math.round(value / max * 32));
+                var x = Math.round(index * width + 3);
+                return '<rect x="' + x + '" y="' + (36 - height) + '" width="' + Math.max(5, Math.round(width - 6)) + '" height="' + height + '" rx="3"><title>' + (labels[index] || '') + ': ' + value + ' tickets</title></rect>';
+            }).join('');
+            stage.innerHTML = '<svg viewBox="0 0 240 36" preserveAspectRatio="none" aria-hidden="true">' + rects + '</svg>';
+            return;
+        }
+        var points = values.map(function (value, index) {
+            return (index * (236 / Math.max(1, values.length - 1)) + 2).toFixed(1) + ',' + (34 - value / max * 27).toFixed(1);
+        });
+        var last = points[points.length - 1].split(',');
+        var circles = values.map(function (value, index) {
+            var point = points[index].split(',');
+            return '<circle class="spark-dot" cx="' + point[0] + '" cy="' + point[1] + '" r="2.2"><title>' + (labels[index] || '') + ': ' + value + ' tickets</title></circle>';
+        }).join('');
+        stage.innerHTML = '<svg viewBox="0 0 240 36" preserveAspectRatio="none" aria-hidden="true"><polygon class="spark-fill" points="2,36 ' + points.join(' ') + ' 238,36"/><polyline class="spark-line" points="' + points.join(' ') + '"/>' + circles + '</svg>';
+    });
+})();
+</script>
 <script>
 (function () {
     var csrfEl = document.querySelector('input[name="csrfmiddlewaretoken"]');
@@ -469,6 +768,73 @@
             tySetView(b.getAttribute("data-view"), true);
         });
     });
+
+    /* Preferencias locales de columnas y densidad: no afectan los datos,
+       filtros ni permisos del listado. */
+    var table = document.querySelector('.ticket-table');
+    var customize = document.getElementById('ticketTableCustomize');
+    var customizeMenu = document.getElementById('ticketTableCustomizeMenu');
+    var tableStorage = 'dogger:tickets:table-preferences';
+    var defaultTablePrefs = {categoria:true, tecnico:true, creacion:true, vencimiento:true, tiempo:true, density:'comfortable'};
+    function readTablePrefs() {
+        try { return Object.assign({}, defaultTablePrefs, JSON.parse(localStorage.getItem(tableStorage) || '{}')); }
+        catch (e) { return Object.assign({}, defaultTablePrefs); }
+    }
+    function applyTablePrefs(prefs, save) {
+        if (!table) return;
+        Object.keys(defaultTablePrefs).forEach(function (key) {
+            if (key === 'density') return;
+            table.classList.toggle('is-hidden-' + key, !prefs[key]);
+            var field = customizeMenu && customizeMenu.querySelector('[data-ticket-column="' + key + '"]');
+            if (field) field.checked = !!prefs[key];
+        });
+        table.classList.toggle('is-compact', prefs.density === 'compact');
+        if (customizeMenu) customizeMenu.querySelectorAll('[data-ticket-density]').forEach(function (button) {
+            button.classList.toggle('is-active', button.dataset.ticketDensity === prefs.density);
+        });
+        if (save) { try { localStorage.setItem(tableStorage, JSON.stringify(prefs)); } catch (e) {} }
+    }
+    var tablePrefs = readTablePrefs();
+    applyTablePrefs(tablePrefs, false);
+    if (customize && customizeMenu) {
+        customize.addEventListener('click', function (event) {
+            event.stopPropagation();
+            var open = customizeMenu.hidden;
+            customizeMenu.hidden = !open;
+            customize.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        customizeMenu.addEventListener('click', function (event) { event.stopPropagation(); });
+        customizeMenu.querySelectorAll('[data-ticket-column]').forEach(function (field) {
+            field.addEventListener('change', function () {
+                tablePrefs[field.dataset.ticketColumn] = field.checked;
+                applyTablePrefs(tablePrefs, true);
+            });
+        });
+        customizeMenu.querySelectorAll('[data-ticket-density]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                tablePrefs.density = button.dataset.ticketDensity;
+                applyTablePrefs(tablePrefs, true);
+            });
+        });
+        var resetTable = customizeMenu.querySelector('[data-ticket-table-reset]');
+        if (resetTable) resetTable.addEventListener('click', function () {
+            tablePrefs = Object.assign({}, defaultTablePrefs);
+            applyTablePrefs(tablePrefs, true);
+        });
+        document.addEventListener('click', function () {
+            if (!customizeMenu.hidden) {
+                customizeMenu.hidden = true;
+                customize.setAttribute('aria-expanded', 'false');
+            }
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !customizeMenu.hidden) {
+                customizeMenu.hidden = true;
+                customize.setAttribute('aria-expanded', 'false');
+                customize.focus();
+            }
+        });
+    }
 
     document.addEventListener('click', function (e) {
         var trigger = e.target.closest('.actions-trigger');

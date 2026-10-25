@@ -72,7 +72,7 @@ def por_vencer(consulta=None, limite=LIMITE_POR_EJECUCION, solo_sin_avisar=True)
         ticket.ans_texto = texto
         ticket.ans_detalle = detalle
         salen.append(ticket)
-        if len(salen) >= limite:
+        if limite is not None and len(salen) >= limite:
             break
     # Vencidos primero, y dentro de cada grupo lo que se va antes.
     salen.sort(
@@ -267,12 +267,14 @@ def tickets_del_observador(usuario, alertas=False):
         estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
     ).select_related("categoria", "tecnico_asignado")
 
-    correos = [
-        e.usuario_email
-        for e in ElementoMiLista.objects.filter(observador=usuario).exclude(
-            usuario_email=""
-        )
-    ]
+    elementos = ElementoMiLista.objects.filter(observador=usuario).select_related("usuario")
+    correos = {
+        (elemento.usuario_email or (
+            elemento.usuario.email if elemento.usuario_id else ""
+        )).strip().lower()
+        for elemento in elementos
+    }
+    correos.discard("")
     puntos = list(
         ElementoMiLista.objects.filter(observador=usuario).exclude(
             punto__isnull=True
@@ -284,11 +286,14 @@ def tickets_del_observador(usuario, alertas=False):
         # no se le impone a la supervisión.
         filtrados = ElementoMiLista.objects.filter(
             observador=usuario, zona__alertas_ans=True
-        )
-        correos = [
-            e.usuario_email
-            for e in filtrados.exclude(usuario_email="")
-        ]
+        ).select_related("usuario")
+        correos = {
+            (elemento.usuario_email or (
+                elemento.usuario.email if elemento.usuario_id else ""
+            )).strip().lower()
+            for elemento in filtrados
+        }
+        correos.discard("")
         puntos = list(
             filtrados.exclude(punto__isnull=True).values_list(
                 "punto__nombre", flat=True
@@ -299,7 +304,9 @@ def tickets_del_observador(usuario, alertas=False):
         return consulta.none()
     condicion = None
     if correos:
-        condicion = Q(solicitante_email__in=correos)
+        for correo in correos:
+            correo_q = Q(solicitante_email__iexact=correo)
+            condicion = correo_q if condicion is None else (condicion | correo_q)
     if puntos:
         punto_q = Q(solicitante_punto__in=puntos)
         condicion = punto_q if condicion is None else (condicion | punto_q)

@@ -34,15 +34,50 @@
     {% if tarjetas %}
     <div class="obs-bloque">
         <h3 class="obs-bloque-titulo">Tus zonas</h3>
-        <div class="obs-tarjetas">
+        <p class="obs-leyenda">Cada carpeta resume a su gente y sus tickets: totales, lo que sigue abierto, lo resuelto y quién lo atiende.</p>
+        <div class="obs-zonas-grid">
             {% for t in tarjetas %}
-            <article class="obs-tarjeta obs-tarjeta--zona"{% if t.zona.color %} style="--zc: {{ t.zona.color }}"{% endif %}>
-                <span class="obs-tarjeta-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
-                <strong class="obs-tarjeta-nombre">
-                    <a href="{% url 'tickets:obs_zona_detalle' t.zona.pk %}">{{ t.zona.nombre }}</a>
-                </strong>
-                <span class="obs-tarjeta-dato">{{ t.personas }} persona{{ t.personas|pluralize }} · {{ t.abiertos }} abierto{{ t.abiertos|pluralize }}</span>
-                {# Paleta de color, ver, editar el nombre y borrar: iconos pegados a la esquina inferior derecha de la tarjeta. #}
+            <article class="obs-zona-card obs-zona-card--{{ t.estado }}"{% if t.zona.color %} style="--zc: {{ t.zona.color }}"{% endif %}>
+                <header class="obs-zona-card-top">
+                    <span class="obs-zona-card-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+                    <div class="obs-zona-card-id">
+                        <a class="obs-zona-card-nombre" href="{% url 'tickets:obs_zona_detalle' t.zona.pk %}">{{ t.zona.nombre }}</a>
+                        <small>{{ t.personas }} cuenta{{ t.personas|pluralize }} {% if t.puntos_n %}· {{ t.puntos_n }} punto{{ t.puntos_n|pluralize }}{% endif %}</small>
+                    </div>
+                    <span class="obs-pill obs-pill-{{ t.estado }}">
+                        <span class="obs-dot obs-dot-{{ t.estado }}"></span>{% if t.estado == 'rojo' %}Crítico{% elif t.estado == 'amarillo' %}En curso{% else %}Al día{% endif %}
+                    </span>
+                </header>
+
+                <div class="obs-zona-card-cifras">
+                    <span class="obs-zona-cifra"><b>{{ t.total }}</b><small>tickets</small></span>
+                    <span class="obs-zona-cifra s-abiertos"><b>{{ t.abiertos }}</b><small>abiertos</small></span>
+                    <span class="obs-zona-cifra s-progreso"><b>{{ t.progreso }}</b><small>progreso</small></span>
+                    <span class="obs-zona-cifra s-resueltos"><b>{{ t.resueltos }}</b><small>resueltos</small></span>
+                    {% if t.urgentes %}<span class="obs-zona-cifra s-urgentes"><b>{{ t.urgentes }}</b><small>urgentes</small></span>{% endif %}
+                </div>
+
+                {% if t.total %}
+                <span class="obs-bar" role="img" aria-label="Avance de la zona: {{ t.avance }} por ciento">
+                    <span class="obs-bar-seg obs-bar-verde" style="flex:{{ t.avance }}"></span>
+                    <span class="obs-bar-seg obs-bar-vacio" style="flex:{{ t.falta }}"></span>
+                </span>
+                <span class="obs-zona-card-avance">{{ t.avance }}% resuelto</span>
+                {% endif %}
+
+                {% if t.tecnicos %}
+                <div class="obs-zona-card-tecs">
+                    <span class="obs-zona-card-tecs-tit"><svg class="icon"><use href="#i-wrench"/></svg> Quién atiende</span>
+                    <div class="obs-zona-card-tecs-lista">
+                        {% for tec in t.tecnicos %}
+                        <span class="obs-zona-tec"><svg class="icon"><use href="#i-user"/></svg>{{ tec.nombre }}<b>{{ tec.tickets }}</b></span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="obs-zona-card-sin-tec">Sin técnicos asignados todavía.</p>
+                {% endif %}
+
                 {% include "observador/_zona_acciones.html" with z=t.zona %}
             </article>
             {% endfor %}

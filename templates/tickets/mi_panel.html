@@ -1,15 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Dogger · Mi panel corporativo{% endblock %}
+{% block title %}Dogger · Mi panel{% endblock %}
 {% block body_class %}admin-shell mi-panel-shell{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-layers"/></svg></span>{% endblock %}
-{% block header_title %}Mis solicitudes{% endblock %}
+{% block header_title %}Mi panel{% endblock %}
 {% block header_desc %}Tus solicitudes, su avance y la actividad reciente.{% endblock %}
 
 {% block extra_css %}
 {% load static asset %}
 <link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 <style>
+/* Prioridad de lectura: indicadores oficiales, solicitudes y sus acciones;
+   el acompañamiento de zona queda después como contexto adicional. */
+.page-corporate { display: flex; flex-direction: column; }
+.page-corporate > .corp-hero { order: 1; }
+.page-corporate > .corp-table-card { order: 2; }
+.page-corporate > .corp-grid { order: 3; }
+.page-corporate > .mz-card { order: 4; }
 /* Mi zona y supervisor: hero con degradado y tarjetas. */
 .corp-card.mz-card { overflow: hidden; padding: 20px 22px; }
 .mz-hero {
@@ -22,6 +29,15 @@
 .mz-hero p { margin: 0; font-size: 12.5px; color: var(--ink-muted); }
 .mz-hero .corp-kicker { color: var(--dogger-red-dark); }
 .mz-stack { display: flex; align-items: center; flex: none; }
+.mz-team-summary { display: flex; flex-direction: column; gap: 7px; max-width: min(440px, 55%); }
+.mz-team-person { display: flex; flex-direction: row-reverse; align-items: center; gap: 10px; min-width: 0; }
+.mz-team-person .mz-stack-ava { flex: none; }
+.mz-team-tx { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; gap: 2px; text-align: right; }
+.mz-team-tx strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--ink); }
+.mz-team-tx small { display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: wrap; font-size: 11px; color: var(--ink-muted); }
+.mz-team-tx small b { color: var(--dogger-red-dark); }
+.mz-team-state { font-weight: 800; white-space: nowrap; }
+.mz-team-state.on { color: #2F7D4F; }
 .mz-stack-ava {
     position: relative; width: 36px; height: 36px; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center;
@@ -29,6 +45,7 @@
     border: 2px solid #fff; margin-left: -10px; overflow: visible;
     box-shadow: 0 0 0 1px var(--line);
 }
+.mz-team-person .mz-stack-ava { width: 44px; height: 44px; font-size: 15px; }
 .mz-stack-ava:first-child { margin-left: 0; }
 .mz-stack-ava img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .mz-more {
@@ -41,17 +58,8 @@
 .mz-zona .icon { width: 14px; height: 14px; color: var(--dogger-red); }
 .mz-zona small { font-weight: 600; color: var(--ink-muted); }
 .mz-zona-vacia { color: var(--ink-muted); font-weight: 600; }
-.mz-sup { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; margin-top: 8px; background: #fff; }
-.mz-ava { position: relative; flex: none; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; background: #4F46E5; overflow: visible; }
-.mz-ava img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .mz-dot { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; background: #9AA0A6; border: 2px solid #fff; }
 .mz-dot.green { background: #2F7D4F; box-shadow: 0 0 0 3px rgba(47,125,79,.2); }
-.mz-sup-tx { min-width: 0; }
-.mz-sup-tx strong { display: block; font-size: 14px; }
-.mz-sup-tx small { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
-.mz-zonachip { background: rgba(214,43,31,.08); color: var(--dogger-red-dark); font-weight: 800; border-radius: 999px; padding: 1px 8px; font-size: 10.5px; }
-.mz-estado { font-weight: 800; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: #8A8478; }
-.mz-estado.on { color: #2F7D4F; }
 .mz-presion { border: 1px solid var(--line); border-radius: 12px; margin-top: 8px; background: #fff; overflow: hidden; }
 .mz-presion summary { padding: 10px 12px; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .mz-presion summary::-webkit-details-marker { display: none; }
@@ -68,18 +76,7 @@
 .mz-presion textarea:focus { outline: none; border-color: var(--dogger-red); }
 .mz-vacio { color: var(--ink-muted); font-size: 13px; padding: 6px 0; }
 /* ---- Dashboard de zona ---- */
-.mz-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 2px 0 14px; }
-.mz-kpi { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
-.mz-kpi-ico { width: 38px; height: 38px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; }
-.mz-kpi-ico .icon { width: 18px; height: 18px; }
-.mz-kpi-azul .mz-kpi-ico { background: rgba(37,99,235,.12); color: #2563EB; }
-.mz-kpi-rojo .mz-kpi-ico { background: rgba(214,43,31,.12); color: #D62B1F; }
-.mz-kpi-amarillo .mz-kpi-ico { background: rgba(242,169,0,.16); color: #B7791F; }
-.mz-kpi-gris .mz-kpi-ico { background: #EEE9DB; color: #57534E; }
-.mz-kpi-tx { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
-.mz-kpi-tx b { font-size: 20px; font-weight: 800; color: var(--ink); }
-.mz-kpi-tx span { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); }
-.mz-kpi-rojo .mz-kpi-tx b { color: #D62B1F; }
+.mz-kpis { margin: 2px 0 14px; }
 .mz-dash { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 14px; align-items: start; }
 .mz-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
 .mz-chart-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
@@ -91,61 +88,12 @@
 .mz-grafica-toolbar > div { display: flex; flex-direction: column; gap: 3px; }
 .mz-grafica-toolbar > div strong { font-size: 14px; color: var(--ink); }
 .mz-grafica-toolbar > div small { font-size: 12px; color: var(--ink-muted); }
-.mz-grafica-filtro { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.mz-grafica-filtro .dash-select { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-muted); }
-.mz-grafica-filtro select { max-width: min(280px, 65vw); font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 10px; background: var(--dogger-paper); color: var(--ink); cursor: pointer; }
-.mz-grafica-filtro select:focus { outline: none; border-color: var(--dogger-red); }
-.mz-grafica-filtro button { white-space: nowrap; }
-.mz-main .dash-head-tools { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-.mz-main .chart-card-head .dash-select { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-muted); }
-.mz-main .chart-card-head .dash-select select { font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 9px; background: var(--dogger-paper); color: var(--ink); cursor: pointer; }
-.mz-main .chart-card-head .dash-select select:focus { outline: none; border-color: var(--dogger-red); }
-.mz-main .chart-switch { position: relative; }
-.mz-main .chart-switch-btn { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12px; font-weight: 700; color: var(--dogger-red-dark); background: rgba(214,43,31,.07); border: 1px solid rgba(214,43,31,.2); border-radius: 999px; padding: 5px 10px; cursor: pointer; transition: background .15s ease; }
-.mz-main .chart-switch-btn:hover, .mz-main .chart-switch[data-open] .chart-switch-btn { background: rgba(214,43,31,.14); }
-.mz-main .chart-switch-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; background: var(--dogger-paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(29,27,22,.16); padding: 8px; min-width: 176px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-.mz-main .chart-switch-menu[hidden] { display: none; }
-.mz-main .chart-switch-menu button { display: flex; align-items: center; gap: 7px; font: inherit; font-size: 12px; color: var(--ink); background: transparent; border: 0; border-radius: 8px; padding: 6px 8px; cursor: pointer; text-align: left; }
-.mz-main .chart-switch-menu button:hover { background: var(--dogger-cream); }
-.mz-main .chart-switch-menu button.is-active { background: rgba(214,43,31,.1); color: var(--dogger-red-dark); font-weight: 800; }
-.mz-main .chart-switch-menu .csm-prev { width: 20px; height: 14px; flex: none; opacity: .85; }
-.mz-main .chart-stage { height: 220px; position: relative; }
-.mz-main .chart-stage.canvas-sm { height: 200px; }
-.mz-main .chart-stage .chart-count { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
-.mz-main .chart-stage .chart-count strong { font-size: 40px; font-weight: 800; font-family: var(--font-mono); color: var(--ink); line-height: 1; }
-.mz-main .chart-stage .chart-count small { color: var(--ink-muted); font-size: 13px; }
-.mz-main .pie-flex { display: grid; grid-template-columns: minmax(0, 1fr) 145px; gap: 10px; align-items: center; }
-.mz-main .pie-legend { list-style: none; margin: 0; padding: 0 4px 0 0; display: flex; flex-direction: column; gap: 7px; max-height: 220px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; }
-.mz-main .pie-legend li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink); border-radius: 8px; padding: 4px 6px; cursor: default; transition: background .12s ease; min-width: 0; }
-.mz-main .pie-legend .pl-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mz-main .pie-legend li:hover, .mz-main .pie-legend li.is-hi { background: var(--dogger-cream); }
-.mz-main .pie-legend li:hover .pl-name, .mz-main .pie-legend li.is-hi .pl-name { text-decoration: underline; text-decoration-color: var(--seg, currentColor); text-decoration-thickness: 2px; text-underline-offset: 3px; font-weight: 700; }
-.mz-main .pie-legend .pl-dot { width: 11px; height: 11px; border-radius: 3px; flex: none; }
-.mz-main .pie-legend .pl-pct { margin-left: auto; font-weight: 800; font-family: var(--font-mono); color: var(--ink); }
-.mz-main .pie-legend .pl-val { font-family: var(--font-mono); font-weight: 700; color: var(--ink-muted); }
-.mz-main .pie-legend::-webkit-scrollbar { width: 6px; }
-.mz-main .pie-legend::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
-.mz-main .pie-legend::-webkit-scrollbar-track { background: transparent; }
-.mz-main .dash-legend { display: flex; flex-wrap: wrap; gap: 10px; margin: -2px 0 8px; }
-.mz-main .dl-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-muted); }
-.mz-main .dl-item::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
-.mz-main .dl-entrante::before { background: #2563EB; }
-.mz-main .dl-completado::before, .mz-main .dl-ok::before { background: #2F7D4F; }
-.mz-main .dl-vencido::before, .mz-main .dl-brecha::before { background: #D62B1F; }
-.mz-main .dl-riesgo::before { background: #F2A900; }
-.mz-main .dash-compact .charts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
-.mz-main .dash-compact .chart-card { padding: 14px 16px; border-radius: 14px; min-width: 0; }
-.mz-main .dash-compact .chart-card-head { margin-bottom: 10px; }
-.mz-main .dash-compact .chart-card-head h3 { font-size: 13.5px; }
-.mz-main .dash-compact .chart-head-icon { width: 26px; height: 26px; }
-.mz-main .dash-compact .chart-head-icon svg { width: 14px; height: 14px; }
-.mz-main .dash-compact .chart-stage { height: 210px; }
-.mz-main .dash-compact .chart-stage.canvas-sm { height: 200px; }
-.mz-main .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr) 145px; gap: 10px; }
-.mz-main .dash-compact .pie-legend li { font-size: 12px; gap: 7px; padding: 4px 6px; }
-.mz-main .dash-compact .dash-head-tools { opacity: 1; }
-.mz-main .dash-compact .chart-stage .chart-count strong { font-size: 40px; }
+/* El diseño y los efectos de los widgets de gráficas viven en
+   dogger-theme.css, bajo .dash-compact, porque el mismo componente se
+   incluye en varias vistas (administrador, técnico, tablero y observador)
+   y todas deben verse igual. */
 .mz-zonacard { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: #fff; }
+.mz-main .dash-compact .chart-card-head { display:grid; grid-template-columns:26px minmax(0,1fr) auto; align-items:center; gap:7px; min-height:34px; }.mz-main .dash-compact .chart-card-head h3 { min-width:0; margin:0; font-size:12px !important; line-height:1.18; letter-spacing:-.01em; }.mz-main .dash-compact .chart-card-head h3 em { font-size:inherit; }.mz-main .dash-compact .dash-head-tools,.mz-main .dash-compact .dash-select-solo { justify-self:end; }.mz-main .dash-compact .dash-head-tools { gap:5px; }.mz-main .dash-compact .chart-card-head .dash-select { gap:4px; font-size:10px; }.mz-main .dash-compact .chart-card-head .dash-select select { min-height:30px; font-size:10.5px; padding:4px 28px 4px 8px; }
 .mz-zonacard-head { display: flex; align-items: center; gap: 10px; }
 .mz-zonacard-head > div { min-width: 0; }
 .mz-zonacard-head strong { font-size: 14px; }
@@ -161,6 +109,7 @@
 .mz-tec-chip img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 .mz-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .mz-cat { font-size: 11px; font-weight: 700; background: #FBF3D9; border: 1px solid #EADCA8; color: #8a6d1c; border-radius: 999px; padding: 2px 9px; }
+.mz-tickets-title { display:flex; align-items:center; gap:7px; margin:18px 0 8px; padding-top:14px; border-top:1px dashed var(--line); color:var(--ink); font-size:14px; }.mz-tickets-title .icon { width:16px; color:var(--dogger-red); }
 .mz-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: flex-start; }
 .mz-acciones .mz-presion { flex: 1 1 220px; margin-top: 0; }
 .mz-detalle { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 12.5px; }
@@ -181,26 +130,20 @@
 .mz-alert-amarillo { background: rgba(242,169,0,.1); color: #8a6116; border: 1px solid rgba(242,169,0,.3); }
 @media (max-width: 960px) {
     .mz-dash { grid-template-columns: 1fr; }
-    .mz-kpis { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 560px) {
     .mz-charts { grid-template-columns: 1fr; }
-    .mz-main .dash-compact .charts-grid { grid-template-columns: minmax(0, 1fr); }
-    .mz-main .dash-compact .pie-flex { grid-template-columns: minmax(0, 1fr); }
-    .mz-main .dash-compact .pie-legend { max-height: none; padding: 0; }
-    .mz-main .dash-compact .chart-stage, .mz-main .dash-compact .chart-stage.canvas-sm { height: 190px; }
-    .mz-main .dash-head-tools { width: 100%; justify-content: flex-start; }
-    .mz-main .chart-card-head .dash-select { width: 100%; }
-    .mz-grafica-filtro { width: 100%; }
     .mz-zonacard-grid, .mz-detalle { grid-template-columns: 1fr; }
     .mz-chart-stage { height: 200px; }
+    .mz-main .dash-compact .chart-card-head { grid-template-columns:26px minmax(0,1fr); }.mz-main .dash-compact .dash-head-tools,.mz-main .dash-compact .dash-select-solo { grid-column:1 / -1; justify-self:start; }
 }
 @media (max-width: 560px) {
     .corp-card.mz-card { padding: 16px; }
     .mz-hero h3 { font-size: 17px; }
     .mz-stack-ava { width: 30px; height: 30px; font-size: 11px; }
+    .mz-team-person .mz-stack-ava { width: 38px; height: 38px; font-size: 12px; }
+    .mz-team-summary { max-width: 100%; align-self: flex-end; }
     .mz-tec { display: none; }
-    .mz-sup { align-items: flex-start; }
 }
 </style>
 {% endblock %}
@@ -255,7 +198,25 @@
                 <h3>Mi zona y supervisor</h3>
                 <p>Quién te gobierna y a quién avisar si tu caso se demora.</p>
             </div>
-            {% if mi_zona.equipo %}
+            {% if mi_zona.supervisores %}
+            <div class="mz-team-summary" aria-label="Supervisores y zonas de acompañamiento">
+                {% for s in mi_zona.supervisores %}
+                <div class="mz-team-person">
+                    <span class="mz-stack-ava" title="{{ s.nombre }}">
+                        {% if s.avatar %}<img src="{{ s.avatar }}" alt="{{ s.nombre }}">{% else %}{{ s.nombre|slice:":1"|upper }}{% endif %}
+                        <span class="mz-dot{% if s.en_linea %} green{% endif %}"></span>
+                    </span>
+                    <span class="mz-team-tx">
+                        <strong>{{ s.nombre }}</strong>
+                        <small>
+                            Supervisor de <b>{{ s.zona|default:"tu punto asignado" }}</b>
+                            <span class="mz-team-state{% if s.en_linea %} on{% endif %}">{% if s.en_linea %}En línea{% else %}Fuera de línea{% endif %}</span>
+                        </small>
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% elif mi_zona.equipo %}
             <div class="mz-stack" title="Tu equipo de acompañamiento">
                 {% for s in mi_zona.equipo %}
                 <span class="mz-stack-ava" title="{{ s.nombre }}">{% if s.avatar %}<img src="{{ s.avatar }}" alt="{{ s.nombre }}">{% else %}{{ s.nombre|slice:":1"|upper }}{% endif %}<span class="mz-dot{% if s.en_linea %} green{% endif %}"></span></span>
@@ -265,57 +226,49 @@
             {% endif %}
         </div>
         <div class="mz-body">
-            {% with tot=zona_dashboard.totales %}
-            <div class="mz-kpis">
-                <div class="mz-kpi mz-kpi-azul">
-                    <span class="mz-kpi-ico"><svg class="icon"><use href="#i-alert"/></svg></span>
-                    <span class="mz-kpi-tx"><b>{{ tot.abiertos|default:0 }}</b><span>Abiertos</span></span>
-                </div>
-                <div class="mz-kpi mz-kpi-rojo">
-                    <span class="mz-kpi-ico"><svg class="icon"><use href="#i-x-circle"/></svg></span>
-                    <span class="mz-kpi-tx"><b>{{ tot.vencidos|default:0 }}</b><span>Vencidos</span></span>
-                </div>
-                <div class="mz-kpi mz-kpi-amarillo">
-                    <span class="mz-kpi-ico"><svg class="icon"><use href="#i-wrench"/></svg></span>
-                    <span class="mz-kpi-tx"><b>{{ tot.en_progreso|default:0 }}</b><span>En progreso</span></span>
-                </div>
-                <div class="mz-kpi mz-kpi-gris">
-                    <span class="mz-kpi-ico"><svg class="icon"><use href="#i-clock"/></svg></span>
-                    <span class="mz-kpi-tx"><b>{% if tot.prom_h is not None %}{{ tot.prom_h }} h{% else %}—{% endif %}</b><span>T. prom. resolución</span></span>
-                </div>
+            <div class="mz-kpis dash-stat-row dash-stat-row--mesas corp-anim">
+                <a class="dash-stat dash-hov-zonas" href="#mz-det-1" title="Ver el resumen de tu zona">
+                    <span class="dash-stat-icon"><span class="dash-stat-value">{{ zona_indicadores.zonas }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-map-pin"/></svg></span></span>
+                    <span class="dash-stat-body"><span class="dash-stat-label">Zonas</span><span class="dash-stat-hint">de seguimiento</span></span>
+                </a>
+                <a class="dash-stat dash-hov-usuarios" href="#mz-det-1" title="Ver las cuentas de tu zona">
+                    <span class="dash-stat-icon"><span class="dash-stat-value">{{ zona_indicadores.cuentas }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-users"/></svg></span></span>
+                    <span class="dash-stat-body"><span class="dash-stat-label">Cuentas</span><span class="dash-stat-hint">en tu zona</span></span>
+                </a>
+                <a class="dash-stat dash-hov-total" href="#mz-det-1" title="Ver los tickets de tu zona">
+                    <span class="dash-stat-icon"><span class="dash-stat-value">{{ zona_indicadores.tickets }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span></span>
+                    <span class="dash-stat-body"><span class="dash-stat-label">Tickets totales</span><span class="dash-stat-hint">de toda la zona</span></span>
+                </a>
+                <a class="dash-stat dash-hov-abiertos" href="#mz-tickets" title="Ver tickets abiertos para presionar">
+                    <span class="dash-stat-icon st-ic-abiertos"><span class="dash-stat-value st-abiertos">{{ zona_indicadores.abiertos }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span></span>
+                    <span class="dash-stat-body"><span class="dash-stat-label">Abiertos</span><span class="dash-stat-hint">por atender</span></span>
+                </a>
+                <a class="dash-stat dash-hov-progreso" href="#mz-tickets" title="Ver tickets en progreso para presionar">
+                    <span class="dash-stat-icon st-ic-progreso"><span class="dash-stat-value st-progreso">{{ zona_indicadores.en_progreso }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-clock"/></svg></span></span>
+                    <span class="dash-stat-body"><span class="dash-stat-label">En progreso</span><span class="dash-stat-hint">en atención</span></span>
+                </a>
+                <a class="dash-stat dash-hov-vencidos" href="#mz-tickets" title="Ver tickets con ANS vencido">
+                    <span class="dash-stat-icon st-ic-vencidos"><span class="dash-stat-value st-vencidos">{{ zona_indicadores.vencidos }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-x-circle"/></svg></span></span>
+                    <span class="dash-stat-body"><span class="dash-stat-label">ANS vencidos</span><span class="dash-stat-hint">requieren atención</span></span>
+                </a>
             </div>
-            {% endwith %}
             <div class="mz-dash">
                 <div class="mz-main">
                     <div class="mz-grafica-toolbar">
                         <div>
-                            <strong>Solicitudes por zona y estado</strong>
-                            <small>{{ zona_grafica_total }} ticket{{ zona_grafica_total|pluralize }} incluido{{ zona_grafica_total|pluralize }}</small>
+                            <strong>Gráficas de tus zonas</strong>
                         </div>
-                        <form method="get" class="mz-grafica-filtro">
-                            {% for key, value in request.GET.items %}
-                                {% if key != "zona_grafica" %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}
-                            {% endfor %}
-                            <label class="dash-select" for="mzZonaGrafica">Analizar</label>
-                            <select id="mzZonaGrafica" name="zona_grafica">
-                                <option value="todas"{% if zona_grafica == "todas" %} selected{% endif %}>Todos mis tickets</option>
-                                {% for nombre in zonas_graficas %}
-                                <option value="{{ nombre }}"{% if zona_grafica == nombre %} selected{% endif %}>{{ nombre }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-outline btn-sm">Aplicar</button>
-                        </form>
                     </div>
                     <div class="dash-compact">
                         {% include "tickets/_dash_widgets.html" with solo_graficas=True mostrar_puntos_pivot=True %}
                     </div>
-                    {% for z in zona_dashboard.zonas %}
+                    {% for z in zona_panel_unificado.zonas %}
                     <div class="mz-zonacard" id="mz-det-{{ forloop.counter }}">
                         <div class="mz-zonacard-head">
                             <span class="mz-ranking">{{ z.posicion }}</span>
                             <div>
                                 <strong>{{ z.nombre }}</strong>
-                                <small>{{ z.total }} tickets · avance {{ z.avance }}% · ANS {{ z.sla }}%</small>
+                                <small>Tu zona de seguimiento · {{ z.total }} tickets · avance {{ z.avance }}% · ANS {{ z.sla }}%</small>
                             </div>
                             <span class="mz-bar"><span style="width:{{ z.avance }}%"></span></span>
                         </div>
@@ -365,6 +318,7 @@
                         </div>
                     </div>
                     {% endfor %}
+                    <h4 class="mz-tickets-title" id="mz-tickets"><svg class="icon"><use href="#i-message"/></svg> Tickets que puedes presionar</h4>
                     {% for t in mis_abiertos %}
                     {% if t.tecnico_asignado %}
                     <details class="mz-presion">
@@ -388,7 +342,7 @@
                 <aside class="mz-side">
                     <div class="mz-panel">
                         <h4><svg class="icon"><use href="#i-layers"/></svg> Ranking de zonas</h4>
-                        {% for z in zona_dashboard.zonas %}
+                        {% for z in zona_seguimiento_dashboard.zonas %}
                         <div class="mz-rank">
                             <span class="mz-ranking">#{{ z.posicion }}</span>
                             <span class="mz-rank-tx"><strong>{{ z.nombre }}</strong><small>{{ z.avance }}% avance · {{ z.total }} tickets</small></span>
@@ -400,7 +354,7 @@
                     </div>
                     <div class="mz-panel">
                         <h4><svg class="icon"><use href="#i-alert"/></svg> Alertas de desempeño</h4>
-                        {% for a in zona_dashboard.alertas %}
+                        {% for a in zona_seguimiento_dashboard.alertas %}
                         <div class="mz-alert mz-alert-{{ a.nivel }}">
                             <svg class="icon"><use href="#i-{% if a.nivel == 'rojo' %}x-circle{% else %}alert{% endif %}"/></svg>
                             <span>{{ a.texto }}</span>
@@ -545,23 +499,7 @@
         {% endif %}
     </section>
 
-    <div class="corp-grid">
-        <!-- ===== Panel de acciones de la solicitud ===== -->
-        <section class="corp-card corp-action-panel">
-            <div class="corp-card-head">
-                <div class="corp-title-wrap">
-                    <span class="corp-title-icon corp-title-icon-acc"><svg class="icon" id="accion-icon"><use href="#i-ticket"/></svg></span>
-                    <div>
-                        <h3 id="accion-titulo">Acción de la solicitud</h3>
-                        <p class="corp-sub">Selecciona una acción en una fila de la tabla.</p>
-                    </div>
-                </div>
-            </div>
-            <div id="accion-content" class="corp-action-body">
-                <p class="empty-hint">Pulsa <strong>Editar</strong>, <strong>Ver respuestas</strong>, <strong>Cerrar</strong> o <strong>Eliminar</strong> en alguna de tus solicitudes para gestionarla aquí sin abrir ventanas emergentes.</p>
-            </div>
-        </section>
-
+    <div class="corp-grid corp-grid-activity">
         {% if DOGGER.panel_mostrar_actividad_glpi %}
         <!-- ===== Actividad reciente GLPI + mini chat ===== -->
         <section class="corp-card corp-activity-panel">
@@ -626,6 +564,26 @@
 
     </div>
 </main>
+
+<!-- Acciones de cada fila: se muestran en una ventana con el ticket elegido. -->
+<div class="modal-overlay" id="modalAccionSolicitud" role="dialog" aria-modal="true" aria-labelledby="accion-titulo">
+    <div class="modal-box modal-box-wide modal-box-accion">
+        <div class="modal-head">
+            <h3 id="accion-titulo"><svg class="icon" id="accion-icon"><use href="#i-ticket"/></svg><span>Acción de la solicitud</span></h3>
+            <button type="button" class="modal-close" aria-label="Cerrar acción">&times;</button>
+        </div>
+        <div id="accion-content" class="modal-body corp-action-body">
+            <p class="empty-hint">Selecciona una acción desde la tabla de solicitudes.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmaciones críticas: ventana independiente, nunca anidada en la acción. -->
+<div class="modal-overlay modal-confirmar-solo" id="modalConfirmarSolicitud" role="dialog" aria-modal="true" aria-label="Confirmar acción sobre la solicitud">
+    <div class="modal-box modal-box-confirmar">
+        <div id="confirmar-content" class="modal-body"></div>
+    </div>
+</div>
 
 {% include "tickets/_modal_tecnicos.html" %}
 

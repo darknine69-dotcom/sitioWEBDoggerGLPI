@@ -70,7 +70,22 @@
         return (el && el.value) || AMBITO20_DEFAULT;
     }
 
+    function vistaObservador(widget) {
+        var card = document.querySelector('.chart-modal[data-widget="' + widget + '"]');
+        var selector = card && card.querySelector('[data-obs-selector]');
+        return (selector && selector.value) || '';
+    }
+
+    function actualizarTituloObservador(card) {
+        var selector = card.querySelector('[data-obs-selector]');
+        var titulo = card.querySelector('.chart-card-head h3');
+        if (!selector || !titulo) return;
+        titulo.textContent = selector.options[selector.selectedIndex].textContent;
+    }
+
     function serieWidget(w) {
+        var vistaObs = vistaObservador(w);
+        if (vistaObs && D.observador && D.observador[vistaObs]) return D.observador[vistaObs];
         if (w === 'modo') return { pairs: D.pie_modo || [] };
         if (w === 'categoria') {
             var porCat = D.pie_categoria || {};
@@ -125,10 +140,13 @@
 
     function pairs(widget) {
         var s = serieWidget(widget);
-        if (widget === 'modo' || widget === 'categoria' || widget === 'prioridad') return s.pairs;
+        if ((widget === 'modo' || widget === 'categoria' || widget === 'prioridad') && !s.labels) return s.pairs;
         return s.labels.map(function (l, i) {
             var v, color;
-            if (widget === 'linea') {
+            if (vistaObservador(widget)) {
+                v = s.datasets.reduce(function (total, ds) { return total + (ds.data[i] || 0); }, 0);
+                color = (s.datasets[0].colors || [s.datasets[0].color || PAL[i % PAL.length]])[i] || s.datasets[0].color || PAL[i % PAL.length];
+            } else if (widget === 'linea') {
                 v = s.datasets[0].data[i];
                 color = PAL[i % PAL.length];
             } else if (widget === 'sla') {
@@ -143,6 +161,12 @@
     }
 
     function countTitle(widget) {
+        var vistaObs = vistaObservador(widget);
+        if (vistaObs) {
+            var card = document.querySelector('.chart-modal[data-widget="' + widget + '"]');
+            var selector = card && card.querySelector('[data-obs-selector]');
+            return selector ? selector.options[selector.selectedIndex].textContent : 'resumen de monitoreo';
+        }
         if (widget === 'modo') return 'solicitudes abiertas por modo';
         if (widget === 'categoria' || widget === 'prioridad') {
             var dim = widget === 'categoria' ? 'categoría' : 'prioridad';
@@ -320,11 +344,12 @@
             return {
                 labels: multi.labels,
                 datasets: multi.datasets.map(function (ds) {
+                    var colores = ds.colors || null;
                     return {
                         label: ds.label,
                         data: ds.data,
-                        backgroundColor: realceFijo(ds.color),
-                        borderColor: ds.color,
+                        backgroundColor: colores ? realcePorIndice(colores) : realceFijo(ds.color),
+                        borderColor: colores || ds.color,
                         borderWidth: bw,
                         borderRadius: 4,
                         stack: stacked ? 's' : undefined,
@@ -346,7 +371,7 @@
         var data, opts;
         var scalesX = { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } };
         var scalesY = { beginAtZero: true, ticks: { precision: 0 } };
-        var hasMulti = widget === 'linea' || widget === 'sla' || widget === 'comp20' || widget === 'recibidas' || widget === 'completadas';
+        var hasMulti = (multi.datasets && multi.datasets.length > 1) || widget === 'linea' || widget === 'sla' || widget === 'comp20' || widget === 'recibidas' || widget === 'completadas';
 
         if (tipo === 'bar' || tipo === 'line' || tipo === 'area') {
             var stacked = false;
@@ -467,7 +492,7 @@
         /* La leyenda fija de series solo vale en cartesianos; en torta o
            recuento confundiría (describe series que ahí no se ven). */
         var ley = card.querySelector('[data-legend]');
-        if (ley) ley.style.display = (tipo === 'bar' || tipo === 'line' || tipo === 'area') ? '' : 'none';
+        if (ley) ley.style.display = (!vistaObservador(widget) && (tipo === 'bar' || tipo === 'line' || tipo === 'area')) ? '' : 'none';
         card.classList.toggle('is-count', tipo === 'count');
         clearStage(stage);
         if (charts[widget]) { charts[widget].destroy(); charts[widget] = null; }
@@ -641,6 +666,7 @@
     ];
     function matchF(t, f) {
         if (f === 'vencido') return !!t.vencido;
+        if (f === 'resuelto') return !!t.resuelto;
         return t.estado === f;
     }
 
@@ -815,6 +841,20 @@
             estado[widget] = DEFAULT_TIPO[widget] || 'bar';
             buildMenu(card, widget);
             render(card, widget);
+            var obsSelector = card.querySelector('[data-obs-selector]');
+            if (obsSelector) {
+                obsSelector.addEventListener('change', function () {
+                    estado[widget] = obsSelector.value === 'estado_lista'
+                        ? 'donut'
+                        : (obsSelector.value ? 'bar' : (DEFAULT_TIPO[widget] || 'bar'));
+                    actualizarTituloObservador(card);
+                    // La leyenda se rehace antes de enlazar el hover del
+                    // canvas: así ambos conservan el mismo realce diagonal
+                    // y el cursor interactivo del panel administrador.
+                    buildPieLegends([widget]);
+                    render(card, widget);
+                });
+            }
         });
         // Selector de ámbito de las dos tortas (abiertas, en progreso, ...).
         // El título usa la etiqueta del <option> elegido para no duplicar
@@ -909,9 +949,27 @@
         });
     }
 
+    /* API pública mínima para que el panel admin cambie sus datos sin
+       reconstruir la página. Chart.js interpola los nuevos datasets. */
+    window.DoggerDashboardCharts = {
+        update: function (nextData) {
+            if (!nextData || typeof nextData !== 'object') return;
+            D = nextData;
+            SERIE = D.colores_serie || SERIE;
+            var pivotSel = document.getElementById('pivotDim');
+            if (pivotSel && D.pivot && D.pivot.dimensiones[pivotSel.value]) {
+                renderPivot(pivotSel.value);
+            }
+            buildPieLegends();
+            Array.prototype.forEach.call(document.querySelectorAll('.chart-modal'), function (card) {
+                render(card, card.dataset.widget);
+            });
+        }
+    };
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
-})();
+})();

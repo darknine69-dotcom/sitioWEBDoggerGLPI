@@ -267,6 +267,12 @@ class Ticket(models.Model):
     def esta_cerrado(self):
         return self.estado == self.Estado.CERRADO
 
+    @property
+    def fecha_finalizacion(self):
+        """Primera marca terminal: resolución o cierre directo."""
+        fechas = [fecha for fecha in (self.fecha_resolucion, self.fecha_cierre) if fecha]
+        return min(fechas) if fechas else None
+
     def save(self, *args, **kwargs):
         if not self.codigo:
             self.codigo = self._generar_codigo()
@@ -368,8 +374,8 @@ class Ticket(models.Model):
         la etiqueta y el cronómetro nunca se contradicen.
         """
         if self.estado in (self.Estado.RESUELTO, self.Estado.CERRADO):
-            if self.fecha_cierre and self.fecha_creacion:
-                duracion = self.fecha_cierre - self.fecha_creacion
+            if self.fecha_finalizacion and self.fecha_creacion:
+                duracion = self.fecha_finalizacion - self.fecha_creacion
                 return ("resuelto", f"Resuelto en {formatear_duracion(duracion)}", None, None, None)
             return ("resuelto", "Resuelto", None, None, None)
         if not self.fecha_creacion or not self.ans_horas:
@@ -387,12 +393,10 @@ class Ticket(models.Model):
                 limite_ts,
             )
         restante = limite - ahora
-        total = limite - self.fecha_creacion
-        margen = total * 0.25
-        # "Por vencer" arranca con el margen o con las dos horas últimas,
-        # lo que ocurra más tarde; ese momento es el que el reloj repite.
-        aviso_dt = max(limite - margen, limite - timedelta(hours=2))
-        estado = "por-vencer" if (restante <= margen or restante <= timedelta(hours=2)) else "ok"
+        # La alerta se abre exactamente en las dos últimas horas. La última
+        # hora queda incluida, sin anticipar el aviso por porcentajes ANS.
+        aviso_dt = limite - timedelta(hours=2)
+        estado = "por-vencer" if restante <= timedelta(hours=2) else "ok"
         return (
             estado,
             f"Faltan {formatear_duracion(restante)}",
@@ -414,19 +418,21 @@ class Ticket(models.Model):
     @classmethod
     def tiempo_promedio_resolucion_horas(cls, queryset=None):
         """
-        KPI: promedio de horas entre creación y cierre, para tickets
-        resueltos o cerrados que ya tienen fecha_cierre.
+        KPI: promedio entre creación y la primera resolución o cierre.
         Retorna string legible o None.
         """
         qs = queryset if queryset is not None else cls.objects.all()
         cerrados = qs.filter(
-            fecha_cierre__isnull=False,
-        ).values_list("fecha_creacion", "fecha_cierre")
+            Q(fecha_resolucion__isnull=False) | Q(fecha_cierre__isnull=False),
+        ).values_list("fecha_creacion", "fecha_resolucion", "fecha_cierre")
         if not cerrados:
             return None
         total_horas = 0.0
         n = 0
-        for creacion, cierre in cerrados:
+        for creacion, resuelto_en, cerrado_en in cerrados:
+            cierre = min(fecha for fecha in (resuelto_en, cerrado_en) if fecha)
+            if not creacion or cierre < creacion:
+                continue
             delta = cierre - creacion
             total_horas += delta.total_seconds() / 3600
             n += 1
@@ -699,7 +705,7 @@ class ConfigSitio(models.Model):
     )
     panel_mostrar_actividad_glpi = models.BooleanField(
         "Mostrar actividad de GLPI en los paneles",
-        default=True,
+        default=False,
         help_text="Si está apagada, el bloque «Actividad reciente GLPI» no aparece en el panel de nadie.",
     )
     glpi_habilitado = models.BooleanField(

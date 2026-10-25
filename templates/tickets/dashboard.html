@@ -7,13 +7,27 @@
 {% block header_title %}Panel Administrador{% endblock %}
 {% block header_desc %}Carga de los técnicos, el ANS y las últimas solicitudes.{% endblock %}
 {% block header_actions %}
-<span class="head-live" title="La tabla de recientes se actualiza en vivo">
-    <svg class="icon icon-xs"><use href="#i-clock"/></svg>
-    {% now "l d/m/Y" %} · <span class="badge-envivo"><span class="punto-vivo" aria-hidden="true"></span>En vivo</span>
-    <a href="#" class="dash-refresh" onclick="event.preventDefault(); window.location.reload();" title="Actualizar">
-        <svg class="icon icon-sm"><use href="#i-refresh"/></svg>
-    </a>
-</span>
+<div class="dash-header-actions">
+    <div class="dashboard-filter-popover" id="dashboardFilterPopover">
+        <button type="button" class="dashboard-period-button" data-filter-toggle aria-expanded="false" aria-controls="dashboardFilters">
+            <svg class="icon icon-sm"><use href="#i-calendar"/></svg>
+            <span>{% if filtros.periodo == "7" %}Últimos 7 días{% elif filtros.periodo == "90" %}Últimos 90 días{% else %}Últimos 30 días{% endif %}</span>
+            <svg class="icon icon-xs"><use href="#i-chevron-down"/></svg>
+        </button>
+        <form class="dashboard-filters" id="dashboardFilters" method="get" aria-label="Filtros globales del dashboard" hidden>
+            <div class="dashboard-filter-grid">
+                <label>Período<select name="periodo"><option value="7" {% if filtros.periodo == "7" %}selected{% endif %}>Últimos 7 días</option><option value="30" {% if filtros.periodo == "30" %}selected{% endif %}>Últimos 30 días</option><option value="90" {% if filtros.periodo == "90" %}selected{% endif %}>Últimos 90 días</option></select></label>
+                <label>Estado<select name="estado"><option value="">Todos</option>{% for value, label in estados %}<option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+                <label>Prioridad<select name="prioridad"><option value="">Todas</option>{% for value, label in prioridades %}<option value="{{ value }}" {% if filtros.prioridad == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+                <label>Categoría<select name="categoria"><option value="">Todas</option>{% for categoria in categorias_dashboard %}<option value="{{ categoria.pk }}" {% if filtros.categoria == categoria.pk|stringformat:"s" %}selected{% endif %}>{{ categoria.nombre }}</option>{% endfor %}</select></label>
+                <label>Técnico<select name="tecnico"><option value="">Todos</option>{% for tecnico in tecnicos_dashboard %}<option value="{{ tecnico.pk }}" {% if filtros.tecnico == tecnico.pk|stringformat:"s" %}selected{% endif %}>{{ tecnico.nombre|default:tecnico.email }}</option>{% endfor %}</select></label>
+                <label>Punto<select name="punto"><option value="">Todos</option>{% for punto in puntos_dashboard %}<option value="{{ punto }}" {% if filtros.punto == punto %}selected{% endif %}>{{ punto }}</option>{% endfor %}</select></label>
+            </div>
+            <div class="dashboard-filter-actions"><a class="btn btn-outline" href="{% url 'tickets:dashboard' %}">Limpiar</a><button class="btn btn-primary" type="submit">Aplicar filtros</button></div>
+        </form>
+    </div>
+    <button type="button" class="dash-refresh" data-dashboard-refresh title="Actualizar datos" aria-label="Actualizar datos del panel"><svg class="icon icon-sm"><use href="#i-refresh"/></svg></button>
+</div>
 {% endblock %}
 
 {% block extra_css %}
@@ -204,6 +218,35 @@
     .tec-ticket { flex-direction: column; align-items: flex-start; gap: 6px; }
     .tec-ticket-meta { max-width: 100%; justify-content: flex-start; }
 }
+
+/* Filtro compacto de encabezado: el período queda visible y el resto se abre
+   en una ventana contextual, sin consumir el área principal del dashboard. */
+.dash-header-actions { display:flex; align-items:center; gap:8px; }
+.dashboard-filter-popover { position:relative; }
+.dashboard-period-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-width:158px; height:40px; padding:0 12px; border:1px solid #DCE4EF; border-radius:12px; background:#fff; color:#334155; font:600 12px/1 var(--font-sans); cursor:pointer; box-shadow:0 3px 10px rgba(15,23,42,.06); transition:border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+.dashboard-period-button:hover, .dashboard-filter-popover.is-open .dashboard-period-button { border-color:#C5D0E0; background:#F8FAFC; box-shadow:0 5px 14px rgba(15,23,42,.09); }
+.dashboard-period-button .icon:first-child { color:#475569; }.dashboard-period-button .icon:last-child { margin-left:auto; width:14px; height:14px; transition:transform .18s ease; }.dashboard-filter-popover.is-open .dashboard-period-button .icon:last-child { transform:rotate(180deg); }
+.dashboard-filters { position:absolute; z-index:220; top:calc(100% + 9px); right:0; width:min(720px, calc(100vw - 28px)); margin:0; padding:16px; border:1px solid #E2E8F0; border-radius:16px; background:#fff; box-shadow:0 18px 38px rgba(15,23,42,.16); }
+.dashboard-filters[hidden] { display:none; }
+.dashboard-filter-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px; }
+.dashboard-filters label { display:grid; gap:5px; min-width:0; color:#475569; font-size:11px; font-weight:600; }
+.dashboard-filters select { width:100%; min-width:0; height:38px; padding:0 10px; border:1px solid #DCE4EF; border-radius:10px; background:#fff; color:#0F172A; font-size:13px; font-weight:500; }
+.dashboard-filter-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; padding-top:13px; border-top:1px solid #EEF2F7; }.dashboard-filter-actions .btn { min-height:38px; white-space:nowrap; }
+.dash-header-actions .dash-refresh { display:grid; width:40px; height:40px; place-items:center; border:1px solid #DCE4EF; border-radius:12px; background:#fff; color:var(--dogger-red); cursor:pointer; box-shadow:0 3px 10px rgba(15,23,42,.06); }
+.dash-header-actions .dash-refresh:hover { background:#FFF5F5; border-color:rgba(214,43,31,.3); }
+.performance-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:0 0 18px; }
+.performance-card { display:flex; align-items:center; gap:12px; min-width:0; padding:15px; border:1px solid #E2E8F0; border-radius:14px; background:#fff; box-shadow:0 6px 18px rgba(15,23,42,.04); }
+.performance-card > div { display:grid; min-width:0; gap:1px; }
+.performance-card span:not(.performance-icon) { color:#475569; font-size:12px; font-weight:600; }
+.performance-card strong { color:#0F172A; font-size:20px; font-weight:700; white-space:nowrap; }
+.performance-card small { color:#64748B; font-size:11px; line-height:1.35; }
+.performance-icon { display:grid; width:38px; height:38px; flex:0 0 38px; place-items:center; border-radius:11px; color:#fff; }
+.performance-icon .icon { width:20px; height:20px; }.performance-icon.green{background:#10B981}.performance-icon.violet{background:#7C3AED}.performance-icon.blue{background:#2563EB}.performance-icon.orange{background:#F59E0B}
+.attention-card { margin:0 0 18px; }.attention-table td { vertical-align:middle; }
+.dash-hero.is-loading .dash-stat, .dash-compact.is-loading { opacity:.6; pointer-events:none; }
+@media (max-width:1240px) { .performance-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:680px) { .dashboard-filter-grid,.performance-grid { grid-template-columns:1fr; }.dashboard-filters { position:fixed; top:70px; right:14px; left:14px; width:auto; max-height:calc(100vh - 88px); overflow:auto; }.dashboard-filter-actions .btn { flex:1; justify-content:center; }.attention-table { min-width:760px; }.dashboard-period-button { min-width:150px; } }
+@media (prefers-reduced-motion: reduce) { .badge-envivo .punto-vivo { animation:none; }.dash-stat,.chart-card { transition:none !important; } }
 </style>
 {% endblock %}
 
@@ -213,7 +256,7 @@
         <div class="dash-stat-row dash-stat-row--mesas">
             <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}">
                 <span class="dash-stat-icon">
-                    <span class="dash-stat-value">{{ stats.total|default:0 }}</span>
+                    <span class="dash-stat-value" data-kpi-key="total">{{ stats.total|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
@@ -223,7 +266,7 @@
             </a>
             <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?estado=abierto">
                 <span class="dash-stat-icon st-ic-abiertos">
-                    <span class="dash-stat-value st-abiertos">{{ stats.abiertos|default:0 }}</span>
+                    <span class="dash-stat-value st-abiertos" data-kpi-key="abiertos">{{ stats.abiertos|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
@@ -233,7 +276,7 @@
             </a>
             <a class="dash-stat dash-hov-progreso" href="{% url 'tickets:lista' %}?estado=en-progreso">
                 <span class="dash-stat-icon st-ic-progreso">
-                    <span class="dash-stat-value st-progreso">{{ stats.en_progreso|default:0 }}</span>
+                    <span class="dash-stat-value st-progreso" data-kpi-key="progreso">{{ stats.en_progreso|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
@@ -243,7 +286,7 @@
             </a>
             <a class="dash-stat dash-hov-resueltos" href="{% url 'tickets:lista' %}?estado=resuelto">
                 <span class="dash-stat-icon st-ic-resueltos">
-                    <span class="dash-stat-value st-resueltos">{{ stats.resueltos_cerrados|default:0 }}</span>
+                    <span class="dash-stat-value st-resueltos" data-kpi-key="resueltos_cerrados">{{ stats.resueltos_cerrados|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
@@ -253,7 +296,7 @@
             </a>
             <a class="dash-stat dash-hov-tecnicos" href="{% url 'tickets:usuarios' %}">
                 <span class="dash-stat-icon">
-                    <span class="dash-stat-value">{{ n_tecnicos|default:0 }}</span>
+                    <span class="dash-stat-value" data-kpi-key="tecnicos">{{ n_tecnicos|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-users"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
@@ -263,25 +306,68 @@
             </a>
             <a class="dash-stat dash-hov-usuarios" href="{% url 'tickets:usuarios' %}">
                 <span class="dash-stat-icon">
-                    <span class="dash-stat-value">{{ n_usuarios|default:0 }}</span>
-                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-user"/></svg></span>
+                    <span class="dash-stat-value" data-kpi-key="puntos">{{ n_puntos|default:0 }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-map-pin"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
-                    <span class="dash-stat-label">Puntos de venta</span>
-                    <span class="dash-stat-hint">solicitantes del portal</span>
+                    <span class="dash-stat-label">Puntos de atención</span>
+                    <span class="dash-stat-hint">con tickets en el período</span>
+                </span>
+            </a>
+            <a class="dash-stat dash-hov-vencidos" href="{% url 'tickets:lista' %}?sv=vencidas">
+                <span class="dash-stat-icon st-ic-vencidos">
+                    <span class="dash-stat-value st-vencidos" data-kpi-key="vencidos">{{ stats.vencidos|default:0 }}</span>
+                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
+                </span>
+                <span class="dash-stat-body">
+                    <span class="dash-stat-label">Vencidos (SLA)</span>
+                    <span class="dash-stat-hint">fuera del plazo de atención</span>
                 </span>
             </a>
         </div>
+    </section>
+
+    <section class="performance-grid" aria-label="Indicadores de rendimiento">
+        <article class="performance-card"><span class="performance-icon green"><svg class="icon"><use href="#i-clock"/></svg></span><div><span>Tiempo de primera respuesta</span><strong>Sin datos</strong><small>No está registrado aún.</small></div></article>
+        <article class="performance-card"><span class="performance-icon violet"><svg class="icon"><use href="#i-clock"/></svg></span><div><span>Tiempo de resolución</span><strong data-kpi-key="resolucion">{{ stats.resolucion|default:"Sin datos" }}</strong><small>Desde creación hasta resolución o cierre.</small></div></article>
+        <article class="performance-card"><span class="performance-icon blue"><svg class="icon"><use href="#i-shield"/></svg></span><div><span>Cumplimiento SLA</span><strong data-kpi-key="sla_pct">{% if stats.sla_pct != None %}{{ stats.sla_pct }}%{% else %}No configurado{% endif %}</strong><small>Tickets dentro de su plazo.</small></div></article>
+        <article class="performance-card"><span class="performance-icon orange"><svg class="icon"><use href="#i-star"/></svg></span><div><span>Satisfacción del usuario</span><strong data-kpi-key="satisfaccion">{% if stats.satisfaccion != None %}{{ stats.satisfaccion }}%{% else %}Sin datos{% endif %}</strong><small>{% if stats.satisfaccion != None %}Votos positivos asociados a tickets.{% else %}Sin encuestas suficientes en este período.{% endif %}</small></div></article>
     </section>
 
     <div class="dash-compact">
         {% include "tickets/_dash_widgets.html" %}
     </div>
 
+    <section class="chart-card attention-card" aria-labelledby="attentionTitle">
+        <div class="chart-card-head">
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <h3 id="attentionTitle">Tickets que requieren atención</h3>
+            <a href="{% url 'tickets:lista' %}?sv=vencidas" class="btn btn-outline btn-sm">Ver bandeja</a>
+        </div>
+        <div class="table-scroll">
+            <table class="data-table attention-table">
+                <thead><tr><th>Código</th><th>Asunto</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Vencimiento SLA</th><th></th></tr></thead>
+                <tbody>
+                    {% for ticket in atencion %}
+                    <tr>
+                        <td><a class="table-code" href="{% url 'tickets:detalle' ticket.pk %}">{{ ticket.codigo }}</a></td>
+                        <td>{{ ticket.titulo|truncatechars:52 }}</td>
+                        <td>{{ ticket.get_prioridad_display }}</td>
+                        <td>{% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display resuelto=ticket.fue_resuelto cerrado=ticket.esta_cerrado %}</td>
+                        <td>{{ ticket.tecnico_asignado.nombre|default:"Sin asignar" }}</td>
+                        <td>{% include "tickets/_ans_time.html" with t=ticket %}</td>
+                        <td><a class="btn btn-outline btn-xs" href="{% url 'tickets:detalle' ticket.pk %}">Ver</a></td>
+                    </tr>
+                    {% empty %}<tr class="table-empty"><td colspan="7">No hay tickets que requieran atención con los filtros aplicados.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     <div class="chart-card mesa-tec-card">
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
-            <h3>Técnicos · carga, ANS y categorías</h3>
+            <h3>Rendimiento por técnico</h3>
             <a href="{% url 'tickets:usuarios' %}" class="btn btn-outline btn-sm">Gestionar</a>
         </div>
         <div class="table-scroll">
@@ -289,12 +375,12 @@
                 <thead>
                     <tr>
                         <th>Técnico</th>
-                        <th class="num">A cargo</th>
-                        <th class="num col-vencido">Vencidos</th>
-                        <th class="num">Por vencer</th>
+                        <th class="num">Asignados</th>
+                        <th class="num">En progreso</th>
                         <th class="num">Resueltos</th>
-                        <th class="num">Cerrados</th>
-                        <th>Categorías</th>
+                        <th class="num col-vencido">Vencidos</th>
+                        <th>Prom. resolución</th>
+                        <th>Cumpl. SLA</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -308,17 +394,12 @@
                                 <span class="tec-name-hint">Ver sus tickets asignados</span>
                             </button>
                         </td>
-                        <td class="num"><strong>{{ t.abrir|add:t.espera }}</strong></td>
-                        <td class="num col-vencido">{% if t.vencido %}<span class="badge-vencido">{{ t.vencido }}</span>{% else %}—{% endif %}</td>
-                        <td class="num">{% if t.riesgo %}<span class="badge-riesgo">{{ t.riesgo }}</span>{% else %}—{% endif %}</td>
+                        <td class="num"><strong>{{ t.asignados }}</strong></td>
+                        <td class="num">{{ t.espera }}</td>
                         <td class="num">{{ t.resueltos }}</td>
-                        <td class="num">{{ t.cerrado }}</td>
-                        <td>
-                            <div class="tec-cats">
-                                {% for c in t.categorias %}<span class="tec-cat">{{ c }}</span>{% endfor %}
-                                {% if not t.categorias %}—{% endif %}
-                            </div>
-                        </td>
+                        <td class="num col-vencido">{% if t.vencido %}<span class="badge-vencido">{{ t.vencido }}</span>{% else %}—{% endif %}</td>
+                        <td>{% if t.promedio_resolucion %}{{ t.promedio_resolucion }}{% else %}<span class="text-muted">Sin datos</span>{% endif %}</td>
+                        <td>{% if t.sla_pct != None %}{{ t.sla_pct }}%{% else %}<span class="text-muted">Sin datos</span>{% endif %}</td>
                         <td class="cell-link"><a href="{% url 'tickets:lista' %}?tecnico={{ t.id }}" title="Historial completo de tickets">Historial</a></td>
                     </tr>
                     {% empty %}
@@ -427,4 +508,99 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ kpi_trends|json_script:"dashboardKpiTrends" }}
+{{ kpi_sparks|json_script:"dashboardKpiSparks" }}
+<script>
+(function () {
+    var source = document.getElementById("dashboardKpiTrends");
+    if (!source) return;
+    var trends = JSON.parse(source.textContent || "[]");
+    var sparksSource = document.getElementById("dashboardKpiSparks");
+    var sparks = sparksSource ? JSON.parse(sparksSource.textContent || "{}") : {};
+    var sparkKeys = ["total", "abiertos", "progreso", "cerrados", "tecnicos", "puntos", "vencidos"];
+    document.querySelectorAll(".dash-hero--plano .dash-stat").forEach(function (card, index) {
+        var trend = trends[index];
+        if (!trend) return;
+        var chip = document.createElement("span");
+        chip.className = "dash-stat-trend " + trend.clase;
+        var value = document.createElement("b");
+        value.textContent = (trend.clase === "is-up" ? "↑ " : trend.clase === "is-down" ? "↓ " : "= ") + trend.texto;
+        var caption = document.createElement("small");
+        caption.textContent = "vs. mes anterior";
+        chip.append(value, caption);
+        card.append(chip);
+        var values = sparks[sparkKeys[index]];
+        if (!Array.isArray(values) || !values.length) return;
+        var spark = document.createElement("span");
+        spark.className = "dash-stat-spark " + (index === 1 || index === 2 || index === 6 ? "is-bars" : "is-line");
+        spark.setAttribute("aria-hidden", "true");
+        spark.title = "Tendencia de los últimos " + values.length + " días";
+        var max = Math.max.apply(null, values.concat([1]));
+        if (spark.classList.contains("is-bars")) {
+            var width = 240 / values.length;
+            var bars = values.map(function (value, i) { var h = Math.max(3, value / max * 54); return '<rect x="' + (i * width + 4) + '" y="' + (60 - h) + '" width="' + Math.max(5, width - 8) + '" height="' + h + '" rx="4"><title>Día ' + (i + 1) + ': ' + value + '</title></rect>'; }).join("");
+            spark.innerHTML = '<svg viewBox="0 0 240 66" preserveAspectRatio="none">' + bars + '</svg>';
+        } else {
+            var points = values.map(function (value, i) { return (i * (236 / Math.max(1, values.length - 1)) + 2).toFixed(1) + ',' + (60 - value / max * 48).toFixed(1); }).join(' ');
+            var last = points.split(' ').pop().split(',');
+            spark.innerHTML = '<svg viewBox="0 0 240 66" preserveAspectRatio="none"><polygon class="spark-fill" points="2,64 ' + points + ' 238,64"/><polyline class="spark-line" points="' + points + '"/><circle cx="' + last[0] + '" cy="' + last[1] + '" r="4"/></svg>';
+        }
+        card.append(spark);
+    });
+})();
+</script>
+<script>
+(function () {
+    var form = document.getElementById('dashboardFilters');
+    var refreshButtons = document.querySelectorAll('[data-dashboard-refresh]');
+    var filterToggle = document.querySelector('[data-filter-toggle]');
+    var filterPopover = document.getElementById('dashboardFilterPopover');
+    if (!form) return;
+    function setFilterOpen(open) {
+        form.hidden = !open;
+        if (filterPopover) filterPopover.classList.toggle('is-open', open);
+        if (filterToggle) filterToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    if (filterToggle) {
+        filterToggle.addEventListener('click', function (event) {
+            event.stopPropagation();
+            setFilterOpen(form.hidden);
+        });
+        document.addEventListener('click', function (event) {
+            if (filterPopover && !filterPopover.contains(event.target)) setFilterOpen(false);
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') { setFilterOpen(false); filterToggle.focus(); }
+        });
+    }
+    var endpoint = '{% url "tickets:dashboard_data" %}';
+    var pending = false;
+    function formatValue(key, value) {
+        if (value === null || value === undefined || value === '') return key === 'sla_pct' ? 'No configurado' : 'Sin datos';
+        return key === 'sla_pct' || key === 'satisfaccion' ? value + '%' : value;
+    }
+    function refreshDashboard() {
+        if (pending) return;
+        pending = true;
+        document.querySelector('.dash-hero').classList.add('is-loading');
+        var query = new URLSearchParams(new FormData(form));
+        fetch(endpoint + '?' + query.toString(), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+            .then(function (response) { if (!response.ok) throw new Error('No se pudo actualizar'); return response.json(); })
+            .then(function (data) {
+                document.querySelectorAll('[data-kpi-key]').forEach(function (node) {
+                    var key = node.dataset.kpiKey;
+                    if (Object.prototype.hasOwnProperty.call(data.kpis, key)) node.textContent = formatValue(key, data.kpis[key]);
+                });
+                if (window.DoggerDashboardCharts) window.DoggerDashboardCharts.update(data.charts);
+            })
+            .catch(function () { /* El contenido visible permanece disponible si falla la red. */ })
+            .finally(function () { pending = false; document.querySelector('.dash-hero').classList.remove('is-loading'); });
+    }
+    refreshButtons.forEach(function (button) { button.addEventListener('click', refreshDashboard); });
+    window.setInterval(function () { if (!document.hidden) refreshDashboard(); }, 60000);
+})();
+</script>
 {% endblock %}

@@ -18,7 +18,7 @@
                 </select>
             </label>
         </div>
-        <div class="table-scroll">
+        <div class="table-scroll{% if graficas_observador %} pivot-table-scroll--observador{% endif %}">
             <table class="data-table pivot-table" id="pivotTable">
                 <thead>
                     <tr>
@@ -37,11 +37,12 @@
         </div>
     </div>
     {% endif %}
-    <div class="chart-card chart-modal" data-widget="categoria">
+    <div class="chart-card chart-modal" data-widget="categoria"{% if graficas_observador %} data-obs-alternativa="estado_lista"{% endif %}>
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
             <h3>Solicitudes por categoría</h3>
             <div class="dash-head-tools">
+                {% if graficas_observador %}<label class="dash-select obs-chart-select"><span>Mostrar</span><select data-obs-selector><option value="">Solicitudes por categoría</option><option value="estado_lista">Estado de tu lista</option></select></label>{% endif %}
                 <label class="dash-select">
                     <span>Ver</span>
                     <select id="wCatScope">
@@ -92,11 +93,12 @@
 </div>
 
 <div class="charts-grid">
-    <div class="chart-card chart-modal" data-widget="prioridad">
+    <div class="chart-card chart-modal" data-widget="prioridad"{% if graficas_observador %} data-obs-alternativa="carga_zona"{% endif %}>
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
             <h3>Solicitudes por prioridad</h3>
             <div class="dash-head-tools">
+                {% if graficas_observador %}<label class="dash-select obs-chart-select"><span>Mostrar</span><select data-obs-selector><option value="">Solicitudes por prioridad</option><option value="carga_zona">Carga por zona</option></select></label>{% endif %}
                 <label class="dash-select">
                     <span>Ver</span>
                     <select id="wPrioScope">
@@ -113,18 +115,18 @@
             <ul class="pie-legend" data-pie-legend></ul>
         </div>
     </div>
-    <div class="chart-card chart-modal" data-widget="linea">
+    <div class="chart-card chart-modal" data-widget="linea"{% if graficas_observador %} data-obs-alternativa="tecnicos"{% endif %}>
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-chart"/></svg></span>
             <h3>Solicitudes por período</h3>
             <div class="dash-head-tools">
+                {% if graficas_observador %}<label class="dash-select obs-chart-select"><span>Mostrar</span><select data-obs-selector><option value="">Solicitudes por período</option><option value="tecnicos">Técnicos que atienden</option></select></label>{% endif %}
                 <label class="dash-select">
                     <span>Período</span>
                     <select id="wLineaRange">
-                        <option value="ultima_semana" selected>Última semana</option>
-                        <option value="esta_semana">Esta semana</option>
-                        <option value="este_mes">Este mes</option>
-                        <option value="ultimo_mes">Último mes</option>
+                        <option value="ultima_semana" selected>Últimos 7 días</option>
+                        <option value="30_dias">Últimos 30 días</option>
+                        <option value="90_dias">Últimos 90 días</option>
                     </select>
                 </label>
                 <div class="chart-switch" data-switch></div>
@@ -140,11 +142,12 @@
 </div>
 
 <div class="charts-grid">
-    <div class="chart-card chart-modal" data-widget="comp20">
+    <div class="chart-card chart-modal" data-widget="comp20"{% if graficas_observador %} data-obs-alternativa="resumen_zona"{% endif %}>
         <div class="chart-card-head">
             <span class="chart-head-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span>
             <h3>Solicitudes recibidas</h3>
             <div class="dash-head-tools">
+                {% if graficas_observador %}<label class="dash-select obs-chart-select"><span>Mostrar</span><select data-obs-selector><option value="">Solicitudes recibidas</option><option value="resumen_zona">Resumen por zona</option></select></label>{% endif %}
                 <label class="dash-select">
                     <span>Analizar</span>
                     <select id="wComp20">

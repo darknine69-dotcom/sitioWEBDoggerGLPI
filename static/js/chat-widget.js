@@ -47,6 +47,15 @@
     var colegasDatos = {};
     var novedadesCache = { sala: 0, dms: {} };
     var dmPendiente = 0;
+    /* Ticket que hay que dejar seleccionado al abrir el chat: lo usa el
+       botón «Abrir chat de soporte» de la ficha del ticket para que el
+       hilo salga ya en ese ticket, y no en el primero de la lista. */
+    var ticketPendiente = 0;
+    /* Correo del dueño de ese ticket: al staff hay que dejarle elegida la
+       persona antes de poder ver su hilo. */
+    var ticketEmailPendiente = "";
+    /* Si en la carga actual se eligió un ticket (y no toca la bienvenida). */
+    var elegido = false;
     /* Lo ya visto del corporativo (sala + cada directo): con esto el
        servidor cuenta lo pendiente para la burbuja, esté o no abierto. */
     var visto = { sala: 0, dm: {} };
@@ -389,17 +398,25 @@
             if (!op.value) { continue; }
             var t = ticketsDatos[op.value] || { codigo: op.textContent, titulo: "", estado_display: "" };
             total++;
-            if (q && normalizar(t.codigo + " " + t.titulo + " " + t.estado_display).indexOf(q) === -1) { continue; }
+            /* Se busca por código, título, estado y técnico asignado: así
+               «quién atiende este ticket» se responde desde el chat. */
+            if (q && normalizar(t.codigo + " " + t.titulo + " " + t.estado_display +
+                    " " + (t.tecnico || "")).indexOf(q) === -1) { continue; }
             var activo = String(ticketPk) === String(op.value);
             html += '<button type="button" class="sw-dd-row' + (activo ? " is-active" : "") +
                 '" role="option" aria-selected="' + activo + '" data-value="' + esc(op.value) + '">' +
                 '<span class="sw-dd-meta"><svg class="icon"><use href="#i-ticket"/></svg></span>' +
                 '<span class="sw-dd-name">' + esc(t.codigo) +
-                (t.titulo ? " · " + esc(t.titulo) : "") + "</span>" +
+                (t.titulo ? " · " + esc(t.titulo) : "") +
+                (t.tecnico
+                    ? '<small class="sw-dd-tec" title="Técnico asignado"><svg class="icon"><use href="#i-user"/></svg>' +
+                      esc(t.tecnico) + "</small>"
+                    : '<small class="sw-dd-tec sw-dd-tec-sin"><svg class="icon"><use href="#i-user"/></svg>Sin asignar</small>') +
+                "</span>" +
                 (t.estado_display ? '<span class="sw-dd-estado">' + esc(t.estado_display) + "</span>" : "") +
                 "</button>";
         }
-        panel.innerHTML = componerBusca("Filtrar…", "Filtrar tickets", antes.valor, total) +
+        panel.innerHTML = componerBusca("Buscar ticket o técnico…", "Buscar ticket por código, título, estado o técnico", antes.valor, total) +
             (html || (q ? '<p class="sw-dd-empty">Sin coincidencias.</p>'
                         : '<p class="sw-dd-empty">Sin tickets para chatear.</p>'));
         retenerBusca(panel, antes);
@@ -516,6 +533,16 @@
         var t = ticketsDatos[String(ticketPk || "")];
         ddTicketLabel.textContent = t ? t.codigo : "Ticket";
     }
+    /* Deja elegido un ticket concreto (el de la ficha desde la que se abrió
+       el chat). Ajusta el selector, el nombre del dueño y el hilo. */
+    function seleccionarTicket(t) {
+        if (!t) { return; }
+        ticketPk = t.pk;
+        sel.value = String(t.pk);
+        pintarTicketUser(t.solicitante_nombre);
+        pintarTicketLabel();
+        bloquearComposer(false);
+    }
     function pintarColegaLabel() {
         if (!ddColegaLabel) { return; }
         if (!colegaPk) {
@@ -538,6 +565,7 @@
                 if (!d || !d.ok) { avisarUnaVez(textoFallo(res, "No se pudo cargar el chat.")); return; }
                 usuSel.innerHTML = "";
                 usuariosDatos = {};
+                var elegidoUser = false;
                 (d.usuarios || []).forEach(function (u, i) {
                     usuariosDatos[(u.email || "").toLowerCase()] = u;
                     var op = document.createElement("option");
@@ -545,7 +573,15 @@
                     op.textContent = (u.en_linea ? "🟢 " : "⚪ ") + u.nombre +
                         " (" + u.n_tickets + " ticket" + (u.n_tickets === 1 ? "" : "s") + ")";
                     usuSel.appendChild(op);
-                    if (i === 0) { usuarioEmail = u.email; }
+                    /* Si el chat se abrió desde la ficha de un ticket, se
+                       deja elegido a su dueño para que su hilo aparezca. */
+                    if (ticketEmailPendiente &&
+                        (u.email || "").toLowerCase() === ticketEmailPendiente) {
+                        usuarioEmail = u.email;
+                        elegidoUser = true;
+                    } else if (i === 0 && !elegidoUser && !ticketEmailPendiente) {
+                        usuarioEmail = u.email;
+                    }
                 });
                 if (!d.usuarios || !d.usuarios.length) {
                     var op0 = document.createElement("option");
@@ -557,6 +593,7 @@
                     usuSel.value = usuarioEmail;
                     pintarUsuarioLabel();
                 }
+                ticketEmailPendiente = "";
                 listarTickets(usuarioEmail);
             })
             .catch(function () { avisarUnaVez("Sin conexión con el servidor."); });
@@ -569,19 +606,26 @@
                 if (!d || !d.ok) { avisarUnaVez(textoFallo(res, "No se pudo cargar el chat.")); return; }
                 sel.innerHTML = "";
                 ticketsDatos = {};
-                (d.tickets || []).forEach(function (t, i) {
+                elegido = false;
+                (d.tickets || []).forEach(function (t) {
                     ticketsDatos[String(t.pk)] = t;
                     var op = document.createElement("option");
                     op.value = t.pk;
                     op.textContent = t.codigo + " · " + t.titulo + " (" + t.estado_display + ")";
                     if (t.solicitante_nombre) { op.setAttribute("data-user", t.solicitante_nombre); }
                     sel.appendChild(op);
-                    if (i === 0) {
-                        ticketPk = t.pk;
-                        pintarTicketUser(t.solicitante_nombre);
-                        pintarTicketLabel();
-                    }
                 });
+                /* Vista predeterminada: si no venimos de una ficha con un
+                   ticket concreto, NO se abre el primero a ciegas; se deja
+                   la bienvenida con los tickets como accesos directos. */
+                if (ticketPendiente && ticketsDatos[String(ticketPendiente)]) {
+                    seleccionarTicket(ticketsDatos[String(ticketPendiente)]);
+                    elegido = true;
+                } else if (!ticketPendiente && ticketPk && ticketsDatos[String(ticketPk)]) {
+                    seleccionarTicket(ticketsDatos[String(ticketPk)]);
+                    elegido = true;
+                }
+                ticketPendiente = 0;
                 if (!d.tickets || !d.tickets.length) {
                     var op0 = document.createElement("option");
                     op0.textContent = "Sin tickets para chatear";
@@ -589,10 +633,68 @@
                     ticketPk = 0;
                     pintarTicketUser("");
                     if (ddTicketLabel) { ddTicketLabel.textContent = "Sin tickets"; }
+                    cargar(0);
+                    return;
                 }
-                cargar(0);
+                if (elegido) { cargar(0); }
+                else { pintarBienvenida(); }
             })
             .catch(function () { avisarUnaVez("Sin conexión con el servidor."); });
+    }
+
+    /* Compositor del chat: en la bienvenida (soporte sin ticket) queda
+       apagado; con ticket o en corporativo se enciende. El texto de ayuda
+       del campo cambia según el caso. */
+    function bloquearComposer(congelar) {
+        var enCorp = esCorp();
+        if (texto) {
+            texto.disabled = congelar;
+            texto.placeholder = congelar
+                ? "Elige una conversación para escribir…"
+                : (enCorp
+                    ? (colegaPk ? "Escríbele a " + nombreColega() + "…" : "Escríbele al equipo…")
+                    : "Escríbenos…");
+        }
+        if (enviar) { enviar.disabled = congelar; }
+        if (adjBtn) { adjBtn.disabled = congelar; }
+        if (emojiBtn) { emojiBtn.disabled = congelar; }
+    }
+
+    /* Pantalla de entrada del chat: sin conversación abierta, se explica
+       qué es y se listan los tickets como atajos para elegir uno. */
+    function pintarBienvenida() {
+        ticketPk = 0;
+        ultimoId = 0;
+        pintarTicketUser("");
+        if (ddTicketLabel) { ddTicketLabel.textContent = "Elige un ticket"; }
+        bloquearComposer(true);
+        var enCorp = esCorp();
+        var lista = (sel ? Array.prototype.slice.call(sel.options) : []).filter(function (op) {
+            return op.value;
+        });
+        var filas = lista.slice(0, 6).map(function (op) {
+            var t = ticketsDatos[op.value] || {};
+            var tec = t.tecnico
+                ? '<small class="sw-bien-tec"><svg class="icon"><use href="#i-user"/></svg>' + esc(t.tecnico) + "</small>"
+                : '<small class="sw-bien-tec sw-bien-tec-sin"><svg class="icon"><use href="#i-user"/></svg>Sin asignar</small>';
+            return '<button type="button" class="sw-bien-row" data-value="' + esc(op.value) + '">' +
+                '<span class="sw-bien-row-ico"><svg class="icon"><use href="#i-ticket"/></svg></span>' +
+                '<span class="sw-bien-row-txt"><b>' + esc(t.codigo || op.textContent) +
+                (t.titulo ? " · " + esc(t.titulo) : "") + "</b>" + tec + "</span>" +
+                (t.estado_display ? '<span class="sw-bien-row-est">' + esc(t.estado_display) + "</span>" : "") +
+                "</button>";
+        }).join("");
+        hilo.innerHTML =
+            '<div class="sw-bien">' +
+            '<span class="sw-bien-ico"><svg class="icon"><use href="#i-headset"/></svg></span>' +
+            '<h3 class="sw-bien-tit">' + (enCorp ? "Sala corporativa" : "¿En qué te ayudamos?") + "</h3>" +
+            '<p class="sw-bien-sub">' + (enCorp
+                ? "Coordínate con técnicos, admins y observadores."
+                : "Elige una conversación de abajo para ver el hilo, o escríbenos y te atendemos.") + "</p>" +
+            (filas
+                ? '<div class="sw-bien-lista"><span class="sw-bien-lista-tit">Tus conversaciones</span>' + filas + "</div>"
+                : "") +
+            "</div>";
     }
 
     /* La ventana se abre junto a la burbuja: arriba de ella y alineada
@@ -692,6 +794,22 @@
     });
     cerrar.addEventListener("click", cerrarWin);
 
+    /* La bienvenida lista los tickets como atajos: al pulsar uno se abre
+       ese hilo (y se sincroniza el selector de arriba). */
+    if (hilo) {
+        hilo.addEventListener("click", function (e) {
+            var fila = e.target.closest && e.target.closest(".sw-bien-row");
+            if (!fila) { return; }
+            var val = fila.getAttribute("data-value");
+            var t = ticketsDatos[String(val)];
+            if (!t) { return; }
+            seleccionarTicket(t);
+            ultimoId = 0;
+            errorMostrado = false;
+            cargar(0);
+        });
+    }
+
     sel.addEventListener("change", function () {
         ticketPk = parseInt(sel.value, 10) || 0;
         ultimoId = 0;
@@ -699,6 +817,7 @@
         var op = sel.options[sel.selectedIndex];
         pintarTicketUser(op ? op.getAttribute("data-user") : "");
         pintarTicketLabel();
+        bloquearComposer(!ticketPk);
         cargar(0);
     });
     if (usuSel) {
@@ -731,8 +850,9 @@
         if (ddUsuario) { ddUsuario.hidden = enCorp; }
         if (ddColega) { ddColega.hidden = !enCorp; }
         if (adjBtn) { adjBtn.style.display = enCorp ? "none" : ""; }
-        texto.placeholder = !enCorp ? "Escríbenos…"
-            : (colegaPk ? "Escríbele a " + nombreColega() + "…" : "Escríbele al equipo…");
+        /* En corporativo siempre se puede escribir (el "para" lo decide el
+           selector de colega); en soporte depende de si hay ticket abierto. */
+        bloquearComposer(!enCorp && !ticketPk);
         errorMostrado = false;
         ultimoId = 0;
         noLeidos = 0;
@@ -931,4 +1051,22 @@
         abrirDesdeHash();
         window.addEventListener("hashchange", abrirDesdeHash);
     } else { listarTickets(); }
+
+    /* API mínima para abrir el chat desde fuera (p. ej. la ficha del ticket
+       del botón X). Hace falta porque el FAB responde a pointerup, y un
+       .click() programático no dispara esos eventos. Con (pk, email) abre
+       ya el hilo de ese ticket, en modo soporte. */
+    window.DoggerChat = {
+        abrir: function (pk, email) {
+            if (hayCorp && esCorp()) { ponerModo("soporte"); }
+            if (pk) { ticketPendiente = parseInt(pk, 10) || 0; }
+            if (email) { ticketEmailPendiente = String(email).toLowerCase(); }
+            if (!abierto) { abrir(); }
+            else if (pk) { if (hayUsuarios) { listarUsuarios(); } else { listarTickets(); } }
+            else { ubicarVentana(); }
+        },
+        cerrar: function () { if (abierto) { cerrarWin(); } },
+        alternar: function () { if (abierto) { cerrarWin(); } else { abrir(); } },
+        estaAbierto: function () { return abierto; },
+    };
 })();

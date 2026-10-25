@@ -815,6 +815,7 @@ def _claves_para_json_frio():
             "cubre": que_cubre(cat.grupo, cat.nombre),
             "prioridad": cat.prioridad_default,
             "ans": cat.ans_horas,
+            "tecnico_default_id": cat.tecnico_default_id,
             "claves": _buscar_claves(cat.grupo, cat.nombre),
             "excluye": EXCLUYE.get(f"{_norm(cat.grupo)}::{_norm(cat.nombre)}", []),
         })

@@ -1,0 +1,18 @@
+{% if grupos %}
+<div class="mon-zona-radar" aria-label="Resumen operativo por zona">
+{% for g in grupos %}
+    <article class="mon-zona-snap mon-zona-snap--{{ g.estado }}"{% if g.zona.color %} style="--zc: {{ g.zona.color }}"{% endif %}>
+        <div class="mon-zona-snap-head">
+            <span class="mon-zona-snap-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
+            <div><h4>{% if g.zona %}{{ g.zona.nombre }}{% else %}Sin zona{% endif %}</h4><p>{{ g.filas|length }} cuenta{{ g.filas|length|pluralize }}</p></div>
+            <span class="obs-pill obs-pill-{{ g.estado }}"><span class="obs-dot obs-dot-{{ g.estado }}"></span>{{ g.estado|capfirst }}</span>
+        </div>
+        <div class="mon-zona-metricas"><span><b>{{ g.total_tickets }}</b><small>tickets</small></span><span><b>{{ g.abiertos }}</b><small>abiertos</small></span><span><b>{{ g.cerrados }}</b><small>resueltos</small></span></div>
+        <div class="mon-zona-avance"><span><b>{{ g.avance }}%</b> resuelto</span><i><i style="width: {{ g.avance }}%"></i></i></div>
+        <footer>{% if g.zona %}<a href="?zona_grafica={{ g.zona.nombre|urlencode }}#analisis-tickets">Analizar <svg class="icon"><use href="#i-chart"/></svg></a><a href="{% url 'tickets:obs_zona_detalle' g.zona.pk %}">Ver zona <svg class="icon"><use href="#i-arrow-right"/></svg></a>{% else %}<a href="{% url 'tickets:obs_usuarios' %}">Organizar cuentas <svg class="icon"><use href="#i-arrow-right"/></svg></a>{% endif %}</footer>
+    </article>
+{% endfor %}
+</div>
+{% else %}
+<div class="obs-vacio"><strong>No hay zonas que resumir todavía</strong><p>Organiza cuentas desde Mi lista para ver su estado operativo aquí.</p></div>
+{% endif %}

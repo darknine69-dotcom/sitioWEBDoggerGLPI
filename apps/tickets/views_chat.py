@@ -14,7 +14,7 @@ import logging
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -52,6 +52,25 @@ def _puntos_de(usuario):
     return puntos_del_observador(usuario)
 
 
+def _correos_de_mi_lista(usuario):
+    """Correos seguidos por el observador, sin importar cómo se guardaron.
+
+    Los elementos antiguos guardan ``usuario_email``; los nuevos pueden
+    apuntar solamente al usuario por clave foránea. El chat debe respetar el
+    mismo alcance que el panel de monitoreo para ambas variantes.
+    """
+    correos = set()
+    elementos = ElementoMiLista.objects.filter(observador=usuario).select_related("usuario")
+    for elemento in elementos:
+        correo = elemento.usuario_email or (
+            elemento.usuario.email if elemento.usuario_id else ""
+        )
+        correo = (correo or "").strip().lower()
+        if correo:
+            correos.add(correo)
+    return correos
+
+
 ROLES_CORPORATIVO = ("tecnico", "admin", "observador")
 
 
@@ -76,12 +95,8 @@ def _puede_ver_hilo(usuario, ticket):
     if rol == "observador":
         if (ticket.solicitante_punto or "") in _puntos_de(usuario):
             return True
-        return bool(
-            ticket.solicitante_email
-            and ElementoMiLista.objects.filter(
-                observador=usuario, usuario_email__iexact=ticket.solicitante_email
-            ).exists()
-        )
+        correo = (ticket.solicitante_email or "").strip().lower()
+        return bool(correo and correo in _correos_de_mi_lista(usuario))
     return False
 
 
@@ -104,7 +119,11 @@ def _insignia(usuario):
 
 def _tickets_del_rol(usuario, limite=20):
     rol = getattr(usuario, "rol", None)
-    qs = Ticket.objects.all().order_by("-fecha_creacion")
+    qs = (
+        Ticket.objects.all()
+        .select_related("tecnico_asignado")
+        .order_by("-fecha_creacion")
+    )
     if rol == "usuario":
         qs = qs.filter(solicitante_email__iexact=usuario.email or "")
     elif rol == "tecnico":
@@ -115,18 +134,15 @@ def _tickets_del_rol(usuario, limite=20):
         )
     elif rol == "observador":
         puntos = _puntos_de(usuario)
-        correos = list(
-            ElementoMiLista.objects.filter(observador=usuario)
-            .exclude(usuario_email="")
-            .values_list("usuario_email", flat=True)[:200]
-        )
+        correos = _correos_de_mi_lista(usuario)
         filtro = Q()
         if puntos:
             filtro |= Q(solicitante_punto__in=puntos)
         if correos:
-            filtro |= Q(solicitante_email__in=correos)
+            for correo in correos:
+                filtro |= Q(solicitante_email__iexact=correo)
         qs = qs.filter(filtro) if filtro else qs.none()
-    return qs[:limite]
+    return qs[:limite] if limite is not None else qs
 
 
 @login_required
@@ -138,22 +154,210 @@ def chat_tickets(request):
     esa persona (el desplegable de usuarios va primero, el de tickets
     después).
     """
-    tickets = _tickets_del_rol(request.user)
+    tickets = _tickets_del_rol(request.user, limite=None)
     correo = (request.GET.get("usuario") or "").strip().lower()
     if correo:
-        tickets = [
-            t for t in tickets
-            if (t.solicitante_email or "").strip().lower() == correo
-        ]
+        tickets = tickets.filter(solicitante_email__iexact=correo)
+    tickets = tickets[:20]
     return JsonResponse({
         "ok": True,
         "tickets": [
             {"pk": t.pk, "codigo": t.codigo, "titulo": t.titulo,
              "solicitante_nombre": t.solicitante_nombre or "",
              "solicitante_email": t.solicitante_email or "",
+             # Quién atiende el ticket: se ve en el buscador del chat para no
+             # tener que abrir la ficha solo por saber a quién buscar.
+             "tecnico": (
+                 (t.tecnico_asignado.nombre or t.tecnico_asignado.email)
+                 if t.tecnico_asignado_id else ""
+             ),
+             "tecnico_email": (
+                 t.tecnico_asignado.email if t.tecnico_asignado_id else ""
+             ),
              "estado": t.estado, "estado_display": t.get_estado_display()}
             for t in tickets
         ],
+    })
+
+
+@login_required
+@require_GET
+def buscar_tickets_tecnico(request):
+    """Busca tickets por código, título, estado o técnico asignado.
+
+    Es la lupa del botón X de atajos: responde «qué técnico tiene este
+    ticket» sin abrir la ficha. El alcance es el mismo del chat
+    (`_tickets_del_rol`), así que cada rol solo ve lo suyo.
+    """
+    q = (request.GET.get("q") or "").strip()
+    if len(q) < 2:
+        return JsonResponse({"ok": True, "tickets": []})
+
+    # Se mira más allá del límite del chat: en una búsqueda no tiene sentido
+    # quedarse en los 20 más recientes, pero tampoco barrer toda la tabla.
+    tickets = _tickets_del_rol(request.user, limite=400)
+    aguja = q.lower()
+    resultados = []
+    for t in tickets:
+        tecnico = ""
+        if t.tecnico_asignado_id:
+            tecnico = t.tecnico_asignado.nombre or t.tecnico_asignado.email or ""
+        pajar = " ".join([
+            t.codigo or "", t.titulo or "", t.get_estado_display() or "",
+            tecnico,
+        ]).lower()
+        if aguja not in pajar:
+            continue
+        resultados.append({
+            "pk": t.pk,
+            "codigo": t.codigo,
+            "titulo": t.titulo or "",
+            "estado": t.estado,
+            "estado_display": t.get_estado_display(),
+            "tecnico": tecnico,
+            "url": reverse("tickets:detalle", args=[t.pk]),
+            "ficha_url": reverse("tickets:ticket_ficha", args=[t.pk]),
+        })
+        if len(resultados) >= 30:
+            break
+    return JsonResponse({"ok": True, "tickets": resultados})
+
+
+def _ticket_visible_al_rol(usuario, pk):
+    """Devuelve el ticket si el rol puede verlo, o lanza 404.
+
+    Usa el mismo alcance que el chat (`_tickets_del_rol`), así que el
+    observador solo abre los de sus zonas y el punto de venta los suyos.
+    El staff ve cualquiera.
+    """
+    try:
+        clave = int(pk)
+    except (TypeError, ValueError):
+        raise Http404
+    if not _tickets_del_rol(usuario, limite=None).filter(pk=clave).exists():
+        raise Http404
+    return get_object_or_404(
+        Ticket.objects.select_related("categoria", "tecnico_asignado")
+        .prefetch_related("adjuntos", "comentarios", "comentarios__usuario"),
+        pk=clave,
+    )
+
+
+def _ficha_ticket(ticket, usuario):
+    """Todo lo que la ventana emergente muestra de un ticket."""
+    rol = getattr(usuario, "rol", None)
+    adjuntos = [
+        {
+            "pk": a.pk,
+            "nombre": a.nombre_original or "adjunto",
+            "imagen": (a.mime_type or "").startswith("image/"),
+            "url": reverse("tickets:adjunto", args=[a.pk]) if a.archivo else "",
+        }
+        for a in ticket.adjuntos.order_by("fecha_subida")
+    ]
+    # El hilo visible: los comentarios internos son de staff y no salen al
+    # usuario final ni al observador.
+    incluir_internos = rol in ("admin", "tecnico")
+    mensajes = []
+    for c in ticket.comentarios.select_related("usuario").order_by("fecha"):
+        if c.es_interno and not incluir_internos:
+            continue
+        mensajes.append({
+            "autor": c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda"),
+            "fecha": c.fecha.strftime("%d/%m/%Y %H:%M") if c.fecha else "",
+            "texto": c.comentario,
+            "interno": bool(c.es_interno),
+            "presion": bool(c.es_presion),
+        })
+    tecnico = ""
+    if ticket.tecnico_asignado_id:
+        tecnico = ticket.tecnico_asignado.nombre or ticket.tecnico_asignado.email or ""
+    return {
+        "pk": ticket.pk,
+        "codigo": ticket.codigo,
+        "titulo": ticket.titulo,
+        "descripcion": ticket.descripcion or "",
+        "estado": ticket.estado,
+        "estado_display": ticket.get_estado_display(),
+        "prioridad": ticket.prioridad,
+        "prioridad_display": ticket.get_prioridad_display(),
+        "categoria": ticket.categoria.nombre if ticket.categoria_id else "Sin categoría",
+        "fecha": (
+            ticket.fecha_creacion.strftime("%d/%m/%Y %H:%M")
+            if ticket.fecha_creacion else ""
+        ),
+        "solicitante_nombre": ticket.solicitante_nombre or "",
+        "solicitante_email": ticket.solicitante_email or "",
+        "solicitante_punto": ticket.solicitante_punto or "",
+        "tecnico": tecnico,
+        "tecnico_email": (
+            ticket.tecnico_asignado.email if ticket.tecnico_asignado_id else ""
+        ),
+        "glpi_id": ticket.glpi_id or "",
+        "adjuntos": adjuntos,
+        "mensajes": mensajes,
+        # Solo se puede presionar un ticket vivo y con técnico. El mensaje va
+        # al hilo, así que también hace falta que el rol pueda escribir en él.
+        "puede_presionar": bool(
+            ticket.tecnico_asignado_id
+            and ticket.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
+            and rol in ("usuario", "observador")
+        ),
+        "url_chat": reverse("tickets:chat_tickets"),
+    }
+
+
+@login_required
+@require_GET
+def ticket_ficha(request, pk):
+    """Ficha de un ticket para la ventana emergente del botón X.
+
+    Es la alternativa al detalle del panel (`tickets:detalle`), que es
+    solo para staff y devolvía 403 a quien no lo es. Cada rol abre los
+    tickets que ya ve en su chat; nadie más.
+    """
+    ticket = _ticket_visible_al_rol(request.user, pk)
+    return JsonResponse({"ok": True, "ticket": _ficha_ticket(ticket, request.user)})
+
+
+@login_required
+@require_POST
+def presionar_ticket(request, pk):
+    """Le escribe al técnico de un ticket desde la ventana emergente.
+
+    Guarda el mensaje como presión en el hilo (visible, no interno) y
+    avisa al técnico. Vale para el punto de venta y el observador, cada
+    uno dentro de los tickets que ya ve.
+    """
+    ticket = _ticket_visible_al_rol(request.user, pk)
+    u = request.user
+    if ticket.estado not in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+        return JsonResponse(
+            {"ok": False, "error": "Solo puedes presionar tickets abiertos o en progreso."},
+            status=400,
+        )
+    if not ticket.tecnico_asignado_id:
+        return JsonResponse(
+            {"ok": False, "error": "El ticket aún no tiene técnico asignado."},
+            status=400,
+        )
+    mensaje = (request.POST.get("mensaje") or "").strip()[:500]
+    if not mensaje:
+        return JsonResponse(
+            {"ok": False, "error": "Escribe el mensaje para el técnico."}, status=400
+        )
+    TicketComentario.objects.create(
+        ticket=ticket, usuario=u, autor_nombre=u.nombre,
+        comentario=mensaje, es_interno=False, es_presion=True,
+    )
+    notificar_comentario(ticket, u.nombre, mensaje, actor=u)
+    return JsonResponse({
+        "ok": True,
+        "detalle": f"Mensaje enviado al técnico del {ticket.codigo}.",
+        "tecnico": (
+            ticket.tecnico_asignado.nombre or ticket.tecnico_asignado.email
+            if ticket.tecnico_asignado_id else ""
+        ),
     })
 
 

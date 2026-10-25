@@ -130,27 +130,31 @@ class ZonasObservadorTest(TestCase):
 
     # --- seguimiento ---
     def test_detalle_muestra_tickets_y_respuestas(self):
-        self._ticket("Ana Ruiz", "ana@x.com")
+        ticket_abierto = self._ticket("Ana Ruiz", "ana@x.com")
         self._ticket("Ana Ruiz", "ana@x.com", estado=Ticket.Estado.CERRADO)
+        ticket_otro_punto = self._ticket(
+            "Ana Ruiz", "ana@x.com", punto="Punto ajeno"
+        )
         self._agregar("ana@x.com")
         elemento = ElementoMiLista.objects.get(observador=self.obs)
         zona = self._zona()
         elemento.zona = zona
         elemento.save()
-        ticket = Ticket.objects.get(solicitante_email="ana@x.com",
-                                    estado=Ticket.Estado.ABIERTO)
         TicketComentario.objects.create(
-            ticket=ticket, usuario=self.tec, autor_nombre="Tec",
+            ticket=ticket_abierto, usuario=self.tec, autor_nombre="Tec",
             comentario="Ya voy en camino", es_interno=False,
         )
         TicketComentario.objects.create(
-            ticket=ticket, usuario=self.tec, autor_nombre="Tec",
+            ticket=ticket_abierto, usuario=self.tec, autor_nombre="Tec",
             comentario="Nota interna secreta", es_interno=True,
         )
-        html = self.client.get(
+        respuesta = self.client.get(
             reverse("tickets:obs_zona_detalle", args=[zona.pk])
-        ).content.decode()
+        )
+        html = respuesta.content.decode()
+        self.assertEqual(respuesta.context["resumen"]["total"], 3)
         self.assertIn("ana@x.com", html)
+        self.assertIn(ticket_otro_punto.codigo, html)
         self.assertIn("Ya voy en camino", html)
         self.assertNotIn("Nota interna secreta", html)
         self.assertIn("Respuestas de los técnicos", html)

@@ -13,6 +13,14 @@
     <span class="ue-ficha-meta-item">Estado <b class="{% if not u.activo %}meta-off{% endif %}">{% if u.activo %}Activa{% else %}Inactiva{% endif %}</b></span>
     <span class="ue-ficha-meta-item">Estadísticas <b>{{ u.ficha.stats.total|default:0 }}</b> ticket{{ u.ficha.stats.total|pluralize }}</span>
 </div>
+<section class="ue-profile-head">
+    <span class="ue-profile-avatar">{% if u.avatar %}<img src="{{ u.avatar.url }}" alt="Foto de {{ u.nombre }}">{% else %}{{ u.nombre|slice:":2"|upper }}{% endif %}<i class="ue-avatar-presence is-{{ u.ficha.dot }}" aria-hidden="true"></i></span>
+    <div class="ue-profile-identity"><h3>{{ u.nombre }}</h3><p>{{ u.email }}</p><span class="perm-chip">{{ u.get_rol_display }}</span><span class="ue-active-badge {% if not u.activo %}is-off{% endif %}"><i></i>{% if u.activo %}Activa{% else %}Inactiva{% endif %}</span><span class="ue-ficha-presencia is-{{ u.ficha.dot }}"><span class="ue-dot {{ u.ficha.dot }}"></span>{{ u.ficha.dot_titulo|default:"" }}</span></div>
+    <button type="button" class="ue-profile-edit" data-profile-edit data-open-modal="#modal-usuario" data-fill-nombre="{{ u.nombre }}" data-fill-email="{{ u.email }}" data-fill-rol="{{ u.rol }}" data-fill-glpi="{{ u.glpi_user_id|default_if_none:'' }}" data-fill-activo="{{ u.activo|yesno:'1,0' }}" data-fill-pk="{{ u.pk }}" data-fill-cambio-rol="{{ u.cambio_rol_habilitado|yesno:'1,0' }}" data-fill-telefono="{{ u.telefono|default:'' }}" data-fill-ubicacion="{{ u.ubicacion|default:'' }}"><svg class="icon"><use href="#i-pencil"/></svg> Editar usuario</button>
+    <button type="button" class="ue-profile-collapse" data-close-ficha aria-label="Cerrar detalle de usuario"><svg class="icon"><use href="#i-chevron-up"/></svg></button>
+    <div class="ue-profile-summary"><span><svg class="icon"><use href="#i-ticket"/></svg><b>{{ u.ficha.stats.total|default:0 }}</b><small>Tickets asignados</small></span><span><svg class="icon"><use href="#i-clock"/></svg><b>{{ u.ficha.acceso_label|default:"Nunca" }}</b><small>Último acceso</small></span></div>
+</section>
+<nav class="ue-profile-tabs" role="tablist"><button type="button" class="is-active" data-ficha-tab="general" aria-selected="true"><svg class="icon"><use href="#i-user"/></svg> Información general</button><button type="button" data-ficha-tab="tickets" aria-selected="false"><svg class="icon"><use href="#i-chart"/></svg> Tickets y actividad</button><button type="button" data-ficha-tab="permisos" aria-selected="false"><svg class="icon"><use href="#i-lock"/></svg> Permisos y accesos</button><button type="button" data-ficha-tab="tareas" aria-selected="false"><svg class="icon"><use href="#i-wrench"/></svg> Tareas y eventos</button><button type="button" data-ficha-tab="alertas" aria-selected="false"><svg class="icon"><use href="#i-bell"/></svg> Alertas</button></nav>
 <div class="ue-stats-grande">
     <a class="ue-stat-link s-ab" href="{{ u.ficha.lista_url }}&estado=abierto" title="Ver tickets abiertos">
         <span class="ue-stat-ico"><svg class="icon"><use href="#i-inbox"/></svg></span>
@@ -35,31 +43,26 @@
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-user"/></svg> Contacto y ubicación</h4>
         <div class="ue-kv">
-            <div><b>Correo</b><span>{{ u.email }}</span></div>
-            <div><b>Teléfono</b><span>{{ u.telefono|default:"Sin número" }}</span></div>
-            <div><b>Ubicación</b><span>{{ u.ubicacion|default:"—" }}</span></div>
+            <div><b><svg class="icon"><use href="#i-mail"/></svg>Correo</b><span>{{ u.email }}</span></div>
+            <div><b><svg class="icon"><use href="#i-phone"/></svg>Teléfono</b><span>{{ u.telefono|default:"Sin número" }}</span></div>
+            <div><b><svg class="icon"><use href="#i-map-pin"/></svg>Ubicación</b><span>{{ u.ubicacion|default:"—" }}</span></div>
             {% if u.ficha.punto %}<div><b>Punto usu.</b><span>{{ u.ficha.punto }}</span></div>{% endif %}
-            <div><b>Registrado</b><span>{{ u.ficha.registrado|date:"d/m/Y H:i" }}</span></div>
-            <div><b>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.ficha.ultimo_acceso %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}</span></div>
+            <div><b><svg class="icon"><use href="#i-calendar"/></svg>Registrado</b><span>{{ u.ficha.registrado|date:"d/m/Y H:i" }}</span></div>
+            <div><b><svg class="icon"><use href="#i-clock"/></svg>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.ficha.ultimo_acceso %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}</span></div>
         </div>
     </div>
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-ticket"/></svg> Estadísticas de tickets</h4>
-        <p class="ue-empty" style="margin:0 0 4px">Total creados: <b>{{ u.ficha.stats.total|default:0 }}</b></p>
-        <div class="ue-box-actions">
-            <a class="btn btn-outline-light btn-sm" href="{{ u.ficha.lista_url }}">
-                <svg class="icon icon-sm"><use href="#i-ticket"/></svg> Ver sus tickets
-            </a>
-        </div>
+        <div class="ue-ticket-stats"><span>Total creados <b>{{ u.ficha.stats.total|default:0 }}</b></span><span>Asignados <b>{{ u.ficha.stats.total|default:0 }}</b></span><span>En progreso <b>{{ u.ficha.stats.progreso|default:0 }}</b></span><span>Resueltos <b>{{ u.ficha.stats.resueltos|default:0 }}</b></span><span>Cerrados <b>{{ u.ficha.stats.cerrados|default:0 }}</b></span></div>
     </div>
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-shield"/></svg> Acciones permitidas</h4>
         <div class="ue-chips">
-            <span class="perm-chip {% if not u.puede_cerrar_tickets %}off{% endif %}">Cerrar</span>
-            <span class="perm-chip {% if not u.puede_eliminar_tickets %}off{% endif %}">Eliminar</span>
-            <span class="perm-chip {% if not u.puede_reabrir_tickets %}off{% endif %}">Reabrir</span>
-            <span class="perm-chip {% if not u.puede_crear_tickets %}off{% endif %}">Crear</span>
-            <span class="perm-chip {% if not u.puede_responder_chat %}off{% endif %}">Chatear</span>
+            <span class="perm-chip {% if not u.puede_cerrar_tickets %}off{% endif %}">Cerrar tickets</span>
+            <span class="perm-chip {% if not u.puede_eliminar_tickets %}off{% endif %}">Eliminar tickets</span>
+            <span class="perm-chip {% if not u.puede_reabrir_tickets %}off{% endif %}">Reabrir tickets</span>
+            <span class="perm-chip {% if not u.puede_crear_tickets %}off{% endif %}">Crear tickets</span>
+            <span class="perm-chip {% if not u.puede_responder_chat %}off{% endif %}">Chatear con usuarios</span>
         </div>
     </div>
     <div class="ue-box">
@@ -72,9 +75,9 @@
         </div>
     </div>
     <div class="ue-box">
-        <h4><svg class="icon"><use href="#i-chart"/></svg> Disponibilidad</h4>
+        <h4><svg class="icon"><use href="#i-clock"/></svg> Disponibilidad</h4>
         {% for d in u.ficha.disponibilidad|slice:":6" %}
-        <span class="ue-disp is-{{ d.tipo }}"><b>{{ d.fecha|date:"d/m/Y" }}</b>{% if d.hora %}<span class="ue-evento-hora">{{ d.hora|time:"H:i" }}</span>{% endif %} {{ d.get_tipo_display }}{% if d.nota %} — {{ d.nota }}{% endif %}</span>
+        <span class="ue-disp ue-availability-event is-{{ d.tipo }}"><b>{{ d.fecha|date:"d/m/Y" }}</b>{% if d.hora %}<span class="ue-evento-hora">{{ d.hora|time:"H:i" }}</span>{% endif %}<small>{{ d.get_tipo_display }}{% if d.nota %} — {{ d.nota }}{% endif %}</small></span>
         {% empty %}
         <p class="ue-empty">Sin ausencias registradas · disponible por defecto.</p>
         {% endfor %}
@@ -82,13 +85,13 @@
             {% if u.rol == 'tecnico' or u.rol == 'admin' %}
             <a class="btn btn-outline-light btn-sm" target="_blank" rel="noopener"
                href="{% url 'programador:panel_programador' %}#disponibilidad">
-                <svg class="icon icon-sm"><use href="#i-chart"/></svg> Panel de disponibilidad
+                <svg class="icon icon-sm"><use href="#i-calendar"/></svg> Ver calendario
             </a>
             {% endif %}
         </div>
     </div>
     <div class="ue-box">
-        <h4><svg class="icon"><use href="#i-wrench"/></svg> Tareas y eventos próximos</h4>
+        <h4><svg class="icon"><use href="#i-layers"/></svg> Tareas y eventos próximos</h4>
         {% for e in u.ficha.eventos %}
         <span class="ue-evento">
             <span class="ue-evento-date">{{ e.fecha|date:"d/m/Y" }}</span>{% if e.hora %}<span class="ue-evento-hora">{{ e.hora|time:"H:i" }}</span>{% endif %}
@@ -114,8 +117,8 @@
         <h4><svg class="icon"><use href="#i-bell"/></svg> Alertas</h4>
         {% for a in u.ficha.alertas %}
         <span class="ue-alerta">
-            <svg class="icon"><use href="#i-{% if a.tipo == 'ausencia' %}alert{% else %}x-circle{% endif %}"/></svg>
-            {% if a.url %}<a href="{{ a.url }}">{{ a.texto }}</a>{% else %}<span>{{ a.texto }}</span>{% endif %}
+            <svg class="icon"><use href="#i-alert"/></svg>
+            <span class="ue-alerta-copy">{% if a.url %}<a href="{{ a.url }}">{{ a.texto }}</a>{% else %}<span>{{ a.texto }}</span>{% endif %}<small>{% if a.tipo == 'vencido' %}Sin respuesta desde hace 2 días{% else %}Requiere atención{% endif %}</small></span>
         </span>
         {% empty %}
         <p class="ue-empty">Sin alertas.</p>

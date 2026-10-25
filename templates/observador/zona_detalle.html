@@ -6,9 +6,20 @@
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>{% endblock %}
 {% block header_title %}{{ zona.nombre }}{% endblock %}
 {% block header_desc %}La zona y sus cuentas: cuánta gente sigues, cómo van sus tickets y qué respondieron los técnicos.{% endblock %}
+{% block header_actions %}
+{% if admin %}
+<a href="{% url 'tickets:monitoreo_admin' %}#zonas" class="btn btn-outline btn-sm" title="Volver al monitoreo"><svg class="icon"><use href="#i-arrow-left"/></svg></a>
+{% else %}
+<a href="{% url 'tickets:obs_zonas' %}#crear-zona" class="btn btn-outline btn-sm obs-btn-ico" title="Crear zona" aria-label="Crear zona"><svg class="icon"><use href="#i-plus"/></svg></a>
+<a href="{% url 'tickets:obs_monitoreo' %}#zonas-monitoreo" class="btn btn-outline btn-sm obs-btn-ico" title="Monitoreo" aria-label="Ir al monitoreo"><svg class="icon"><use href="#i-eye"/></svg></a>
+<a href="{% url 'tickets:obs_zona_excel' zona.pk %}" class="btn btn-excel btn-sm obs-btn-ico" title="Exportar zona a Excel" aria-label="Exportar zona a Excel"><svg class="icon"><use href="#i-excel"/></svg></a>
+<details class="zona-header-buscar"><summary title="Buscar y agregar punto de venta" aria-label="Buscar y agregar punto de venta"><svg class="icon"><use href="#i-search"/></svg></summary><form method="get" class="zona-agregar-buscar"><input type="search" name="agregar_q" value="{{ agregar_q }}" placeholder="Buscar punto de venta" aria-label="Buscar punto de venta"><button type="submit" class="btn btn-sm btn-accent" title="Agregar"><svg class="icon"><use href="#i-plus"/></svg></button></form></details>
+{% endif %}
+{% endblock %}
 
 {% block content %}
-<main class="page obs-page">
+<main class="page obs-page zona-gestion-page">
+    {% comment %} Acciones trasladadas al encabezado global de la vista.
     <div class="page-head">
         <div class="obs-head-actions">
             {% if admin %}
@@ -30,8 +41,10 @@
         </div>
     </div>
 
-    {# ---- La carpeta, de un vistazo ---- #}
-    <section class="obs-zona-ficha{% if resumen.estado == 'rojo' %} es-rojo{% elif resumen.estado == 'amarillo' %} es-amarillo{% else %} es-verde{% endif %}"
+    {% endcomment %}
+    {% comment %} El resumen se integró al único encabezado operativo siguiente. {% endcomment %}
+    {% comment %}
+    <section class="obs-zona-ficha zona-gestion-resumen{% if resumen.estado == 'rojo' %} es-rojo{% elif resumen.estado == 'amarillo' %} es-amarillo{% else %} es-verde{% endif %}"
              {% if zona.color %}style="--zc: {{ zona.color }}"{% endif %}>
         <div class="obs-zona-ficha-top">
             <span class="obs-zona-ficha-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
@@ -61,10 +74,30 @@
         {% endif %}
     </section>
 
+    {% endcomment %}
     {% if filas %}
-    <section class="obs-bloque">
-        <h3 class="obs-bloque-titulo">Sus cuentas</h3>
-        <p class="obs-leyenda">
+    <section class="zona-control" aria-label="Centro de control de la zona">
+        <div class="zona-control-intro"><span class="zona-control-icon"><svg class="icon"><use href="#i-shield"/></svg></span><div><span>Centro de control</span><strong>Prioridades y cobertura de {{ zona.nombre }}</strong></div><a href="#puntos-venta">Ver puntos <svg class="icon"><use href="#i-arrow-right"/></svg></a></div>
+        <div class="zona-control-metricas">
+            <a class="zona-control-metrica" href="#puntos-venta"><svg class="icon"><use href="#i-users"/></svg><span><b>{{ resumen.cuentas }}</b><small>puntos en la zona</small></span></a>
+            <a class="zona-control-metrica" href="#puntos-venta"><svg class="icon"><use href="#i-ticket"/></svg><span><b>{{ resumen.total }}</b><small>tickets de toda la zona</small></span></a>
+            <a class="zona-control-metrica is-amber" href="#puntos-venta"><svg class="icon"><use href="#i-clock"/></svg><span><b>{{ resumen.abiertos }}</b><small>abiertos en la zona</small></span></a>
+            <a class="zona-control-metrica" href="#puntos-venta"><svg class="icon"><use href="#i-check-circle"/></svg><span><b>{{ resumen.resueltos }}</b><small>{{ resumen.avance }}% resuelto</small></span></a>
+            {% comment %}
+            <a class="zona-control-metrica is-red" href="#alertas-zona"><svg class="icon"><use href="#i-alert"/></svg><span><b>{{ ans_vencidos }}</b><small>ANS vencido{{ ans_vencidos|pluralize }}</small></span></a>
+            <a class="zona-control-metrica is-amber" href="#alertas-zona"><svg class="icon"><use href="#i-clock"/></svg><span><b>{{ ans_por_vencer }}</b><small>por vencer</small></span></a>
+            <a class="zona-control-metrica" href="#tecnicos-zona"><svg class="icon"><use href="#i-wrench"/></svg><span><b>{{ tecnicos_zona|length }}</b><small>técnicos atienden</small></span></a>
+            <a class="zona-control-metrica" href="#puntos-venta"><svg class="icon"><use href="#i-ticket"/></svg><span><b>{{ resumen.abiertos }}</b><small>tickets activos</small></span></a>
+            {% endcomment %}
+        </div>
+    </section>
+    <div class="zona-gestion-paneles">
+        <section class="zona-gestion-panel" id="tecnicos-zona"><header><div><span class="zona-panel-kicker"><svg class="icon"><use href="#i-wrench"/></svg> Cobertura</span><h3>Técnicos que atienden</h3></div><span class="zona-panel-total">{{ tecnicos_zona|length }}</span></header>{% if tecnicos_zona %}<div class="zona-tecnicos-lista">{% for tecnico in tecnicos_zona %}<div class="zona-tecnico-item">{% if tecnico.avatar %}<img src="{{ tecnico.avatar.url }}" alt="{{ tecnico.nombre }}">{% else %}<span class="zona-tecnico-avatar"><svg class="icon"><use href="#i-user"/></svg></span>{% endif %}<strong>{{ tecnico.nombre }}</strong><small>{{ tecnico.tickets }} tickets en la zona</small><b class="{% if tecnico.abiertos %}has-work{% endif %}">{{ tecnico.abiertos }} activos</b></div>{% endfor %}</div>{% else %}<p class="zona-panel-vacio">Aún no hay técnicos asignados a los tickets de esta zona.</p>{% endif %}</section>
+        <section class="zona-gestion-panel zona-alertas-panel" id="alertas-zona"><header><div><span class="zona-panel-kicker"><svg class="icon"><use href="#i-alert"/></svg> Seguimiento ANS</span><h3>Alertas de la zona</h3></div><span class="zona-panel-total">{{ alertas_zona|length }}</span></header>{% if alertas_zona %}<div class="zona-alertas-lista">{% for ticket in alertas_zona|slice:":4" %}<a class="zona-alerta-item is-{{ ticket.ans_estado }}" href="{% url 'tickets:mi_ticket' ticket.pk %}"><span><svg class="icon"><use href="{% if ticket.ans_estado == 'vencido' %}#i-alert{% else %}#i-clock{% endif %}"/></svg></span><div><strong>{{ ticket.codigo }} · {{ ticket.solicitante_nombre|default:ticket.solicitante_email }}</strong><small>{{ ticket.ans_texto }}</small></div><svg class="icon zona-alerta-go"><use href="#i-arrow-right"/></svg></a>{% endfor %}</div>{% else %}<p class="zona-panel-vacio is-ok"><svg class="icon"><use href="#i-check-circle"/></svg> No hay tickets en alerta ANS.</p>{% endif %}</section>
+    </div>
+    <section class="obs-bloque zona-gestion-cuentas" id="puntos-venta">
+        <div class="zona-gestion-cuentas-head"><div><h3 class="obs-bloque-titulo">Puntos de venta</h3>
+        {% comment %}<p class="obs-leyenda">
             {% if admin %}
             Cuentas asignadas a esta zona y sus tickets.
             {% else %}
@@ -73,10 +106,13 @@
             entera; usa «Sacar de la zona» para dejar de seguirla aquí (la
             persona no se borra de tu lista).
             {% endif %}
-        </p>
+        </p>{% endcomment %}</div>
+        {% if not admin %}<form method="get" class="zona-agregar-buscar"><svg class="icon"><use href="#i-search"/></svg><input type="search" name="agregar_q" value="{{ agregar_q }}" placeholder="Buscar y agregar punto de venta…" aria-label="Buscar punto de venta para agregar"><button type="submit" class="btn btn-sm">Buscar</button></form>{% endif %}</div>
+        {% if agregar_q %}<div class="zona-agregar-resultados">{% for candidato in candidatos %}<div><span class="zona-agregar-avatar"><svg class="icon"><use href="#i-user"/></svg></span><span><strong>{{ candidato.nombre }}</strong><small>{{ candidato.email }}{% if candidato.ubicacion %} · {{ candidato.ubicacion }}{% endif %}</small></span><form method="post" action="{% url 'tickets:obs_agregar' %}">{% csrf_token %}<input type="hidden" name="email" value="{{ candidato.email }}"><input type="hidden" name="zona" value="{{ zona.pk }}"><input type="hidden" name="volver" value="{% url 'tickets:obs_zona_detalle' zona.pk %}"><button type="submit" class="btn btn-sm btn-accent"><svg class="icon"><use href="#i-plus"/></svg> Agregar</button></form></div>{% empty %}<p>No hay puntos de venta nuevos que coincidan con “{{ agregar_q }}”.</p>{% endfor %}</div>{% endif %}
+        <label class="zona-gestion-buscar"><svg class="icon"><use href="#i-search"/></svg><input type="search" data-gestion-search placeholder="Buscar por punto de venta o correo…" aria-label="Buscar punto de venta"></label>
         <div class="obs-cuentas">
         {% for f in filas %}
-            <article class="obs-cuenta obs-cuenta--{{ f.estado }}">
+            <article class="obs-cuenta obs-cuenta--{{ f.estado }}" data-gestion-punto="{{ f.nombre|lower }} {{ f.email|lower }} {{ f.detalle|lower }}">
                 <div class="obs-cuenta-top">
                     <span class="obs-avatar obs-avatar-ico">
                         {% if f.elemento.usuario and f.elemento.usuario.avatar %}
@@ -115,6 +151,12 @@
                 <p class="obs-cuenta-nota">Todavía no ha levantado tickets en tus puntos.</p>
                 {% endif %}
 
+                <div class="zona-punto-gestion">
+                    <div class="zona-punto-tecnicos"><span><svg class="icon"><use href="#i-wrench"/></svg> Atienden</span><div>{% for tecnico in f.tecnicos|slice:":3" %}<span class="zona-punto-tecnico" title="{{ tecnico.nombre }} · {{ tecnico.tickets }} tickets">{% if tecnico.avatar %}<img src="{{ tecnico.avatar.url }}" alt="{{ tecnico.nombre }}">{% else %}<svg class="icon"><use href="#i-user"/></svg>{% endif %}</span>{% empty %}<small>Sin técnico asignado</small>{% endfor %}{% if f.tecnicos|length > 3 %}<b>+{{ f.tecnicos|length|add:"-3" }}</b>{% endif %}</div></div>
+                    {% if f.ans_vencidos or f.ans_por_vencer %}<a class="zona-punto-alerta {% if f.ans_vencidos %}is-red{% else %}is-amber{% endif %}" href="#alertas-punto-{{ f.elemento.pk }}"><svg class="icon"><use href="#i-alert"/></svg> {{ f.ans_vencidos|add:f.ans_por_vencer }} alerta{{ f.ans_vencidos|add:f.ans_por_vencer|pluralize }}</a>{% else %}<span class="zona-punto-alerta is-ok"><svg class="icon"><use href="#i-check-circle"/></svg> ANS al día</span>{% endif %}
+                </div>
+                {% if f.tickets %}<details class="zona-punto-tickets"><summary><svg class="icon"><use href="#i-ticket"/></svg> Ver tickets de este punto <b>{{ f.total }}</b></summary><div>{% for t in f.tickets %}<a class="obs-ticket t-{{ t.estado }}" href="{% url 'tickets:mi_ticket' t.pk %}" title="Abrir {{ t.codigo }}">{{ t.codigo }} <small>{{ t.get_estado_display }}</small></a>{% endfor %}</div></details>{% endif %}
+                {% if f.ans_tickets %}<details class="zona-punto-alertas" id="alertas-punto-{{ f.elemento.pk }}"><summary><svg class="icon"><use href="#i-alert"/></svg> Alertas de este punto <b>{{ f.ans_tickets|length }}</b></summary><div>{% for t in f.ans_tickets %}<a href="{% url 'tickets:mi_ticket' t.pk %}" class="is-{{ t.ans_estado }}">{{ t.codigo }} · {{ t.ans_texto }}</a>{% endfor %}</div></details>{% endif %}
                 {% if f.tickets %}
                 {# Los tickets de la cuenta, uno a uno: el mismo chip que en Monitoreo. #}
                 <div class="obs-tickets">
@@ -158,6 +200,7 @@
             </article>
         {% endfor %}
         </div>
+        <p class="zona-gestion-sin-resultados" hidden data-gestion-empty>No hay puntos de venta que coincidan con la búsqueda.</p>
     </section>
     {% else %}
     <div class="obs-vacio">
@@ -168,4 +211,22 @@
     </div>
     {% endif %}
 </main>
+<script>
+(() => {
+    const filtro=document.querySelector('[data-gestion-search]');
+    if(filtro){
+        const tarjetas=[...document.querySelectorAll('[data-gestion-punto]')], vacio=document.querySelector('[data-gestion-empty]');
+        filtro.placeholder='Filtrar puntos que ya están en esta zona…';
+        filtro.addEventListener('input',()=>{let n=0,q=filtro.value.trim().toLowerCase();tarjetas.forEach(t=>{let ok=!q||t.dataset.gestionPunto.includes(q);t.hidden=!ok;n+=ok;});vacio.hidden=!!n;});
+    }
+    const formulario=document.querySelector('.zona-agregar-buscar');
+    if(formulario){
+        const campo=formulario.querySelector('[name="agregar_q"]'); let espera;
+        campo.addEventListener('input',()=>{clearTimeout(espera);const q=campo.value.trim();espera=setTimeout(()=>{if(q.length>=2||!q)formulario.requestSubmit();},300);});
+    }
+    document.querySelectorAll('.zona-punto-tecnico[title]').forEach(tecnico=>{
+        tecnico.dataset.tecnico=tecnico.title;
+    });
+})();
+</script>
 {% endblock %}

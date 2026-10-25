@@ -12,6 +12,7 @@ from django.urls import reverse
 from apps.tickets.management.commands.seed_categorias import CATEGORIAS
 from apps.tickets.models import Categoria, Ticket
 from apps.tickets.sla import horas_por_prioridad
+from apps.tickets.views import _auto_asignar_tecnico
 
 
 class AltaDeTicket(TestCase):
@@ -75,3 +76,36 @@ class AltaDeTicket(TestCase):
         self._entrar("usuario")
         self._alta()
         self.assertEqual(Ticket.objects.get().modo, Ticket.Modo.WEB)
+
+    def test_usuario_final_no_puede_forzar_categoria(self):
+        """La categoría visible es automática incluso si se manipula el POST."""
+        self._entrar("usuario")
+        categoria_manual = Categoria.objects.exclude(nombre__icontains="SIESA").first()
+        self._alta(categoria=categoria_manual.pk)
+        ticket = Ticket.objects.get()
+        self.assertIn("SIESA", str(ticket.categoria))
+
+    def test_incidente_urgente_va_al_tecnico_con_menor_carga(self):
+        """La disponibilidad tiene prioridad en una caída de internet urgente."""
+        tecnico_cargado = get_user_model().objects.create_user(
+            "red-cargado@dogger.com.co", "Red cargado", "dogger1234", rol="tecnico"
+        )
+        tecnico_disponible = get_user_model().objects.create_user(
+            "red-disponible@dogger.com.co", "Red disponible", "dogger1234", rol="tecnico"
+        )
+        categoria = Categoria.objects.get(grupo="Soporte TI", nombre="Red")
+        categoria.tecnico_default = tecnico_cargado
+        categoria.prioridad_default = Ticket.Prioridad.URGENTE
+        categoria.save(update_fields=["tecnico_default", "prioridad_default"])
+        Ticket.objects.create(
+            titulo="Incidencia previa", categoria=categoria,
+            prioridad=Ticket.Prioridad.URGENTE, estado=Ticket.Estado.ABIERTO,
+            tecnico_asignado=tecnico_cargado,
+        )
+        ticket = Ticket(
+            titulo="El internet no funciona", categoria=categoria,
+            prioridad=Ticket.Prioridad.URGENTE, estado=Ticket.Estado.ABIERTO,
+        )
+        self.assertTrue(_auto_asignar_tecnico(ticket))
+        self.assertEqual(ticket.tecnico_asignado, tecnico_disponible)
+        self.assertTrue(ticket.asignacion_automatica)

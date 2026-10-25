@@ -1,9 +1,11 @@
 """Mi zona y presionar al técnico: el usuario ve quién lo gobierna."""
 
 import json
+from datetime import timedelta
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import Usuario
 from apps.tickets.models import (
@@ -12,6 +14,7 @@ from apps.tickets.models import (
     Punto,
     Ticket,
     TicketComentario,
+    ZonaObservador,
 )
 
 
@@ -125,10 +128,150 @@ class MiZonaSupervisorTest(TestCase):
         self.assertIn('data-widget="linea"', html)
         self.assertIn('data-widget="comp20"', html)
         self.assertIn('data-widget="sla"', html)
-        self.assertIn("Todos mis tickets", html)
+        self.assertIn("Gráficas de tus zonas", html)
         self.assertIn("Ranking de zonas", html)
 
-    def test_graficas_se_pueden_filtrar_por_zona_y_solo_usan_tickets_propios(self):
+    def test_muestra_zona_de_seguimiento_y_sus_metricas_solo_con_tickets_propios(self):
+        zona = ZonaObservador.objects.create(
+            observador=self.sup, nombre="Balcones2"
+        )
+        elemento = ElementoMiLista.objects.get(
+            observador=self.sup, usuario_email="ana@x.com"
+        )
+        elemento.zona = zona
+        elemento.save(update_fields=["zona"])
+        Ticket.objects.create(
+            titulo="Ticket de otra persona en Balcones2",
+            descripcion="d",
+            solicitante_nombre="Luis",
+            solicitante_email="luis@x.com",
+            solicitante_punto="Balcones2",
+            tecnico_asignado=self.tec,
+        )
+        ElementoMiLista.objects.create(
+            observador=self.sup,
+            tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario_email="luis@x.com",
+            zona=zona,
+        )
+        punto_extra = Punto.objects.create(nombre="Punto supervisor no asociado")
+        ObservadorPunto.objects.create(observador=self.sup, punto=punto_extra)
+        Ticket.objects.create(
+            titulo="Ticket de usuario fuera de Balcones2",
+            descripcion="d",
+            solicitante_nombre="Marta",
+            solicitante_email="marta@x.com",
+            solicitante_punto="Punto supervisor no asociado",
+            tecnico_asignado=self.tec,
+        )
+
+        respuesta = self.client.get(reverse("tickets:mi_panel"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(
+            respuesta.context["mi_zona"]["supervisores"][0]["zona"],
+            "Balcones2",
+        )
+        zonas = respuesta.context["zona_seguimiento_dashboard"]["zonas"]
+        self.assertEqual(len(zonas), 1)
+        self.assertEqual(zonas[0]["nombre"], "Balcones2")
+        self.assertEqual(zonas[0]["total"], 2)
+        self.assertEqual(zonas[0]["abiertos"], 2)
+        self.assertTrue(zonas[0]["seguimiento"])
+        self.assertEqual(
+            respuesta.context["zona_indicadores"],
+            {
+                "zonas": 1,
+                "cuentas": 2,
+                "tickets": 2,
+                "abiertos": 2,
+                "en_progreso": 0,
+                "vencidos": 0,
+            },
+        )
+        chart_data = json.loads(respuesta.context["dash_json"])
+        self.assertEqual(
+            sum(row["value"] for row in chart_data["pie_categoria"]["todas"]),
+            3,
+        )
+        html = respuesta.content.decode()
+        self.assertIn("Supervisor de", html)
+        self.assertIn("Balcones2", html)
+        self.assertIn("Fuera de línea", html)
+        self.assertIn('class="mz-team-summary"', html)
+        self.assertLess(html.index('class="mz-team-summary"'), html.index('class="mz-body"'))
+        self.assertNotIn('class="mz-equipo-zonas"', html)
+        self.assertIn("Tu zona de seguimiento", html)
+        self.assertIn("Gráficas de tus zonas", html)
+        self.assertNotIn("Actividad global de tus zonas", html)
+        self.assertNotIn("de las cuentas incluidas en tus zonas", html)
+        self.assertNotIn('id="mzZonaGrafica"', html)
+
+    def test_ranking_y_alertas_usan_carpetas_y_no_puntos_de_venta(self):
+        zona = ZonaObservador.objects.create(
+            observador=self.sup, nombre="Balcones2"
+        )
+        ElementoMiLista.objects.filter(
+            observador=self.sup, usuario_email="ana@x.com"
+        ).update(zona=zona)
+        Ticket.objects.create(
+            titulo="Solicitud Medellin",
+            descripcion="d",
+            solicitante_nombre="Ana",
+            solicitante_email="ana@x.com",
+            solicitante_punto="medellin",
+            tecnico_asignado=None,
+        )
+
+        respuesta = self.client.get(reverse("tickets:mi_panel"))
+        self.assertEqual(respuesta.status_code, 200)
+        ranking = respuesta.content.decode().split(
+            "Ranking de zonas", 1
+        )[1].split("Alertas de desempeño", 1)[0]
+        alertas = respuesta.content.decode().split(
+            "Alertas de desempeño", 1
+        )[1].split("</aside>", 1)[0]
+
+        self.assertIn("Balcones2", ranking)
+        self.assertNotIn("medellin", ranking)
+        self.assertIn("sin asignar en Balcones2", alertas)
+        self.assertNotIn("medellin", alertas)
+        html = respuesta.content.decode()
+        self.assertIn(
+            ".mz-team-person { display: flex; flex-direction: row-reverse;",
+            html,
+        )
+        self.assertIn(
+            ".mz-team-person .mz-stack-ava { width: 44px; height: 44px;",
+            html,
+        )
+
+    def test_indicador_ans_vencido_incluye_las_cuentas_de_su_carpeta(self):
+        zona = ZonaObservador.objects.create(
+            observador=self.sup, nombre="Balcones ANS"
+        )
+        ElementoMiLista.objects.filter(
+            observador=self.sup, usuario_email="ana@x.com"
+        ).update(zona=zona)
+        ElementoMiLista.objects.create(
+            observador=self.sup,
+            tipo=ElementoMiLista.TIPO_USUARIO,
+            usuario_email="luis@x.com",
+            zona=zona,
+        )
+        vencido = Ticket.objects.create(
+            titulo="Caso vencido de otro punto", descripcion="d",
+            solicitante_nombre="Luis", solicitante_email="luis@x.com",
+            solicitante_punto="Otro punto", tecnico_asignado=self.tec,
+        )
+        Ticket.objects.filter(pk=vencido.pk).update(
+            fecha_creacion=timezone.now() - timedelta(days=30)
+        )
+
+        respuesta = self.client.get(reverse("tickets:mi_panel"))
+
+        self.assertEqual(respuesta.context["zona_indicadores"]["vencidos"], 1)
+
+    def test_graficas_usan_datos_globales_de_sus_zonas_sin_selector_de_zona(self):
         Ticket.objects.create(
             titulo="Otro ticket de Ana",
             descripcion="d",
@@ -153,28 +296,27 @@ class MiZonaSupervisorTest(TestCase):
                 fila["value"]
                 for fila in todas_graficas["pie_categoria"]["todas"]
             ),
-            2,
+            3,
         )
         self.assertEqual(
             [(fila["label"], fila["total"]) for fila in
              todas_graficas["pivot"]["dimensiones"]["punto"]["rows"]],
-            [("Zona Uno", 2)],
+            [("Zona Dos", 1), ("Zona Uno", 2)],
         )
 
-        zona = self.client.get(
+        filtro_ignorado = self.client.get(
             reverse("tickets:mi_panel"),
             {"zona_grafica": "Zona Uno"},
         )
-        zona_graficas = json.loads(zona.context["dash_json"])
-        self.assertEqual(zona.context["zona_grafica"], "Zona Uno")
+        zona_graficas = json.loads(filtro_ignorado.context["dash_json"])
         self.assertEqual(
             sum(
                 fila["value"]
                 for fila in zona_graficas["pie_categoria"]["todas"]
             ),
-            1,
+            3,
         )
-        self.assertEqual(zona.context["zona_grafica_total"], 1)
+        self.assertEqual(filtro_ignorado.context["zona_indicadores"]["tickets"], 0)
 
     def test_tabla_punto_muestra_todos_los_puntos_y_sus_tickets(self):
         punto_dos = Punto.objects.create(nombre="Punto Dos")
@@ -214,6 +356,18 @@ class MiZonaSupervisorTest(TestCase):
         )
         self.assertEqual(pivot_punto["rows"][0]["cerrado"], 1)
         self.assertTrue(all(not fila["tickets"] for fila in pivot_punto["rows"]))
+
+    def test_tabla_punto_cuenta_ans_vencidos_aun_sin_detalle(self):
+        Ticket.objects.filter(pk=self.ticket.pk).update(
+            fecha_creacion=timezone.now() - timedelta(days=3)
+        )
+
+        respuesta = self.client.get(reverse("tickets:mi_panel"))
+        pivot_punto = json.loads(respuesta.context["dash_json"])["pivot"]["dimensiones"]["punto"]
+
+        fila = next(fila for fila in pivot_punto["rows"] if fila["label"] == "Zona Uno")
+        self.assertEqual(fila["vencido"], 1)
+        self.assertEqual(fila["tickets"], [])
 
     def test_presionar_zona_avisa_supervisores(self):
         from apps.notificaciones.models import Notificacion

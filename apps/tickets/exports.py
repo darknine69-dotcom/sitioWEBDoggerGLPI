@@ -284,12 +284,15 @@ def generar_excel_tickets(tickets, titulo="Tickets Dogger Helpdesk"):
     return _responder_xlsx(wb, "dogger_tickets")
 
 
-def generar_excel_reportes(kpis, tecnicos, usuarios, tickets, filtros_txt="Sin filtros"):
+def generar_excel_reportes(kpis, tecnicos, usuarios, tickets, filtros_txt="Sin filtros", seccion="completo"):
     """
     Reporte corporativo multi-hoja: Resumen de KPIs (con barras), desempeño
     por técnico (con comparativo), producción por usuario, hoja de Gráficas
     (tortas por estado y categoría + barras por mes) y el detalle filtrado.
     """
+    seccion = seccion if seccion in {"completo", "tecnicos", "usuarios"} else "completo"
+    incluir_tecnicos = seccion in {"completo", "tecnicos"}
+    incluir_usuarios = seccion in {"completo", "usuarios"}
     wb = Workbook()
     tickets = list(tickets)
 
@@ -323,8 +326,9 @@ def generar_excel_reportes(kpis, tecnicos, usuarios, tickets, filtros_txt="Sin f
         ws.add_chart(barra, "D5")
 
     # ---- Hoja 2: Por técnico (con comparativo en barras) ----
-    ws2 = wb.create_sheet("Por técnico")
-    tec_headers = (
+    if incluir_tecnicos:
+        ws2 = wb.create_sheet("Por técnico")
+        tec_headers = (
         ("Técnico", 24),
         ("Asignados", 14),
         ("Resueltos/Cerrados", 18),
@@ -332,19 +336,20 @@ def generar_excel_reportes(kpis, tecnicos, usuarios, tickets, filtros_txt="Sin f
         ("T. prom. resolución (h)", 22),
         ("% Resueltos", 12),
     )
-    r2 = _escribir_titulo(ws2, f"Desempeño por técnico · {filtros_txt}", len(tec_headers))
-    fin2 = _escribir_tabla(ws2, tec_headers, tecnicos, r2, None)
-    if tecnicos:
-        cats = Reference(ws2, min_col=1, min_row=r2 + 1, max_row=fin2)
-        asignados = Reference(ws2, min_col=2, min_row=r2, max_row=fin2)
-        resueltos = Reference(ws2, min_col=3, min_row=r2, max_row=fin2)
-        comp = _barra_tickets(cats, [(asignados, DOGGER_RED), (resueltos, DOGGER_GREEN)],
-                              "Asignados vs resueltos por técnico")
-        ws2.add_chart(comp, f"H{r2}")
+        r2 = _escribir_titulo(ws2, f"Desempeño por técnico · {filtros_txt}", len(tec_headers))
+        fin2 = _escribir_tabla(ws2, tec_headers, tecnicos, r2, None)
+        if tecnicos:
+            cats = Reference(ws2, min_col=1, min_row=r2 + 1, max_row=fin2)
+            asignados = Reference(ws2, min_col=2, min_row=r2, max_row=fin2)
+            resueltos = Reference(ws2, min_col=3, min_row=r2, max_row=fin2)
+            comp = _barra_tickets(cats, [(asignados, DOGGER_RED), (resueltos, DOGGER_GREEN)],
+                                  "Asignados vs resueltos por técnico")
+            ws2.add_chart(comp, f"H{r2}")
 
     # ---- Hoja 3: Por usuario ----
-    ws3 = wb.create_sheet("Por usuario")
-    usu_headers = (
+    if incluir_usuarios:
+        ws3 = wb.create_sheet("Por usuario")
+        usu_headers = (
         ("Punto de venta", 26),
         ("Correo", 28),
         ("Creados", 10),
@@ -354,8 +359,8 @@ def generar_excel_reportes(kpis, tecnicos, usuarios, tickets, filtros_txt="Sin f
         ("Último estado", 16),
         ("T. prom. resolución (h)", 22),
     )
-    r3 = _escribir_titulo(ws3, f"Producción por usuario · {filtros_txt}", len(usu_headers))
-    _escribir_tabla(ws3, usu_headers, usuarios, r3, None)
+        r3 = _escribir_titulo(ws3, f"Producción por usuario · {filtros_txt}", len(usu_headers))
+        _escribir_tabla(ws3, usu_headers, usuarios, r3, None)
 
     # ---- Hoja 4: Gráficas de trazabilidad ----
     ws4 = wb.create_sheet("Gráficas")

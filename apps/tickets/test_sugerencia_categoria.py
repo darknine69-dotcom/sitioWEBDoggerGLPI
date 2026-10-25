@@ -74,6 +74,14 @@ class SugerenciaPuntosDeVenta(CatalogoDePrueba):
         )
         self.assertEqual(self.nombre_de(c), "Puntos de venta::POS Software")
 
+    def test_internet_sin_servicio_es_infraestructura_urgente(self):
+        categoria = sugerir_categoria(
+            "El internet no funciona",
+            "El punto de venta está sin WiFi ni conexión para operar.",
+        )
+        self.assertEqual(self.nombre_de(categoria), "Infraestructura::Red / Switch")
+        self.assertEqual(categoria.prioridad_default, "urgente")
+
     def test_facturacion_electronica(self):
         c = sugerir_categoria(
             "La factura electrónica sale rechazada",

@@ -294,6 +294,81 @@
     });
 
     /* ---- Selector "Filas por página": recarga con el nuevo tamaño ---- */
+    /* ---- Selects visuales para barras de filtros ---- */
+    document.querySelectorAll("select[data-custom-dropdown]").forEach(function (sel) {
+        if (sel.dataset.dropdownReady === "1") return;
+        sel.dataset.dropdownReady = "1";
+        var dropdown = document.createElement("details");
+        dropdown.className = "custom-dropdown";
+        dropdown.dataset.filterKind = sel.name || "";
+        var summary = document.createElement("summary");
+        var label = document.createElement("span");
+        var arrow = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        arrow.setAttribute("class", "icon");
+        arrow.setAttribute("aria-hidden", "true");
+        arrow.setAttribute("viewBox", "0 0 24 24");
+        arrow.innerHTML = '<path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>';
+        summary.appendChild(label);
+        summary.appendChild(arrow);
+        var options = document.createElement("div");
+        options.className = "custom-dropdown-options";
+        options.setAttribute("role", "listbox");
+        options.setAttribute("aria-label", sel.getAttribute("aria-label") || "Seleccionar opción");
+        dropdown.appendChild(summary);
+        dropdown.appendChild(options);
+        sel.insertAdjacentElement("afterend", dropdown);
+        sel.classList.add("custom-dropdown-native");
+
+        function refrescar() {
+            label.textContent = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : "Seleccionar";
+            dropdown.dataset.selectedValue = sel.value || "todas";
+            options.innerHTML = "";
+            Array.prototype.forEach.call(sel.options, function (option) {
+                var button = document.createElement("button");
+                button.type = "button";
+                button.dataset.optionValue = option.value;
+                if (sel.name === "categoria" && option.text.indexOf("›") !== -1) {
+                    var parts = option.text.split("›");
+                    var group = document.createElement("span");
+                    group.className = "custom-dropdown-category-group";
+                    group.textContent = parts.shift().trim();
+                    var category = document.createElement("span");
+                    category.className = "custom-dropdown-category-name";
+                    category.textContent = parts.join("›").trim();
+                    button.appendChild(group);
+                    button.appendChild(category);
+                } else {
+                    button.textContent = option.text;
+                }
+                button.disabled = option.disabled;
+                if (option.selected) button.setAttribute("aria-selected", "true");
+                button.addEventListener("click", function () {
+                    if (option.disabled) return;
+                    sel.value = option.value;
+                    sel.dispatchEvent(new Event("change", { bubbles:true }));
+                    dropdown.removeAttribute("open");
+                });
+                options.appendChild(button);
+            });
+        }
+        refrescar();
+        sel.addEventListener("change", refrescar);
+        dropdown.addEventListener("toggle", function () {
+            if (!dropdown.open) return;
+            document.querySelectorAll(".custom-dropdown[open]").forEach(function (other) {
+                if (other !== dropdown) other.removeAttribute("open");
+            });
+        });
+    });
+    document.addEventListener("click", function (event) {
+        if (event.target.closest && event.target.closest(".custom-dropdown")) return;
+        document.querySelectorAll(".custom-dropdown[open]").forEach(function (dropdown) { dropdown.removeAttribute("open"); });
+    });
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Escape") return;
+        document.querySelectorAll(".custom-dropdown[open]").forEach(function (dropdown) { dropdown.removeAttribute("open"); });
+    });
+
     var PAGE_PARAMS = ["page", "page_sol", "page_recientes", "page_glpi"];
     document.querySelectorAll("select[data-per-page-param]").forEach(function (sel) {
         sel.addEventListener("change", function () {
@@ -550,7 +625,32 @@
         ring.style.background = "conic-gradient(" + grad.join(", ") + ")";
     });
 
-    /* ---- Modal de usuario (usuarios.html): rellenar formulario ---- */
+    /* ---- Selector de rol y modal de usuario (usuarios.html) ---- */
+    var selectorRolUsuario = document.getElementById("u-rol");
+    function sincronizarSelectorRolUsuario() {
+        if (!selectorRolUsuario) return;
+        var picker = document.querySelector("[data-role-picker]");
+        if (!picker) return;
+        var opcion = selectorRolUsuario.options[selectorRolUsuario.selectedIndex];
+        var etiqueta = picker.querySelector("[data-role-label]");
+        if (etiqueta) etiqueta.textContent = opcion ? opcion.textContent : "Seleccionar rol";
+        picker.querySelectorAll("[data-role-option]").forEach(function (boton) {
+            boton.setAttribute("aria-selected", String(boton.getAttribute("data-role-option") === selectorRolUsuario.value));
+        });
+    }
+    if (selectorRolUsuario) {
+        selectorRolUsuario.addEventListener("change", sincronizarSelectorRolUsuario);
+        document.querySelectorAll("[data-role-option]").forEach(function (boton) {
+            boton.addEventListener("click", function () {
+                selectorRolUsuario.value = boton.getAttribute("data-role-option");
+                selectorRolUsuario.dispatchEvent(new Event("change", { bubbles: true }));
+                var picker = boton.closest("[data-role-picker]");
+                if (picker) picker.removeAttribute("open");
+            });
+        });
+        sincronizarSelectorRolUsuario();
+    }
+
     document.querySelectorAll("[data-fill-pk]").forEach(function (btn) {
         btn.addEventListener("click", function () {
             [
@@ -574,6 +674,7 @@
                     el.value = spec[3];
                 }
             });
+            if (selectorRolUsuario) selectorRolUsuario.dispatchEvent(new Event("change", { bubbles: true }));
             var pass = document.getElementById("u-pass");
             if (pass) pass.placeholder = "Dejar vacía = sin cambios";
         });
@@ -586,6 +687,7 @@
             });
             var rol = document.getElementById("u-rol");
             if (rol) rol.value = btn.getAttribute("data-default-rol") === "tecnico" ? "tecnico" : "usuario";
+            if (rol) rol.dispatchEvent(new Event("change", { bubbles: true }));
             var activo = document.getElementById("u-activo");
             if (activo) activo.checked = true;
             var cambioRol = document.getElementById("u-cambio-rol");
@@ -598,7 +700,8 @@
     /* ---- Ajustes de cuenta: tabs + preview de avatar ---- */
     var TITULOS_AJUSTES = {
         perfil: "Mi perfil", password: "Contraseña", ayuda: "Ayuda y tour",
-        notificaciones: "Notificaciones", glpi: "GLPI", pagina: "Página"
+        notificaciones: "Notificaciones", glpi: "GLPI", pagina: "Página",
+        atajos: "Atajos"
     };
     function tituloAjustes(name) {
         if (TITULOS_AJUSTES[name]) { document.title = "Dogger · " + TITULOS_AJUSTES[name]; }
@@ -667,6 +770,9 @@
     var catSelEl = document.getElementById("id_categoria");
     var suggestChip = document.getElementById("cat-suggest");
     var autoHintEl = document.getElementById("cat-auto-hint");
+    var analysisPendingEl = document.getElementById("cat-analysis-pending");
+    var techsEl = document.getElementById("dogger-tecnicos-disponibles");
+    var autoTechsEl = document.getElementById("cat-auto-techs");
     if (catKeywordsEl && tituloEl && catSelEl && suggestChip) {
         var CAT_JSON = JSON.parse(catKeywordsEl.textContent);
         /* El último objeto trae los pesos y los umbrales; los demás son las
@@ -687,9 +793,12 @@
         });
         var CATS = CAT_JSON.filter(function (item) { return !item.pesos; });
         var URGENCIA = { urgente: 0, alta: 1, media: 2, baja: 3 };
-        var suggestName = document.getElementById("cat-suggest-name");
         var autoName = document.getElementById("cat-auto-name");
-        var dismissed = false;      // el usuario descartó la sugerencia
+        var autoMeta = document.getElementById("cat-auto-meta");
+        var autoPriority = document.getElementById("cat-auto-priority");
+        var autoAns = document.getElementById("cat-auto-ans");
+        var autoTechName = document.getElementById("cat-auto-tech-name");
+        var TECHS = techsEl ? JSON.parse(techsEl.textContent) : [];
         var autoAppliedId = "";     // categoría que puso el automatismo
         var applyingAuto = false;
 
@@ -799,12 +908,52 @@
         function hideAll() {
             suggestChip.hidden = true;
             if (autoHintEl) autoHintEl.hidden = true;
+            if (autoMeta) autoMeta.hidden = true;
+            if (autoTechsEl) autoTechsEl.hidden = true;
+            if (analysisPendingEl) analysisPendingEl.hidden = false;
+        }
+        function limpiarCategoriaAutomatica() {
+            /* El selector del solicitante no admite elecciones manuales. Al
+               borrar el texto se elimina también el resultado anterior para
+               que pegar una incidencia distinta arranque desde cero. */
+            if (!catSelEl.disabled || !catSelEl.value) return;
+            applyingAuto = true;
+            catSelEl.value = "";
+            catSelEl.classList.remove("suggest-applied");
+            catSelEl.dispatchEvent(new Event("change", { bubbles: true }));
+            applyingAuto = false;
+            autoAppliedId = "";
         }
         function pintarAuto(cat) {
             if (autoHintEl && autoName) {
                 autoName.textContent = cat.nombre + " (" + cat.grupo + ")";
                 autoHintEl.hidden = false;
             }
+            if (autoMeta && autoPriority && autoAns) {
+                autoPriority.textContent = ({ urgente: "Urgente", alta: "Alta", media: "Media", baja: "Baja" })[cat.prioridad] || "Por definir";
+                autoAns.textContent = (cat.ans || "—") + " h";
+                autoMeta.classList.toggle("is-urgent", cat.prioridad === "urgente");
+                autoMeta.hidden = false;
+            }
+            if (autoTechsEl) {
+                var elegido = null;
+                if (TECHS.length) {
+                    var porDefecto = TECHS.filter(function (t) { return String(t.id) === String(cat.tecnico_default_id || ""); })[0];
+                    if (cat.prioridad === "urgente" || cat.prioridad === "alta") {
+                        var menorCarga = Math.min.apply(null, TECHS.map(function (t) { return t.carga; }));
+                        var empate = TECHS.filter(function (t) { return t.carga === menorCarga; });
+                        elegido = empate.filter(function (t) { return porDefecto && t.id === porDefecto.id; })[0] || empate[0];
+                    } else {
+                        elegido = porDefecto || TECHS[0];
+                    }
+                }
+                document.querySelectorAll("[data-auto-tech]").forEach(function (perfil) {
+                    perfil.classList.toggle("is-recommended", !!(elegido && String(perfil.getAttribute("data-auto-tech")) === String(elegido.id)));
+                });
+                if (autoTechName) autoTechName.textContent = elegido ? elegido.nombre : "Buscando técnico";
+                autoTechsEl.hidden = false;
+            }
+            if (analysisPendingEl) analysisPendingEl.hidden = true;
             suggestChip.hidden = true;
         }
         function applyToSelect(pk) {
@@ -818,16 +967,23 @@
             applyingAuto = false;
         }
         function evaluar() {
-            if (dismissed) return;
             var titulo = tituloEl.value, descripcion = descEl ? descEl.value : "";
             var texto = (normText(titulo) + " " + normText(descripcion)).trim();
-            if (texto.length < MIN_CARACTERES) { hideAll(); return; }
+            if (texto.length < MIN_CARACTERES) {
+                limpiarCategoriaAutomatica();
+                hideAll();
+                return;
+            }
             var candidatos = [], i;
             for (i = 0; i < CATS.length; i++) {
                 var score = puntaje(CATS[i]);
                 if (score > 0) candidatos.push({ cat: CATS[i], score: score });
             }
-            if (!candidatos.length) { hideAll(); return; }
+            if (!candidatos.length) {
+                limpiarCategoriaAutomatica();
+                hideAll();
+                return;
+            }
             /* El comodin es el ultimo recurso: no tapa a una categoria
                concreta que ya explica el problema (para eso la concreta tiene
                que llegar al umbral de auto). Si nada concreto puntua fuerte,
@@ -853,11 +1009,10 @@
                 return;
             }
             if (best.score >= MED_THRESHOLD && String(actual) !== String(best.cat.id)) {
-                /* Sugerencia clara pero no concluyente, o el usuario eligio
-                   otra categoria a mano: se ofrece sin pisar su eleccion. */
-                suggestName.textContent = best.cat.nombre + " (" + best.cat.grupo + ")";
-                suggestChip.setAttribute("data-best", best.cat.id);
+                /* Aún no hay suficiente evidencia para asignarla. La cuenta
+                   solo ve que Dogger sigue analizando; no puede modificarla. */
                 if (autoHintEl) autoHintEl.hidden = true;
+                if (analysisPendingEl) analysisPendingEl.hidden = true;
                 suggestChip.hidden = false;
                 return;
             }
@@ -866,58 +1021,29 @@
         var suggestTimer = null;
         function evaluarPronto() {
             clearTimeout(suggestTimer);
+            /* Da respuesta visual inmediata al borrar, escribir o pegar. */
+            if (analysisPendingEl && (!autoHintEl || !autoHintEl.hidden)) analysisPendingEl.hidden = false;
             suggestTimer = setTimeout(evaluar, 220);
         }
         /* input cubre teclear y pegar; change/paste/drop son la red de
            seguridad para cuando el texto entra pegado o arrastrado. */
         tituloEl.addEventListener("input", evaluarPronto);
         tituloEl.addEventListener("change", evaluarPronto);
-        tituloEl.addEventListener("paste", function () { setTimeout(evaluar, 0); });
-        tituloEl.addEventListener("drop", function () { setTimeout(evaluar, 0); });
+        tituloEl.addEventListener("paste", function () { setTimeout(evaluar, 40); });
+        tituloEl.addEventListener("drop", function () { setTimeout(evaluar, 40); });
         tituloEl.addEventListener("blur", evaluar);
         if (descEl) {
             descEl.addEventListener("input", evaluarPronto);
             descEl.addEventListener("change", evaluarPronto);
-            descEl.addEventListener("paste", function () { setTimeout(evaluar, 0); });
-            descEl.addEventListener("drop", function () { setTimeout(evaluar, 0); });
+            descEl.addEventListener("paste", function () { setTimeout(evaluar, 40); });
+            descEl.addEventListener("drop", function () { setTimeout(evaluar, 40); });
             descEl.addEventListener("blur", evaluar);
         }
-        document.addEventListener("click", function (e) {
-            var apply = e.target.closest ? e.target.closest("[data-suggest-apply]") : null;
-            if (apply && suggestChip) {
-                e.preventDefault();
-                var pk = suggestChip.getAttribute("data-best");
-                if (pk) applyToSelect(pk);
-                autoAppliedId = String(pk || "");
-                hideAll();
-                return;
-            }
-            var ajustar = e.target.closest ? e.target.closest("[data-suggest-focus]") : null;
-            if (ajustar) {
-                /* "Cambiar categoria" solo lleva la mirada al select: la
-                   autoasignacion sigue viva para cuando el usuario escriba mas. */
-                e.preventDefault();
-                hideAll();
-                if (catSelEl.focus) catSelEl.focus();
-                return;
-            }
-            var dismiss = e.target.closest ? e.target.closest("[data-suggest-dismiss]") : null;
-            if (dismiss) {
-                e.preventDefault();
-                dismissed = true;
-                autoAppliedId = "";
-                catSelEl.classList.remove("suggest-applied");
-                hideAll();
-                return;
-            }
-        });
         catSelEl.addEventListener("change", function () {
             if (applyingAuto) return;
-            /* El usuario eligió a mano: deja de mover la categoría sola. */
-            dismissed = true;
-            autoAppliedId = "";
-            catSelEl.classList.remove("suggest-applied");
-            hideAll();
+            /* El select está deshabilitado para solicitantes. Si el valor
+               cambia por código, se vuelve a evaluar desde el texto. */
+            evaluar();
         });
         evaluar();
     }
@@ -1836,4 +1962,79 @@
     document.addEventListener("keydown", function (ev) {
         if (ev.key === "Escape") cerrarPaletas();
     });
+
+    /* ---- Precargador de página completa ----
+       Al navegar a otra página (enlace interno o envío de formulario) se
+       tapa la pantalla con un giro hasta que la nueva página pinta. Nunca
+       deja la interfaz bloqueada: se oculta al cargar y, por si acaso, con
+       un tope de tiempo. */
+    (function () {
+        var loader = document.getElementById("pageLoader");
+        if (!loader) { return; }
+        var mostrarTimer = null;
+        var ocultarTimer = null;
+        var mostrando = false;
+
+        function mostrar() {
+            if (mostrando) { return; }
+            mostrando = true;
+            loader.hidden = false;
+            /* Red de seguridad: aunque la navegación no llegue a completarse
+               (descarga abortada, etc.), el precargador no se queda pegado. */
+            clearTimeout(ocultarTimer);
+            ocultarTimer = setTimeout(ocultar, 12000);
+        }
+        function ocultar() {
+            mostrando = false;
+            loader.hidden = true;
+            clearTimeout(ocultarTimer);
+        }
+        /* Se espera un pelín antes de mostrarlo para no parpadear cuando la
+           navegación es instantánea. */
+        function programar() {
+            clearTimeout(mostrarTimer);
+            mostrarTimer = setTimeout(mostrar, 140);
+        }
+        function cancelarProgramado() { clearTimeout(mostrarTimer); }
+
+        /* Al terminar de cargar esta página, el precargador ya no hace falta. */
+        window.addEventListener("pageshow", ocultar);
+        window.addEventListener("load", function () {
+            clearTimeout(mostrarTimer);
+            ocultar();
+        });
+
+        /* Un enlace interno que se va a abrir en la misma pestaña. */
+        document.addEventListener("click", function (e) {
+            if (e.defaultPrevented || e.button !== 0) { return; }
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { return; }
+            var a = e.target.closest ? e.target.closest("a[href]") : null;
+            if (!a) { return; }
+            if (a.target && a.target !== "" && a.target !== "_self") { return; }
+            if (a.hasAttribute("download")) { return; }
+            var href = a.getAttribute("href") || "";
+            if (!href || href.charAt(0) === "#" || /^(mailto:|tel:|javascript:)/i.test(href)) { return; }
+            /* Solo navegaciones del propio sitio. */
+            try {
+                var url = new URL(a.href, location.href);
+                if (url.origin !== location.origin) { return; }
+                if (url.pathname === location.pathname && url.search === location.search) { return; }
+            } catch (err) { return; }
+            programar();
+        }, true);
+
+        /* Un formulario que se envía en la misma pestaña. */
+        document.addEventListener("submit", function (e) {
+            var f = e.target;
+            if (!f || f.tagName !== "FORM") { return; }
+            if (e.defaultPrevented) { return; }
+            if (f.target && f.target !== "" && f.target !== "_self") { return; }
+            programar();
+        }, true);
+
+        /* Si el navegador cancela la página (el usuario se queda o vuelve
+           atrás) se quita el precargador. */
+        window.addEventListener("pagehide", ocultar);
+        window.addEventListener("beforeunload", cancelarProgramado);
+    })();
 })();

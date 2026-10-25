@@ -104,6 +104,24 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
             "rol sin que el administrador tenga que editar la ficha."
         ),
     )
+    atajos_rapidos = models.JSONField(
+        "Atajos rápidos",
+        blank=True,
+        default=list,
+        help_text=(
+            "Claves del botón X de atajos, elegidas en Ajustes de cuenta. "
+            "Vacío = los que trae su rol por defecto."
+        ),
+    )
+    atajos_enlaces = models.JSONField(
+        "Enlaces propios de atajos",
+        blank=True,
+        default=list,
+        help_text=(
+            "Enlaces que la persona agrega a mano al botón X: "
+            "lista de {nombre, url, icono}."
+        ),
+    )
     glpi_user_id = models.PositiveIntegerField(
         "ID usuario GLPI",
         null=True,

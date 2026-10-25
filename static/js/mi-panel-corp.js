@@ -13,6 +13,11 @@
     var accionPanel = document.getElementById("accion-content");
     var accionTitulo = document.getElementById("accion-titulo");
     var accionIcon = document.getElementById("accion-icon");
+    var accionModal = document.getElementById("modalAccionSolicitud");
+    var confirmarModal = document.getElementById("modalConfirmarSolicitud");
+    var confirmarTitulo = document.getElementById("confirmar-titulo");
+    var confirmarIcon = document.getElementById("confirmar-icon");
+    var confirmarPanel = document.getElementById("confirmar-content");
 
     /* ---------- Mini chat ---------- */
     var miniChat = document.getElementById("mini-chat");
@@ -21,6 +26,7 @@
     var miniForm = document.getElementById("mini-chat-form");
     var miniText = document.getElementById("mini-chat-text");
     var currentChatPk = null;
+    var currentActionChatPk = null;
 
     function esc(s) {
         return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -110,17 +116,46 @@
 
     /* ---------- Panel de acciones in-page ---------- */
     function setAccion(iconHref, title) {
-        if (accionIcon) accionIcon.setAttribute("href", iconHref);
-        if (accionTitulo) accionTitulo.textContent = title;
+        var iconUse = accionIcon && accionIcon.querySelector("use");
+        if (iconUse) iconUse.setAttribute("href", iconHref);
+        var titleText = accionTitulo && accionTitulo.querySelector("span");
+        if (titleText) titleText.textContent = title;
+    }
+
+    function abrirAccion() {
+        if (!accionModal) return;
+        accionModal.classList.add("open");
+        document.body.style.overflow = "hidden";
+    }
+
+    function abrirConfirmacion(iconHref, title) {
+        if (!confirmarModal || !confirmarPanel) return false;
+        if (accionModal) accionModal.classList.remove("open");
+        var iconUse = confirmarIcon && confirmarIcon.querySelector("use");
+        if (iconUse) iconUse.setAttribute("href", iconHref);
+        var titleText = confirmarTitulo && confirmarTitulo.querySelector("span");
+        if (titleText) titleText.textContent = title;
+        confirmarModal.classList.add("open");
+        document.body.style.overflow = "hidden";
+        return true;
+    }
+
+    function cerrarConfirmacion() {
+        if (confirmarModal) confirmarModal.classList.remove("open");
+        if (!document.querySelector(".modal-overlay.open")) document.body.style.overflow = "";
     }
 
     /* Ver respuestas (en panel) */
     function showRespuestas(pk, codigo) {
+        currentActionChatPk = pk;
         setAccion("#i-message", "Respuestas · " + codigo);
         accionPanel.innerHTML = '<p class="empty-hint">Cargando historial…</p>';
         fetch("/mi-panel/api/tickets/" + pk + "/info/", { headers: { "Accept": "application/json" } })
             .then(function (r) { return r.json(); })
             .then(function (data) {
+                var composer = '<form id="accion-chat-form" class="accion-chat-form">' +
+                    '<textarea id="accion-chat-text" rows="2" maxlength="2000" placeholder="Escribe una respuesta para este ticket"></textarea>' +
+                    '<button type="submit" class="btn btn-primary btn-sm">Enviar</button></form>';
                 if (!data.ok || !data.respuestas || !data.respuestas.length) {
                     accionPanel.innerHTML = '<p class="empty-hint">Aún no hay respuestas registradas para esta solicitud.</p>';
                     return;
@@ -134,10 +169,28 @@
                         '<div class="resp-body">' + esc(item.texto) + '</div></div>';
                 });
                 html += '</div>';
-                accionPanel.innerHTML = html;
+                accionPanel.innerHTML = html + composer;
             })
             .catch(function () { accionPanel.innerHTML = '<p class="empty-hint">No se pudo cargar el historial.</p>'; });
     }
+
+    document.addEventListener("submit", function (e) {
+        var form = e.target;
+        if (!form || form.id !== "accion-chat-form") return;
+        e.preventDefault();
+        var text = document.getElementById("accion-chat-text");
+        var mensaje = (text && text.value || "").trim();
+        if (!currentActionChatPk || !mensaje) return;
+        postAsForm("/mi-panel/api/tickets/" + currentActionChatPk + "/responder/", { comentario: mensaje })
+            .then(function (res) {
+                if (!res.ok) return;
+                var hilo = accionPanel.querySelector(".resp-thread");
+                if (hilo) {
+                    hilo.insertAdjacentHTML("beforeend", '<div class="resp-bubble resp-bubble-usuario"><span class="resp-meta"><span class="resp-rol rol-usuario">Tú</span></span><div class="resp-body">' + esc(mensaje) + '</div></div>');
+                }
+                if (text) text.value = "";
+            });
+    });
 
     var currentEditPk = null;
     var imagenParaEliminar = null;
@@ -269,6 +322,40 @@
     /* Cerrar / Eliminar (confirmación en panel) */
     function showConfirmar(kind, pk, codigo) {
         var esCerrar = (kind === "cerrar");
+        if (abrirConfirmacion(
+            esCerrar ? "#i-ban" : "#i-trash",
+            esCerrar ? "Cerrar solicitud" : "Eliminar solicitud"
+        )) {
+            confirmarPanel.innerHTML =
+                '<div class="confirm-box">' +
+                '<p>' + (esCerrar
+                    ? '¿Confirmas que deseas cerrar la solicitud <strong>' + esc(codigo) + '</strong>?'
+                    : '¿Seguro que deseas <strong>eliminar</strong> la solicitud <strong>' + esc(codigo) + '</strong>? Se podrá recuperar desde tu papelera.') + '</p>' +
+                '<p class="modal-note">' + (esCerrar
+                    ? 'Al cerrarla no podrás editarla; el historial se conserva.'
+                    : 'Se mueve a tu papelera y deja de contar en el contador de abiertas.') + '</p>' +
+                '<p id="confirm-error" class="form-error-line" hidden></p>' +
+                '<div class="modal-actions">' +
+                '<button type="button" class="btn btn-cancel btn-sm" id="btn-confirm-yes">' + (esCerrar ? 'Sí, cerrar' : 'Sí, mover a la papelera') + '</button>' +
+                '<button type="button" class="btn btn-outline btn-sm" id="btn-confirm-no">No, cancelar</button>' +
+                '</div></div>';
+            var confirmarSi = document.getElementById("btn-confirm-yes");
+            var confirmarNo = document.getElementById("btn-confirm-no");
+            var confirmarError = document.getElementById("confirm-error");
+            var confirmarUrl = "/mi-panel/api/tickets/" + pk + (esCerrar ? "/cerrar/" : "/eliminar/");
+            confirmarNo.addEventListener("click", cerrarConfirmacion);
+            confirmarSi.addEventListener("click", function () {
+                confirmarError.hidden = true;
+                postAsForm(confirmarUrl, {}).then(function (res) {
+                    if (res.ok) window.location.reload();
+                    else { confirmarError.textContent = res.error || "No se pudo completar la acción."; confirmarError.hidden = false; }
+                }).catch(function () {
+                    confirmarError.textContent = "Error de conexión.";
+                    confirmarError.hidden = false;
+                });
+            });
+            return;
+        }
         setAccion(esCerrar ? "#i-ban" : "#i-trash", esCerrar ? "Cerrar solicitud" : "Cancelar solicitud");
         accionPanel.innerHTML =
             '<div class="confirm-box">' +
@@ -326,11 +413,16 @@
         var pk = btn.getAttribute("data-pk");
         var codigo = btn.getAttribute("data-codigo") || "";
         e.preventDefault();
-        if (accion === "respuestas") showRespuestas(pk, codigo);
-        else if (accion === "editar") showEditar(pk, codigo);
-        else if (accion === "cerrar") showConfirmar("cerrar", pk, codigo);
-        else if (accion === "eliminar") showConfirmar("eliminar", pk, codigo);
-        // scroll al panel de acciones en móvil
-        if (accionPanel && window.innerWidth < 900) accionPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (accion === "respuestas") {
+            showRespuestas(pk, codigo);
+            abrirAccion();
+        } else if (accion === "editar") {
+            showEditar(pk, codigo);
+            abrirAccion();
+        } else if (accion === "cerrar") {
+            showConfirmar("cerrar", pk, codigo);
+        } else if (accion === "eliminar") {
+            showConfirmar("eliminar", pk, codigo);
+        }
     });
 })();
