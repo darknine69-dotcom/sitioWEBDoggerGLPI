@@ -1283,6 +1283,56 @@ def _contexto_monitoreo(usuario, zona_grafica=""):
         ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
         for ticket in tickets_analisis
     )
+    # Series de los KPI: son hechos del alcance que el observador está viendo,
+    # no curvas decorativas. Las tarjetas usan los últimos siete días con
+    # actividad registrada en cada métrica y muestran un estado vacío si no
+    # existe ningún dato histórico.
+    hoy_kpi = timezone.localdate()
+    fechas_kpi = [hoy_kpi - timedelta(days=6 - indice) for indice in range(7)]
+    etiquetas_kpi = [fecha.strftime("%d/%m/%Y") for fecha in fechas_kpi]
+
+    def serie_por_fecha(objetos, campo, condicion=lambda objeto: True):
+        valores = []
+        for fecha in fechas_kpi:
+            valores.append(sum(
+                1 for objeto in objetos
+                if condicion(objeto)
+                and getattr(objeto, campo, None)
+                and timezone.localtime(getattr(objeto, campo)).date() == fecha
+            ))
+        return valores
+
+    def serie_por_limite(objetos, condicion=lambda objeto: True):
+        return [sum(
+            1 for objeto in objetos
+            if condicion(objeto)
+            and objeto.fecha_limite_ans
+            and timezone.localtime(objeto.fecha_limite_ans).date() == fecha
+        ) for fecha in fechas_kpi]
+
+    zonas_kpi = [g["zona"] for g in grupos if g["zona"] is not None]
+    elementos_kpi = list(elementos_analisis)
+    activos_kpi = lambda ticket: ticket.estado in _ACTIVOS
+    finalizados_kpi = lambda ticket: ticket.estado in (
+        Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO
+    )
+    por_vencer_kpi = lambda ticket: (
+        activos_kpi(ticket) and ticket.fecha_limite_ans >= ahora_indicadores
+    )
+    vencido_kpi = lambda ticket: (
+        activos_kpi(ticket) and ticket.fecha_limite_ans < ahora_indicadores
+    )
+    monitor_kpi_series = {
+        "zonas": {"labels": etiquetas_kpi, "values": serie_por_fecha(zonas_kpi, "creado_en")},
+        "tickets": {"labels": etiquetas_kpi, "values": serie_por_fecha(tickets_analisis, "fecha_creacion")},
+        # Un ticket cuenta aquí el día en que entró a la lista y aún requiere
+        # atención; no se infiere un historial de estado que el sistema no guarda.
+        "atender": {"labels": etiquetas_kpi, "values": serie_por_fecha(tickets_analisis, "fecha_creacion", activos_kpi)},
+        "por_vencer": {"labels": etiquetas_kpi, "values": serie_por_limite(tickets_analisis, por_vencer_kpi)},
+        "resolucion": {"labels": etiquetas_kpi, "values": serie_por_fecha(tickets_analisis, "fecha_resolucion", finalizados_kpi)},
+        "cuentas": {"labels": etiquetas_kpi, "values": serie_por_fecha(elementos_kpi, "creado_en")},
+        "ans": {"labels": etiquetas_kpi, "values": serie_por_limite(tickets_analisis, vencido_kpi)},
+    }
     correos_indicadores = set()
     for elemento in elementos_analisis:
         correo = elemento.usuario_email or (
@@ -1395,6 +1445,7 @@ def _contexto_monitoreo(usuario, zona_grafica=""):
         "zonas_graficas": zonas_obs,
         "zona_grafica": zona_seleccionada.nombre if zona_seleccionada else "",
         "zona_grafica_total": tickets_graficas.count(),
+        "monitor_kpi_series": monitor_kpi_series,
     }
 
 
@@ -1474,6 +1525,7 @@ def _panel_de_supervision(usuario, filas):
             "pk": t.pk,
             "codigo": t.codigo,
             "titulo": t.titulo,
+            "url": reverse("tickets:mi_ticket", args=[t.pk]),
             "estado": t.estado,
             "estado_display": t.get_estado_display(),
             "fecha": (
@@ -1501,10 +1553,17 @@ def _panel_de_supervision(usuario, filas):
             "cerrados": 0,
             "avance": 0,
             "estado": ESTADO_VERDE,
+            "ultima_actividad": "",
+            "url": reverse("tickets:obs_zona_detalle", args=[pk]) if pk else "",
         }
 
     zonas = []
     por_clave = {}
+    registros_zonas = list(
+        ZonaObservador.objects.filter(observador=usuario)
+        .order_by("-creado_en", "-pk")
+        .values("pk", "nombre", "creado_en", "color")
+    )
 
     def _mete(tarjeta):
         if tarjeta["clave"] in por_clave:
@@ -1513,11 +1572,7 @@ def _panel_de_supervision(usuario, filas):
         por_clave[tarjeta["clave"]] = tarjeta
         return tarjeta
 
-    for z in (
-        ZonaObservador.objects.filter(observador=usuario)
-        .order_by("-creado_en", "-pk")
-        .values("pk", "nombre", "creado_en", "color")
-    ):
+    for z in registros_zonas:
         _mete(_tarjeta(
             f"z{z['pk']}",
             (z["nombre"] or "").strip(),
@@ -1610,6 +1665,11 @@ def _panel_de_supervision(usuario, filas):
                 reverse("tickets:obs_usuarios") + "?q=" + correo
                 if correo else reverse("tickets:obs_usuarios")
             ),
+            "ultima_actividad": (
+                f.get("ultimo").strftime("%d/%m/%Y %H:%M")
+                if f.get("ultimo") else ""
+            ),
+            "_ultima_actividad": f.get("ultimo"),
         })
 
     for tarjeta in zonas:
@@ -1630,6 +1690,120 @@ def _panel_de_supervision(usuario, filas):
         for u in cuentas:
             if orden_estado.get(u["estado"], 0) > orden_estado[tarjeta["estado"]]:
                 tarjeta["estado"] = u["estado"]
+        # Un ANS vencido nunca puede presentarse como una zona al día.
+        if tarjeta["ans_vencidos"]:
+            tarjeta["estado"] = ESTADO_ROJO
+        elif tarjeta["ans_por_vencer"] and tarjeta["estado"] == ESTADO_VERDE:
+            tarjeta["estado"] = ESTADO_AMARILLO
+        ultima = max(
+            (u.get("_ultima_actividad") for u in cuentas if u.get("_ultima_actividad")),
+            default=None,
+        )
+        tarjeta["ultima_actividad"] = (
+            ultima.strftime("%d/%m/%Y %H:%M") if ultima else "Sin actividad"
+        )
+        # Barras relativas a cifras reales de la zona; no son una serie ficticia.
+        spark_origen = [
+            tarjeta["total"], tarjeta["abiertos"], tarjeta["cerrados"], tarjeta["ans_vencidos"],
+        ]
+        spark_maximo = max(spark_origen, default=0)
+        tarjeta["spark"] = [
+            max(5, round(valor * 36 / spark_maximo)) if valor and spark_maximo else 5
+            for valor in spark_origen
+        ]
+        for u in cuentas:
+            u.pop("_ultima_actividad", None)
+
+    # Series de eventos reales de los dos últimos períodos semanales. Los
+    # acumulados de zonas/cuentas se basan en su fecha de alta; los abiertos
+    # se basan exclusivamente en tickets que permanecen abiertos o en curso.
+    hoy = timezone.localdate()
+    inicio = hoy - timedelta(days=13)
+    dias = [inicio + timedelta(days=i) for i in range(14)]
+
+    def _fecha_local(momento):
+        if not momento:
+            return None
+        return timezone.localtime(momento).date() if timezone.is_aware(momento) else momento.date()
+
+    def _acumulada(fechas):
+        base = sum(1 for fecha in fechas if fecha and fecha < inicio)
+        salida = []
+        for dia in dias:
+            base += sum(1 for fecha in fechas if fecha == dia)
+            salida.append(base)
+        return salida
+
+    fechas_zonas = [_fecha_local(z.get("creado_en")) for z in registros_zonas]
+    fechas_cuentas = [
+        _fecha_local(fecha) for fecha in ElementoMiLista.objects.filter(
+            observador=usuario, zona__isnull=False
+        ).values_list("creado_en", flat=True)
+    ]
+    correos_zonas = {
+        (cuenta.get("email") or "").strip().lower()
+        for zona in zonas for cuenta in zona["usuarios"]
+        if (cuenta.get("email") or "").strip()
+    }
+    abiertos_por_dia = Counter()
+    if correos_zonas:
+        for fecha in Ticket.objects.filter(
+            solicitante_email__in=correos_zonas,
+            estado__in=estados_activos,
+            fecha_creacion__date__gte=inicio,
+        ).values_list("fecha_creacion", flat=True):
+            dia = _fecha_local(fecha)
+            if dia in dias:
+                abiertos_por_dia[dia] += 1
+
+    series_completas = {
+        "supervisores": [int(valor > 0) for valor in _acumulada(fechas_zonas)],
+        "zonas": _acumulada(fechas_zonas),
+        "cuentas": _acumulada(fechas_cuentas),
+        "abiertos": [abiertos_por_dia[dia] for dia in dias],
+    }
+
+    # La gráfica de zonas/cuentas es acumulada, pero el porcentaje debe medir
+    # altas reales del período. Sumar acumulados haría que el mismo registro
+    # se contara varias veces y alteraría la variación.
+    def _tendencia(anterior, actual, desfavorable=False, detalle="vs. 7 días anteriores"):
+        if not anterior and not actual:
+            return None
+        if not anterior:
+            return {"texto": "Nuevo", "clase": "is-neutral", "detalle": "Sin actividad en el período anterior"}
+        cambio = round((actual - anterior) * 100 / anterior)
+        favorable = cambio >= 0 if not desfavorable else cambio <= 0
+        return {
+            "texto": f"{cambio:+d}%",
+            "clase": "is-positive" if favorable else "is-negative",
+            "detalle": detalle,
+        }
+
+    zonas_anterior = sum(1 for fecha in fechas_zonas if fecha and dias[0] <= fecha < dias[7])
+    zonas_actual = sum(1 for fecha in fechas_zonas if fecha and fecha >= dias[7])
+    cuentas_anterior = sum(1 for fecha in fechas_cuentas if fecha and dias[0] <= fecha < dias[7])
+    cuentas_actual = sum(1 for fecha in fechas_cuentas if fecha and fecha >= dias[7])
+
+    kpi_series = {
+        "labels": [dia.strftime("%d/%m") for dia in dias[7:]],
+        "series": {clave: valores[7:] for clave, valores in series_completas.items()},
+    }
+    kpi_tendencias = {
+        "supervisores": _tendencia(
+            1 if zonas_anterior else 0, 1 if zonas_actual else 0,
+            detalle="altas vs. 7 días anteriores",
+        ),
+        "zonas": _tendencia(
+            zonas_anterior, zonas_actual, detalle="altas vs. 7 días anteriores",
+        ),
+        "cuentas": _tendencia(
+            cuentas_anterior, cuentas_actual, detalle="altas vs. 7 días anteriores",
+        ),
+        "abiertos": _tendencia(
+            sum(series_completas["abiertos"][:7]), sum(series_completas["abiertos"][7:]),
+            desfavorable=True, detalle="creados vs. 7 días anteriores",
+        ),
+    }
 
     return {
         "supervisor": {
@@ -1644,6 +1818,8 @@ def _panel_de_supervision(usuario, filas):
             "abiertos": sum(z["abiertos"] for z in zonas),
         },
         "zonas": zonas,
+        "kpi_series": kpi_series,
+        "kpi_tendencias": kpi_tendencias,
     }
 
 

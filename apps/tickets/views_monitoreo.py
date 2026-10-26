@@ -6,6 +6,7 @@ activos, con filtros, y los guarda en la zona que le toca para que el
 observador los vea en su panel.
 """
 
+from collections import Counter
 from datetime import timedelta
 
 from django.contrib import messages
@@ -364,6 +365,129 @@ def monitoreo_admin(request):
     zonas_destino += [p.strip() for p in (zonas or []) if _norm_zona(p) not in vistos_destino][:50]
     zona_elegida = zona or (zonas_destino[0] if zonas_destino else "")
     creadas = _zonas_creadas_por_observador()
+
+    # Serie real para las tarjetas de Monitoreo.  Se conservan las cifras
+    # actuales de ``dash`` y se agrega únicamente su evolución reciente para
+    # las minigráficas y las comparaciones con el período anterior.
+    hoy = timezone.localdate()
+    inicio_kpi = hoy - timedelta(days=13)
+    dias_kpi = [inicio_kpi + timedelta(days=i) for i in range(14)]
+    registros_zona_kpi = list(
+        ZonaObservador.objects.values("observador_id", "creado_en")
+    )
+
+    def _fecha_kpi(valor):
+        if not valor:
+            return None
+        return (
+            timezone.localtime(valor).date()
+            if timezone.is_aware(valor) else valor.date()
+        )
+
+    def _acumulada_kpi(fechas):
+        antes = sum(1 for fecha in fechas if fecha and fecha < inicio_kpi)
+        salida = []
+        for dia in dias_kpi:
+            antes += sum(1 for fecha in fechas if fecha == dia)
+            salida.append(antes)
+        return salida
+
+    fechas_zona_kpi = [_fecha_kpi(z["creado_en"]) for z in registros_zona_kpi]
+    fechas_cuenta_kpi = [
+        _fecha_kpi(fecha)
+        for fecha in ElementoMiLista.objects.filter(zona__isnull=False)
+        .values_list("creado_en", flat=True)
+    ]
+    supervisores_por_dia = []
+    vistos_supervisor = {
+        registro["observador_id"] for registro in registros_zona_kpi
+        if _fecha_kpi(registro["creado_en"]) and _fecha_kpi(registro["creado_en"]) < inicio_kpi
+    }
+    for dia in dias_kpi:
+        for registro in registros_zona_kpi:
+            fecha = _fecha_kpi(registro["creado_en"])
+            if fecha and fecha <= dia:
+                vistos_supervisor.add(registro["observador_id"])
+        supervisores_por_dia.append(len(vistos_supervisor))
+    abiertos_por_dia = Counter()
+    for fecha in Ticket.objects.filter(
+        estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
+        fecha_creacion__date__gte=inicio_kpi,
+    ).values_list("fecha_creacion", flat=True):
+        dia = _fecha_kpi(fecha)
+        if dia in dias_kpi:
+            abiertos_por_dia[dia] += 1
+    series_completas = {
+        "supervisores": supervisores_por_dia,
+        "zonas": _acumulada_kpi(fechas_zona_kpi),
+        "cuentas": _acumulada_kpi(fechas_cuenta_kpi),
+        "abiertos": [abiertos_por_dia[dia] for dia in dias_kpi],
+    }
+
+    # Para el porcentaje no se suman curvas acumuladas: eso duplicaría el
+    # mismo registro por cada día. Se comparan únicamente las altas reales
+    # de cada semana, o los tickets aún abiertos creados en ese lapso.
+    def _tendencia_kpi(anterior, actual, desfavorable=False, detalle="vs. 7 días anteriores"):
+        if not anterior and not actual:
+            return None
+        if not anterior:
+            return {
+                "texto": "Nuevo", "clase": "is-neutral",
+                "detalle": "sin actividad previa",
+            }
+        cambio = round((actual - anterior) * 100 / anterior)
+        favorable = cambio <= 0 if desfavorable else cambio >= 0
+        return {
+            "texto": f"{cambio:+d}%",
+            "clase": "is-positive" if favorable else "is-negative",
+            "detalle": detalle,
+        }
+
+    zonas_semana_anterior = sum(
+        1 for fecha in fechas_zona_kpi if fecha and dias_kpi[0] <= fecha < dias_kpi[7]
+    )
+    zonas_semana_actual = sum(
+        1 for fecha in fechas_zona_kpi if fecha and fecha >= dias_kpi[7]
+    )
+    cuentas_semana_anterior = sum(
+        1 for fecha in fechas_cuenta_kpi if fecha and dias_kpi[0] <= fecha < dias_kpi[7]
+    )
+    cuentas_semana_actual = sum(
+        1 for fecha in fechas_cuenta_kpi if fecha and fecha >= dias_kpi[7]
+    )
+    supervisores_semana_anterior = {
+        registro["observador_id"] for registro in registros_zona_kpi
+        if (fecha := _fecha_kpi(registro["creado_en"])) and dias_kpi[0] <= fecha < dias_kpi[7]
+    }
+    supervisores_semana_actual = {
+        registro["observador_id"] for registro in registros_zona_kpi
+        if (fecha := _fecha_kpi(registro["creado_en"])) and fecha >= dias_kpi[7]
+    }
+
+    dash_series = {
+        "labels": [dia.strftime("%d/%m") for dia in dias_kpi[7:]],
+        "series": {clave: valores[7:] for clave, valores in series_completas.items()},
+    }
+    dash_tendencias = {
+        "supervisores": _tendencia_kpi(
+            len(supervisores_semana_anterior), len(supervisores_semana_actual),
+            detalle="altas vs. 7 días anteriores",
+        ),
+        "zonas": _tendencia_kpi(
+            zonas_semana_anterior, zonas_semana_actual,
+            detalle="altas vs. 7 días anteriores",
+        ),
+        "cuentas": _tendencia_kpi(
+            cuentas_semana_anterior, cuentas_semana_actual,
+            detalle="altas vs. 7 días anteriores",
+        ),
+        "abiertos": _tendencia_kpi(
+            sum(series_completas["abiertos"][:7]),
+            sum(series_completas["abiertos"][7:]),
+            desfavorable=True,
+            detalle="creados vs. 7 días anteriores",
+        ),
+    }
     return render(
         request,
         "tickets/monitoreo_admin.html",
@@ -397,6 +521,8 @@ def monitoreo_admin(request):
                     z["abiertos"] for b in creadas for z in b["zonas"]
                 ),
             },
+            "dash_series": dash_series,
+            "dash_tendencias": dash_tendencias,
         },
     )
 

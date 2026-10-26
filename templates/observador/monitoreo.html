@@ -301,29 +301,35 @@
     .obs-graficas-filtro .obs-select-wrap { flex: 1 1 0; min-width: 0; }
     .obs-graficas-filtro .obs-analisis-apply { padding-inline: 14px; }
 }
-/* KPI del observador: nombres de zona largos no empujan ni salen de la tarjeta. */
-.obs-kpis { grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:20px; }
-.obs-kpis .dash-stat { min-width:0; min-height:120px; padding:24px; gap:16px; overflow:hidden; }
-.obs-kpis .dash-stat-icon { width:68px; height:68px; }
-.obs-kpis .dash-stat-icon .dash-stat-value { font-size:32px; }
-.obs-kpis .dash-stat-body { flex:1; min-width:0; gap:3px; }
-.obs-kpis .dash-stat-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:15px; }
-.obs-kpis .dash-stat-hint { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; min-height:2.5em; line-height:1.35; font-size:13px; overflow-wrap:anywhere; }
-.obs-kpis .dash-stat { position:relative; isolation:isolate; }
-.obs-kpis .dash-stat-icon,.obs-kpis .dash-stat-body { position:relative; z-index:1; }
-.obs-kpi-spark { position:absolute; right:10px; bottom:7px; z-index:0; width:84px; height:30px; opacity:.25; pointer-events:none; }
-.obs-kpi-spark svg { display:block; width:100%; height:100%; overflow:visible; }
-.obs-kpi-spark polyline { fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
-.obs-kpi-spark path { fill:currentColor; opacity:.1; }
-.obs-kpi-spark.is-blue { color:#3974F4; }.obs-kpi-spark.is-red { color:#EF4053; }.obs-kpi-spark.is-green { color:#11B97B; }.obs-kpi-spark.is-amber { color:#F59E0B; }.obs-kpis .dash-stat:hover .obs-kpi-spark { opacity:.42; transform:translateY(-2px); transition:.18s ease; }
-@media(max-width:560px){.obs-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.obs-kpis .dash-stat{min-height:70px;padding:9px;gap:8px}.obs-kpis .dash-stat-icon{width:39px;height:39px}.obs-kpis .dash-stat-icon .dash-stat-value{font-size:15px}.obs-kpis .dash-stat-hint{font-size:10px}.obs-kpis .dash-stat-label{font-size:9.5px}}
+/* KPI de Monitoreo: misma escala compacta de Tickets, sin posiciones absolutas. */
+.obs-monitor-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:22px; margin:0 0 24px; }
+.obs-monitor-kpi { --kpi:#6D44ED; --kpi-rgb:109,68,237; display:grid; grid-template-rows:auto 45px auto; gap:9px; min-width:0; min-height:184px; padding:20px; border:1px solid rgba(var(--kpi-rgb),.16); border-radius:22px; background:linear-gradient(145deg,#fff 0%,rgba(var(--kpi-rgb),.055) 100%); color:#0F172A; text-decoration:none; box-shadow:0 10px 24px rgba(15,23,42,.055); transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease; }
+.obs-monitor-kpi:hover { color:#0F172A; transform:translateY(-2px); border-color:rgba(var(--kpi-rgb),.3); box-shadow:0 15px 29px rgba(var(--kpi-rgb),.16); }
+.obs-monitor-kpi:focus-visible { outline:3px solid rgba(var(--kpi-rgb),.34); outline-offset:3px; }
+.obs-monitor-kpi--red { --kpi:#D70835; --kpi-rgb:215,8,53; }.obs-monitor-kpi--coral { --kpi:#F43F5E; --kpi-rgb:244,63,94; }.obs-monitor-kpi--amber { --kpi:#F59E0B; --kpi-rgb:245,158,11; }.obs-monitor-kpi--green { --kpi:#08A85F; --kpi-rgb:8,168,95; }.obs-monitor-kpi--violet { --kpi:#7042EE; --kpi-rgb:112,66,238; }
+.obs-monitor-kpi-head { display:flex; align-items:flex-start; gap:13px; min-width:0; }
+.obs-monitor-kpi-icon { display:grid; flex:0 0 58px; width:58px; height:58px; place-items:center; border-radius:18px; color:#fff; background:var(--kpi); box-shadow:0 10px 18px rgba(var(--kpi-rgb),.24); }
+.obs-monitor-kpi-icon .icon { width:29px; height:29px; }
+.obs-monitor-kpi-copy { display:flex; min-width:0; flex:1; flex-direction:column; gap:2px; padding-top:1px; }
+.obs-monitor-kpi-label { color:#0F172A; font-size:14px; font-weight:600; line-height:1.23; overflow-wrap:anywhere; }
+.obs-monitor-kpi-value { color:#0F172A; font-size:36px; font-weight:700; line-height:1.05; letter-spacing:-.035em; }
+.obs-monitor-kpi-chart { position:relative; display:grid; min-width:0; height:45px; align-items:center; color:var(--kpi); }
+.obs-monitor-kpi-chart svg { display:block; width:100%; height:45px; overflow:visible; }
+.obs-monitor-kpi-chart .obs-kpi-area { fill:currentColor; opacity:.12; }.obs-monitor-kpi-chart .obs-kpi-line { fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }.obs-monitor-kpi-chart .obs-kpi-dot { fill:currentColor; stroke:#fff; stroke-width:1.5; cursor:help; transition:r .18s ease; }.obs-monitor-kpi-chart .obs-kpi-dot:hover,.obs-monitor-kpi-chart .obs-kpi-dot:focus { r:4.5; outline:none; }
+.obs-monitor-kpi-tooltip { position:absolute; z-index:3; bottom:calc(100% + 6px); left:0; max-width:150px; padding:5px 7px; border-radius:6px; background:#0F172A; color:#fff; font-size:11px; font-weight:600; line-height:1.2; white-space:nowrap; opacity:0; pointer-events:none; transform:translateY(3px); transition:opacity .15s ease,transform .15s ease; }
+.obs-monitor-kpi-tooltip.is-visible { opacity:1; transform:translateY(0); }.obs-monitor-kpi-empty { color:#64748B; font-size:12px; }
+.obs-monitor-kpi-foot { display:flex; min-width:0; align-items:center; justify-content:space-between; gap:10px; }
+.obs-monitor-kpi-hint { min-width:0; color:#64748B; font-size:12px; line-height:1.25; overflow-wrap:anywhere; }.obs-monitor-kpi-hint::before { display:inline-block; width:8px; height:8px; margin:0 7px 1px 0; border-radius:50%; background:var(--kpi); content:""; }
+.obs-monitor-kpi-arrow { display:grid; flex:0 0 38px; width:38px; height:38px; place-items:center; border-radius:50%; background:#fff; color:var(--kpi); box-shadow:0 5px 13px rgba(15,23,42,.12); }.obs-monitor-kpi-arrow .icon { width:19px; height:19px; }
+@media (max-width:1180px){.obs-monitor-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}@media(max-width:600px){.obs-monitor-kpis{grid-template-columns:1fr;gap:14px}.obs-monitor-kpi{min-height:184px;padding:18px;}}
+@media (prefers-reduced-motion:reduce){.obs-monitor-kpi,.obs-monitor-kpi-chart .obs-kpi-dot,.obs-monitor-kpi-tooltip{transition:none}.obs-monitor-kpi:hover{transform:none}}
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="page obs-page">
 
-    <div class="dash-stat-row dash-stat-row--mesas corp-anim obs-kpis" style="margin-bottom:24px">
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim obs-kpis" hidden aria-hidden="true">
         <a class="dash-stat dash-hov-zonas" href="#zonas-monitoreo" title="Ir a tus zonas">
             <span class="dash-stat-icon">
                 <span class="dash-stat-value">{{ total_zonas|default:0 }}</span>
@@ -402,6 +408,16 @@
             </span>
         </a>
     </div>
+
+    <section class="obs-monitor-kpis corp-anim" aria-label="Indicadores de monitoreo">
+        <a class="obs-monitor-kpi obs-monitor-kpi--violet" data-obs-monitor-kpi="zonas" href="#zonas-monitoreo" title="Ir a tus zonas"><span class="obs-monitor-kpi-head"><span class="obs-monitor-kpi-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span><span class="obs-monitor-kpi-copy"><span class="obs-monitor-kpi-label">Zonas a cargo</span><strong class="obs-monitor-kpi-value">{{ total_zonas|default:0 }}</strong></span></span><span class="obs-monitor-kpi-chart" aria-label="Histórico de zonas"></span><span class="obs-monitor-kpi-foot"><span class="obs-monitor-kpi-hint">{% if zona_grafica %}carpeta seleccionada{% else %}zonas que supervisas{% endif %}</span><span class="obs-monitor-kpi-arrow"><svg class="icon"><use href="#i-arrow-right"/></svg></span></span></a>
+        <a class="obs-monitor-kpi obs-monitor-kpi--red" data-obs-monitor-kpi="tickets" href="#tickets-recientes" title="Ir a los tickets de tu lista"><span class="obs-monitor-kpi-head"><span class="obs-monitor-kpi-icon"><svg class="icon"><use href="#i-ticket"/></svg></span><span class="obs-monitor-kpi-copy"><span class="obs-monitor-kpi-label">Tickets en mi lista</span><strong class="obs-monitor-kpi-value">{{ total_tickets }}</strong></span></span><span class="obs-monitor-kpi-chart" aria-label="Histórico de tickets"></span><span class="obs-monitor-kpi-foot"><span class="obs-monitor-kpi-hint">{% if zona_grafica %}de {{ zona_grafica }}{% else %}tickets en seguimiento{% endif %}</span><span class="obs-monitor-kpi-arrow"><svg class="icon"><use href="#i-arrow-right"/></svg></span></span></a>
+        <a class="obs-monitor-kpi obs-monitor-kpi--coral" data-obs-monitor-kpi="atender" href="#analisis-tickets" title="Ir al análisis de tickets"><span class="obs-monitor-kpi-head"><span class="obs-monitor-kpi-icon"><svg class="icon"><use href="#i-alert"/></svg></span><span class="obs-monitor-kpi-copy"><span class="obs-monitor-kpi-label">Por atender</span><strong class="obs-monitor-kpi-value">{{ total_abiertos }}</strong></span></span><span class="obs-monitor-kpi-chart" aria-label="Histórico de tickets por atender"></span><span class="obs-monitor-kpi-foot"><span class="obs-monitor-kpi-hint">tickets abiertos actuales</span><span class="obs-monitor-kpi-arrow"><svg class="icon"><use href="#i-arrow-right"/></svg></span></span></a>
+        <a class="obs-monitor-kpi obs-monitor-kpi--amber" data-obs-monitor-kpi="por_vencer" href="#por-vencer" title="Ir a los tickets por vencer"><span class="obs-monitor-kpi-head"><span class="obs-monitor-kpi-icon"><svg class="icon"><use href="#i-stopwatch"/></svg></span><span class="obs-monitor-kpi-copy"><span class="obs-monitor-kpi-label">Próximos a vencer</span><strong class="obs-monitor-kpi-value">{{ total_por_vencer }}</strong></span></span><span class="obs-monitor-kpi-chart" aria-label="Histórico de vencimientos ANS"></span><span class="obs-monitor-kpi-foot"><span class="obs-monitor-kpi-hint">{% if total_vencidos %}{{ total_vencidos }} ANS vencidos{% else %}ventana de ANS{% endif %}</span><span class="obs-monitor-kpi-arrow"><svg class="icon"><use href="#i-arrow-right"/></svg></span></span></a>
+        <a class="obs-monitor-kpi obs-monitor-kpi--green" data-obs-monitor-kpi="resolucion" href="#analisis-tickets" title="Ir al análisis de tickets"><span class="obs-monitor-kpi-head"><span class="obs-monitor-kpi-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span><span class="obs-monitor-kpi-copy"><span class="obs-monitor-kpi-label">Resolución global</span><strong class="obs-monitor-kpi-value">{{ avance_global }}%</strong></span></span><span class="obs-monitor-kpi-chart" aria-label="Histórico de resoluciones"></span><span class="obs-monitor-kpi-foot"><span class="obs-monitor-kpi-hint">tickets finalizados</span><span class="obs-monitor-kpi-arrow"><svg class="icon"><use href="#i-arrow-right"/></svg></span></span></a>
+        <a class="obs-monitor-kpi obs-monitor-kpi--violet" data-obs-monitor-kpi="cuentas" href="#analisis-tickets" title="Ir al análisis de tickets"><span class="obs-monitor-kpi-head"><span class="obs-monitor-kpi-icon"><svg class="icon"><use href="#i-user"/></svg></span><span class="obs-monitor-kpi-copy"><span class="obs-monitor-kpi-label">Cuentas supervisadas</span><strong class="obs-monitor-kpi-value">{{ total }}</strong></span></span><span class="obs-monitor-kpi-chart" aria-label="Histórico de cuentas supervisadas"></span><span class="obs-monitor-kpi-foot"><span class="obs-monitor-kpi-hint">cuentas en seguimiento</span><span class="obs-monitor-kpi-arrow"><svg class="icon"><use href="#i-arrow-right"/></svg></span></span></a>
+        <a class="obs-monitor-kpi obs-monitor-kpi--red" data-obs-monitor-kpi="ans" href="#por-vencer" title="Ir a los tickets con ANS vencido"><span class="obs-monitor-kpi-head"><span class="obs-monitor-kpi-icon"><svg class="icon"><use href="#i-x-circle"/></svg></span><span class="obs-monitor-kpi-copy"><span class="obs-monitor-kpi-label">ANS vencidos</span><strong class="obs-monitor-kpi-value">{{ total_vencidos }}</strong></span></span><span class="obs-monitor-kpi-chart" aria-label="Histórico de ANS vencidos"></span><span class="obs-monitor-kpi-foot"><span class="obs-monitor-kpi-hint">{% if total_vencidos %}requieren atención{% else %}sin ANS vencidos{% endif %}</span><span class="obs-monitor-kpi-arrow"><svg class="icon"><use href="#i-arrow-right"/></svg></span></span></a>
+    </section>
 
     <section class="obs-dashboard-graficas" id="analisis-tickets" aria-label="Gráficas de monitoreo">
         <form method="get" class="obs-filtros obs-graficas-filtro">
@@ -567,8 +583,68 @@
         </div>
     </div>
     </section>
+    {{ monitor_kpi_series|json_script:"obs-monitor-kpi-series" }}
     <script>
     (function () {
+        /* Un solo minigráfico por KPI, construido desde las series reales del
+           alcance actual. Los puntos sirven también en teclado y pantallas táctiles. */
+        var seriesNode = document.getElementById("obs-monitor-kpi-series");
+        var monitorSeries = {};
+        try { monitorSeries = seriesNode ? JSON.parse(seriesNode.textContent) : {}; } catch (error) { monitorSeries = {}; }
+        var ns = "http://www.w3.org/2000/svg";
+        document.querySelectorAll("[data-obs-monitor-kpi]").forEach(function (card) {
+            var key = card.dataset.obsMonitorKpi;
+            var serie = monitorSeries[key] || {};
+            var values = Array.isArray(serie.values) ? serie.values.map(Number) : [];
+            var labels = Array.isArray(serie.labels) ? serie.labels : [];
+            var chart = card.querySelector(".obs-monitor-kpi-chart");
+            if (!chart || !values.length || !values.some(function (value) { return value > 0; })) {
+                if (chart) chart.innerHTML = '<span class="obs-monitor-kpi-empty">Sin datos históricos</span>';
+                return;
+            }
+            var width = 260, height = 45, pad = 4;
+            var max = Math.max.apply(null, values.concat([1]));
+            var points = values.map(function (value, index) {
+                return {
+                    x: pad + (index * (width - (pad * 2)) / Math.max(values.length - 1, 1)),
+                    y: height - pad - ((value / max) * (height - (pad * 2))),
+                    value: value,
+                    label: labels[index] || ""
+                };
+            });
+            var svg = document.createElementNS(ns, "svg");
+            svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+            svg.setAttribute("preserveAspectRatio", "none");
+            svg.setAttribute("role", "img");
+            svg.setAttribute("aria-label", "Tendencia de los últimos siete días");
+            var area = document.createElementNS(ns, "path");
+            area.setAttribute("class", "obs-kpi-area");
+            area.setAttribute("d", "M " + points[0].x + " " + (height - pad) + " L " + points.map(function (point) { return point.x + " " + point.y; }).join(" L ") + " L " + points[points.length - 1].x + " " + (height - pad) + " Z");
+            var line = document.createElementNS(ns, "polyline");
+            line.setAttribute("class", "obs-kpi-line");
+            line.setAttribute("points", points.map(function (point) { return point.x + "," + point.y; }).join(" "));
+            svg.appendChild(area); svg.appendChild(line);
+            var tooltip = document.createElement("span");
+            tooltip.className = "obs-monitor-kpi-tooltip";
+            chart.appendChild(tooltip);
+            var mostrar = function (point) {
+                tooltip.textContent = point.label + ": " + point.value;
+                tooltip.style.left = Math.max(0, Math.min(82, (point.x / width) * 100)) + "%";
+                tooltip.classList.add("is-visible");
+            };
+            points.forEach(function (point) {
+                var dot = document.createElementNS(ns, "circle");
+                dot.setAttribute("class", "obs-kpi-dot"); dot.setAttribute("cx", point.x); dot.setAttribute("cy", point.y); dot.setAttribute("r", "2.6");
+                dot.setAttribute("tabindex", "0"); dot.setAttribute("role", "img"); dot.setAttribute("aria-label", point.label + ": " + point.value);
+                dot.addEventListener("pointerenter", function () { mostrar(point); });
+                dot.addEventListener("focus", function () { mostrar(point); });
+                dot.addEventListener("pointerleave", function () { tooltip.classList.remove("is-visible"); });
+                dot.addEventListener("blur", function () { tooltip.classList.remove("is-visible"); });
+                dot.addEventListener("click", function (event) { event.preventDefault(); event.stopPropagation(); mostrar(point); });
+                svg.appendChild(dot);
+            });
+            chart.appendChild(svg);
+        });
         var campo = document.getElementById("actBuscar");
         var lista = document.getElementById("actLista");
         var vacio = document.getElementById("actVacio");

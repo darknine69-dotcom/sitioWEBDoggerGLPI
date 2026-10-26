@@ -1282,16 +1282,24 @@ def reportes(request):
         "detalle": tec_detalle,
     }
 
-    # Personas para el buscador unificado de filtros (técnico o usuario, por nombre)
+    # Personas para el buscador unificado de filtros (técnico o usuario, por nombre o correo).
     personas = []
-    for u in User.objects.filter(activo=True, rol__in=["admin", "tecnico"]).order_by("nombre").values("id", "nombre", "rol"):
-        personas.append({"nombre": u["nombre"], "rol": u["rol"], "tipo": "tecnico", "valor": str(u["id"])})
+    for u in User.objects.filter(activo=True, rol__in=["admin", "tecnico"]).order_by("nombre").values("id", "nombre", "email", "rol"):
+        personas.append(
+            {"nombre": u["nombre"], "email": u["email"] or "", "rol": u["rol"], "tipo": "tecnico", "valor": str(u["id"])}
+        )
     for item in Ticket.objects.values("solicitante_nombre", "solicitante_email").distinct().order_by("solicitante_nombre")[:400]:
         nombre = (item["solicitante_nombre"] or item["solicitante_email"] or "").strip()
         if not nombre:
             continue
         personas.append(
-            {"nombre": nombre, "rol": "", "tipo": "usuario", "valor": item["solicitante_email"] or item["solicitante_nombre"]}
+            {
+                "nombre": nombre,
+                "email": item["solicitante_email"] or "",
+                "rol": "",
+                "tipo": "usuario",
+                "valor": item["solicitante_email"] or item["solicitante_nombre"],
+            }
         )
 
     filtro_persona = {"tipo": "", "nombre": "", "rol": "", "valor": ""}
@@ -3863,10 +3871,33 @@ def _dashboard_metricas(tickets):
         else:
             vencidos += 1
     promedio = sum(duraciones, timedelta()) / len(duraciones) if duraciones else None
-    # La satisfacción solo se muestra cuando hay votos asociados a tickets del
-    # período. Un pulgar no se transforma artificialmente en una calificación.
+
+    # Primera respuesta: se toma el primer comentario público de personal
+    # técnico o administrador, nunca un comentario del solicitante.
+    ticket_ids = [ticket.pk for ticket in tickets]
+    primeras_respuestas = dict(
+        TicketComentario.objects.filter(
+            ticket_id__in=ticket_ids,
+            es_interno=False,
+            usuario__rol__in=(Usuario.Rol.ADMIN, Usuario.Rol.TECNICO),
+        ).values("ticket_id").annotate(fecha_primera=Min("fecha"))
+        .values_list("ticket_id", "fecha_primera")
+    ) if ticket_ids else {}
+    tiempos_primera_respuesta = [
+        fecha - ticket.fecha_creacion
+        for ticket in tickets
+        if (fecha := primeras_respuestas.get(ticket.pk)) and ticket.fecha_creacion
+        and fecha >= ticket.fecha_creacion
+    ]
+    promedio_primera_respuesta = (
+        sum(tiempos_primera_respuesta, timedelta()) / len(tiempos_primera_respuesta)
+        if tiempos_primera_respuesta else None
+    )
+
+    # Una aprobación no es estadísticamente representativa con un único voto.
+    # Solo se muestran resultados con tres o más evaluaciones de tickets.
     from .models import CalificacionTecnico
-    votos = CalificacionTecnico.objects.filter(ticket_id__in=[t.pk for t in tickets])
+    votos = CalificacionTecnico.objects.filter(ticket_id__in=ticket_ids)
     total_votos = votos.count()
     positivos = votos.filter(valor=CalificacionTecnico.Valor.ME_GUSTA).count()
     return {
@@ -3875,8 +3906,16 @@ def _dashboard_metricas(tickets):
         "cerrados": cerrados, "resueltos": resueltos,
         "resueltos_cerrados": resueltos + cerrados, "vencidos": vencidos,
         "sla_pct": round(sla_ok * 100 / sla_total) if sla_total else None,
+        "sla_ok": sla_ok,
+        "sla_no": sla_total - sla_ok,
+        "sla_total": sla_total,
+        "primera_respuesta": formatear_duracion(promedio_primera_respuesta) if promedio_primera_respuesta else None,
+        "primera_respuesta_total": len(tiempos_primera_respuesta),
         "resolucion": formatear_duracion(promedio) if promedio else None,
-        "satisfaccion": round(positivos * 100 / total_votos) if total_votos else None,
+        "resolucion_total": len(duraciones),
+        "satisfaccion": round(positivos * 100 / total_votos) if total_votos >= 3 else None,
+        "satisfaccion_positivos": positivos,
+        "satisfaccion_votos": total_votos,
     }
 
 
@@ -3959,20 +3998,17 @@ def dashboard(request):
     recientes = _adjuntar_solicitantes(recientes_page.object_list)
     n_tecnicos = User.objects.filter(activo=True, rol__in=[User.Rol.TECNICO, User.Rol.ADMIN]).count()
     n_puntos = tickets_qs.exclude(solicitante_punto__isnull=True).exclude(solicitante_punto="").values("solicitante_punto").distinct().count()
+    # Solo se compara cuando la base conserva el evento histórico necesario.
+    # Técnicos, puntos y vencidos son estados actuales: no existe un snapshot
+    # histórico de ellos, por lo que mostrar un porcentaje sería inventarlo.
     kpi_trends = [
         variacion(mes_actual["total"], mes_anterior["total"]),
         variacion(mes_actual["abiertos"], mes_anterior["abiertos"]),
         variacion(mes_actual["progreso"], mes_anterior["progreso"]),
         variacion(mes_actual["resueltos"], mes_anterior["resueltos"]),
-        variacion(
-            n_tecnicos,
-            User.objects.filter(activo=True, rol__in=[User.Rol.TECNICO, User.Rol.ADMIN], fecha_creacion__gte=inicio_mes_anterior, fecha_creacion__lt=inicio_mes).count(),
-        ),
-        variacion(
-            n_puntos,
-            0,
-        ),
-        variacion(stats["vencidos"], 0),
+        None,
+        None,
+        None,
     ]
     return render(
         request,

@@ -41,7 +41,13 @@
 envíos de formulario) y al terminar de cargar la página. Es puro adorno: si
 el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcomment %}
 <div class="page-loader" id="pageLoader" hidden aria-hidden="true">
-    <span class="page-loader-spin" role="progressbar" aria-label="Cargando"></span>
+    <div class="page-loader-card" role="status" aria-live="polite" aria-atomic="true">
+        <span class="page-loader-spin" aria-hidden="true"></span>
+        <div>
+            <strong id="pageLoaderTitle">Cargando información</strong>
+            <span id="pageLoaderText">Preparando la información solicitada…</span>
+        </div>
+    </div>
 </div>
 
 <!-- Iconos SVG compartidos (sprite) -->

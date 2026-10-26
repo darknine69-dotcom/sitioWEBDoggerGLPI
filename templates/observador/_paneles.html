@@ -15,7 +15,7 @@ la papelera se conectan antes de pintar nada).
 {% endcomment %}
 {% if panel.zonas %}
 <div class="dash-stat-row dash-stat-row--mesas corp-anim pan-indicadores" style="margin-bottom:16px">
-    <a class="dash-stat dash-hov-usuarios" href="#zonas" title="Zonas creadas por ti">
+    <a class="dash-stat dash-hov-usuarios" data-pan-kpi="supervisores" href="#zonas" title="Zonas creadas por ti">
         <span class="dash-stat-icon">
             <span class="dash-stat-value">{{ panel.resumen.supervisores }}</span>
             <span class="dash-stat-glyph"><svg class="icon"><use href="#i-eye"/></svg></span>
@@ -24,8 +24,10 @@ la papelera se conectan antes de pintar nada).
             <span class="dash-stat-label">Supervisores</span>
             <span class="dash-stat-hint">con zonas creadas</span>
         </span>
+        {% with trend=panel.kpi_tendencias.supervisores %}{% if trend %}<span class="pan-kpi-trend {{ trend.clase }}" title="{{ trend.detalle }}"><b>{{ trend.texto }}</b><small>{{ trend.detalle }}</small></span>{% endif %}{% endwith %}
+        <span class="pan-kpi-spark" aria-hidden="true"></span>
     </a>
-    <a class="dash-stat dash-hov-zonas" href="#zonas" title="Carpetas de seguimiento">
+    <a class="dash-stat dash-hov-zonas" data-pan-kpi="zonas" href="#zonas" title="Carpetas de seguimiento">
         <span class="dash-stat-icon">
             <span class="dash-stat-value">{{ panel.resumen.zonas }}</span>
             <span class="dash-stat-glyph"><svg class="icon"><use href="#i-map-pin"/></svg></span>
@@ -34,8 +36,10 @@ la papelera se conectan antes de pintar nada).
             <span class="dash-stat-label">Zonas creadas</span>
             <span class="dash-stat-hint">carpetas de seguimiento</span>
         </span>
+        {% with trend=panel.kpi_tendencias.zonas %}{% if trend %}<span class="pan-kpi-trend {{ trend.clase }}" title="{{ trend.detalle }}"><b>{{ trend.texto }}</b><small>{{ trend.detalle }}</small></span>{% endif %}{% endwith %}
+        <span class="pan-kpi-spark" aria-hidden="true"></span>
     </a>
-    <a class="dash-stat dash-hov-total" href="#zonas" title="Cuentas dentro de tus zonas">
+    <a class="dash-stat dash-hov-total" data-pan-kpi="cuentas" href="#zonas" title="Cuentas dentro de tus zonas">
         <span class="dash-stat-icon">
             <span class="dash-stat-value">{{ panel.resumen.cuentas }}</span>
             <span class="dash-stat-glyph"><svg class="icon"><use href="#i-user"/></svg></span>
@@ -44,8 +48,10 @@ la papelera se conectan antes de pintar nada).
             <span class="dash-stat-label">Cuentas en zonas</span>
             <span class="dash-stat-hint">personas vigiladas</span>
         </span>
+        {% with trend=panel.kpi_tendencias.cuentas %}{% if trend %}<span class="pan-kpi-trend {{ trend.clase }}" title="{{ trend.detalle }}"><b>{{ trend.texto }}</b><small>{{ trend.detalle }}</small></span>{% endif %}{% endwith %}
+        <span class="pan-kpi-spark" aria-hidden="true"></span>
     </a>
-    <a class="dash-stat dash-hov-abiertos" href="#zonas" title="Tickets por atender en tus zonas">
+    <a class="dash-stat dash-hov-abiertos" data-pan-kpi="abiertos" href="#zonas" title="Tickets por atender en tus zonas">
         <span class="dash-stat-icon st-ic-abiertos">
             <span class="dash-stat-value st-abiertos">{{ panel.resumen.abiertos }}</span>
             <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
@@ -54,8 +60,11 @@ la papelera se conectan antes de pintar nada).
             <span class="dash-stat-label">Abiertos en zonas</span>
             <span class="dash-stat-hint">tickets por atender</span>
         </span>
+        {% with trend=panel.kpi_tendencias.abiertos %}{% if trend %}<span class="pan-kpi-trend {{ trend.clase }}" title="{{ trend.detalle }}"><b>{{ trend.texto }}</b><small>{{ trend.detalle }}</small></span>{% endif %}{% endwith %}
+        <span class="pan-kpi-spark" aria-hidden="true"></span>
     </a>
 </div>
+{{ panel.kpi_series|json_script:"panKpiSeries" }}
 <p class="obs-leyenda">
     <span class="obs-leyenda-item" tabindex="0"><svg class="icon icon-sm" style="color:#2F7D4F"><use href="#i-check-circle"/></svg> Al día<span class="obs-tip">Zona sin tickets abiertos</span></span>
     <span class="obs-leyenda-item" tabindex="0"><svg class="icon icon-sm" style="color:#C98A12"><use href="#i-clock"/></svg> Pendiente<span class="obs-tip">Zona con tickets abiertos o en progreso</span></span>
@@ -69,11 +78,11 @@ la papelera se conectan antes de pintar nada).
             <header class="pan-sup-head">
                 <span class="pan-ava">{{ panel.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
                 <div class="pan-sup-id">
-                    <strong>{{ panel.supervisor.nombre }}</strong>
+                    <strong>Zonas del supervisor</strong>
                     <small>{{ panel.supervisor.email|default:"—" }}</small>
                     <span class="pan-rol">Supervisor a cargo</span>
                 </div>
-                <span class="pan-sup-n">{{ panel.zonas|length }} zona{{ panel.zonas|length|pluralize }}</span>
+                <span class="pan-sup-n">Total: {{ panel.zonas|length }} zona{{ panel.zonas|length|pluralize }}</span>
             </header>
 
             <p class="pan-sub-tit"><svg class="icon icon-sm"><use href="#i-map-pin"/></svg> Mis zonas</p>
@@ -89,6 +98,7 @@ la papelera se conectan antes de pintar nada).
         <div class="pan-right-head">
             <h4>Usuarios en <span id="panRightZona">—</span></h4>
             <span class="muted" id="panSelCount"></span>
+            <a class="pan-manage-users" id="panGestionar" href="#" hidden><svg class="icon"><use href="#i-layers"/></svg> Gestionar usuarios</a>
             <button type="button" class="pan-right-toggle" id="panAlternarZonas"
                     aria-expanded="true" aria-controls="panLeft"
                     title="Plegar la lista de zonas para ampliar los usuarios">
@@ -165,6 +175,7 @@ la papelera se conectan antes de pintar nada).
     var papeleraN = document.getElementById("panBorrarN");
     var botonPresionar = document.getElementById("panPresionar");
     var aside = document.getElementById("panRight");
+    var gestionar = document.getElementById("panGestionar");
     var modalPresionar = document.getElementById("panPresionarModal");
     var formPresionar = document.getElementById("panPresionarForm");
     var selectPresionar = document.getElementById("panPresionarTicket");
@@ -178,6 +189,47 @@ la papelera se conectan antes de pintar nada).
 
     var panel = null;
     try { panel = raw ? JSON.parse(raw.textContent) : null; } catch (e) { panel = null; }
+
+    // Curvas reales de los KPI: se pintan con SVG para no añadir una librería
+    // al panel y se animan cada vez que llegan datos actualizados del servidor.
+    (function () {
+        var source = document.getElementById("panKpiSeries");
+        if (!source) return;
+        var chartData;
+        try { chartData = JSON.parse(source.textContent || "{}"); } catch (e) { return; }
+        var labels = chartData.labels || [];
+        var series = chartData.series || {};
+        document.querySelectorAll("[data-pan-kpi]").forEach(function (card) {
+            var key = card.getAttribute("data-pan-kpi");
+            var values = series[key] || [];
+            var spark = card.querySelector(".pan-kpi-spark");
+            if (!spark || !values.length || !values.some(function (value) { return value > 0; })) return;
+            var max = Math.max.apply(null, values.concat([1]));
+            var step = 236 / Math.max(1, values.length - 1);
+            var points = values.map(function (value, index) {
+                return (2 + index * step).toFixed(1) + "," + (34 - value / max * 27).toFixed(1);
+            });
+            var dots = values.map(function (value, index) {
+                var p = points[index].split(",");
+                return '<circle class="spark-dot" data-index="' + index + '" cx="' + p[0] + '" cy="' + p[1] + '" r="2.4" />';
+            }).join("");
+            spark.innerHTML = '<svg viewBox="0 0 240 36" preserveAspectRatio="none"><polygon class="spark-fill" points="2,36 ' + points.join(" ") + ' 238,36"/><polyline class="spark-line" points="' + points.join(" ") + '"/>' + dots + '</svg><span class="pan-kpi-tooltip" role="tooltip"></span>';
+            var tip = spark.querySelector(".pan-kpi-tooltip");
+            spark.querySelectorAll(".spark-dot").forEach(function (dot) {
+                function mostrarTip() {
+                    var index = Number(dot.getAttribute("data-index"));
+                    tip.textContent = (labels[index] || "") + ": " + values[index];
+                    tip.style.left = ((index / Math.max(1, values.length - 1)) * 100) + "%";
+                    tip.classList.add("is-visible");
+                }
+                dot.addEventListener("pointerenter", mostrarTip);
+                dot.addEventListener("focus", mostrarTip);
+                dot.addEventListener("pointerleave", function () { tip.classList.remove("is-visible"); });
+                dot.addEventListener("blur", function () { tip.classList.remove("is-visible"); });
+            });
+        });
+    })();
+
     var porClave = {};
     (((panel && panel.zonas) || [])).forEach(function (z) { porClave[z.clave] = z; });
     var botones = grid.querySelectorAll("[data-pan-clave]");
@@ -217,6 +269,7 @@ la papelera se conectan antes de pintar nada).
         if (buscar) buscar.value = "";
         if (pane) pane.innerHTML = VACIO;
         if (aside) aside.hidden = true;
+        if (gestionar) { gestionar.hidden = true; gestionar.href = "#"; }
         grid.classList.add("is-cerrado");
         grid.classList.remove("is-zonas-plegadas");
         actualizaBotonZonas(false);
@@ -440,12 +493,12 @@ la papelera se conectan antes de pintar nada).
                     '<small class="pan-ticket-ans is-vencido">ANS vencido</small>' :
                     t.ans_estado === "por-vencer" ?
                     '<small class="pan-ticket-ans is-por-vencer">ANS por vencer</small>' : "";
-                return '<span class="obs-ticket t-' + esc(t.estado) + '"' +
+                return '<a class="obs-ticket t-' + esc(t.estado) + '" href="' + esc(t.url || "#") + '"' +
                     ' title="' + esc(t.estado_display) + ' · ' + esc(t.fecha) +
                     (t.tecnico ? ' · ' + esc(t.tecnico) : "") +
                     (t.ans_texto ? ' · ' + esc(t.ans_texto) : "") + '">' +
                     esc(t.codigo) + " <small>" + esc(t.estado_display) + "</small>" +
-                    ans + "</span>";
+                    ans + "</a>";
             }).join("");
             var resp = (u.respuestas || []).map(function (r) {
                 return '<li class="pan-resp">' +
@@ -483,7 +536,7 @@ la papelera se conectan antes de pintar nada).
                     (u.total ? '<span class="obs-bar" role="img" aria-label="Avance de ' + esc(u.nombre) + ': ' + esc(u.avance) + ' por ciento">' +
                         '<span class="obs-bar-seg obs-bar-verde" style="flex:' + esc(u.avance) + '"></span>' +
                         '<span class="obs-bar-seg obs-bar-vacio" style="flex:' + esc(u.falta) + '"></span></span>' : "") +
-                    (chips ? '<div class="obs-tickets pan-tickets">' + chips + "</div>" : "") +
+                    (chips ? '<details class="pan-recent"><summary><b>Tickets recientes</b><span>' + (u.tickets || []).length + ' <svg class="icon"><use href="#i-chevron-down"/></svg></span></summary><div class="pan-recent-head"><a href="' + esc(u.url) + '">Ver todos</a></div><div class="obs-tickets pan-tickets">' + chips + "</div></details>" : "") +
                     (resp ? '<details class="pan-resp-wrap"><summary>' + u.respuestas.length +
                         " respuesta" + (u.respuestas.length === 1 ? "" : "s") +
                         " reciente" + (u.respuestas.length === 1 ? "" : "s") +
@@ -505,7 +558,12 @@ la papelera se conectan antes de pintar nada).
         grid.classList.remove("is-cerrado");
         if (rotulo) rotulo.textContent = btn.getAttribute("data-pan-nombre") || "—";
         if (buscar) buscar.value = "";
-        pinta(porClave[btn.getAttribute("data-pan-clave")]);
+        var zona = porClave[btn.getAttribute("data-pan-clave")];
+        if (gestionar) {
+            gestionar.hidden = !zona || !zona.url;
+            gestionar.href = (zona && zona.url) || "#";
+        }
+        pinta(zona);
     }
 
     /* Tarjetas de zona: delegado en el panel, así funcionan aunque se

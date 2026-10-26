@@ -200,8 +200,8 @@ main.obs-page { font-family: var(--font-corp); }
 {% block content %}
 <main class="page obs-page">
 
-    <div class="dash-stat-row dash-stat-row--mesas corp-anim" style="margin-bottom:16px">
-        <a class="dash-stat dash-hov-usuarios" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
+    <div class="dash-stat-row dash-stat-row--mesas corp-anim mon-admin-kpis" style="margin-bottom:16px">
+        <a class="dash-stat dash-hov-usuarios" data-mon-kpi="supervisores" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
             <span class="dash-stat-icon">
                 <span class="dash-stat-value">{{ dash.supervisores|default:0 }}</span>
                 <span class="dash-stat-glyph"><svg class="icon"><use href="#i-eye"/></svg></span>
@@ -210,8 +210,10 @@ main.obs-page { font-family: var(--font-corp); }
                 <span class="dash-stat-label">Supervisores</span>
                 <span class="dash-stat-hint">con zonas creadas</span>
             </span>
+            {% with trend=dash_tendencias.supervisores %}{% if trend %}<span class="mon-kpi-trend {{ trend.clase }}" title="{{ trend.detalle }}"><b>{{ trend.texto }}</b><small>{{ trend.detalle }}</small></span>{% endif %}{% endwith %}
+            <span class="mon-kpi-spark" aria-hidden="true"></span>
         </a>
-        <a class="dash-stat dash-hov-zonas" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
+        <a class="dash-stat dash-hov-zonas" data-mon-kpi="zonas" href="#zonas" title="Bajar a las zonas creadas por los supervisores">
             <span class="dash-stat-icon">
                 <span class="dash-stat-value">{{ dash.zonas|default:0 }}</span>
                 <span class="dash-stat-glyph"><svg class="icon"><use href="#i-map-pin"/></svg></span>
@@ -220,8 +222,10 @@ main.obs-page { font-family: var(--font-corp); }
                 <span class="dash-stat-label">Zonas creadas</span>
                 <span class="dash-stat-hint">carpetas de seguimiento</span>
             </span>
+            {% with trend=dash_tendencias.zonas %}{% if trend %}<span class="mon-kpi-trend {{ trend.clase }}" title="{{ trend.detalle }}"><b>{{ trend.texto }}</b><small>{{ trend.detalle }}</small></span>{% endif %}{% endwith %}
+            <span class="mon-kpi-spark" aria-hidden="true"></span>
         </a>
-        <a class="dash-stat dash-hov-total" href="#zonas" title="Bajar a las cuentas dentro de cada zona">
+        <a class="dash-stat dash-hov-total" data-mon-kpi="cuentas" href="#zonas" title="Bajar a las cuentas dentro de cada zona">
             <span class="dash-stat-icon">
                 <span class="dash-stat-value">{{ dash.cuentas|default:0 }}</span>
                 <span class="dash-stat-glyph"><svg class="icon"><use href="#i-user"/></svg></span>
@@ -230,8 +234,10 @@ main.obs-page { font-family: var(--font-corp); }
                 <span class="dash-stat-label">Cuentas en zonas</span>
                 <span class="dash-stat-hint">personas vigiladas</span>
             </span>
+            {% with trend=dash_tendencias.cuentas %}{% if trend %}<span class="mon-kpi-trend {{ trend.clase }}" title="{{ trend.detalle }}"><b>{{ trend.texto }}</b><small>{{ trend.detalle }}</small></span>{% endif %}{% endwith %}
+            <span class="mon-kpi-spark" aria-hidden="true"></span>
         </a>
-        <a class="dash-stat dash-hov-abiertos" href="#agregar" title="Bajar a agregar cuentas al seguimiento">
+        <a class="dash-stat dash-hov-abiertos" data-mon-kpi="abiertos" href="#agregar" title="Bajar a agregar cuentas al seguimiento">
             <span class="dash-stat-icon st-ic-abiertos">
                 <span class="dash-stat-value st-abiertos">{{ dash.abiertos|default:0 }}</span>
                 <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
@@ -240,8 +246,11 @@ main.obs-page { font-family: var(--font-corp); }
                 <span class="dash-stat-label">Abiertos en zonas</span>
                 <span class="dash-stat-hint">tickets por atender</span>
             </span>
+            {% with trend=dash_tendencias.abiertos %}{% if trend %}<span class="mon-kpi-trend {{ trend.clase }}" title="{{ trend.detalle }}"><b>{{ trend.texto }}</b><small>{{ trend.detalle }}</small></span>{% endif %}{% endwith %}
+            <span class="mon-kpi-spark" aria-hidden="true"></span>
         </a>
     </div>
+    {{ dash_series|json_script:"monKpiSeries" }}
 
     <section id="zonas" class="obs-bloque">
         <p class="obs-leyenda">
@@ -788,6 +797,43 @@ main.obs-page { font-family: var(--font-corp); }
     {% endif %}
 
     <script>
+    /* Minigráficas con valores reales de los siete días más recientes. */
+    (function () {
+        var source = document.getElementById("monKpiSeries");
+        if (!source) return;
+        var data;
+        try { data = JSON.parse(source.textContent || "{}"); } catch (e) { return; }
+        var labels = data.labels || [];
+        var series = data.series || {};
+        document.querySelectorAll("[data-mon-kpi]").forEach(function (card) {
+            var key = card.getAttribute("data-mon-kpi");
+            var values = series[key] || [];
+            var spark = card.querySelector(".mon-kpi-spark");
+            if (!spark || !values.length || !values.some(function (value) { return value > 0; })) return;
+            var max = Math.max.apply(null, values.concat([1]));
+            var step = 236 / Math.max(1, values.length - 1);
+            var points = values.map(function (value, index) {
+                return (2 + index * step).toFixed(1) + "," + (34 - value / max * 27).toFixed(1);
+            });
+            var dots = values.map(function (value, index) {
+                var point = points[index].split(",");
+                return '<circle class="spark-dot" data-index="' + index + '" cx="' + point[0] + '" cy="' + point[1] + '" r="2.4" />';
+            }).join("");
+            spark.innerHTML = '<svg viewBox="0 0 240 36" preserveAspectRatio="none"><polygon class="spark-fill" points="2,36 ' + points.join(" ") + ' 238,36"/><polyline class="spark-line" points="' + points.join(" ") + '"/>' + dots + '</svg><span class="mon-kpi-tooltip" role="tooltip"></span>';
+            var tooltip = spark.querySelector(".mon-kpi-tooltip");
+            spark.querySelectorAll(".spark-dot").forEach(function (dot) {
+                function mostrar() {
+                    var index = Number(dot.getAttribute("data-index"));
+                    tooltip.textContent = (labels[index] || "") + ": " + values[index];
+                    tooltip.style.left = ((index / Math.max(1, values.length - 1)) * 100) + "%";
+                    tooltip.classList.add("is-visible");
+                }
+                dot.addEventListener("pointerenter", mostrar);
+                dot.addEventListener("pointerleave", function () { tooltip.classList.remove("is-visible"); });
+            });
+        });
+    })();
+
     /* Clic en el nombre o en la fila: abre la vista principal de la cuenta.
        Los botones y formularios (iconos, asignar, renombrar…) siguen
        funcionando: si el clic nace ahí, no se navega. */

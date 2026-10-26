@@ -45,6 +45,119 @@
 .rpt-section { margin:0 0 22px; }
 .rpt-section .charts-grid { margin:0; }
 .charts-grid--three { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+/* Tendencia: una superficie analítica compacta, igual al panel de referencia. */
+.rpt-trend-section {
+    margin: 0 0 22px;
+    padding: 10px;
+    border: 1px solid #E7EDF5;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 6px 22px rgba(15, 23, 42, .045);
+}
+.rpt-trend-section > .rpt-section-head {
+    min-height: 40px;
+    margin: 0;
+    padding: 0 6px 8px;
+    justify-content: flex-start;
+}
+.rpt-trend-range {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 138px;
+    height: 34px;
+    margin-left: auto;
+    padding: 0 10px;
+    border: 1px solid #E2E8F0;
+    border-radius: 9px;
+    background: #fff;
+    color: #475569;
+    font: 600 11px var(--font-sans);
+}
+.rpt-trend-range .icon { width: 15px; height: 15px; color: #64748B; }
+.rpt-trend-range select {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    appearance: auto;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.rpt-trend-section .charts-grid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
+    gap: 10px;
+    margin: 0;
+}
+.rpt-trend-section .chart-card {
+    min-height: 238px;
+    padding: 14px 16px 12px;
+    border: 1px solid #EDF1F5;
+    border-radius: 11px;
+    background: #fff;
+    box-shadow: none;
+}
+.rpt-trend-section .chart-card-head {
+    min-height: 20px;
+    margin: 0 0 8px;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
+.rpt-trend-section .chart-card-head h3 {
+    justify-content: flex-start;
+    color: #1E293B;
+    font: 600 14px/1.25 var(--font-sans);
+    text-align: left;
+}
+.rpt-trend-view {
+    flex: 0 0 auto;
+    min-height: 28px;
+    padding: 0 9px;
+    border: 1px solid #DCE5F0;
+    border-radius: 7px;
+    background: #fff;
+    color: #475569;
+    font: 600 11px var(--font-sans);
+    cursor: pointer;
+}
+.rpt-trend-view:hover { border-color: #93C5FD; background: #F8FBFF; color: #2563EB; }
+.rpt-trend-view:focus-visible { outline: 2px solid #93C5FD; outline-offset: 2px; }
+.rpt-trend-section .chart-head-icon,
+.rpt-trend-section .rpt-chart-tools { display: none; }
+.rpt-trend-section .chart-stage {
+    position: relative;
+    height: 190px;
+    min-height: 190px;
+}
+.rpt-trend-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    cursor: grab;
+}
+.rpt-trend-scroll::-webkit-scrollbar { display: none; }
+.rpt-trend-scroll:focus-visible { outline: 2px solid #93C5FD; outline-offset: 3px; border-radius: 8px; }
+.rpt-trend-scroll:active { cursor: grabbing; }
+.rpt-trend-section .chart-stage canvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none;
+}
+.rpt-trend-section .rpt-empty { min-height: 190px; display: grid; place-items: center; padding: 0; }
+@media (max-width: 980px) {
+    .rpt-trend-section .charts-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+    .rpt-trend-section { padding: 8px; border-radius: 14px; }
+    .rpt-trend-section > .rpt-section-head { flex-wrap: wrap; padding: 2px 4px 10px; }
+    .rpt-trend-range { width: 100%; margin: 2px 0 0; }
+    .rpt-trend-section .chart-card { min-height: 226px; padding: 13px; }
+    .rpt-trend-section .chart-stage { height: 178px; min-height: 178px; }
+}
 .rpt-kpis .st-ic-tiempo { background:#7C3AED !important; }
 .rpt-kpis .st-ic-reabiertos { background:#64748B !important; }
 .rpt-kpis .st-ic-usuarios { background:#EF476F !important; }
@@ -57,11 +170,17 @@
 @media (max-width: 980px) { .charts-grid--three { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 680px) { .charts-grid--three { grid-template-columns:1fr; } }
 .rpt-filterbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin: 0 0 14px; }
-.rpt-filter-panel { display:grid; grid-template-columns:repeat(6,minmax(130px,1fr)) auto; align-items:end; gap:12px; margin:0 0 18px; padding:14px; border:1px solid #E2E8F0; border-radius:14px; background:#fff; box-shadow:0 3px 14px rgba(15,23,42,.04); }
+.rpt-filter-panel { display:grid; grid-template-columns:repeat(4,minmax(120px,1fr)) minmax(280px,1.65fr) auto; align-items:end; gap:12px; margin:0 0 18px; padding:14px; border:1px solid #E2E8F0; border-radius:14px; background:#fff; box-shadow:0 3px 14px rgba(15,23,42,.04); }
 .rpt-filter-panel .rpt-periodos { grid-column:1/-1; margin:0; }
 .rpt-filter-panel .rpt-fld { min-width:0; flex:auto; }
 .rpt-filter-panel .rpt-fld select,.rpt-filter-panel .rpt-fld input[type="date"],.rpt-filter-panel .rpt-persona-input input { min-height:38px; box-sizing:border-box; border-color:#DCE5F0; border-radius:9px; font-size:12px; }
 .rpt-filter-panel .rpt-actions { margin:0; flex-wrap:nowrap; }
+.rpt-filter-panel .rpt-apply {
+    display:grid; width:40px; min-width:40px; height:40px; min-height:40px; place-items:center;
+    padding:0; border-radius:10px;
+}
+.rpt-filter-panel .rpt-apply .icon { width:18px; height:18px; margin:0; }
+.rpt-filter-panel .rpt-apply span { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 .rpt-filter-reset { display:grid; width:40px; height:40px; place-items:center; border:1px solid #E2E8F0; border-radius:10px; color:#64748B; text-decoration:none; }.rpt-filter-reset:hover{border-color:#FCA5A5;background:#FFF5F5;color:#DC2626}.rpt-filter-reset .icon{width:18px;height:18px}
 .rpt-export-menu--header { position:relative; z-index:40; }.rpt-export-menu--header .rpt-export-options { z-index:60; }
 /* El orden visual sigue la jerarquía del reporte: acción, filtros, resumen y análisis. */
@@ -72,7 +191,7 @@
 .page.page-corporate > .rpt-section { order:4; }
 .page.page-corporate > .rpt-tech-report { order:5; }
 .page.page-corporate > .rpt-user-report { order:6; }
-@media(max-width:1120px){.rpt-filter-panel{grid-template-columns:repeat(3,minmax(0,1fr)) auto}}@media(max-width:680px){.rpt-filter-panel{grid-template-columns:1fr 1fr}.rpt-filter-panel .rpt-periodos{grid-column:1/-1}.rpt-filter-panel .rpt-persona,.rpt-filter-panel .rpt-actions{grid-column:1/-1}.rpt-filter-panel .rpt-actions .btn{flex:1}}
+@media(max-width:1120px){.rpt-filter-panel{grid-template-columns:repeat(3,minmax(0,1fr)) auto}.rpt-filter-panel .rpt-persona{grid-column:span 2}}@media(max-width:680px){.rpt-filter-panel{grid-template-columns:1fr 1fr}.rpt-filter-panel .rpt-periodos{grid-column:1/-1}.rpt-filter-panel .rpt-persona,.rpt-filter-panel .rpt-actions{grid-column:1/-1}.rpt-filter-panel .rpt-actions .btn{flex:1}}
 .rpt-fld { display: flex; flex-direction: column; gap: 4px; min-width: 150px; flex: 1 1 165px; }
 .rpt-fld label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: var(--ink-muted); }
 .rpt-fld select, .rpt-fld input[type="date"] {
@@ -191,19 +310,31 @@
 }
 .rpt-persona-clear:hover { color: var(--dogger-red); }
 .rpt-suggest {
-    position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% - 20px);
+    position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 5px);
     background: #fff; border: 1px solid var(--line); border-radius: 12px;
     box-shadow: 0 12px 28px rgba(23, 20, 18, .14); max-height: 250px; overflow: auto;
 }
-.rpt-suggest button {
-    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
-    padding: 9px 12px; border: 0; background: transparent; cursor: pointer;
-    font-size: 13px; color: var(--ink); border-bottom: 1px solid #F6F1E6;
+.rpt-person-option {
+    display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 9px;
+    width: 100%; min-height: 58px; padding: 9px 12px; border: 0; border-bottom: 1px solid #F6F1E6;
+    background: transparent; color: var(--ink); text-align: left; cursor: pointer;
 }
-.rpt-suggest button:last-child { border-bottom: 0; }
-.rpt-suggest button:hover, .rpt-suggest button.is-sel { background: #FBF7EE; }
-.rpt-suggest button .icon { width: 14px; height: 14px; color: var(--ink-muted); flex-shrink: 0; }
-.rpt-suggest button b { font-weight: 700; }
+.rpt-person-option:last-child { border-bottom: 0; }
+.rpt-person-option:hover, .rpt-person-option:focus-visible { background: #FFF8F5; outline: none; }
+.rpt-person-avatar {
+    display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+    background: #4F46E5; color: #fff; font-size: 12px; font-weight: 800;
+}
+.rpt-person-copy { min-width: 0; }
+.rpt-person-line { display:flex; align-items:center; min-width:0; gap:6px; }
+.rpt-person-copy b, .rpt-person-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rpt-person-copy b { min-width:0; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.rpt-person-copy small { margin-top: 2px; font-size: 11px; color: var(--ink-muted); }
+.rpt-person-kind {
+    display: inline-flex; align-items: center; gap: 3px; flex:0 0 auto; padding:3px 6px; border-radius:999px;
+    font-size: 9.5px; font-weight: 800; line-height:1; white-space: nowrap;
+}
+.rpt-person-kind .icon { width: 13px; height: 13px; flex: 0 0 auto; }
 .rpt-rol {
     margin-left: auto; font-size: 10.5px; font-weight: 800; text-transform: uppercase;
     letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
@@ -221,7 +352,11 @@
 .rpt-chip .rpt-rol { margin-left: 2px; }
 .rpt-chip-x { border: 0; background: transparent; cursor: pointer; color: var(--ink-muted); font-size: 14px; line-height: 1; padding: 0 2px; }
 .rpt-chip-x:hover { color: var(--dogger-red); }
-.rpt-suggest-empty { padding: 10px 12px; font-size: 12.5px; color: var(--ink-muted); }
+.rpt-suggest-empty { display: flex; align-items: flex-start; gap: 9px; padding: 13px 12px; color: var(--ink-muted); }
+.rpt-suggest-empty .icon { width: 17px; height: 17px; margin-top: 1px; color: var(--dogger-red); flex: 0 0 auto; }
+.rpt-suggest-empty b, .rpt-suggest-empty small { display: block; }
+.rpt-suggest-empty b { color: var(--ink); font-size: 12.5px; font-weight: 700; }
+.rpt-suggest-empty small { margin-top: 2px; font-size: 11.5px; line-height: 1.35; }
 
 @media (max-width: 700px) {
     .rpt-fld { flex: 1 1 100%; }
@@ -403,7 +538,7 @@
             <div id="fPersonaChip"></div>
         </div>
         <div class="rpt-actions">
-            <button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-search"/></svg> Aplicar filtros</button>
+            <button type="submit" class="btn btn-primary btn-sm rpt-apply" title="Aplicar filtros" aria-label="Aplicar filtros"><svg class="icon"><use href="#i-filter"/></svg><span>Aplicar filtros</span></button>
             <a class="rpt-filter-reset" href="{% url 'tickets:reportes' %}" title="Limpiar filtros" aria-label="Limpiar filtros"><svg class="icon"><use href="#i-refresh"/></svg></a>
         </div>
     </form>
@@ -413,16 +548,18 @@
         <span>{{ filtros_txt }}</span>
     </div>
 
-    <section class="rpt-section" aria-labelledby="rptTrendTitle">
-        <h2 class="rpt-section-head" id="rptTrendTitle"><span><svg class="icon"><use href="#i-chart"/></svg></span>2. Tendencia de tickets</h2>
+    <section class="rpt-section rpt-trend-section" aria-labelledby="rptTrendTitle">
+        <h2 class="rpt-section-head" id="rptTrendTitle"><span><svg class="icon"><use href="#i-chart"/></svg></span>2. Tendencia de tickets
+            <label class="rpt-trend-range" for="rptTrendPeriod"><svg class="icon"><use href="#i-calendar"/></svg><select id="rptTrendPeriod" aria-label="Período de tendencia"><option value="30d" selected>Últimos 30 días</option><option value="month">Este mes</option><option value="quarter">Este trimestre</option><option value="year">Este año</option><option value="clear">Todo el tiempo</option></select></label>
+        </h2>
     <div class="charts-grid">
         <div class="chart-card">
             <div class="chart-card-head">
                 <span class="chart-head-icon"><svg class="icon"><use href="#i-chart"/></svg></span>
-                <h3>Tickets creados vs. resueltos</h3>
+                <h3>Tickets creados vs. resueltos</h3><button class="rpt-trend-view" id="tecTrendView" type="button" aria-pressed="true" title="Ajustar el gráfico completo al panel">Ajustar vista</button>
                 <div class="rpt-chart-tools"><details class="rpt-chart-info"><summary title="Información del gráfico"><svg class="icon"><use href="#i-info"/></svg></summary><div><strong>Lectura rápida</strong>La serie usa las fechas reales de creación y finalización de los tickets filtrados.</div></details></div>
             </div>
-            <div class="chart-stage" id="tecChartBox"><canvas id="tecChart"></canvas></div>
+            <div class="rpt-trend-scroll" id="tecChartScroll" tabindex="0" aria-label="Desplaza horizontalmente para revisar todos los días del período"><div class="chart-stage" id="tecChartBox"><canvas id="tecChart"></canvas></div></div>
             <div class="rpt-empty rpt-hidden" id="tecEmpty">No hay tickets en el rango seleccionado.</div>
         </div>
         <div class="chart-card">
@@ -561,6 +698,15 @@
         });
     });
 
+    // El selector de la cabecera de tendencia reutiliza los mismos rangos y filtros reales.
+    var trendPeriod = document.getElementById("rptTrendPeriod");
+    if (trendPeriod) {
+        trendPeriod.addEventListener("change", function () {
+            var target = document.querySelector('[data-rpt-period="' + trendPeriod.value + '"]');
+            if (target) target.click();
+        });
+    }
+
     // ---- Buscador unificado de persona (técnico o usuario) ----
     (function () {
         var personas = JSON.parse('{{ sugerencias_personas|escapejs }}');
@@ -579,16 +725,22 @@
 
         function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
         function label(p) {
-            if (p.tipo === "tecnico") return p.rol ? cap(p.rol) : "Técnico";
-            return "Punto de venta";
+            if (p.tipo === "tecnico") return p.rol === "admin" ? "Administrador" : "Técnico";
+            return "Usuario";
         }
-        /* Mismo diseño compacto de los desplegables del chat: foto/inicial,
-           nombre pequeño e icono de rol separado a la derecha. */
         var ICONO_ROL_RPT = { tecnico: "i-wrench", admin: "i-shield", usuario: "i-user" };
         function rolCls(p) {
             if (p.rol === "admin") return "rpt-rol--admin";
             if (p.rol === "tecnico") return "rpt-rol--tecnico";
             return "rpt-rol--usuario";
+        }
+        function normalizar(texto) {
+            return String(texto || "").toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+        function escaparHtml(texto) {
+            return String(texto || "").replace(/[&<>'\"]/g, function (c) {
+                return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c];
+            });
         }
         function hideSuggest() { sug.classList.add("rpt-hidden"); sug.innerHTML = ""; }
         function renderChip() {
@@ -614,16 +766,16 @@
             lista.forEach(function (p) {
                 var b = document.createElement("button");
                 b.type = "button";
-                b.className = "sw-dd-row";
+                b.className = "rpt-person-option";
                 b.setAttribute("role", "option");
                 var ini = ((p.nombre || "?").trim().charAt(0) || "?").toUpperCase();
                 var icono = ICONO_ROL_RPT[p.rol] || ICONO_ROL_RPT[p.tipo] || "i-user";
-                b.innerHTML = '<span class="sw-dd-ava"></span>' +
-                    '<span class="sw-dd-name"></span>' +
-                    '<span class="sw-dd-meta"><svg class="icon"><use href="#' + icono + '"/></svg><span></span></span>';
-                b.querySelector(".sw-dd-ava").textContent = ini;
-                b.querySelector(".sw-dd-name").textContent = p.nombre;
-                b.querySelector(".sw-dd-meta span").textContent = label(p);
+                b.innerHTML = '<span class="rpt-person-avatar"></span>' +
+                    '<span class="rpt-person-copy"><span class="rpt-person-line"><span class="rpt-person-kind ' + rolCls(p) + '"><svg class="icon"><use href="#' + icono + '"/></svg><span></span></span><b></b></span><small></small></span>';
+                b.querySelector(".rpt-person-avatar").textContent = ini;
+                b.querySelector(".rpt-person-copy b").textContent = p.nombre;
+                b.querySelector(".rpt-person-copy small").textContent = p.email || label(p);
+                b.querySelector(".rpt-person-kind span").textContent = label(p);
                 b.addEventListener("click", function () {
                     sel = { tipo: p.tipo, nombre: p.nombre, rol: p.rol || "", valor: p.valor };
                     hTec.value = p.tipo === "tecnico" ? p.valor : "";
@@ -637,12 +789,15 @@
         }
 
         inp.addEventListener("input", function () {
-            var q = inp.value.trim().toLowerCase();
+            var q = normalizar(inp.value);
             if (!q) { hideSuggest(); return; }
-            var hits = personas.filter(function (p) { return p.nombre.toLowerCase().indexOf(q) !== -1; }).slice(0, 8);
+            var hits = personas.filter(function (p) {
+                return normalizar((p.nombre || "") + " " + (p.email || "")).indexOf(q) !== -1;
+            }).slice(0, 8);
             if (hits.length) mostrar(hits);
             else {
-                sug.innerHTML = '<div class="rpt-suggest-empty">Sin coincidencias para «' + inp.value.trim() + "».</div>";
+                sug.innerHTML = '<div class="rpt-suggest-empty"><svg class="icon"><use href="#i-search"/></svg>' +
+                    '<span><b>Sin resultados</b><small>No encontramos a “' + escaparHtml(inp.value.trim()) + '”. Prueba con otro nombre o correo.</small></span></div>';
                 sug.classList.remove("rpt-hidden");
             }
         });
@@ -691,6 +846,17 @@
             catch (e) { return color; }
         };
     }
+    function rptAreaFill(superior, inferior) {
+        return function (ctx) {
+            var chart = ctx.chart;
+            var area = chart && chart.chartArea;
+            if (!area) return superior;
+            var gradient = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+            gradient.addColorStop(0, superior);
+            gradient.addColorStop(1, inferior);
+            return gradient;
+        };
+    }
     function rptRealceLista(base) {
         return function (c) {
             var color = base[c.dataIndex];
@@ -709,19 +875,40 @@
     var resumenGraficos = JSON.parse('{{ graficos_reportes_json|escapejs }}');
     var tec = resumenGraficos.tendencia || {};
     var tecBox = document.getElementById("tecChartBox");
+    var tecScroll = document.getElementById("tecChartScroll");
+    var tecTrendView = document.getElementById("tecTrendView");
     var tecEmpty = document.getElementById("tecEmpty");
     if (tec && tec.labels && tec.labels.length) {
         var tecChart = null;
+        var detallePorDia = true;
+        function cambiarVistaTendencia(detalle) {
+            detallePorDia = detalle;
+            if (tecScroll && tec.labels.length > 10) {
+                tecBox.style.minWidth = detalle ? Math.max(620, tec.labels.length * 54) + "px" : "0";
+                tecScroll.scrollLeft = 0;
+            }
+            if (tecChart) {
+                tecChart.options.scales.x.ticks.autoSkip = !detalle;
+                tecChart.resize();
+                tecChart.update("none");
+            }
+            if (tecTrendView) {
+                tecTrendView.textContent = detalle ? "Ajustar vista" : "Ver por día";
+                tecTrendView.setAttribute("aria-pressed", String(detalle));
+                tecTrendView.title = detalle ? "Ajustar el gráfico completo al panel" : "Ver todos los días con desplazamiento horizontal";
+            }
+        }
         function renderTecChart(tipo) {
             if (tecChart) tecChart.destroy();
             var esArea = tipo === "area";
+            var esLinea = tipo === "line";
             tecChart = new Chart(document.getElementById("tecChart"), {
             type: esArea ? "line" : tipo,
             data: {
                 labels: tec.labels,
                 datasets: [
-                    { label: "Creados", data: tec.creados, backgroundColor: rptRealce("rgba(214,43,31,.85)"), borderColor: "#D62B1F", fill: esArea, tension: .35, borderRadius: 4, barPercentage: .7, pointRadius: 3, pointHoverRadius: 6, hoverBorderWidth: 1 },
-                    { label: "Resueltos", data: tec.resueltos, backgroundColor: rptRealce("rgba(47,125,79,.85)"), borderColor: "#2F7D4F", fill: esArea, tension: .35, borderRadius: 4, barPercentage: .7, pointRadius: 3, pointHoverRadius: 6, hoverBorderWidth: 1 }
+                    { label: "Creados", data: tec.creados, backgroundColor: rptAreaFill("rgba(239,68,68,.24)", "rgba(239,68,68,.025)"), pointBackgroundColor: "#EF4444", borderColor: "#EF4444", fill: esArea || esLinea, tension: .35, borderRadius: 4, barPercentage: .7, pointRadius: 3, pointHoverRadius: 6, hoverBorderWidth: 1 },
+                    { label: "Resueltos", data: tec.resueltos, backgroundColor: rptAreaFill("rgba(16,185,129,.22)", "rgba(16,185,129,.025)"), pointBackgroundColor: "#10B981", borderColor: "#10B981", fill: esArea || esLinea, tension: .35, borderRadius: 4, barPercentage: .7, pointRadius: 3, pointHoverRadius: 6, hoverBorderWidth: 1 }
                 ]
             },
             options: {
@@ -741,13 +928,17 @@
                     }
                 },
                 scales: {
-                    x: { grid: { color: "#efe8da" } },
+                    x: { grid: { color: "#efe8da" }, ticks: { autoSkip: false, minRotation: 45, maxRotation: 45 } },
                     y: { grid: { color: "#efe8da" }, beginAtZero: true, ticks: { precision: 0 } }
                 }
             }
         });
         }
         renderTecChart("line");
+        cambiarVistaTendencia(true);
+        if (tecTrendView) tecTrendView.addEventListener("click", function () {
+            cambiarVistaTendencia(!detallePorDia);
+        });
         var tecType = document.getElementById("tecChartType");
         if (tecType) tecType.addEventListener("change", function () { renderTecChart(tecType.value); });
     } else {

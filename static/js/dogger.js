@@ -1971,14 +1971,33 @@
     (function () {
         var loader = document.getElementById("pageLoader");
         if (!loader) { return; }
+        var loaderTitle = document.getElementById("pageLoaderTitle");
+        var loaderText = document.getElementById("pageLoaderText");
         var mostrarTimer = null;
         var ocultarTimer = null;
+        var estadoTimer = null;
         var mostrando = false;
+        var proximoEstado = { titulo: "Cargando información", texto: "Preparando la información solicitada…" };
+
+        function definirEstado(titulo, texto) {
+            proximoEstado = {
+                titulo: titulo || "Cargando información",
+                texto: texto || "Preparando la información solicitada…"
+            };
+        }
 
         function mostrar() {
             if (mostrando) { return; }
             mostrando = true;
+            if (loaderTitle) { loaderTitle.textContent = proximoEstado.titulo; }
+            if (loaderText) { loaderText.textContent = proximoEstado.texto; }
             loader.hidden = false;
+            clearTimeout(estadoTimer);
+            estadoTimer = setTimeout(function () {
+                if (mostrando && loaderText) {
+                    loaderText.textContent = "Aún estamos procesando los datos; puede tardar unos segundos…";
+                }
+            }, 2200);
             /* Red de seguridad: aunque la navegación no llegue a completarse
                (descarga abortada, etc.), el precargador no se queda pegado. */
             clearTimeout(ocultarTimer);
@@ -1988,11 +2007,13 @@
             mostrando = false;
             loader.hidden = true;
             clearTimeout(ocultarTimer);
+            clearTimeout(estadoTimer);
         }
         /* Se espera un pelín antes de mostrarlo para no parpadear cuando la
            navegación es instantánea. */
-        function programar() {
+        function programar(titulo, texto) {
             clearTimeout(mostrarTimer);
+            definirEstado(titulo, texto);
             mostrarTimer = setTimeout(mostrar, 140);
         }
         function cancelarProgramado() { clearTimeout(mostrarTimer); }
@@ -2020,7 +2041,12 @@
                 if (url.origin !== location.origin) { return; }
                 if (url.pathname === location.pathname && url.search === location.search) { return; }
             } catch (err) { return; }
-            programar();
+            var label = (a.dataset.loadingLabel || a.textContent || "").replace(/\s+/g, " ").trim();
+            var titulo = /reportes/i.test(url.pathname) ? "Cargando reportes" : "Cargando información";
+            var texto = /reportes/i.test(url.pathname)
+                ? "Actualizando indicadores y gráficos con datos reales…"
+                : (label ? "Abriendo “" + label.slice(0, 54) + "”…" : "Preparando la información solicitada…");
+            programar(titulo, texto);
         }, true);
 
         /* Un formulario que se envía en la misma pestaña. */
@@ -2029,7 +2055,11 @@
             if (!f || f.tagName !== "FORM") { return; }
             if (e.defaultPrevented) { return; }
             if (f.target && f.target !== "" && f.target !== "_self") { return; }
-            programar();
+            var esReporte = f.id === "rptFiltros" || /reportes/i.test(f.action || "");
+            programar(
+                esReporte ? "Actualizando reportes" : "Procesando solicitud",
+                esReporte ? "Aplicando filtros y calculando las métricas…" : "Guardando y preparando la información…"
+            );
         }, true);
 
         /* Si el navegador cancela la página (el usuario se queda o vuelve

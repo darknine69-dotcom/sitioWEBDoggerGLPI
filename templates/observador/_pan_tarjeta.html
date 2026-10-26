@@ -1,35 +1,21 @@
-{% comment %}
-Una tarjeta de zona dentro del panel de dos columnas del supervisor
-(véase _paneles.html). Espera `e`, la entrada que arma
-_panel_de_supervision en views_observador: pk, clave, nombre, fecha,
-cuentas, tickets abiertos/cerrados, avance, estado y sus usuarios.
-
-La tarjeta abre la lista de la zona a la derecha; debajo lleva las mismas
-acciones que la página Zonas —Ver, Editar (despliega el nombre) y Borrar—
-para que el icono de la papelera esté siempre al alcance de la zona.
-{% endcomment %}
+{% comment %}Tarjeta compacta de zona para el visor del supervisor.{% endcomment %}
 <div class="pan-zc-wrap pan-zc-{% if e.ans_vencidos %}rojo{% elif e.ans_por_vencer %}amarillo{% else %}{{ e.estado }}{% endif %}" data-pan-wrap="{{ e.clave }}"{% if e.color %} style="--zc: {{ e.color }}"{% endif %}>
-<button type="button" class="pan-zc pan-zc-{% if e.ans_vencidos %}rojo{% elif e.ans_por_vencer %}amarillo{% else %}{{ e.estado }}{% endif %}" data-pan-clave="{{ e.clave }}" data-pan-nombre="{{ e.nombre }}">
-    <span class="pan-zc-top">
-        <span class="pan-zc-nombre">{{ e.nombre|default:"Sin nombre" }}</span>
-        {% if e.fecha %}<span class="pan-zc-fecha">{{ e.fecha }}</span>{% endif %}
-    </span>
-    <span class="pan-zc-meta">
-        <span class="pan-zc-cuentas"><svg class="icon icon-sm"><use href="#i-users"/></svg> <b>{{ e.cuentas }}</b> cuenta{{ e.cuentas|pluralize }}</span>
-        <span class="pan-zc-est"><b>{{ e.abiertos }}</b> abiertos · <b>{{ e.cerrados }}</b> cerrados</span>
-    </span>
-    <span class="pan-zc-bar"><span style="width: {{ e.avance }}%"></span></span>
-    <span class="pan-zc-foot">
-        <span class="pan-dot"></span>
-        {% if e.ans_vencidos %}{{ e.ans_vencidos }} ANS vencido{{ e.ans_vencidos|pluralize }}
-        {% elif e.ans_por_vencer %}{{ e.ans_por_vencer }} por vencer
-        {% elif e.estado == "rojo" %}Incidencia{% elif e.estado == "amarillo" %}Pendiente{% else %}Al día{% endif %}
-        {% if e.urgentes %}<span class="pan-zc-prioridad" title="{{ e.urgentes }} ticket{{ e.urgentes|pluralize }} urgente{{ e.urgentes|pluralize }}"><svg class="icon"><use href="#i-alert"/></svg>{{ e.urgentes }}</span>{% endif %}
-        <b>{{ e.avance }}%</b>
-    </span>
-</button>
-{% if e.pk %}
-{# La misma tira de iconos de las otras vistas de carpetas: paleta, ver, editar el nombre y borrar, pegados a la esquina inferior derecha. #}
-{% include "observador/_zona_acciones.html" with z=e %}
-{% endif %}
+    <button type="button" class="pan-zc pan-zc-{% if e.ans_vencidos %}rojo{% elif e.ans_por_vencer %}amarillo{% else %}{{ e.estado }}{% endif %}" data-pan-clave="{{ e.clave }}" data-pan-nombre="{{ e.nombre }}">
+        <span class="pan-zc-headline">
+            <span class="pan-zc-ico"><svg class="icon"><use href="#i-store"/></svg></span>
+            <span class="pan-zc-title"><b>{{ e.nombre|default:"Sin nombre" }}</b><small>{{ e.fecha|default:"Sin fecha" }}</small></span>
+            <span class="pan-zc-state"><i></i>{% if e.ans_vencidos or e.estado == "rojo" %}Con incidencia{% elif e.ans_por_vencer or e.estado == "amarillo" %}Pendiente{% else %}Al día{% endif %}</span>
+        </span>
+        <span class="pan-zc-middle">
+            <span class="pan-zc-metrics">
+                <span><svg class="icon"><use href="#i-users"/></svg><b>{{ e.cuentas }}</b> cuenta{{ e.cuentas|pluralize }}</span>
+                <span><svg class="icon"><use href="#i-ticket"/></svg><b>{{ e.abiertos }}</b> abiertos</span>
+                <span><svg class="icon"><use href="#i-check-circle"/></svg><b>{{ e.cerrados }}</b> cerrados</span>
+            </span>
+            <span class="pan-zc-spark" title="Distribución real: tickets, abiertos, cerrados y ANS vencidos" aria-label="Distribución real de tickets">{% for valor in e.spark %}<i style="--bar:{{ valor }}"></i>{% endfor %}</span>
+        </span>
+        <span class="pan-zc-progress"><span><i style="width:{{ e.avance }}%"></i></span><b>{{ e.avance }}%</b></span>
+        <span class="pan-zc-activity"><svg class="icon"><use href="#i-calendar"/></svg>Última actividad: {{ e.ultima_actividad }}</span>
+    </button>
+    {% if e.pk %}{% include "observador/_zona_acciones.html" with z=e %}{% endif %}
 </div>
