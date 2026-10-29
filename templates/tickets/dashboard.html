@@ -254,44 +254,44 @@
 <main class="page page-corporate">
     <section class="dash-hero dash-hero--plano">
         <div class="dash-stat-row dash-stat-row--mesas">
-            <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}">
+            <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}?sv=sin-asignar">
                 <span class="dash-stat-icon">
-                    <span class="dash-stat-value" data-kpi-key="total">{{ stats.total|default:0 }}</span>
+                    <span class="dash-stat-value" data-kpi-key="sin_asignar">{{ stats.sin_asignar|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
-                    <span class="dash-stat-label">Total tickets</span>
-                    <span class="dash-stat-hint">incluye cerrados</span>
+                    <span class="dash-stat-label">Sin asignar</span>
+                    <span class="dash-stat-hint">requieren responsable</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?estado=abierto">
+            <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?prioridad=urgente">
                 <span class="dash-stat-icon st-ic-abiertos">
-                    <span class="dash-stat-value st-abiertos" data-kpi-key="abiertos">{{ stats.abiertos|default:0 }}</span>
+                    <span class="dash-stat-value st-abiertos" data-kpi-key="urgentes">{{ stats.urgentes|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
-                    <span class="dash-stat-label">Abiertos</span>
+                    <span class="dash-stat-label">Urgentes activas</span>
                     <span class="dash-stat-hint">en espera de atención</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-progreso" href="{% url 'tickets:lista' %}?estado=en-progreso">
+            <a class="dash-stat dash-hov-progreso" href="{% url 'tickets:lista' %}?prioridad=alta">
                 <span class="dash-stat-icon st-ic-progreso">
-                    <span class="dash-stat-value st-progreso" data-kpi-key="progreso">{{ stats.en_progreso|default:0 }}</span>
+                    <span class="dash-stat-value st-progreso" data-kpi-key="altas">{{ stats.altas|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
-                    <span class="dash-stat-label">En progreso</span>
+                    <span class="dash-stat-label">Alta prioridad</span>
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-resueltos" href="{% url 'tickets:lista' %}?estado=resuelto">
+            <a class="dash-stat dash-hov-resueltos" href="{% url 'tickets:lista' %}?sv=con-ans">
                 <span class="dash-stat-icon st-ic-resueltos">
-                    <span class="dash-stat-value st-resueltos" data-kpi-key="resueltos_cerrados">{{ stats.resueltos_cerrados|default:0 }}</span>
+                    <span class="dash-stat-value st-resueltos" data-kpi-key="sla_total">{{ stats.sla_total|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
                 </span>
                 <span class="dash-stat-body">
-                    <span class="dash-stat-label">Resueltos</span>
-                    <span class="dash-stat-hint">{{ stats.cerrados|default:0 }} cerrados</span>
+                    <span class="dash-stat-label">Con ANS</span>
+                    <span class="dash-stat-hint">{{ stats.sla_no|default:0 }} fuera de plazo</span>
                 </span>
             </a>
             <a class="dash-stat dash-hov-tecnicos" href="{% url 'tickets:usuarios' %}">

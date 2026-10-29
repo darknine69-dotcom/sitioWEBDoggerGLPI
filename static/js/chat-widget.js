@@ -168,7 +168,7 @@
             return '<a class="sw-adj" href="' + esc(a.url) + '" target="_blank" rel="noopener">' +
                 '<img src="' + esc(a.url) + '" alt="' + esc(a.nombre) + '" loading="lazy"></a>';
         }
-        return '<a class="sw-adj-file" href="' + esc(a.url || "#") + '" target="_blank" rel="noopener">📄 ' +
+        return '<a class="sw-adj-file" href="' + esc(a.url || "#") + '" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg> ' +
             esc(a.nombre) + "</a>";
     }
     function mensajeHtml(m) {
@@ -522,11 +522,11 @@
         if (!ddUsuarioLabel || !usuSel) { return; }
         var u = usuariosDatos[String(usuarioEmail || "").toLowerCase()];
         if (u) {
-            ddUsuarioLabel.textContent = (u.en_linea ? "🟢 " : "⚪ ") + primerNombre(u.nombre);
+            ddUsuarioLabel.textContent = primerNombre(u.nombre) + (u.en_linea ? " · En línea" : " · Fuera de línea");
             return;
         }
         var op = usuSel.options[usuSel.selectedIndex];
-        ddUsuarioLabel.textContent = op ? primerNombre(op.textContent.replace(/^[🟢⚪]\s*/, "")) : "Usuario";
+        ddUsuarioLabel.textContent = op ? primerNombre(op.textContent.split(" · ")[0]) : "Usuario";
     }
     function pintarTicketLabel() {
         if (!ddTicketLabel) { return; }
@@ -553,7 +553,7 @@
         var c = colegasDatos[String(colegaPk)];
         if (!c) { return; }
         var nuevos = (novedadesCache.dms[String(colegaPk)] || {}).nuevos || 0;
-        ddColegaLabel.textContent = (c.en_linea ? "🟢 " : "⚪ ") + primerNombre(c.nombre) +
+        ddColegaLabel.textContent = primerNombre(c.nombre) + (c.en_linea ? " · En línea" : " · Fuera de línea") +
             (nuevos > 0 ? " (" + nuevos + ")" : "");
     }
     /* Staff: primero la persona (con su estado en línea), luego sus tickets. */
@@ -570,7 +570,7 @@
                     usuariosDatos[(u.email || "").toLowerCase()] = u;
                     var op = document.createElement("option");
                     op.value = u.email;
-                    op.textContent = (u.en_linea ? "🟢 " : "⚪ ") + u.nombre +
+                    op.textContent = u.nombre + (u.en_linea ? " · En línea" : " · Fuera de línea") +
                         " (" + u.n_tickets + " ticket" + (u.n_tickets === 1 ? "" : "s") + ")";
                     usuSel.appendChild(op);
                     /* Si el chat se abrió desde la ficha de un ticket, se
@@ -868,7 +868,7 @@
     /* Etiqueta del colega: punto en línea + pendientes de esa persona. */
     function etiquetaColega(c) {
         var nuevos = (novedadesCache.dms[String(c.pk)] || {}).nuevos || 0;
-        var txt = (c.en_linea ? "🟢 " : "⚪ ") + c.nombre + " · " + c.insignia;
+        var txt = c.nombre + " · " + c.insignia + (c.en_linea ? " · En línea" : " · Fuera de línea");
         if (nuevos > 0) { txt += " (" + nuevos + " nuevo" + (nuevos === 1 ? "" : "s") + ")"; }
         return txt;
     }

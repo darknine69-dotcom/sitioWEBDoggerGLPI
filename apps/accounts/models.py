@@ -122,6 +122,10 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
             "lista de {nombre, url, icono}."
         ),
     )
+    preferencias_notificaciones = models.JSONField(
+        "Preferencias de notificaciones", default=dict, blank=True,
+        help_text="Preferencias individuales de avisos en la campana.",
+    )
     glpi_user_id = models.PositiveIntegerField(
         "ID usuario GLPI",
         null=True,
@@ -161,6 +165,10 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     puede_responder_chat = models.BooleanField(
         "Puede responder en el chat", default=True,
         help_text="Puede escribir en el chat de soporte.",
+    )
+    puede_editar_anuncios = models.BooleanField(
+        "Puede editar sus anuncios", default=True,
+        help_text="Puede editar los anuncios que creó en el programador.",
     )
 
     objects = UsuarioManager()

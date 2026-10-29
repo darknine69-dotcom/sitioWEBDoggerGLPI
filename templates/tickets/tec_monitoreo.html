@@ -241,7 +241,7 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
                 <span>{{ m.fecha|date:"d/m/Y H:i" }}</span>
             </span>
             <div class="pres-ficha-pie">
-                <a class="ans-ficha-detalle" href="{% url 'tickets:detalle' m.ticket.pk %}">Abrir el ticket ›</a>
+                <a class="ans-ficha-detalle" data-ticket-ficha="{{ m.ticket.pk }}" href="{% url 'tickets:detalle' m.ticket.pk %}">Abrir el ticket ›</a>
             </div>
         </article>
         {% endfor %}
@@ -288,7 +288,7 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
                 <span>{{ t.categoria|default:"" }}</span>
             </span>
             <div class="ans-ficha-pie">
-                <a class="ans-ficha-detalle" href="{% url 'tickets:detalle' t.pk %}">Abrir el ticket ›</a>
+                <a class="ans-ficha-detalle" data-ticket-ficha="{{ t.pk }}" href="{% url 'tickets:detalle' t.pk %}">Abrir el ticket ›</a>
             </div>
         </article>
         {% endfor %}

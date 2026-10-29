@@ -22,14 +22,14 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
             <div class="sw-dd" id="ddColega" hidden>
                 <span class="sw-dd-ico"><svg class="icon"><use href="#i-users"/></svg></span>
                 <span class="sw-dd-label" id="ddColegaLabel">Sala</span>
-                <span class="sw-dd-chev" aria-hidden="true">▾</span>
+                <svg class="sw-dd-chev icon" aria-hidden="true"><use href="#i-chevron-down"/></svg>
                 <select class="sw-ticket sw-dd-native" id="swColega" aria-label="Hablar con" tabindex="-1"></select>
                 <div class="sw-dd-panel" id="ddColegaPanel" role="listbox" aria-label="Conversaciones corporativas" hidden></div>
             </div>
             <div class="sw-dd" id="ddUsuario" hidden>
                 <span class="sw-dd-ico"><svg class="icon"><use href="#i-user"/></svg></span>
                 <span class="sw-dd-label" id="ddUsuarioLabel">Usuario</span>
-                <span class="sw-dd-chev" aria-hidden="true">▾</span>
+                <svg class="sw-dd-chev icon" aria-hidden="true"><use href="#i-chevron-down"/></svg>
                 <select class="sw-ticket sw-dd-native" id="swUsuario" aria-label="Usuario" tabindex="-1"></select>
                 <div class="sw-dd-panel" id="ddUsuarioPanel" role="listbox" aria-label="Usuarios" hidden></div>
             </div>
@@ -37,7 +37,7 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
             <div class="sw-dd" id="ddTicket">
                 <span class="sw-dd-ico"><svg class="icon"><use href="#i-ticket"/></svg></span>
                 <span class="sw-dd-label" id="ddTicketLabel">Ticket</span>
-                <span class="sw-dd-chev" aria-hidden="true">▾</span>
+                <svg class="sw-dd-chev icon" aria-hidden="true"><use href="#i-chevron-down"/></svg>
                 <select class="sw-ticket sw-dd-native" id="swTicket" aria-label="Conversación" tabindex="-1"></select>
                 <div class="sw-dd-panel" id="ddTicketPanel" role="listbox" aria-label="Tickets" hidden></div>
             </div>
@@ -52,7 +52,7 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
             <svg class="icon"><use href="#i-paperclip"/></svg>
         </button>
         <input type="file" id="swArchivo" hidden accept="image/png,image/jpeg,image/gif,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.txt">
-        <button type="button" class="sw-icon-btn" id="swEmojiBtn" title="Emojis" aria-label="Emojis" aria-expanded="false">😊</button>
+        <button type="button" class="sw-icon-btn" id="swEmojiBtn" title="Emojis" aria-label="Emojis" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-smile"/></svg></button>
         <textarea id="swTexto" rows="1" placeholder="Escríbenos…" aria-label="Escribe tu mensaje"></textarea>
         <button type="button" class="sw-send" id="swEnviar" title="Enviar" aria-label="Enviar mensaje">
             <svg class="icon"><use href="#i-send"/></svg>

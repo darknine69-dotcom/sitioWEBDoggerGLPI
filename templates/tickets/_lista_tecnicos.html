@@ -43,6 +43,12 @@ y con scroll si son más de tres.
                     </div>
 
                     <div class="tec-voto">
+                        {% if voto_ticket and tec.voto_mostrar %}
+                        <span class="tec-voto-registrado" title="Tu calificación ya quedó guardada en este ticket">
+                            <svg class="icon icon-sm"><use href="#i-check-circle"/></svg>
+                            Calificación guardada
+                        </span>
+                        {% else %}
                         <span class="tec-voto-conteo">
                             <button type="button" class="tec-pulgar up {% if tec.voto_mostrar == 1 %}is-on{% endif %}"
                                     data-valor="1" data-tec="{{ tec.pk }}" title="Me gusta" {% if not puede_calificar_tecnicos %}disabled{% endif %}>
@@ -55,6 +61,7 @@ y con scroll si son más de tres.
                                 <span data-rol="down">{{ tec.conteo_down }}</span>
                             </button>
                         </span>
+                        {% endif %}
                         {% if not puede_calificar_tecnicos %}
                         <small class="tec-voto-aviso">Tu rol no califica</small>
                         {% endif %}

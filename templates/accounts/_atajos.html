@@ -34,6 +34,10 @@ atiende este ticket»: filtra por código, título, estado o técnico asignado.
 
     {# Buscador de tickets: se abre desde el menú y consulta al servidor. #}
     <div class="ax-busca" id="axBusca" hidden data-url="{% url 'tickets:buscar_tickets_tecnico' %}">
+        <template data-ax-role-icon="admin">{% include 'components/role_icon.html' with rol='admin' only %}</template>
+        <template data-ax-role-icon="tecnico">{% include 'components/role_icon.html' with rol='tecnico' only %}</template>
+        <template data-ax-role-icon="observador">{% include 'components/role_icon.html' with rol='observador' only %}</template>
+        <template data-ax-role-icon="usuario">{% include 'components/role_icon.html' with rol='usuario' only %}</template>
         <div class="ax-busca-head">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
             <input type="search" id="axBuscaInput" placeholder="Código, título o técnico…"
@@ -123,7 +127,7 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
     document.addEventListener("keydown", function (e) {
         if (e.key !== "Escape") return;
         var modalEl = document.getElementById("axModal");
-        if (modalEl && !modalEl.hidden) { modalEl.hidden = true; return; }
+        if (modalEl && !modalEl.hidden) { cerrarModal(); return; }
         if (fab.hasAttribute("data-open")) {
             cerrarBuscaCaja();
             fab.removeAttribute("data-open");
@@ -149,8 +153,11 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
             return;
         }
         lista.innerHTML = tickets.map(function (t) {
+            var rolesPermitidos = ["admin", "tecnico", "observador", "usuario"];
+            var rol = rolesPermitidos.indexOf(t.tecnico_rol) >= 0 ? t.tecnico_rol : "usuario";
+            var icono = caja.querySelector('[data-ax-role-icon="' + rol + '"]');
             var tec = t.tecnico
-                ? '<small class="ax-busca-tec"><svg class="icon"><use href="#i-user"/></svg>' + esc(t.tecnico) + "</small>"
+                ? '<small class="ax-busca-tec" data-rol="' + rol + '">' + (icono ? icono.innerHTML : '') + esc(t.tecnico) + "</small>"
                 : '<small class="ax-busca-tec ax-busca-tec-sin"><svg class="icon"><use href="#i-user"/></svg>Sin asignar</small>';
             /* Cada resultado abre la ficha en ventana emergente (data-pk),
                en vez de ir al detalle del panel, que da 403 a quien no es staff. */
@@ -194,12 +201,18 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
     var urlPresionar = (modal.getAttribute("data-url-presionar") || "").replace(/0\/?$/, "");
     var pkActual = null;
     var fichaActual = null;
+    var relojAns = null;
+    var focoAnterior = null;
+    var detalleAlternativo = "";
 
     function cerrarModal() {
         modal.hidden = true;
         pkActual = null;
+        if (relojAns) { clearInterval(relojAns); relojAns = null; }
+        document.body.classList.remove("ax-ficha-abierta");
+        if (focoAnterior && focoAnterior.isConnected) focoAnterior.focus();
     }
-    function abrirModal() { modal.hidden = false; }
+    function abrirModal() { if (modal.hidden) focoAnterior = document.activeElement; modal.hidden = false; document.body.classList.add("ax-ficha-abierta"); mCerrar.focus(); }
 
     function filaMensaje(m) {
         return '<div class="ax-ficha-msg' + (m.interno ? " es-interno" : "") +
@@ -211,12 +224,39 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
             "</div>" +
             '<p class="ax-ficha-msg-txt">' + esc(m.texto) + "</p></div>";
     }
+    function tiempo(segundos) {
+        var minutos = Math.floor(Math.abs(segundos) / 60), dias = Math.floor(minutos / 1440), horas = Math.floor((minutos % 1440) / 60);
+        return (dias ? dias + "d " : "") + (horas ? horas + "h " : "") + (minutos % 60) + "min";
+    }
+    function panelAns(t) {
+        var a = t.ans || {}, resuelto = a.estado === "resuelto";
+        return '<section class="ax-ans-panel" data-ans-panel><div class="ax-ans-heading"><span class="ax-panel-icon"><svg class="icon"><use href="#i-clock"/></svg></span><div><h4 data-ans-titulo>Tiempo de atención · ANS</h4><strong data-ans-texto>' + esc(a.texto || "Sin ANS configurado") + '</strong></div><span class="ax-ans-badge" data-ans-badge></span></div><div class="ax-ans-datos"><span>Creación <b>' + esc(t.fecha || "—") + '</b></span><span>Vencimiento <b>' + esc(a.limite || "—") + '</b></span><span>Tiempo transcurrido <b data-ans-transcurrido>—</b><small>de ' + (a.horas ? esc(a.horas) + ' horas' : '—') + '</small></span></div>' + (a.limite_ts && !resuelto ? '<div class="ax-ans-track"><span data-ans-barra></span></div><small data-ans-porcentaje></small>' : '') + '</section>';
+    }
+    function panelObservador(t) {
+        var presiones = t.presiones_observador || [], ultima = presiones[0];
+        if (!ultima) return '<section class="ax-observador-panel"><div class="ax-observador-heading"><span class="ax-panel-icon"><svg class="icon"><use href="#i-eye"/></svg></span><div><h4>Seguimiento del observador</h4><p>Este ticket todavía no registra presiones del observador.</p></div></div></section>';
+        var historial = presiones.map(function (p) { return '<li><strong>' + esc(p.autor) + '</strong><time>' + esc(p.fecha) + '</time><p>' + esc(p.texto) + '</p></li>'; }).join("");
+        return '<section class="ax-observador-panel"><div class="ax-observador-heading"><span class="ax-panel-icon"><svg class="icon"><use href="#i-eye"/></svg></span><div class="ax-observador-content"><h4>Seguimiento del observador</h4><div class="ax-observador-persona">' + (ultima.avatar ? '<img src="' + esc(ultima.avatar) + '" alt="">' : '<span class="ax-observador-avatar"><svg class="icon"><use href="#i-user"/></svg></span>') + '<div><strong>' + esc(ultima.autor) + '</strong><small>Observador · ' + esc(ultima.fecha) + '</small></div></div></div></div><p class="ax-observador-nota">El observador hizo presión sobre este ticket.</p><details><summary>Ver historial (' + presiones.length + ')</summary><ul>' + historial + '</ul></details></section>';
+    }
+    function actualizarAns(t) {
+        var a = t.ans || {}, panel = mCuerpo.querySelector("[data-ans-panel]"); if (!panel) return;
+        var actual = Math.floor(Date.now() / 1000), limite = a.limite_ts, inicio = a.inicio_ts, transcurrido = panel.querySelector("[data-ans-transcurrido]");
+        if (transcurrido && inicio && limite) transcurrido.textContent = tiempo(Math.max(0, actual - inicio));
+        if (!limite || !inicio) { panel.dataset.estado = a.estado || "sin"; return; }
+        var diferencia = limite - actual, estado = diferencia <= 0 ? "vencido" : actual >= a.aviso_ts ? "por-vencer" : "ok";
+        panel.dataset.estado = estado; panel.querySelector("[data-ans-titulo]").textContent = diferencia <= 0 ? "ANS vencido" : "Tiempo restante · ANS";
+        panel.querySelector("[data-ans-texto]").textContent = tiempo(diferencia);
+        panel.querySelector("[data-ans-badge]").textContent = estado === "vencido" ? "Fuera de tiempo" : estado === "por-vencer" ? "Próximo a vencer" : "Dentro del tiempo";
+        var porcentaje = Math.max(0, Math.round((actual - inicio) / (limite - inicio) * 100));
+        panel.querySelector("[data-ans-barra]").style.width = Math.min(100, porcentaje) + "%";
+        panel.querySelector("[data-ans-porcentaje]").textContent = porcentaje + "% del tiempo consumido";
+    }
     function pintaFicha(t) {
         fichaActual = t;
         mCodigo.textContent = "Ticket " + (t.codigo || "");
         mTitulo.textContent = t.titulo || "";
         var meta = [];
-        if (t.estado_display) meta.push('<span class="ax-ficha-pill ax-ficha-estado">' + esc(t.estado_display) + "</span>");
+        if (t.estado_display) meta.push('<span class="ax-ficha-pill ax-ficha-estado" data-estado="' + esc(t.estado) + '">' + esc(t.estado_display) + "</span>");
         if (t.prioridad_display) meta.push('<span class="ax-ficha-pill">' + esc(t.prioridad_display) + "</span>");
         if (t.categoria) meta.push('<span class="ax-ficha-pill"><svg class="icon icon-sm"><use href="#i-folder"/></svg>' + esc(t.categoria) + "</span>");
         if (t.fecha) meta.push('<span class="ax-ficha-pill"><svg class="icon icon-sm"><use href="#i-clock"/></svg>' + esc(t.fecha) + "</span>");
@@ -224,12 +264,12 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
 
         var quien = [];
         if (t.solicitante_nombre || t.solicitante_email) {
-            quien.push('<li><span>Solicitante</span><strong>' +
-                esc(t.solicitante_nombre || t.solicitante_email) + "</strong></li>");
+            quien.push('<li><svg class="icon ax-person-icon"><use href="#i-user"/></svg><div><span>Solicitante</span><strong>' +
+                esc(t.solicitante_nombre || t.solicitante_email) + "</strong></div></li>");
         }
         if (t.solicitante_punto) quien.push('<li><span>Punto de venta</span><strong>' + esc(t.solicitante_punto) + "</strong></li>");
-        quien.push('<li><span>Técnico</span><strong>' +
-            (t.tecnico ? esc(t.tecnico) : '<em class="ax-ficha-sin">Sin asignar</em>') + "</strong></li>");
+        quien.push('<li><svg class="icon ax-person-icon"><use href="#i-users"/></svg><div><span>Técnico asignado</span><strong>' +
+            (t.tecnico ? esc(t.tecnico) : '<em class="ax-ficha-sin">Sin asignar</em>') + "</strong></div></li>");
 
         var adjuntos = "";
         if (t.adjuntos && t.adjuntos.length) {
@@ -242,21 +282,24 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
         }
         var hilo = (t.mensajes && t.mensajes.length)
             ? t.mensajes.map(filaMensaje).join("")
-            : '<p class="ax-busca-vacio">Todavía no hay mensajes en este ticket.</p>';
+            : '<p class="ax-busca-vacio ax-empty-messages"><svg class="icon"><use href="#i-message"/></svg> Todavía no hay mensajes en este ticket.</p>';
 
         mCuerpo.innerHTML =
             '<div class="ax-ficha-meta">' + meta.join("") + "</div>" +
             '<ul class="ax-ficha-quien">' + quien.join("") + "</ul>" +
-            '<div class="ax-ficha-sec"><h4>Descripción</h4><p class="ax-ficha-desc">' +
+            '<div class="ax-ficha-sec"><h4><svg class="icon"><use href="#i-file"/></svg> Descripción</h4><p class="ax-ficha-desc">' +
             (t.descripcion ? esc(t.descripcion) : "Sin descripción.") + "</p></div>" +
             adjuntos +
-            '<div class="ax-ficha-sec"><h4>Seguimiento</h4><div class="ax-ficha-hilo">' + hilo + "</div></div>";
+            '<div class="ax-ficha-sec"><h4><svg class="icon"><use href="#i-message"/></svg> Seguimiento</h4><div class="ax-ficha-hilo">' + hilo + "</div></div>" +
+            '<div class="ax-ficha-paneles">' + panelAns(t) + panelObservador(t) + '</div>';
+        if (relojAns) clearInterval(relojAns);
+        actualizarAns(t); relojAns = setInterval(function () { if (!modal.hidden) actualizarAns(t); }, 30000);
 
         var acciones = '<button type="button" class="ax-ficha-chat"><svg class="icon icon-sm"><use href="#i-message"/></svg> Abrir chat de soporte</button>';
         if (t.puede_presionar) {
             acciones = '<button type="button" class="ax-ficha-presionar"><svg class="icon icon-sm"><use href="#i-send"/></svg> Presionar al técnico</button>' + acciones;
         }
-        mPie.innerHTML = acciones +
+        mPie.innerHTML = acciones + (t.url_detalle ? '<a class="ax-ficha-detalle-completo" href="' + esc(t.url_detalle) + '">Abrir detalle completo</a>' : '') + '<button type="button" class="ax-ficha-actualizar"><svg class="icon icon-sm"><use href="#i-refresh"/></svg> Actualizar información</button>' +
             '<div class="ax-ficha-presion-form" hidden>' +
             '<input type="text" class="ax-ficha-presion-input" maxlength="500" placeholder="Mensaje para el técnico…">' +
             '<button type="button" class="ax-ficha-presion-enviar"><svg class="icon icon-sm"><use href="#i-send"/></svg> Enviar</button>' +
@@ -264,7 +307,8 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
             '<p class="ax-ficha-aviso" role="status"></p>' +
             "</div>";
     }
-    function cargarFicha(pk) {
+    function cargarFicha(pk, destinoAlternativo) {
+        if (destinoAlternativo !== undefined) detalleAlternativo = destinoAlternativo;
         pkActual = pk;
         abrirModal();
         mCodigo.textContent = "Ticket";
@@ -272,7 +316,7 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
         mCuerpo.innerHTML = '<p class="ax-busca-vacio">Cargando la ficha…</p>';
         mPie.innerHTML = "";
         fetch(urlFicha + pk + "/", { credentials: "same-origin" })
-            .then(function (r) { return r.json(); })
+            .then(function (r) { if (!r.ok) throw new Error("no_disponible"); return r.json(); })
             .then(function (d) {
                 if (pkActual !== pk) return;
                 if (!d || !d.ok) {
@@ -283,8 +327,10 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
                 pintaFicha(d.ticket);
             })
             .catch(function () {
-                mTitulo.textContent = "Sin conexión";
-                mCuerpo.innerHTML = '<p class="ax-busca-vacio">No se pudo cargar la ficha.</p>';
+                if (pkActual !== pk) return;
+                mTitulo.textContent = "Ficha no disponible";
+                mCuerpo.innerHTML = '<p class="ax-busca-vacio">No se pudo cargar la ficha. Comprueba tu conexión o abre el detalle completo.</p>';
+                if (detalleAlternativo) mPie.innerHTML = '<a class="ax-ficha-detalle-completo" href="' + esc(detalleAlternativo) + '">Abrir detalle completo</a>';
             });
     }
 
@@ -294,13 +340,21 @@ es la alternativa al detalle del panel, que era solo para staff (403).{% endcomm
             if (fila) {
                 e.preventDefault();
                 var pk = parseInt(fila.getAttribute("data-pk"), 10);
-                if (pk) cargarFicha(pk);
+                if (pk) cargarFicha(pk, "");
             }
         });
     }
+    document.addEventListener("click", function (e) {
+        var enlace = e.target.closest("a[data-ticket-ficha]");
+        if (!enlace || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || enlace.target === "_blank") return;
+        var pk = Number(enlace.dataset.ticketFicha);
+        if (!Number.isInteger(pk) || pk < 1) return;
+        e.preventDefault(); cargarFicha(pk, enlace.href);
+    });
     if (mCerrar) mCerrar.addEventListener("click", cerrarModal);
     modal.addEventListener("click", function (e) { if (e.target === modal) cerrarModal(); });
     mPie.addEventListener("click", function (e) {
+        if (e.target.closest(".ax-ficha-actualizar")) { if (pkActual) cargarFicha(pkActual); return; }
         if (e.target.closest(".ax-ficha-chat")) {
             /* El FAB responde a pointerup, así que un .click() no lo abre;
                se usa la API del chat y, si no está, se cae al click. Se le

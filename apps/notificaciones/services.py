@@ -23,12 +23,23 @@ ICONO_POR_TIPO = {
     Notificacion.Tipo.SISTEMA: "i-bell",
 }
 
+PREFERENCIA_POR_TIPO = {
+    Notificacion.Tipo.TICKET_NUEVO: "tickets_nuevos",
+    Notificacion.Tipo.TICKET_EDITADO: "cambios_ticket",
+    Notificacion.Tipo.TICKET_CERRADO: "tickets_cerrados",
+    Notificacion.Tipo.TICKET_RECORDATORIO: "recordatorios",
+    Notificacion.Tipo.EVENTO: "eventos",
+}
+
 
 # --------------------------------------------------------------------- base
 def crear(usuario, tipo, titulo, mensaje, url="", icono="", clave="", actor="",
           actor_rol=""):
     """Crea un aviso. Devuelve None si el usuario no existe o ya fue avisado."""
     if usuario is None or not getattr(usuario, "pk", None):
+        return None
+    preferencia = PREFERENCIA_POR_TIPO.get(tipo)
+    if preferencia and (getattr(usuario, "preferencias_notificaciones", None) or {}).get(preferencia, True) is False:
         return None
     if clave and Notificacion.objects.filter(usuario_id=usuario.pk, clave=clave).exists():
         return None
@@ -343,6 +354,33 @@ def ticket_editado(ticket, actor, detalle=""):
             )
         )
     return [n for n in creadas if n]
+
+
+def presion_observadores(ticket, actor, comentario):
+    """Notifica presiones explícitas a observadores que pueden ver el ticket."""
+    from django.db.models import Q
+    from apps.tickets.models import ElementoMiLista, ObservadorPunto
+
+    if not actor or actor.rol != "usuario" or not comentario.es_presion or comentario.es_interno:
+        return []
+    filtro = Q(pk__in=[])
+    if ticket.solicitante_punto:
+        filtro |= Q(pk__in=ObservadorPunto.objects.filter(punto__nombre__iexact=ticket.solicitante_punto).values("observador_id"))
+    if ticket.solicitante_email:
+        filtro |= Q(pk__in=ElementoMiLista.objects.filter(usuario_email__iexact=ticket.solicitante_email).values("observador_id"))
+    User = get_user_model()
+    observadores = User.objects.filter(filtro, rol=User.Rol.OBSERVADOR, activo=True, is_active=True).exclude(pk=actor.pk).distinct()
+    avisos = []
+    for observador in observadores:
+        avisos.append(crear(
+            observador, Notificacion.Tipo.TICKET_EDITADO,
+            f"Seguimiento solicitado: {ticket.codigo}",
+            f"{actor.nombre} solicitó seguimiento: {comentario.comentario[:120]}",
+            url=reverse("tickets:mi_ticket", args=[ticket.pk]), icono="i-bell",
+            clave=f"ticket:{ticket.pk}:presion:{comentario.pk}:{observador.pk}",
+            actor=actor.nombre, actor_rol=_rol_de(actor),
+        ))
+    return [aviso for aviso in avisos if aviso]
 
 
 # -------------------------------------------------------------- recordatorios

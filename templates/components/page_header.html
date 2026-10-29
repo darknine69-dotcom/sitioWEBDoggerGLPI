@@ -1,0 +1,7 @@
+{% if encabezado.actual %}
+<nav class="dogger-page-breadcrumb" aria-label="Ruta de navegación" {% if encabezado.perfil %}data-profile-breadcrumb data-profile-url="{% url 'accounts:ajustes' %}"{% endif %}>
+    <svg class="icon dogger-crumb-icon" aria-hidden="true"><use href="#{{ encabezado.icono }}"/></svg>
+    {% for padre in encabezado.padres %}<a href="{{ padre.url }}">{{ padre.texto }}</a><span aria-hidden="true">›</span>{% endfor %}
+    <span aria-current="page" data-current-crumb>{% if encabezado.detalle_ticket and ticket %}Detalle {{ ticket.codigo }}{% else %}{{ encabezado.actual }}{% endif %}</span>
+</nav>
+{% endif %}

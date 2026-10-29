@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load asset %}
 
 {% block title %}Dogger · Nuevo ticket{% endblock %}
 {% block nav_mi_panel %}{% endblock %}
@@ -11,11 +12,30 @@
 
     <div class="ticket-form-layout">
         <div class="panel ticket-form-panel">
-            <form method="post" enctype="multipart/form-data" class="user-ticket-form form-grid">
+            <form method="post" enctype="multipart/form-data" class="user-ticket-form form-grid"
+                  data-loading-title="Enviando solicitud"
+                  data-loading-text="Registrando tu incidencia y buscando el técnico disponible…"
+                  data-loading-slow-text="Tu solicitud sigue enviándose. No cierres esta ventana…"
+                  data-loading-icon="send"
+                  data-loading-tone="send"
+                  data-loading-submit="1">
                 {% csrf_token %}
                 <h3 class="form-section-title form-step-report"><span class="form-section-num">1</span> Cuéntanos qué pasó</h3>
                 {% for field in form %}
                 {% if field.name == 'categoria' %}
+                {% if categoria_preseleccionada %}
+                <h3 class="form-section-title form-step-analysis" data-category-picker-heading>
+                    <span class="form-section-num">2</span>
+                    <span class="category-heading-icon"><svg class="icon" aria-hidden="true"><use href="#i-folder-closed"/></svg></span>
+                    <span class="category-heading-copy">Categoría: {{ categoria_seleccionada.nombre }}</span>
+                </h3>
+                <div class="form-group span-2 category-catalog-selection" data-category-picker>
+                    <label for="{{ field.id_for_label }}">Categoría seleccionada</label>
+                    {{ field }}
+                    <p class="category-catalog-note"><svg class="icon icon-sm"><use href="#i-check-circle"/></svg> Se completó desde el catálogo. Puedes cambiarla si tu incidencia pertenece a otra categoría.</p>
+                    {% if field.errors %}<div class="field-error">{{ field.errors|join:", " }}</div>{% endif %}
+                </div>
+                {% else %}
                 <h3 class="form-section-title form-step-analysis"><span class="form-section-num">2</span> Dogger analiza tu solicitud</h3>
                 <div class="form-group span-2 auto-category-field">
                     {{ field }}
@@ -60,6 +80,7 @@
                     </section>
                     {% if field.errors %}<div class="field-error">{{ field.errors|join:", " }}</div>{% endif %}
                 </div>
+                {% endif %}
                 {% elif field.name == 'solicitante_punto' %}
                 <h3 class="form-section-title form-step-location"><span class="form-section-num">3</span> Ubicación del problema</h3>
                 {% include "tickets/_form_field.html" with field=field span2_fields="titulo descripcion adjuntos" %}
@@ -93,4 +114,8 @@
 
 <script type="application/json" id="dogger-cat-keywords">{{ cat_sugerencias_json|safe }}</script>
 <script type="application/json" id="dogger-tecnicos-disponibles">{{ tecnicos_disponibles_json|safe }}</script>
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="{% asset 'js/category-picker.js' %}"></script>
 {% endblock %}

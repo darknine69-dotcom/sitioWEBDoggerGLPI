@@ -215,6 +215,7 @@ def buscar_tickets_tecnico(request):
             "estado": t.estado,
             "estado_display": t.get_estado_display(),
             "tecnico": tecnico,
+            "tecnico_rol": t.tecnico_asignado.rol if t.tecnico_asignado_id else "",
             "url": reverse("tickets:detalle", args=[t.pk]),
             "ficha_url": reverse("tickets:ticket_ficha", args=[t.pk]),
         })
@@ -259,6 +260,7 @@ def _ficha_ticket(ticket, usuario):
     # usuario final ni al observador.
     incluir_internos = rol in ("admin", "tecnico")
     mensajes = []
+    presiones_observador = []
     for c in ticket.comentarios.select_related("usuario").order_by("fecha"):
         if c.es_interno and not incluir_internos:
             continue
@@ -269,9 +271,20 @@ def _ficha_ticket(ticket, usuario):
             "interno": bool(c.es_interno),
             "presion": bool(c.es_presion),
         })
+        if c.es_presion and c.usuario_id and c.usuario.rol == "observador":
+            presiones_observador.append({
+                "autor": c.autor_nombre or c.usuario.nombre,
+                "fecha": timezone.localtime(c.fecha).strftime("%d/%m/%Y %H:%M") if c.fecha else "",
+                "fecha_ts": int(c.fecha.timestamp()) if c.fecha else None,
+                "texto": c.comentario,
+                "avatar": c.usuario.avatar.url if c.usuario.avatar else "",
+            })
     tecnico = ""
     if ticket.tecnico_asignado_id:
         tecnico = ticket.tecnico_asignado.nombre or ticket.tecnico_asignado.email or ""
+    estado_ans, texto_ans, detalle_ans, limite_ts, aviso_ts = ticket.datos_ans
+    limite = ticket.fecha_limite_ans
+    inicio = ticket.fecha_creacion
     return {
         "pk": ticket.pk,
         "codigo": ticket.codigo,
@@ -296,6 +309,15 @@ def _ficha_ticket(ticket, usuario):
         "glpi_id": ticket.glpi_id or "",
         "adjuntos": adjuntos,
         "mensajes": mensajes,
+        "url_detalle": reverse("tickets:detalle" if rol in ("admin", "tecnico") else "tickets:mi_ticket", args=[ticket.pk]),
+        "presiones_observador": list(reversed(presiones_observador)),
+        "ans": {
+            "estado": estado_ans, "texto": texto_ans, "detalle": detalle_ans,
+            "inicio_ts": int(inicio.timestamp()) if inicio else None,
+            "limite_ts": limite_ts, "aviso_ts": aviso_ts,
+            "limite": timezone.localtime(limite).strftime("%d/%m/%Y %H:%M") if limite else "",
+            "horas": ticket.ans_horas,
+        },
         # Solo se puede presionar un ticket vivo y con técnico. El mensaje va
         # al hilo, así que también hace falta que el rol pueda escribir en él.
         "puede_presionar": bool(
@@ -346,11 +368,13 @@ def presionar_ticket(request, pk):
         return JsonResponse(
             {"ok": False, "error": "Escribe el mensaje para el técnico."}, status=400
         )
-    TicketComentario.objects.create(
+    presion = TicketComentario.objects.create(
         ticket=ticket, usuario=u, autor_nombre=u.nombre,
         comentario=mensaje, es_interno=False, es_presion=True,
     )
     notificar_comentario(ticket, u.nombre, mensaje, actor=u)
+    from .notifications import notificar_presion_observadores
+    notificar_presion_observadores(ticket, u, presion)
     return JsonResponse({
         "ok": True,
         "detalle": f"Mensaje enviado al técnico del {ticket.codigo}.",

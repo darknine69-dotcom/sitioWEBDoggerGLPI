@@ -150,7 +150,7 @@
                             {% endif %}
                         </td>
                         <td class="td-cat" data-label="Categoría">
-                            {% if ticket.categoria %}<span class="cat-chip">{{ ticket.categoria.nombre }}</span>{% else %}<span class="muted">—</span>{% endif %}
+                            {% if ticket.categoria %}<span class="cat-chip category-shared" data-category-label="{{ ticket.categoria.nombre }}" data-category-group="{{ ticket.categoria.grupo }}"><span data-category-icon></span>{{ ticket.categoria.nombre }}</span>{% else %}<span class="muted">—</span>{% endif %}
                         </td>
                         <td class="td-state" data-label="Estado">{% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display resuelto=ticket.fue_resuelto cerrado=ticket.esta_cerrado %}</td>
                         <td class="td-prio" data-label="Prioridad"><span class="meta-pill meta-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span></td>

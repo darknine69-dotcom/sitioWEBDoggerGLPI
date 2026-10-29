@@ -487,14 +487,14 @@
                 {% for t in tickets %}
                     <tr>
                         <td><input type="checkbox" aria-label="Seleccionar {{ t.codigo }}"></td>
-                        <td><a class="ticket-table-code" href="{% url 'tickets:detalle' t.pk %}">{{ t.codigo }}</a></td>
-                        <td><a class="ticket-table-subject" href="{% url 'tickets:detalle' t.pk %}" title="{{ t.titulo }}">{{ t.titulo }}</a></td>
-                        <td><span class="ticket-table-category"><svg class="icon"><use href="#i-folder"/></svg>{{ t.categoria.nombre|default:"Sin categoría" }}</span></td>
+                        <td><a class="ticket-table-code" data-ticket-ficha="{{ t.pk }}" href="{% url 'tickets:detalle' t.pk %}">{{ t.codigo }}</a></td>
+                        <td><a class="ticket-table-subject" data-ticket-ficha="{{ t.pk }}" href="{% url 'tickets:detalle' t.pk %}" title="{{ t.titulo }}">{{ t.titulo }}</a></td>
+                        <td><span class="ticket-table-category category-shared" data-category-label="{{ t.categoria.nombre|default:'Sin categoría' }}" data-category-group="{{ t.categoria.grupo|default:'' }}"><span data-category-icon></span>{{ t.categoria.nombre|default:"Sin categoría" }}</span></td>
                         <td><span class="ty-prio ty-prio-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span></td>
                         <td>{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
                         <td><span class="ticket-table-tech"><span class="ticket-tech-avatar">{% if t.tecnico_asignado and t.tecnico_asignado.avatar %}<img src="{{ t.tecnico_asignado.avatar.url }}" alt="">{% elif t.tecnico_asignado %}{{ t.tecnico_asignado.iniciales }}{% else %}<svg class="icon"><use href="#i-user"/></svg>{% endif %}</span>{{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</span></td>
                         <td>{{ t.fecha_creacion|date:"d/m/Y" }}<br><small>{{ t.fecha_creacion|date:"H:i" }}</small></td>
-                        <td><span class="ticket-deadline">{% if t.fecha_limite_ans %}<span>{{ t.fecha_limite_ans|date:"d/m/Y H:i" }}</span>{% else %}<span>—</span>{% endif %}{% include "tickets/_ans_time.html" with t=t %}</span></td>
+                        <td><span class="ticket-deadline">{% if t.fecha_limite_ans %}<svg class="icon icon-sm" aria-hidden="true"><use href="#i-stopwatch"/></svg><span>{{ t.fecha_limite_ans|date:"d/m/Y H:i" }}</span>{% else %}<span>—</span>{% endif %}</span></td>
                         <td>{% include "tickets/_ans_time.html" with t=t %}</td>
                         <td><span class="ticket-row-actions"><a class="btn btn-sm btn-outline" title="Ver detalle" href="{% url 'tickets:detalle' t.pk %}"><svg class="icon icon-sm"><use href="#i-eye"/></svg></a>{% if es_admin %}<button type="button" class="btn btn-sm btn-outline actions-trigger" title="Acciones" aria-label="Acciones de {{ t.codigo }}" aria-haspopup="true" aria-expanded="false" data-estado-url="{% url 'tickets:cambiar_estado' t.pk %}" data-eliminar-url="{% url 'tickets:eliminar' t.pk %}" data-codigo="{{ t.codigo }}" data-estado-actual="{{ t.estado }}"><svg class="icon icon-sm"><use href="#i-ellipsis"/></svg></button>{% endif %}</span></td>
                     </tr>
@@ -508,7 +508,7 @@
             {% for t in tickets %}
             <article class="ty-card">
                 <div class="ty-card-head">
-                    <a class="ty-code" href="{% url 'tickets:detalle' t.pk %}" title="Ver ticket">{{ t.codigo }}</a>
+                    <a class="ty-code" data-ticket-ficha="{{ t.pk }}" href="{% url 'tickets:detalle' t.pk %}" title="Ver ticket">{{ t.codigo }}</a>
                     <div class="ty-card-head-right">
                         {% if t.adjuntos_count %}<span class="row-icon" title="Adjuntos"><svg class="icon icon-sm"><use href="#i-paperclip"/></svg>{{ t.adjuntos_count }}</span>{% endif %}
                         {% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}
@@ -516,11 +516,11 @@
                     </div>
                 </div>
                 <div class="ty-body">
-                    <a class="ty-title" href="{% url 'tickets:detalle' t.pk %}">{{ t.titulo }}</a>
+                    <a class="ty-title" data-ticket-ficha="{{ t.pk }}" href="{% url 'tickets:detalle' t.pk %}">{{ t.titulo }}</a>
                     <div class="ty-meta">
                         {% include "tickets/_solicitante_cell.html" with t=t %}
-                        <span class="ty-meta-line">
-                            <svg class="icon"><use href="#i-folder"/></svg>
+                        <span class="ty-meta-line category-shared" data-category-label="{{ t.categoria.nombre|default:'Sin categoría' }}" data-category-group="{{ t.categoria.grupo|default:'' }}">
+                            <span data-category-icon></span>
                             {{ t.categoria.grupo|default:"—" }} › {{ t.categoria.nombre|default:"Sin categoría" }}
                         </span>
                         <span class="ty-meta-line">
@@ -534,7 +534,7 @@
                     {% include "tickets/_ans_time.html" with t=t %}
                     <span class="ty-date">{{ t.fecha_creacion|date:"d/m/Y" }}</span>
                     <div class="ty-actions">
-                        <a class="btn btn-sm btn-outline actions-icon" title="Ver ticket" href="{% url 'tickets:detalle' t.pk %}"><svg class="icon icon-sm"><use href="#i-eye"/></svg></a>
+                        <a class="btn btn-sm btn-outline actions-icon" title="Ver ticket" data-ticket-ficha="{{ t.pk }}" href="{% url 'tickets:detalle' t.pk %}"><svg class="icon icon-sm"><use href="#i-eye"/></svg></a>
                         {% if es_admin %}
                         <button type="button" class="btn btn-sm btn-outline actions-trigger"
                                 title="Acciones" aria-label="Acciones"

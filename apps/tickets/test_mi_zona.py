@@ -206,6 +206,25 @@ class MiZonaSupervisorTest(TestCase):
         self.assertNotIn("de las cuentas incluidas en tus zonas", html)
         self.assertNotIn('id="mzZonaGrafica"', html)
 
+    def test_al_quitar_usuario_de_zona_no_muestra_su_supervisor(self):
+        """Una cuenta sin carpeta activa ya no debe conservar acompañamiento."""
+        zona = ZonaObservador.objects.create(
+            observador=self.sup, nombre="Zona Azul"
+        )
+        elemento = ElementoMiLista.objects.get(
+            observador=self.sup, usuario_email="ana@x.com"
+        )
+        elemento.zona = zona
+        elemento.save(update_fields=["zona"])
+
+        elemento.zona = None
+        elemento.save(update_fields=["zona"])
+
+        respuesta = self.client.get(reverse("tickets:mi_panel"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context["mi_zona"]["supervisores"], [])
+        self.assertEqual(respuesta.context["mi_zona"]["zonas_seguimiento"], [])
+
     def test_ranking_y_alertas_usan_carpetas_y_no_puntos_de_venta(self):
         zona = ZonaObservador.objects.create(
             observador=self.sup, nombre="Balcones2"

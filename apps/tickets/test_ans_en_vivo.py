@@ -73,7 +73,7 @@ class DatosAnsTest(TestCase):
         estado, texto, _detalle, limite, aviso = t.datos_ans
 
         self.assertEqual(estado, "vencido")
-        self.assertTrue(texto.startswith("ANS vencido"))
+        self.assertEqual(texto, "Vencido")
         self.assertEqual(limite, aviso)  # vencido: ya pasó el momento de aviso
 
     def test_info_ans_no_cambio(self):

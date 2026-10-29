@@ -84,8 +84,8 @@ class CalificarDesdeElDetalle(TestCase):
 
         self.assertIn('name="csrfmiddlewaretoken" content="', html)
 
-    def test_la_lista_limita_la_altura_si_hay_mas_de_tres_tecnicos(self):
-        """Con 4 o mas técnicos la lista no crece: sale con scroll."""
+    def test_la_lista_solo_muestra_al_tecnico_asignado(self):
+        """El detalle no expone el directorio completo de técnicos."""
         get_user_model().objects.create_user(
             "cuarto@dogger.com.co", "Cuarto", "dogger1234", rol="tecnico",
         )
@@ -96,8 +96,9 @@ class CalificarDesdeElDetalle(TestCase):
         self.client.force_login(self.usuario)
         html = self.client.get(self.url(ticket)).content.decode()
 
-        self.assertIn("es-directa tiene-scroll", html)
-        self.assertIn("Desliza para ver los", html)
+        self.assertIn(self.tecnico.nombre, html)
+        self.assertNotIn(self.ayudante.nombre, html)
+        self.assertNotIn("tiene-scroll", html)
 
     def test_la_lista_no_agrega_scroll_con_pocos_tecnicos(self):
         ticket = self.resuelto()
@@ -209,11 +210,22 @@ class CalificarDesdeElDetalle(TestCase):
             CalificacionTecnico.conteos(self.tecnico, self.usuario, ticket)["mi_voto"], -1
         )
 
-    def test_votar_el_mismo_ticket_dos_veces_quita_el_voto(self):
+    def test_votar_el_mismo_ticket_dos_veces_conserva_el_voto(self):
         ticket = self.resuelto()
         self.voto(ticket)
-        self.voto(ticket)
-        self.assertEqual(CalificacionTecnico.objects.filter(ticket=ticket).count(), 0)
+        respuesta = self.voto(ticket)
+        self.assertTrue(respuesta.json()["ya_calificado"])
+        self.assertEqual(CalificacionTecnico.objects.filter(ticket=ticket).count(), 1)
+
+    def test_no_se_puede_calificar_a_otro_tecnico_en_el_ticket(self):
+        ticket = self.resuelto()
+        self.client.force_login(self.usuario)
+        respuesta = self.client.post(
+            reverse("tickets:calificar_tecnico", args=[self.ayudante.pk]),
+            {"valor": "1", "ticket": ticket.pk},
+        )
+        self.assertEqual(respuesta.status_code, 403)
+        self.assertEqual(CalificacionTecnico.objects.count(), 0)
 
     def test_una_persona_puede_votar_en_dos_tickets_distintos(self):
         uno, otro = self.resuelto(), self.resuelto()
@@ -260,9 +272,10 @@ class CalificarDesdeElDetalle(TestCase):
         self.client.force_login(self.usuario)
         html = self.client.get(self.url(ticket)).content.decode()
         self.assertIn(self.tecnico.nombre, html)
-        self.assertIn(self.ayudante.nombre, html)
+        self.assertNotIn(self.ayudante.nombre, html)
         self.assertIn("tec-barra", html)
         self.assertIn("1 votos · 100% de 1 resueltos", html)
+        self.assertIn("Calificación guardada", html)
 
     def test_sin_votos_la_barra_dice_que_no_hay(self):
         ticket = self.resuelto()

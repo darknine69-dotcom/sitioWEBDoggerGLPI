@@ -34,14 +34,15 @@ restaura lo que canceló sin pedirle ayuda a nadie.
         <span>Lo que está aquí <strong>no cuenta</strong> en el contador de abiertas, ni en los reportes ni en la sincronización con GLPI. Puedes <strong>recuperar</strong> la solicitud cuando la necesites; "Borrar" sí es definitivo.</span>
     </p>
 
-    <form class="pap-search" method="get" action="{% url 'tickets:mi_papelera' %}">
+    <form class="pap-search" method="get" action="{% url 'tickets:mi_papelera' %}" data-ajax-list-form="papelera">
         <svg class="icon pap-search-icon"><use href="#i-search"/></svg>
-        <input type="search" data-vivo name="q" value="{{ q }}" placeholder="Buscar por código o título…"
+        <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código o título…"
                aria-label="Buscar en mi papelera">
         <button type="submit" class="btn btn-primary">Buscar</button>
         {% if q %}<a class="link-clear" href="{% url 'tickets:mi_papelera' %}">✕ Limpiar</a>{% endif %}
     </form>
 
+<div data-ajax-list-region="papelera" aria-live="polite">
 {% if tickets %}
     {% include "tickets/_papelera_lista.html" with pap_solicitante=0 %}
 
@@ -75,6 +76,7 @@ restaura lo que canceló sin pedirle ayuda a nadie.
         {% endif %}
     </div>
 {% endif %}
+</div>
 </main>
 {% include "tickets/_papelera_js.html" %}
 {% endblock %}

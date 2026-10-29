@@ -79,6 +79,12 @@ viene del detalle, el pk del ticket (data-ticket).
         if (track) track.setAttribute("title", votos + " votos de " + res + " resueltos");
     }
 
+    function bloquearVoto(card) {
+        var controles = card.querySelector(".tec-voto-conteo");
+        if (!controles) return;
+        controles.outerHTML = '<span class="tec-voto-registrado"><svg class="icon icon-sm"><use href="#i-check-circle"></use></svg>Calificación guardada</span>';
+    }
+
     document.querySelectorAll(".tec-pulgar").forEach(function (btn) {
         btn.addEventListener("click", function () {
             var pk = btn.getAttribute("data-tec");
@@ -115,6 +121,7 @@ viene del detalle, el pk del ticket (data-ticket).
                     b.classList.toggle("is-on", mio);
                 });
                 pintarBarra(card, r.barra);
+                if (ticket && r.voto_bloqueado) bloquearVoto(card);
             }).catch(function () {
                 btn.disabled = false;
                 aviso(card, "Error de conexión.");

@@ -117,16 +117,27 @@ class TicketForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, permitir_modo=False, categoria_automatica=False, **kwargs):
+    def __init__(
+        self,
+        *args,
+        permitir_modo=False,
+        categoria_automatica=False,
+        categoria_preseleccionada=False,
+        **kwargs,
+    ):
         self._modo_fijo = None
         # Las cuentas solicitantes no clasifican el incidente: Dogger lo hace
         # a partir del asunto y la descripción para conservar una asignación
         # consistente. El staff sigue teniendo el selector disponible.
         self._categoria_automatica = categoria_automatica
+        # Una categoría elegida desde el catálogo es una decisión explícita
+        # del solicitante. No debe ocultarse ni ser sustituida por la
+        # clasificación textual al enviar el formulario.
+        self._categoria_preseleccionada = categoria_preseleccionada
         super().__init__(*args, **kwargs)
         self.fields["categoria"] = _campo_categoria(required=False)
         self.fields["categoria"].empty_label = "— Categoría en análisis automático —"
-        if self._categoria_automatica:
+        if self._categoria_automatica and not self._categoria_preseleccionada:
             self.fields["categoria"].widget.attrs.update(
                 {
                     "disabled": "disabled",
@@ -168,7 +179,10 @@ class TicketForm(forms.ModelForm):
         cleaned = super().clean()
         if "modo" in cleaned:
             cleaned["modo"] = cleaned.get("modo") or Ticket.Modo.WEB
-        if self._categoria_automatica or not cleaned.get("categoria"):
+        if (
+            (self._categoria_automatica and not self._categoria_preseleccionada)
+            or not cleaned.get("categoria")
+        ):
             sugerida = sugerir_categoria(
                 titulo=cleaned.get("titulo", ""),
                 descripcion=cleaned.get("descripcion", ""),

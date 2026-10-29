@@ -85,7 +85,16 @@
         if (item) {
             var pk = item.getAttribute("data-chat-pk");
             var codigo = item.getAttribute("data-chat-codigo") || "";
-            if (pk) openMiniChat(pk, codigo);
+            var detalleUrl = item.getAttribute("data-ticket-url");
+            /* La línea de tiempo del punto de venta lleva al hilo completo
+               del ticket, donde el usuario conversa con el técnico asignado. */
+            if (detalleUrl) {
+                window.location.assign(detalleUrl);
+            } else if (pk && miniChat) {
+                openMiniChat(pk, codigo);
+            } else {
+                return;
+            }
             return;
         }
         var close = e.target.closest("#mini-chat-close");

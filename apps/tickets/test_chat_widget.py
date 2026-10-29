@@ -66,6 +66,50 @@ class ChatWidgetTest(TestCase):
             403,
         )
 
+    def test_ficha_ans_y_presiones_solo_observador(self):
+        TicketComentario.objects.create(ticket=self.ticket, usuario=self.obs, comentario="Revisar", es_presion=True)
+        TicketComentario.objects.create(ticket=self.ticket, usuario=self.usuario, comentario="Solicitud", es_presion=True)
+        TicketComentario.objects.create(ticket=self.ticket, usuario=self.obs, comentario="Mensaje normal", es_presion=False)
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get(reverse("tickets:ticket_ficha", args=[self.ticket.pk]))
+        self.assertEqual(respuesta.status_code, 200)
+        datos = respuesta.json()["ticket"]
+        self.assertEqual(datos["ans"]["limite_ts"], int(self.ticket.fecha_limite_ans.timestamp()))
+        self.assertEqual(len(datos["presiones_observador"]), 1)
+        self.assertEqual(datos["presiones_observador"][0]["autor"], "Obs")
+        self.assertEqual(datos["presiones_observador"][0]["texto"], "Revisar")
+        self.assertEqual(datos["url_detalle"], reverse("tickets:mi_ticket", args=[self.ticket.pk]))
+        self.assertEqual(TicketComentario.objects.filter(ticket=self.ticket, es_presion=True).count(), 2)
+        self.assertEqual(self.client.get(reverse("tickets:ticket_ficha", args=[self.ajeno.pk])).status_code, 404)
+
+    def test_presion_de_usuario_avisa_solo_al_observador_autorizado(self):
+        otro = Usuario.objects.create_user(email="obs-ajeno@x.com", password="x", nombre="Ajeno", rol=Usuario.Rol.OBSERVADOR)
+        ObservadorPunto.objects.create(observador=otro, punto=Punto.objects.create(nombre="Zona distinta"))
+        self.client.force_login(self.usuario)
+        respuesta = self.client.post(reverse("tickets:mi_presionar", args=[self.ticket.pk]), {"mensaje": "Solicito seguimiento"})
+        self.assertEqual(respuesta.status_code, 302)
+        aviso = Notificacion.objects.get(usuario=self.obs, clave__contains=":presion:")
+        self.assertIn(self.ticket.codigo, aviso.titulo)
+        self.assertEqual(aviso.url, reverse("tickets:mi_ticket", args=[self.ticket.pk]))
+        self.assertFalse(Notificacion.objects.filter(usuario=otro, clave__contains=":presion:").exists())
+
+    def test_presion_desde_ficha_respeta_preferencia_observador(self):
+        self.obs.preferencias_notificaciones = {"cambios_ticket": False}
+        self.obs.save(update_fields=["preferencias_notificaciones"])
+        self.client.force_login(self.usuario)
+        respuesta = self.client.post(reverse("tickets:presionar_ticket", args=[self.ticket.pk]), {"mensaje": "Priorizar"})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(TicketComentario.objects.filter(ticket=self.ticket, es_presion=True).exists())
+        self.assertFalse(Notificacion.objects.filter(usuario=self.obs, clave__contains=":presion:").exists())
+
+    def test_lista_staff_conserva_enlace_y_habilita_ficha(self):
+        self.client.force_login(self.admin)
+        respuesta = self.client.get(reverse("tickets:lista"))
+        self.assertContains(respuesta, f'data-ticket-ficha="{self.ticket.pk}"')
+        self.assertContains(respuesta, reverse("tickets:detalle", args=[self.ticket.pk]))
+        datos = self.client.get(reverse("tickets:ticket_ficha", args=[self.ticket.pk])).json()["ticket"]
+        self.assertEqual(datos["url_detalle"], reverse("tickets:detalle", args=[self.ticket.pk]))
+
     def test_responder_avisa_al_otro_lado(self):
         self.client.force_login(self.usuario)
         respuesta = self.client.post(
@@ -234,6 +278,7 @@ class ChatWidgetTest(TestCase):
         aciertos = {t["codigo"]: t for t in por_codigo["tickets"]}
         self.assertIn(self.ticket.codigo, aciertos)
         self.assertEqual(aciertos[self.ticket.codigo]["tecnico"], "Tec")
+        self.assertEqual(aciertos[self.ticket.codigo]["tecnico_rol"], "tecnico")
         self.assertEqual(
             aciertos[self.ticket.codigo]["url"],
             reverse("tickets:detalle", args=[self.ticket.pk]),

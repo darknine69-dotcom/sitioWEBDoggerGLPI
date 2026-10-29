@@ -12,8 +12,8 @@
     <summary><svg class="icon"><use href="#i-download"/></svg> Exportar informe <svg class="icon"><use href="#i-chevron-down"/></svg></summary>
     <div class="rpt-export-options">
         <a href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}"><svg class="icon"><use href="#i-excel"/></svg><span>Reporte completo<small>Resumen, técnicos, usuarios y gráficas.</small></span></a>
-        <a href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}{% if querystring %}&amp;{% endif %}seccion=tecnicos"><svg class="icon"><use href="#i-users"/></svg><span>Reporte por técnico<small>Desempeño, asignación y resolución.</small></span></a>
-        <a href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}{% if querystring %}&amp;{% endif %}seccion=usuarios"><svg class="icon"><use href="#i-user"/></svg><span>Reporte por usuario<small>Solicitudes y actividad por usuario.</small></span></a>
+        <a href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}{% if querystring %}&amp;{% endif %}seccion=tecnicos"><svg class="icon"><use href="#i-excel"/></svg><span>Reporte por técnico<small>Desempeño, asignación y resolución.</small></span></a>
+        <a href="{% url 'tickets:exportar_reportes' %}?{{ querystring }}{% if querystring %}&amp;{% endif %}seccion=usuarios"><svg class="icon"><use href="#i-excel"/></svg><span>Reporte por usuario<small>Solicitudes y actividad por usuario.</small></span></a>
     </div>
 </details>
 {% endblock %}
@@ -1127,7 +1127,7 @@
                 '<a role="menuitem"><svg class="icon"><use href="#i-ticket"/></svg><span><strong>Ver tickets asignados</strong><small>Pendientes, en curso y cerrados</small></span></a>' +
                 '<a role="menuitem" href="#rptTechTitle"><svg class="icon"><use href="#i-chart"/></svg><span><strong>Ver rendimiento</strong><small>Métricas e historial</small></span></a>' +
                 '<a role="menuitem"><svg class="icon"><use href="#i-clock"/></svg><span><strong>Historial de actividad</strong><small>Acciones y tiempos registrados</small></span></a>' +
-                '<a role="menuitem"><svg class="icon"><use href="#i-download"/></svg><span><strong>Exportar reporte</strong><small>Descargar informe individual</small></span></a></nav>' +
+                '<a role="menuitem"><svg class="icon"><use href="#i-excel"/></svg><span><strong>Exportar reporte</strong><small>Descargar informe individual</small></span></a></nav>' +
                 '<nav class="rpt-tech-menu-links rpt-tech-menu-reassign"><a role="menuitem"><svg class="icon"><use href="#i-share"/></svg><span><strong>Reasignar tickets</strong><small>Acción exclusiva del administrador</small></span></a></nav>';
             panel.querySelector(".rpt-tech-menu-head b").textContent = button.dataset.name;
             var status = panel.querySelector(".rpt-tech-menu-status");

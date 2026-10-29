@@ -532,6 +532,57 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     .usuarios-page .users-tabs-bar .tab-pill .icon { width:17px; height:17px; }
     .usuarios-page .users-tabs-bar .tab-pill small { display:none; }
 }
+/* Filtros compactos y menús de la vista de cuentas. */
+.usuarios-page .users-tabs-bar { min-height:48px; padding:4px 8px; }
+.usuarios-page .users-tabs-bar .tab-pill { min-height:38px; padding:0 14px; font-size:13px; }
+.usuarios-page .users-tabs-bar { justify-content:flex-start; gap:6px; padding:6px; border:1px solid #e2e8f0; border-radius:14px; background:#f8fafc; box-shadow:0 3px 12px rgba(15,23,42,.035); }
+.usuarios-page .users-tabs-bar .tab-pill { position:relative; gap:9px; border:1px solid transparent; border-radius:10px; color:#526985; background:transparent; transition:background .18s,border-color .18s,color .18s,box-shadow .18s; }
+.usuarios-page .users-tabs-bar .tab-pill + .tab-pill { border-left:1px solid transparent; }
+.usuarios-page .users-tabs-bar .tab-pill:hover { border-color:#e2e8f0; background:#fff; color:#1e3a5f; }
+.usuarios-page .users-tabs-bar .tab-pill.active { border:1px solid #fecdd3; border-radius:10px; color:#dc2626; background:#fff; box-shadow:0 3px 10px rgba(220,38,38,.08); }
+.usuarios-page .users-tabs-bar .tab-pill.active::after { display:none; }
+.usuarios-page .users-tabs-bar .tab-pill .icon { width:18px; height:18px; }
+.usuarios-page .users-tabs-bar .tab-pill span { min-width:25px; height:25px; background:#e9eef5; color:#526985; }
+.usuarios-page .users-tabs-bar .tab-pill.active span { background:#fee2e2; color:#dc2626; }
+.usuarios-page .users-tabs-bar .tab-pill:focus-visible { outline:2px solid #ef4444; outline-offset:2px; }
+.usuarios-page .table-toolbar { align-items:center; gap:8px; margin:12px 0; padding:8px; }
+.usuarios-page .table-toolbar .search-field { min-height:42px; padding:7px 12px; background:#fff; }
+.usuarios-page .users-toolbar-picker { min-height:42px; flex-basis:132px; }
+.usuarios-page .users-toolbar-picker > span { top:4px; left:11px; font-size:9px; }
+.usuarios-page .users-toolbar-picker summary { min-height:42px; padding:15px 10px 4px; border-color:#dce4ef; border-radius:9px; font-size:12px; }
+.usuarios-page .users-toolbar-picker details[open] summary { border-color:#ef4444; box-shadow:0 0 0 3px rgba(220,38,38,.1); }
+.usuarios-page .users-toolbar-picker details[open] summary .icon { transform:rotate(180deg); }
+.usuarios-page .users-toolbar-options { min-width:180px; padding:6px; border:1px solid #e2e8f0; border-radius:12px; background:#fff; box-shadow:0 12px 28px rgba(15,23,42,.15); }
+.usuarios-page .users-toolbar-options button { min-height:36px; padding:8px 10px; border-radius:8px; color:#334b6d; font-size:12px; transition:background .16s,color .16s; }
+.usuarios-page .users-toolbar-options button:hover,.usuarios-page .users-toolbar-options button:focus-visible { outline:0; background:#f1f5f9; color:#1e3a5f; }
+.usuarios-page .users-toolbar-options button[aria-selected="true"] { background:#fff1f2; color:#dc2626; }
+.usuarios-page .users-filter-button,.usuarios-page .users-clear-button,.usuarios-page .users-new-button { min-height:42px; padding:0 13px; border-radius:9px; font-size:13px; }
+@media(max-width:640px) { .usuarios-page .table-toolbar { flex-wrap:wrap; }.usuarios-page .table-toolbar .search-field { flex:1 1 100%; }.usuarios-page .users-toolbar-picker { flex:1 1 calc(50% - 8px); }.usuarios-page .users-toolbar-options { right:auto; min-width:100%; } }
+/* Modal de cuenta: encabezado y acciones siempre visibles. */
+#modal-usuario { padding:16px; background:rgba(15,23,42,.55); backdrop-filter:blur(4px); }
+#modal-usuario .modal-box { box-sizing:border-box; width:min(680px,100%); max-width:680px; max-height:calc(100dvh - 32px); margin:0; padding:0; overflow:hidden; border-radius:16px; background:#fff; box-shadow:0 24px 70px rgba(15,23,42,.24); }
+#modal-usuario .usuario-modal-form { display:flex; flex-direction:column; min-height:0; max-height:calc(100dvh - 32px); }
+#modal-usuario .modal-head { display:flex; align-items:center; flex:none; gap:16px; margin:0; padding:18px 22px; border-bottom:1px solid #f7e5e7; background:linear-gradient(115deg,#fff 35%,#fff0f1); }
+#modal-usuario .usuario-modal-icon { display:grid; flex:none; place-items:center; width:58px; height:58px; border-radius:14px; color:#dc2626; background:#fee9eb; }
+#modal-usuario .usuario-modal-icon .icon { width:25px; height:25px; }
+#modal-usuario .usuario-modal-heading { flex:1; min-width:0; } #modal-usuario .usuario-modal-heading h3 { margin:0; color:#101b36; font-size:20px; font-weight:700; } #modal-usuario .usuario-modal-heading p { margin:4px 0 0; color:#64748b; font-size:12px; line-height:1.4; }
+#modal-usuario .modal-head .modal-close { display:grid; flex:none; place-items:center; width:36px; height:36px; margin:0; padding:0; border:1px solid #e2e8f0; border-radius:10px; color:#64748b; background:#fff; font-size:22px; cursor:pointer; }
+#modal-usuario .modal-body { flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; padding:16px 22px; }
+#modal-usuario .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px 18px; }
+#modal-usuario .form-group { min-width:0; margin:0; } #modal-usuario .form-group.span-2 { grid-column:1 / -1; }
+#modal-usuario .form-group > label:not(.form-check-row label) { display:block; margin:0 0 6px; color:#526985; font-size:11px; font-weight:700; letter-spacing:.025em; text-transform:uppercase; }
+#modal-usuario .req { color:#dc2626; }
+#modal-usuario .usuario-input { display:flex; align-items:center; min-width:0; min-height:44px; border:1px solid #dce3ec; border-radius:9px; background:#fff; } #modal-usuario .usuario-input:focus-within { border-color:#ef4444; box-shadow:0 0 0 3px rgba(220,38,38,.1); }
+#modal-usuario .usuario-input .icon { flex:none; width:18px; height:18px; margin-left:12px; color:#647a99; }
+#modal-usuario .usuario-input input { box-sizing:border-box; flex:1; width:100%; min-width:0; min-height:42px; padding:9px 11px; border:0; outline:0; box-shadow:none; background:transparent; color:#17233b; font:13px var(--font-body); }
+#modal-usuario .u-role-picker > summary { box-sizing:border-box; min-height:44px; border-color:#dce3ec; border-radius:9px; background:#f8fafc; }
+#modal-usuario .u-role-options { border-color:#e2e8f0; border-radius:10px; box-shadow:0 12px 28px rgba(15,23,42,.14); }
+#modal-usuario .u-role-picker summary { justify-content:flex-start; gap:9px; } #modal-usuario .u-role-picker summary [data-role-label] { flex:1; } #modal-usuario .u-role-selected-icon { display:grid; place-items:center; color:#647a99; } #modal-usuario .u-role-picker summary .u-role-selected-icon .role-icon { width:18px; height:18px; margin:0; color:inherit; } #modal-usuario .u-role-options button { gap:9px; } #modal-usuario .u-role-options .role-icon { width:17px; height:17px; flex:none; } #modal-usuario .u-role-options button[data-role-option="admin"] .role-icon,#modal-usuario .u-role-picker[data-selected-role="admin"] .u-role-selected-icon { color:#dc2626; } #modal-usuario .u-role-options button[data-role-option="tecnico"] .role-icon,#modal-usuario .u-role-picker[data-selected-role="tecnico"] .u-role-selected-icon { color:#2563eb; } #modal-usuario .u-role-options button[data-role-option="observador"] .role-icon,#modal-usuario .u-role-picker[data-selected-role="observador"] .u-role-selected-icon { color:#7c3aed; } #modal-usuario .u-role-options button[data-role-option="usuario"] .role-icon,#modal-usuario .u-role-picker[data-selected-role="usuario"] .u-role-selected-icon { color:#059669; }
+#modal-usuario .u-password-control { align-items:stretch; } #modal-usuario .u-password-control .usuario-input { flex:1; } #modal-usuario .u-password-control button { min-width:96px; border:1px solid #dce3ec; border-radius:9px; background:#f8fafc; color:#263958; }
+#modal-usuario .form-check-hint { display:block; margin-top:6px; color:#7185a3; font-size:11px; line-height:1.4; text-transform:none; letter-spacing:normal; font-weight:400; }
+#modal-usuario .form-check-row { display:flex; align-items:flex-start; gap:10px; } #modal-usuario .form-check-row input { width:18px; height:18px; flex:none; margin:1px 0 0; accent-color:#dc2626; } #modal-usuario .form-check-row label { margin:0; color:#263958; font-size:13px; font-weight:600; line-height:1.35; text-transform:none; letter-spacing:normal; }
+#modal-usuario .modal-actions { display:flex; flex:none; align-items:center; justify-content:space-between; gap:12px; margin:0; padding:12px 22px; border-top:1px solid #e9edf3; background:#fff; } #modal-usuario .modal-actions .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:8px 16px; border-radius:9px; font-size:12px; } #modal-usuario .modal-actions .icon { width:16px; height:16px; }
+@media(max-width:560px) { #modal-usuario .modal-head { padding:14px 16px; } #modal-usuario .usuario-modal-icon { width:46px; height:46px; } #modal-usuario .usuario-modal-heading h3 { font-size:17px; } #modal-usuario .modal-body { padding:14px 16px; } #modal-usuario .form-grid { grid-template-columns:1fr; gap:12px; } #modal-usuario .form-group.span-2 { grid-column:auto; } #modal-usuario .modal-actions { padding:10px 16px; } }
 </style>
 {% endblock %}
 
@@ -549,11 +600,11 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         </a>
     </div>
 
-    <form method="get" class="table-toolbar">
+    <form method="get" class="table-toolbar" data-ajax-table-form="usuarios">
         {% if tab %}<input type="hidden" name="rol" value="{{ tab }}">{% endif %}
         <label class="search-field">
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
-            <input type="search" data-vivo name="q" value="{{ q }}" placeholder="Buscar por nombre, correo o contacto…" />
+            <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre, correo o contacto…" />
         </label>
         <div class="users-toolbar-select users-toolbar-picker users-toolbar-picker--estado" data-toolbar-picker data-selected-value="{{ estado_filtro|default:'todos' }}">
             <input type="hidden" name="estado" value="{{ estado_filtro }}">
@@ -598,7 +649,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     </div>
     {% endif %}
 
-    <div class="table-card">
+    <div class="table-card" data-ajax-table-region="usuarios" aria-live="polite">
         <div class="table-scroll tabla-scroll-seis" data-filas="6">
             <table class="data-table cards-mobile" id="tablaUsuarios">
                 <thead>
@@ -801,25 +852,26 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
     </div>
 </main>
 
-<div class="modal-overlay" id="modal-usuario">
+<div class="modal-overlay" id="modal-usuario" role="dialog" aria-modal="true" aria-labelledby="usuario-modal-titulo">
     <div class="modal-box">
+        <form method="post" action="{% url 'tickets:usuario_guardar' %}" class="usuario-modal-form">
+            {% csrf_token %}
         <div class="modal-head">
-            <h3><svg class="icon icon-sm"><use href="#i-user"/></svg> Datos de la cuenta</h3>
-            <button type="button" class="modal-close">&times;</button>
+            <span class="usuario-modal-icon"><svg class="icon"><use href="#i-user"/></svg></span><div class="usuario-modal-heading"><h3 id="usuario-modal-titulo">Datos de la cuenta</h3><p>Actualiza tu información personal y configuración de acceso.</p></div>
+            <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
         </div>
         <div class="modal-body">
-            <form method="post" action="{% url 'tickets:usuario_guardar' %}" class="form-grid">
-                {% csrf_token %}
+            <div class="form-grid">
                 <input type="hidden" name="pk" id="u-pk" value="">
                 <div class="form-group">
                     <label for="u-nombre">Nombre completo <span class="req">*</span></label>
-                    <input type="text" name="nombre" id="u-nombre" required maxlength="100">
+                    <div class="usuario-input"><svg class="icon"><use href="#i-user"/></svg><input type="text" name="nombre" id="u-nombre" required maxlength="100" placeholder="Ej: Juan Pérez"></div>
                 </div>
                 <div class="form-group">
                     <label for="u-email">Correo <span class="req">*</span></label>
-                    <input type="email" name="email" id="u-email" required
+                    <div class="usuario-input"><svg class="icon"><use href="#i-mail"/></svg><input type="email" name="email" id="u-email" required placeholder="Ej: usuario@dominio.com"
                            pattern="[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}"
-                           title="Ingresa un correo válido, por ejemplo: nombre@dogger.com.co">
+                           title="Ingresa un correo válido, por ejemplo: nombre@dogger.com.co"></div>
                 </div>
                 <div class="form-group">
                     <label for="u-rol">Rol <span class="req">*</span></label>
@@ -829,31 +881,31 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                         {% endfor %}
                     </select>
                     <details class="u-role-picker" data-role-picker>
-                        <summary><span data-role-label>Usuario</span><svg class="icon"><use href="#i-chevron-down"/></svg></summary>
+                        <summary><span data-role-icon class="u-role-selected-icon">{% include 'components/role_icon.html' with rol='usuario' only %}</span><span data-role-label>Usuario</span><svg class="icon"><use href="#i-chevron-down"/></svg></summary>
                         <div class="u-role-options" role="listbox" aria-label="Seleccionar rol">
                             {% for valor, etiqueta in rol_choices %}
-                            <button type="button" data-role-option="{{ valor }}" role="option">{{ etiqueta }}</button>
+                            <button type="button" data-role-option="{{ valor }}" role="option">{% include 'components/role_icon.html' with rol=valor only %}<span>{{ etiqueta }}</span></button>
                             {% endfor %}
                         </div>
                     </details>
                 </div>
                 <div class="form-group">
                     <label for="u-telefono">Teléfono</label>
-                    <input type="text" name="telefono" id="u-telefono" maxlength="20" placeholder="Ej: 310 123 4567">
+                    <div class="usuario-input"><svg class="icon"><use href="#i-phone"/></svg><input type="text" name="telefono" id="u-telefono" maxlength="20" placeholder="Ej: 310 123 4567"></div>
                 </div>
                 <div class="form-group">
                     <label for="u-ubicacion">Ubicación</label>
-                    <input type="text" name="ubicacion" id="u-ubicacion" maxlength="120" placeholder="Ej: Sede Norte">
+                    <div class="usuario-input"><svg class="icon"><use href="#i-map-pin"/></svg><input type="text" name="ubicacion" id="u-ubicacion" maxlength="120" placeholder="Ej: Sede Norte"></div>
                 </div>
                 <div class="form-group">
                     <label for="u-glpi">ID usuario GLPI</label>
-                    <input type="number" name="glpi_user_id" id="u-glpi" min="1" placeholder="Ej: 12">
+                    <div class="usuario-input"><svg class="icon"><use href="#i-user"/></svg><input type="number" name="glpi_user_id" id="u-glpi" min="1" placeholder="Ej: 12"></div>
                 </div>
                 <div class="form-group span-2">
                     <label for="u-pass">Contraseña</label>
                     <div class="u-password-control">
-                        <input type="password" name="password1" id="u-pass" autocomplete="new-password"
-                               placeholder="{% if not q %}Obligatoria para cuentas nuevas{% endif %}Dejar vacía = sin cambios">
+                        <div class="usuario-input"><svg class="icon"><use href="#i-lock"/></svg><input type="password" name="password1" id="u-pass" autocomplete="new-password"
+                               placeholder="Obligatoria para cuentas nuevas"></div>
                         <button type="button" class="btn btn-cancel btn-sm" data-password-toggle="u-pass"
                                 aria-controls="u-pass" aria-pressed="false">Mostrar</button>
                     </div>
@@ -871,12 +923,10 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                         superior para que cambie de rol desde cualquier vista.</small>
                     </label>
                 </div>
-                <div class="modal-actions">
-                    <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>
-                    <button type="button" class="btn btn-cancel btn-sm modal-close">Cancelar</button>
-                </div>
-            </form>
+            </div>
         </div>
+        <div class="modal-actions"><button type="button" class="btn btn-cancel btn-sm modal-close">Cancelar</button><button type="submit" class="btn btn-primary btn-sm"><svg class="icon"><use href="#i-check"/></svg> Guardar cambios</button></div>
+        </form>
     </div>
 </div>
 
@@ -1274,6 +1324,11 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         if (filaSolicitada) { window.setTimeout(function () { abrirFichaInline(filaSolicitada); }, 0); }
     }
     adaptarMovil();
+    document.addEventListener('dogger:tabla-actualizada', function () {
+        cerrarMenuAcciones();
+        cerrarFichaInline();
+        adaptarMovil();
+    });
     if (mqMovil.addEventListener) { mqMovil.addEventListener('change', adaptarMovil); }
     else if (mqMovil.addListener) { mqMovil.addListener(adaptarMovil); }
 
@@ -1388,16 +1443,14 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
         return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() +
                ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
     }
-    var uidSet = {};
-    document.querySelectorAll('[data-uid]').forEach(function (el) {
-        uidSet[el.getAttribute('data-uid')] = true;
-    });
     var DOT_LABEL = { green: 'en linea', yellow: 'activo sin conexion', red: 'inactivo' };
-    var uids = Object.keys(uidSet);
-    if (uids.length) {
-        var url = '{% url "tickets:usuarios_estado" %}?ids=' + uids.join(',');
-        setInterval(function () {
+    setInterval(function () {
             if (document.hidden) { return; }
+            var uidSet = {};
+            document.querySelectorAll('[data-uid]').forEach(function (el) { uidSet[el.getAttribute('data-uid')] = true; });
+            var uids = Object.keys(uidSet);
+            if (!uids.length) return;
+            var url = '{% url "tickets:usuarios_estado" %}?ids=' + uids.join(',');
             fetch(url).then(function (r) { return r.json(); }).then(function (j) {
                 if (!j || !j.ok) return;
                 var us = j.usuarios || {};
@@ -1441,8 +1494,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                     }
                 });
             }).catch(function () {});
-        }, 25000);
-    }
+    }, 25000);
 })();
 </script>
 {% endblock %}

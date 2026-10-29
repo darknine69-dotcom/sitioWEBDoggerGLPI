@@ -49,6 +49,7 @@
         <span class="sa-pill"><svg class="icon"><use href="#i-inbox"/></svg> {{ pendientes }} pendiente{{ pendientes|pluralize }}</span>
     </div>
 
+    <div data-ajax-list-region="sin-asignar" aria-live="polite">
     <div class="table-card">
         <div class="table-scroll">
             <table class="data-table sa-tabla">
@@ -156,6 +157,7 @@
         </div>
     </div>
     {% endif %}
+    </div>
 </main>
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 <script>

@@ -142,3 +142,9 @@ def notificar_comentario(ticket, autor, comentario, es_interno=False, actor=None
     quien = getattr(actor, "nombre", None) or autor
     _notificar_app(_editado, ticket, actor, f"Respondio: {(comentario or '')[:90]}")
     _enviar(_asunto(ticket, "Nuevo comentario"), _mensaje(ticket, f"{quien or 'Anonimo'} comento", comentario), _destinatarios(ticket))
+
+
+def notificar_presion_observadores(ticket, actor, comentario):
+    from apps.notificaciones import services
+
+    _notificar_app(services.presion_observadores, ticket, actor, comentario)

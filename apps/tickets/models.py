@@ -3,7 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
-from django.db import IntegrityError, models
+from django.db import IntegrityError, models, transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 
@@ -387,7 +387,7 @@ class Ticket(models.Model):
         if ahora >= limite:
             return (
                 "vencido",
-                f"ANS vencido {formatear_duracion(ahora - limite)}",
+                "Vencido",
                 detalle,
                 limite_ts,
                 limite_ts,
@@ -873,6 +873,29 @@ class CalificacionTecnico(models.Model):
         existente.valor = valor
         existente.save(update_fields=["valor", "fecha"])
         return valor
+
+    @classmethod
+    def registrar_ticket_una_vez(cls, tecnico, usuario, ticket, valor):
+        """Registra la única calificación permitida para un ticket.
+
+        A diferencia del voto general, una calificación de un trabajo no se
+        alterna ni se reemplaza: el usuario deja su opinión una sola vez y el
+        botón no vuelve a ofrecerse al recargar el detalle.
+        """
+        filtro = {"tecnico": tecnico, "usuario": usuario, "ticket": ticket}
+        try:
+            # La restricción única del modelo es el respaldo ante dos clics
+            # concurrentes; get_or_create deja el segundo como una lectura.
+            with transaction.atomic():
+                voto, creado = cls.objects.get_or_create(
+                    **filtro, defaults={"valor": valor}
+                )
+        except IntegrityError:
+            # Otro POST ganó la carrera justo antes del INSERT. Su opinión es
+            # la que queda y se responde de forma idempotente, no con un 500.
+            voto = cls.objects.get(**filtro)
+            creado = False
+        return voto.valor, creado
 
     @classmethod
     def conteos(cls, tecnico, usuario=None, ticket=None):

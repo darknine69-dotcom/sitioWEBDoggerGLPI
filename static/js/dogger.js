@@ -56,12 +56,18 @@
     /* opciones: { titulo, icono, nota } para que cada confirmación se vea
        como la que le corresponde (papelera, cierre,Combination, etc.). */
     function confirmarAction(mensaje, onOk, textoOk, opciones) {
-        if (!confirmOverlay || !confirmMsgEl) { if (onOk) onOk(); return; }
+        if (!confirmOverlay || !confirmMsgEl) return;
         var op = opciones || {};
+        var textoAccion = (mensaje || "") + " " + (textoOk || "") + " " + (op.titulo || "");
+        var accion = /eliminar|borrar|purgar/iu.test(textoAccion) ? { titulo:"Confirmar eliminación", icono:"#i-trash", boton:"Eliminar" } :
+            /restaurar|recuperar/iu.test(textoAccion) ? { titulo:"Confirmar restauración", icono:"#i-refresh", boton:"Restaurar" } :
+            /cerrar|cancelar ticket|cancelar solicitud/iu.test(textoAccion) ? { titulo:"Confirmar cierre", icono:"#i-lock", boton:"Cerrar" } :
+            /asignar|tomar/iu.test(textoAccion) ? { titulo:"Confirmar asignación", icono:"#i-user-round-check", boton:"Confirmar" } :
+            { titulo:"Confirmar acción", icono:"#i-circle-alert", boton:"Continuar" };
         confirmMsgEl.textContent = mensaje;
         confirmCallback = onOk;
-        if (confirmTitleEl) confirmTitleEl.textContent = op.titulo || "¿Confirmar acción?";
-        if (confirmIconUse) confirmIconUse.setAttribute("href", op.icono || "#i-x-circle");
+        if (confirmTitleEl) confirmTitleEl.textContent = op.titulo || accion.titulo;
+        if (confirmIconUse) confirmIconUse.setAttribute("href", op.icono || accion.icono);
         if (confirmNoteEl) {
             var nota = op.nota || "";
             confirmNoteEl.textContent = nota;
@@ -69,7 +75,7 @@
         }
         if (confirmOkBtn) {
             var peligro = /eliminar|borra|quedar/iu.test(mensaje || "");
-            var textoBtn = textoOk || "Continuar";
+            var textoBtn = textoOk || accion.boton;
             confirmOkBtn.textContent = textoBtn;
             confirmOkBtn.classList.toggle("btn-danger", peligro);
         }
@@ -369,12 +375,79 @@
         document.querySelectorAll(".custom-dropdown[open]").forEach(function (dropdown) { dropdown.removeAttribute("open"); });
     });
 
+    /* ---- Paginación sin salto de contexto ----
+       Las tablas del sistema se renderizan en servidor, pero al cambiar de
+       página no debemos llevar al usuario al inicio. Se memoriza la posición
+       exacta para la URL destino y se restaura cuando termina de pintar. Así
+       cada paginador conserva al usuario junto a la tabla que estaba usando. */
+    var DoggerPaginacion = (function () {
+        var PREFIJO = "dogger:paginacion:scroll:";
+
+        function clave(url) {
+            return PREFIJO + url.pathname + url.search;
+        }
+        function guardar(url) {
+            try {
+                sessionStorage.setItem(clave(url), JSON.stringify({
+                    x: window.scrollX || window.pageXOffset || 0,
+                    y: window.scrollY || window.pageYOffset || 0
+                }));
+            } catch (err) { /* almacenamiento no disponible: navegación normal */ }
+        }
+        function guardarEnlace(enlace) {
+            try {
+                var url = new URL(enlace.href, window.location.href);
+                if (url.origin === window.location.origin) { guardar(url); }
+            } catch (err) { }
+        }
+        function guardarFormulario(formulario) {
+            try {
+                var url = new URL(formulario.getAttribute("action") || window.location.href, window.location.href);
+                if ((formulario.getAttribute("method") || "get").toLowerCase() === "get") {
+                    new FormData(formulario).forEach(function (valor, nombre) {
+                        url.searchParams.set(nombre, valor);
+                    });
+                }
+                if (url.origin === window.location.origin) { guardar(url); }
+            } catch (err) { }
+        }
+        function restaurar() {
+            var raw;
+            try {
+                raw = sessionStorage.getItem(clave(new URL(window.location.href)));
+                if (raw) { sessionStorage.removeItem(clave(new URL(window.location.href))); }
+            } catch (err) { return; }
+            if (!raw) { return; }
+            try {
+                var punto = JSON.parse(raw);
+                window.requestAnimationFrame(function () {
+                    window.requestAnimationFrame(function () {
+                        window.scrollTo({ left: Number(punto.x) || 0, top: Number(punto.y) || 0, behavior: "auto" });
+                    });
+                });
+            } catch (err) { }
+        }
+
+        document.addEventListener("click", function (evento) {
+            if (evento.defaultPrevented || evento.button !== 0 || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) { return; }
+            var enlace = evento.target && evento.target.closest
+                ? evento.target.closest(".pagination-links a[href], .pagination-bar a.page-pill[href]")
+                : null;
+            if (enlace && (!enlace.target || enlace.target === "_self")) { guardarEnlace(enlace); }
+        }, true);
+        window.addEventListener("pageshow", restaurar);
+
+        return { guardarEnlace: guardarEnlace, guardarFormulario: guardarFormulario };
+    })();
+    window.DoggerPaginacion = DoggerPaginacion;
+
     var PAGE_PARAMS = ["page", "page_sol", "page_recientes", "page_glpi"];
     document.querySelectorAll("select[data-per-page-param]").forEach(function (sel) {
         sel.addEventListener("change", function () {
             var url = new URL(window.location.href);
             url.searchParams.set(sel.getAttribute("data-per-page-param"), sel.value);
             PAGE_PARAMS.forEach(function (p) { url.searchParams.delete(p); });
+            DoggerPaginacion.guardarEnlace({ href: url.toString() });
             window.location.href = url.toString();
         });
     });
@@ -631,11 +704,17 @@
         if (!selectorRolUsuario) return;
         var picker = document.querySelector("[data-role-picker]");
         if (!picker) return;
+        picker.dataset.selectedRole = selectorRolUsuario.value;
         var opcion = selectorRolUsuario.options[selectorRolUsuario.selectedIndex];
         var etiqueta = picker.querySelector("[data-role-label]");
         if (etiqueta) etiqueta.textContent = opcion ? opcion.textContent : "Seleccionar rol";
         picker.querySelectorAll("[data-role-option]").forEach(function (boton) {
-            boton.setAttribute("aria-selected", String(boton.getAttribute("data-role-option") === selectorRolUsuario.value));
+            var seleccionado = boton.getAttribute("data-role-option") === selectorRolUsuario.value;
+            boton.setAttribute("aria-selected", String(seleccionado));
+            if (seleccionado) {
+                var contenedorIcono = picker.querySelector("[data-role-icon]"), iconoRol = boton.querySelector(".role-icon");
+                if (contenedorIcono && iconoRol) contenedorIcono.replaceChildren(iconoRol.cloneNode(true));
+            }
         });
     }
     if (selectorRolUsuario) {
@@ -651,8 +730,9 @@
         sincronizarSelectorRolUsuario();
     }
 
-    document.querySelectorAll("[data-fill-pk]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
+    document.addEventListener("click", function (evento) {
+        var btn = evento.target.closest("[data-fill-pk]");
+        if (btn) {
             [
                 ["pk", "value", "data-fill-pk", ""],
                 ["nombre", "value", "data-fill-nombre", ""],
@@ -677,7 +757,7 @@
             if (selectorRolUsuario) selectorRolUsuario.dispatchEvent(new Event("change", { bubbles: true }));
             var pass = document.getElementById("u-pass");
             if (pass) pass.placeholder = "Dejar vacía = sin cambios";
-        });
+        }
     });
     document.querySelectorAll("[data-new-user]").forEach(function (btn) {
         btn.addEventListener("click", function () {
@@ -739,12 +819,16 @@
     });
     var avatarInput = document.getElementById("id_avatar");
     var avatarPreview = document.getElementById("avatar-preview");
-    if (avatarInput && avatarPreview) {
+    if (avatarInput && avatarPreview && !avatarInput.hasAttribute("data-avatar-editor")) {
+        var avatarOriginal = avatarPreview.cloneNode(true);
+        var avatarLectura = 0;
         avatarInput.addEventListener("change", function () {
             var file = avatarInput.files[0];
             if (!file) return;
+            var lecturaActual = ++avatarLectura;
             var reader = new FileReader();
             reader.onload = function (e) {
+                if (lecturaActual !== avatarLectura) return;
                 if (avatarPreview.tagName === "IMG") {
                     avatarPreview.src = e.target.result;
                 } else {
@@ -754,9 +838,16 @@
                     img.className = "settings-avatar-img";
                     img.id = "avatar-preview";
                     avatarPreview.parentNode.replaceChild(img, avatarPreview);
+                    avatarPreview = img;
                 }
             };
             reader.readAsDataURL(file);
+        });
+        if (avatarInput.form) avatarInput.form.addEventListener("reset", function () {
+            avatarLectura++;
+            var restaurado = avatarOriginal.cloneNode(true);
+            if (avatarPreview.parentNode) avatarPreview.parentNode.replaceChild(restaurado, avatarPreview);
+            avatarPreview = restaurado;
         });
     }
 
@@ -1733,10 +1824,11 @@
         var h = Math.floor((abs % 86400) / 3600);
         var m = Math.floor((abs % 3600) / 60);
         var s = Math.floor(abs % 60);
-        if (d > 0) return h > 0 ? d + "d " + h + "h" : d + "d";
-        if (h > 0) return m > 0 ? h + "h " + m + "min" : h + "h";
-        if (m > 0) return m + "min";
-        return s + "s";
+        // La cuenta se actualiza cada segundo; mostrar segundos en todos los
+        // rangos hace visible el tiempo exacto que falta antes del vencimiento.
+        if (d > 0) return d + "d " + h + "h " + m + "min " + s + "s";
+        if (h > 0) return h + "h " + m + "min " + s + "s";
+        return m + "min " + s + "s";
     }
 
     /* El texto vive en un <span data-ans-txt>; si no lo hay (algunas vistas
@@ -1758,7 +1850,9 @@
             estado = (aviso && ahora >= aviso) ? "por-vencer" : "ok";
         }
         var destino = textoDe(el);
-        var nuevo = (estado === "vencido" ? "Vencido hace " : "Faltan ") + duracion(dif);
+        /* Al alcanzar el límite no se muestra tiempo transcurrido: el ANS ya
+           venció y la etiqueta queda congelada en ese estado. */
+        var nuevo = estado === "vencido" ? "Vencido" : "Faltan " + duracion(dif);
         if (destino.textContent !== nuevo) destino.textContent = nuevo;
 
         if (el.classList.contains("ans-ok") || el.classList.contains("ans-por-vencer")
@@ -1782,6 +1876,10 @@
         var icono = ICONO[estado];
         if (use && icono && use.getAttribute("href") !== icono) {
             use.setAttribute("href", icono);
+        }
+        if (estado === "vencido") {
+            /* No vuelve a entrar al intervalo global ni continúa contando. */
+            el.removeAttribute("data-ans-live");
         }
         return true;
     }
@@ -1973,16 +2071,27 @@
         if (!loader) { return; }
         var loaderTitle = document.getElementById("pageLoaderTitle");
         var loaderText = document.getElementById("pageLoaderText");
+        var loaderIconUse = document.getElementById("pageLoaderIconUse");
         var mostrarTimer = null;
         var ocultarTimer = null;
         var estadoTimer = null;
         var mostrando = false;
-        var proximoEstado = { titulo: "Cargando información", texto: "Preparando la información solicitada…" };
+        var proximoEstado = {
+            titulo: "Cargando información",
+            texto: "Preparando la información solicitada…",
+            lento: "Seguimos preparando la información…",
+            icono: "refresh",
+            tono: "default"
+        };
 
-        function definirEstado(titulo, texto) {
+        function definirEstado(titulo, texto, opciones) {
+            opciones = opciones || {};
             proximoEstado = {
                 titulo: titulo || "Cargando información",
-                texto: texto || "Preparando la información solicitada…"
+                texto: texto || "Preparando la información solicitada…",
+                lento: opciones.lento || "Seguimos preparando la información…",
+                icono: opciones.icono || "refresh",
+                tono: opciones.tono || "default"
             };
         }
 
@@ -1991,32 +2100,65 @@
             mostrando = true;
             if (loaderTitle) { loaderTitle.textContent = proximoEstado.titulo; }
             if (loaderText) { loaderText.textContent = proximoEstado.texto; }
+            if (loaderIconUse) { loaderIconUse.setAttribute("href", "#i-" + proximoEstado.icono); }
+            loader.setAttribute("data-loader-tone", proximoEstado.tono);
             loader.hidden = false;
             clearTimeout(estadoTimer);
             estadoTimer = setTimeout(function () {
                 if (mostrando && loaderText) {
-                    loaderText.textContent = "Aún estamos procesando los datos; puede tardar unos segundos…";
+                    loaderText.textContent = proximoEstado.lento;
                 }
             }, 2200);
             /* Red de seguridad: aunque la navegación no llegue a completarse
                (descarga abortada, etc.), el precargador no se queda pegado. */
             clearTimeout(ocultarTimer);
-            ocultarTimer = setTimeout(ocultar, 12000);
+            ocultarTimer = setTimeout(ocultar, 6000);
         }
         function ocultar() {
             mostrando = false;
             loader.hidden = true;
+            clearTimeout(mostrarTimer);
             clearTimeout(ocultarTimer);
             clearTimeout(estadoTimer);
         }
         /* Se espera un pelín antes de mostrarlo para no parpadear cuando la
            navegación es instantánea. */
-        function programar(titulo, texto) {
+        function programar(titulo, texto, opciones) {
             clearTimeout(mostrarTimer);
-            definirEstado(titulo, texto);
+            definirEstado(titulo, texto, opciones);
             mostrarTimer = setTimeout(mostrar, 140);
         }
         function cancelarProgramado() { clearTimeout(mostrarTimer); }
+
+        function estadoPorRuta(pathname, etiqueta) {
+            var ruta = (pathname || "").toLowerCase();
+            if (/reportes/.test(ruta)) return { titulo: "Cargando reportes", texto: "Actualizando indicadores y gráficos con datos reales…", icono: "chart", tono: "reports", lento: "Los indicadores siguen actualizándose…" };
+            if (/programador|calendario/.test(ruta)) return { titulo: "Abriendo programador", texto: "Preparando el calendario y tus eventos…", icono: "calendar", lento: "El calendario sigue sincronizándose…" };
+            if (/categor/.test(ruta)) return { titulo: "Cargando categorías", texto: "Preparando las opciones para tu solicitud…", icono: "folder", lento: "Las categorías siguen cargándose…" };
+            if (/mi-panel/.test(ruta)) return { titulo: "Cargando mi panel", texto: "Actualizando tus solicitudes y actividad reciente…", icono: "layers", lento: "Tu panel sigue actualizándose…" };
+            if (/panel.*tecnico|tecnico/.test(ruta)) return { titulo: "Cargando panel técnico", texto: "Actualizando los tickets asignados…", icono: "wrench", lento: "El panel técnico sigue actualizándose…" };
+            if (/tickets/.test(ruta)) return { titulo: "Cargando tickets", texto: "Preparando las solicitudes registradas…", icono: "ticket", lento: "Los tickets siguen cargándose…" };
+            return { titulo: "Cargando información", texto: etiqueta ? "Abriendo “" + etiqueta.slice(0, 54) + "”…" : "Preparando la información solicitada…", icono: "refresh", lento: "Seguimos preparando la información…" };
+        }
+
+        function estadoFormulario(formulario, esReporte) {
+            if (formulario.dataset.loadingTitle) {
+                return {
+                    titulo: formulario.dataset.loadingTitle,
+                    texto: formulario.dataset.loadingText || "Guardando la información…",
+                    icono: formulario.dataset.loadingIcon || "refresh",
+                    tono: formulario.dataset.loadingTone || "default",
+                    lento: formulario.dataset.loadingSlowText || "Seguimos procesando tu solicitud…"
+                };
+            }
+            if (esReporte) return { titulo: "Actualizando reportes", texto: "Aplicando filtros y calculando las métricas…", icono: "chart", tono: "reports", lento: "Los reportes siguen actualizándose…" };
+            var etiqueta = ((formulario.querySelector('button[type="submit"]') || {}).textContent || "").replace(/\s+/g, " ").trim();
+            if (/buscar|filtrar|aplicar/i.test(etiqueta)) return { titulo: "Aplicando filtros", texto: "Actualizando los resultados…", icono: "filter", lento: "Los resultados siguen actualizándose…" };
+            if (/eliminar|borrar/i.test(etiqueta)) return { titulo: "Eliminando registro", texto: "Aplicando el cambio solicitado…", icono: "trash", lento: "La eliminación sigue procesándose…" };
+            if (/tomar|asignar/i.test(etiqueta)) return { titulo: "Asignando ticket", texto: "Actualizando la responsabilidad del ticket…", icono: "user", lento: "La asignación sigue procesándose…" };
+            if (/guardar|actualizar|editar/i.test(etiqueta)) return { titulo: "Guardando cambios", texto: "Actualizando la información…", icono: "check", lento: "Los cambios siguen guardándose…" };
+            return { titulo: "Procesando solicitud", texto: etiqueta ? "Procesando “" + etiqueta.slice(0, 54) + "”…" : "Guardando y preparando la información…", icono: "refresh", lento: "Seguimos procesando tu solicitud…" };
+        }
 
         /* Al terminar de cargar esta página, el precargador ya no hace falta. */
         window.addEventListener("pageshow", ocultar);
@@ -2031,6 +2173,10 @@
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { return; }
             var a = e.target.closest ? e.target.closest("a[href]") : null;
             if (!a) { return; }
+            if (a.hasAttribute("data-ticket-ficha")) { return; }
+            /* La paginación mantiene la tabla visible y no necesita tapar
+               toda la vista con el precargador global. */
+            if (a.closest && a.closest(".pagination-links, .pagination-bar")) { return; }
             if (a.target && a.target !== "" && a.target !== "_self") { return; }
             if (a.hasAttribute("download")) { return; }
             var href = a.getAttribute("href") || "";
@@ -2042,24 +2188,43 @@
                 if (url.pathname === location.pathname && url.search === location.search) { return; }
             } catch (err) { return; }
             var label = (a.dataset.loadingLabel || a.textContent || "").replace(/\s+/g, " ").trim();
-            var titulo = /reportes/i.test(url.pathname) ? "Cargando reportes" : "Cargando información";
-            var texto = /reportes/i.test(url.pathname)
-                ? "Actualizando indicadores y gráficos con datos reales…"
-                : (label ? "Abriendo “" + label.slice(0, 54) + "”…" : "Preparando la información solicitada…");
-            programar(titulo, texto);
+            var estadoLink = estadoPorRuta(url.pathname, label);
+            setTimeout(function () {
+                if (!e.defaultPrevented) programar(estadoLink.titulo, estadoLink.texto, estadoLink);
+            }, 0);
         }, true);
 
         /* Un formulario que se envía en la misma pestaña. */
         document.addEventListener("submit", function (e) {
             var f = e.target;
             if (!f || f.tagName !== "FORM") { return; }
+            if (f.hasAttribute("data-no-page-loader")) { return; }
             if (e.defaultPrevented) { return; }
             if (f.target && f.target !== "" && f.target !== "_self") { return; }
-            var esReporte = f.id === "rptFiltros" || /reportes/i.test(f.action || "");
-            programar(
-                esReporte ? "Actualizando reportes" : "Procesando solicitud",
-                esReporte ? "Aplicando filtros y calculando las métricas…" : "Guardando y preparando la información…"
-            );
+            if (f.closest && f.closest(".pagination-bar")) {
+                DoggerPaginacion.guardarFormulario(f);
+                return;
+            }
+            setTimeout(function () {
+                if (e.defaultPrevented) { return; }
+                var esReporte = f.id === "rptFiltros" || /reportes/i.test(f.action || "");
+                var estadoForm = estadoFormulario(f, esReporte);
+                programar(estadoForm.titulo, estadoForm.texto, estadoForm);
+                if (f.dataset.loadingSubmit === "1") {
+                    var boton = f.querySelector('button[type="submit"]');
+                    if (boton) {
+                        boton.disabled = true;
+                        boton.setAttribute("aria-disabled", "true");
+                    }
+                }
+            }, 0);
+        }, true);
+
+        document.addEventListener("click", function (e) {
+            if (e.target.closest && e.target.closest(".modal-close, .modal-close-cancel, [data-modal-close], #axModalCerrar")) {
+                cancelarProgramado();
+                if (mostrando) ocultar();
+            }
         }, true);
 
         /* Si el navegador cancela la página (el usuario se queda o vuelve

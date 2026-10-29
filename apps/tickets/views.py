@@ -921,20 +921,194 @@ def _calificacion_de(tecnico):
 
 
 
+def _actividad_punto_venta(eventos):
+    """Da presentación a la bitácora GLPI sin alterar sus registros."""
+    hoy = timezone.localdate()
+    filas = []
+    for evento in eventos:
+        descripcion = (evento.descripcion or "Actualización registrada").strip()
+        codigo = evento.ticket.codigo if evento.ticket_id else ""
+        prefijo = f"{codigo}:" if codigo else ""
+        texto = descripcion[len(prefijo):].strip() if prefijo and descripcion.startswith(prefijo) else descripcion
+        clave = texto.lower()
+        if "resuelto" in clave or "cerrado" in clave:
+            icono, tono = "i-check-circle", "success"
+        elif evento.tipo == GlpiEvento.Tipo.CAMBIO_ESTADO:
+            icono, tono = "i-refresh", "update"
+        elif "técnico" in clave or "tecnico" in clave:
+            icono, tono = "i-message", "reply"
+        elif "nueva solicitud" in clave or "ticket creado" in clave:
+            icono, tono = "i-plus", "new"
+        else:
+            icono, tono = "i-message", "message"
+        fecha_local = timezone.localtime(evento.fecha)
+        if fecha_local.date() == hoy:
+            fecha_label = f"Hoy, {fecha_local:%H:%M}"
+        elif fecha_local.date() == hoy - timedelta(days=1):
+            fecha_label = f"Ayer, {fecha_local:%H:%M}"
+        else:
+            fecha_label = f"{fecha_local:%d/%m/%Y, %H:%M}"
+        filas.append({
+            "ticket": evento.ticket,
+            "codigo": codigo,
+            "texto": texto,
+            "icono": icono,
+            "tono": tono,
+            "fecha_label": fecha_label,
+        })
+    return filas
+
+
 def _build_dashboard_context(request, tickets):
     chart_context = _build_chart_context(tickets)
     eventos_qs = GlpiEvento.objects.select_related("ticket").order_by("-fecha")
+    # En Mi panel la actividad es privada: solo eventos de las solicitudes
+    # del punto de venta autenticado. El dashboard administrativo conserva
+    # su visión global.
+    if getattr(request.user, "rol", "") == Usuario.Rol.USUARIO:
+        eventos_qs = eventos_qs.filter(ticket__solicitante_email=request.user.email)
     pp_glpi = _resolve_per_page(request, "per_page_glpi", PER_PAGE_DEFECTO)
     page_number = request.GET.get("page_glpi", 1)
     paginator = Paginator(eventos_qs, pp_glpi)
     eventos_glpi_page = paginator.get_page(page_number)
     chart_context.update({
         "eventos_glpi": eventos_glpi_page.object_list,
+        "actividad_punto_venta": _actividad_punto_venta(eventos_glpi_page.object_list[:5]),
         "eventos_glpi_page": eventos_glpi_page,
         "per_page_glpi": pp_glpi,
         "querystring_glpi": _params_sin_page(request, "page_glpi"),
     })
     return chart_context
+
+
+def _punto_venta_panel_datos(usuario, zona_context):
+    """Datos de presentación del panel del punto de venta, sin ampliar alcance."""
+    tickets = list(Ticket.objects.select_related("categoria", "tecnico_asignado").filter(
+        solicitante_email=usuario.email
+    ).order_by("fecha_creacion"))
+    # Las series cubren las siete fechas reales más recientes con actividad.
+    # Así no se muestra un gráfico vacío cuando los tickets son anteriores
+    # a la semana actual.
+    dias = sorted({timezone.localtime(t.fecha_creacion).date() for t in tickets})[-7:]
+
+    def contar(clave, fecha):
+        if clave == "solicitudes":
+            return sum(timezone.localtime(t.fecha_creacion).date() == fecha for t in tickets)
+        estados = {
+            "abiertas": (Ticket.Estado.ABIERTO,),
+            "progreso": (Ticket.Estado.EN_PROGRESO,),
+            "resueltas": (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO),
+        }
+        return sum(t.estado in estados[clave] and timezone.localtime(t.fecha_creacion).date() == fecha for t in tickets)
+
+    estados = {
+        "abiertos": sum(t.estado == Ticket.Estado.ABIERTO for t in tickets),
+        "progreso": sum(t.estado == Ticket.Estado.EN_PROGRESO for t in tickets),
+        "resueltos": sum(t.estado == Ticket.Estado.RESUELTO for t in tickets),
+        "cerrados": sum(t.estado == Ticket.Estado.CERRADO for t in tickets),
+        "vencidos": sum(t.info_ans[0] == "vencido" for t in tickets),
+    }
+    definiciones = (
+        ("solicitudes", "Solicitudes", len(tickets), "i-ticket", "red", "incluye cerradas", "?"),
+        ("abiertas", "Abiertas", estados["abiertos"], "i-alert", "rose", "en espera", "?estado=abierto"),
+        ("progreso", "En progreso", estados["progreso"], "i-wrench", "orange", "siendo atendidas", "?estado=en-progreso"),
+        ("resueltas", "Resueltas", estados["resueltos"] + estados["cerrados"], "i-check-circle", "green", "terminadas", "?estado=resuelto"),
+    )
+    kpis = [{"key": clave, "titulo": titulo, "valor": valor, "icono": icono,
+             "tono": tono, "detalle": detalle, "url": url,
+            "serie": [contar(clave, dia) for dia in dias]}
+            for clave, titulo, valor, icono, tono, detalle, url in definiciones]
+    categorias = Counter(t.categoria.nombre if t.categoria else "Sin categoría" for t in tickets)
+    puntos = Counter(t.solicitante_punto or "Sin punto" for t in tickets)
+    categorias_por_estado = {}
+    for estado in ("", Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO,
+                   Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
+        filtrados = tickets if not estado else [t for t in tickets if t.estado == estado]
+        conteo = Counter(t.categoria.nombre if t.categoria else "Sin categoría" for t in filtrados)
+        categorias_por_estado[estado or "todos"] = [
+            {"nombre": nombre, "total": total}
+            for nombre, total in conteo.most_common(6)
+        ]
+
+    # Todas las curvas parten de fechas almacenadas. Los ceros entre fechas
+    # son ausencia real de actividad, no datos de ejemplo.
+    fechas_actividad = {
+        timezone.localtime(t.fecha_creacion).date() for t in tickets if t.fecha_creacion
+    }
+    for t in tickets:
+        fin = t.fecha_resolucion or t.fecha_finalizacion
+        if fin:
+            fechas_actividad.add(timezone.localtime(fin).date())
+    dias_periodo = sorted(fechas_actividad)[-7:]
+
+    def por_dia(fecha_attr, fecha):
+        return sum(
+            1 for t in tickets
+            if getattr(t, fecha_attr, None)
+            and timezone.localtime(getattr(t, fecha_attr)).date() == fecha
+        )
+
+    completados = [
+        sum(
+            1 for t in tickets
+            if (t.fecha_resolucion or t.fecha_finalizacion)
+            and timezone.localtime(t.fecha_resolucion or t.fecha_finalizacion).date() == dia
+        )
+        for dia in dias_periodo
+    ]
+    vencidos_periodo = [
+        sum(
+            1 for t in tickets
+            if t.fecha_limite_ans
+            and timezone.localtime(t.fecha_limite_ans).date() == dia
+            and (
+                t.info_ans[0] == "vencido"
+                or (t.fecha_finalizacion and t.fecha_finalizacion > t.fecha_limite_ans)
+            )
+        )
+        for dia in dias_periodo
+    ]
+
+    # El botón solo se ofrece cuando realmente necesita seguimiento: ANS
+    # vencido o dentro de las dos últimas horas, y con técnico asignado.
+    presionables = []
+    for t in tickets:
+        estado_ans, texto_ans, _ = t.info_ans
+        if (
+            t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
+            and t.tecnico_asignado_id
+            and estado_ans in ("por-vencer", "vencido")
+        ):
+            presionables.append({
+                "pk": t.pk,
+                "codigo": t.codigo,
+                "titulo": t.titulo,
+                "categoria": t.categoria.nombre if t.categoria else "Sin categoría",
+                "prioridad": t.get_prioridad_display(),
+                "prioridad_clase": t.prioridad,
+                "ans_estado": estado_ans,
+                "ans_texto": texto_ans,
+                "limite": t.fecha_limite_ans,
+                "tecnico": t.tecnico_asignado.nombre,
+            })
+    presionables.sort(key=lambda item: item["limite"] or timezone.now())
+    return {
+        "kpis": kpis,
+        "total": len(tickets),
+        "estados": estados,
+        "etiquetas": [dia.strftime("%d/%m") for dia in dias],
+        "categorias": [{"nombre": nombre, "total": total} for nombre, total in categorias.most_common(6)],
+        "categorias_por_estado": categorias_por_estado,
+        "puntos": [{"nombre": nombre, "total": total} for nombre, total in puntos.most_common(6)],
+        "periodo": {
+            "etiquetas": [dia.strftime("%d/%m") for dia in dias_periodo],
+            "entrantes": [por_dia("fecha_creacion", dia) for dia in dias_periodo],
+            "completados": completados,
+            "vencidos": vencidos_periodo,
+        },
+        "presionables": presionables,
+        "ranking": sorted(zona_context["zona_seguimiento_dashboard"]["zonas"], key=lambda z: -z["total"])[:5],
+    }
 
 
 def paginate_recent_tickets(request, queryset, page_param="page_recientes", per_page=5, per_page_param="per_page_recientes"):
@@ -2603,6 +2777,7 @@ def _mi_zona_supervisor(user):
                 o = op.observador
                 sups.append({
                     "nombre": o.nombre or o.email,
+                    "correo": o.email,
                     "en_linea": bool(getattr(o, "en_linea", False)),
                     "avatar": _avatar_url_simple(o),
                 })
@@ -2615,10 +2790,11 @@ def _mi_zona_supervisor(user):
             tipo=ElementoMiLista.TIPO_USUARIO,
         ).filter(
             Q(usuario_email__iexact=email) | Q(usuario__email__iexact=email)
-        ).select_related("observador", "zona")[:20]:
+        ).filter(zona__isnull=False).select_related("observador", "zona")[:20]:
             o = el.observador
             supervisor = {
                 "nombre": o.nombre or o.email,
+                "correo": o.email,
                 "zona": el.zona.nombre if el.zona else "",
                 "en_linea": bool(getattr(o, "en_linea", False)),
                 "avatar": _avatar_url_simple(o),
@@ -2626,16 +2802,15 @@ def _mi_zona_supervisor(user):
             if o.pk not in vistos_obs:
                 vistos_obs.add(o.pk)
                 supervisores.append(supervisor)
-            if el.zona:
-                clave_zona = el.zona_id
-                zona = zonas_seguimiento.setdefault(clave_zona, {
-                    "nombre": el.zona.nombre,
-                    "pk": el.zona_id,
-                    "supervisores": [],
-                    "seguimiento": True,
-                })
-                if not any(s["nombre"] == supervisor["nombre"] for s in zona["supervisores"]):
-                    zona["supervisores"].append(supervisor)
+            clave_zona = el.zona_id
+            zona = zonas_seguimiento.setdefault(clave_zona, {
+                "nombre": el.zona.nombre,
+                "pk": el.zona_id,
+                "supervisores": [],
+                "seguimiento": True,
+            })
+            if not any(s["nombre"] == supervisor["nombre"] for s in zona["supervisores"]):
+                zona["supervisores"].append(supervisor)
     ids_zonas = [zona["pk"] for zona in zonas_seguimiento.values()]
     miembros_por_zona = {}
     if ids_zonas:
@@ -2933,6 +3108,7 @@ def _zona_dashboard_ctx(user):
     alcance = Q()
     supervisores_ids = ElementoMiLista.objects.filter(
         tipo=ElementoMiLista.TIPO_USUARIO,
+        zona__isnull=False,
     ).filter(
         Q(usuario_email__iexact=correo_usuario)
         | Q(usuario__email__iexact=correo_usuario)
@@ -3173,11 +3349,13 @@ def mi_presionar_tecnico(request, pk):
     if not mensaje:
         messages.error(request, "Escribe el mensaje para el técnico.")
         return redirect("tickets:mi_panel")
-    TicketComentario.objects.create(
+    presion = TicketComentario.objects.create(
         ticket=ticket, usuario=u, autor_nombre=u.nombre,
         comentario=mensaje, es_interno=False, es_presion=True,
     )
     notificar_comentario(ticket, u.nombre, mensaje, actor=u)
+    from .notifications import notificar_presion_observadores
+    notificar_presion_observadores(ticket, u, presion)
     messages.success(request, f"Mensaje enviado al técnico del {ticket.codigo}.")
     return redirect("tickets:mi_panel")
 
@@ -3226,6 +3404,7 @@ def mi_panel(request):
     )
     total_qs = tickets_qs.count()
     estado_filtro = request.GET.get("estado", "").strip()
+    categoria_filtro = request.GET.get("categoria", "").strip()
     q_filtro = (request.GET.get("q", "") or "")[:120].strip()
     if estado_filtro == Ticket.Estado.RESUELTO:
         # En Mi panel "Resueltas" trae resueltas y cerradas: al marcar
@@ -3238,9 +3417,13 @@ def mi_panel(request):
         )
     elif estado_filtro:
         tickets_qs = tickets_qs.filter(estado=estado_filtro)
+    if categoria_filtro.isdigit():
+        tickets_qs = tickets_qs.filter(categoria_id=categoria_filtro)
+    else:
+        categoria_filtro = ""
     if q_filtro:
         tickets_qs = tickets_qs.filter(
-            Q(codigo__iexact=q_filtro.upper())
+            Q(codigo__icontains=q_filtro.upper())
             | Q(titulo__icontains=q_filtro)
         )
 
@@ -3267,6 +3450,8 @@ def mi_panel(request):
         per_page_default=pp_mp,
     )
     dashboard_context = _build_dashboard_context(request, list(page_obj.object_list))
+    zona_context = _zona_dashboard_ctx(request.user)
+    punto_dashboard = _punto_venta_panel_datos(request.user, zona_context)
     return render(
         request,
         "tickets/mi_panel.html",
@@ -3277,9 +3462,12 @@ def mi_panel(request):
             "page_obj": page_obj,
             "querystring": _params_sin_page(request),
             "filtro_estado": estado_filtro,
+            "filtro_categoria": categoria_filtro,
+            "categorias_panel": Categoria.objects.filter(activo=True).order_by("nombre"),
             "q": q_filtro,
             "estados": Ticket.Estado.choices,
             "stats": stats,
+            "punto_dashboard": punto_dashboard,
             # Lo mismo que cuenta el morrito del menú: lo que tiene sin mirar.
             # Al entrar a Mi panel ya queda revisado, así que el número baja
             # a cero y solo vuelve a subir cuando pase algo.
@@ -3295,9 +3483,7 @@ def mi_panel(request):
                     estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO],
                 ).order_by("-fecha_creacion")[:10]
             ),
-            **_zona_dashboard_ctx(
-                request.user,
-            ),
+            **zona_context,
             **dashboard_context,
         },
     )
@@ -3350,10 +3536,21 @@ def calificar_tecnico(request, pk):
                 },
                 status=400,
             )
-
-    CalificacionTecnico.registrar(tecnico, request.user, valor, ticket=ticket)
+        if ticket.tecnico_asignado_id != tecnico.pk:
+            return JsonResponse(
+                {
+                    "ok": False,
+                    "detalle": "Solo puedes calificar al técnico asignado a este ticket.",
+                },
+                status=403,
+            )
 
     if ticket is not None:
+        # Un ticket representa un trabajo concreto: su opinión se conserva y
+        # no puede duplicarse o cambiarse por doble clic.
+        _, creado = CalificacionTecnico.registrar_ticket_una_vez(
+            tecnico, request.user, ticket, valor
+        )
         # El contador que se pinta es el de ese ticket; la barra es la de todo
         # lo que el técnico tiene resuelto.
         conteos = CalificacionTecnico.conteos(tecnico, request.user, ticket)
@@ -3366,9 +3563,12 @@ def calificar_tecnico(request, pk):
                 "me_gusta": conteos["me_gusta"],
                 "no_me_gusta": conteos["no_me_gusta"],
                 "barra": CalificacionTecnico.aprobacion_por_resueltos(tecnico),
+                "voto_bloqueado": True,
+                "ya_calificado": not creado,
             }
         )
 
+    CalificacionTecnico.registrar(tecnico, request.user, valor, ticket=ticket)
     conteos = CalificacionTecnico.conteos(tecnico, request.user)
     return JsonResponse(
         {
@@ -3396,10 +3596,13 @@ def crear_ticket(request):
         "solicitante_nombre": request.user.nombre,
         "solicitante_email": request.user.email,
     }
-    # Desde la vista de categorías se llega con ?categoria=<id>: si la categoría
-    # existe y está activa, queda elegida de una vez.
-    if request.method == "GET" and request.GET.get("categoria"):
-        elegida = Categoria.objects.filter(pk=request.GET["categoria"], activo=True).first()
+    # Desde la vista de categorías se llega con ?categoria=<id>. El parámetro
+    # permanece en la URL también al enviar el formulario, así que se valida
+    # en ambos métodos y la elección no se pierde ante un error de validación.
+    elegida = None
+    categoria_id = request.GET.get("categoria")
+    if categoria_id and categoria_id.isdigit():
+        elegida = Categoria.objects.filter(pk=categoria_id, activo=True).first()
         if elegida:
             initial["categoria"] = elegida.pk
     form = TicketForm(
@@ -3408,6 +3611,7 @@ def crear_ticket(request):
         initial=initial,
         permitir_modo=not es_usuario_final,
         categoria_automatica=es_usuario_final,
+        categoria_preseleccionada=bool(elegida),
     )
     if request.method == "POST" and form.is_valid():
         ticket = form.save(commit=False)
@@ -3453,6 +3657,8 @@ def crear_ticket(request):
         {
             "form": form,
             "es_usuario_final": es_usuario_final,
+            "categoria_preseleccionada": bool(elegida),
+            "categoria_seleccionada": elegida,
             "tecnicos_disponibles": tecnicos_disponibles,
             "cat_sugerencias_json": json.dumps(claves_para_json(), ensure_ascii=False),
             "ans_categorias_json": json.dumps(
@@ -3850,10 +4056,14 @@ def _dashboard_filtros(request):
 def _dashboard_metricas(tickets):
     """Métricas reales de una colección ya filtrada, sin estimar datos ausentes."""
     total = len(tickets)
+    activos = (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
     abiertos = sum(t.estado == Ticket.Estado.ABIERTO for t in tickets)
     progreso = sum(t.estado == Ticket.Estado.EN_PROGRESO for t in tickets)
     cerrados = sum(t.estado == Ticket.Estado.CERRADO for t in tickets)
     resueltos = sum(t.fue_resuelto for t in tickets)
+    sin_asignar = sum(t.estado in activos and not t.tecnico_asignado_id for t in tickets)
+    urgentes = sum(t.estado in activos and t.prioridad == Ticket.Prioridad.URGENTE for t in tickets)
+    altas = sum(t.estado in activos and t.prioridad == Ticket.Prioridad.ALTA for t in tickets)
     vencidos = 0
     sla_ok = sla_total = 0
     duraciones = []
@@ -3902,6 +4112,7 @@ def _dashboard_metricas(tickets):
     positivos = votos.filter(valor=CalificacionTecnico.Valor.ME_GUSTA).count()
     return {
         "total": total, "abiertos": abiertos, "progreso": progreso,
+        "sin_asignar": sin_asignar, "urgentes": urgentes, "altas": altas,
         "en_progreso": progreso,
         "cerrados": cerrados, "resueltos": resueltos,
         "resueltos_cerrados": resueltos + cerrados, "vencidos": vencidos,

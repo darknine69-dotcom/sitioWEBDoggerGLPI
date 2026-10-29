@@ -2,7 +2,7 @@
     {% if DOGGER.whatsapp_activo %}
     <a class="btn-share btn-whatsapp" href="https://wa.me/?text={{ share_text|urlencode }}"
        target="_blank" rel="noopener" title="Compartir por WhatsApp">
-        <svg class="icon"><use href="#i-message"/></svg> WhatsApp
+        <svg class="icon" aria-hidden="true"><use href="#i-whatsapp"/></svg> WhatsApp
     </a>
     {% endif %}
     {% if DOGGER.teams_activo %}

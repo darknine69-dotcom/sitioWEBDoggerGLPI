@@ -26,14 +26,15 @@
         <span>Los tickets que están aquí <strong>no cuentan</strong> en el dashboard, los reportes ni la sincronización con GLPI. Puedes restaurarlos; "Borrar" sí es irreversible.</span>
     </p>
 
-    <form class="pap-search" method="get" action="{% url 'tickets:papelera' %}">
+    <form class="pap-search" method="get" action="{% url 'tickets:papelera' %}" data-ajax-list-form="papelera">
         <svg class="icon pap-search-icon"><use href="#i-search"/></svg>
-        <input type="search" data-vivo name="q" value="{{ q }}" placeholder="Buscar por código, título o solicitante…"
+        <input type="search" name="q" value="{{ q }}" placeholder="Buscar por código, título o solicitante…"
                aria-label="Buscar en la papelera">
         <button type="submit" class="btn btn-primary">Buscar</button>
         {% if q %}<a class="link-clear" href="{% url 'tickets:papelera' %}">✕ Limpiar</a>{% endif %}
     </form>
 
+<div data-ajax-list-region="papelera" aria-live="polite">
 {% if tickets %}
     {% include "tickets/_papelera_lista.html" with pap_solicitante=1 %}
 
@@ -62,6 +63,7 @@
         <p>{% if q %}Prueba con otro código, título o solicitante, o <a href="{% url 'tickets:papelera' %}">ver todo</a>.{% else %}No hay ningún ticket eliminado. Cuando borres uno aparecerá aquí y podrás recuperarlo si fue por error.{% endif %}</p>
     </div>
 {% endif %}
+</div>
 </main>
 {% include "tickets/_papelera_js.html" %}
 {% endblock %}

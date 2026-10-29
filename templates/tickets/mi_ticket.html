@@ -34,7 +34,7 @@
                 <div class="corp-detail-badges ticket-meta-row">
                     <span class="meta-pill meta-prio meta-prio-{{ ticket.prioridad }}">
                         <svg class="icon icon-sm"><use href="#i-alert"/></svg> {{ ticket.get_prioridad_display }}</span>
-                    <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-folder"/></svg> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
+                    <span class="meta-pill category-shared" data-category-label="{{ ticket.categoria.nombre|default:'Sin categoría' }}" data-category-group="{{ ticket.categoria.grupo|default:'' }}"><span data-category-icon></span> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
                     <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-clock"/></svg> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
                     <span class="meta-pill">{% include "tickets/_ans_time.html" with t=ticket %}</span>
                     {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
@@ -68,7 +68,7 @@
                 </div>
 
                 <div class="corp-detail-sections">
-                    <section class="corp-subsection">
+                    <section class="corp-subsection" id="chat-soporte">
                         <div class="corp-subsection-head">
                             <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
                             <h3>Descripción</h3>

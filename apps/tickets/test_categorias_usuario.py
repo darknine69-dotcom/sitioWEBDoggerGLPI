@@ -81,6 +81,8 @@ class VistaCategoriasUsuario(TestCase):
         respuesta = self.client.get(reverse("tickets:crear_ticket"), {"categoria": categoria.pk})
         self.assertEqual(respuesta.status_code, 200)
         self.assertEqual(respuesta.context["form"].initial.get("categoria"), categoria.pk)
+        self.assertTrue(respuesta.context["categoria_preseleccionada"])
+        self.assertNotContains(respuesta, 'id="id_categoria" disabled')
 
     def test_categoria_inactiva_o_inventada_no_preselecciona(self):
         inactiva = Categoria.objects.get(grupo="Puntos de venta", nombre="POS Hardware")

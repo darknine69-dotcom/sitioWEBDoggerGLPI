@@ -35,8 +35,8 @@
             <section class="cat-grupo collapsed" data-grupo="{{ grupo.grupo|lower }}" data-busca="{{ grupo.grupo|lower }}">
                 <h3 class="cat-grupo-head" data-toggle tabindex="0" role="button"
                     aria-label="Desplegar {{ grupo.grupo }}" aria-expanded="false">
-                    <span class="cat-grupo-icono" aria-hidden="true">
-                        <svg class="icon"><use href="#i-folder"/></svg>
+                    <span class="cat-grupo-icono category-shared" data-category-label="{{ grupo.grupo }}" data-category-group="{{ grupo.grupo }}" aria-hidden="true">
+                        <span data-category-icon></span>
                     </span>
                     <span class="cat-grupo-txt">
                         <span class="cat-grupo-nom">{{ grupo.grupo }}</span>
@@ -53,7 +53,7 @@
                              aria-expanded="false" aria-label="Ver detalles de {{ sub.nombre }}">
                             <svg class="icon icon-sm cat-sign cat-item-sign" aria-hidden="true"><use href="#i-plus"/></svg>
                             <span class="cat-item-punto meta-{{ sub.prioridad_default }}" aria-hidden="true"></span>
-                            <span class="cat-item-nom">{{ sub.nombre }}</span>
+                            <span class="cat-item-nom category-shared" data-category-label="{{ sub.nombre }}" data-category-group="{{ grupo.grupo }}"><span data-category-icon></span>{{ sub.nombre }}</span>
                             <span class="meta-pill meta-{{ sub.prioridad_default }}">{{ sub.get_prioridad_default_display }}</span>
                             <span class="cat-item-ans">{{ sub.ans_horas }} h</span>
                         </div>

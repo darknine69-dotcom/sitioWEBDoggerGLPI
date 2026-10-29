@@ -102,6 +102,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.notificaciones.context_processors.notificaciones",
                 "apps.accounts.context_processors.atajos",
+                "apps.accounts.page_header.encabezado_pagina",
                 "apps.tickets.context_processors.dogger_config",
                 "apps.tickets.context_processors.calificacion_lateral",
             ],

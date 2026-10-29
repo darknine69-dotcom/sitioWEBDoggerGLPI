@@ -75,12 +75,16 @@ def mapeados_del_tecnico(usuario_actual, ticket=None):
     """
     from .cache import cachear, clave
 
-    pk_ticket = ticket.pk if ticket is not None else 0
+    # En el detalle se califica exclusivamente a quien está a cargo del
+    # ticket.  Además no se cachea: al volver a la página el voto recién
+    # guardado debe reflejarse de inmediato y no volver a ofrecerse.
+    if ticket is not None:
+        return _mapeados_frio(usuario_actual, ticket)
 
     def _construir():
         return _mapeados_frio(usuario_actual, ticket)
 
-    return cachear(clave("tec", "mapeados", usuario_actual.pk, pk_ticket), _construir, segundos=120)
+    return cachear(clave("tec", "mapeados", usuario_actual.pk, 0), _construir, segundos=120)
 
 
 def _mapeados_frio(usuario_actual, ticket=None):
@@ -88,6 +92,10 @@ def _mapeados_frio(usuario_actual, ticket=None):
     from apps.tickets.models import CalificacionTecnico, Ticket
 
     qs = Usuario.objects.filter(rol=Usuario.Rol.TECNICO, activo=True, is_active=True)
+    if ticket is not None:
+        # La lista de un ticket no es el directorio general de técnicos. Solo
+        # aparece el técnico actualmente asignado a ese trabajo.
+        qs = qs.filter(pk=ticket.tecnico_asignado_id)
     if usuario_actual.rol == Usuario.Rol.TECNICO:
         # Un técnico no aparece en su propia lista.
         qs = qs.exclude(pk=usuario_actual.pk)

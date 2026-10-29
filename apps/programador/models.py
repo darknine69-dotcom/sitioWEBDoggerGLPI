@@ -95,6 +95,7 @@ class CalendarioEvento(models.Model):
     )
     sitio = models.CharField("Sitio / punto", max_length=80, blank=True, default="")
     grupo = models.CharField("Grupo", max_length=60, blank=True, default="")
+    metadatos = models.JSONField("Metadatos", default=dict, blank=True)
     completado = models.BooleanField("Completado", default=False)
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -114,3 +115,56 @@ class CalendarioEvento(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_display()}: {self.titulo} ({self.fecha})"
+
+
+class CalendarioEventoLectura(models.Model):
+    """Acuse de lectura de un evento compartido por parte de un técnico."""
+
+    evento = models.ForeignKey(
+        CalendarioEvento,
+        on_delete=models.CASCADE,
+        related_name="lecturas",
+        db_column="EventoId",
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="lecturas_eventos_calendario",
+        db_column="UsuarioId",
+    )
+    leido_en = models.DateTimeField("Leído en", auto_now_add=True)
+
+    class Meta:
+        db_table = "CalendarioEventoLecturas"
+        constraints = [
+            models.UniqueConstraint(fields=["evento", "usuario"], name="uq_calendario_evento_lectura"),
+        ]
+        ordering = ["leido_en"]
+
+
+class DisponibilidadTecnicoLectura(models.Model):
+    """Registro automático de quién consultó una marca de disponibilidad."""
+
+    disponibilidad = models.ForeignKey(
+        DisponibilidadTecnico,
+        on_delete=models.CASCADE,
+        related_name="lecturas",
+        db_column="DisponibilidadId",
+    )
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="lecturas_disponibilidad_tecnico",
+        db_column="UsuarioId",
+    )
+    leido_en = models.DateTimeField("Leído en", auto_now_add=True)
+
+    class Meta:
+        db_table = "DisponibilidadTecnicoLecturas"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["disponibilidad", "usuario"],
+                name="uq_disponibilidad_tecnico_lectura",
+            ),
+        ]
+        ordering = ["leido_en"]

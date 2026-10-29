@@ -220,10 +220,42 @@ def permisos_roles(request):
     if request.method != "POST":
         return redirect(reverse("accounts:ajustes") + "#pagina")
     User = get_user_model()
+    from django.contrib.admin.models import CHANGE, LogEntry
+    from django.contrib.contenttypes.models import ContentType
+    from django.db import transaction
+    from django.http import JsonResponse
+
+    permiso_unico = request.POST.get("permiso_unico")
+    mapa_permisos = {
+        "cerrar": "puede_cerrar_tickets", "eliminar": "puede_eliminar_tickets",
+        "reabrir": "puede_reabrir_tickets", "crear": "puede_crear_tickets",
+        "responder": "puede_responder_chat", "editar_anuncios": "puede_editar_anuncios",
+    }
+    if permiso_unico is not None:
+        campo = mapa_permisos.get(permiso_unico)
+        uid = request.POST.get("uid", "")
+        valor = request.POST.get("valor")
+        if not campo or not uid.isdigit() or valor not in ("0", "1"):
+            return JsonResponse({"ok": False, "error": "El cambio de permiso no es válido."}, status=400)
+        with transaction.atomic():
+            u = User.objects.select_for_update().filter(pk=int(uid)).first()
+            if u is None:
+                return JsonResponse({"ok": False, "error": "La cuenta no existe."}, status=404)
+            anterior = getattr(u, campo)
+            nuevo = valor == "1"
+            if anterior != nuevo:
+                setattr(u, campo, nuevo)
+                u.save(update_fields=[campo])
+                LogEntry.objects.log_action(user_id=request.user.pk, content_type_id=ContentType.objects.get_for_model(User).pk, object_id=str(u.pk), object_repr=str(u)[:200], action_flag=CHANGE, change_message=f"Permiso {campo}: {'activado' if anterior else 'desactivado'} → {'activado' if nuevo else 'desactivado'}")
+        return JsonResponse({"ok": True})
     vistos = {
         int(pk) for pk in request.POST.getlist("uid") if str(pk).isdigit()
     }
     for u in User.objects.filter(pk__in=vistos):
+        anteriores = {campo: getattr(u, campo) for campo in (
+            "puede_cerrar_tickets", "puede_eliminar_tickets", "puede_reabrir_tickets",
+            "puede_crear_tickets", "puede_responder_chat", "puede_editar_anuncios",
+        )}
         for campo, llave in (
             ("puede_cerrar_tickets", "cerrar"),
             ("puede_eliminar_tickets", "eliminar"),
@@ -235,11 +267,22 @@ def permisos_roles(request):
                 u, campo,
                 request.POST.get(f"perm_{u.pk}_{llave}") in ("1", "on", "true"),
             )
-        u.save(update_fields=[
+        campos = [
             "puede_cerrar_tickets", "puede_eliminar_tickets",
             "puede_reabrir_tickets", "puede_crear_tickets",
             "puede_responder_chat",
-        ])
+        ]
+        if request.POST.get("incluye_permiso_anuncios") == "1":
+            u.puede_editar_anuncios = request.POST.get(f"perm_{u.pk}_editar_anuncios") in ("1", "on", "true")
+            campos.append("puede_editar_anuncios")
+        with transaction.atomic():
+            u.save(update_fields=campos)
+            for campo in campos:
+                if anteriores[campo] != getattr(u, campo):
+                    LogEntry.objects.log_action(user_id=request.user.pk, content_type_id=ContentType.objects.get_for_model(User).pk, object_id=str(u.pk), object_repr=str(u)[:200], action_flag=CHANGE, change_message=f"Permiso {campo}: {'activado' if anteriores[campo] else 'desactivado'} → {'activado' if getattr(u, campo) else 'desactivado'}")
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        from django.http import JsonResponse
+        return JsonResponse({"ok": True})
     messages.success(request, "Permisos guardados.")
     return redirect(reverse("accounts:ajustes") + "#pagina")
 
@@ -250,6 +293,12 @@ def ajustes_cuenta(request):
     glpi_enabled = _glpi_available() and bool(getattr(user, "glpi_user_id", None))
 
     if request.method == "POST":
+        if request.POST.get("guardar_notificaciones") == "1":
+            claves = ("tickets_nuevos", "cambios_ticket", "tickets_cerrados", "recordatorios", "eventos")
+            user.preferencias_notificaciones = {clave: request.POST.get(clave) == "1" for clave in claves}
+            user.save(update_fields=["preferencias_notificaciones"])
+            messages.success(request, "Preferencias de notificaciones guardadas.")
+            return redirect(reverse("accounts:ajustes") + "#notificaciones")
         es_staff = bool(getattr(user, "es_staff_helpdesk", False))
         if es_staff and request.POST.get("borrar_glpi_al_eliminar") in ("1", "on", "true"):
             user.borrar_glpi_al_eliminar = True
@@ -296,7 +345,17 @@ def ajustes_cuenta(request):
         "atajos_elegidos": elegidos,
         "atajos_enlaces": normaliza_enlaces(getattr(user, "atajos_enlaces", None)),
         "atajos_iconos": ICONOS_ENLACE,
+        "preferencias_avisos": {clave: (user.preferencias_notificaciones or {}).get(clave, True) for clave in ("tickets_nuevos", "cambios_ticket", "tickets_cerrados", "recordatorios", "eventos")},
     }
+    from apps.tickets.models import Categoria, Ticket
+
+    if user.rol == "admin":
+        ctx["perfil_ticket_total"] = Ticket.objects.count()
+        ctx["perfil_categoria_total"] = Categoria.objects.filter(activo=True).count()
+    elif user.rol == "tecnico":
+        ctx["perfil_ticket_total"] = Ticket.objects.filter(tecnico_asignado=user).count()
+    elif user.rol == "usuario":
+        ctx["perfil_ticket_total"] = Ticket.objects.filter(solicitante_email__iexact=user.email).count()
     if user.rol == "admin":
         from apps.tickets.models import ConfigSitio
 
@@ -870,6 +929,36 @@ def configuracion_pagina(request):
 
     cfg = ConfigSitio.cargar()
 
+    if request.POST.get("ajustes_pagina") == "1":
+        from django.core.exceptions import ValidationError
+        from django.core.validators import validate_email, URLValidator
+        from django.http import JsonResponse
+        import re
+        errores = []
+        numero = request.POST.get("whatsapp_numero", "").strip()
+        correo = request.POST.get("correo_soporte", "").strip()
+        if numero and not re.fullmatch(r"[0-9]{7,20}", numero):
+            errores.append("El número de WhatsApp debe contener entre 7 y 20 dígitos.")
+        if correo:
+            try:
+                validate_email(correo)
+            except ValidationError:
+                errores.append("Introduce un correo electrónico válido.")
+        validar_url = URLValidator(schemes=["https"])
+        for campo in ("facebook_url", "instagram_url", "tiktok_url", "teams_url"):
+            valor = request.POST.get(campo, "").strip()
+            if valor:
+                try:
+                    validar_url(valor)
+                except ValidationError:
+                    errores.append("Los enlaces de redes sociales deben ser URL HTTPS válidas.")
+                    break
+        if errores:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"ok": False, "error": " ".join(errores)}, status=400)
+            messages.error(request, " ".join(errores))
+            return redirect(reverse("accounts:ajustes") + "#pagina")
+
     def _bool(name, default=False):
         return request.POST.get(name) in ("1", "on", "true", "True")
 
@@ -901,6 +990,9 @@ def configuracion_pagina(request):
     except Exception:
         pass
     cfg.save()
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        from django.http import JsonResponse
+        return JsonResponse({"ok": True})
     messages.success(request, "Configuración de la página actualizada.")
     siguiente = (request.POST.get("siguiente") or "").strip()
     if siguiente.startswith("/"):

@@ -238,6 +238,9 @@ class PermisosRolesTest(TestCase):
     def test_glpi_bloque_obedece_al_interruptor(self):
         from apps.tickets.models import ConfigSitio
 
+        cfg = ConfigSitio.cargar()
+        cfg.panel_mostrar_actividad_glpi = True
+        cfg.save()
         self.client.force_login(self.admin)
         html = self.client.get(reverse("tickets:dashboard")).content.decode()
         self.assertIn("Actividad GLPI", html)
@@ -273,6 +276,7 @@ class PermisosRolesTest(TestCase):
         self.assertTrue(esta_activo())
         self.assertEqual(cliente.timeout, 10)
 
+    @override_settings(GLPI={})
     def test_glpi_probar_sin_datos_avisa(self):
         self.client.force_login(self.admin)
         respuesta = self.client.post(

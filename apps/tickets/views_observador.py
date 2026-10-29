@@ -594,6 +594,48 @@ def usuarios_observador(request):
     total_tickets = sum(f["total"] for f in filas)
     cerrados = sum(f["cerrados_total"] for f in filas)
 
+    # Histórico de los KPI de Usuarios: se limita a las cuentas que quedaron
+    # visibles después de aplicar los filtros actuales.
+    hoy_kpi = timezone.localdate()
+    # Treinta días visibles y treinta días previos para una comparación mensual
+    # verdadera, sin extrapolar porcentajes cuando el período anterior es cero.
+    dias_kpi = [hoy_kpi - timedelta(days=59 - indice) for indice in range(60)]
+    correos_kpi = {(f["email"] or "").strip().lower() for f in filas if f["email"]}
+    tickets_kpi = list(Ticket.objects.filter(solicitante_email__in=correos_kpi)) if correos_kpi else []
+    objetos_kpi = [f["obj"] for f in filas if f.get("obj") is not None]
+    lista_kpi = list(ElementoMiLista.objects.filter(
+        observador=usuario, usuario_email__in=correos_kpi
+    )) if correos_kpi else []
+
+    def _serie_kpi(objetos, fecha_attr, condicion=lambda objeto: True):
+        return [sum(
+            1 for objeto in objetos
+            if condicion(objeto) and getattr(objeto, fecha_attr, None)
+            and timezone.localtime(getattr(objeto, fecha_attr)).date() == dia
+        ) for dia in dias_kpi]
+
+    activos_kpi = lambda ticket: ticket.estado in _ACTIVOS
+    finalizados_kpi = lambda ticket: ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
+    series_kpi = {
+        "personas": _serie_kpi(objetos_kpi, "fecha_creacion"),
+        "tickets": _serie_kpi(tickets_kpi, "fecha_creacion"),
+        "abiertos": _serie_kpi(tickets_kpi, "fecha_creacion", activos_kpi),
+        "avance": _serie_kpi(tickets_kpi, "fecha_resolucion", finalizados_kpi),
+        "lista": _serie_kpi(lista_kpi, "creado_en"),
+        "incidencias": _serie_kpi(tickets_kpi, "fecha_creacion", lambda ticket: ticket.prioridad == Ticket.Prioridad.URGENTE),
+    }
+    def _tendencia_kpi(valores, desfavorable=False):
+        actual, anterior = sum(valores[30:]), sum(valores[:30])
+        if not anterior:
+            return None
+        cambio = round((actual - anterior) * 100 / anterior)
+        favorable = cambio <= 0 if desfavorable else cambio >= 0
+        return {"texto": f"{cambio:+d}%", "clase": "is-positive" if favorable else "is-negative"}
+    tendencias_kpi = {
+        clave: _tendencia_kpi(valores, clave in ("abiertos", "incidencias"))
+        for clave, valores in series_kpi.items()
+    }
+
     # La zona recién creada (si venimos de crearla): Usuarios se abre con la
     # ventana que propone meterle puntos de venta.
     recien_creada = None
@@ -625,6 +667,11 @@ def usuarios_observador(request):
             "todos_usuarios": todos_usuarios,
             "zonas_obs": zonas_obs,
             "zona_nueva": recien_creada,
+            "usuarios_kpi_series": {
+                "labels": [dia.strftime("%d/%m/%Y") for dia in dias_kpi[30:]],
+                "series": {clave: valores[30:] for clave, valores in series_kpi.items()},
+            },
+            "usuarios_kpi_tendencias": tendencias_kpi,
         },
     )
 

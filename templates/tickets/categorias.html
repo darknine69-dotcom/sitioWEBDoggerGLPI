@@ -69,7 +69,7 @@
                     {% for sub in grupo.subcategorias %}
                     <tr>
                         <td class="cat-sub-name">
-                            <strong class="cat-sub-title">{{ sub.nombre }}</strong>
+                            <strong class="cat-sub-title category-shared" data-category-label="{{ sub.nombre }}" data-category-group="{{ grupo.grupo }}"><span data-category-icon></span>{{ sub.nombre }}</strong>
                             {% if sub.cubre %}<span class="cat-sub-cubre">{{ sub.cubre }}</span>{% endif %}
                             <span class="cat-sub-badges">
                                 {% if sub.glpi_category_id %}<span class="meta-pill meta-glpi">GLPI #{{ sub.glpi_category_id }}</span>{% endif %}

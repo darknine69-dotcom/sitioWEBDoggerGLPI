@@ -11,5 +11,7 @@ urlpatterns = [
     path("api/eliminar/", views.programador_eliminar, name="eliminar"),
     path("api/completado/", views.programador_completado, name="completado"),
     path("api/disponibilidad/", views.programador_disponibilidad, name="disponibilidad"),
+    path("api/disponibilidad/leida/", views.programador_disponibilidad_leida, name="disponibilidad_leida"),
+    path("api/evento/leido/", views.programador_evento_leido, name="evento_leido"),
     path("api/festivo/", views.programador_festivo, name="festivo"),
 ]

@@ -2,11 +2,17 @@
 {% load static %}{% load asset %}
 
 {% block title %}Dogger · Programador{% endblock %}
-{% block body_class %}admin-shell{% endblock %}
+{% block body_class %}{% if request.user.rol == 'tecnico' %}lista-page tecnico-programador-page{% else %}admin-shell{% endif %}{% endblock %}
 {% block nav_programador %}is-active{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-calendar"/></svg></span>{% endblock %}
 {% block header_title %}Programador{% endblock %}
 {% block header_desc %}Programa tareas, solicitudes, recordatorios y anuncios; gestiona la disponibilidad de los técnicos.{% endblock %}
+
+{% block header_actions %}
+<button type="button" class="btn btn-primary btn-sm" id="progCreateEvent">
+    <svg class="icon"><use href="#i-plus"/></svg> Crear evento
+</button>
+{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% asset 'css/programador.css' %}">
@@ -45,6 +51,8 @@
       data-url-eliminar="{% url 'programador:eliminar' %}"
       data-url-completado="{% url 'programador:completado' %}"
       data-url-disp="{% url 'programador:disponibilidad' %}"
+      data-url-disp-leida="{% url 'programador:disponibilidad_leida' %}"
+      data-url-evento-leido="{% url 'programador:evento_leido' %}"
       data-url-festivo="{% url 'programador:festivo' %}"
       data-url-detalle="{% url 'tickets:detalle' 0 %}"
       data-destacado="{{ destacado|default:'' }}">
@@ -53,12 +61,12 @@
 
     {# ---- Filtros superiores ---- #}
     <div class="prog-filters">
-        <label class="prog-field prog-select">
+        <label class="prog-field prog-select prog-tech-select">
             <span class="prog-field-label"><svg class="icon"><use href="#i-users"/></svg> Técnico</span>
-            <select id="filtroTecnico" aria-label="Técnico">
+            <span class="prog-tech-control"><select id="filtroTecnico" aria-label="Técnico" class="prog-tech-native">
                 <option value="">Todos los técnicos</option>
                 {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
-            </select>
+            </select><button type="button" class="prog-tech-trigger" id="techPicker" aria-haspopup="listbox" aria-expanded="false"><span class="prog-tech-avatar"><svg class="icon"><use href="#i-users"/></svg></span><span class="prog-tech-name" id="techPickerName">Todos los técnicos</span><span class="prog-tech-status"><i></i> Disponible</span><svg class="icon prog-tech-chevron"><use href="#i-chevron-down"/></svg></button><div class="prog-tech-menu" id="techPickerMenu" role="listbox" hidden><button type="button" role="option" data-tech-value="">Todos los técnicos</button>{% for u in tecnicos %}<button type="button" role="option" data-tech-value="{{ u.pk }}">{{ u.nombre }}</button>{% endfor %}</div></span>
         </label>
         <p class="prog-filters-hint">El filtro de técnico aplica al calendario, a la matriz de disponibilidad y a los nuevos eventos.</p>
         <button type="button" class="btn btn-outline btn-sm prog-disp-toggle" id="dispOtrosBtn"
@@ -88,11 +96,20 @@
 
     {# ---- Panel: Programador (calendario) ---- #}
     <section class="prog-panel is-active" id="panel-programador" data-tabpanel="programador">
-        <div class="prog-cal-head">
-            <button type="button" class="prog-nav-btn" id="mesPrev" title="Mes anterior"><svg class="icon"><use href="#i-arrow-left"/></svg></button>
+        <div class="prog-calendar-layout">
+        <div class="prog-calendar-main"><div class="prog-cal-head">
+            <div class="prog-cal-nav">
+                <button type="button" class="btn btn-outline btn-sm" id="mesHoy">Hoy</button>
+                <button type="button" class="prog-nav-btn" id="mesPrev" title="Mes anterior"><svg class="icon"><use href="#i-arrow-left"/></svg></button>
+            </div>
             <h3 class="prog-cal-title" id="mesTitulo">—</h3>
-            <button type="button" class="btn btn-outline btn-sm" id="mesHoy">Hoy</button>
             <button type="button" class="prog-nav-btn" id="mesNext" title="Mes siguiente"><svg class="icon"><use href="#i-arrow-right"/></svg></button>
+            <div class="prog-view-controls" role="group" aria-label="Vista del calendario">
+                <button type="button" class="is-active" data-calendar-view="mes">Mes</button>
+                <button type="button" data-calendar-view="semana">Semana</button>
+                <button type="button" data-calendar-view="dia">Día</button>
+                <button type="button" class="prog-view-filter" id="progCalendarFilters"><svg class="icon"><use href="#i-filter"/></svg> Filtros</button>
+            </div>
         </div>
         <div class="prog-cal">
             <div class="prog-cal-weekdays">
@@ -100,10 +117,25 @@
             </div>
             <div class="prog-cal-grid" id="calGrid" aria-live="polite"></div>
         </div>
+        </div>
+        <aside class="prog-day-side" id="progDaySide" aria-live="polite">
+            <div class="prog-day-side-head"><span class="prog-side-head-icon"><svg class="icon"><use href="#i-calendar"/></svg></span><div><span class="prog-side-kicker">Detalle del día</span><h3 id="progSideDate">Selecciona un día</h3></div><span class="prog-side-count" id="progSideCount">0 eventos</span></div>
+            <div class="prog-side-actions">
+                <button type="button" class="prog-side-close" id="progSideClose" aria-label="Contraer detalle">×</button>
+            </div>
+            <div class="prog-side-day-card">
+                <div class="prog-side-date-tile"><strong id="progSideNum">—</strong><span id="progSideMonth">Selecciona una fecha</span><span id="progSideYear"></span></div>
+                <div class="prog-side-day-info"><b id="progSideState">Sin selección</b><small id="progSideEventLabel">Sin eventos programados</small></div>
+                <div class="prog-side-mini-stats" id="progSideMiniStats"></div>
+            </div>
+            <div class="prog-side-events" id="progSideEvents"><p class="prog-side-empty">Selecciona una fecha del calendario para ver los eventos y su disponibilidad.</p></div>
+            <div class="prog-side-summary" id="progSideSummary"></div>
+            <button type="button" class="btn btn-outline btn-sm prog-side-full" id="progSideFull"><svg class="icon"><use href="#i-calendar"/></svg> Ver detalle del día</button>
+        </aside></div>
     </section>
 
     {# ---- Panel: disponibilidad mensual de técnicos ---- #}
-    <section class="prog-panel" id="panel-disponibilidad" data-tabpanel="disponibilidad">
+    <section class="prog-panel prog-subview prog-availability" id="panel-disponibilidad" data-tabpanel="disponibilidad">
         <div class="prog-chart-head">
             <h3 class="prog-section-title">Disponibilidad de técnicos</h3>
             <span class="tec-count" id="chartResumen"></span>
@@ -120,30 +152,32 @@
             </table>
         </div>
         <p class="prog-chart-note">Haz clic en una celda para marcar la disponibilidad del técnico en ese día.</p>
-        <div class="tec-matrix-legend" id="matrixLegend">
-            <span><span class="m-dot dm-festivo"></span>Día festivo de la empresa</span>
-            <span><span class="m-dot dm-fin"></span>Fin de semana</span>
-            <span><span class="m-dot dm-online"></span>Técnico en línea</span>
-            <span><span class="m-dot dm-offline"></span>Técnico sin conexión</span>
-            <span><span class="m-dot dm-ausencia"></span>Abandono</span>
-            <span><span class="m-dot dm-noausencia"></span>No ausencia</span>
-            <span><span class="m-dot dm-falta"></span>Falta de disponibilidad</span>
-        </div>
+        <section class="prog-month-summary" id="monthSummary" aria-live="polite" aria-label="Resumen mensual del técnico seleccionado"></section>
     </section>
 
     {# ---- Paneles: Tareas / Recordatorios / Anuncios ---- #}
-    <section class="prog-panel" id="panel-tareas" data-tabpanel="tareas">
+    <section class="prog-panel prog-subview" id="panel-tareas" data-tabpanel="tareas">
         <div class="prog-list-head"><h3 class="prog-section-title">Tareas del mes</h3><span class="tec-count" id="tareasCount"></span></div>
         <div class="prog-event-list" id="listaTareas"></div>
     </section>
-    <section class="prog-panel" id="panel-recordatorios" data-tabpanel="recordatorios">
+    <section class="prog-panel prog-subview" id="panel-recordatorios" data-tabpanel="recordatorios">
         <div class="prog-list-head"><h3 class="prog-section-title">Recordatorios del mes</h3><span class="tec-count" id="recordatoriosCount"></span></div>
         <div class="prog-event-list" id="listaRecordatorios"></div>
     </section>
-    <section class="prog-panel" id="panel-anuncios" data-tabpanel="anuncios">
+    <section class="prog-panel prog-subview" id="panel-anuncios" data-tabpanel="anuncios">
         <div class="prog-list-head"><h3 class="prog-section-title">Anuncios del mes</h3><span class="tec-count" id="anunciosCount"></span></div>
         <div class="prog-event-list" id="listaAnuncios"></div>
     </section>
+
+    <div class="tec-matrix-legend prog-shared-legend" id="matrixLegend" aria-label="Leyenda de estados del calendario">
+        <span><span class="m-dot dm-online"></span>Disponible</span>
+        <span><span class="m-dot dm-eventos"></span>Con eventos</span>
+        <span><span class="m-dot dm-falta"></span>Ocupado</span>
+        <span><span class="m-dot dm-fin"></span>No disponible</span>
+        <span><span class="m-dot dm-ausencia"></span>Ausencia</span>
+        <span><span class="m-dot dm-seleccionado"></span>Día seleccionado</span>
+        <span><span class="m-dot dm-festivo"></span>Día festivo</span>
+    </div>
 
     {# ---- Mini toasts (feedback) ---- #}
     <div class="toast-stack" id="progToasts" aria-live="polite"></div>
@@ -153,42 +187,43 @@
 
 {# Modal: nuevo evento #}
 <div class="modal-overlay prog-modal" id="modalEvento" role="dialog" aria-modal="true" aria-labelledby="eventoTitulo">
-    <div class="modal-box">
+    <div class="modal-box prog-modal-box">
         <div class="modal-head">
-            <div class="modal-head-ic"><svg class="icon"><use href="#i-plus"/></svg></div>
+            <div class="modal-head-ic" id="evModalIcon"><svg class="icon"><use href="#i-plus"/></svg></div>
             <div class="modal-head-txt">
                 <h3 id="eventoTitulo">Nuevo evento</h3>
-                <span class="modal-head-sub">Agenda el trabajo de tu equipo</span>
+                <span class="modal-head-sub" id="eventoSub">Agenda el trabajo de tu equipo</span>
             </div>
             <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
         </div>
         <div class="modal-body">
-            <form id="formEvento">
+            <form id="formEvento" class="prog-modal-form" data-no-page-loader>
                 <input type="hidden" name="fecha" id="evFecha">
                 <div class="corp-form-grid">
-                    <label class="corp-field">Tipo
+                    <label class="corp-field" id="evTipoWrap">Tipo
                         <select name="tipo" id="evTipo">
                             <option value="tarea">Tarea</option>
                             <option value="solicitud">Solicitud</option>
                             <option value="recordatorio">Recordatorio</option>
+                            <option value="proyecto">Evento / reunión</option>
                             <option value="anuncio">Anuncio</option>
                         </select>
                     </label>
                     <label class="corp-field" id="evFechaWrap">Fecha
                         <input type="date" name="fecha_show" id="evFechaShow" required>
                     </label>
+                    <p class="ev-pista" id="evPista"></p>
                 </div>
-                <p class="ev-pista" id="evPista"></p>
                 {# El cuerpo se arma en JS: cada tipo muestra sus propios campos. #}
                 <div class="corp-form-grid ev-cuerpo" id="evCuerpo"></div>
-                <div class="corp-modal-actions prog-modal-actions">
+            </form>
+        </div>
+        <div class="corp-modal-actions prog-modal-actions prog-event-footer">
                     <button type="button" class="btn btn-outline btn-sm" id="evDispBtn"><svg class="icon"><use href="#i-clock"/></svg> Disponibilidad…</button>
                     {% if request.user.rol == 'admin' %}<button type="button" class="btn btn-outline btn-sm" id="evFestivoBtn"><svg class="icon"><use href="#i-home"/></svg> Festivo…</button>{% endif %}
                     <button type="button" class="btn btn-outline btn-sm modal-close-cancel">Cancelar</button>
-                    <button type="submit" class="btn btn-accent btn-sm"><svg class="icon"><use href="#i-check"/></svg> Guardar</button>
+                    <button type="submit" form="formEvento" class="btn btn-accent btn-sm" id="evGuardar"><svg class="icon"><use href="#i-check"/></svg> Guardar</button>
                 </div>
-            </form>
-        </div>
     </div>
 </div>
 
@@ -212,11 +247,14 @@
         <input type="time" name="hora" id="evHora">
     </label>
 
+    <label class="corp-field" data-campo="visibilidad">Quién puede verlo
+        <select name="meta_visibilidad"><option value="persona">Una persona</option><option value="todos">Todo el equipo</option></select>
+    </label>
     <label class="corp-field" data-campo="tecnico">
         <span id="evTecnicoLabel">Técnico</span>
         <select name="tecnico_id" id="evTecnico">
             <option value="">— General —</option>
-            {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
+            {% for u in destinatarios_programador %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
         </select>
     </label>
 
@@ -235,7 +273,7 @@
     </label>
 
     <label class="corp-field" data-campo="grupo">
-        Grupo
+        <span id="evGrupoLabel">Grupo</span>
         <select name="grupo" id="evGrupo">
             <option value="">— Grupo —</option>
             {% for g in grupos %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
@@ -247,51 +285,78 @@
         <textarea name="descripcion" rows="3"></textarea>
         <small class="corp-ayuda" id="evDescAyuda"></small>
     </label>
+
+    <label class="corp-field" data-campo="prioridad">Prioridad
+        <select name="meta_prioridad"><option value="baja">Baja</option><option value="media" selected>Media</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select>
+    </label>
+    <label class="corp-field" data-campo="estado">Estado
+        <select name="meta_estado"><option value="pendiente">Pendiente</option><option value="en_progreso">En progreso</option><option value="completada">Completada</option></select>
+    </label>
+    <label class="corp-field" data-campo="repeticion">Repetición
+        <select name="meta_repeticion"><option value="una_vez">Una vez</option><option value="diaria">Diaria</option><option value="semanal">Semanal</option><option value="mensual">Mensual</option></select>
+    </label>
+    <label class="corp-field" data-campo="anticipacion">Anticipación de aviso
+        <select name="meta_anticipacion"><option value="5_min">5 minutos</option><option value="10_min">10 minutos</option><option value="15_min">15 minutos</option><option value="30_min" selected>30 minutos</option><option value="60_min">1 hora</option><option value="1_dia">1 día</option></select>
+    </label>
+    <label class="corp-field corp-field-full" data-campo="participantes">Participantes
+        <input type="text" name="meta_participantes" maxlength="250" placeholder="Nombres o correos separados por coma">
+    </label>
+    <label class="corp-field" data-campo="fecha_fin">Fecha límite / expiración
+        <input type="date" name="meta_fecha_fin">
+    </label>
+    <label class="corp-field" data-campo="hora_fin">Hora límite / finalización
+        <input type="time" name="meta_hora_fin">
+    </label>
+    <label class="corp-field" data-campo="destinatarios">Destinatarios
+        <select name="meta_destinatarios"><option value="todos">Todos</option><option value="tecnicos">Técnicos específicos</option><option value="administradores">Administradores</option></select>
+    </label>
+    <label class="corp-field" data-campo="importancia">Importancia
+        <select name="meta_importancia"><option value="normal">Normal</option><option value="importante">Importante</option><option value="urgente">Urgente</option></select>
+    </label>
 </div>
 
 {# Modal: disponibilidad #}
-<div class="modal-overlay prog-modal" id="modalDisp" role="dialog" aria-modal="true" aria-labelledby="dispTitulo2">
-    <div class="modal-box">
+<div class="modal-overlay prog-modal" id="modalDisp" data-tipo="red" role="dialog" aria-modal="true" aria-labelledby="dispTitulo2">
+    <div class="modal-box prog-modal-box">
         <div class="modal-head">
             <div class="modal-head-ic"><svg class="icon"><use href="#i-clock"/></svg></div>
             <div class="modal-head-txt">
-                <h3 id="dispTitulo2">Disponibilidad</h3>
-                <span class="modal-head-sub">Ausencia, falta de disponibilidad o no ausencia</span>
+                <h3 id="dispTitulo2">Programar disponibilidad</h3>
+                <span class="modal-head-sub">Define el estado real de la agenda del técnico</span>
             </div>
             <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
         </div>
         <div class="modal-body">
-            <form id="formDisp">
-                <input type="hidden" name="fecha" id="dispFecha">
-                <label class="corp-field">Técnico
+            <form id="formDisp" class="prog-modal-form prog-disp-form" data-no-page-loader>
+                <label class="corp-field prog-disp-tecnico">Técnico <span class="prog-required">*</span>
                     <select name="tecnico_id" id="dispTecnico" required>
                         <option value="">— Selecciona —</option>
                         {% for u in tecnicos %}<option value="{{ u.pk }}">{{ u.nombre }}</option>{% endfor %}
                     </select>
                 </label>
-                <label class="corp-field">Fecha
-                    <span class="fecha-chip" id="dispFechaShow"></span>
+                <label class="corp-field prog-disp-fecha">Fecha <span class="prog-required">*</span>
+                    <input type="date" name="fecha" id="dispFecha" required>
                 </label>
                 <label class="corp-field">Hora <small>(opcional)</small>
                     <input type="time" name="hora" id="dispHora" title="Ej: 08:00 si la falta/ausencia cubre solo desde una hora concreta">
                 </label>
-                <div class="corp-field" style="margin-top:16px">Disponibilidad <small>· selecciona el estado del día</small></div>
+                <div class="corp-field prog-disp-label">Disponibilidad <span class="prog-required">*</span></div>
                 <div class="prog-disp-tipos">
-                    <button type="button" class="prog-disp-tipo" data-tipo="ausencia"><span class="legend-dot lg-ausencia"></span> Ausencia <small>El técnico no estará disponible</small></button>
-                    <button type="button" class="prog-disp-tipo" data-tipo="falta"><span class="legend-dot lg-falta"></span> Falta de disponibilidad <small>Solo cubre parte del día</small></button>
-                    <button type="button" class="prog-disp-tipo" data-tipo="no_ausencia"><span class="legend-dot lg-noausencia"></span> No ausencia <small>Confirma que estará disponible</small></button>
+                    <button type="button" class="prog-disp-tipo" data-tipo="ausencia" aria-pressed="false"><span class="prog-disp-symbol"><i></i><svg class="icon"><use href="#i-calendar-x"/></svg></span><b>No disponible</b><small>El técnico no estará disponible</small></button>
+                    <button type="button" class="prog-disp-tipo" data-tipo="falta" aria-pressed="false"><span class="prog-disp-symbol"><i></i><svg class="icon"><use href="#i-users"/></svg></span><b>Ocupado</b><small>Solo cubre parte del día</small></button>
+                    <button type="button" class="prog-disp-tipo" data-tipo="no_ausencia" aria-pressed="false"><span class="prog-disp-symbol"><i></i><svg class="icon"><use href="#i-check-circle"/></svg></span><b>Disponible</b><small>Confirma que estará disponible</small></button>
                 </div>
                 <input type="hidden" name="tipo" id="dispTipo" value="">
-                <label class="corp-field corp-field-full">Nota
+                <label class="corp-field corp-field-full">Nota <small>(opcional)</small>
                     <input type="text" name="nota" id="dispNota" placeholder="Motivo (opcional)">
                 </label>
-                <div class="corp-modal-actions">
-                    <button type="button" class="btn btn-outline btn-sm" id="dispQuitar">Quitar marca</button>
-                    <button type="button" class="btn btn-outline btn-sm modal-close-cancel">Cancelar</button>
-                    <button type="submit" class="btn btn-accent btn-sm" id="dispGuardarBtn" disabled><svg class="icon"><use href="#i-check"/></svg> Guardar</button>
-                </div>
             </form>
         </div>
+        <div class="corp-modal-actions prog-disp-footer">
+                    <button type="button" class="btn btn-outline btn-sm" id="dispQuitar">Quitar marca</button>
+                    <button type="button" class="btn btn-outline btn-sm modal-close-cancel">Cancelar</button>
+                    <button type="submit" form="formDisp" class="btn btn-accent btn-sm" id="dispGuardarBtn" disabled><svg class="icon"><use href="#i-check"/></svg> Guardar</button>
+                </div>
     </div>
 </div>
 
@@ -308,7 +373,7 @@
             <button type="button" class="modal-close" aria-label="Cerrar">&times;</button>
         </div>
         <div class="modal-body">
-            <form id="formFestivo">
+            <form id="formFestivo" data-no-page-loader>
                 <input type="hidden" name="fecha" id="festivoFecha">
                 <label class="corp-field">Fecha
                     <span class="fecha-chip" id="festivoFechaShow"></span>

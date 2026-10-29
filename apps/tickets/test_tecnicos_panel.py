@@ -30,10 +30,10 @@ class AjusteGlobalActividadGlpi(TestCase):
             "jefe@dogger.com.co", "Jefe", "dogger1234", rol="admin",
         )
 
-    def test_la_actividad_glpi_se_ve_por_defecto(self):
+    def test_la_actividad_glpi_esta_oculta_por_defecto(self):
         self.client.force_login(self.usuario)
         html = self.client.get(reverse("tickets:mi_panel")).content.decode()
-        self.assertIn("Actividad reciente GLPI", html)
+        self.assertNotIn("Actividad reciente GLPI", html)
 
     def test_apagado_el_bloque_no_aparece_en_mi_panel(self):
         cfg = ConfigSitio.cargar()

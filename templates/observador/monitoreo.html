@@ -323,6 +323,21 @@
 .obs-monitor-kpi-arrow { display:grid; flex:0 0 38px; width:38px; height:38px; place-items:center; border-radius:50%; background:#fff; color:var(--kpi); box-shadow:0 5px 13px rgba(15,23,42,.12); }.obs-monitor-kpi-arrow .icon { width:19px; height:19px; }
 @media (max-width:1180px){.obs-monitor-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}@media(max-width:600px){.obs-monitor-kpis{grid-template-columns:1fr;gap:14px}.obs-monitor-kpi{min-height:184px;padding:18px;}}
 @media (prefers-reduced-motion:reduce){.obs-monitor-kpi,.obs-monitor-kpi-chart .obs-kpi-dot,.obs-monitor-kpi-tooltip{transition:none}.obs-monitor-kpi:hover{transform:none}}
+/* Actividad: separar claramente cada módulo y facilitar la lectura. */
+.obs-reference-section .obs-reference-grid { gap:16px; align-items:start; }
+.obs-reference-section .obs-reference-card { min-width:0; padding:0 0 12px; border:1px solid #dce5ef; border-radius:14px; background:#fff; box-shadow:0 6px 20px rgba(15,23,42,.055); }
+.obs-reference-section .obs-reference-head { display:flex; align-items:center; gap:12px; min-height:68px; margin:0 0 12px; padding:15px 16px; border-bottom:1px solid #e8edf4; background:linear-gradient(100deg,#f8fafc,#fff); }
+.obs-reference-section .chart-head-icon { display:grid; place-items:center; flex:none; width:38px; height:38px; border-radius:10px; color:#2563eb; background:#eff6ff; }
+.obs-reference-section .chart-head-icon .icon { width:19px; height:19px; }
+.obs-reference-section .obs-reference-copy h3 { font-size:16px; color:#17233b; font-weight:700; }
+.obs-reference-section .obs-reference-copy p { font-size:12px; line-height:1.35; color:#64748b; }
+.obs-reference-section .obs-reference-action { flex:none; min-height:34px; padding:7px 10px; border:1px solid #dbe6f5; border-radius:8px; color:#315c93; background:#f5f9ff; font-size:12px; font-weight:700; cursor:pointer; }
+.obs-reference-section .obs-reference-action:hover,.obs-reference-section .obs-reference-action:focus-visible { color:#1d4ed8; border-color:#a8c8f5; background:#eaf3ff; outline:none; }
+.obs-reference-section .obs-modern-ticket-columns,.obs-reference-section .obs-live-tech-columns { margin:0 12px 4px; padding:9px 10px; border:1px solid #e8edf4; background:#f1f5f9; color:#536985; font-size:11px; }
+.obs-reference-section .obs-modern-ticket-row,.obs-reference-section .obs-modern-tech-row { border-bottom:1px solid #e2e8f0; }
+.obs-reference-section .obs-modern-ticket-row:hover,.obs-reference-section .obs-modern-tech-row:hover { background:#f4f8ff; }
+.obs-reference-section .obs-modern-ticket-list,.obs-reference-section .obs-modern-tech-list { scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
+@media(max-width:760px) { .obs-reference-section .obs-reference-head { min-height:0; padding:12px; }.obs-reference-section .obs-reference-copy h3 { font-size:15px; }.obs-reference-section .obs-reference-action { padding:7px; }.obs-reference-section .obs-modern-ticket-columns,.obs-reference-section .obs-modern-ticket-row { grid-template-columns:70px 64px minmax(0,1fr) 18px; gap:6px; } }
 </style>
 {% endblock %}
 
@@ -494,7 +509,7 @@
                            aria-label="Mensaje para el técnico de {{ t.codigo }}" required>
                     <button type="submit" class="btn btn-sm">Presionar</button>
                 </form>
-                <a class="ans-ficha-detalle" href="{% url 'tickets:mi_ticket' t.pk %}">detalles ›</a>
+                <a class="ans-ficha-detalle" data-ticket-ficha="{{ t.pk }}" href="{% url 'tickets:mi_ticket' t.pk %}">detalles ›</a>
             </div>
             </div>
         </details>
@@ -542,7 +557,7 @@
             <div class="obs-modern-ticket-columns" aria-hidden="true"><span>Estado</span><span>Ticket</span><span>Solicitud</span><span>Usuario / técnico</span><span>Fecha</span><span></span></div>
             <div class="obs-modern-ticket-list" id="actLista">
             {% for t in actividad.tickets %}
-            <a class="obs-modern-ticket-row" href="{% url 'tickets:mi_ticket' t.pk %}" aria-label="Ver detalle de {{ t.codigo }}">
+            <a class="obs-modern-ticket-row" data-ticket-ficha="{{ t.pk }}" href="{% url 'tickets:mi_ticket' t.pk %}" aria-label="Ver detalle de {{ t.codigo }}">
                 <span class="obs-modern-ticket-status is-{{ t.estado }}"><i></i>{{ t.get_estado_display }}</span>
                 <strong class="obs-modern-ticket-code">{{ t.codigo }}</strong>
                 <span class="obs-modern-ticket-request"><b>{{ t.titulo }}</b><small>{{ t.solicitante_nombre }} · {{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</small></span>

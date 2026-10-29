@@ -30,7 +30,12 @@
     </script>
     <link rel="stylesheet" href="{% asset 'css/dogger-theme.css' %}">
     <link rel="stylesheet" href="{% asset 'css/theme-modes.css' %}">
+    <link rel="stylesheet" href="{% asset 'css/page-header.css' %}">
+    <link rel="stylesheet" href="{% asset 'css/ticket-ficha.css' %}">
+    <script defer src="{% asset 'js/page-header.js' %}"></script>
+    <script defer src="{% asset 'js/lucide-icons.js' %}"></script>
     <script defer src="{% asset 'js/dogger.js' %}"></script>
+    <script defer src="{% asset 'js/tabla-ajax.js' %}"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}" data-tooltips="{% if request.user.tooltips_habilitado %}1{% else %}0{% endif %}"
@@ -42,7 +47,10 @@ envíos de formulario) y al terminar de cargar la página. Es puro adorno: si
 el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcomment %}
 <div class="page-loader" id="pageLoader" hidden aria-hidden="true">
     <div class="page-loader-card" role="status" aria-live="polite" aria-atomic="true">
-        <span class="page-loader-spin" aria-hidden="true"></span>
+        <span class="page-loader-visual" aria-hidden="true">
+            <svg class="page-loader-icon"><use id="pageLoaderIconUse" href="#i-refresh"/></svg>
+            <span class="page-loader-spin"></span>
+        </span>
         <div>
             <strong id="pageLoaderTitle">Cargando información</strong>
             <span id="pageLoaderText">Preparando la información solicitada…</span>
@@ -51,7 +59,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
 </div>
 
 <!-- Iconos SVG compartidos (sprite) -->
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+<svg id="dogger-lucide-sprite" data-icon-library="lucide" xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
     <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
     <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
         <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
@@ -71,7 +79,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
     <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
     <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></symbol>
     <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
-    <symbol id="i-excel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9.5 13.5l5 5M14.5 13.5l-5 5"/></symbol>
+    <symbol id="i-excel" viewBox="0 0 24 24" stroke="none"><path fill="#185C37" d="M12 2h9a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1h-9z"/><path fill="#21A366" d="M12 2h9a1 1 0 0 1 1 1v8H12z"/><path fill="#33C481" d="M15 4h5v3h-5z"/><path fill="#107C41" d="M15 8h5v3h-5z"/><path fill="#33C481" d="M15 12h5v3h-5z"/><path fill="#107C41" d="M15 16h5v3h-5z"/><path fill="#107C41" d="M2 5.1 13 3v18L2 18.9z"/><path fill="#fff" d="m5 8 1.8-.1 1.4 2.6L9.6 7.7l1.8-.1-2.3 4.3 2.4 4.5-1.9-.1-1.5-2.8-1.5 2.7-1.8-.1 2.4-4.2z"/></symbol>
     <symbol id="i-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></symbol>
     <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></symbol>
     <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
@@ -113,6 +121,9 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
     <symbol id="i-tiktok" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M16.6 3c.35 1.53 1.4 2.85 2.9 3.33v2.73c-1.1.05-2.15-.27-3.08-.85v5.6a5.92 5.92 0 11-5.92-5.92c.32 0 .64.02.95.07v2.92a3 3 0 102.05 2.86V3h3.1z"/></symbol>
     <symbol id="i-whatsapp" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></symbol>
     <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+    <symbol id="i-layout-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+    <symbol id="i-folder-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-chart-column-increasing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
     <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
     <symbol id="i-ip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></symbol>
     <symbol id="i-headset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></symbol>
@@ -120,6 +131,37 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
     <symbol id="i-thumb-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(180 12 12)"><path d="M7 10v11"/><path d="M15 5.9l-1 4.1h5.8a2 2 0 011.9 2.6l-2.3 8A2 2 0 0117.5 22H4a2 2 0 01-2-2v-8a2 2 0 012-2h2.8a2 2 0 001.8-1.1L12 2a3.1 3.1 0 013 3.9z"/></g></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
     <symbol id="i-printer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+    <!-- Alias y símbolos Lucide usados por navegación, estados y calendario. -->
+    <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+    <symbol id="i-calendar-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7.5V6a2 2 0 0 0-2-2h-1V2"/><path d="M16 2v2H8V2"/><path d="M3 10h18"/><path d="M3 6a2 2 0 0 1 2-2h1"/><path d="M3 6v12a2 2 0 0 0 2 2h5"/><circle cx="17" cy="17" r="3"/><path d="M17 15.5v1.7l1.2.8"/></symbol>
+    <symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l4 2"/></symbol>
+    <symbol id="i-circle-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+    <symbol id="i-clock-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 1"/><path d="M5 3 2 6"/><path d="M19 3l3 3"/><path d="M12 2v2"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.2a2 2 0 0 0-.6-1.4L13 13l3.4-3.4a2 2 0 0 0 .6-1.4V2"/><path d="M7 2v6.2a2 2 0 0 0 .6 1.4L11 13l-3.4 3.4a2 2 0 0 0-.6 1.4V22"/></symbol>
+    <symbol id="i-user-round-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="5"/><path d="M2 21a8 8 0 0 1 16 0"/><path d="m17 16 2 2 3-3"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+    <symbol id="i-trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+    <symbol id="i-shield-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3z"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+    <symbol id="i-calendar-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></symbol>
+    <symbol id="i-bell-ring" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 21a2 2 0 0 0 3.4 0"/><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M4 2C2.8 3.7 2 5.7 2 8M20 2c1.2 1.7 2 3.7 2 6"/></symbol>
+    <symbol id="i-list-todo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8M13 12h8M13 18h8"/></symbol>
+    <symbol id="i-messages-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18a2 2 0 0 0 2 2h4l2 2v-8a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2z"/><path d="M4 2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8l-4 4V4a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-calendar-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18M10 15l4 4m0-4-4 4"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 13z"/><path d="M11.6 16.8a3 3 0 1 1-5.2-2.6"/><path d="M6 13v4"/></symbol>
+    <symbol id="i-smile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></symbol>
+    <symbol id="i-key-round" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 7.5a5.5 5.5 0 1 0-5 8.3L13 18h2v2h2v2h3v-3.2l-5.1-5.1a5.5 5.5 0 0 0 .6-6.2z"/><circle cx="10" cy="8" r=".8" fill="currentColor"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6 6h.01M6 18h.01"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v7c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12v7c0 1.7 4 3 9 3s9-1.3 9-3v-7"/></symbol>
+    <symbol id="i-hard-drive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M6 13h.01M10 13h.01M6 17h12"/><path d="m12 5 3 3-3 3M15 8H9"/></symbol>
+    <symbol id="i-usb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V8"/><path d="m8 12 4-4 4 4"/><path d="M7 5h10"/><path d="M7 5v4M17 5v4"/><circle cx="12" cy="4" r="2"/></symbol>
+    <symbol id="i-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9 5-9-5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></symbol>
+    <symbol id="i-calculator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.7-9.1A5 5 0 1 1 17.5 19z"/></symbol>
+    <symbol id="i-user-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></symbol>
+    <symbol id="i-scan-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></symbol>
+    <symbol id="i-shopping-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 2 2 2.5 11h10.8l2-8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol>
 </svg>
 {% block header %}
     {% load dogger_nav %}
@@ -150,7 +192,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                 <a href="{% url 'tickets:mi_panel' %}"
                    class="sidebar-link{% nav_active 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %}"
                    {% nav_current 'mi_panel' 'mi_ticket' 'mi_ticket_editar' %} data-title="Mi panel">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-home"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-layout-dashboard"/></svg>
                     <span class="sidebar-label">Mi panel</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} por revisar</span>{% endif %}
@@ -160,7 +202,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                     <span class="sidebar-label">Reportar incidencia</span>
                 </a>
                 <a href="{% url 'tickets:categorias_publico' %}" class="sidebar-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %} data-title="Categoría">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder-closed"/></svg>
                     <span class="sidebar-label">Categoría</span>
                 </a>
                 <a href="{% url 'tickets:mi_papelera' %}" class="sidebar-link{% nav_active 'mi_papelera' %}"{% nav_current 'mi_papelera' %} data-title="Papelera">
@@ -176,7 +218,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Trabajo</p>
                 <a href="{% url 'tickets:panel_tecnico' %}" class="sidebar-link{% nav_active 'panel_tecnico' 'mis_tickets' 'panel_tecnico_lote' %}"{% nav_current 'panel_tecnico' %} data-title="Panel">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-grid"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-layout-dashboard"/></svg>
                     <span class="sidebar-label">Panel</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} por revisar</span>{% endif %}
@@ -188,14 +230,14 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} avisos por ver</span>{% endif %}
                 </a>
                 <a href="{% url 'tickets:categorias_arbol' %}" class="sidebar-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %} data-title="Categorías">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder-closed"/></svg>
                     <span class="sidebar-label">Categorías</span>
                 </a>
             </div>
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Agenda</p>
                 <a href="{% url 'programador:panel_programador' %}" class="sidebar-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %} data-title="Calendario">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-calendar"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-calendar-clock"/></svg>
                     <span class="sidebar-label">Calendario</span>
                 </a>
             </div>
@@ -205,11 +247,11 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Seguimiento</p>
                 <a href="{% url 'tickets:tec_monitoreo' %}" class="sidebar-link{% nav_active 'tec_monitoreo' %}"{% nav_current 'tec_monitoreo' %} data-title="Monitoreo">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-eye"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-monitor"/></svg>
                     <span class="sidebar-label">Monitoreo</span>
                 </a>
                 <a href="{% url 'tickets:tec_historial' %}" class="sidebar-link{% nav_active 'tec_historial' %}"{% nav_current 'tec_historial' %} data-title="Historial">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-clock"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-history"/></svg>
                     <span class="sidebar-label">Historial</span>
                 </a>
                 <a href="{% url 'tickets:papelera' %}" class="sidebar-link{% nav_active 'papelera' %}"{% nav_current 'papelera' %} data-title="Papelera">
@@ -223,7 +265,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Operación</p>
                 <a href="{% url 'tickets:dashboard' %}" class="sidebar-link{% nav_active 'dashboard' %}"{% nav_current 'dashboard' %} data-title="Panel">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-grid"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-layout-dashboard"/></svg>
                     <span class="sidebar-label">Panel</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} por revisar</span>{% endif %}
@@ -238,22 +280,22 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Análisis</p>
                 <a href="{% url 'tickets:reportes' %}" class="sidebar-link{% nav_active 'reportes' %}"{% nav_current 'reportes' %} data-title="Reportes">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-chart"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-chart-column-increasing"/></svg>
                     <span class="sidebar-label">Reportes</span>
                 </a>
             </div>
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Administración</p>
                 <a href="{% url 'tickets:usuarios' %}" class="sidebar-link{% nav_active 'usuarios' %}"{% nav_current 'usuarios' %} data-title="Accesos">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-users"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-shield-check"/></svg>
                     <span class="sidebar-label">Accesos</span>
                 </a>
                 <a href="{% url 'tickets:categorias_arbol' %}" class="sidebar-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %} data-title="Categorías">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder-closed"/></svg>
                     <span class="sidebar-label">Categorías</span>
                 </a>
                 <a href="{% url 'tickets:monitoreo_admin' %}" class="sidebar-link{% nav_active 'monitoreo_admin' %}"{% nav_current 'monitoreo_admin' %} data-title="Monitoreo">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-eye"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-monitor"/></svg>
                     <span class="sidebar-label">Monitoreo</span>
                 </a>
                 <a href="{% url 'tickets:papelera' %}" class="sidebar-link{% nav_active 'papelera' %}"{% nav_current 'papelera' %} data-title="Papelera">
@@ -266,7 +308,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Agenda</p>
                 <a href="{% url 'programador:panel_programador' %}" class="sidebar-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %} data-title="Calendario">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-calendar"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-calendar-clock"/></svg>
                     <span class="sidebar-label">Calendario</span>
                 </a>
             </div>
@@ -276,7 +318,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Observación</p>
                 <a href="{% url 'tickets:obs_monitoreo' %}" class="sidebar-link{% nav_active 'obs_monitoreo' %}"{% nav_current 'obs_monitoreo' %} data-title="Monitoreo">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-check-circle"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-monitor"/></svg>
                     <span class="sidebar-label">Monitoreo</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets en tus zonas</span>{% endif %}
@@ -292,7 +334,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                     {% if menu_mios %}<span class="nav-count-sr">{{ menu_mios }} elementos en tu lista</span>{% endif %}
                 </a>
                 <a href="{% url 'tickets:categorias_publico' %}" class="sidebar-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %} data-title="Categorías">
-                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder"/></svg>
+                    <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder-closed"/></svg>
                     <span class="sidebar-label">Categorías</span>
                 </a>
             </div>
@@ -434,10 +476,14 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             por el título, o al llegar con Tab, muestra en una burbuja el texto
             que tenía debajo. Cada vista lo escribe en header_desc; si no lo
             escribe, dogger.js quita el símbolo.{% endcomment %}
-            <h1>{% block header_icon %}{% endblock %}{% block header_title %}Mesa de Ayuda TI{% endblock %}<span class="title-hint" tabindex="0"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span class="title-hint-bubble">{% block header_desc %}{% endblock %}</span></span></h1>
+            <div class="dogger-page-section">{{ encabezado.seccion }}</div>
+            <h1>{% block header_icon %}{% endblock %}{% block header_title %}Mesa de Ayuda TI{% endblock %}</h1>
+            <p class="dogger-page-description">{% block header_desc %}{% endblock %}</p>
+            {% include 'components/page_header.html' %}
         </div>
         {% if not request.user.is_authenticated %}</div>{% endif %}
         <div class="header-actions">
+            {% if request.user.is_authenticated %}<div class="dogger-page-meta"><div class="dogger-header-clock" data-page-clock data-time-zone="{{ encabezado.zona }}"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><div><time data-page-date>{% now 'l, j \d\e F \d\e Y' %}</time><small data-page-time>{% now 'H:i' %}</small></div></div><div class="dogger-header-session"><strong>Sesión iniciada</strong>{% if request.user.ultima_actividad %}<small>Última actividad: <time datetime="{{ request.user.ultima_actividad|date:'c' }}">{{ request.user.ultima_actividad|date:'d/m/Y H:i' }}</time></small>{% endif %}</div></div>{% endif %}
             {% if request.user.is_authenticated %}
             {% if request.user.rol == 'usuario' %}
             <a class="btn btn-excel btn-sm" href="{% url 'tickets:exportar_mis_tickets' %}"><svg class="icon"><use href="#i-excel"/></svg> Exportar mis tickets</a>

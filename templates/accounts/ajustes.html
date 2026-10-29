@@ -1,31 +1,38 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static %}{% load asset %}
 
 {% block title %}Dogger · Mi perfil{% endblock %}
-{% block body_class %}admin-shell{% endblock %}
+{% block body_class %}admin-shell perfil-shell{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-user"/></svg></span>{% endblock %}
 {% block header_title %}Mi perfil{% endblock %}
 {% block header_desc %}Tu cuenta, tu contraseña y cómo te avisamos.{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% asset 'css/ajustes-perfil.css' %}">{% endblock %}
 
 {% block content %}
-<main class="page">
-
+<main class="page perfil-page">
     <div class="settings-grid">
         <!-- SIDEBAR -->
         <aside class="settings-sidebar">
             <div class="settings-profile-card">
+                <div class="perfil-card-identity">
                 <div class="settings-avatar-wrap">
                     {% if request.user.avatar %}
                     <img src="{{ request.user.avatar.url }}" alt="{{ request.user.nombre }}" class="settings-avatar-img">
                     {% else %}
                     <div class="settings-avatar-placeholder">{{ request.user.iniciales }}</div>
                     {% endif %}
+                    <label for="id_avatar" class="perfil-avatar-float" title="Cambiar foto de perfil" aria-label="Cambiar foto de perfil"><svg class="icon"><use href="#i-cloud-upload"/></svg></label>
                 </div>
                 <h3>{{ request.user.nombre }}</h3>
                 <p>{{ request.user.email }}</p>
-                <span class="badge-role {{ request.user.rol }}">{{ request.user.get_rol_display }}</span>
+                <span class="badge-role {{ request.user.rol }}">{% include 'components/role_icon.html' with rol=request.user.rol only %}{{ request.user.get_rol_display }}</span>
+                </div>
+                {% if perfil_ticket_total != None or perfil_categoria_total != None %}<div class="perfil-stats">
+                    {% if perfil_ticket_total != None %}<div class="perfil-stat-tickets"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg><strong>{{ perfil_ticket_total }}</strong><span>Tickets{% if request.user.rol == 'tecnico' %} asignados{% elif request.user.rol == 'usuario' %} propios{% endif %}</span></div>{% endif %}
+                    {% if perfil_categoria_total != None %}<div class="perfil-stat-categorias"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 10h18"/></svg><strong>{{ perfil_categoria_total }}</strong><span>Categorías activas</span></div>{% endif %}
+                </div>{% endif %}
                 <a href="{% url 'accounts:perfil' %}" class="settings-profile-link">
-                    <svg class="icon icon-sm"><use href="#i-settings"/></svg> Ajustes de la cuenta
+                    <svg class="icon icon-sm"><use href="#i-settings"/></svg><span>Ajustes de la cuenta</span><svg class="perfil-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                 </a>
             </div>
 
@@ -69,9 +76,13 @@
         <div class="settings-content">
             <!-- PERFIL -->
             <section id="perfil" class="settings-panel active" data-settings-panel="perfil">
-                <div class="settings-panel-header">
+                <div class="settings-panel-header perfil-personal-head">
+                    <span class="perfil-head-icon"><svg class="icon"><use href="#i-user"/></svg></span>
+                    <div>
                     <h3>Información personal</h3>
                     <p>Actualiza tu nombre, correo, género, teléfono y foto de perfil.</p>
+                    </div>
+                    <span class="perfil-personal-art" aria-hidden="true"><span class="perfil-art-card"><span class="perfil-art-avatar"></span><span class="perfil-art-line"></span><span class="perfil-art-line perfil-art-line-short"></span></span><span class="perfil-art-gear"><svg class="icon"><use href="#i-settings"/></svg></span><span class="perfil-art-spark">✦</span></span>
                 </div>
                 <form method="post" action="{% url 'accounts:ajustes' %}" enctype="multipart/form-data" class="settings-form">
                     {% csrf_token %}
@@ -83,62 +94,70 @@
                             <div class="settings-avatar-placeholder lg" id="avatar-preview">{{ request.user.iniciales }}</div>
                             {% endif %}
                         </div>
-                        <label class="btn btn-outline btn-sm" for="id_avatar">
-                            <svg class="icon icon-sm"><use href="#i-cloud-upload"/></svg>
-                            Cambiar foto
-                        </label>
-                        <input type="file" name="avatar" id="id_avatar" accept="image/*" class="visually-hidden">
+                        <div class="perfil-avatar-copy"><strong>Foto de perfil</strong><small>Selecciona una imagen clara. Tamaño máximo: 2 MB.</small>
+                        <div class="perfil-avatar-actions">
+                            <label class="perfil-photo-action" for="id_avatar"><svg class="icon" aria-hidden="true"><use href="#i-cloud-upload"/></svg> Cambiar foto</label>
+                            <button type="button" class="perfil-photo-action perfil-photo-remove" id="perfil-avatar-remove" {% if not request.user.avatar %}hidden{% endif %}><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg> Eliminar foto</button>
+                        </div>
+                        <input type="file" name="avatar" id="id_avatar" accept="image/jpeg,image/png,image/gif,image/webp" class="visually-hidden" data-avatar-editor data-iniciales="{{ request.user.iniciales }}" data-tiene-avatar="{% if request.user.avatar %}1{% else %}0{% endif %}">
+                        <input type="checkbox" name="avatar-clear" id="perfil-avatar-clear" hidden>
+                        <small id="perfil-avatar-status" aria-live="polite"></small>
+                        <small id="perfil-avatar-error" class="field-error" role="alert" hidden></small>
+                        {% if form.avatar.errors %}<small class="field-error">{{ form.avatar.errors.0 }}</small>{% endif %}
+                        </div>
                     </div>
 
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="id_nombre">Nombre completo</label>
-                            {{ form.nombre }}
+                            <div class="perfil-input"><span><svg class="icon"><use href="#i-user"/></svg></span>{{ form.nombre }}</div>
                             {% if form.nombre.errors %}<small class="field-error">{{ form.nombre.errors.0 }}</small>{% endif %}
                         </div>
                         <div class="form-group">
                             <label for="id_email">Correo electrónico</label>
-                            {{ form.email }}
+                            <div class="perfil-input"><span><svg class="icon"><use href="#i-mail"/></svg></span>{{ form.email }}</div>
                             {% if form.email.errors %}<small class="field-error">{{ form.email.errors.0 }}</small>{% endif %}
                         </div>
                         <div class="form-group">
                             <label for="id_genero">Género</label>
-                            <input type="text" id="id_genero" value="{{ request.user.get_genero_display }}" disabled class="is-readonly">
+                            <div class="perfil-input"><span><svg class="icon"><use href="#i-users"/></svg></span><input type="text" id="id_genero" value="{{ request.user.get_genero_display }}" disabled class="is-readonly"></div>
                         </div>
                         <div class="form-group">
                             <label for="id_telefono">Teléfono</label>
-                            {{ form.telefono }}
+                            <div class="perfil-input"><span><svg class="icon"><use href="#i-phone"/></svg></span>{{ form.telefono }}</div>
                             {% if form.telefono.errors %}<small class="field-error">{{ form.telefono.errors.0 }}</small>{% endif %}
                         </div>
                         <div class="form-group">
-                            <label>Rol</label>
-                            <input type="text" value="{{ request.user.get_rol_display }}" disabled class="is-readonly">
+                            <label for="perfil-rol">Rol</label>
+                            <div class="perfil-input"><span><svg class="icon"><use href="#i-shield-check"/></svg></span><input id="perfil-rol" type="text" value="{{ request.user.get_rol_display }}" disabled class="is-readonly"></div>
                         </div>
                         <div class="form-group">
-                            <label>Miembro desde</label>
-                            <input type="text" value="{{ request.user.fecha_creacion|date:'d/m/Y' }}" disabled class="is-readonly">
+                            <label for="perfil-fecha">Miembro desde</label>
+                            <div class="perfil-input"><span><svg class="icon"><use href="#i-calendar"/></svg></span><input id="perfil-fecha" type="text" value="{{ request.user.fecha_creacion|date:'d/m/Y' }}" disabled class="is-readonly"></div>
                         </div>
                         {% if request.user.glpi_user_id %}
                         <div class="form-group">
-                            <label>ID GLPI</label>
-                            <input type="text" value="#{{ request.user.glpi_user_id }}" disabled class="is-readonly">
+                            <label for="perfil-glpi">ID GLPI</label>
+                            <div class="perfil-input"><span class="perfil-hash">#</span><input id="perfil-glpi" type="text" value="#{{ request.user.glpi_user_id }}" disabled class="is-readonly"></div>
                         </div>
+                        <div class="perfil-glpi-info"><svg class="icon"><use href="#i-info"/></svg><span>Este ID se utiliza para la integración con GLPI.</span></div>
                         {% endif %}
                     </div>
                     <div class="settings-actions">
                         {% if glpi_enabled %}
                         <div class="glpi-sync-group">
-                            <a href="{% url 'accounts:glpi_pull_perfil' %}" class="btn btn-outline btn-sm" title="Descargar perfil y foto desde GLPI">
+                            <a href="{% url 'accounts:glpi_pull_perfil' %}" class="btn btn-outline btn-sm perfil-btn-sync" title="Descargar perfil y foto desde GLPI">
                                 <svg class="icon icon-sm"><use href="#i-refresh"/></svg>
                                 Sync desde GLPI
                             </a>
-                            <a href="{% url 'accounts:glpi_push_avatar' %}" class="btn btn-outline btn-sm" title="Subir esta foto a GLPI">
+                            <a href="{% url 'accounts:glpi_push_avatar' %}" class="btn btn-outline btn-sm perfil-btn-sync" title="Subir esta foto a GLPI">
                                 <svg class="icon icon-sm"><use href="#i-cloud-upload"/></svg>
                                 Push foto a GLPI
                             </a>
                         </div>
                         {% endif %}
-                        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                        <button type="reset" class="btn btn-outline perfil-btn-cancel"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg> Cancelar</button>
+                        <button type="submit" class="btn btn-primary perfil-btn-save"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> Guardar cambios</button>
                     </div>
                 </form>
             </section>
@@ -154,17 +173,18 @@
                     <div class="form-grid">
                         <div class="form-group span-2">
                             <label for="id_password_actual">Contraseña actual</label>
-                            <input type="password" name="password_actual" id="id_password_actual" required placeholder="••••••••" autocomplete="current-password">
+                            <div class="perfil-password-field"><input type="password" name="password_actual" id="id_password_actual" required placeholder="••••••••" autocomplete="current-password"><button type="button" data-toggle-password="id_password_actual" aria-label="Mostrar contraseña actual" aria-pressed="false"><svg class="icon"><use href="#i-eye"/></svg></button></div>
                             {% if form.password_actual.errors %}<small class="field-error">{{ form.password_actual.errors.0 }}</small>{% endif %}
                         </div>
                         <div class="form-group">
                             <label for="id_password_nueva">Nueva contraseña</label>
-                            <input type="password" name="password_nueva" id="id_password_nueva" required placeholder="Mínimo 8 caracteres" minlength="8">
+                            <div class="perfil-password-field"><input type="password" name="password_nueva" id="id_password_nueva" required placeholder="Mínimo 8 caracteres" minlength="8"><button type="button" data-toggle-password="id_password_nueva" aria-label="Mostrar nueva contraseña" aria-pressed="false"><svg class="icon"><use href="#i-eye"/></svg></button></div>
+                            <small class="perfil-field-hint">Utiliza al menos 8 caracteres.</small>
                             {% if form.password_nueva.errors %}<small class="field-error">{{ form.password_nueva.errors.0 }}</small>{% endif %}
                         </div>
                         <div class="form-group">
                             <label for="id_password_confirmar">Confirmar contraseña</label>
-                            <input type="password" name="password_confirmar" id="id_password_confirmar" required placeholder="Repite la nueva contraseña">
+                            <div class="perfil-password-field"><input type="password" name="password_confirmar" id="id_password_confirmar" required placeholder="Repite la nueva contraseña"><button type="button" data-toggle-password="id_password_confirmar" aria-label="Mostrar confirmación de contraseña" aria-pressed="false"><svg class="icon"><use href="#i-eye"/></svg></button></div>
                             {% if form.password_confirmar.errors %}<small class="field-error">{{ form.password_confirmar.errors.0 }}</small>{% endif %}
                         </div>
                     </div>
@@ -278,24 +298,26 @@
                     <h3>Notificaciones</h3>
                     <p>Configura cómo y cuándo recibir alertas del sistema.</p>
                 </div>
-                <div class="settings-form">
+                <form method="post" action="{% url 'accounts:ajustes' %}" class="settings-form">
+                    {% csrf_token %}<input type="hidden" name="guardar_notificaciones" value="1">
+                    <p class="perfil-notif-note">Estas preferencias controlan los nuevos avisos de la campana; no modifican el envío de correos ni los avisos anteriores.</p>
                     <div class="notif-item">
                         <div class="notif-info">
-                            <strong>Ticket asignado</strong>
-                            <small>Recibe un aviso cuando un ticket te sea asignado.</small>
+                            <strong>Tickets nuevos</strong>
+                            <small>Avisos de tickets nuevos o registrados.</small>
                         </div>
                         <label class="toggle-switch">
-                            <input type="checkbox" checked disabled>
+                            <input type="checkbox" name="tickets_nuevos" value="1"{% if preferencias_avisos.tickets_nuevos %} checked{% endif %} aria-label="Avisos de tickets nuevos">
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
                     <div class="notif-item">
                         <div class="notif-info">
-                            <strong>Nuevo comentario</strong>
-                            <small>Alerta cuando alguien comente en tu ticket.</small>
+                            <strong>Cambios y respuestas</strong>
+                            <small>Avisos cuando un ticket se actualiza o recibe una respuesta.</small>
                         </div>
                         <label class="toggle-switch">
-                            <input type="checkbox" checked disabled>
+                            <input type="checkbox" name="cambios_ticket" value="1"{% if preferencias_avisos.cambios_ticket %} checked{% endif %} aria-label="Avisos de cambios y respuestas">
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
@@ -305,21 +327,23 @@
                             <small>Notificación cuando tu ticket sea marcado como resuelto.</small>
                         </div>
                         <label class="toggle-switch">
-                            <input type="checkbox" checked disabled>
+                            <input type="checkbox" name="tickets_cerrados" value="1"{% if preferencias_avisos.tickets_cerrados %} checked{% endif %} aria-label="Avisos de tickets cerrados">
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
                     <div class="notif-item">
                         <div class="notif-info">
-                            <strong>Correo de soporte</strong>
-                            <small>Recibe copia por correo de los cambios importantes.</small>
+                            <strong>Recordatorios de tickets</strong>
+                            <small>Avisos de seguimiento y plazos ANS.</small>
                         </div>
                         <label class="toggle-switch">
-                            <input type="checkbox">
+                            <input type="checkbox" name="recordatorios" value="1"{% if preferencias_avisos.recordatorios %} checked{% endif %} aria-label="Recordatorios de tickets">
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
-                </div>
+                    <div class="notif-item"><div class="notif-info"><strong>Eventos del programador</strong><small>Avisos de tareas y eventos de tu agenda.</small></div><label class="toggle-switch"><input type="checkbox" name="eventos" value="1"{% if preferencias_avisos.eventos %} checked{% endif %} aria-label="Avisos de eventos del programador"><span class="toggle-slider"></span></label></div>
+                    <div class="settings-actions"><button type="submit" class="btn btn-primary">Guardar preferencias</button></div>
+                </form>
             </section>
 
             <!-- ATAJOS DEL BOTÓN X -->
@@ -497,10 +521,11 @@
             <!-- CONFIGURACIÓN DE LA PÁGINA (solo administradores) -->
             {% if request.user.rol == 'admin' %}
             <section id="pagina" class="settings-panel" data-settings-panel="pagina">
-                <div class="settings-panel-header">
-                    <h3>Configuración de la página</h3>
+                <div id="pagina-toast-stack" class="pagina-toast-stack" aria-live="polite"></div>
+                <div class="settings-panel-header pagina-hero">
+                    <span class="pagina-head-icon"><svg class="icon"><use href="#i-monitor"/></svg></span><div class="pagina-hero-copy"><h3>Configuración de la página</h3><p>Personaliza la información de contacto, redes sociales y permisos de tu cuenta.</p></div><div class="pagina-hero-art" aria-hidden="true"><span class="pagina-art-window"><i></i><i></i><i></i></span><span class="pagina-art-gear"><svg class="icon"><use href="#i-settings"/></svg></span><span class="pagina-art-spark">✦</span></div>
                 </div>
-                <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form">
+                <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form pagina-config-form" id="pagina-config-form">
                     {% csrf_token %}
                     {# Marca de que viene este formulario + valor por defecto del interruptor. #}
                     <input type="hidden" name="ajustes_pagina" value="1">
@@ -514,8 +539,8 @@
                     </div>
                     {% endif %}
 
-                    <div class="settings-panel-header">
-                        <h3>Paneles y contacto</h3>
+                    <div class="pagina-section"><div class="pagina-section-header">
+                        <span class="pagina-section-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1.5l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1-.5l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"/></svg></span><div><h3>Paneles y contacto</h3><p>Configura los canales de comunicación y la integración con GLPI.</p></div>
                     </div>
                     <div class="cfg-row">
                         <label class="toggle-switch">
@@ -523,7 +548,7 @@
                                    {% if config_sitio.panel_mostrar_actividad_glpi %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                            <span class="cfg-label">Actividad reciente GLPI y su chat</span>
+                            <span class="cfg-label">Actividad reciente GLPI y su chat<small>Muestra la actividad reciente de GLPI y el chat integrado.</small></span>
                     </div>
                     <div class="cfg-row">
                         <label class="toggle-switch">
@@ -531,7 +556,7 @@
                                    {% if config_sitio.whatsapp_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                        <span class="cfg-label">WhatsApp</span>
+                        <span class="cfg-label">WhatsApp<small>Número de contacto para soporte.</small></span>
                         <input type="text" name="whatsapp_numero" onchange="this.form.submit()" id="id_whatsapp_numero"
                                value="{{ config_sitio.whatsapp_numero }}" maxlength="20" placeholder="3103716129">
                     </div>
@@ -541,14 +566,13 @@
                                    {% if config_sitio.correo_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                        <span class="cfg-label">Correo</span>
+                        <span class="cfg-label">Correo<small>Correo para notificaciones y contacto.</small></span>
                         <input type="email" name="correo_soporte" onchange="this.form.submit()" id="id_correo_soporte"
                                value="{{ config_sitio.correo_soporte }}" maxlength="254" placeholder="sistemasbogota@dogger.com.co">
                     </div>
 
-                    <hr class="cfg-sep">
-                    <div class="settings-panel-header">
-                        <h3>Redes sociales</h3>
+                    </div><div class="pagina-section"><div class="pagina-section-header">
+                        <span class="pagina-section-icon"><svg class="icon"><use href="#i-share"/></svg></span><div><h3>Redes sociales</h3><p>Activa las redes sociales que deseas mostrar y configura sus enlaces.</p></div>
                     </div>                    <div class="cfg-row">
                         <label class="toggle-switch">
                             <input type="checkbox" name="pagina_mostrar_redes" value="1" onchange="this.form.submit()"
@@ -563,7 +587,7 @@
                                    {% if config_sitio.facebook_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                        <span class="cfg-label">Facebook</span>
+                        <span class="cfg-label">Facebook</span><svg class="pagina-social" viewBox="0 0 24 24" aria-label="Facebook"><rect width="24" height="24" rx="5" fill="#1877f2"/><path fill="#fff" d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.25-1.5 1.55-1.5h1.65V3.6c-.3-.04-1.3-.13-2.47-.13-2.45 0-4.13 1.5-4.13 4.25v2.18H7.4V13h2.7v8z"/></svg>
                         <input type="url" name="facebook_url" onchange="this.form.submit()" id="id_facebook_url"
                                value="{{ config_sitio.facebook_url }}" maxlength="250" placeholder="https://facebook.com/…">
                     </div>
@@ -573,7 +597,7 @@
                                    {% if config_sitio.instagram_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                        <span class="cfg-label">Instagram</span>
+                        <span class="cfg-label">Instagram</span><svg class="pagina-social" viewBox="0 0 24 24" aria-label="Instagram"><defs><linearGradient id="pagina-instagram-gradient" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#feda75"/><stop offset=".35" stop-color="#fa7e1e"/><stop offset=".65" stop-color="#d62976"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="6" fill="none" stroke="url(#pagina-instagram-gradient)" stroke-width="2.5"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="url(#pagina-instagram-gradient)" stroke-width="2.5"/><circle cx="18" cy="6" r="1.3" fill="#d62976"/></svg>
                         <input type="url" name="instagram_url" onchange="this.form.submit()" id="id_instagram_url"
                                value="{{ config_sitio.instagram_url }}" maxlength="250" placeholder="https://instagram.com/…">
                     </div>
@@ -583,7 +607,7 @@
                                    {% if config_sitio.tiktok_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                        <span class="cfg-label">TikTok</span>
+                        <span class="cfg-label">TikTok</span><svg class="icon pagina-social"><use href="#i-tiktok"/></svg>
                         <input type="url" name="tiktok_url" onchange="this.form.submit()" id="id_tiktok_url"
                                value="{{ config_sitio.tiktok_url }}" maxlength="250" placeholder="https://tiktok.com/…">
                     </div>
@@ -593,74 +617,97 @@
                                    {% if config_sitio.teams_activo %}checked{% endif %}>
                             <span class="toggle-slider"></span>
                         </label>
-                        <span class="cfg-label">Teams</span>
+                        <span class="cfg-label">Teams</span><svg class="pagina-social" viewBox="0 0 24 24" aria-label="Microsoft Teams"><circle cx="18" cy="6" r="3" fill="#7b83eb"/><circle cx="12" cy="5" r="3.5" fill="#5059c9"/><path d="M15 10h6a2 2 0 0 1 2 2v4a4 4 0 0 1-4 4 4 4 0 0 1-4-4z" fill="#7b83eb"/><path d="M8 10h9v6a5 5 0 0 1-5 5 5 5 0 0 1-5-5v-4a2 2 0 0 1 1-2z" fill="#5059c9"/><rect x="1" y="9" width="11" height="11" rx="1.5" fill="#343a91"/><path d="M3.5 11.5h6v1.5h-2v5H5.6v-5H3.5z" fill="#fff"/></svg>
                         <input type="url" name="teams_url" id="id_teams_url"
                                value="{{ config_sitio.teams_url }}" maxlength="250" placeholder="https://teams.microsoft.com/…">
                     </div>
 
+                    </div><div class="pagina-save"><span id="pagina-save-status" role="status" aria-live="polite"></span><button type="submit" class="btn btn-primary">Guardar cambios</button></div>
                 </form>
 
-                <hr class="cfg-sep">
-                <div class="settings-panel-header">
-                    <h3>Permisos por cuenta</h3>
+                <div class="pagina-section pagina-permisos"><div class="pagina-section-header">
+                    <span class="pagina-section-icon"><svg class="icon"><use href="#i-shield"/></svg></span><div><h3>Permisos por cuenta</h3><p>Visualiza y administra los permisos asignados a los usuarios de la plataforma.</p></div>
                 </div>
-                <form method="get" action="{% url 'accounts:ajustes' %}#pagina" class="settings-form" style="margin-bottom:8px">
-                    <div class="cfg-row">
-                        <span class="cfg-label">Ver rol</span>
+                <form method="get" action="{% url 'accounts:ajustes' %}#pagina" class="settings-form pagina-filter-form">
+                    <div class="pagina-filter-bar">
+                        <span class="pagina-filter-title">Ver rol<small>Filtra las cuentas por tipo de usuario</small></span>
+                        <div class="pagina-filter-controls"><div class="pagina-search" id="pagina-search">
+                            <button type="button" id="pagina-search-toggle" class="pagina-search-toggle" aria-expanded="false" aria-controls="pagina-search-field" aria-label="Buscar cuentas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+                            <div id="pagina-search-field" class="pagina-search-field" hidden><label class="visually-hidden" for="pagina-search-input">Buscar por nombre o correo</label><input id="pagina-search-input" type="search" placeholder="Buscar nombre o correo" autocomplete="off"></div>
+                        </div>
                         <select name="rol_perm" class="obs-buscador-tipo" onchange="this.form.submit()" aria-label="Filtrar por rol">
-                            <option value="">Usuarios y técnicos</option>
+                            <option value="">Todos</option>
                             <option value="usuario"{% if rol_perm_sel == 'usuario' %} selected{% endif %}>Puntos de venta</option>
                             <option value="tecnico"{% if rol_perm_sel == 'tecnico' %} selected{% endif %}>Técnicos</option>
                             <option value="admin"{% if rol_perm_sel == 'admin' %} selected{% endif %}>Administradores</option>
                             <option value="observador"{% if rol_perm_sel == 'observador' %} selected{% endif %}>Observadores</option>
                         </select>
+                        </div>
                     </div>
+                    <p class="pagina-search-count" id="pagina-search-count" role="status" aria-live="polite"></p>
                 </form>
                 <form method="post" action="{% url 'accounts:permisos' %}" class="settings-form">
                     {% csrf_token %}
+                    <input type="hidden" name="incluye_permiso_anuncios" value="1">
                     <div class="perm-lista">
                     <div class="table-scroll">
                         <table class="obs-tabla">
                             <thead>
                                 <tr>
-                                    <th>Cuenta</th>
+                                    <th>Usuario</th><th>Correo</th><th>Rol</th>
                                     <th>Cerrar</th>
                                     <th>Eliminar</th>
                                     <th>Reabrir</th>
                                     <th>Crear</th>
                                     <th>Chatear</th>
+                                    <th>Editar anuncios propios</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for u in cuentas_permisos %}
-                                <tr>
+                                <tr data-permiso-cuenta>
                                     <td>
-                                        <strong>{{ u.nombre }}</strong>
-                                        <small>{{ u.email }} · {{ u.get_rol_display }}</small>
+                                        <span class="pagina-user">{% if u.avatar %}<img src="{{ u.avatar.url }}" alt="">{% else %}<span class="pagina-user-placeholder">{{ u.iniciales }}</span>{% endif %}<strong>{{ u.nombre }}</strong></span>
                                         <input type="hidden" name="uid" value="{{ u.pk }}">
-                                    </td>
+                                    </td><td>{{ u.email }}</td><td>{{ u.get_rol_display }}</td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}" onchange="this.form.submit()"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}" onchange="this.form.submit()"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_reabrir" value="1"{% if u.puede_reabrir_tickets %} checked{% endif %} aria-label="Reabrir para {{ u.email }}" onchange="this.form.submit()"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_crear" value="1"{% if u.puede_crear_tickets %} checked{% endif %} aria-label="Crear para {{ u.email }}" onchange="this.form.submit()"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_responder" value="1"{% if u.puede_responder_chat %} checked{% endif %} aria-label="Chatear para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td><input type="checkbox" name="perm_{{ u.pk }}_editar_anuncios" value="1"{% if u.puede_editar_anuncios %} checked{% endif %} aria-label="Editar anuncios propios para {{ u.email }}" onchange="this.form.submit()"></td>
                                 </tr>
                                 {% empty %}
-                                <tr><td colspan="6" class="obs-sin-datos">Sin cuentas.</td></tr>
+                                <tr><td colspan="9" class="obs-sin-datos">Sin cuentas.</td></tr>
                                 {% endfor %}
+                                <tr id="pagina-search-empty" hidden><td colspan="9" class="obs-sin-datos">No se encontraron cuentas para esta búsqueda.</td></tr>
                             </tbody>
                         </table>
                     </div>
                     </div>
-                </form>
+                </form></div>
             </section>
             {% endif %}
         </div>
     </div>
 </main>
+<dialog class="perfil-photo-dialog" id="perfil-photo-dialog" aria-labelledby="perfil-photo-title" aria-describedby="perfil-photo-description">
+    <div class="perfil-photo-dialog-head"><div><h2 id="perfil-photo-title">Personalizar foto</h2><p id="perfil-photo-description">Ajusta el tamaño y la posición de tu foto de perfil.</p></div><button type="button" class="perfil-photo-close" data-photo-cancel aria-label="Cerrar">×</button></div>
+    <div class="perfil-photo-dialog-body">
+        <div class="perfil-photo-crop"><canvas id="perfil-photo-canvas" width="512" height="512" aria-label="Vista previa del encuadre"></canvas></div>
+        <p class="perfil-photo-hint">La imagen se mostrará dentro del círculo.</p>
+        <label for="perfil-photo-zoom">Tamaño <output id="perfil-photo-zoom-value">100%</output></label><input id="perfil-photo-zoom" type="range" min="100" max="300" value="100">
+        <label for="perfil-photo-x">Posición horizontal</label><input id="perfil-photo-x" type="range" min="-100" max="100" value="0">
+        <label for="perfil-photo-y">Posición vertical</label><input id="perfil-photo-y" type="range" min="-100" max="100" value="0">
+        <p id="perfil-photo-dialog-error" class="field-error" role="alert" hidden></p>
+    </div>
+    <div class="perfil-photo-dialog-actions"><button type="button" class="perfil-photo-action" data-photo-cancel>Cancelar</button><button type="button" class="perfil-photo-apply" id="perfil-photo-apply">Aplicar foto</button></div>
+</dialog>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% asset 'js/ajustes-perfil.js' %}"></script>
+<script src="{% asset 'js/ajustes-pagina.js' %}"></script>
 <script>
 /* Vista previa del manual: se abre dentro de los ajustes, sin salir de la
    pagina, con el manual del rol ya cargado en el marco. */

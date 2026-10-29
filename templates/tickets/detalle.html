@@ -126,7 +126,7 @@
         <div class="corp-detail-badges ticket-meta-row">
             <span class="meta-pill meta-prio meta-prio-{{ ticket.prioridad }}">
                 <svg class="icon icon-xs"><use href="#i-alert"/></svg> {{ ticket.get_prioridad_display }}</span>
-            <span class="meta-pill"><svg class="icon icon-xs"><use href="#i-folder"/></svg> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
+            <span class="meta-pill category-shared" data-category-label="{{ ticket.categoria.nombre|default:'Sin categoría' }}" data-category-group="{{ ticket.categoria.grupo|default:'' }}"><span data-category-icon></span> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
             <span class="meta-pill"><svg class="icon icon-xs"><use href="#i-clock"/></svg> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
             <span class="meta-pill">{% include "tickets/_ans_time.html" with t=ticket %}</span>
             {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
@@ -334,7 +334,7 @@
                         <span class="ficha-v">{{ ticket.fecha_limite_ans|date:"d/m/Y H:i"|default:"—" }}{% if ticket.ans_horas %}<small>{{ ticket.ans_horas }}h para {{ ticket.get_prioridad_display }}</small>{% endif %}</span>
                     </div>
                     <div class="ficha-row">
-                        <span class="ficha-icon"><svg class="icon"><use href="#i-folder"/></svg></span>
+                        <span class="ficha-icon category-shared" data-category-label="{{ ticket.categoria.nombre|default:'Sin categoría' }}" data-category-group="{{ ticket.categoria.grupo|default:'' }}"><span data-category-icon></span></span>
                         <span class="ficha-k">Categoría</span>
                         <span class="ficha-v">{{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
                     </div>
