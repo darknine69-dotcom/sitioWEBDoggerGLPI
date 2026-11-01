@@ -59,7 +59,7 @@ def _enviar(asunto, mensaje, destinatarios, html=""):
             settings.DEFAULT_FROM_EMAIL,
             destinatarios,
             html_message=html or None,
-            fail_silently=True,
+            fail_silently=False,
         )
     except Exception as exc:
         logger.error("Error enviando correo '%s': %s", asunto, exc)

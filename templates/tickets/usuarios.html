@@ -545,6 +545,22 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 .usuarios-page .users-tabs-bar .tab-pill span { min-width:25px; height:25px; background:#e9eef5; color:#526985; }
 .usuarios-page .users-tabs-bar .tab-pill.active span { background:#fee2e2; color:#dc2626; }
 .usuarios-page .users-tabs-bar .tab-pill:focus-visible { outline:2px solid #ef4444; outline-offset:2px; }
+/* Navegación de cuentas: opciones con identidad visual y selección clara. */
+.usuarios-page .users-tabs-bar { display:flex; align-items:stretch; gap:8px; padding:8px; border:1px solid #e2e8f0; border-radius:16px; background:linear-gradient(120deg,#f8fafc,#fff); box-shadow:0 4px 16px rgba(15,23,42,.05); }
+.usuarios-page .users-tabs-bar .tab-pill { flex:0 1 auto; min-height:46px; gap:10px; padding:5px 14px 5px 7px; border:1px solid #e7edf4; border-radius:11px; color:#405878; background:#fff; box-shadow:0 2px 6px rgba(15,23,42,.025); text-decoration:none; }
+.usuarios-page .users-tabs-bar .tab-pill .icon { box-sizing:content-box; width:18px; height:18px; padding:8px; border-radius:9px; color:#526985; background:#f1f5f9; }
+.usuarios-page .users-tabs-bar .tab-pill:hover { transform:translateY(-1px); border-color:#cbd5e1; box-shadow:0 5px 12px rgba(15,23,42,.08); }
+.usuarios-page .users-tabs-bar .tab-pill.active { border-color:#fecaca; color:#b91c1c; background:linear-gradient(110deg,#fff5f5,#fff); box-shadow:0 4px 12px rgba(220,38,38,.09); }
+.usuarios-page .users-tabs-bar .tab-pill.active .icon { color:#dc2626; background:#fee2e2; }
+.usuarios-page .users-tabs-bar { position:relative; padding-bottom:12px; }
+.usuarios-page .users-tabs-bar::after { content:""; position:absolute; left:0; bottom:3px; width:var(--tabs-indicator-width,0px); height:2px; border-radius:999px; background:#dc2626; transform:translateX(var(--tabs-indicator-x,0px)); transition:transform .18s ease,width .18s ease; pointer-events:none; }
+.usuarios-page .users-tabs-bar .tab-pill:nth-child(1) .icon,.usuarios-page .users-tabs-bar .tab-pill:nth-child(1).active .icon { color:#dc2626; background:linear-gradient(145deg,#ffe4e6,#fff1f2); }
+.usuarios-page .users-tabs-bar .tab-pill:nth-child(2) .icon,.usuarios-page .users-tabs-bar .tab-pill:nth-child(2).active .icon { color:#2563eb; background:linear-gradient(145deg,#dbeafe,#eff6ff); }
+.usuarios-page .users-tabs-bar .tab-pill:nth-child(3) .icon,.usuarios-page .users-tabs-bar .tab-pill:nth-child(3).active .icon { color:#059669; background:linear-gradient(145deg,#d1fae5,#ecfdf5); }
+@media (prefers-reduced-motion:reduce) { .usuarios-page .users-tabs-bar::after { transition:none; } }
+.usuarios-page .users-tabs-bar .tab-pill span { min-width:25px; height:25px; border-radius:8px; }
+.usuarios-page .users-tabs-bar .tab-pill small { padding:4px 7px; border-radius:7px; color:#b45309; background:#fffbeb; font-size:10px; }
+@media(max-width:640px) { .usuarios-page .users-tabs-bar { overflow-x:auto; flex-wrap:nowrap; }.usuarios-page .users-tabs-bar .tab-pill { flex:0 0 auto; }.usuarios-page .users-tabs-bar .tab-pill .icon { padding:6px; } }
 .usuarios-page .table-toolbar { align-items:center; gap:8px; margin:12px 0; padding:8px; }
 .usuarios-page .table-toolbar .search-field { min-height:42px; padding:7px 12px; background:#fff; }
 .usuarios-page .users-toolbar-picker { min-height:42px; flex-basis:132px; }
@@ -583,19 +599,43 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 #modal-usuario .form-check-row { display:flex; align-items:flex-start; gap:10px; } #modal-usuario .form-check-row input { width:18px; height:18px; flex:none; margin:1px 0 0; accent-color:#dc2626; } #modal-usuario .form-check-row label { margin:0; color:#263958; font-size:13px; font-weight:600; line-height:1.35; text-transform:none; letter-spacing:normal; }
 #modal-usuario .modal-actions { display:flex; flex:none; align-items:center; justify-content:space-between; gap:12px; margin:0; padding:12px 22px; border-top:1px solid #e9edf3; background:#fff; } #modal-usuario .modal-actions .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:8px 16px; border-radius:9px; font-size:12px; } #modal-usuario .modal-actions .icon { width:16px; height:16px; }
 @media(max-width:560px) { #modal-usuario .modal-head { padding:14px 16px; } #modal-usuario .usuario-modal-icon { width:46px; height:46px; } #modal-usuario .usuario-modal-heading h3 { font-size:17px; } #modal-usuario .modal-body { padding:14px 16px; } #modal-usuario .form-grid { grid-template-columns:1fr; gap:12px; } #modal-usuario .form-group.span-2 { grid-column:auto; } #modal-usuario .modal-actions { padding:10px 16px; } }
+/* Tabla de cuentas: misma presentación para todos los filtros. */
+@media (min-width:701px) {
+    .usuarios-page .table-card { border:1px solid #dce4ee; border-radius:16px; background:#fff; box-shadow:0 5px 18px rgba(15,23,42,.06); }
+    .usuarios-page #tablaUsuarios thead th { padding:17px 16px; border-bottom:1px solid #cbd5e1; background:#e9eef5; color:#172b4d; font-size:11px; font-weight:700; white-space:nowrap; }
+    .usuarios-page #tablaUsuarios tbody tr.ue-row > td { padding:13px 16px; border-bottom:1px solid #dce4ee; color:#17243d; vertical-align:middle; }
+    .usuarios-page #tablaUsuarios tbody tr.ue-row:nth-child(even) { background:#f5f8fb; }
+    .usuarios-page #tablaUsuarios tbody tr.ue-row:hover, .usuarios-page #tablaUsuarios tbody tr.ue-row.is-open { background:#eaf2fb; box-shadow:inset 3px 0 #f43f5e; }
+    .usuarios-page #tablaUsuarios .ue-user-avatar { width:48px; height:48px; font-size:16px; }
+    .usuarios-page #tablaUsuarios .ue-name-line .ue-dot-w { left:36px; }
+    .usuarios-page #tablaUsuarios .ue-user-identity strong { font-size:14px; }
+    .usuarios-page #tablaUsuarios .ue-user-identity small { color:#526d91; font-size:12px; }
+    .usuarios-page .pagination-bar { padding:14px 18px; border-top:1px solid #dce4ee; background:#fff; }
+}
+.usuarios-page #tablaUsuarios .badge-role { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+.usuarios-page #tablaUsuarios .badge-role .role-icon { width:15px; height:15px; flex:none; }
+.usuarios-page #tablaUsuarios .badge-role.admin { background:#fee2e2; color:#c91d1d; }
+.usuarios-page #tablaUsuarios .badge-role.tecnico { background:#dbeafe; color:#1d4ed8; }
+.usuarios-page #tablaUsuarios .badge-role.observador { background:#ede9f3; color:#34304b; }
+.usuarios-page #tablaUsuarios .badge-role.usuario { background:#dcfce7; color:#15803d; }
+.usuarios-page #tablaUsuarios .ue-estado { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; }
+.usuarios-page #tablaUsuarios .ue-estado::before { content:""; width:8px; height:8px; border-radius:50%; background:currentColor; }
+.usuarios-page #tablaUsuarios .row-menu-btn { width:36px; height:36px; border-color:#d7e0eb; background:#fff; color:#294669; }
+.usuarios-page #tablaUsuarios .role-heading { display:inline-flex; align-items:center; gap:6px; }
+.usuarios-page #tablaUsuarios .role-heading .icon { width:14px; height:14px; color:#647b9b; }
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="page">
     <div class="tabs-bar users-tabs-bar">
-        <a class="tab-pill {% if not tab %}active{% endif %}" href="{% url 'tickets:usuarios' %}{% if q %}?q={{ q|urlencode }}{% endif %}">
+        <a class="tab-pill {% if not tab %}active{% endif %}" {% if not tab %}aria-current="page"{% endif %} href="{% url 'tickets:usuarios' %}{% if q %}?q={{ q|urlencode }}{% endif %}">
             <svg class="icon icon-sm"><use href="#i-users"/></svg> Todos <span>{{ total }}</span>
         </a>
-        <a class="tab-pill {% if tab == 'usuario' %}active{% endif %}" href="?rol=usuario{% if q %}&q={{ q|urlencode }}{% endif %}">
+        <a class="tab-pill {% if tab == 'usuario' %}active{% endif %}" {% if tab == 'usuario' %}aria-current="page"{% endif %} href="?rol=usuario{% if q %}&q={{ q|urlencode }}{% endif %}">
             <svg class="icon icon-sm"><use href="#i-store"/></svg> Puntos de venta <span>{{ n_usuarios_finales }}</span>
         </a>
-        <a class="tab-pill {% if tab == 'tecnico' %}active{% endif %}" href="?rol=tecnico{% if q %}&q={{ q|urlencode }}{% endif %}">
+        <a class="tab-pill {% if tab == 'tecnico' %}active{% endif %}" {% if tab == 'tecnico' %}aria-current="page"{% endif %} href="?rol=tecnico{% if q %}&q={{ q|urlencode }}{% endif %}">
             <svg class="icon icon-sm"><use href="#i-wrench"/></svg> Técnicos <span>{{ n_tecnicos }}</span> <small>({{ n_tecnicos_glpi }} en GLPI)</small>
         </a>
     </div>
@@ -656,7 +696,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                     <tr>
                         <th>Usuario</th>
                         <th>Contacto</th>
-                        <th>Rol</th>
+                        <th><span class="role-heading"><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg>Rol</span></th>
                         <th>GLPI</th>
                         <th>Estado</th>
                         <th>Tickets</th>
@@ -710,7 +750,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                             {% if u.ubicacion %}<small class="ue-ubi">Punto: {{ u.ubicacion }}</small>
                             {% elif u.ficha.punto %}<small class="ue-ubi">Punto habitual: {{ u.ficha.punto }}</small>{% endif %}
                         </td>
-                        <td data-label="Rol"><span class="badge-role {{ u.rol }}">{{ u.get_rol_display }}</span></td>
+                        <td data-label="Rol"><span class="badge-role {{ u.rol }}">{% include 'components/role_icon.html' with rol=u.rol only %}{{ u.get_rol_display }}</span></td>
                         <td data-label="GLPI">
                             {% if u.glpi_user_id %}
                                 {% if glpi_base %}
@@ -833,7 +873,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                     <option value="0" {% if per_page == 0 %}selected{% endif %}>Todas</option>
                 </select>
             </div>
-            <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            <span class="pagination-info">Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} resultados</span>
             <div class="pagination-links">
                 {% if page_obj.has_previous %}
                 <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
@@ -992,6 +1032,27 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 {% endblock %}
 
 {% block extra_js %}
+<script>
+(function () {
+    var barra = document.querySelector('.users-tabs-bar');
+    if (!barra) return;
+    var activo = barra.querySelector('.tab-pill.active');
+    var navegando = false;
+    function mover(opcion) {
+        if (!opcion) return;
+        barra.style.setProperty('--tabs-indicator-x', opcion.offsetLeft + 'px');
+        barra.style.setProperty('--tabs-indicator-width', opcion.offsetWidth + 'px');
+    }
+    mover(activo);
+    window.addEventListener('resize', function () { mover(activo); });
+    barra.addEventListener('click', function (e) {
+        var enlace = e.target.closest('a.tab-pill');
+        if (!enlace || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || enlace.target || enlace === activo || navegando) return;
+        e.preventDefault(); navegando = true; mover(enlace);
+        window.setTimeout(function () { window.location.href = enlace.href; }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 180);
+    });
+})();
+</script>
 <script>
 (function () {
     var token = document.querySelector('#form-tarea [name="csrfmiddlewaretoken"]');

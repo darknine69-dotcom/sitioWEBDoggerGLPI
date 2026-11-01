@@ -41,7 +41,7 @@ class PapeleraDelUsuario(TestCase):
             estado=estado,
         )
 
-    def test_resueltas_trae_resueltas_y_cerradas(self):
+    def test_resueltas_excluye_cierres_directos(self):
         from django.utils import timezone
 
         resuelta = self.ticket("HD-2001", estado=Ticket.Estado.CERRADO)
@@ -54,8 +54,8 @@ class PapeleraDelUsuario(TestCase):
             reverse("tickets:mi_panel"), {"estado": "resuelto"})
         self.assertEqual(respuesta.status_code, 200)
         codigos = {t.codigo for t in respuesta.context["tickets"]}
-        self.assertEqual(codigos, {"HD-2001", "HD-2002"})
-        self.assertEqual(respuesta.context["stats"]["resueltos"], 2)
+        self.assertEqual(codigos, {"HD-2001"})
+        self.assertEqual(respuesta.context["stats"]["resueltos"], 1)
 
     # ---------- cancelar ----------
     def test_el_usuario_cancela_su_solicitud_desde_mi_panel(self):
@@ -208,13 +208,15 @@ class PapeleraDelUsuario(TestCase):
         objetivo = Ticket.objects.get(codigo="HD-3100")
         self.client.post(reverse("tickets:mi_api_eliminar", args=[objetivo.pk]))
 
-        despues = self.client.get(reverse("tickets:mi_panel")).content.decode()
+        respuesta = self.client.get(reverse("tickets:mi_panel"))
+        despues = respuesta.content.decode()
         self.assertIn("1 solicitud", despues)
-        self.assertNotIn("HD-3100", despues)
+        self.assertNotIn("HD-3100", [ticket.codigo for ticket in respuesta.context["tickets"]])
+        self.assertIn("HD-3100", despues)  # la actividad conserva el movimiento a papelera
 
     def test_lo_que_esta_en_la_papelera_no_cuenta(self):
         t = self.ticket("HD-4000")
         t.mandar_a_la_papelera(self.user)
         self.client.force_login(self.user)
-        html = self.client.get(reverse("tickets:mi_panel")).content.decode()
-        self.assertNotIn("HD-4000", html)
+        respuesta = self.client.get(reverse("tickets:mi_panel"))
+        self.assertNotIn("HD-4000", [ticket.codigo for ticket in respuesta.context["tickets"]])

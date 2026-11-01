@@ -31,6 +31,11 @@
 {% endblock %}
 
 {% block extra_css %}
+<style>
+/* Mantener las mini gráficas debajo del valor del indicador. */
+.dash-hero--plano .dash-stat-spark { height:37px !important; bottom:54px !important; }
+@media(max-width:760px) { .dash-hero--plano .dash-stat-spark { height:28px !important; bottom:47px !important; } }
+</style>
 {% load static asset %}
 <link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 <style>
@@ -235,6 +240,43 @@
 .dash-header-actions .dash-refresh { display:grid; width:40px; height:40px; place-items:center; border:1px solid #DCE4EF; border-radius:12px; background:#fff; color:var(--dogger-red); cursor:pointer; box-shadow:0 3px 10px rgba(15,23,42,.06); }
 .dash-header-actions .dash-refresh:hover { background:#FFF5F5; border-color:rgba(214,43,31,.3); }
 .performance-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:0 0 18px; }
+.performance-grid { grid-auto-flow:column; grid-auto-columns:minmax(250px,calc((100% - 42px) / 4)); grid-template-columns:none!important; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; overscroll-behavior-x:contain; scroll-snap-type:x proximity; }
+.performance-grid::-webkit-scrollbar { display:none; }
+.performance-grid > .performance-card { min-width:0; scroll-snap-align:start; }
+@media(max-width:1240px){.performance-grid{grid-auto-columns:minmax(250px,calc((100% - 14px) / 2));}}
+@media(max-width:680px){.performance-grid{grid-auto-columns:minmax(240px,90%);}}
+.performance-card.ans-summary { display:flex; align-items:center; gap:14px; min-width:0; }
+.ans-donut { --dentro:0%; --vencidos:0%; --proximos:0%; position:relative; display:grid; place-items:center; align-self:center; flex:0 0 100px; width:100px; min-width:100px; max-width:100px; height:100px; min-height:100px; max-height:100px; aspect-ratio:1; box-sizing:border-box; border-radius:50%; background:conic-gradient(#10b981 0 var(--dentro),#ef233c var(--dentro) var(--vencidos),#f59e0b var(--vencidos) var(--proximos),#cbd5e1 var(--proximos) 100%); }
+.ans-donut::before { content:""; position:absolute; inset:12px; border-radius:50%; background:#fff; }
+.ans-donut strong { position:relative; color:#10203f; font-size:23px; }
+.ans-summary-copy { min-width:0; flex:1; }.ans-summary-copy h3 { margin:0 0 7px; color:#172b4d; font-size:13px; }.ans-legend { display:grid; gap:5px; margin:0; padding:0; list-style:none; }.ans-legend li { display:grid; grid-template-columns:10px 34px minmax(0,1fr); gap:7px; align-items:center; color:#64748b; font-size:11px; }.ans-legend i { width:9px; height:9px; border-radius:2px; background:var(--color); }.ans-legend b { color:#243c62; }
+.performance-card.ans-summary { overflow-x:auto; overflow-y:hidden; scrollbar-width:none; padding:14px; gap:12px; }
+.performance-card.ans-summary::-webkit-scrollbar { display:none; }
+.ans-summary-copy { flex:0 0 175px; }
+.ans-summary-copy h3 { white-space:nowrap; }
+.ans-legend li { grid-template-columns:9px 27px auto; gap:6px; white-space:nowrap; }
+.ans-summary-copy > small { display:block; margin-top:5px; font-size:10px; line-height:1.3; }
+.performance-card.ans-summary { height:132px; min-height:132px; max-height:132px; padding:12px 14px; box-sizing:border-box; }
+.ans-summary-copy { flex:1 0 165px; }
+.ans-summary-copy > small { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.ans-summary-copy h3 { margin:0 0 8px; font-weight:700; }
+.ans-legend { gap:6px; }
+.ans-legend li { grid-template-columns:10px 36px auto; font-size:11px; line-height:1.2; }
+.performance-card.ans-summary { position:relative; }
+.ans-donut { cursor:crosshair; transition:transform .18s ease,filter .18s ease; }
+.ans-legend li.is-highlighted { color:#10203f; font-weight:700; }
+.ans-legend li.is-highlighted span { text-decoration:underline; text-decoration-color:var(--ans-highlight,#dc2626); text-underline-offset:4px; text-decoration-thickness:2px; }
+.ans-segment-highlight { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
+.ans-segment-highlight circle { fill:none; stroke-width:12; transform-origin:center; transition:transform .16s ease; filter:drop-shadow(0 2px 3px rgba(15,23,42,.22)); }
+.ans-legend li.is-highlighted i { box-shadow:0 0 0 3px color-mix(in srgb,var(--color) 22%,transparent); }
+.ans-hover-detail { position:absolute; z-index:5; left:10px; bottom:8px; max-width:calc(100% - 20px); padding:5px 8px; border:1px solid #dce5ef; border-radius:7px; background:#fff; color:#172b4d; box-shadow:0 4px 12px rgba(15,23,42,.14); font-size:11px; font-weight:700; pointer-events:none; }
+.ans-hover-detail[hidden] { display:none; }
+.ans-ticket-popup { position:fixed; z-index:9999; width:260px; max-width:calc(100vw - 24px); padding:10px; border:1px solid #dce5ef; border-radius:10px; background:#fff; color:#172b4d; box-shadow:0 10px 28px rgba(15,23,42,.18); font-size:12px; }
+.ans-ticket-popup[hidden] { display:none; }.ans-ticket-popup strong { display:block; margin:0 0 6px; }.ans-ticket-popup ul { list-style:none; margin:0; padding:0; max-height:180px; overflow-y:auto; scrollbar-width:none; }.ans-ticket-popup ul::-webkit-scrollbar { display:none; }.ans-ticket-popup li a { display:block; min-height:36px; padding:5px 6px; border-radius:6px; color:#1e3a5f; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.ans-ticket-popup li a:hover,.ans-ticket-popup li a:focus-visible { background:#f1f5f9; color:#dc2626; }
+.ans-ticket-popup li a { height:36px; box-sizing:border-box; }
+@media (prefers-reduced-motion:reduce) { .ans-donut { transition:none; } }
+@media (min-width:1241px) { .performance-grid { grid-template-columns:1fr 1fr 1.2fr 1fr; } }
+@media(max-width:400px){.ans-donut{flex-basis:78px;width:78px;min-width:78px;max-width:78px;height:78px;min-height:78px;max-height:78px}.ans-donut strong{font-size:18px}}
 .performance-card { display:flex; align-items:center; gap:12px; min-width:0; padding:15px; border:1px solid #E2E8F0; border-radius:14px; background:#fff; box-shadow:0 6px 18px rgba(15,23,42,.04); }
 .performance-card > div { display:grid; min-width:0; gap:1px; }
 .performance-card span:not(.performance-icon) { color:#475569; font-size:12px; font-weight:600; }
@@ -247,23 +289,38 @@
 @media (max-width:1240px) { .performance-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:680px) { .dashboard-filter-grid,.performance-grid { grid-template-columns:1fr; }.dashboard-filters { position:fixed; top:70px; right:14px; left:14px; width:auto; max-height:calc(100vh - 88px); overflow:auto; }.dashboard-filter-actions .btn { flex:1; justify-content:center; }.attention-table { min-width:760px; }.dashboard-period-button { min-width:150px; } }
 @media (prefers-reduced-motion: reduce) { .badge-envivo .punto-vivo { animation:none; }.dash-stat,.chart-card { transition:none !important; } }
+.dash-hero--plano .dash-stat .dash-stat-spark { pointer-events:auto; z-index:3; }
+.dash-hero--plano .dash-stat .dash-stat-value { z-index:4!important; }
+.dash-hero--plano .spark-tooltip { position:absolute; z-index:5; bottom:100%; left:50%; transform:translate(-50%,-6px); width:max-content; max-width:210px; padding:7px 9px; border:1px solid #dce5ef; border-radius:8px; background:#fff; color:#172b4d; box-shadow:0 6px 18px rgba(15,23,42,.16); font:600 11px/1.4 var(--font-body); text-align:center; pointer-events:none; }
+.dash-hero--plano .spark-tooltip[hidden] { display:none; }
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="page page-corporate">
+    <section class="dash-hero dash-hero--plano dashboard-primary" aria-label="Indicadores principales">
+        <div class="dash-stat-row dash-stat-row--mesas">
+            <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?sv=pendientes&amp;rango={{ filtros.periodo }}">
+                <span class="dash-stat-icon st-ic-abiertos"><span class="dash-stat-value" data-kpi-key="pendientes">{{ stats.pendientes|default:0 }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-inbox"/></svg></span></span>
+                <span class="dash-stat-body"><span class="dash-stat-label">Tickets pendientes</span><span class="dash-stat-hint">Abiertos y en progreso · creados en el período</span></span>
+            </a>
+            <a class="dash-stat dash-hov-vencidos" href="{% url 'tickets:lista' %}?sv=vencidas&amp;rango={{ filtros.periodo }}">
+                <span class="dash-stat-icon st-ic-vencidos"><span class="dash-stat-value" data-kpi-key="vencidos_pendientes">{{ stats.vencidos_pendientes|default:0 }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-clock-alert"/></svg></span></span>
+                <span class="dash-stat-body"><span class="dash-stat-label">ANS vencidos</span><span class="dash-stat-hint">Pendientes vencidos · creados en el período</span></span>
+            </a>
+            <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}?sv=no-asignadas&amp;rango={{ filtros.periodo }}">
+                <span class="dash-stat-icon"><span class="dash-stat-value" data-kpi-key="sin_asignar">{{ stats.sin_asignar|default:0 }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-user-plus"/></svg></span></span>
+                <span class="dash-stat-body"><span class="dash-stat-label">Sin asignar</span><span class="dash-stat-hint">Pendientes de responsable</span></span>
+            </a>
+            <a class="dash-stat dash-hov-resueltos" href="{% url 'tickets:lista' %}?estado=resuelto&amp;fecha_resolucion_periodo=1&amp;rango={{ filtros.periodo }}">
+                <span class="dash-stat-icon st-ic-resueltos"><span class="dash-stat-value" data-kpi-key="resueltos_periodo">{{ stats.resueltos_periodo|default:0 }}</span><span class="dash-stat-glyph"><svg class="icon"><use href="#i-shield-check"/></svg></span></span>
+                <span class="dash-stat-body"><span class="dash-stat-label">Resueltos en el período</span><span class="dash-stat-hint">Con fecha de resolución registrada</span></span>
+                <span class="dash-stat-trend" data-resolved-comparison{% if stats.variacion_resueltos == None %} hidden{% endif %}><b>{{ stats.variacion_resueltos }}%</b><small>vs. período anterior</small></span>
+            </a>
+        </div>
+    </section>
     <section class="dash-hero dash-hero--plano">
         <div class="dash-stat-row dash-stat-row--mesas">
-            <a class="dash-stat dash-hov-total" href="{% url 'tickets:lista' %}?sv=sin-asignar">
-                <span class="dash-stat-icon">
-                    <span class="dash-stat-value" data-kpi-key="sin_asignar">{{ stats.sin_asignar|default:0 }}</span>
-                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
-                </span>
-                <span class="dash-stat-body">
-                    <span class="dash-stat-label">Sin asignar</span>
-                    <span class="dash-stat-hint">requieren responsable</span>
-                </span>
-            </a>
             <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?prioridad=urgente">
                 <span class="dash-stat-icon st-ic-abiertos">
                     <span class="dash-stat-value st-abiertos" data-kpi-key="urgentes">{{ stats.urgentes|default:0 }}</span>
@@ -327,10 +384,18 @@
         </div>
     </section>
 
-    <section class="performance-grid" aria-label="Indicadores de rendimiento">
+    <section class="performance-grid" aria-label="Indicadores de rendimiento; desplázate horizontalmente para ver más" tabindex="0">
         <article class="performance-card"><span class="performance-icon green"><svg class="icon"><use href="#i-clock"/></svg></span><div><span>Tiempo de primera respuesta</span><strong data-kpi-key="primera_respuesta">{{ stats.primera_respuesta|default:"Sin datos" }}</strong><small>{% if stats.primera_respuesta_total %}{{ stats.primera_respuesta_total }} respuesta{{ stats.primera_respuesta_total|pluralize }} pública{{ stats.primera_respuesta_total|pluralize }} registrada{{ stats.primera_respuesta_total|pluralize }}.{% else %}No hay respuestas públicas del personal registradas.{% endif %}</small></div></article>
         <article class="performance-card"><span class="performance-icon violet"><svg class="icon"><use href="#i-clock"/></svg></span><div><span>Tiempo de resolución</span><strong data-kpi-key="resolucion">{{ stats.resolucion|default:"Sin datos" }}</strong><small>{% if stats.resolucion_total %}Promedio de {{ stats.resolucion_total }} ticket{{ stats.resolucion_total|pluralize }} finalizado{{ stats.resolucion_total|pluralize }}.{% else %}No hay tickets finalizados en este período.{% endif %}</small></div></article>
-        <article class="performance-card{% if stats.sla_no %} performance-card--critical{% endif %}" data-sla-card><span class="performance-icon {% if stats.sla_no %}red{% else %}blue{% endif %}" data-sla-icon><svg class="icon"><use href="#i-shield"/></svg></span><div><span>Cumplimiento SLA</span><strong data-kpi-key="sla_pct">{% if stats.sla_pct != None %}{{ stats.sla_pct }}%{% else %}No configurado{% endif %}</strong><small data-sla-detail>{% if stats.sla_total %}{{ stats.sla_ok }} de {{ stats.sla_total }} dentro de plazo{% if stats.sla_no %} · {{ stats.sla_no }} vencido{{ stats.sla_no|pluralize }}{% endif %}.{% else %}No hay tickets con SLA configurado.{% endif %}</small></div></article>
+        <article class="performance-card ans-summary" data-ans-summary aria-label="Cumplimiento ANS">
+            <span class="ans-donut" data-ans-donut><strong data-ans-percent>{% if stats.sla_pct != None %}{{ stats.sla_pct }}%{% else %}—{% endif %}</strong></span>
+            <span class="ans-hover-detail" data-ans-tooltip hidden></span><div class="ans-summary-copy"><h3>Cumplimiento ANS</h3><ul class="ans-legend">
+                <li><i style="--color:#10b981"></i><b data-ans-value="sla_dentro">{{ stats.sla_dentro }}</b><span>Dentro del plazo</span></li>
+                <li><i style="--color:#ef233c"></i><b data-ans-value="sla_no">{{ stats.sla_no }}</b><span>Fuera de plazo</span></li>
+                <li><i style="--color:#f59e0b"></i><b data-ans-value="sla_proximos">{{ stats.sla_proximos }}</b><span>Próximos a vencer</span></li>
+                <li><i style="--color:#94a3b8"></i><b data-ans-value="sla_sin">{{ stats.sla_sin }}</b><span>Sin ANS o no evaluable</span></li>
+            </ul><small>Próximos a vencer cuentan dentro del plazo. Porcentaje sobre {{ stats.sla_total }} evaluables.</small></div>
+        </article>
         <article class="performance-card"><span class="performance-icon orange"><svg class="icon"><use href="#i-star"/></svg></span><div><span>Satisfacción del usuario</span><strong data-kpi-key="satisfaccion">{% if stats.satisfaccion != None %}{{ stats.satisfaccion }}%{% else %}Sin datos{% endif %}</strong><small>{% if stats.satisfaccion != None %}{{ stats.satisfaccion_positivos }} de {{ stats.satisfaccion_votos }} votos positivos.{% elif stats.satisfaccion_votos %}Muestra insuficiente: {{ stats.satisfaccion_votos }} voto{{ stats.satisfaccion_votos|pluralize }} registrado{{ stats.satisfaccion_votos|pluralize }}.{% else %}No hay votos asociados a tickets en este período.{% endif %}</small></div></article>
     </section>
 
@@ -462,7 +527,7 @@
                             <option value="0" {% if per_page_recientes == 0 %}selected{% endif %}>Todas</option>
                         </select>
                     </div>
-                    <span class="pagination-info">Página {{ recientes_page.number }} de {{ recientes_page.paginator.num_pages }}</span>
+                    <span class="pagination-info">Mostrando {{ recientes_page.start_index }}–{{ recientes_page.end_index }} de {{ recientes_page.paginator.count }} resultados</span>
                     <div class="pagination-links">
                         {% if recientes_page.has_previous %}
                         <a class="page-pill" href="?{{ querystring }}&page_recientes={{ recientes_page.previous_page_number }}">‹ Anterior</a>
@@ -511,6 +576,84 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ stats|json_script:"dashboardAnsStats" }}
+<script>
+(function () {
+    var source = document.getElementById('dashboardAnsStats');
+    var card = document.querySelector('[data-ans-summary]');
+    if (!source || !card) return;
+    var donut = card.querySelector('[data-ans-donut]');
+    var tooltip = card.querySelector('[data-ans-tooltip]');
+    var current = [];
+    var highlight = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    highlight.setAttribute('viewBox', '0 0 100 100');
+    highlight.setAttribute('class', 'ans-segment-highlight');
+    highlight.setAttribute('aria-hidden', 'true');
+    var arc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    arc.setAttribute('cx', '50'); arc.setAttribute('cy', '50'); arc.setAttribute('r', '44');
+    highlight.appendChild(arc); donut.appendChild(highlight);
+    var groups = {}, closeTimer;
+    var popup = document.createElement('div');
+    popup.className = 'ans-ticket-popup'; popup.hidden = true;
+    popup.innerHTML = '<strong></strong><ul></ul>';
+    document.body.appendChild(popup);
+    function hideDetail() { tooltip.hidden = true; popup.hidden = true; highlight.style.display = 'none'; card.querySelectorAll('.ans-legend li').forEach(function (row) { row.classList.remove('is-highlighted'); }); }
+    function scheduleHide() { clearTimeout(closeTimer); closeTimer = setTimeout(hideDetail, 350); }
+    popup.addEventListener('pointerenter', function () { clearTimeout(closeTimer); });
+    popup.addEventListener('pointerleave', scheduleHide);
+    popup.addEventListener('focusout', function (event) { if (!popup.contains(event.relatedTarget)) scheduleHide(); });
+    donut.addEventListener('pointermove', function (event) {
+        var rect = donut.getBoundingClientRect(), x = event.clientX - rect.left - rect.width / 2, y = event.clientY - rect.top - rect.height / 2;
+        var distance = Math.sqrt(x * x + y * y), radius = Math.min(rect.width, rect.height) / 2;
+        var total = current.reduce(function (sum, value) { return sum + value; }, 0);
+        if (!total || distance < radius * .72 || distance > radius) { hideDetail(); return; }
+        var angle = (Math.atan2(x, -y) + Math.PI * 2) % (Math.PI * 2), target = angle / (Math.PI * 2) * total, sum = 0;
+        var index = current.findIndex(function (value) { sum += value; return target < sum; });
+        var rows = card.querySelectorAll('.ans-legend li');
+        if (index < 0 || !rows[index]) { hideDetail(); return; }
+        rows.forEach(function (row, i) { row.classList.toggle('is-highlighted', i === index); });
+        var color = ['#10b981', '#ef233c', '#f59e0b', '#94a3b8'][index];
+        card.style.setProperty('--ans-highlight', color);
+        var start = current.slice(0, index).reduce(function (a, b) { return a + b; }, 0) / total;
+        var fraction = current[index] / total, circumference = 2 * Math.PI * 44;
+        arc.setAttribute('stroke', color);
+        arc.setAttribute('stroke-dasharray', (fraction * circumference) + ' ' + circumference);
+        arc.setAttribute('stroke-dashoffset', -start * circumference);
+        arc.style.transform = 'rotate(-90deg) scale(1.06)';
+        highlight.style.display = '';
+        clearTimeout(closeTimer);
+        var title = rows[index].querySelector('span').textContent;
+        var key = ['dentro', 'vencidos', 'proximos', 'sin'][index];
+        popup.querySelector('strong').textContent = title + ' · ' + current[index] + (current[index] === 1 ? ' ticket' : ' tickets');
+        var list = popup.querySelector('ul'); list.replaceChildren();
+        (groups[key] || []).forEach(function (ticket) {
+            var li = document.createElement('li'), link = document.createElement('a');
+            link.href = ticket.url; link.textContent = ticket.codigo + ' · ' + ticket.titulo;
+            li.appendChild(link); list.appendChild(li);
+        });
+        var bounds = card.getBoundingClientRect();
+        popup.style.left = Math.max(12, Math.min(bounds.left, window.innerWidth - 272)) + 'px';
+        popup.style.top = Math.max(12, Math.min(bounds.bottom + 6, window.innerHeight - 230)) + 'px';
+        popup.hidden = false;
+    });
+    donut.addEventListener('pointerleave', scheduleHide);
+    function render(data) {
+        var dentro = Number(data.sla_dentro || 0), vencidos = Number(data.sla_no || 0), proximos = Number(data.sla_proximos || 0), sin = Number(data.sla_sin || 0);
+        var total = dentro + vencidos + proximos + sin;
+        current = [dentro, vencidos, proximos, sin];
+        groups = data.sla_tickets || {};
+        hideDetail();
+        donut.style.setProperty('--dentro', (total ? dentro * 100 / total : 0) + '%');
+        donut.style.setProperty('--vencidos', (total ? (dentro + vencidos) * 100 / total : 0) + '%');
+        donut.style.setProperty('--proximos', (total ? (dentro + vencidos + proximos) * 100 / total : 0) + '%');
+        card.querySelector('[data-ans-percent]').textContent = data.sla_pct == null ? '—' : data.sla_pct + '%';
+        card.querySelectorAll('[data-ans-value]').forEach(function (node) { node.textContent = data[node.dataset.ansValue] || 0; });
+        card.querySelector('.ans-summary-copy small').textContent = 'Próximos a vencer cuentan dentro del plazo. Porcentaje sobre ' + (data.sla_total || 0) + ' evaluables.';
+    }
+    render(JSON.parse(source.textContent));
+    document.addEventListener('dogger:ans-actualizado', function (event) { render(event.detail); });
+})();
+</script>
 {{ kpi_trends|json_script:"dashboardKpiTrends" }}
 {{ kpi_sparks|json_script:"dashboardKpiSparks" }}
 <script>
@@ -520,24 +663,27 @@
     var trends = JSON.parse(source.textContent || "[]");
     var sparksSource = document.getElementById("dashboardKpiSparks");
     var sparks = sparksSource ? JSON.parse(sparksSource.textContent || "{}") : {};
-    var sparkKeys = ["total", "abiertos", "progreso", "cerrados", "tecnicos", "puntos", "vencidos"];
-    document.querySelectorAll(".dash-hero--plano .dash-stat").forEach(function (card, index) {
-        var trend = trends[index];
-        if (!trend) return;
-        var chip = document.createElement("span");
-        chip.className = "dash-stat-trend " + trend.clase;
-        var value = document.createElement("b");
-        value.textContent = (trend.clase === "is-up" ? "↑ " : trend.clase === "is-down" ? "↓ " : "= ") + trend.texto;
-        var caption = document.createElement("small");
-        caption.textContent = "vs. mes anterior";
+    document.querySelectorAll('.dash-hero--plano:not(.dashboard-primary) .dash-stat').forEach(function (card, index) {
+        var trend = trends[index + 1];
+        if (!trend || trend.texto === 'Nuevo') return;
+        var chip = document.createElement('span');
+        chip.className = 'dash-stat-trend ' + trend.clase;
+        var value = document.createElement('b');
+        value.textContent = (trend.clase === 'is-up' ? '↑ ' : trend.clase === 'is-down' ? '↓ ' : '= ') + trend.texto;
+        var caption = document.createElement('small');
+        caption.textContent = 'vs. mes anterior';
         chip.append(value, caption);
         card.append(chip);
-        var values = sparks[sparkKeys[index]];
+    });
+    function dibujar(sparks) {
+    document.querySelectorAll(".dash-hero--plano .dash-stat").forEach(function (card, index) {
+        var indicador = card.querySelector('[data-kpi-key]');
+        var values = indicador && sparks[indicador.dataset.kpiKey];
         if (!Array.isArray(values) || !values.length) return;
-        var spark = document.createElement("span");
+        var spark = card.querySelector('.dash-stat-spark') || document.createElement("span");
         spark.className = "dash-stat-spark " + (index === 1 || index === 2 || index === 6 ? "is-bars" : "is-line");
         spark.setAttribute("aria-hidden", "true");
-        spark.title = "Tendencia de los últimos " + values.length + " días";
+        spark.removeAttribute('title');
         var max = Math.max.apply(null, values.concat([1]));
         if (spark.classList.contains("is-bars")) {
             var width = 240 / values.length;
@@ -548,8 +694,26 @@
             var last = points.split(' ').pop().split(',');
             spark.innerHTML = '<svg viewBox="0 0 240 66" preserveAspectRatio="none"><polygon class="spark-fill" points="2,64 ' + points + ' 238,64"/><polyline class="spark-line" points="' + points + '"/><circle cx="' + last[0] + '" cy="' + last[1] + '" r="4"/></svg>';
         }
+        var tooltip = document.createElement('span');
+        tooltip.className = 'spark-tooltip';
+        tooltip.hidden = true;
+        spark.appendChild(tooltip);
+        spark.onpointermove = function (event) {
+            var bounds = spark.getBoundingClientRect();
+            var position = Math.min(values.length - 1, Math.max(0, Math.floor((event.clientX - bounds.left) / bounds.width * values.length)));
+            var ago = values.length - 1 - position;
+            var day = ago === 0 ? 'Hoy' : ago === 1 ? 'Ayer' : 'Hace ' + ago + ' días';
+            tooltip.textContent = indicador.dataset.kpiKey === 'resueltos_periodo'
+                ? day + ': ' + values[position] + (values[position] === 1 ? ' ticket resuelto' : ' tickets resueltos')
+                : day + ': ' + values[position] + (values[position] === 1 ? ' ticket creado' : ' tickets creados') + ' que cumplen este indicador actualmente';
+            tooltip.hidden = false;
+        };
+        spark.onpointerleave = function () { tooltip.hidden = true; };
         card.append(spark);
     });
+    }
+    dibujar(sparks);
+    document.addEventListener('dogger:dashboard-sparks', function (event) { dibujar(event.detail || {}); });
 })();
 </script>
 <script>
@@ -559,6 +723,19 @@
     var filterToggle = document.querySelector('[data-filter-toggle]');
     var filterPopover = document.getElementById('dashboardFilterPopover');
     if (!form) return;
+    function actualizarEnlaces() {
+        var filtros = new FormData(form);
+        document.querySelectorAll('.dashboard-primary a.dash-stat').forEach(function (link) {
+            var url = new URL(link.href, location.href);
+            ['estado', 'prioridad', 'categoria', 'tecnico', 'punto'].forEach(function (key) {
+                var value = filtros.get(key);
+                if (value) url.searchParams.set(key, value); else url.searchParams.delete(key);
+            });
+            url.searchParams.set('rango', filtros.get('periodo') || '30');
+            link.href = url.toString();
+        });
+    }
+    actualizarEnlaces();
     function setFilterOpen(open) {
         form.hidden = !open;
         if (filterPopover) filterPopover.classList.toggle('is-open', open);
@@ -594,6 +771,12 @@
                     var key = node.dataset.kpiKey;
                     if (Object.prototype.hasOwnProperty.call(data.kpis, key)) node.textContent = formatValue(key, data.kpis[key]);
                 });
+                var comparison = document.querySelector('[data-resolved-comparison]');
+                if (comparison) {
+                    var change = data.kpis.variacion_resueltos;
+                    comparison.hidden = change === null || change === undefined;
+                    if (!comparison.hidden) comparison.querySelector('b').textContent = (change > 0 ? '+' : '') + change + '%';
+                }
                 var slaCard = document.querySelector('[data-sla-card]');
                 var slaIcon = document.querySelector('[data-sla-icon]');
                 var slaDetail = document.querySelector('[data-sla-detail]');
@@ -607,6 +790,8 @@
                         : 'No hay tickets con SLA configurado.';
                 }
                 if (window.DoggerDashboardCharts) window.DoggerDashboardCharts.update(data.charts);
+                document.dispatchEvent(new CustomEvent('dogger:ans-actualizado', {detail:data.kpis}));
+                document.dispatchEvent(new CustomEvent('dogger:dashboard-sparks', {detail: data.sparks}));
             })
             .catch(function () { /* El contenido visible permanece disponible si falla la red. */ })
             .finally(function () { pending = false; document.querySelector('.dash-hero').classList.remove('is-loading'); });

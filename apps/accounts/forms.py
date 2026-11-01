@@ -107,13 +107,19 @@ class UserRegisterForm(forms.Form):
 
 
 class PerfilForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.rol != "usuario":
+            self.fields.pop("horario_atencion", None)
+
     class Meta:
         model = User
-        fields = ["nombre", "email", "telefono", "avatar"]
+        fields = ["nombre", "email", "telefono", "avatar", "horario_atencion"]
         widgets = {
             "nombre": forms.TextInput(attrs={"placeholder": "Tu nombre completo"}),
             "email": forms.EmailInput(attrs={"placeholder": "correo@dogger.com.co"}),
             "telefono": forms.TextInput(attrs={"placeholder": "Ej: 310 371 6129"}),
+            "horario_atencion": forms.TextInput(attrs={"placeholder": "Ej: Lunes a sábado · 8:00 a. m. – 6:00 p. m."}),
         }
 
     def clean_avatar(self):

@@ -44,6 +44,14 @@
             </div>
         </div>
 
+        {% if rol == 'usuario' %}
+        <div id="pvDashboard" class="mon-cuenta-dashboard"><div class="pv-kpi-grid" aria-label="Indicadores de la cuenta">
+            <div class="pv-kpi pv-kpi-red"><span class="pv-kpi-top"><span class="pv-kpi-icon"><svg class="icon"><use href="#i-ticket"/></svg></span><span class="pv-kpi-main"><b>Solicitudes</b><strong>{{ total|default:0 }}</strong></span></span><span class="pv-kpi-bottom"><i></i>Todos los tickets</span></div>
+            <div class="pv-kpi pv-kpi-rose"><span class="pv-kpi-top"><span class="pv-kpi-icon"><svg class="icon"><use href="#i-alert"/></svg></span><span class="pv-kpi-main"><b>Abiertas</b><strong>{{ abiertos|default:0 }}</strong></span></span><span class="pv-kpi-bottom"><i></i>Por atender y en progreso</span></div>
+            <div class="pv-kpi pv-kpi-orange"><span class="pv-kpi-top"><span class="pv-kpi-icon"><svg class="icon"><use href="#i-wrench"/></svg></span><span class="pv-kpi-main"><b>En progreso</b><strong>{{ en_progreso|default:0 }}</strong></span></span><span class="pv-kpi-bottom"><i></i>En atención técnica</span></div>
+            <div class="pv-kpi pv-kpi-green"><span class="pv-kpi-top"><span class="pv-kpi-icon"><svg class="icon"><use href="#i-check-circle"/></svg></span><span class="pv-kpi-main"><b>Resueltas</b><strong>{{ resueltos|default:0 }}</strong></span></span><span class="pv-kpi-bottom"><i></i>Resueltas y cerradas</span></div>
+        </div></div>
+        {% else %}
         <div class="corp-kpis">
             <div class="corp-kpi is-static">
                 <span class="corp-kpi-num corp-kpi-total">{{ total|default:0 }}</span>
@@ -63,6 +71,7 @@
             </div>
         </div>
 
+        {% endif %}
         {% if calificacion %}
         <div class="corp-kpis">
             <div class="corp-kpi is-static">

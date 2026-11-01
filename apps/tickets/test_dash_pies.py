@@ -417,15 +417,16 @@ class FiltroResueltasTest(SmokeTestCase):
         self.assertTrue(t.fue_resuelto)
         self.assertTrue(t.esta_cerrado)
 
-    def test_reabrir_borra_la_marca_de_resolucion(self):
+    def test_no_reabrir_conserva_la_marca_de_resolucion(self):
         t = self._ticket(Ticket.Estado.CERRADO, "ZK-Cerrada", resuelta=True)
         self.client.post(
             reverse("tickets:cambiar_estado", args=[t.pk]),
             {"estado": Ticket.Estado.ABIERTO, "next": "/panel/tickets/"},
         )
         t.refresh_from_db()
-        self.assertIsNone(t.fecha_resolucion)
-        self.assertFalse(t.fue_resuelto)
+        self.assertIsNotNone(t.fecha_resolucion)
+        self.assertTrue(t.fue_resuelto)
+        self.assertEqual(t.estado, Ticket.Estado.CERRADO)
 
     def test_filtrar_por_resuelto_trae_solo_los_resueltos(self):
         # Este se resolvió: al resolverlo se cerró, así que cuenta.
@@ -476,7 +477,7 @@ class FiltroResueltasTest(SmokeTestCase):
         # En el filtro de resueltas sale solo "Resuelto" (ya no van pegados).
         self._ticket(Ticket.Estado.CERRADO, "ZK-Resuelta", resuelta=True)
         html = self._listado(Ticket.Estado.RESUELTO)
-        self.assertEqual(html.count("status-pill status-resuelto"), 1)
+        self.assertEqual(html.count("status-pill status-resuelto"), 2)  # tabla y tarjetas
         self.assertNotIn("status-pill status-cerrado", html)
 
     def test_en_cerradas_solo_sale_el_distintivo_cerrado(self):
@@ -486,7 +487,7 @@ class FiltroResueltasTest(SmokeTestCase):
         self._ticket(Ticket.Estado.CERRADO, "ZK-Solo-cerrada")
         html = self._listado(Ticket.Estado.CERRADO)
         self.assertNotIn("status-pill status-resuelto", html)
-        self.assertEqual(html.count("status-pill status-cerrado"), 2)
+        self.assertEqual(html.count("status-pill status-cerrado"), 4)  # tabla y tarjetas
 
     def test_una_abierta_conserva_su_unico_distintivo(self):
         self._ticket(Ticket.Estado.ABIERTO, "ZK-Abierta")
@@ -494,6 +495,12 @@ class FiltroResueltasTest(SmokeTestCase):
         self.assertIn("status-pill status-abierto", html)
         self.assertNotIn("status-pill status-resuelto", html)
         self.assertNotIn("status-pill status-cerrado", html)
+
+    def test_cierre_directo_no_muestra_resuelto_sin_filtro(self):
+        self._ticket(Ticket.Estado.CERRADO, "Solo cerrado")
+        html = self.client.get(reverse("tickets:lista"), {"per_page": 0}).content.decode()
+        self.assertIn("status-pill status-cerrado", html)
+        self.assertNotIn("status-pill status-resuelto", html)
 
     def test_los_mensajes_de_confirmacion_avisan_la_accion(self):
         """Al cambiar de estado se avisa qué va a pasar antes de hacerlo."""

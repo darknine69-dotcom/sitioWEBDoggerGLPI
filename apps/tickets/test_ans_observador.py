@@ -183,15 +183,14 @@ class ObservadorVeElAnsTest(BaseAnsTest):
         self.assertIn("Ninguno de los tickets", seccion)
 
     def test_el_aviso_respeta_el_interruptor_de_la_zona(self):
-        """Con las alertas de la zona apagadas la sección no se llena: no
-        enseña ningún caso ni el aviso de los que sí vencerían."""
+        """Apagar avisos no oculta los tickets, pero no alerta al supervisor."""
         self.zona.alertas_ans = False
         self.zona.save(update_fields=["alertas_ans"])
-        self._ticket(horas=HORAS_MEDIA - 0.5)
+        ticket = self._ticket(horas=HORAS_MEDIA - 0.5)
         html = self._monitoreo().content.decode()
         seccion = self._seccion_por_vencer(html)
-        self.assertNotIn("HD-", seccion)
-        self.assertIn("Ninguno de los tickets", seccion)
+        self.assertIn(ticket.codigo, seccion)
+        self.assertFalse(self._avisos_ans().filter(usuario=self.observador).exists())
 
 
 @override_settings(STORAGES={

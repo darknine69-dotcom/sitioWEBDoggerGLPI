@@ -149,22 +149,21 @@ class AnsEnVivoEnLasVistasTest(TestCase):
             "Mis solicitudes del técnico",
         )
 
-    def test_el_reloj_conserva_el_formato_del_servidor(self):
-        """El reloj repite el formato de formatear_duracion().
+    def test_el_reloj_muestra_segundos_en_todos_los_rangos(self):
+        """El temporizador vivo muestra segundos incluso para días y horas.
 
-        Si el texto cambiara de forma al recargar ("1h 0min" un segundo y "1h"
-        al recargar) se vería un salto tonto, así que se fija que las cuatro
-        formas del reloj son las mismas del servidor.
+        El formato del servidor es deliberadamente más compacto y no muestra
+        segundos; aquí se comprueba cada rama del reloj interactivo.
         """
         js = (BASE / "static/js/dogger.js").read_text(encoding="utf-8")
         bloque = js[js.index("function duracion(seg) {"):]
         bloque = bloque[: bloque.index("\n    }")]
 
-        for rama in ('d + "d " + h + "h"', 'd + "d"', 'h + "h " + m + "min"',
-                     'h + "h"', 'm + "min"', 's + "s"'):
+        for rama in ('d + "d " + h + "h " + m + "min " + s + "s"',
+                     'h + "h " + m + "min " + s + "s"', 'm + "min " + s + "s"'):
             self.assertIn(rama, bloque, f"el reloj perdió la forma {rama}")
 
-        # El servidor usa estas mismas terminaciones.
+        # El servidor conserva su formato compacto para vistas sin JavaScript.
         from apps.tickets.sla import formatear_duracion
 
         self.assertEqual(formatear_duracion(timedelta(hours=1)), "1h")

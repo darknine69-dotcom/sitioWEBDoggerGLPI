@@ -414,7 +414,7 @@
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-resueltos" data-rpt-kpi="resueltas" href="{% url 'tickets:lista' %}?estado=resuelto" title="Solicitudes resueltas o cerradas">
+            <a class="dash-stat dash-hov-resueltos" data-rpt-kpi="resueltas" href="{% url 'tickets:lista' %}?estado=resuelto" title="Solicitudes marcadas como resueltas">
                 <span class="dash-stat-icon st-ic-resueltos">
                     <span class="dash-stat-value st-resueltos">{{ kpis.resueltos_cerrados }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
@@ -454,16 +454,6 @@
                     <span class="dash-stat-hint">por fuera del plazo</span>
                 </span>
             </a>
-            <span class="dash-stat dash-hov-slate" title="El historial no registra reaperturas como una métrica independiente">
-                <span class="dash-stat-icon st-ic-reabiertos">
-                    <span class="dash-stat-value">—</span>
-                    <span class="dash-stat-glyph"><svg class="icon"><use href="#i-refresh"/></svg></span>
-                </span>
-                <span class="dash-stat-body">
-                    <span class="dash-stat-label">Tickets reabiertos</span>
-                    <span class="dash-stat-hint">Sin datos registrados</span>
-                </span>
-            </span>
             <a class="dash-stat dash-hov-users" href="{% url 'tickets:usuarios' %}" title="Usuarios con tickets en el período filtrado">
                 <span class="dash-stat-icon st-ic-usuarios">
                     <span class="dash-stat-value">{{ usuarios|length }}</span>
@@ -1194,7 +1184,10 @@
             noMatch = document.createElement("tr");
             noMatch.id = "usuNoMatch";
             noMatch.className = "table-empty";
-            noMatch.innerHTML = '<td colspan="11">Sin resultados para «' + search.value.trim() + "».</td>";
+            var celdaSinResultado = document.createElement("td");
+            celdaSinResultado.colSpan = 11;
+            celdaSinResultado.textContent = "Sin resultados para «" + search.value.trim() + "».";
+            noMatch.appendChild(celdaSinResultado);
             tbody.appendChild(noMatch);
         }
 

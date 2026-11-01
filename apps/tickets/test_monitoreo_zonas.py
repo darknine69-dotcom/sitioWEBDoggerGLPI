@@ -82,7 +82,8 @@ class MonitoreoZonasAdminTest(TestCase):
             f'href="{reverse("tickets:monitoreo_zona_detalle", args=[self.zona.pk])}"',
             html,
         )
-        self.assertIn('target="_blank" rel="noopener noreferrer"', html)
+        self.assertIn('data-mon-ver-cuentas', html)
+        self.assertIn('id="monFolderDialog"', html)
         self.assertIn(f'id="za-{self.zona.pk}"', html)
         self.assertNotIn('data-mon-card-view=', html)
         dash = respuesta.context["dash"]
@@ -99,7 +100,7 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertTrue(respuesta.context["admin"])
         self.assertEqual(respuesta.context["resumen"]["cuentas"], 1)
         html = respuesta.content.decode()
-        self.assertIn("Cuentas asignadas a esta zona", html)
+        self.assertIn("Puntos de venta", html)
         self.assertIn("ana@x.com", html)
         self.assertIn(Ticket.objects.first().codigo, html)
         self.assertIn(
@@ -414,7 +415,7 @@ class MonitoreoZonasAdminTest(TestCase):
         self.assertIn("Sus solicitudes", html)
         # Mismo diseño de su cuenta: hero, KPIs y tabla corp.
         self.assertIn("corp-hero", html)
-        self.assertIn("corp-kpis", html)
+        self.assertIn("pv-kpi-grid", html)
         self.assertIn("tickets-table", html)
 
     def test_ficha_tecnico_muestra_lo_que_atiende_y_su_calificacion(self):
@@ -654,8 +655,8 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertEqual(grupos[0]["zona"].nombre, "Norte")
         self.assertEqual(grupos[0]["filas"][0]["tecnico"], "Tec")
         html = respuesta.content.decode()
-        self.assertIn("Técnico a cargo", html)
-        self.assertIn("resuelto global", html)
+        self.assertIn("Atención de técnicos", html)
+        self.assertIn("Resolución global", html)
 
     def test_monitoreo_es_tablero_con_graficos_y_tablas(self):
         self._ticket("ana@x.com")
@@ -747,21 +748,17 @@ class MonitoreoObservadorDetalleTest(TestCase):
         self.assertEqual(filas[0]["tecnico"], "Tec")
         html = respuesta.content.decode()
         self.assertIn(ticket.codigo, html)
-        self.assertIn("data-zona-toggle", html)
-        self.assertIn("data-miembro-toggle", html)
-        self.assertIn("obs-crate", html)
-        self.assertIn("obs-crate-global", html)
+        self.assertIn("data-zona-carousel", html)
+        self.assertIn("data-zona-user-list", html)
+        self.assertIn("zona-activa-cifras", html)
         self.assertIn("Tickets recientes", html)
         self.assertNotIn("Últimas respuestas", html)
-        self.assertIn("Presionar al técnico", html)
         self.assertIn("obs-leyenda-item", html)
         self.assertIn("Todo resuelto, sin pendientes", html)
         self.assertIn("Exportar datos", html)
         self.assertNotIn("Imprimir", html)
-        self.assertIn("act-ticket st-abierto", html)
-        self.assertIn("detalles ›", html)
-        self.assertIn("Presionar al técnico", html)
-        self.assertIn("act-nudge", html)
+        self.assertIn("obs-modern-ticket-row", html)
+        self.assertIn(reverse("tickets:mi_ticket", args=[ticket.pk]), html)
         self.assertIn('id="actBuscar"', html)
         self.assertIn('id="actLista"', html)
 
@@ -816,6 +813,20 @@ class MonitoreoObservadorDetalleTest(TestCase):
         for i in range(5):
             self.assertIn(f"Avance {i}", html)
         self.assertIn("obs-resp-lista", html)
+
+    def test_respuestas_se_consultan_solo_para_correos_permitidos(self):
+        from apps.tickets.models import TicketComentario
+        from apps.tickets.views_observador import _respuestas_por_correo
+
+        propio = self._ticket("ana@x.com")
+        Ticket.objects.filter(pk=propio.pk).update(solicitante_email=" ANA@X.COM ")
+        ajeno = self._ticket("ajeno@x.com")
+        TicketComentario.objects.create(ticket=propio, usuario=self.tec, comentario="Visible")
+        TicketComentario.objects.create(ticket=ajeno, usuario=self.tec, comentario="Privado")
+        with self.assertNumQueries(1):
+            resultado = _respuestas_por_correo([], ["ana@x.com"], limite=10, global_scope=True)
+        self.assertEqual([r.comentario for r in resultado["ana@x.com"]], ["Visible"])
+        self.assertNotIn("ajeno@x.com", resultado)
 
     def test_detalles_abre_la_ficha_del_ticket_en_lectura(self):
         ticket = self._ticket("ana@x.com")

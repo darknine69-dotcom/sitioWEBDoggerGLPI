@@ -2,6 +2,9 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
 import re
+import warnings
+from pathlib import Path
+from PIL import Image, UnidentifiedImageError
 
 from .models import Categoria, CategoriaGrupo, Ticket, TicketComentario
 from .sugerencia_categoria import sugerir_categoria
@@ -19,6 +22,34 @@ ALLOWED_CONTENT_TYPES = {
     "image/webp",
     "application/pdf",
 }
+
+def validar_contenido_adjunto(archivo, solo_imagen=False):
+    """Comprueba el contenido y normaliza el MIME, sin confiar en el cliente."""
+    extension = Path(archivo.name).suffix.lower()
+    permitidas = {".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG", ".gif": "GIF", ".webp": "WEBP"}
+    try:
+        archivo.seek(0)
+        if extension == ".pdf" and not solo_imagen:
+            if archivo.read(5) != b"%PDF-":
+                raise forms.ValidationError("El archivo no es un PDF válido.")
+            archivo.seek(max(0, archivo.size - 2048))
+            if b"%%EOF" not in archivo.read(2048):
+                raise forms.ValidationError("El PDF está incompleto o no es válido.")
+            archivo.content_type = "application/pdf"
+            return
+        if extension not in permitidas:
+            raise forms.ValidationError("Formato de archivo no permitido.")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(archivo) as imagen:
+                if imagen.format != permitidas[extension]:
+                    raise forms.ValidationError("La extensión no coincide con el contenido de la imagen.")
+                imagen.verify()
+        archivo.content_type = "image/" + {"JPEG": "jpeg", "PNG": "png", "GIF": "gif", "WEBP": "webp"}[permitidas[extension]]
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise forms.ValidationError("La imagen no es válida o es demasiado grande.")
+    finally:
+        archivo.seek(0)
 
 
 def categorias_agrupadas():
@@ -167,12 +198,9 @@ class TicketForm(forms.ModelForm):
         if len(files) > max_files:
             raise forms.ValidationError(f"Maximo {max_files} archivos por ticket.")
         for f in files:
-            if f.content_type not in ALLOWED_CONTENT_TYPES:
-                raise forms.ValidationError(
-                    f"Tipo no permitido: {f.name}. Solo imagenes y PDF."
-                )
             if f.size > max_bytes:
                 raise forms.ValidationError(f'"{f.name}" supera el limite de {max_mb} MB.')
+            validar_contenido_adjunto(f)
         return files
 
     def clean(self):

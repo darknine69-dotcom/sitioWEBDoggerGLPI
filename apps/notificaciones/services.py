@@ -140,17 +140,34 @@ def revisar_la_vista(usuario, url_name, url_actual=""):
     return 0
 
 
+def _ocultar_recordatorios_anticipados(queryset):
+    """No mostrar avisos antiguos que fueron creados antes de su hora real."""
+    from apps.programador.models import CalendarioEvento
+
+    candidatos = list(queryset.filter(tipo=Notificacion.Tipo.EVENTO, clave__startswith="evento:").values_list("pk", "clave"))
+    ids = {int(partes[1]) for _, clave in candidatos if len(partes := clave.split(":")) == 3 and partes[1].isdigit()}
+    eventos = {e.pk: e for e in CalendarioEvento.objects.filter(pk__in=ids, tipo=CalendarioEvento.Tipo.RECORDATORIO)}
+    ahora = timezone.now()
+    ocultos = []
+    for pk, clave in candidatos:
+        partes = clave.split(":")
+        evento = eventos.get(int(partes[1])) if len(partes) == 3 and partes[1].isdigit() else None
+        if evento and (partes[2] != evento.fecha.isoformat() or ahora < _inicio_aviso(evento)):
+            ocultos.append(pk)
+    return queryset.exclude(pk__in=ocultos)
+
+
 def no_leidas(usuario):
     if usuario is None or not getattr(usuario, "is_authenticated", False):
         return 0
-    return Notificacion.objects.filter(usuario_id=usuario.pk, leida=False).count()
+    return _ocultar_recordatorios_anticipados(Notificacion.objects.filter(usuario_id=usuario.pk, leida=False)).count()
 
 
 def lista(usuario, limite=15):
     if usuario is None or not getattr(usuario, "is_authenticated", False):
         return []
     return list(
-        Notificacion.objects.filter(usuario_id=usuario.pk).order_by("-creada_en", "-id")[:limite]
+        _ocultar_recordatorios_anticipados(Notificacion.objects.filter(usuario_id=usuario.pk)).order_by("-creada_en", "-id")[:limite]
     )
 
 
@@ -159,7 +176,7 @@ def pendientes_de_emergente(usuario, limite=1):
     if usuario is None or not getattr(usuario, "is_authenticated", False):
         return []
     return list(
-        Notificacion.objects.filter(usuario_id=usuario.pk, mostrada_en__isnull=True)
+        _ocultar_recordatorios_anticipados(Notificacion.objects.filter(usuario_id=usuario.pk, mostrada_en__isnull=True))
         .order_by("-creada_en", "-id")[:limite]
     )
 
@@ -559,6 +576,15 @@ def recordatorios(usuario, forzar=False):
     return [n for n in nuevas if n]
 
 
+def _inicio_aviso(evento):
+    from datetime import datetime, time, timedelta
+
+    anticipaciones = {"5_min": 5, "10_min": 10, "15_min": 15, "30_min": 30, "60_min": 60, "1_dia": 1440}
+    inicio = timezone.make_aware(datetime.combine(evento.fecha, evento.hora or time.min), timezone.get_current_timezone())
+    minutos = anticipaciones.get((evento.metadatos or {}).get("anticipacion"), 0)
+    return inicio - timedelta(minutes=minutos)
+
+
 def _recordatorio_eventos(usuario, hoy):
     """Tareas y eventos de calendario asignados para hoy o mañana.
 
@@ -574,14 +600,19 @@ def _recordatorio_eventos(usuario, hoy):
 
     hoy_date = timezone.localdate()
     manana = hoy_date + timedelta(days=1)
-    eventos = list(
+    from django.db.models import Q
+    candidatos = list(
         CalendarioEvento.objects.filter(
-            tecnico_id=usuario.pk,
+            Q(tecnico_id=usuario.pk) | Q(tecnico__isnull=True),
             completado=False,
             fecha__lte=manana,
             fecha__gte=hoy_date - timedelta(days=7),
-        ).order_by("fecha", "hora")[:3]
+        ).order_by("fecha", "hora")
     )
+    ahora = timezone.now()
+    eventos = [evento for evento in candidatos
+               if (evento.tecnico_id == usuario.pk or (usuario.rol in ("admin", "tecnico") and (evento.metadatos or {}).get("visibilidad") == "todos"))
+               and (evento.tipo != CalendarioEvento.Tipo.RECORDATORIO or ahora >= _inicio_aviso(evento))][:3]
 
     nuevas = []
     for evento in eventos:
@@ -606,7 +637,9 @@ def _recordatorio_eventos(usuario, hoy):
 
     # Los avisos de evento de hoy que ya no aplican (completados o vencidos)
     # se retiran para no dejar tareas fantasma en la campana.
-    claves = {f"evento:{e.pk}:{e.fecha.isoformat()}" for e in eventos}
+    # Conservar avisos ya creados aunque aún no estén dentro de la anticipación:
+    # se ocultan temporalmente en lugar de borrarse.
+    claves = {f"evento:{e.pk}:{e.fecha.isoformat()}" for e in candidatos}
     Notificacion.objects.filter(
         usuario_id=usuario.pk,
         tipo=Notificacion.Tipo.EVENTO,

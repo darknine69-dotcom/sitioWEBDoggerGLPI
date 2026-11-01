@@ -2,6 +2,7 @@ import json
 import logging
 
 from django.conf import settings
+from django.core.exceptions import RequestDataTooBig
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -133,18 +134,28 @@ def glpi_webhook(request):
         else:
             logger.warning("Webhook GLPI rechazado: sin secret en producción")
             return HttpResponseForbidden("Webhook no configurado")
-    elif not hmac.compare_digest(secret_recibido, secret_esperado):
+    elif not hmac.compare_digest(secret_recibido.encode("utf-8"), secret_esperado.encode("utf-8")):
         logger.warning("Webhook GLPI rechazado: secret inválido")
         return HttpResponseForbidden("Secret inválido")
 
     try:
-        data = json.loads(request.body.decode("utf-8"))
-    except (ValueError, UnicodeDecodeError):
+        body = request.body
+        if len(body) > 256 * 1024:
+            return JsonResponse({"error": "Contenido demasiado grande"}, status=413)
+        data = json.loads(body.decode("utf-8"))
+    except RequestDataTooBig:
+        return JsonResponse({"error": "Contenido demasiado grande"}, status=413)
+    except (ValueError, UnicodeDecodeError, RecursionError):
         return JsonResponse({"error": "JSON inválido"}, status=400)
+    if not isinstance(data, dict):
+        return JsonResponse({"error": "Se requiere un objeto JSON"}, status=400)
 
-    evento = _normalize_event_name(data)
-    status_id = _extract_status_id(data)
-    contenido = _extract_followup_content(data).strip()
+    try:
+        evento = _normalize_event_name(data)
+        status_id = _extract_status_id(data)
+        contenido = _extract_followup_content(data).strip()
+    except RecursionError:
+        return JsonResponse({"error": "JSON demasiado anidado"}, status=400)
 
     handled = False
 

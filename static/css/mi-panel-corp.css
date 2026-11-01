@@ -50,12 +50,37 @@
 .pv-kpi-top { display:grid; grid-template-columns:52px minmax(0,1fr) auto; align-items:start; gap:10px; }.pv-kpi-icon { display:grid; width:52px; height:52px; place-items:center; border-radius:16px; color:#fff; background:var(--pv); box-shadow:0 9px 17px color-mix(in srgb,var(--pv) 25%,transparent); }.pv-kpi-icon .icon { width:25px; height:25px; }.pv-kpi-main { display:grid; gap:3px; min-width:0; }.pv-kpi-main b { font-size:12px; font-weight:700; }.pv-kpi-main strong { font-family:var(--font-display); font-size:34px; line-height:1; letter-spacing:-.04em; }.pv-variation { padding:5px 7px; border-radius:9px; font-size:10px; font-weight:800; white-space:nowrap; }.pv-variation.is-good { color:#15803D; background:#DCFCE7; }.pv-variation.is-bad { color:#E11D48; background:#FFE4E6; }
 .pv-spark { display:block; min-height:42px; margin:7px 0 2px; }.pv-spark svg { display:block; width:100%; height:45px; overflow:visible; }.pv-spark path { fill:none; stroke:var(--pv); stroke-width:2.3; }.pv-spark .pv-spark-fill { fill:color-mix(in srgb,var(--pv) 14%,transparent); stroke:none; }.pv-spark circle { fill:var(--pv); stroke:#fff; stroke-width:1.4; }.pv-spark-empty { display:flex; align-items:center; height:42px; color:#94A3B8; font-size:10px; font-weight:700; }
 .pv-spark polyline { fill:none; stroke:var(--pv); stroke-width:2.3; stroke-linecap:round; stroke-linejoin:round; }
+.mi-panel-shell .pv-spark { position:relative; overflow:visible; }
+.mi-panel-shell .pv-spark-dot { position:absolute; z-index:2; width:8px; height:8px; border:2px solid #fff; border-radius:50%; background:var(--pv); box-sizing:border-box; transform:translate(-50%,-50%); cursor:help; }
+.mi-panel-shell .pv-spark-dot:hover, .mi-panel-shell .pv-spark-dot:focus-visible { width:11px; height:11px; outline:2px solid var(--pv); outline-offset:2px; }
+.mi-panel-shell .pv-spark .pv-chart-tooltip { top:auto!important; bottom:calc(100% + 7px); }
 .pv-kpi-bottom { display:flex; align-items:center; gap:7px; align-self:end; color:#64748B; font-size:11px; font-weight:600; }.pv-kpi-bottom i { width:9px; height:9px; border-radius:50%; background:var(--pv); }.pv-kpi-bottom em { display:grid; width:31px; height:31px; place-items:center; margin-left:auto; border-radius:50%; color:var(--pv); background:#fff; box-shadow:0 4px 11px rgba(15,23,42,.09); font-size:27px; font-style:normal; line-height:1; }
 .pv-middle-grid { display:grid; grid-template-columns:minmax(330px,1.3fr) minmax(230px,.8fr) minmax(240px,.9fr); gap:14px; margin-top:14px; }.pv-card { min-width:0; border:1px solid #E2E8F0; border-radius:15px; background:#fff; box-shadow:0 7px 19px rgba(15,23,42,.045); }.pv-card > header { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:40px; padding:12px 14px 7px; }.pv-card h3 { margin:0; font-size:13px; }.pv-card header > a { color:#2563EB; font-size:11px; font-weight:700; text-decoration:none; }
 .pv-state-body { display:flex; align-items:center; gap:16px; padding:5px 14px 14px; }.pv-donut { --pv-donut:conic-gradient(#E2E8F0 0deg 360deg); display:grid; width:130px; height:130px; place-items:center; flex:none; border-radius:50%; background:var(--pv-donut); position:relative; }.pv-donut::after { content:""; position:absolute; inset:19px; border-radius:50%; background:#fff; }.pv-donut > div { display:grid; z-index:1; justify-items:center; }.pv-donut strong { font-family:var(--font-display); font-size:25px; line-height:1; }.pv-donut span { color:#64748B; font-size:10px; font-weight:700; }.pv-state-body ul { display:grid; width:100%; gap:6px; margin:0; padding:0; list-style:none; }.pv-state-body li { display:grid; grid-template-columns:8px 1fr auto; align-items:center; gap:7px; color:#475569; font-size:11px; cursor:pointer; }.pv-state-body li i { width:8px; height:8px; border-radius:50%; background:#F59E0B; }.pv-state-body li[data-pv-state="progreso"] i{background:#22C55E}.pv-state-body li[data-pv-state="resuelto"] i{background:#0BA568}.pv-state-body li[data-pv-state="cerrado"] i{background:#94A3B8}.pv-state-body li[data-pv-state="vencido"] i{background:#EF4444}.pv-state-body li b { color:#0F172A; }
 .pv-ranking ol,.pv-activity ul { display:grid; gap:9px; margin:0; padding:4px 14px 14px; list-style:none; }.pv-ranking li { display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:center; gap:7px; }.pv-ranking li>span { display:grid; width:18px; height:18px; place-items:center; border-radius:50%; color:#fff; background:#653CF5; font-size:9px; font-weight:800; }.pv-ranking li:nth-child(2)>span{background:#2563EB}.pv-ranking li:nth-child(3)>span{background:#F59E0B}.pv-ranking div { display:grid; gap:4px; min-width:0; }.pv-ranking b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; }.pv-ranking i { display:block; height:6px; overflow:hidden; border-radius:99px; background:#F1F5F9; }.pv-ranking i em { display:block; height:100%; min-width:4px; border-radius:inherit; background:linear-gradient(90deg,#FB7185,#FDA4AF); }.pv-ranking strong { font-size:10px; }.pv-ranking .pv-empty { display:block; }
 .pv-activity li { display:grid; grid-template-columns:24px minmax(0,1fr) auto; align-items:center; gap:7px; padding:2px 0; }.pv-activity li>span { display:grid; width:24px; height:24px; place-items:center; border-radius:8px; color:#fff; background:#E11D48; }.pv-activity li .icon { width:13px; height:13px; }.pv-activity li div { display:grid; min-width:0; gap:1px; }.pv-activity b,.pv-activity small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.pv-activity b { font-size:10px; }.pv-activity small,.pv-activity time { color:#64748B; font-size:9px; }.pv-activity .pv-empty { display:block; }
 .pv-activity-list { display:grid; gap:2px; margin:0; padding:3px 13px 13px; list-style:none; }.pv-activity-list .pv-activity-item { display:block; min-width:0; padding:0; position:relative; }.pv-activity-item:not(:last-child)::after { position:absolute; z-index:0; top:31px; bottom:-4px; left:15px; width:2px; content:""; background:#E8EEF6; }.pv-activity-action { position:relative; z-index:1; display:grid; grid-template-columns:31px minmax(0,1fr) auto; width:100%; align-items:center; gap:9px; padding:7px 3px; border:0; border-radius:9px; color:#0F172A; background:transparent; font:inherit; text-align:left; }.pv-activity-action:not(:disabled) { cursor:pointer; }.pv-activity-action:not(:disabled):hover,.pv-activity-action:not(:disabled):focus-visible { outline:0; background:#F8FAFC; }.pv-activity-icon { display:grid; width:31px; height:31px; place-items:center; border-radius:50%; color:#E11D48; background:#FFF1F2; box-shadow:0 0 0 4px #fff; }.pv-activity-icon .icon { width:15px; height:15px; }.pv-activity-copy { display:grid; min-width:0; gap:2px; }.pv-activity-copy b { overflow:hidden; color:#1E293B; font-size:10px; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }.pv-activity-copy small { color:#64748B; font-size:9px; font-weight:600; }.pv-activity-action em { padding-left:5px; color:#E11D48; font-size:9px; font-style:normal; font-weight:800; opacity:0; transition:opacity .18s ease; white-space:nowrap; }.pv-activity-action:hover em,.pv-activity-action:focus-visible em { opacity:1; }.pv-activity-item.is-update .pv-activity-icon { color:#2563EB; background:#EFF6FF; }.pv-activity-item.is-success .pv-activity-icon { color:#0BA568; background:#DCFCE7; }.pv-activity-item.is-reply .pv-activity-icon { color:#3B82F6; background:#EFF6FF; }.pv-activity-item.is-new .pv-activity-icon { color:#EF4444; background:#FFE4E6; }.pv-activity-action:disabled { cursor:default; opacity:.82; }
+.pv-activity-list { max-height: 204px; overflow-y: auto; scrollbar-width: none; align-content: start; }
+.pv-activity-list::-webkit-scrollbar { display: none; }
+.pv-activity-item.is-expired .pv-activity-icon { color: #DC2626; background: #FEE2E2; }
+
+/* Seguimiento: mayor jerarquía sin cambiar los datos ni las acciones. */
+.mi-panel-shell #pvDashboard .pv-press-card { border:1px solid #E2E8F0; background:#fff; box-shadow:0 8px 24px rgba(15,23,42,.06); }
+.mi-panel-shell #pvDashboard .pv-press-card > header { display:flex; align-items:center; justify-content:space-between; gap:12px; background:#fff; }
+.mi-panel-shell #pvDashboard .pv-press-title > .icon { background:#F12642; box-shadow:0 6px 14px rgba(241,38,66,.2); }
+.pv-press-count { display:inline-flex; align-items:center; gap:7px; padding:7px 11px; border:1px solid #FEE2E2; border-radius:999px; color:#BE123C; background:#FFF1F2; font-size:11px; font-weight:700; white-space:nowrap; }
+.pv-press-count > span { width:7px; height:7px; border-radius:50%; background:#F12642; }
+.mi-panel-shell #pvDashboard .pv-press-table { border-collapse:separate; border-spacing:0; border:1px solid #E2E8F0; }
+.mi-panel-shell #pvDashboard .pv-press-table th { background:#EDF2F8; color:#526986; padding:12px; }
+.mi-panel-shell #pvDashboard .pv-press-table td { padding:15px 12px; }
+.mi-panel-shell #pvDashboard .pv-press-table td:first-child > a { display:inline-block; padding:6px 8px; border-radius:7px; color:#DC2626; background:#FFF1F2; }
+.mi-panel-shell #pvDashboard .pv-press-table td:nth-child(2) > a { color:#0F172A; }
+.mi-panel-shell #pvDashboard .pv-press-table td small { color:#64748B; }
+.mi-panel-shell #pvDashboard .pv-press-row:hover { background:#F8FAFC; transform:none; }
+.mi-panel-shell #pvDashboard .pv-press-btn { min-height:36px; padding:0 13px; border-color:#E11D48; color:#fff; background:#E11D48; font-weight:700; }
+.mi-panel-shell #pvDashboard .pv-press-btn:hover { background:#BE123C; }
+.mi-panel-shell #pvDashboard .pv-press-btn:focus-visible { outline:3px solid #FDA4AF; outline-offset:2px; }
+@media(max-width:620px) { .mi-panel-shell #pvDashboard .pv-press-card > header { align-items:flex-start; flex-wrap:wrap; } .pv-press-count { margin-left:48px; } }
 .pv-charts-section { margin-top:14px; }.pv-charts-section>h3 { margin:0 0 8px; font-size:14px; }.pv-chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }.pv-chart-card header>span { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:700; }.pv-chart-card header>span .icon { color:#E11D48; width:16px; }.pv-chart-refresh { display:grid; width:29px; height:29px; place-items:center; border:1px solid #E2E8F0; border-radius:8px; color:#475569; background:#fff; cursor:pointer; }.pv-chart-refresh:hover { color:#E11D48; border-color:#FDA4AF; }.pv-chart-refresh .icon { width:14px; }.pv-chart-content { min-height:170px; padding:5px 14px 14px; }.pv-bars { display:flex; height:130px; align-items:end; justify-content:space-around; gap:11px; border-bottom:1px solid #E2E8F0; }.pv-bar-item { display:grid; height:100%; flex:1; align-items:end; justify-items:center; gap:5px; min-width:0; }.pv-bar-item i { display:block; width:min(38px,100%); min-height:4px; border-radius:7px 7px 2px 2px; background:linear-gradient(#FCA5A5,#FB7185); transition:height .3s ease; }.pv-bar-item b { font-size:10px; }.pv-bar-item small { overflow:hidden; width:100%; color:#64748B; font-size:9px; text-align:center; text-overflow:ellipsis; white-space:nowrap; }.pv-category-list { display:grid; gap:7px; padding-top:7px; }.pv-category-item { display:grid; grid-template-columns:9px minmax(0,1fr) auto; gap:7px; align-items:center; font-size:11px; }.pv-category-item i { width:9px; height:9px; border-radius:50%; background:#653CF5; }.pv-category-item span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#475569; }.pv-category-item b { color:#0F172A; }
 .pv-chart-controls { display:flex; align-items:center; gap:6px; }.pv-chart-controls select { max-width:108px; height:29px; padding:0 22px 0 7px; border:1px solid #E2E8F0; border-radius:8px; color:#475569; background:#fff; font:700 10px var(--font-body); }
 @media(max-width:1180px){.pv-middle-grid{grid-template-columns:1fr 1fr}.pv-activity{grid-column:1/-1}.pv-kpi-grid{grid-template-columns:repeat(3,1fr)}}
@@ -1458,6 +1483,7 @@
 .mi-panel-shell #pvDashboard .pv-kpi .pv-spark svg { transition:transform .22s ease, filter .22s ease; transform-origin:center bottom; }
 .mi-panel-shell #pvDashboard .pv-kpi:hover .pv-spark svg,
 .mi-panel-shell #pvDashboard .pv-kpi:focus-visible .pv-spark svg { transform:translateY(-4px); filter:drop-shadow(0 4px 3px color-mix(in srgb,var(--pv) 28%,transparent)); }
+.mi-panel-shell #pvDashboard .pv-kpi:hover .pv-spark svg, .mi-panel-shell #pvDashboard .pv-kpi:focus-visible .pv-spark svg { transform:none; }
 .mi-panel-shell #pvDashboard .pv-kpi:hover,
 .mi-panel-shell #pvDashboard .pv-kpi:focus-visible { transform:translateY(-4px); border-color:var(--pv); box-shadow:0 12px 26px color-mix(in srgb,var(--pv) 22%,transparent); }
 .mi-panel-shell #pvDashboard .pv-kpi:hover .pv-kpi-icon,
@@ -1533,3 +1559,177 @@
     .mi-panel-shell #pvDashboard .pv-kpi:hover .pv-spark svg,
     .mi-panel-shell #pvDashboard .pv-kpi:focus-visible .pv-spark svg { transform:none; }
 }
+
+/* Jerarquía y alineación de los paneles de resumen y gráficas. */
+.mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header,
+.mi-panel-shell #pvDashboard .pv-chart-card > header {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+    align-items:center;
+    min-height:58px;
+    gap:8px;
+    padding:14px 16px;
+    border-bottom:1px solid #edf2f7;
+}
+.mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header > h3,
+.mi-panel-shell #pvDashboard .pv-chart-card > header > span:first-child {
+    grid-column:2;
+    justify-content:center;
+    min-width:0;
+    color:#0f172a;
+    font-size:15px;
+    font-weight:700;
+    line-height:1.3;
+    text-align:center;
+}
+.mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header > a,
+.mi-panel-shell #pvDashboard .pv-chart-card > header > :last-child:not(:first-child) {
+    grid-column:3;
+    justify-self:end;
+}
+.mi-panel-shell #pvDashboard .pv-charts-section { margin-top:24px; }
+.mi-panel-shell #pvDashboard .pv-charts-section > h3 {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin:0 0 14px;
+    color:#0f172a;
+    font-size:20px;
+    font-weight:750;
+    line-height:1.3;
+    text-align:center;
+}
+.mi-panel-shell #pvDashboard .pv-charts-section > h3::before {
+    width:4px;
+    height:22px;
+    border-radius:4px;
+    background:#e11d48;
+    content:"";
+}
+@media (max-width:620px) {
+    .mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header,
+    .mi-panel-shell #pvDashboard .pv-chart-card > header { grid-template-columns:minmax(0,1fr) auto; padding:12px; }
+    .mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header > h3,
+    .mi-panel-shell #pvDashboard .pv-chart-card > header > span:first-child { grid-column:1; font-size:14px; }
+    .mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header > a,
+    .mi-panel-shell #pvDashboard .pv-chart-card > header > :last-child:not(:first-child) { grid-column:2; }
+    .mi-panel-shell #pvDashboard .pv-charts-section > h3 { font-size:18px; }
+}
+
+.mi-panel-shell #pvDashboard .pv-chart-card > header {
+    grid-template-columns:20px minmax(0,1fr) auto;
+    gap:8px;
+}
+.mi-panel-shell #pvDashboard .pv-chart-card > header > .pv-chart-heading-icon {
+    grid-column:1;
+    width:18px;
+    height:18px;
+    color:#e11d48;
+}
+.mi-panel-shell #pvDashboard .pv-chart-card > header > span:nth-child(2) {
+    grid-column:2;
+    min-width:0;
+    color:#0f172a;
+    font-size:15px;
+    font-weight:700;
+    line-height:1.3;
+    text-align:center;
+}
+.mi-panel-shell #pvDashboard .pv-chart-card > header > :last-child { grid-column:3; }
+@media (max-width:620px) {
+    .mi-panel-shell #pvDashboard .pv-chart-card > header > span:nth-child(2) { font-size:13px; }
+}
+
+/* Resumen del punto de venta. */
+.mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header {
+    display:flex;
+    justify-content:space-between;
+}
+.mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header > h3 {
+    text-align:left;
+    font-size:15px;
+}
+.mi-panel-shell #pvDashboard .pv-state-body { padding:18px 22px 20px; gap:24px; }
+.mi-panel-shell #pvDashboard .pv-state-body { position:relative; }
+.mi-panel-shell #pvDashboard .pv-state-body li:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }
+.mi-panel-shell #pvDashboard .pv-donut { margin-left:8px; transition:transform .2s ease, filter .2s ease; }
+.mi-panel-shell #pvDashboard .pv-donut:hover { filter:drop-shadow(0 6px 9px rgba(15,23,42,.15)); }
+.pv-segment-overlay { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; z-index:1; transform:rotate(-90deg); }
+.pv-segment-overlay circle { transition:transform .3s cubic-bezier(.22,1,.36,1), filter .3s ease; }
+.pv-segment-overlay circle.is-selected { filter:drop-shadow(0 2px 3px rgba(15,23,42,.28)); }
+.pv-donut > div, .pv-chart-donut > span { position:relative; z-index:2; }
+.mi-panel-shell #pvDashboard .pv-state-body li { margin:0 -7px; padding:5px 7px; border-radius:7px; transition:background .18s ease, transform .18s ease; }
+.mi-panel-shell #pvDashboard .pv-state-body li:hover { background:#f1f5fb; transform:translateX(3px); }
+.mi-panel-shell #pvDashboard .pv-state-body li:hover i { box-shadow:0 0 0 4px rgba(100,116,139,.12); }
+.mi-panel-shell #pvDashboard .pv-ranking ol { gap:10px; padding:16px; }
+.mi-panel-shell #pvDashboard .pv-ranking li:not(.pv-empty) { grid-template-columns:32px minmax(0,1fr) auto; gap:10px; padding:12px; border:1px solid #e8eef7; border-radius:11px; background:#f8faff; transition:background .18s ease, box-shadow .18s ease; }
+.mi-panel-shell #pvDashboard .pv-ranking li:not(.pv-empty):hover { background:#f0f5ff; box-shadow:0 4px 12px rgba(15,23,42,.07); }
+.mi-panel-shell #pvDashboard .pv-ranking li > span { width:30px; height:30px; font-size:12px; box-shadow:0 3px 8px rgba(101,60,245,.2); }
+.mi-panel-shell #pvDashboard .pv-ranking li div { gap:7px; }
+.mi-panel-shell #pvDashboard .pv-ranking li i { height:8px; background:#e2e8f0; }
+.mi-panel-shell #pvDashboard .pv-ranking li strong { padding:5px 8px; border-radius:7px; color:#be123c; background:#ffe4e6; }
+@media (prefers-reduced-motion:reduce) {
+    .mi-panel-shell #pvDashboard .pv-donut,
+    .mi-panel-shell #pvDashboard .pv-state-body li,
+    .mi-panel-shell #pvDashboard .pv-ranking li { transition:none; }
+}
+
+/* Ranking de zonas: datos y avatar reales del supervisor asociado. */
+.mi-panel-shell #pvDashboard .pv-ranking > header { gap:10px; }
+.pv-ranking-heading { display:flex; min-width:0; align-items:center; gap:10px; }
+.pv-ranking-heading > .icon { flex:none; width:40px; height:40px; padding:10px; box-sizing:border-box; border-radius:11px; color:#e11d48; background:#ffe4e6; }
+.pv-ranking-heading > span { display:grid; gap:3px; min-width:0; }
+.pv-ranking-heading h3 { color:#0f172a; font-size:15px; line-height:1.2; }
+.pv-ranking-heading small { color:#64748b; font-size:11px; }
+.mi-panel-shell #pvDashboard .pv-ranking > header > a { display:inline-flex; flex:none; align-items:center; gap:5px; padding:8px 10px; border-radius:9px; background:#eff6ff; white-space:nowrap; }
+.pv-ranking > header > a span { font-size:19px; line-height:10px; }
+.mi-panel-shell #pvDashboard .pv-ranking ol { gap:6px; padding:12px; }
+.mi-panel-shell #pvDashboard .pv-ranking li:not(.pv-empty) { grid-template-columns:28px minmax(85px,1fr) minmax(35px,.75fr) auto 26px; gap:7px; padding:9px 8px; border-color:#f1f5f9; background:#fff; }
+.mi-panel-shell #pvDashboard .pv-ranking li:first-child:not(.pv-empty) { background:#fff1f2; border-color:#fff1f2; }
+.mi-panel-shell #pvDashboard .pv-ranking li > .pv-rank-number { width:26px; height:26px; background:#ef4444; }
+.mi-panel-shell #pvDashboard .pv-ranking li:nth-child(2) > .pv-rank-number { background:#f59e0b; }
+.mi-panel-shell #pvDashboard .pv-ranking li:nth-child(3) > .pv-rank-number { background:#3b82f6; }
+.mi-panel-shell #pvDashboard .pv-ranking li:nth-child(4) > .pv-rank-number { background:#10b981; }
+.mi-panel-shell #pvDashboard .pv-ranking li:nth-child(5) > .pv-rank-number { background:#94a3b8; }
+.mi-panel-shell #pvDashboard .pv-ranking .pv-rank-info { display:flex; align-items:center; min-width:0; gap:6px; }
+.pv-rank-avatar { display:grid; flex:none; width:28px; height:28px; overflow:hidden; place-items:center; border-radius:50%; color:#475569; background:#e2e8f0; font-size:11px; font-weight:700; }
+.pv-rank-avatar img { width:100%; height:100%; object-fit:cover; }
+.pv-rank-name { display:grid; min-width:0; gap:2px; }
+.pv-rank-name b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pv-rank-name small { color:#64748b; font-size:10px; }
+.mi-panel-shell #pvDashboard .pv-ranking li .pv-rank-track { height:8px; }
+.mi-panel-shell #pvDashboard .pv-ranking li:nth-child(2) .pv-rank-track em { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+.mi-panel-shell #pvDashboard .pv-ranking li:nth-child(3) .pv-rank-track em { background:linear-gradient(90deg,#2563eb,#60a5fa); }
+.mi-panel-shell #pvDashboard .pv-ranking li:nth-child(4) .pv-rank-track em { background:linear-gradient(90deg,#10b981,#6ee7b7); }
+.mi-panel-shell #pvDashboard .pv-ranking li:nth-child(5) .pv-rank-track em { background:#94a3b8; }
+.pv-rank-link { display:grid; width:26px; height:26px; place-items:center; border:1px solid #e2e8f0; border-radius:8px; color:#64748b; background:#fff; font-size:20px; line-height:1; text-decoration:none; }
+.pv-rank-link:hover,.pv-rank-link:focus-visible { color:#e11d48; border-color:#fda4af; }
+
+/* Filas compactas: el nombre de zona tiene prioridad sobre la barra. */
+.mi-panel-shell #pvDashboard .pv-ranking ol { gap:5px; padding:10px; }
+.mi-panel-shell #pvDashboard .pv-ranking li:not(.pv-empty) {
+    grid-template-columns:minmax(0,1.5fr) minmax(28px,.6fr) auto 24px;
+    gap:6px;
+    padding:7px;
+}
+.mi-panel-shell #pvDashboard .pv-ranking li > .pv-rank-number { width:24px; height:24px; font-size:10px; }
+.mi-panel-shell #pvDashboard .pv-ranking .pv-rank-info { gap:5px; }
+.mi-panel-shell #pvDashboard .pv-ranking .pv-rank-avatar { width:24px; height:24px; font-size:10px; }
+.mi-panel-shell #pvDashboard .pv-ranking .pv-rank-name b { overflow:visible; white-space:normal; overflow-wrap:anywhere; font-size:12px; line-height:1.15; }
+.mi-panel-shell #pvDashboard .pv-ranking .pv-rank-name small { font-size:10px; line-height:1.15; }
+.mi-panel-shell #pvDashboard .pv-ranking li strong { padding:4px 6px; font-size:12px; }
+.mi-panel-shell #pvDashboard .pv-ranking .pv-rank-link { width:24px; height:24px; font-size:17px; }
+.mi-panel-shell #pvDashboard .pv-ranking ol { max-height:230px; overflow-y:auto; scrollbar-width:none; align-content:start; }
+.mi-panel-shell #pvDashboard .pv-ranking ol::-webkit-scrollbar { display:none; }
+.pv-rank-link { cursor:pointer; }
+.pv-zone-dialog { width:min(360px,calc(100% - 32px)); padding:20px; border:1px solid #e2e8f0; border-radius:16px; color:#0f172a; background:#fff; box-shadow:0 18px 48px rgba(15,23,42,.24); }
+.pv-zone-dialog::backdrop { background:rgba(15,23,42,.4); }
+.pv-zone-dialog-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.pv-zone-dialog-head h3 { margin:0; font-size:16px; }
+.pv-zone-dialog-head button { width:30px; height:30px; border:0; border-radius:8px; color:#64748b; background:#f1f5f9; cursor:pointer; font-size:20px; }
+.pv-zone-dialog > p { margin:8px 0 16px; color:#64748b; font-weight:600; }
+.pv-zone-dialog dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0; }
+.pv-zone-dialog dl div { padding:10px; border-radius:9px; background:#f8fafc; }
+.pv-zone-dialog dt { color:#64748b; font-size:11px; }
+.pv-zone-dialog dd { margin:4px 0 0; font-size:17px; font-weight:700; }

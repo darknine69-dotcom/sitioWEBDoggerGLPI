@@ -7,6 +7,9 @@
             <div class="zona-activa-identidad"><span class="zona-activa-icon"><svg class="icon"><use href="#i-map-pin"/></svg></span><div><span>Zona a cargo</span><h4>{{ grupo.zona.nombre }}</h4><small>{{ grupo.filas|length }} punto{{ grupo.filas|length|pluralize }} de venta</small></div></div>
             <div class="zona-activa-resumen"><span><b>{{ grupo.total_tickets }}</b> tickets</span><span><b>{{ grupo.abiertos }}</b> abiertos</span><span><b>{{ grupo.avance }}%</b> avance</span></div>
         </header>
+        <div class="obs-zona-acc-wrap">
+            {% include "observador/_zona_acciones.html" with z=grupo.zona %}
+        </div>
         <div class="zona-activa-tools">
             <label><svg class="icon"><use href="#i-search"/></svg><input type="search" data-zona-user-search placeholder="Buscar punto de venta…" aria-label="Buscar punto de venta en {{ grupo.zona.nombre }}"></label>
             <a href="{% url 'tickets:obs_zona_detalle' grupo.zona.pk %}">Gestionar zona <svg class="icon"><use href="#i-arrow-right"/></svg></a>
@@ -15,10 +18,11 @@
         {% for f in grupo.filas %}
             <article class="zona-activa-persona" data-zona-user="{{ f.nombre|lower }} {{ f.email|lower }} {{ f.detalle|lower }}">
                 <div class="zona-activa-punto">{% if f.avatar %}<img src="{{ f.avatar.url }}" alt="Foto de {{ f.nombre }}">{% else %}<span><svg class="icon"><use href="#i-store"/></svg></span>{% endif %}<i title="Punto de venta"><svg class="icon"><use href="#i-store"/></svg></i></div>
-                <div class="zona-activa-datos"><strong>{{ f.nombre }}</strong><small><svg class="icon"><use href="#i-mail"/></svg> {{ f.email|default:"Sin correo" }}</small><small><svg class="icon"><use href="#i-map-pin"/></svg> {{ f.detalle|default:grupo.zona.nombre }}</small></div>
+                <div class="zona-activa-datos"><strong><a href="{% url 'tickets:obs_usuarios' %}?q={{ f.email|urlencode }}">{{ f.nombre }}</a></strong><small><svg class="icon"><use href="#i-mail"/></svg> {{ f.email|default:"Sin correo" }}</small><small><svg class="icon"><use href="#i-map-pin"/></svg> {{ f.detalle|default:grupo.zona.nombre }}</small></div>
                 <div class="zona-activa-tecnico" title="Técnicos que atienden este punto de venta"><span class="zona-activa-tecnicos-fotos">{% for tecnico in f.tecnicos|slice:":3" %}{% if tecnico.avatar %}<img src="{{ tecnico.avatar.url }}" alt="{{ tecnico.nombre }}">{% else %}<span><svg class="icon"><use href="#i-wrench"/></svg></span>{% endif %}{% empty %}<span><svg class="icon"><use href="#i-wrench"/></svg></span>{% endfor %}{% if f.tecnicos|length > 3 %}<b>+{{ f.tecnicos|length|add:"-3" }}</b>{% endif %}</span><small>{% if f.tecnicos %}{{ f.tecnicos|length }} técnico{{ f.tecnicos|length|pluralize }}{% else %}Sin técnico{% endif %}</small></div>
                 <div class="zona-activa-progreso" style="--avance: {{ f.avance }}"><b>{{ f.avance }}%</b><small>avance</small></div>
                 <div class="zona-activa-cifras"><span><svg class="icon"><use href="#i-ticket"/></svg><b>{{ f.total }}</b></span><span class="is-open"><svg class="icon"><use href="#i-alert"/></svg><b>{{ f.abiertos }}</b></span><span class="is-done"><svg class="icon"><use href="#i-check-circle"/></svg><b>{{ f.cerrados_total }}</b></span></div>
+                {% if f.respuestas %}<details class="zona-activa-respuestas"><summary>Respuestas recientes de técnicos <span>{{ f.respuestas|length }}</span></summary><div class="obs-resp-lista" tabindex="0" aria-label="Respuestas recientes de {{ f.nombre }}">{% for respuesta in f.respuestas %}<div class="zona-activa-respuesta"><strong>{{ respuesta.usuario.nombre|default:respuesta.autor_nombre }} · {{ respuesta.ticket.codigo }}</strong><small>{{ respuesta.fecha|date:"d/m/Y H:i" }}</small><p>{{ respuesta.comentario }}</p></div>{% endfor %}</div></details>{% endif %}
             </article>
         {% endfor %}
         </div>
@@ -66,5 +70,6 @@
 })();
 </script>
 {% else %}
-<div class="obs-vacio"><strong>No tienes zonas con puntos de venta todavía</strong><p>Crea una zona y agrega puntos de venta desde tu lista para monitorearlos aquí.</p></div>
+{% if not grupos %}<div class="obs-vacio"><strong>No tienes zonas con puntos de venta todavía</strong><p>Crea una zona y agrega puntos de venta desde tu lista para monitorearlos aquí.</p></div>{% endif %}
 {% endif %}
+{% for grupo in grupos %}{% if not grupo.zona %}<section class="zona-activa-sin-zona" aria-label="Cuentas sin zona"><strong>Sin zona</strong><p>Estas cuentas están en tu lista, pero aún no tienen carpeta asignada.</p><ul>{% for f in grupo.filas %}<li><a href="{% url 'tickets:obs_usuarios' %}?q={{ f.email|urlencode }}">{{ f.nombre|default:f.email }}</a><span>{{ f.total }} ticket{{ f.total|pluralize }}</span></li>{% endfor %}</ul></section>{% endif %}{% endfor %}

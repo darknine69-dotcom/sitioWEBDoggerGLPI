@@ -40,13 +40,16 @@
         if (editar) editar.disabled = n !== 1;
     }
 
-    rows.forEach(function (r) {
-        var cb = r.querySelector(".chk-abierta");
+    table.addEventListener("change", function (event) {
+        var cb = event.target.closest(".chk-abierta");
         if (!cb) return;
-        cb.addEventListener("change", function () {
-            marcarFila(r, cb.checked);
-            refreshSelection();
-        });
+        marcarFila(cb.closest("tr"), cb.checked);
+        refreshSelection();
+    });
+    document.addEventListener("dogger:mis-actualizadas", function () {
+        rows = Array.prototype.slice.call(table.querySelectorAll("tbody tr[data-pk]"));
+        if (checkAll) checkAll.checked = false;
+        refreshSelection();
     });
     if (checkAll) checkAll.addEventListener("change", function () {
         rows.forEach(function (r) {

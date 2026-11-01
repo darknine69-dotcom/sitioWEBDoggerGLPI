@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import redirect, render, reverse
 from django.views import View
@@ -30,6 +31,13 @@ from .seguridad import bloqueado, ip_del_request, limpiar, registrar_intento
 logger = logging.getLogger(__name__)
 
 User = Usuario
+
+
+def _ruta_retorno_segura(request, parametro, fallback):
+    ruta = (request.POST.get(parametro) or "").strip()
+    if ruta.startswith("/") and url_has_allowed_host_and_scheme(ruta, {request.get_host()}, require_https=request.is_secure()):
+        return ruta
+    return fallback
 
 
 def _id_intento(request):
@@ -228,7 +236,7 @@ def permisos_roles(request):
     permiso_unico = request.POST.get("permiso_unico")
     mapa_permisos = {
         "cerrar": "puede_cerrar_tickets", "eliminar": "puede_eliminar_tickets",
-        "reabrir": "puede_reabrir_tickets", "crear": "puede_crear_tickets",
+        "crear": "puede_crear_tickets",
         "responder": "puede_responder_chat", "editar_anuncios": "puede_editar_anuncios",
     }
     if permiso_unico is not None:
@@ -259,7 +267,6 @@ def permisos_roles(request):
         for campo, llave in (
             ("puede_cerrar_tickets", "cerrar"),
             ("puede_eliminar_tickets", "eliminar"),
-            ("puede_reabrir_tickets", "reabrir"),
             ("puede_crear_tickets", "crear"),
             ("puede_responder_chat", "responder"),
         ):
@@ -269,7 +276,7 @@ def permisos_roles(request):
             )
         campos = [
             "puede_cerrar_tickets", "puede_eliminar_tickets",
-            "puede_reabrir_tickets", "puede_crear_tickets",
+            "puede_crear_tickets",
             "puede_responder_chat",
         ]
         if request.POST.get("incluye_permiso_anuncios") == "1":
@@ -488,7 +495,7 @@ def tour_preferencia(request):
             {"ok": True, "tour_habilitado": user.tour_habilitado}
         )
     messages.success(request, mensaje)
-    destino = request.POST.get("next") or reverse("accounts:ajustes")
+    destino = _ruta_retorno_segura(request, "next", reverse("accounts:ajustes"))
     return redirect(destino)
 
 
@@ -573,7 +580,7 @@ def tooltips_preferencia(request):
             {"ok": True, "tooltips_habilitado": user.tooltips_habilitado}
         )
     messages.success(request, mensaje)
-    destino = request.POST.get("next") or reverse("accounts:ajustes")
+    destino = _ruta_retorno_segura(request, "next", reverse("accounts:ajustes"))
     return redirect(destino)
 
 
@@ -675,7 +682,7 @@ def solicitar_reset(request):
             try:
                 token = ResetPasswordToken.generar(usuario)
                 request.session["reset_pwd_email"] = usuario.email
-                _enviar_codigo_reset(request, usuario, token.codigo)
+                _enviar_codigo_reset(request, usuario, token)
             except Exception as exc:
                 logger.exception("Error enviando código de reset a %s", usuario.email)
                 messages.error(
@@ -803,10 +810,12 @@ def _enmascarar_correo(email):
     return f"{oculto}@{dominio}"
 
 
-def _enviar_codigo_reset(request, usuario, codigo):
+def _enviar_codigo_reset(request, usuario, token):
     """Envía el correo del código con la plantilla HTML corporativa de Dogger."""
     from django.template.loader import render_to_string
     from django.templatetags.static import static
+
+    codigo = token.codigo
 
     texto_plano = (
         f"Hola {usuario.nombre}:\n\n"
@@ -835,8 +844,9 @@ def _enviar_codigo_reset(request, usuario, codigo):
             texto_plano,
             settings.DEFAULT_FROM_EMAIL,
             [usuario.email],
+            _reset_token_id=token.pk,
             html_message=html,
-            fail_silently=True,
+            fail_silently=False,
         )
     except Exception:
         logger.exception("Error enviando código de reset a %s", usuario.email)
@@ -995,7 +1005,7 @@ def configuracion_pagina(request):
         return JsonResponse({"ok": True})
     messages.success(request, "Configuración de la página actualizada.")
     siguiente = (request.POST.get("siguiente") or "").strip()
-    if siguiente.startswith("/"):
+    if siguiente.startswith("/") and url_has_allowed_host_and_scheme(siguiente, {request.get_host()}, require_https=request.is_secure()):
         return redirect(siguiente)
     return redirect(reverse("accounts:ajustes") + "#" + request.POST.get("volver", "pagina"))
 

@@ -36,6 +36,11 @@
 .hist-busca svg { position: absolute; left: 11px; color: var(--ink-muted); pointer-events: none; }
 .hist-busca input { width: 100%; height: 38px; padding: 0 12px 0 34px; border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: 13px; background: #fff; }
 .hist-busca input:focus { outline: none; border-color: var(--dogger-red); box-shadow: 0 0 0 3px rgba(200,16,46,.12); }
+.hist-page .dash-stat[data-hist-spark] { position:relative; min-height:190px; }
+.hist-spark { position:absolute; left:22px; right:22px; bottom:48px; height:42px; color:var(--kpi-color,#dc2626); z-index:1; }
+.hist-spark svg { width:100%; height:100%; overflow:visible; }.hist-spark polyline { fill:none; stroke:currentColor; stroke-width:2; vector-effect:non-scaling-stroke; }.hist-spark polygon { fill:currentColor; opacity:.12; }
+.hist-spark-tip { position:absolute; bottom:100%; left:50%; transform:translateX(-50%); padding:5px 8px; border:1px solid #e2e8f0; border-radius:7px; background:#fff; color:#172b4d; box-shadow:0 4px 12px #0f172a22; font-size:11px; white-space:nowrap; pointer-events:none; }.hist-spark-tip[hidden] { display:none; }
+.hist-page .dash-stat-value { z-index:3!important; }
 </style>
 {% endblock %}
 
@@ -43,7 +48,7 @@
 <main class="page hist-page">
 
     <div class="dash-stat-row corp-anim" style="margin-bottom:16px">
-        <div class="dash-stat dash-hov-total">
+        <div class="dash-stat dash-hov-total" data-hist-spark="registros">
             <span class="dash-stat-icon">
                 <span class="dash-stat-value">{{ total }}</span>
                 <span class="dash-stat-glyph"><svg class="icon"><use href="#i-clock"/></svg></span>
@@ -53,7 +58,7 @@
                 <span class="dash-stat-hint">con el filtro aplicado</span>
             </span>
         </div>
-        <div class="dash-stat dash-hov-resueltos">
+        <div class="dash-stat dash-hov-resueltos" data-hist-spark="respuestas">
             <span class="dash-stat-icon st-ic-resueltos">
                 <span class="dash-stat-value st-resueltos">{{ respuestas_total }}</span>
                 <span class="dash-stat-glyph"><svg class="icon"><use href="#i-message"/></svg></span>
@@ -63,7 +68,7 @@
                 <span class="dash-stat-hint">escritas en los hilos</span>
             </span>
         </div>
-        <div class="dash-stat dash-hov-abiertos">
+        <div class="dash-stat dash-hov-abiertos" data-hist-spark="resueltos">
             <span class="dash-stat-icon st-ic-abiertos">
                 <span class="dash-stat-value st-abiertos">{{ resueltos_total }}</span>
                 <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
@@ -177,4 +182,20 @@
     </div>
     {% endif %}
 </main>
+{{ historial_series|json_script:"historialSeries" }}
+<script>
+(function () {
+    var source = document.getElementById('historialSeries'); if (!source) return;
+    var data = JSON.parse(source.textContent || '{}');
+    document.querySelectorAll('[data-hist-spark]').forEach(function (card) {
+        var values = data.series[card.dataset.histSpark], max = Math.max.apply(null, values.concat([1]));
+        var points = values.map(function (value, i) { return (2 + i * 236 / Math.max(1, values.length - 1)) + ',' + (36 - value * 30 / max); }).join(' ');
+        var graph = document.createElement('span'); graph.className = 'hist-spark';
+        graph.innerHTML = '<svg viewBox="0 0 240 40" preserveAspectRatio="none" aria-hidden="true"><polygon points="2,40 ' + points + ' 238,40"/><polyline points="' + points + '"/></svg><span class="hist-spark-tip" hidden></span>';
+        graph.addEventListener('pointermove', function (event) { var bounds = graph.getBoundingClientRect(), index = Math.min(values.length - 1, Math.max(0, Math.floor((event.clientX - bounds.left) / bounds.width * values.length))), tip = graph.querySelector('.hist-spark-tip'); tip.textContent = data.labels[index] + ': ' + values[index] + ' registros'; tip.hidden = false; });
+        graph.addEventListener('pointerleave', function () { graph.querySelector('.hist-spark-tip').hidden = true; });
+        card.appendChild(graph);
+    });
+})();
+</script>
 {% endblock %}

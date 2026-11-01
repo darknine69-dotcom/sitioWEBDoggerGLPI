@@ -19,14 +19,22 @@ from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
-from django.db.models.functions import Lower
+from django.db.models.functions import Lower, Trim
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET
 
 from apps.accounts.models import Usuario
+
+
+def _retorno_seguro(request, fallback):
+    destino = request.POST.get("volver", "").strip()
+    if destino and url_has_allowed_host_and_scheme(destino, {request.get_host()}, require_https=request.is_secure()):
+        return destino
+    return reverse(fallback)
 
 from . import ans_avisos
 from .models import (
@@ -952,7 +960,7 @@ def agregar_mi_lista(request):
         )
         _marca_equipo_supervisor(zona, request)
 
-    destino = request.POST.get("volver") or reverse("tickets:obs_mi_lista")
+    destino = _retorno_seguro(request, "tickets:obs_mi_lista")
     return redirect(destino)
 
 
@@ -962,7 +970,7 @@ def quitar_mi_lista(request, pk):
     if request.method != "POST":
         raise Http404
     ElementoMiLista.objects.filter(pk=pk, observador=request.user).delete()
-    return redirect(request.POST.get("volver") or reverse("tickets:obs_mi_lista"))
+    return redirect(_retorno_seguro(request, "tickets:obs_mi_lista"))
 
 
 @solo_observador
@@ -996,7 +1004,7 @@ def quitar_varios_mi_lista(request):
         messages.success(request, f"Se quitaron {quitados} cuentas de tu lista.")
     else:
         messages.warning(request, "No había ninguna cuenta tuya entre las marcadas.")
-    return redirect(request.POST.get("volver") or reverse("tickets:obs_mi_lista"))
+    return redirect(_retorno_seguro(request, "tickets:obs_mi_lista"))
 
 
 @solo_observador
@@ -1803,10 +1811,13 @@ def _panel_de_supervision(usuario, filas):
             if dia in dias:
                 abiertos_por_dia[dia] += 1
 
+    altas_zonas = Counter(fecha for fecha in fechas_zonas if fecha)
+    altas_cuentas = Counter(fecha for fecha in fechas_cuentas if fecha)
+    primera_zona = min((fecha for fecha in fechas_zonas if fecha), default=None)
     series_completas = {
-        "supervisores": [int(valor > 0) for valor in _acumulada(fechas_zonas)],
-        "zonas": _acumulada(fechas_zonas),
-        "cuentas": _acumulada(fechas_cuentas),
+        "supervisores": [int(dia == primera_zona) for dia in dias],
+        "zonas": [altas_zonas[dia] for dia in dias],
+        "cuentas": [altas_cuentas[dia] for dia in dias],
         "abiertos": [abiertos_por_dia[dia] for dia in dias],
     }
 
@@ -1885,6 +1896,8 @@ def _respuestas_por_correo(puntos, correos, limite=2, global_scope=False):
     consulta = TicketComentario.objects.filter(
         es_interno=False,
         usuario__rol=Usuario.Rol.TECNICO,
+    ).annotate(_correo_ticket=Lower(Trim("ticket__solicitante_email"))).filter(
+        _correo_ticket__in=correos,
     )
     if not global_scope:
         consulta = consulta.filter(ticket__solicitante_punto__in=puntos)
@@ -1917,7 +1930,7 @@ def presionar_tecnico(request, pk):
     if request.method != "POST":
         raise Http404
     usuario = request.user
-    volver = request.POST.get("volver") or reverse("tickets:obs_monitoreo")
+    volver = _retorno_seguro(request, "tickets:obs_monitoreo")
     mensaje = (request.POST.get("mensaje") or "").strip()[:500]
     if not mensaje:
         messages.error(request, "Escribe el mensaje para el técnico.")
@@ -1998,7 +2011,7 @@ def zona_crear_observador(request):
     if request.method != "POST":
         return redirect("tickets:obs_usuarios")
     usuario = request.user
-    volver = request.POST.get("volver") or reverse("tickets:obs_usuarios")
+    volver = _retorno_seguro(request, "tickets:obs_usuarios")
     nombre = (request.POST.get("nombre") or "").strip()[:80]
     if not nombre:
         messages.error(request, "Ponle un nombre a la zona para crearla.")
@@ -2065,7 +2078,7 @@ def zonas_observador(request):
                 )
                 _marca_equipo_supervisor(zona, request)
                 return redirect(
-                    request.POST.get("volver") or reverse("tickets:obs_zonas")
+                    _retorno_seguro(request, "tickets:obs_zonas")
                 )
             nombre = ""
         else:
@@ -2447,7 +2460,7 @@ def zona_miembro_asignar(request):
             _marca_equipo_supervisor(elemento.zona, request)
         elemento.zona = None
     elemento.save(update_fields=["zona"])
-    return redirect(request.POST.get("volver") or reverse("tickets:obs_zonas"))
+    return redirect(_retorno_seguro(request, "tickets:obs_zonas"))
 
 
 @solo_observador
@@ -2464,7 +2477,7 @@ def zona_eliminar(request, pk):
         zona.nombre, "",
     )
     zona.delete()
-    return redirect(request.POST.get("volver") or reverse("tickets:obs_zonas"))
+    return redirect(_retorno_seguro(request, "tickets:obs_zonas"))
 
 
 @solo_observador
@@ -2487,7 +2500,7 @@ def zona_color(request):
         raise Http404
     zona.color = color
     zona.save(update_fields=["color"])
-    return redirect(request.POST.get("volver") or reverse("tickets:obs_zonas"))
+    return redirect(_retorno_seguro(request, "tickets:obs_zonas"))
 
 
 @solo_observador

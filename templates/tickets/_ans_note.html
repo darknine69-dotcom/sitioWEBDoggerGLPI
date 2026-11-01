@@ -48,5 +48,6 @@
 </div>
 
 {% if ans_categorias_json %}
-<script type="application/json" id="dogger-ans-cats">{{ ans_categorias_json|safe }}</script>
+{% load secure_json %}
+{% secure_json_script ans_categorias_json "dogger-ans-cats" %}
 {% endif %}

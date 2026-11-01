@@ -127,6 +127,7 @@
                             <div class="perfil-input"><span><svg class="icon"><use href="#i-phone"/></svg></span>{{ form.telefono }}</div>
                             {% if form.telefono.errors %}<small class="field-error">{{ form.telefono.errors.0 }}</small>{% endif %}
                         </div>
+                        {% if form.horario_atencion %}<div class="form-group"><label for="id_horario_atencion">Horario de atención</label><div class="perfil-input"><span><svg class="icon"><use href="#i-clock"/></svg></span>{{ form.horario_atencion }}</div>{% if form.horario_atencion.errors %}<small class="field-error">{{ form.horario_atencion.errors.0 }}</small>{% endif %}</div>{% endif %}
                         <div class="form-group">
                             <label for="perfil-rol">Rol</label>
                             <div class="perfil-input"><span><svg class="icon"><use href="#i-shield-check"/></svg></span><input id="perfil-rol" type="text" value="{{ request.user.get_rol_display }}" disabled class="is-readonly"></div>
@@ -657,7 +658,6 @@
                                     <th>Usuario</th><th>Correo</th><th>Rol</th>
                                     <th>Cerrar</th>
                                     <th>Eliminar</th>
-                                    <th>Reabrir</th>
                                     <th>Crear</th>
                                     <th>Chatear</th>
                                     <th>Editar anuncios propios</th>
@@ -669,18 +669,17 @@
                                     <td>
                                         <span class="pagina-user">{% if u.avatar %}<img src="{{ u.avatar.url }}" alt="">{% else %}<span class="pagina-user-placeholder">{{ u.iniciales }}</span>{% endif %}<strong>{{ u.nombre }}</strong></span>
                                         <input type="hidden" name="uid" value="{{ u.pk }}">
-                                    </td><td>{{ u.email }}</td><td>{{ u.get_rol_display }}</td>
+                                    </td><td>{{ u.email }}</td><td><span class="badge-role {{ u.rol }}" style="display:inline-flex;align-items:center;gap:6px">{% include 'components/role_icon.html' with rol=u.rol only %}{{ u.get_rol_display }}</span></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}" onchange="this.form.submit()"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}" onchange="this.form.submit()"></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_reabrir" value="1"{% if u.puede_reabrir_tickets %} checked{% endif %} aria-label="Reabrir para {{ u.email }}" onchange="this.form.submit()"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_crear" value="1"{% if u.puede_crear_tickets %} checked{% endif %} aria-label="Crear para {{ u.email }}" onchange="this.form.submit()"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_responder" value="1"{% if u.puede_responder_chat %} checked{% endif %} aria-label="Chatear para {{ u.email }}" onchange="this.form.submit()"></td>
                                     <td><input type="checkbox" name="perm_{{ u.pk }}_editar_anuncios" value="1"{% if u.puede_editar_anuncios %} checked{% endif %} aria-label="Editar anuncios propios para {{ u.email }}" onchange="this.form.submit()"></td>
                                 </tr>
                                 {% empty %}
-                                <tr><td colspan="9" class="obs-sin-datos">Sin cuentas.</td></tr>
+                                <tr><td colspan="8" class="obs-sin-datos">Sin cuentas.</td></tr>
                                 {% endfor %}
-                                <tr id="pagina-search-empty" hidden><td colspan="9" class="obs-sin-datos">No se encontraron cuentas para esta búsqueda.</td></tr>
+                                <tr id="pagina-search-empty" hidden><td colspan="8" class="obs-sin-datos">No se encontraron cuentas para esta búsqueda.</td></tr>
                             </tbody>
                         </table>
                     </div>

@@ -112,8 +112,9 @@
     </div>
 </main>
 
-<script type="application/json" id="dogger-cat-keywords">{{ cat_sugerencias_json|safe }}</script>
-<script type="application/json" id="dogger-tecnicos-disponibles">{{ tecnicos_disponibles_json|safe }}</script>
+{% load secure_json %}
+{% secure_json_script cat_sugerencias_json "dogger-cat-keywords" %}
+{% secure_json_script tecnicos_disponibles_json "dogger-tecnicos-disponibles" %}
 {% endblock %}
 
 {% block extra_js %}

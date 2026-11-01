@@ -24,7 +24,7 @@ def en_pruebas():
     return any(a == "test" for a in sys.argv[1:2])
 
 
-def en_fondo(func, *args, **kwargs):
+def en_fondo(func, *args, _reset_token_id=None, **kwargs):
     """Ejecuta `func` en un hilo daemon; devuelve el hilo o el resultado.
 
     En síncrono devuelve lo que retorne `func`; en hilo devuelve el
@@ -33,6 +33,10 @@ def en_fondo(func, *args, **kwargs):
     """
     if not getattr(settings, "DOGGER_FONDO_ASINCRONO", True) or en_pruebas():
         return func(*args, **kwargs)
+    if getattr(settings, "DOGGER_FONDO_DURABLE", False):
+        from .cola_durable import encolar
+
+        return encolar(func, args, kwargs, reset_token_id=_reset_token_id)
 
     def _correr():
         try:

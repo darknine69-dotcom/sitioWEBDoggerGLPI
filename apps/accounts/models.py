@@ -45,6 +45,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     grado = models.CharField("Grado", max_length=50, blank=True, default="")
     telefono = models.CharField("Teléfono", max_length=20, blank=True, default="")
     ubicacion = models.CharField("Ubicación / punto", max_length=120, blank=True, default="")
+    horario_atencion = models.CharField("Horario de atención", max_length=120, blank=True, default="")
     avatar = models.ImageField("Foto de perfil", upload_to=avatar_upload_to, blank=True, null=True)
 
     class Genero(models.TextChoices):

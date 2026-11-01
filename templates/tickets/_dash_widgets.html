@@ -190,6 +190,7 @@
     </div>
 </div>
 
-<script type="application/json" id="dashData">{{ dash_json|safe }}</script>
+{% load secure_json %}
+{% secure_json_script dash_json "dashData" %}
 <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=20261402"></script>
 <script src="{% asset 'js/panel-dash.js' %}"></script>

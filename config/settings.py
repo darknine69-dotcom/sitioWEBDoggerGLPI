@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 load_dotenv(encoding="utf-8")
 
@@ -124,17 +125,18 @@ except ImportError:
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-if DATABASE_URL:
-    # PostgreSQL en la nube (Render, Railway, etc.)
-    DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL)
-    }
-elif os.getenv("SMOKE_TEST_SQLITE", "False").lower() in ("1", "true", "yes"):
+if os.getenv("SMOKE_TEST_SQLITE", "False").lower() in ("1", "true", "yes"):
+    # Las pruebas aisladas nunca deben heredar DATABASE_URL de producción.
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "smoketest.sqlite3",
         }
+    }
+elif DATABASE_URL:
+    # PostgreSQL en la nube (Render, Railway, etc.)
+    DATABASES = {
+        "default": dj_database_url.parse(DATABASE_URL)
     }
 else:
     DATABASES = {
@@ -148,9 +150,8 @@ else:
             "OPTIONS": {
                 "driver": os.getenv("DB_DRIVER", "ODBC Driver 18 for SQL Server"),
                 "host_is_server": True,
-                "extra_params": os.getenv(
-                    "DB_EXTRA_PARAMS",
-                    "TrustServerCertificate=yes",
+                "extra_params": os.getenv("DB_EXTRA_PARAMS") or (
+                    "TrustServerCertificate=yes" if DEBUG else "TrustServerCertificate=no"
                 ),
             },
         }
@@ -236,6 +237,16 @@ DOGGER_FONDO_ASINCRONO = os.getenv("DOGGER_FONDO_ASINCRONO", "True").lower() in 
     "true",
     "yes",
 )
+# En producción no perder trabajos al reiniciar procesos web. El entorno de
+# pruebas aislado y desarrollo conservan ejecución síncrona/hilos existentes.
+_cola_default = "False" if DEBUG or os.getenv("SMOKE_TEST_SQLITE", "False").lower() in ("1", "true", "yes") else "True"
+DOGGER_FONDO_DURABLE = os.getenv("DOGGER_FONDO_DURABLE", _cola_default).lower() in ("1", "true", "yes")
+if DOGGER_FONDO_DURABLE and not DEBUG:
+    from cryptography.fernet import Fernet
+    try:
+        Fernet((os.getenv("DOGGER_FERNET_KEY") or "").strip().encode())
+    except (TypeError, ValueError) as exc:
+        raise ImproperlyConfigured("DOGGER_FERNET_KEY válida es obligatoria para la cola durable en producción.") from exc
 
 # ---------------------------------------------------------------------------
 # Seguridad para producción
@@ -277,10 +288,10 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
     # HSTS solo cuando realmente servimos por HTTPS directo.
-    if os.getenv("DJANGO_ENABLE_HSTS", "False").lower() in ("1", "true", "yes"):
+    if os.getenv("DJANGO_ENABLE_HSTS", "True").lower() in ("1", "true", "yes"):
         SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_HSTS_SECONDS", "31536000"))
-        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-        SECURE_HSTS_PRELOAD = True
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("DJANGO_HSTS_INCLUDE_SUBDOMAINS", "False").lower() in ("1", "true", "yes")
+        SECURE_HSTS_PRELOAD = os.getenv("DJANGO_HSTS_PRELOAD", "False").lower() in ("1", "true", "yes")
 
 # ---------------------------------------------------------------------------
 # Email (SMTP — Servidor Dogger directo)
@@ -292,6 +303,7 @@ EMAIL_BACKEND = os.getenv(
 )
 EMAIL_HOST = os.getenv("DJANGO_EMAIL_HOST", os.getenv("EMAIL_HOST", "smtp.office365.com"))
 EMAIL_PORT = int(os.getenv("DJANGO_EMAIL_PORT", os.getenv("EMAIL_PORT", "587")))
+EMAIL_TIMEOUT = int(os.getenv("DJANGO_EMAIL_TIMEOUT", "15"))
 EMAIL_USE_TLS = os.getenv(
     "DJANGO_EMAIL_USE_TLS", os.getenv("EMAIL_USE_TLS", "True")
 ).lower() in ("1", "true", "yes")
@@ -301,9 +313,14 @@ DEFAULT_FROM_EMAIL = os.getenv("DJANGO_DEFAULT_FROM_EMAIL", os.getenv("EMAIL_FRO
 
 # Sin credenciales SMTP configuradas (o en el entorno de pruebas), el envío
 # se hace por consola para que la recuperación de contraseña nunca falle en silencio.
-if (os.getenv("SMOKE_TEST_SQLITE", "False").lower() in ("1", "true", "yes")
-        or not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD):
+_smoke_test = os.getenv("SMOKE_TEST_SQLITE", "False").lower() in ("1", "true", "yes")
+if _smoke_test or (DEBUG and not EMAIL_HOST_USER and not EMAIL_HOST_PASSWORD):
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+elif not DEBUG:
+    if EMAIL_BACKEND in ("django.core.mail.backends.console.EmailBackend", "django.core.mail.backends.dummy.EmailBackend", "django.core.mail.backends.filebased.EmailBackend"):
+        raise ImproperlyConfigured("El backend de correo de producción debe entregar mensajes.")
+    if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend" and (not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD):
+        raise ImproperlyConfigured("Configura las credenciales SMTP para producción.")
 
 # ---------------------------------------------------------------------------
 # Configuración Dogger

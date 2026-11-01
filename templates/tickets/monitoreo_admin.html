@@ -323,36 +323,37 @@ main.obs-page { font-family: var(--font-corp); }
             </div>
         </div>
         {% if zonas_creadas %}
-        <div class="mon-grid" data-url-presionar="{% url 'tickets:monitoreo_presionar' 0 %}">
-            <div class="mon-left" id="monLeft">
+        <dialog class="mon-folder-dialog" id="monFolderDialog" aria-labelledby="monFolderTitle">
+            <div class="mon-folder-head"><span class="mon-folder-title-icon"><svg class="icon"><use href="#i-store"/></svg></span><div><h3 id="monFolderTitle">Puntos de venta</h3><p id="monFolderSupervisor"></p></div><span id="monFolderCount" class="mon-folder-count"></span><button type="button" id="monFolderClose" aria-label="Cerrar">×</button></div>
+            <div class="mon-folder-filters"><label class="mon-folder-search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="monFolderSearch" type="search" placeholder="Buscar punto de venta…" aria-label="Buscar punto de venta"></label><select id="monFolderStatus" aria-label="Estado ANS"><option value="">Estado: Todos</option><option value="vencido">ANS vencido</option><option value="por-vencer">Por vencer</option><option value="al-dia">Al día</option></select><select id="monFolderSort" aria-label="Ordenar puntos"><option value="nombre">Ordenar por: Nombre</option><option value="tickets">Ordenar por: Tickets</option></select></div>
+            <div class="mon-folder-list" id="monFolderList"></div>
+            <div class="mon-folder-footer"><span id="monFolderSummary"></span><div><button type="button" id="monFolderPrev" aria-label="Página anterior">‹</button><span id="monFolderPage"></span><button type="button" id="monFolderNext" aria-label="Página siguiente">›</button></div></div>
+        </dialog>
+        <dialog class="mon-point-dialog" id="monPointDialog" aria-labelledby="monPointTitle">
+            <header><span class="mon-folder-title-icon"><svg class="icon"><use href="#i-store"/></svg></span><div><h3 id="monPointTitle"></h3><p id="monPointSubtitle"></p></div><button type="button" id="monPointClose" aria-label="Cerrar">×</button></header>
+            <div class="mon-point-grid"><section class="mon-point-general"><h4><svg class="icon"><use href="#i-store"/></svg>Información general</h4><dl><div><dt><svg class="icon"><use href="#i-store"/></svg>Nombre del punto de venta</dt><dd data-point-name></dd></div><div><dt><svg class="icon"><use href="#i-map-pin"/></svg>Zona</dt><dd data-point-zone></dd></div><div><dt><svg class="icon"><use href="#i-map-pin"/></svg>Ubicación</dt><dd data-point-location></dd></div><div><dt><svg class="icon"><use href="#i-user"/></svg>Responsable</dt><dd>No disponible</dd></div><div><dt><svg class="icon"><use href="#i-mail"/></svg>Correo</dt><dd data-point-email></dd></div><div><dt><svg class="icon"><use href="#i-clock"/></svg>Horario de atención</dt><dd>No disponible</dd></div></dl></section><section><h4><svg class="icon"><use href="#i-chart"/></svg>Resumen de actividad</h4><div class="mon-point-metrics"><div><svg class="icon"><use href="#i-ticket"/></svg><b data-point-total></b><small>Tickets creados</small></div><div><svg class="icon"><use href="#i-alert"/></svg><b data-point-overdue></b><small>ANS vencidos</small></div><div><svg class="icon"><use href="#i-clock"/></svg><b data-point-progress></b><small>En progreso</small></div><div><svg class="icon"><use href="#i-check-circle"/></svg><b data-point-resolved></b><small>Resueltos</small></div></div><div class="mon-point-chart"><b>Tickets por día · últimos 30 días</b><div data-point-chart></div></div></section><section><h4><svg class="icon"><use href="#i-users"/></svg>Supervisor de la zona</h4><div class="mon-point-supervisor"><span class="mon-point-supervisor-avatar" aria-hidden="true"><svg class="icon"><use href="#i-user"/></svg></span><p data-point-supervisor></p></div></section><section><h4><svg class="icon"><use href="#i-ticket"/></svg>Últimos tickets</h4><div class="mon-point-tickets"><div class="mon-point-ticket-head"><span>ID</span><span>ASUNTO</span><span>ESTADO</span><span>CREADO</span></div><div data-point-tickets></div></div></section></div>
+        </dialog>
+        <div class="mon-grid pan-grid" data-url-presionar="{% url 'tickets:monitoreo_presionar' 0 %}">
+            <div class="mon-left pan-left" id="monLeft">
                 {% for bloque in zonas_creadas %}
-                <article class="mon-sup" data-sup="{{ bloque.supervisor.pk }}">
-                    <header class="mon-sup-head">
-                        <span class="mon-ava">{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
-                        <div class="mon-sup-id">
+                <article class="mon-sup pan-sup" data-sup="{{ bloque.supervisor.pk }}">
+                    <header class="mon-sup-head pan-sup-head">
+                        <span class="mon-ava pan-ava"{% if bloque.supervisor.avatar %} data-supervisor-avatar="{{ bloque.supervisor.avatar.url }}"{% endif %}>{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
+                        <div class="mon-sup-id pan-sup-id">
                             <strong>{{ bloque.supervisor.nombre }}</strong>
                             <small>{{ bloque.supervisor.email|default:"—" }}</small>
                             <span class="mon-rol">{% if bloque.supervisor.rol == 'observador' %}Supervisor a cargo{% else %}{{ bloque.supervisor.get_rol_display }}{% endif %}</span>
                         </div>
-                        <span class="mon-sup-n">{{ bloque.zonas|length }} zona{{ bloque.zonas|length|pluralize }}</span>
+                        <span class="mon-sup-n pan-sup-n">{{ bloque.zonas|length }} zona{{ bloque.zonas|length|pluralize }}</span>
                     </header>
-                    <div class="mon-zonas">
+                    <p class="pan-sub-tit">Mis zonas</p><div class="mon-zonas pan-cards">
                         {% for z in bloque.zonas %}
-                        <div class="mon-zc-wrap"{% if z.zona.color %} style="--mon-zc-color: {{ z.zona.color }}"{% endif %}>
-                            <button type="button" class="mon-zc mon-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %}" data-mon-zona="{{ z.zona.pk }}" data-mon-sup="{{ bloque.supervisor.pk }}" data-mon-nombre="{{ z.zona.nombre }}">
-                                <span class="mon-zc-top">
-                                    <span class="mon-zc-nombre">{{ z.zona.nombre }}</span>
-                                    <span class="mon-zc-fecha">{{ z.zona.creado_en|date:"d/m/Y" }}</span>
-                                </span>
-                                <span class="mon-zc-meta">
-                                    <span><b>{{ z.miembros|length }}</b> cuentas</span>
-                                    <span class="mon-zc-tk"><b>{{ z.abiertos }}</b> abiertos / <b>{{ z.cerrados|default:0 }}</b> cerrados</span>
-                                </span>
-                                <span class="mon-zc-bar"><span style="width: {{ z.avance }}%"></span></span>
-                                <span class="mon-zc-foot">
-                                    <span class="mon-dot"></span>{% if z.urgentes %}Críticos{% elif z.abiertos %}Pendientes{% else %}Al día{% endif %} · {{ z.avance }}%
-                                    {% if z.urgentes %}<span class="mon-zc-prioridad" title="{{ z.urgentes }} ticket{{ z.urgentes|pluralize }} urgente{{ z.urgentes|pluralize }}"><svg class="icon"><use href="#i-alert"/></svg>{{ z.urgentes }}</span>{% endif %}
-                                </span>
+                        <div class="mon-zc-wrap pan-zc-wrap"{% if z.zona.color %} style="--mon-zc-color: {{ z.zona.color }}; --zc: {{ z.zona.color }}"{% endif %}>
+                            <button type="button" class="mon-zc pan-zc mon-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %} pan-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %}" data-mon-zona="{{ z.zona.pk }}" data-mon-sup="{{ bloque.supervisor.pk }}" data-mon-nombre="{{ z.zona.nombre }}">
+                                <span class="pan-zc-headline"><span class="pan-zc-ico"><svg class="icon"><use href="#i-store"/></svg></span><span class="pan-zc-title"><b>{{ z.zona.nombre }}</b><small>{{ z.zona.creado_en|date:"d/m/Y" }}</small></span><span class="pan-zc-state"><i></i>{% if z.urgentes %}Con incidencia{% elif z.abiertos %}Pendiente{% else %}Al día{% endif %}</span></span>
+                                <span class="pan-zc-middle"><span class="pan-zc-metrics"><span><svg class="icon"><use href="#i-users"/></svg><b>{{ z.miembros|length }}</b> cuentas</span><span><svg class="icon"><use href="#i-ticket"/></svg><b>{{ z.abiertos }}</b> abiertos</span><span><svg class="icon"><use href="#i-check-circle"/></svg><b>{{ z.cerrados|default:0 }}</b> cerrados</span></span></span>
+                                <span class="pan-zc-progress"><span><i style="width:{{ z.avance }}%"></i></span><b>{{ z.avance }}%</b></span>
+                                {% if z.urgentes %}<span class="pan-zc-activity"><svg class="icon"><use href="#i-alert"/></svg>{{ z.urgentes }} urgentes</span>{% endif %}
                             </button>
                             {% include "observador/_zona_acciones.html" with z=z.zona admin=True %}
                         </div>
@@ -363,8 +364,8 @@ main.obs-page { font-family: var(--font-corp); }
                 </article>
                 {% endfor %}
             </div>
-            <aside class="mon-right" id="monRight" aria-live="polite">
-                <div class="mon-right-head">
+            <aside class="mon-right pan-right" id="monRight" aria-live="polite">
+                <div class="mon-right-head pan-right-head">
                     <h4>Usuarios en <span id="monRightZona">—</span></h4>
                     <span class="muted" id="monSelCount"></span>
                     <button type="button" class="mon-right-toggle" id="monAlternarZonas"
@@ -374,8 +375,8 @@ main.obs-page { font-family: var(--font-corp); }
                         <span>Plegar zonas</span>
                     </button>
                 </div>
-                <div class="mon-busca"><svg class="icon icon-sm"><use href="#i-search"/></svg><input type="search" id="monBuscar" placeholder="Buscar usuario…" aria-label="Buscar usuario" autocomplete="off"></div>
-                <div class="mon-lista" id="monLista"><p class="muted mon-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p></div>
+                <div class="mon-busca pan-busca"><svg class="icon icon-sm"><use href="#i-search"/></svg><input type="search" id="monBuscar" placeholder="Buscar usuario…" aria-label="Buscar usuario" autocomplete="off"></div>
+                <div class="mon-lista pan-lista" id="monLista"><p class="muted mon-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p></div>
                 <div class="mon-right-pie">
                     <form method="post" action="{% url 'tickets:monitoreo_zona_miembros_quitar' %}"
                           id="monQuitarSeleccionados" data-motivo-tipo="sacar"
@@ -476,7 +477,7 @@ main.obs-page { font-family: var(--font-corp); }
                 </div>
                 {% for m in z.miembros %}
                 <article class="obs-miembro{% if m.ans_vencidos %} mon-miembro-ans-vencido{% elif m.ans_por_vencer %} mon-miembro-ans-por-vencer{% endif %}"
-                         data-elemento="{{ m.elemento_id }}" data-total="{{ m.total }}" data-resueltos="{{ m.resueltos }}" data-cerrados="{{ m.cerrados }}" data-avance="{{ m.avance }}"
+                         data-elemento="{{ m.elemento_id }}" data-ubicacion="{{ m.ubicacion }}" data-horario="{{ m.horario_atencion }}" data-cuenta-activa="{% if m.cuenta_activa == None %}desconocido{% elif m.cuenta_activa %}activo{% else %}inactivo{% endif %}" data-total="{{ m.total }}" data-presiones="{{ m.presiones }}" data-resueltos="{{ m.resueltos }}" data-cerrados="{{ m.cerrados }}" data-avance="{{ m.avance }}"
                          data-ans-vencidos="{{ m.ans_vencidos }}" data-ans-por-vencer="{{ m.ans_por_vencer }}" data-abiertos="{{ m.abiertos }}" data-urgentes="{{ m.urgentes }}">
                     <div class="obs-miembro-top" data-href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}" style="cursor:pointer">
                         <span class="obs-avatar">{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
@@ -809,7 +810,8 @@ main.obs-page { font-family: var(--font-corp); }
             var key = card.getAttribute("data-mon-kpi");
             var values = series[key] || [];
             var spark = card.querySelector(".mon-kpi-spark");
-            if (!spark || !values.length || !values.some(function (value) { return value > 0; })) return;
+            if (!spark) return;
+            if (!values.length || !values.some(function (value) { return value > 0; })) { spark.textContent = 'Sin actividad en 7 días'; spark.classList.add('is-empty'); return; }
             var max = Math.max.apply(null, values.concat([1]));
             var step = 236 / Math.max(1, values.length - 1);
             var points = values.map(function (value, index) {
@@ -817,19 +819,21 @@ main.obs-page { font-family: var(--font-corp); }
             });
             var dots = values.map(function (value, index) {
                 var point = points[index].split(",");
-                return '<circle class="spark-dot" data-index="' + index + '" cx="' + point[0] + '" cy="' + point[1] + '" r="2.4" />';
+                return '<circle class="spark-dot" tabindex="0" data-index="' + index + '" cx="' + point[0] + '" cy="' + point[1] + '" r="2.4" />';
             }).join("");
             spark.innerHTML = '<svg viewBox="0 0 240 36" preserveAspectRatio="none"><polygon class="spark-fill" points="2,36 ' + points.join(" ") + ' 238,36"/><polyline class="spark-line" points="' + points.join(" ") + '"/>' + dots + '</svg><span class="mon-kpi-tooltip" role="tooltip"></span>';
             var tooltip = spark.querySelector(".mon-kpi-tooltip");
             spark.querySelectorAll(".spark-dot").forEach(function (dot) {
                 function mostrar() {
                     var index = Number(dot.getAttribute("data-index"));
-                    tooltip.textContent = (labels[index] || "") + ": " + values[index];
+                    tooltip.textContent = (labels[index] || "") + ": " + values[index] + (key === 'abiertos' ? ' tickets abiertos creados' : ' altas');
                     tooltip.style.left = ((index / Math.max(1, values.length - 1)) * 100) + "%";
                     tooltip.classList.add("is-visible");
                 }
                 dot.addEventListener("pointerenter", mostrar);
                 dot.addEventListener("pointerleave", function () { tooltip.classList.remove("is-visible"); });
+                dot.addEventListener("focus", mostrar);
+                dot.addEventListener("blur", function () { tooltip.classList.remove("is-visible"); });
             });
         });
     })();
@@ -935,6 +939,9 @@ main.obs-page { font-family: var(--font-corp); }
                         nombre: a ? a.textContent.trim() : "—",
                         href: a ? a.getAttribute("href") : "#",
                         correo: (partes[0] || "").trim(),
+                        ubicacion: f.getAttribute("data-ubicacion") || "",
+                        horario: f.getAttribute("data-horario") || "",
+                        cuentaActiva: f.getAttribute("data-cuenta-activa") || "desconocido",
                         rol: (partes[1] || "").trim(),
                         ava: av ? av.textContent.trim() : "?",
                         ansEstado: ansEstado,
@@ -942,6 +949,7 @@ main.obs-page { font-family: var(--font-corp); }
                         ansPorVencer: porVencer,
                         abiertos: abiertos,
                         total: total,
+                        presiones: parseInt(f.getAttribute("data-presiones") || "0", 10),
                         resueltos: resueltos,
                         cerrados: cerrados,
                         avance: avance,
@@ -1054,11 +1062,11 @@ main.obs-page { font-family: var(--font-corp); }
                                 (t.ansTexto ? " · " + t.ansTexto : "")) + '">' +
                             esc(t.codigo) + ' <small>' + esc(t.estadoDisplay) + '</small>' + ans + '</span>';
                     }).join("");
-                    return '<div class="mon-user-wrap' + estadoClase + '" data-elemento="' + esc(u.elementoId) + '">' +
-                        '<label class="mon-user">' +
+                    return '<div class="mon-user-wrap pan-user-wrap' + estadoClase + '" data-elemento="' + esc(u.elementoId) + '">' +
+                        '<label class="mon-user pan-user">' +
                             '<input type="checkbox" class="mon-user-chk" aria-label="Seleccionar ' + esc(u.nombre) + '">' +
-                            '<span class="mon-user-ava">' + esc(u.ava) + "</span>" +
-                            '<span class="mon-user-id"><strong>' + esc(u.nombre) + "</strong><small>" + esc(u.correo) + "</small></span>" +
+                            '<span class="mon-user-ava pan-user-ava">' + esc(u.ava) + "</span>" +
+                            '<span class="mon-user-id pan-user-id"><strong>' + esc(u.nombre) + "</strong><small>" + esc(u.correo) + "</small></span>" +
                             semaforo + prioridad +
                             '<span class="mon-user-rol">' + esc(u.rol || "Usuario") + "</span>" +
                             '<a class="mon-user-ficha" href="' + esc(u.href) + '" title="Abrir ficha de ' + esc(u.nombre) + '">Ver ficha</a>' +
@@ -1153,6 +1161,193 @@ main.obs-page { font-family: var(--font-corp); }
             botones.forEach(function (b) {
                 b.addEventListener("click", function () { activa(b); });
             });
+            var folderPuntos = [], folderPage = 1, folderZona = "", folderSupervisor = "", folderSupervisorEmail = "", folderSupervisorAvatar = "", folderZonaFecha = "";
+            function abrirFichaPunto(punto) {
+                var dialog = document.getElementById("monPointDialog");
+                if (!dialog || typeof dialog.showModal !== "function") return false;
+                document.getElementById("monPointTitle").textContent = punto.nombre;
+                document.getElementById("monPointSubtitle").textContent = "Punto de venta · " + folderZona;
+                var header = dialog.querySelector('header');
+                var actions = header.querySelector('.mon-point-actions');
+                if (!actions) { actions = document.createElement('div'); actions.className = 'mon-point-actions'; actions.innerHTML = '<a class="mon-point-map" target="_blank" rel="noopener noreferrer"><svg class="icon" aria-hidden="true"><use href="#i-map-pin"></use></svg>Ver en mapa</a><a class="mon-point-open"><svg class="icon" aria-hidden="true"><use href="#i-ticket"></use></svg>Abrir tickets</a>'; header.insertBefore(actions, document.getElementById('monPointClose')); }
+                var mapa = actions.querySelector('.mon-point-map');
+                var ubicacion = (punto.ubicacion || '').trim();
+                mapa.hidden = !ubicacion || ubicacion === '—';
+                if (!mapa.hidden) mapa.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ubicacion);
+                var abrir = actions.querySelector('.mon-point-open');
+                abrir.hidden = !punto.correo || punto.correo === '—';
+                if (!abrir.hidden) abrir.href = '{% url "tickets:lista" %}?' + new URLSearchParams({solicitante_email:punto.correo}).toString();
+                var headerEstado = header.querySelector('.mon-point-header-status');
+                if (!headerEstado) { headerEstado = document.createElement('span'); headerEstado.className = 'mon-point-header-status'; document.getElementById('monPointSubtitle').appendChild(headerEstado); }
+                headerEstado.className = 'mon-point-header-status is-' + punto.cuentaActiva;
+                headerEstado.textContent = punto.cuentaActiva === 'activo' ? 'Activo' : punto.cuentaActiva === 'inactivo' ? 'Inactivo' : 'No disponible';
+                var values = {name:punto.nombre, zone:folderZona, location:punto.ubicacion && punto.ubicacion !== "—" ? punto.ubicacion : "No registrada", email:punto.correo || "No registrado", total:punto.total, overdue:punto.ansVencidos, progress:punto.tickets.filter(function(t) { return t.estado === "en-progreso"; }).length, resolved:punto.resueltos, supervisor:folderSupervisor};
+                Object.keys(values).forEach(function (key) { dialog.querySelector('[data-point-' + key + ']').textContent = values[key]; });
+                var supervisorBox = dialog.querySelector('.mon-point-supervisor');
+                var avatar = supervisorBox.querySelector('.mon-point-supervisor-avatar');
+                avatar.replaceChildren();
+                if (folderSupervisorAvatar) { var foto = document.createElement('img'); foto.src = folderSupervisorAvatar; foto.alt = ''; avatar.appendChild(foto); }
+                else { avatar.textContent = (folderSupervisor || '?').charAt(0).toUpperCase(); }
+                var supervisorEmail = supervisorBox.querySelector('.mon-point-supervisor-email');
+                if (!supervisorEmail) { supervisorEmail = document.createElement('small'); supervisorEmail.className = 'mon-point-supervisor-email'; supervisorBox.appendChild(supervisorEmail); }
+                supervisorEmail.textContent = folderSupervisorEmail;
+                var supervisorTitle = supervisorBox.closest('section').querySelector('h4');
+                Array.prototype.forEach.call(supervisorTitle.childNodes, function(node) { if (node.nodeType === 3) node.textContent = 'Supervisores que la monitorean'; });
+                var contadorSupervisor = supervisorTitle.querySelector('.mon-point-supervisor-count');
+                if (!contadorSupervisor) { contadorSupervisor = document.createElement('span'); contadorSupervisor.className = 'mon-point-supervisor-count'; supervisorTitle.appendChild(contadorSupervisor); }
+                contadorSupervisor.textContent = folderSupervisor && folderSupervisor !== 'No registrado' ? '1 supervisor' : 'Sin supervisor';
+                var insignia = supervisorBox.querySelector('.mon-point-supervisor-badge');
+                if (!insignia) { insignia = document.createElement('span'); insignia.className = 'mon-point-supervisor-badge'; supervisorBox.appendChild(insignia); }
+                insignia.textContent = folderSupervisor && folderSupervisor !== 'No registrado' ? 'Responsable de zona' : '';
+                var fechaZona = supervisorBox.querySelector('.mon-point-supervisor-date');
+                if (!fechaZona) { fechaZona = document.createElement('span'); fechaZona.className = 'mon-point-supervisor-date'; supervisorBox.appendChild(fechaZona); }
+                fechaZona.textContent = folderZonaFecha ? 'Zona creada · ' + folderZonaFecha : '';
+                dialog.querySelectorAll('.mon-point-general dt').forEach(function (label) {
+                    if (label.textContent.trim() === 'Responsable') {
+                        label.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-check-circle"></use></svg>Estado';
+                        var badge = document.createElement('span');
+                        badge.className = 'mon-point-account-status';
+                        label.nextElementSibling.replaceChildren(badge);
+                    }
+                    if (label.textContent.trim() === 'Estado') {
+                        var estadoCuenta = label.nextElementSibling.querySelector('.mon-point-account-status');
+                        estadoCuenta.className = 'mon-point-account-status is-' + punto.cuentaActiva;
+                        estadoCuenta.textContent = punto.cuentaActiva === 'activo' ? 'Activo' : punto.cuentaActiva === 'inactivo' ? 'Inactivo' : 'No disponible';
+                    }
+                    if (label.textContent.trim() === 'Horario de atención') label.nextElementSibling.textContent = punto.horario || 'No registrado';
+                });
+                var chart = dialog.querySelector('[data-point-chart]');
+                var chartContainer = chart.parentElement;
+                var selector = chartContainer.closest('section').querySelector('.mon-point-period');
+                if (!selector) { selector = document.createElement('select'); selector.className = 'mon-point-period'; selector.setAttribute('aria-label', 'Período de la gráfica'); selector.innerHTML = '<option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option>'; chartContainer.closest('section').querySelector('h4').appendChild(selector); }
+                selector.value = '30';
+                function pintarGrafico() {
+                var periodo = Number(selector.value);
+                chartContainer.querySelector('b').textContent = 'Tickets por día · últimos ' + periodo + ' días';
+                var dias = [], ahora = new Date();
+                for (var d = periodo - 1; d >= 0; d--) { var fecha = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - d); dias.push({ key: String(fecha.getDate()).padStart(2, '0') + '/' + String(fecha.getMonth() + 1).padStart(2, '0') + '/' + fecha.getFullYear(), count: 0, tickets: [] }); }
+                punto.tickets.forEach(function(ticket) { var dia = dias.find(function(entry) { return entry.key === ticket.fecha; }); if (dia) { dia.count++; dia.tickets.push(ticket); } });
+                var maximo = Math.max.apply(null, dias.map(function(dia) { return dia.count; }).concat([1]));
+                chart.replaceChildren();
+                dias.forEach(function(dia) {
+                    var barra = document.createElement('span');
+                    barra.dataset.chartDay = dia.key;
+                    barra.style.height = (dia.count / maximo * 100) + '%';
+                    barra.title = dia.key + ': ' + dia.count + ' tickets';
+                    if (dia.count) {
+                        barra.tabIndex = 0;
+                        barra.setAttribute('aria-label', dia.key + ': ' + dia.count + ' tickets');
+                        var detalle = document.createElement('span');
+                        detalle.className = 'mon-point-chart-tooltip';
+                        var titulo = document.createElement('strong'); titulo.textContent = dia.key + ' · ' + dia.count + (dia.count === 1 ? ' ticket' : ' tickets'); detalle.appendChild(titulo);
+                        dia.tickets.forEach(function(ticket) { var linea = document.createElement('span'); linea.textContent = ticket.codigo + ' · ' + ticket.titulo; detalle.appendChild(linea); });
+                        barra.appendChild(detalle);
+                    }
+                    chart.appendChild(barra);
+                });
+                var escala = chartContainer.querySelector('.mon-point-chart-axis');
+                if (!escala) { escala = document.createElement('div'); escala.className = 'mon-point-chart-axis'; chartContainer.appendChild(escala); }
+                escala.replaceChildren();
+                [maximo, Math.round(maximo * 2 / 3), Math.round(maximo / 3), 0].forEach(function(valor) { var marca = document.createElement('span'); marca.textContent = valor; escala.appendChild(marca); });
+                var fechas = chartContainer.querySelector('.mon-point-chart-dates');
+                if (!fechas) { fechas = document.createElement('div'); fechas.className = 'mon-point-chart-dates'; chartContainer.appendChild(fechas); }
+                fechas.replaceChildren();
+                [0, .25, .5, .75, 1].forEach(function(fraccion) { var index = Math.round((dias.length - 1) * fraccion); var label = document.createElement('span'); label.dataset.chartDay = dias[index].key; var parts = dias[index].key.split('/'); var fecha = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])); label.textContent = fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }).replace('.', ''); fechas.appendChild(label); });
+                chart.querySelectorAll('[data-chart-day]').forEach(function(barra) {
+                    function marcar(activo) { fechas.querySelectorAll('[data-chart-day]').forEach(function(label) { label.classList.toggle('is-selected', activo && label.dataset.chartDay === barra.dataset.chartDay); }); }
+                    barra.addEventListener('pointerenter', function() { marcar(true); });
+                    barra.addEventListener('pointerleave', function() { marcar(false); });
+                    barra.addEventListener('focus', function() { marcar(true); });
+                    barra.addEventListener('blur', function() { marcar(false); });
+                });
+                }
+                selector.onchange = pintarGrafico;
+                pintarGrafico();
+                var lista = dialog.querySelector('[data-point-tickets]');
+                lista.replaceChildren();
+                punto.tickets.forEach(function(ticket) {
+                    var fila = document.createElement('div');
+                    [ticket.codigo, ticket.titulo, ticket.estadoDisplay, ticket.fecha].forEach(function(valor, index) { var celda = document.createElement('span'); celda.textContent = valor || '—'; if (index === 2) { celda.className = 'mon-point-status'; if (['abierto', 'en-progreso', 'resuelto', 'cerrado'].includes(ticket.estado)) celda.classList.add('is-' + ticket.estado); } fila.appendChild(celda); });
+                    lista.appendChild(fila);
+                });
+                if (!punto.tickets.length) lista.textContent = 'Sin tickets registrados.';
+                dialog.showModal();
+                return true;
+            }
+            function pintarPuntos() {
+                var lista = document.getElementById("monFolderList");
+                var query = document.getElementById("monFolderSearch").value.trim().toLocaleLowerCase();
+                var estado = document.getElementById("monFolderStatus").value;
+                var orden = document.getElementById("monFolderSort").value;
+                var puntos = folderPuntos.filter(function (p) {
+                    return (p.nombre + " " + p.correo).toLocaleLowerCase().includes(query) && (!estado || (estado === "al-dia" ? !p.ansEstado : p.ansEstado === estado));
+                }).sort(function (a, b) { return orden === "tickets" ? b.total - a.total || a.nombre.localeCompare(b.nombre) : a.nombre.localeCompare(b.nombre); });
+                var paginas = Math.max(1, Math.ceil(puntos.length / 5));
+                folderPage = Math.min(folderPage, paginas);
+                lista.replaceChildren();
+                puntos.slice((folderPage - 1) * 5, folderPage * 5).forEach(function (punto) {
+                    var item = document.createElement("div");
+                    item.className = "mon-folder-item";
+                    item.innerHTML = '<span class="mon-folder-icon"><svg class="icon" aria-hidden="true"><use href="#i-store"></use></svg></span><span class="mon-folder-info"><b></b><small><svg class="icon" aria-hidden="true"><use href="#i-map-pin"></use></svg><span></span></small></span><span class="mon-folder-metric"><svg class="icon"><use href="#i-ticket"></use></svg><span><b></b><small>Tickets</small></span></span><span class="mon-folder-metric is-alert"><svg class="icon"><use href="#i-alert"></use></svg><span><b></b><small>ANS vencidos</small></span></span><span class="mon-folder-metric is-pressure"><svg class="icon"><use href="#i-message"></use></svg><span><b></b><small>Presiones</small></span></span><a class="mon-folder-profile">Ver ficha <span aria-hidden="true">›</span></a>';
+                    item.querySelector(".mon-folder-info b").textContent = punto.nombre;
+                    item.querySelector(".mon-folder-info small span").textContent = punto.ubicacion && punto.ubicacion !== "—" ? punto.ubicacion : "Ubicación no registrada";
+                    var cifras = item.querySelectorAll(".mon-folder-metric b");
+                    cifras[0].textContent = punto.total; cifras[1].textContent = punto.ansVencidos; cifras[2].textContent = punto.presiones;
+                    var ficha = item.querySelector(".mon-folder-profile");
+                    ficha.href = punto.href;
+                    ficha.addEventListener("click", function(event) { if (abrirFichaPunto(punto)) event.preventDefault(); });
+                    lista.appendChild(item);
+                });
+                if (!puntos.length) { var vacio = document.createElement("p"); vacio.textContent = "No hay puntos de venta para mostrar."; lista.appendChild(vacio); }
+                document.getElementById("monFolderSummary").textContent = puntos.length ? "Mostrando " + ((folderPage - 1) * 5 + 1) + "–" + Math.min(folderPage * 5, puntos.length) + " de " + puntos.length + " puntos de venta" : "Sin resultados";
+                document.getElementById("monFolderPage").textContent = folderPage + " / " + paginas;
+                document.getElementById("monFolderPrev").disabled = folderPage === 1;
+                document.getElementById("monFolderNext").disabled = folderPage === paginas;
+            }
+            grid.querySelectorAll("[data-mon-ver-cuentas]").forEach(function (enlace) {
+                enlace.addEventListener("click", function (event) {
+                    var tarjeta = enlace.closest(".mon-zc-wrap");
+                    var zona = tarjeta && tarjeta.querySelector("[data-mon-zona]");
+                    var modal = document.getElementById("monFolderDialog");
+                    var lista = document.getElementById("monFolderList");
+                    if (!zona || !modal || !lista || typeof modal.showModal !== "function") { return; }
+                    event.preventDefault();
+                    lista.replaceChildren();
+                    document.getElementById("monFolderSupervisor").textContent = "Zona: " + (zona.getAttribute("data-mon-nombre") || "—");
+                    folderZona = zona.getAttribute("data-mon-nombre") || "—";
+                    var supervisor = tarjeta.closest(".mon-sup").querySelector(".mon-sup-id strong");
+                    folderSupervisor = supervisor ? supervisor.textContent.trim() : "No registrado";
+                    var supervisorPanel = tarjeta.closest(".mon-sup");
+                    var correoSupervisor = supervisorPanel.querySelector(".mon-sup-id small");
+                    var avatarSupervisor = supervisorPanel.querySelector(".mon-ava");
+                    folderSupervisorEmail = correoSupervisor ? correoSupervisor.textContent.trim() : "";
+                    folderSupervisorAvatar = avatarSupervisor ? avatarSupervisor.getAttribute("data-supervisor-avatar") || "" : "";
+                    var fechaZona = tarjeta.querySelector('.pan-zc-title small');
+                    folderZonaFecha = fechaZona ? fechaZona.textContent.trim() : '';
+                    folderPuntos = usuariosDe(zona.getAttribute("data-mon-zona")).filter(function (usuario) {
+                        return /punto de venta/i.test(usuario.rol);
+                    });
+                    document.getElementById("monFolderCount").textContent = folderPuntos.length + " puntos de venta";
+                    document.getElementById("monFolderSearch").value = "";
+                    document.getElementById("monFolderStatus").value = "";
+                    document.getElementById("monFolderSort").value = "nombre";
+                    folderPage = 1; pintarPuntos();
+                    modal.showModal();
+                });
+            });
+            var folderModal = document.getElementById("monFolderDialog");
+            var pointModal = document.getElementById("monPointDialog");
+            if (pointModal) {
+                document.getElementById("monPointClose").addEventListener("click", function() { pointModal.close(); });
+                pointModal.addEventListener("click", function(event) { if (event.target === pointModal) pointModal.close(); });
+            }
+            if (folderModal) {
+                document.getElementById("monFolderClose").addEventListener("click", function () { folderModal.close(); });
+                folderModal.addEventListener("click", function (event) { if (event.target === folderModal) { folderModal.close(); } });
+                ["monFolderSearch", "monFolderStatus", "monFolderSort"].forEach(function (id) { document.getElementById(id).addEventListener(id === "monFolderSearch" ? "input" : "change", function () { folderPage = 1; pintarPuntos(); }); });
+                document.getElementById("monFolderPrev").addEventListener("click", function () { folderPage--; pintarPuntos(); });
+                document.getElementById("monFolderNext").addEventListener("click", function () { folderPage++; pintarPuntos(); });
+            }
             if (buscar) {
                 buscar.addEventListener("input", function () {
                     if (!actual) { return; }

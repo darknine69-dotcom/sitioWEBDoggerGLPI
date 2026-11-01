@@ -13,7 +13,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-dogger}
       POSTGRES_USER: ${POSTGRES_USER:-dogger}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-clave}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -28,7 +28,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-dogger}:${POSTGRES_PASSWORD:-cambia-esta-clave}@db:5432/${POSTGRES_DB:-dogger}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dogger}:${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-dogger}
       DJANGO_MEDIA_ROOT: /app/media
     volumes:
       - media:/app/media
@@ -41,6 +41,22 @@ services:
         condition: service_healthy
     expose:
       - "8000"
+
+  worker:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-dogger}:${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-dogger}
+      DOGGER_FONDO_DURABLE: "True"
+    # Espera a que web aplique las migraciones; restart vuelve a intentarlo.
+    command: ["sh", "-c", "python manage.py migrate --check && exec python manage.py procesar_tareas --loop"]
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_started
 
   nginx:
     image: nginx:1.27-alpine

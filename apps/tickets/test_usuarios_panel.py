@@ -132,8 +132,15 @@ class AccesosPanelTest(TestCase):
 
     def test_buscador_en_vivo_sin_recarga(self):
         html = self._pagina().content.decode()
-        self.assertIn('data-vivo', html)
+        self.assertIn('data-ajax-table-form="usuarios"', html)
+        self.assertIn('data-ajax-table-region="usuarios"', html)
         self.assertIn('id="tablaUsuarios"', html)
+        from django.contrib.staticfiles import finders
+        from pathlib import Path
+
+        js = Path(finders.find("js/tabla-ajax.js")).read_text(encoding="utf-8")
+        self.assertIn('search.addEventListener("input"', js)
+        self.assertIn('fetch(url,', js)
 
     def test_js_muestra_fecha_absoluta(self):
         from pathlib import Path

@@ -6,7 +6,7 @@ echo "Aplicando migraciones..."
 python manage.py migrate --noinput
 
 echo "Recopilando estáticos..."
-python manage.py collectstatic --noinput || true
+python manage.py collectstatic --noinput
 
 echo "Sembrando datos base (no rompe si ya existen)..."
 python manage.py seed_categorias || true

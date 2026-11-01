@@ -11,6 +11,29 @@ from .sla import horas_por_prioridad, formatear_duracion
 from .cifrado import CampoCifrado
 
 
+class TareaDiferida(models.Model):
+    """Trabajo de correo o GLPI persistido hasta su procesamiento."""
+    class Estado(models.TextChoices):
+        PENDIENTE = "pendiente", "Pendiente"
+        PROCESANDO = "procesando", "Procesando"
+        COMPLETADA = "completada", "Completada"
+        FALLIDA = "fallida", "Fallida"
+        REVISAR = "revisar", "Resultado desconocido"
+
+    tipo = models.CharField(max_length=30)
+    datos = CampoCifrado()
+    estado = models.CharField(max_length=16, choices=Estado.choices, default=Estado.PENDIENTE)
+    intentos = models.PositiveIntegerField(default=0)
+    disponible_en = models.DateTimeField(default=timezone.now)
+    reservado_en = models.DateTimeField(null=True, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+    ultimo_error = models.CharField(max_length=120, blank=True, default="")
+
+    class Meta:
+        indexes = [models.Index(fields=["estado", "disponible_en"], name="tarea_estado_disponible_idx")]
+
+
 class Categoria(models.Model):
     """
     Categorias alineadas a la infraestructura Dogger (STATU QUO):

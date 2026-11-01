@@ -3,6 +3,7 @@ import secrets
 import string
 from collections import Counter
 from datetime import date, datetime, timedelta
+from types import SimpleNamespace
 import logging
 import re
 
@@ -16,10 +17,12 @@ from django.db.models import CharField, Count, F, Min, Prefetch, Q, Value
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.dateformat import DateFormat
 from django.views.decorators.http import require_POST
 
 PRESETS_MIS = [
+    ("pendientes", "Solicitudes pendientes"),
     ("abiertas", "Mis solicitudes abiertas"),
     ("todas", "Todas las solicitudes"),
     ("completadas", "Mis solicitudes completadas"),
@@ -440,7 +443,8 @@ def _agrupar_vencidos(tickets, dimension):
 
 
 def _build_tecnico_dashboard(
-    tecnico_id=None, consulta=None, incluir_pivot=True, puntos_pivot=None
+    tecnico_id=None, consulta=None, incluir_pivot=True, puntos_pivot=None,
+    incluir_detalle_pivot=True,
 ):
     """
     Datos JSON para el rediseño del Panel Técnico.
@@ -495,8 +499,10 @@ def _build_tecnico_dashboard(
     # --- Tabla dinámica pivote -------------------------------------------
     def _pivot(
         dimension, sort_key=None, limite=40, base=None, semillas=None,
-        incluir_detalle=True,
+        incluir_detalle=None,
     ):
+        if incluir_detalle is None:
+            incluir_detalle = incluir_detalle_pivot
         rows = {}
 
         def _fila(clave, label):
@@ -931,7 +937,9 @@ def _actividad_punto_venta(eventos):
         prefijo = f"{codigo}:" if codigo else ""
         texto = descripcion[len(prefijo):].strip() if prefijo and descripcion.startswith(prefijo) else descripcion
         clave = texto.lower()
-        if "resuelto" in clave or "cerrado" in clave:
+        if "vencido" in clave:
+            icono, tono = "i-alert", "expired"
+        elif "resuelto" in clave or "cerrado" in clave:
             icono, tono = "i-check-circle", "success"
         elif evento.tipo == GlpiEvento.Tipo.CAMBIO_ESTADO:
             icono, tono = "i-refresh", "update"
@@ -959,6 +967,35 @@ def _actividad_punto_venta(eventos):
     return filas
 
 
+def _eventos_panel_punto(usuario):
+    """Combina la bitácora con fechas reales de creación y papelera propias."""
+    if not usuario.email:
+        return []
+    eventos = list(GlpiEvento.objects.select_related("ticket").filter(
+        ticket__solicitante_email=usuario.email
+    ).order_by("-fecha", "-pk")[:30])
+    propios = Ticket.con_eliminados.filter(solicitante_email=usuario.email)
+    for ticket in propios.order_by("-fecha_creacion")[:30]:
+        eventos.append(SimpleNamespace(ticket=ticket, ticket_id=ticket.pk,
+            tipo=GlpiEvento.Tipo.OTRO, descripcion="Nueva solicitud creada", fecha=ticket.fecha_creacion))
+    for ticket in propios.filter(eliminado_en__isnull=False).order_by("-eliminado_en")[:30]:
+        eventos.append(SimpleNamespace(ticket=ticket, ticket_id=ticket.pk,
+            tipo=GlpiEvento.Tipo.OTRO, descripcion="Solicitud enviada a la papelera", fecha=ticket.eliminado_en))
+    ahora = timezone.now()
+    for ticket in propios.select_related("categoria").iterator():
+        limite = ticket.fecha_limite_ans
+        fin = ticket.fecha_finalizacion or ticket.eliminado_en
+        if limite and limite <= ahora and (not fin or fin > limite):
+            eventos.append(SimpleNamespace(ticket=ticket, ticket_id=ticket.pk,
+                tipo=GlpiEvento.Tipo.OTRO, descripcion="Ticket vencido (ANS)", fecha=limite))
+    eventos.sort(key=lambda evento: evento.fecha, reverse=True)
+    filas = _actividad_punto_venta(eventos[:30])
+    for fila in filas:
+        if fila["ticket"] and fila["ticket"].eliminado_en:
+            fila["ticket"] = None
+    return filas
+
+
 def _build_dashboard_context(request, tickets):
     chart_context = _build_chart_context(tickets)
     eventos_qs = GlpiEvento.objects.select_related("ticket").order_by("-fecha")
@@ -973,7 +1010,7 @@ def _build_dashboard_context(request, tickets):
     eventos_glpi_page = paginator.get_page(page_number)
     chart_context.update({
         "eventos_glpi": eventos_glpi_page.object_list,
-        "actividad_punto_venta": _actividad_punto_venta(eventos_glpi_page.object_list[:5]),
+        "actividad_punto_venta": _eventos_panel_punto(request.user) if getattr(request.user, "rol", "") == Usuario.Rol.USUARIO else _actividad_punto_venta(eventos_glpi_page.object_list[:5]),
         "eventos_glpi_page": eventos_glpi_page,
         "per_page_glpi": pp_glpi,
         "querystring_glpi": _params_sin_page(request, "page_glpi"),
@@ -1004,15 +1041,17 @@ def _punto_venta_panel_datos(usuario, zona_context):
     estados = {
         "abiertos": sum(t.estado == Ticket.Estado.ABIERTO for t in tickets),
         "progreso": sum(t.estado == Ticket.Estado.EN_PROGRESO for t in tickets),
-        "resueltos": sum(t.estado == Ticket.Estado.RESUELTO for t in tickets),
-        "cerrados": sum(t.estado == Ticket.Estado.CERRADO for t in tickets),
+        "resueltos": sum(t.fue_resuelto for t in tickets),
+        "resueltos_estado": sum(t.estado == Ticket.Estado.RESUELTO for t in tickets),
+        "cerrados": sum(t.estado in (Ticket.Estado.CERRADO, Ticket.Estado.RESUELTO) for t in tickets),
+        "cerrados_estado": sum(t.estado == Ticket.Estado.CERRADO for t in tickets),
         "vencidos": sum(t.info_ans[0] == "vencido" for t in tickets),
     }
     definiciones = (
         ("solicitudes", "Solicitudes", len(tickets), "i-ticket", "red", "incluye cerradas", "?"),
         ("abiertas", "Abiertas", estados["abiertos"], "i-alert", "rose", "en espera", "?estado=abierto"),
         ("progreso", "En progreso", estados["progreso"], "i-wrench", "orange", "siendo atendidas", "?estado=en-progreso"),
-        ("resueltas", "Resueltas", estados["resueltos"] + estados["cerrados"], "i-check-circle", "green", "terminadas", "?estado=resuelto"),
+        ("resueltas", "Resueltas", estados["resueltos"], "i-check-circle", "green", "resueltas", "?estado=resuelto"),
     )
     kpis = [{"key": clave, "titulo": titulo, "valor": valor, "icono": icono,
              "tono": tono, "detalle": detalle, "url": url,
@@ -1107,7 +1146,7 @@ def _punto_venta_panel_datos(usuario, zona_context):
             "vencidos": vencidos_periodo,
         },
         "presionables": presionables,
-        "ranking": sorted(zona_context["zona_seguimiento_dashboard"]["zonas"], key=lambda z: -z["total"])[:5],
+        "ranking": sorted(zona_context["zona_seguimiento_dashboard"]["zonas"], key=lambda z: -z["total"]),
     }
 
 
@@ -1199,9 +1238,9 @@ def _reportes_metricas_kpis(tickets):
             abiertos += 1
         elif t.estado == Ticket.Estado.EN_PROGRESO:
             en_progreso += 1
-        elif t.estado == Ticket.Estado.RESUELTO:
+        if t.fue_resuelto:
             resueltos += 1
-        elif t.estado == Ticket.Estado.CERRADO:
+        if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
             cerrados += 1
         estado_ans = t.info_ans[0] if t.info_ans else None
         if estado_ans == "vencido":
@@ -1214,7 +1253,7 @@ def _reportes_metricas_kpis(tickets):
             if horas >= 0:
                 horas_resolucion += horas
                 cierres_con_tiempo += 1
-    total = abiertos + en_progreso + resueltos + cerrados
+    total = len(tickets)
     base_sla = sla_ok + sla_no
     return {
         "total": total,
@@ -1222,13 +1261,13 @@ def _reportes_metricas_kpis(tickets):
         "en_progreso": en_progreso,
         "resueltos": resueltos,
         "cerrados": cerrados,
-        "resueltos_cerrados": resueltos + cerrados,
+        "resueltos_cerrados": cerrados,
         "vencidos": vencidos,
         "sla_ok": sla_ok,
         "sla_no": sla_no,
         "pct_sla": round(sla_ok / base_sla * 100) if base_sla else 0,
         "prom_h": round(horas_resolucion / cierres_con_tiempo, 2) if cierres_con_tiempo else None,
-        "pct_resueltos": round((resueltos + cerrados) / total * 100) if total else 0,
+        "pct_resueltos": round(resueltos / total * 100) if total else 0,
     }
 
 
@@ -1249,7 +1288,7 @@ def _reportes_metricas_tecnicos(tickets):
         g["asignados"] += 1
         if t.estado in abiertos_estados:
             g["en_curso"] += 1
-        if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
+        if t.fue_resuelto:
             g["resueltos"] += 1
         if t.fecha_finalizacion and t.fecha_creacion:
             horas = (t.fecha_finalizacion - t.fecha_creacion).total_seconds() / 3600.0
@@ -1298,9 +1337,9 @@ def _reportes_metricas_usuarios(tickets):
         g["creados"] += 1
         if t.estado == Ticket.Estado.ABIERTO:
             g["abiertos"] += 1
-        elif t.estado == Ticket.Estado.RESUELTO:
+        if t.fue_resuelto:
             g["resueltos"] += 1
-        elif t.estado == Ticket.Estado.CERRADO:
+        if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
             g["cerrados"] += 1
         if not g["ultimo_fecha"] or (t.fecha_creacion and t.fecha_creacion > g["ultimo_fecha"]):
             g["ultimo_fecha"] = t.fecha_creacion
@@ -1913,7 +1952,7 @@ def usuarios_lista(request):
                 total=Count("pk"),
                 abiertos=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
                 progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
-                resueltos=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
+                resueltos=Count("pk", filter=Q(fecha_resolucion__isnull=False) | Q(estado=Ticket.Estado.RESUELTO)),
                 cerrados=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
             )
         }
@@ -2191,7 +2230,7 @@ def _ficha_usuario(u):
                 total=Count("pk"),
                 abiertos=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
                 progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
-                resueltos=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
+                resueltos=Count("pk", filter=Q(fecha_resolucion__isnull=False) | Q(estado=Ticket.Estado.RESUELTO)),
                 cerrados=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
             )
         }.get(u.pk) or {}
@@ -2204,7 +2243,7 @@ def _ficha_usuario(u):
                 total=Count("pk"),
                 abiertos=Count("pk", filter=Q(estado=Ticket.Estado.ABIERTO)),
                 progreso=Count("pk", filter=Q(estado=Ticket.Estado.EN_PROGRESO)),
-                resueltos=Count("pk", filter=Q(estado=Ticket.Estado.RESUELTO)),
+                resueltos=Count("pk", filter=Q(fecha_resolucion__isnull=False) | Q(estado=Ticket.Estado.RESUELTO)),
                 cerrados=Count("pk", filter=Q(estado=Ticket.Estado.CERRADO)),
             )
         }.get(email) or {}
@@ -2742,7 +2781,7 @@ def _avatar_url_simple(usuario):
     return ""
 
 
-def _mi_zona_supervisor(user):
+def _mi_zona_supervisor(user, supervisores_permitidos=None):
     """Zona que gobierna al usuario y supervisor que le toca.
 
     Se mira por dos caminos: el punto de sus tickets (con los supervisores
@@ -2773,7 +2812,10 @@ def _mi_zona_supervisor(user):
         punto = Punto.objects.filter(nombre__iexact=nombre).first()
         sups = []
         if punto:
-            for op in ObservadorPunto.objects.filter(punto=punto).select_related("observador")[:10]:
+            relaciones = ObservadorPunto.objects.filter(punto=punto)
+            if supervisores_permitidos is not None:
+                relaciones = relaciones.filter(observador_id__in=supervisores_permitidos)
+            for op in relaciones.select_related("observador")[:10]:
                 o = op.observador
                 sups.append({
                     "nombre": o.nombre or o.email,
@@ -2786,11 +2828,14 @@ def _mi_zona_supervisor(user):
     zonas_seguimiento = {}
     vistos_obs = set()
     if email:
-        for el in ElementoMiLista.objects.filter(
+        asignaciones = ElementoMiLista.objects.filter(
             tipo=ElementoMiLista.TIPO_USUARIO,
         ).filter(
             Q(usuario_email__iexact=email) | Q(usuario__email__iexact=email)
-        ).filter(zona__isnull=False).select_related("observador", "zona")[:20]:
+        ).filter(zona__isnull=False)
+        if supervisores_permitidos is not None:
+            asignaciones = asignaciones.filter(observador_id__in=supervisores_permitidos)
+        for el in asignaciones.select_related("observador", "zona")[:20]:
             o = el.observador
             supervisor = {
                 "nombre": o.nombre or o.email,
@@ -2849,7 +2894,7 @@ def _mi_zona_supervisor(user):
             "equipo": equipo[:5], "equipo_extra": max(0, len(equipo) - 5)}
 
 
-def _zona_dashboard(user, zonas_info, incluir_vacias=False):
+def _zona_dashboard(user, zonas_info, incluir_vacias=False, consulta_base=None):
     """Métricas por zona para el panel del usuario: indicadores, ranking,
     alertas, técnicos y datos listos para las gráficas.
 
@@ -2859,6 +2904,7 @@ def _zona_dashboard(user, zonas_info, incluir_vacias=False):
     from collections import Counter
 
     zonas = []
+    base_tickets = consulta_base if consulta_base is not None else Ticket.objects.all()
     for z in zonas_info:
         nombre = z["nombre"]
         if z.get("seguimiento"):
@@ -2866,11 +2912,11 @@ def _zona_dashboard(user, zonas_info, incluir_vacias=False):
             for correo in z.get("correos", []):
                 alcance |= Q(solicitante_email__iexact=correo)
             qs = (
-                Ticket.objects.filter(alcance)
-                if z.get("correos") else Ticket.objects.none()
+                base_tickets.filter(alcance)
+                if z.get("correos") else base_tickets.none()
             )
         else:
-            qs = Ticket.objects.filter(solicitante_punto__iexact=nombre)
+            qs = base_tickets.filter(solicitante_punto__iexact=nombre)
         total = qs.count()
         if not total and not incluir_vacias:
             continue
@@ -3067,12 +3113,46 @@ def _zona_dashboard_ctx(user):
                  alcance for alcance in _ALCANCES_20_DIAS
                  if alcance[0] != "eliminados"
              )}
-    if getattr(user, "rol", None) != "usuario":
+    if getattr(user, "rol", None) != "usuario" or not getattr(user, "pk", None):
         return vacio
-    mi_zona = _mi_zona_supervisor(user)
-    zd = _zona_dashboard(user, mi_zona["zonas"])
+    correo_usuario = (getattr(user, "email", "") or "").strip()
+    # Solo una asignación explícita del usuario a una carpeta autoriza los
+    # datos generales de los puntos observados por ese supervisor.
+    identidad = Q(usuario_id=user.pk)
+    if correo_usuario:
+        identidad |= Q(usuario_email__iexact=correo_usuario)
+    asignaciones = ElementoMiLista.objects.filter(
+        tipo=ElementoMiLista.TIPO_USUARIO, zona__isnull=False,
+        zona__observador_id=F("observador_id"),
+    ).filter(identidad)
+    supervisores_ids = list(asignaciones.values_list("observador_id", flat=True).distinct())
+    if not supervisores_ids:
+        vacio["dash_json"] = _build_tecnico_dashboard(
+            consulta=Ticket.objects.none(), incluir_detalle_pivot=False
+        )
+        return vacio
+    elementos_supervisados = ElementoMiLista.objects.filter(
+        observador_id__in=supervisores_ids,
+    ).select_related("usuario", "punto")
+    correos_zona = set()
+    puntos_zona = set()
+    for elemento in elementos_supervisados:
+        if elemento.tipo == ElementoMiLista.TIPO_USUARIO:
+            correo = (elemento.usuario_email or (elemento.usuario.email if elemento.usuario_id else "")).strip()
+            if correo:
+                correos_zona.add(correo)
+        elif elemento.tipo == ElementoMiLista.TIPO_PUNTO and elemento.punto_id and elemento.punto.activo:
+            puntos_zona.add(elemento.punto.nombre)
+    alcance = Q()
+    for correo in correos_zona:
+        alcance |= Q(solicitante_email__iexact=correo)
+    for punto in puntos_zona:
+        alcance |= Q(solicitante_punto__iexact=punto)
+    tickets_zona = Ticket.objects.filter(alcance) if correos_zona or puntos_zona else Ticket.objects.none()
+    mi_zona = _mi_zona_supervisor(user, supervisores_permitidos=supervisores_ids)
+    zd = _zona_dashboard(user, mi_zona["zonas"], consulta_base=tickets_zona)
     seguimiento = _zona_dashboard(
-        user, mi_zona["zonas_seguimiento"], incluir_vacias=True
+        user, mi_zona["zonas_seguimiento"], incluir_vacias=True, consulta_base=tickets_zona
     )
     if zd["zonas"]:
         datos = {
@@ -3097,39 +3177,7 @@ def _zona_dashboard_ctx(user):
             zd, datos = vacio["zona_dashboard"], {}
         else:
             zd, datos = propio
-    from apps.tickets.models import ElementoMiLista, ObservadorPunto
-
-    correo_usuario = (getattr(user, "email", "") or "").strip()
-    correos_zona = {
-        correo
-        for zona in mi_zona["zonas_seguimiento"]
-        for correo in zona.get("correos", [])
-    }
-    alcance = Q()
-    supervisores_ids = ElementoMiLista.objects.filter(
-        tipo=ElementoMiLista.TIPO_USUARIO,
-        zona__isnull=False,
-    ).filter(
-        Q(usuario_email__iexact=correo_usuario)
-        | Q(usuario__email__iexact=correo_usuario)
-    ).values_list("observador_id", flat=True)
-    puntos_zona = set(
-        ObservadorPunto.objects.filter(
-            observador_id__in=supervisores_ids,
-            punto__activo=True,
-        ).values_list("punto__nombre", flat=True)
-    )
-    puntos_zona.update(
-        zona["nombre"] for zona in mi_zona["zonas"] if zona.get("nombre")
-    )
-    if correos_zona:
-        for correo in correos_zona:
-            alcance |= Q(solicitante_email__iexact=correo)
-    for punto in puntos_zona:
-        alcance |= Q(solicitante_punto__iexact=punto)
-    if not correos_zona and not puntos_zona:
-        alcance = Q(solicitante_email__iexact=correo_usuario)
-    tickets_zona = Ticket.objects.filter(alcance)
+    # El pivote entregado a la cuenta contiene agregados, nunca tickets.
     puntos_pivot = list(
         tickets_zona.exclude(solicitante_punto__isnull=True)
         .exclude(solicitante_punto="")
@@ -3141,6 +3189,7 @@ def _zona_dashboard_ctx(user):
         consulta=tickets_zona,
         incluir_pivot=True,
         puntos_pivot=puntos_pivot,
+        incluir_detalle_pivot=False,
     )
     return {"zona_dashboard": zd,
             # La tarjeta visible al punto de venta usa la carpeta/zona real
@@ -3337,7 +3386,9 @@ def mi_presionar_tecnico(request, pk):
     """
     ticket = get_object_or_404(Ticket, pk=pk)
     u = request.user
-    if (ticket.solicitante_email or "").lower() != (u.email or "").lower():
+    correo_ticket = (ticket.solicitante_email or "").strip().casefold()
+    correo_usuario = (u.email or "").strip().casefold()
+    if not correo_ticket or not correo_usuario or correo_ticket != correo_usuario:
         raise Http404
     if ticket.estado not in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
         messages.error(request, "Solo puedes presionar tickets abiertos o en progreso.")
@@ -3362,6 +3413,14 @@ def mi_presionar_tecnico(request, pk):
 
 @user_required
 def mi_panel(request):
+    if request.method == "GET" and request.GET.get("actividad") == "1":
+        filas = _eventos_panel_punto(request.user)
+        return JsonResponse({"eventos": [{
+            "codigo": fila["codigo"], "texto": fila["texto"],
+            "icono": fila["icono"], "tono": fila["tono"],
+            "fecha_label": fila["fecha_label"],
+            "ticket_url": reverse("tickets:mi_ticket", args=[fila["ticket"].pk]) + "#chat-soporte" if fila["ticket"] else "",
+        } for fila in filas]})
     initial = {
         "solicitante_nombre": request.user.nombre,
         "solicitante_email": request.user.email,
@@ -3413,7 +3472,6 @@ def mi_panel(request):
         tickets_qs = tickets_qs.filter(
             Q(fecha_resolucion__isnull=False)
             | Q(estado=Ticket.Estado.RESUELTO)
-            | Q(estado=Ticket.Estado.CERRADO)
         )
     elif estado_filtro:
         tickets_qs = tickets_qs.filter(estado=estado_filtro)
@@ -3436,8 +3494,7 @@ def mi_panel(request):
             resueltos=Count(
                 "id",
                 filter=Q(fecha_resolucion__isnull=False)
-                | Q(estado=Ticket.Estado.RESUELTO)
-                | Q(estado=Ticket.Estado.CERRADO),
+                | Q(estado=Ticket.Estado.RESUELTO),
             ),
         ),
     }
@@ -4023,7 +4080,7 @@ def editar_mi_ticket(request, pk):
     )
 
 
-def _dashboard_filtros(request):
+def _dashboard_filtros(request, fecha_campo="fecha_creacion"):
     """Filtros compartidos por el panel administrador y su actualización JSON."""
     qs = Ticket.objects.select_related("categoria", "tecnico_asignado")
     periodo = request.GET.get("periodo", "30")
@@ -4033,10 +4090,10 @@ def _dashboard_filtros(request):
     tecnico = request.GET.get("tecnico", "")
     punto = request.GET.get("punto", "")
     if periodo in {"7", "30", "90"}:
-        qs = qs.filter(fecha_creacion__gte=timezone.now() - timedelta(days=int(periodo)))
+        qs = qs.filter(**{f"{fecha_campo}__gte": timezone.now() - timedelta(days=int(periodo))})
     else:
         periodo = "30"
-        qs = qs.filter(fecha_creacion__gte=timezone.now() - timedelta(days=30))
+        qs = qs.filter(**{f"{fecha_campo}__gte": timezone.now() - timedelta(days=30)})
     if estado in dict(Ticket.Estado.choices):
         qs = qs.filter(estado=estado)
     if prioridad in dict(Ticket.Prioridad.choices):
@@ -4066,20 +4123,31 @@ def _dashboard_metricas(tickets):
     altas = sum(t.estado in activos and t.prioridad == Ticket.Prioridad.ALTA for t in tickets)
     vencidos = 0
     sla_ok = sla_total = 0
+    sla_dentro = sla_proximos = sla_sin = 0
+    sla_tickets = {clave: [] for clave in ("dentro", "vencidos", "proximos", "sin")}
     duraciones = []
     for ticket in tickets:
         limite = ticket.fecha_limite_ans
         final = ticket.fecha_finalizacion
         if final and ticket.fecha_creacion and final >= ticket.fecha_creacion:
             duraciones.append(final - ticket.fecha_creacion)
-        if not limite:
+        if not limite or not ticket.ans_horas or (ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) and not final):
+            sla_sin += 1
+            sla_tickets["sin"].append(ticket)
             continue
         sla_total += 1
         referencia = final or timezone.now()
         if referencia <= limite:
             sla_ok += 1
+            if not final and ticket.info_ans[0] == "por-vencer":
+                sla_proximos += 1
+                sla_tickets["proximos"].append(ticket)
+            else:
+                sla_dentro += 1
+                sla_tickets["dentro"].append(ticket)
         else:
             vencidos += 1
+            sla_tickets["vencidos"].append(ticket)
     promedio = sum(duraciones, timedelta()) / len(duraciones) if duraciones else None
 
     # Primera respuesta: se toma el primer comentario público de personal
@@ -4111,7 +4179,9 @@ def _dashboard_metricas(tickets):
     total_votos = votos.count()
     positivos = votos.filter(valor=CalificacionTecnico.Valor.ME_GUSTA).count()
     return {
-        "total": total, "abiertos": abiertos, "progreso": progreso,
+        "total": total, "abiertos": abiertos, "progreso": progreso, "pendientes": abiertos + progreso,
+        "vencidos_pendientes": sum(t.estado in activos and t.info_ans[0] == "vencido" for t in tickets),
+        "completados_actuales": sum(t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) for t in tickets),
         "sin_asignar": sin_asignar, "urgentes": urgentes, "altas": altas,
         "en_progreso": progreso,
         "cerrados": cerrados, "resueltos": resueltos,
@@ -4120,6 +4190,8 @@ def _dashboard_metricas(tickets):
         "sla_ok": sla_ok,
         "sla_no": sla_total - sla_ok,
         "sla_total": sla_total,
+        "sla_dentro": sla_dentro, "sla_proximos": sla_proximos, "sla_sin": sla_sin,
+        "sla_tickets": {clave: [{"codigo": t.codigo, "titulo": t.titulo, "url": reverse("tickets:detalle", args=[t.pk])} for t in grupo] for clave, grupo in sla_tickets.items()},
         "primera_respuesta": formatear_duracion(promedio_primera_respuesta) if promedio_primera_respuesta else None,
         "primera_respuesta_total": len(tiempos_primera_respuesta),
         "resolucion": formatear_duracion(promedio) if promedio else None,
@@ -4136,19 +4208,36 @@ def _dashboard_sparks(tickets, dias=7):
     fechas = [inicio + timedelta(days=i) for i in range(dias)]
     series = {"total": [0] * dias, "abiertos": [0] * dias, "progreso": [0] * dias,
               "cerrados": [0] * dias, "vencidos": [0] * dias}
+    for clave in ("sin_asignar", "urgentes", "altas", "sla_total", "pendientes", "vencidos_pendientes", "completados_actuales"):
+        series[clave] = [0] * dias
     for ticket in tickets:
         fecha = _key_fecha(ticket.fecha_creacion)
         if fecha not in fechas:
             continue
         indice = (fecha - inicio).days
         series["total"][indice] += 1
+        activo = ticket.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
+        if activo:
+            series["pendientes"][indice] += 1
+            if ticket.info_ans[0] == "vencido":
+                series["vencidos_pendientes"][indice] += 1
+        if ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
+            series["completados_actuales"][indice] += 1
+        if activo and not ticket.tecnico_asignado_id:
+            series["sin_asignar"][indice] += 1
+        if activo and ticket.prioridad == Ticket.Prioridad.URGENTE:
+            series["urgentes"][indice] += 1
+        if activo and ticket.prioridad == Ticket.Prioridad.ALTA:
+            series["altas"][indice] += 1
+        if ticket.fecha_limite_ans:
+            series["sla_total"][indice] += 1
         if ticket.estado == Ticket.Estado.ABIERTO:
             series["abiertos"][indice] += 1
         elif ticket.estado == Ticket.Estado.EN_PROGRESO:
             series["progreso"][indice] += 1
         elif ticket.estado == Ticket.Estado.CERRADO:
             series["cerrados"][indice] += 1
-        if ticket.info_ans[0] == "vencido":
+        if ticket.fecha_limite_ans and (ticket.fecha_finalizacion or timezone.now()) > ticket.fecha_limite_ans:
             series["vencidos"][indice] += 1
     return series
 
@@ -4161,11 +4250,37 @@ def _dashboard_atencion(tickets):
     return pendientes[:8]
 
 
+def _dashboard_sparks_resueltos(qs):
+    inicio = timezone.localdate() - timedelta(days=6)
+    valores = [0] * 7
+    for fecha in qs.filter(estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO]).values_list("fecha_resolucion", flat=True):
+        dia = _key_fecha(fecha)
+        if dia and 0 <= (dia - inicio).days < 7:
+            valores[(dia - inicio).days] += 1
+    return valores
+
+
+def _dashboard_comparacion_resueltos(request, filtros, actual):
+    dias = int(filtros["periodo"])
+    fin = timezone.now() - timedelta(days=dias)
+    # Se reconstruye la consulta sin la restricción temporal actual.
+    base = Ticket.objects.filter(fecha_resolucion__gte=fin - timedelta(days=dias), fecha_resolucion__lt=fin, estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO])
+    for clave, campo in (("estado", "estado"), ("prioridad", "prioridad"), ("categoria", "categoria_id"), ("tecnico", "tecnico_asignado_id"), ("punto", "solicitante_punto")):
+        valor = filtros.get(clave)
+        if valor and (clave not in ("categoria", "tecnico") or valor.isdigit()) and (clave != "estado" or valor in dict(Ticket.Estado.choices)) and (clave != "prioridad" or valor in dict(Ticket.Prioridad.choices)):
+            base = base.filter(**{campo: valor})
+    anterior = base.count()
+    return round((actual - anterior) * 100 / anterior) if anterior else None
+
+
 @admin_required
 def dashboard(request):
     filtros, tickets_qs = _dashboard_filtros(request)
     tickets_todos = list(tickets_qs)
     stats = _dashboard_metricas(tickets_todos)
+    _, resueltos_qs = _dashboard_filtros(request, fecha_campo="fecha_resolucion")
+    stats["resueltos_periodo"] = resueltos_qs.filter(estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO]).count()
+    stats["variacion_resueltos"] = _dashboard_comparacion_resueltos(request, filtros, stats["resueltos_periodo"])
     ahora = timezone.now()
     inicio_mes = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     inicio_mes_anterior = (inicio_mes - timedelta(days=1)).replace(day=1)
@@ -4237,7 +4352,7 @@ def dashboard(request):
             "n_tecnicos": n_tecnicos,
             "n_puntos": n_puntos,
             "kpi_trends": kpi_trends,
-            "kpi_sparks": _dashboard_sparks(tickets_todos),
+            "kpi_sparks": {**_dashboard_sparks(tickets_todos), "resueltos_periodo": _dashboard_sparks_resueltos(resueltos_qs)},
             "atencion": _dashboard_atencion(tickets_todos),
             "filtros": filtros,
             "categorias_dashboard": Categoria.objects.filter(activo=True).order_by("nombre"),
@@ -4253,9 +4368,12 @@ def dashboard(request):
 @admin_required
 def dashboard_data_api(request):
     """Datos del dashboard para actualización parcial; no altera tickets ni sesión."""
-    _, qs = _dashboard_filtros(request)
+    filtros, qs = _dashboard_filtros(request)
     tickets = list(qs)
     metricas = _dashboard_metricas(tickets)
+    _, resueltos_qs = _dashboard_filtros(request, fecha_campo="fecha_resolucion")
+    metricas["resueltos_periodo"] = resueltos_qs.filter(estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO]).count()
+    metricas["variacion_resueltos"] = _dashboard_comparacion_resueltos(request, filtros, metricas["resueltos_periodo"])
     metricas["tecnicos"] = User.objects.filter(
         activo=True, rol__in=[User.Rol.TECNICO, User.Rol.ADMIN]
     ).count()
@@ -4264,7 +4382,7 @@ def dashboard_data_api(request):
     ).values("solicitante_punto").distinct().count()
     return JsonResponse({
         "kpis": metricas,
-        "sparks": _dashboard_sparks(tickets),
+        "sparks": {**_dashboard_sparks(tickets), "resueltos_periodo": _dashboard_sparks_resueltos(resueltos_qs)},
         "charts": json.loads(_build_tecnico_dashboard(consulta=qs)),
         "updated_at": timezone.localtime().strftime("%H:%M"),
     })
@@ -4599,6 +4717,31 @@ def _ticket_kpis_historico(scope_qs):
     }
 
 
+def _tecnico_actividad_graficas(scope_qs):
+    """Últimos días con creación o resolución de tickets asignados."""
+    eventos = list(scope_qs.select_related(None).only("fecha_creacion", "fecha_resolucion", "fecha_cierre", "estado", "tecnico_asignado_id"))
+    fechas = sorted({dia for ticket in eventos for dia in (_key_fecha(ticket.fecha_creacion), _key_fecha(ticket.fecha_resolucion), _key_fecha(ticket.fecha_cierre)) if dia})[-7:]
+    series = {clave: [0] * len(fechas) for clave in ("total", "abiertas", "progreso", "resueltas", "cerradas", "sin_asignar")}
+    indices = {dia: i for i, dia in enumerate(fechas)}
+    for ticket in eventos:
+        creado, resuelto = _key_fecha(ticket.fecha_creacion), _key_fecha(ticket.fecha_resolucion)
+        if creado in indices:
+            i = indices[creado]
+            series["total"][i] += 1
+            if ticket.estado == Ticket.Estado.ABIERTO:
+                series["abiertas"][i] += 1
+            elif ticket.estado == Ticket.Estado.EN_PROGRESO:
+                series["progreso"][i] += 1
+            if ticket.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO) and not ticket.tecnico_asignado_id:
+                series["sin_asignar"][i] += 1
+        if resuelto in indices:
+            series["resueltas"][indices[resuelto]] += 1
+        cerrado = _key_fecha(ticket.fecha_cierre)
+        if ticket.estado == Ticket.Estado.CERRADO and cerrado in indices:
+            series["cerradas"][indices[cerrado]] += 1
+    return {"labels": [dia.strftime("%d/%m/%Y") for dia in fechas], "series": series}
+
+
 @staff_required
 def lista_tickets(request):
     """Lista unificada de tickets: el admin ve todos, el técnico solo los suyos."""
@@ -4626,6 +4769,7 @@ def lista_tickets(request):
         ).count()
     )
     kpi_historico = _ticket_kpis_historico(scope_qs)
+    kpi_historico.update(_tecnico_actividad_graficas(scope_qs))
 
     estado = request.GET.get("estado", "").strip()
     prioridad = request.GET.get("prioridad", "").strip()
@@ -4667,7 +4811,9 @@ def lista_tickets(request):
     }
 
     abiertos = [Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO]
-    if sv == "completadas":
+    if sv == "pendientes":
+        qs = qs.filter(estado__in=abiertos)
+    elif sv == "completadas":
         qs = qs.filter(estado__in=[Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO])
     elif sv == "abiertas":
         qs = qs.filter(estado=Ticket.Estado.ABIERTO)
@@ -4688,7 +4834,7 @@ def lista_tickets(request):
     if rango:
         try:
             qs = qs.filter(
-                fecha_creacion__gte=timezone.now() - timedelta(days=int(rango))
+                **{("fecha_resolucion__gte" if request.GET.get("fecha_resolucion_periodo") == "1" else "fecha_creacion__gte"): timezone.now() - timedelta(days=int(rango))}
             )
         except (TypeError, ValueError):
             pass
@@ -4712,6 +4858,9 @@ def lista_tickets(request):
         qs = qs.filter(solicitante_email__iexact=solicitante_email)
     if zona:
         qs = qs.filter(solicitante_punto__iexact=zona)
+    punto_dashboard = request.GET.get("punto", "").strip()[:150]
+    if punto_dashboard:
+        qs = qs.filter(solicitante_punto=punto_dashboard)
     if q:
         match_codigo = re.match(r"^HD-(\d+)$", q.upper())
         condicion = (
@@ -4893,12 +5042,8 @@ def cambiar_estado(request, pk):
     validos = {c[0] for c in Ticket.Estado.choices}
     if nuevo not in validos:
         messages.error(request, "Estado no valido.")
-    elif (
-        nuevo == Ticket.Estado.ABIERTO
-        and getattr(request.user, "rol", None) == "tecnico"
-        and not getattr(request.user, "puede_reabrir_tickets", False)
-    ):
-        messages.error(request, "El administrador no te permite reabrir tickets.")
+    elif ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) and nuevo in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
+        messages.error(request, "Las solicitudes finalizadas no pueden volver a abrirse.")
     else:
         if nuevo == Ticket.Estado.RESUELTO:
             # Marcar resuelto cierra el ticket: queda registrado que se
@@ -4920,10 +5065,14 @@ def cambiar_estado(request, pk):
             messages.warning(request, f"No se pudo actualizar el estado en GLPI: {exc}")
             logger.warning("GLPI estado sync: %s", exc)
         messages.success(request, aviso)
-    next_url = request.POST.get("next") or "tickets:lista"
-    if next_url.startswith("/"):
-        return redirect(next_url)
-    return redirect(next_url)
+    return redirect(_destino_seguro(request, "tickets:lista"))
+
+
+def _destino_seguro(request, nombre_ruta):
+    destino = (request.POST.get("next") or "").strip()
+    if destino.startswith("/") and url_has_allowed_host_and_scheme(destino, {request.get_host()}, require_https=request.is_secure()):
+        return destino
+    return reverse(nombre_ruta)
 
 
 def _es_dueno(ticket, user):
@@ -4964,10 +5113,7 @@ def eliminar_ticket(request, pk):
     if had_glpi:
         mensaje += " Se conserva en GLPI hasta que se purge definitivamente."
     messages.success(request, mensaje)
-    next_url = request.POST.get("next") or "tickets:lista"
-    if not next_url.startswith("/"):
-        next_url = "tickets:lista"
-    return redirect(next_url)
+    return redirect(_destino_seguro(request, "tickets:lista"))
 
 
 @user_required
@@ -5060,10 +5206,7 @@ def restaurar_ticket(request, pk):
     codigo = ticket.codigo
     ticket.restaurar()
     messages.success(request, f"Ticket {codigo} restaurado.")
-    next_url = request.POST.get("next") or "tickets:papelera"
-    if not next_url.startswith("/"):
-        next_url = "tickets:papelera"
-    return redirect(next_url)
+    return redirect(_destino_seguro(request, "tickets:papelera"))
 
 
 @login_required
@@ -5106,10 +5249,7 @@ def purgar_ticket(request, pk):
         else:
             mensaje += " No tenía registro en GLPI."
     messages.success(request, mensaje)
-    next_url = request.POST.get("next") or "tickets:papelera"
-    if not next_url.startswith("/"):
-        next_url = "tickets:papelera"
-    return redirect(next_url)
+    return redirect(_destino_seguro(request, "tickets:papelera"))
 
 
 @login_required
@@ -5125,7 +5265,9 @@ def ver_adjunto(request, pk):
     adj = get_object_or_404(TicketAdjunto.objects.select_related("ticket"), pk=pk)
     ticket = adj.ticket
     u = request.user
-    es_dueno = (ticket.solicitante_email or "").lower() == (getattr(u, "email", "") or "").lower()
+    correo_ticket = (ticket.solicitante_email or "").strip().casefold()
+    correo_usuario = (getattr(u, "email", "") or "").strip().casefold()
+    es_dueno = bool(correo_ticket and correo_usuario and correo_ticket == correo_usuario)
     # El observador también abre los adjuntos de los tickets que ve en su
     # monitoreo (sus puntos o su lista); si no, la ficha le mostraba el
     # enlace y al pulsarlo recibía 404.
@@ -5147,8 +5289,11 @@ def ver_adjunto(request, pk):
         raise Http404("Archivo no encontrado")
     if not adj.archivo:
         raise Http404("Archivo no encontrado en disco")
-    mime = adj.mime_type or "application/octet-stream"
-    forzar = request.GET.get("descargar") == "1" or mime == "image/svg+xml" or not mime.startswith("image/")
+    mime = (adj.mime_type or "application/octet-stream").lower().strip()
+    imagenes_seguras = {"image/png", "image/jpeg", "image/gif", "image/webp"}
+    forzar = request.GET.get("descargar") == "1" or mime not in imagenes_seguras
+    if mime not in imagenes_seguras and mime != "application/pdf":
+        mime = "application/octet-stream"
     try:
         return FileResponse(
             adj.archivo.open("rb"),
@@ -5281,23 +5426,24 @@ def mi_ticket_editar_ajax(request, pk):
     if not titulo:
         return JsonResponse({"ok": False, "error": "Debes escribir el nombre del ticket."}, status=400)
 
-    # Actualizar SOLO título y descripción (prioridad/categoría se conservan)
-    ticket.titulo = titulo
-    ticket.descripcion = descripcion
-    ticket.save(update_fields=["titulo", "descripcion"])
-
     # Adjuntar imagen pequeña (si viene un archivo de imagen)
     archivo = request.FILES.get("imagen")
     if archivo:
-        if not (archivo.content_type or "").startswith("image/"):
-            return JsonResponse(
-                {"ok": False, "error": "Solo puedes adjuntar imágenes."},
-                status=400,
-            )
         if archivo.size > 5 * 1024 * 1024:
             return JsonResponse({"ok": False, "error": "La imagen no puede superar los 5 MB."}, status=400)
         if ticket.adjuntos.filter(mime_type__startswith="image/").count() >= 1:
             return JsonResponse({"ok": False, "error": "Solo se permite una imagen por ticket."}, status=400)
+        from django.core.exceptions import ValidationError
+        from .forms import validar_contenido_adjunto
+        try:
+            validar_contenido_adjunto(archivo, solo_imagen=True)
+        except ValidationError as exc:
+            return JsonResponse({"ok": False, "error": exc.messages[0]}, status=400)
+    # Solo guardar el texto cuando todas las validaciones hayan pasado.
+    ticket.titulo = titulo
+    ticket.descripcion = descripcion
+    ticket.save(update_fields=["titulo", "descripcion"])
+    if archivo:
         TicketAdjunto.objects.create(
             ticket=ticket,
             nombre_original=archivo.name,
@@ -5512,10 +5658,9 @@ def panel_tecnico(request):
         list(base_qs.select_related("categoria", "tecnico_asignado"))
     )
 
-    # Cola de solicitudes de usuarios: tickets sin cerrar que el técnico puede tomar
+    # Las solicitudes finalizadas también se pueden consultar desde los filtros.
     cola_qs = (
         Ticket.objects.select_related("categoria", "tecnico_asignado")
-        .exclude(estado=Ticket.Estado.CERRADO)
         .annotate(_prioridad_orden=orden_prioridad_annotation())
         .order_by("-fecha_creacion", "_prioridad_orden", "-pk")
     )
@@ -5531,6 +5676,31 @@ def panel_tecnico(request):
         if match_cola:
             condicion_cola = Q(codigo__iexact=q_cola.upper()) | Q(titulo__icontains=q_cola) | Q(solicitante_nombre__icontains=q_cola)
         cola_qs = cola_qs.filter(condicion_cola)
+    cola_estado = request.GET.get("cola_estado", "")
+    cola_prioridad = request.GET.get("cola_prioridad", "")
+    cola_tecnico = request.GET.get("cola_tecnico", "")
+    cola_periodo = request.GET.get("cola_periodo", "")
+    cola_orden = request.GET.get("cola_orden", "")
+    cola_campos = {"codigo": "codigo", "solicitante": "solicitante_nombre", "punto": "solicitante_punto", "prioridad": "prioridad", "tecnico": "tecnico_asignado__nombre", "estado": "estado"}
+    if cola_estado == Ticket.Estado.RESUELTO:
+        cola_qs = cola_qs.filter(Q(estado=Ticket.Estado.RESUELTO) | Q(fecha_resolucion__isnull=False))
+    elif cola_estado in dict(Ticket.Estado.choices):
+        cola_qs = cola_qs.filter(estado=cola_estado)
+    if cola_prioridad in dict(Ticket.Prioridad.choices):
+        cola_qs = cola_qs.filter(prioridad=cola_prioridad)
+    if cola_tecnico.isdigit():
+        cola_qs = cola_qs.filter(tecnico_asignado_id=cola_tecnico)
+    if cola_periodo in {"7", "30", "90"}:
+        cola_qs = cola_qs.filter(fecha_creacion__gte=timezone.now() - timedelta(days=int(cola_periodo)))
+    campo_orden = cola_campos.get(cola_orden.lstrip("-"))
+    if campo_orden:
+        cola_qs = cola_qs.order_by(("-" if cola_orden.startswith("-") else "") + campo_orden, "pk")
+    elif cola_orden.lstrip("-") == "vencimiento":
+        tickets_cola = list(cola_qs)
+        con_limite = [t for t in tickets_cola if t.fecha_limite_ans]
+        sin_limite = [t for t in tickets_cola if not t.fecha_limite_ans]
+        con_limite.sort(key=lambda t: t.fecha_limite_ans, reverse=cola_orden.startswith("-"))
+        cola_qs = con_limite + sin_limite
     solicitudes_page = _paginar(
         cola_qs,
         request,
@@ -5597,6 +5767,7 @@ def panel_tecnico(request):
     grupos = []
     tecnicos = []
     abiertas_count = 0
+    mis_page = None
     if request.user.rol == "admin":
         mias = request.GET.get("mias", "") in ("1", "true", "on")
     else:
@@ -5643,13 +5814,9 @@ def panel_tecnico(request):
     elif sv == "no-asignadas":
         mis_qs = mis_qs.filter(estado__in=abiertos, tecnico_asignado__isnull=True)
     elif sv == "vencen-hoy":
-        mis_qs = mis_qs.filter(
-            estado__in=abiertos,
-            fecha_limite_ans__gte=inicio_hoy,
-            fecha_limite_ans__lt=inicio_hoy + timedelta(days=1),
-        )
+        mis_qs = mis_qs.filter(estado__in=abiertos)
     elif sv == "vencidas":
-        mis_qs = mis_qs.filter(estado__in=abiertos, fecha_limite_ans__lt=timezone.now())
+        mis_qs = mis_qs.filter(estado__in=abiertos)
     elif sv == "creadas-hoy":
         mis_qs = mis_qs.filter(fecha_creacion__gte=inicio_hoy)
     elif sv != "todas":
@@ -5664,6 +5831,15 @@ def panel_tecnico(request):
     mis_qs = _filtrar_estado(mis_qs, estado)
     if mias:
         mis_qs = mis_qs.filter(tecnico_asignado=tecnico)
+    if sv in ("vencen-hoy", "vencidas"):
+        ahora_ans = timezone.now()
+        limite_hoy = inicio_hoy + timedelta(days=1)
+        ids_ans = []
+        for item in mis_qs.iterator():
+            limite = item.fecha_limite_ans
+            if limite and (inicio_hoy <= limite < limite_hoy if sv == "vencen-hoy" else limite < ahora_ans):
+                ids_ans.append(item.pk)
+        mis_qs = mis_qs.filter(pk__in=ids_ans)
     mis_qs = mis_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
         "-fecha_creacion", "_prioridad_orden", "-pk"
     )
@@ -5702,14 +5878,16 @@ def panel_tecnico(request):
                     per_page_default=pp_mis,
                 ).object_list
             )
-        abiertas = list(mis_qs)
+        mis_page = _paginar(mis_qs, request, per_page_default=pp_mis)
+        abiertas = list(mis_page.object_list)
+        tarjetas = list(mis_page.object_list)
         tarjetas = _adjuntar_solicitantes(tarjetas)
         for t in tarjetas:
             t.combinadas = combinadas_map.get(t.pk, [])
         abiertas = _adjuntar_solicitantes(abiertas)
         for t in abiertas:
             t.combinadas = combinadas_map.get(t.pk, [])
-        abiertas_count = len(abiertas)
+        abiertas_count = mis_page.paginator.count
         sitios = sorted(
             {t.solicitante_punto for t in abiertas if t.solicitante_punto},
             key=str.lower,
@@ -5753,6 +5931,10 @@ def panel_tecnico(request):
             "filtro_estado": estado,
             "q": q,
             "q_cola": q_cola,
+            "cola_estado": cola_estado, "cola_prioridad": cola_prioridad, "cola_tecnico": cola_tecnico,
+            "cola_periodo": cola_periodo, "cola_orden": cola_orden,
+            "cola_prioridades": Ticket.Prioridad.choices,
+            "cola_tecnicos": User.objects.filter(activo=True, rol__in=[User.Rol.TECNICO, User.Rol.ADMIN]).order_by("nombre"),
             "estados": Ticket.Estado.choices,
             "total_resultados": page_obj.paginator.count,
             "ticket": ticket,
@@ -5760,6 +5942,7 @@ def panel_tecnico(request):
             "eventos_count": eventos_count,
             "stats": stats,
             "per_page": pp_mis,
+            "tecnico_kpi_historico": _tecnico_actividad_graficas(base_qs),
             "per_page_sol": pp_sol,
             "dash_json": dash_json,
             "alcances_tortas": _ALCANCES_TORTAS,
@@ -5767,6 +5950,7 @@ def panel_tecnico(request):
             "abiertas": abiertas,
             "tarjetas": tarjetas,
             "abiertas_count": abiertas_count,
+            "mis_page": mis_page,
             "mis_count": mis_count,
             "sitios": sitios,
             "grupos": grupos,
@@ -5800,6 +5984,9 @@ def panel_tecnico_tomar(request, pk):
         Ticket.objects.select_related("tecnico_asignado"),
         pk=pk,
     )
+    if ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) or ticket.fue_resuelto:
+        messages.error(request, "No se puede tomar una solicitud finalizada.")
+        return redirect("tickets:panel_tecnico")
     anterior = None
     if ticket.tecnico_asignado_id:
         if ticket.tecnico_asignado_id == request.user.pk:
@@ -6346,6 +6533,18 @@ def tec_historial(request):
     respuestas_total = TicketComentario.objects.filter(
         usuario=request.user
     ).count()
+    inicio_hist = timezone.localdate() - timedelta(days=6)
+    series_hist = {key: [0] * 7 for key in ("registros", "respuestas", "resueltos")}
+    def acumular_historial(query, campo, claves):
+        for fecha in query.filter(**{campo + "__gte": timezone.now() - timedelta(days=8)}).values_list(campo, flat=True):
+            dia = _key_fecha(fecha)
+            if dia and 0 <= (dia - inicio_hist).days < 7:
+                for clave in claves:
+                    series_hist[clave][(dia - inicio_hist).days] += 1
+    acumular_historial(mensajes, "fecha", ("registros",))
+    acumular_historial(resueltos, "fecha_resolucion", ("registros",))
+    acumular_historial(TicketComentario.objects.filter(usuario=request.user), "fecha", ("respuestas",))
+    acumular_historial(Ticket.objects.filter(tecnico_asignado=request.user, fecha_resolucion__isnull=False), "fecha_resolucion", ("resueltos",))
 
     return render(
         request,
@@ -6362,6 +6561,7 @@ def tec_historial(request):
             "por_pagina": por_pagina,
             "resueltos_total": resueltos_total,
             "respuestas_total": respuestas_total,
+            "historial_series": {"series": series_hist, "labels": [(inicio_hist + timedelta(days=i)).strftime("%d/%m") for i in range(7)]},
             "tipo": tipo,
             "q": q,
             "nav_tec_historial": True,
@@ -6390,12 +6590,17 @@ def _zonas_de_mirada(mensajes, tickets):
             autores[u.pk] = u
 
     puntos = set()
+    correos_tickets = set()
     for m in mensajes:
         nombre = (m.ticket.solicitante_punto or "").strip()
+        if m.ticket.solicitante_email:
+            correos_tickets.add(m.ticket.solicitante_email.strip().lower())
         if nombre:
             puntos.add(nombre)
     for t in tickets:
         nombre = (t.solicitante_punto or "").strip()
+        if t.solicitante_email:
+            correos_tickets.add(t.solicitante_email.strip().lower())
         if nombre:
             puntos.add(nombre)
 
@@ -6430,14 +6635,28 @@ def _zonas_de_mirada(mensajes, tickets):
                 (e.punto.nombre or "").strip(), []
             ).append(e.zona)
 
-    def _una_vez(*grupos, tope=3):
+    if correos_tickets:
+        # La zona también puede contener personas, sin un punto asociado.
+        # Normalizar en Python mantiene la comparación independiente de la
+        # colación de la base de datos.
+        elementos = ElementoMiLista.objects.filter(zona__isnull=False).exclude(
+            usuario_email="", usuario__isnull=True
+        ).select_related("zona", "zona__observador", "usuario")
+        for elemento in elementos:
+            correos_elemento = {str(valor).strip().lower() for valor in (
+                elemento.usuario_email, elemento.usuario.email if elemento.usuario else ""
+            ) if valor}
+            for correo in correos_elemento & correos_tickets:
+                por_correo.setdefault(correo, []).append(elemento.zona)
+
+    def _una_vez(*grupos, tope=None):
         salida, vistos = [], set()
         for grupo in grupos:
             for z in grupo:
                 if z.pk not in vistos:
                     vistos.add(z.pk)
                     salida.append(z)
-        return salida[:tope]
+        return salida[:tope] if tope is not None else salida
 
     def _del_autor(u):
         if u is None:
@@ -6452,19 +6671,22 @@ def _zonas_de_mirada(mensajes, tickets):
 
     for m in mensajes:
         m.zonas = _una_vez(
-            _del_autor(m.usuario), _del_punto(m.ticket.solicitante_punto)
+            _del_autor(m.usuario), _del_punto(m.ticket.solicitante_punto),
+            por_correo.get((m.ticket.solicitante_email or "").strip().lower(), []),
         )
     for t in tickets:
-        t.zonas = _del_punto(t.solicitante_punto)
+        t.zonas = _una_vez(_del_punto(t.solicitante_punto), por_correo.get((t.solicitante_email or "").strip().lower(), []))
 
     resumen = {}
     for m in mensajes:
         for z in m.zonas:
             fila = resumen.setdefault(
                 z.pk,
-                {"zona": z, "presiones": 0, "tickets": 0, "quien": []},
+                {"zona": z, "presiones": 0, "presiones_enviadas": 0, "tickets": 0, "quien": []},
             )
             fila["presiones"] += 1
+            if m.usuario_id and m.usuario_id == z.observador_id:
+                fila["presiones_enviadas"] += 1
             quien = (m.usuario.nombre or m.usuario.email) if m.usuario else ""
             if quien and quien not in fila["quien"]:
                 fila["quien"].append(quien)
@@ -6472,7 +6694,7 @@ def _zonas_de_mirada(mensajes, tickets):
         for z in t.zonas:
             fila = resumen.setdefault(
                 z.pk,
-                {"zona": z, "presiones": 0, "tickets": 0, "quien": []},
+                {"zona": z, "presiones": 0, "presiones_enviadas": 0, "tickets": 0, "quien": []},
             )
             fila["tickets"] += 1
     return sorted(
@@ -6500,13 +6722,36 @@ def tec_monitoreo(request):
     )
     total_vencidos = sum(1 for t in por_vencer if t.ans_estado == "vencido")
     total_por_vencer = len(por_vencer) - total_vencidos
+    ans_graficas = {}
+    for estado_ans in ("vencido", "por-vencer"):
+        grupos = Counter()
+        for ticket_ans in por_vencer:
+            if ticket_ans.ans_estado == estado_ans and ticket_ans.fecha_limite_ans:
+                limite = ticket_ans.fecha_limite_ans
+                fecha_local = timezone.localdate(limite) if timezone.is_aware(limite) else limite.date()
+                grupos[fecha_local] += 1
+        ultimo_dia = max(grupos) if grupos else timezone.localdate()
+        fechas_ans = [ultimo_dia - timedelta(days=9-i) for i in range(10)]
+        ans_graficas[estado_ans] = {"labels": [fecha.strftime("%d/%m/%Y") for fecha in fechas_ans], "values": [grupos.get(fecha, 0) for fecha in fechas_ans]}
 
     consulta_presion = TicketComentario.objects.filter(
         es_presion=True, ticket__tecnico_asignado=request.user
     )
-    presiones = list(
-        consulta_presion.select_related("ticket", "usuario").order_by("-fecha")[:20]
-    )
+    inicio_presiones = timezone.localdate() - timedelta(days=9)
+    presiones_dias = [0] * 10
+    for fecha in consulta_presion.filter(fecha__gte=timezone.now() - timedelta(days=11)).values_list("fecha", flat=True):
+        dia = timezone.localdate(fecha) if timezone.is_aware(fecha) else fecha.date()
+        indice = (dia - inicio_presiones).days
+        if 0 <= indice < 10:
+            presiones_dias[indice] += 1
+    from django.db.models import Max
+    puntos_presion = list(consulta_presion.exclude(ticket__solicitante_punto__isnull=True).exclude(ticket__solicitante_punto="").values("ticket__solicitante_punto").annotate(total=Count("pk"), ultima=Max("fecha")).order_by("-total", "ticket__solicitante_punto"))
+    max_presiones_punto = max(3, max((p["total"] for p in puntos_presion), default=0))
+    for punto in puntos_presion:
+        punto["porcentaje"] = round(punto["total"] * 100 / max_presiones_punto)
+        punto["intensidad"] = "alta" if punto["porcentaje"] >= 75 else "media" if punto["porcentaje"] >= 45 else "baja"
+    todas_presiones = list(consulta_presion.select_related("ticket", "usuario").order_by("-fecha"))
+    presiones = todas_presiones[:20]
     # `ans_estado` no es un campo del ticket: lo pone `por_vencer` sobre cada
     # objeto que devuelve. Aquí se lo pasamos a los tickets de los mensajes,
     # que son los mismos, para que la tarjeta pueda pintar el aviso.
@@ -6520,7 +6765,9 @@ def tec_monitoreo(request):
     # De qué zona sale cada mirada, y el listado que sirve de destino a los
     # indicadores de arriba (el que apunta a «Abiertos» tiene que enseñar
     # abiertos, no un listado indiferente).
-    zonas_mirada = _zonas_de_mirada(presiones, por_vencer)
+    tickets_zonas = list(asignados.select_related("categoria"))
+    zonas_mirada = _zonas_de_mirada(todas_presiones, tickets_zonas)
+    _zonas_de_mirada([], por_vencer)
     hoy = timezone.localdate()
     tickets_lista = list(
         asignados.select_related("categoria").order_by("-fecha_actualizacion")[:60]
@@ -6545,6 +6792,9 @@ def tec_monitoreo(request):
             "total_vencidos": total_vencidos,
             "presiones": presiones,
             "total_presiones": consulta_presion.count(),
+            "puntos_presion": puntos_presion,
+            "presiones_dias": presiones_dias,
+            "ans_graficas": ans_graficas,
             "resueltos_hoy": resueltos_hoy,
             "zonas_mirada": zonas_mirada,
             "tickets_lista": tickets_lista,

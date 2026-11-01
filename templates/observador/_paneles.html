@@ -160,6 +160,8 @@ la papelera se conectan antes de pintar nada).
     </form>
 </dialog>
 
+<dialog id="panPuntosModal" class="mon-folder-dialog" aria-labelledby="panPuntosTitulo"><div class="mon-folder-head"><span class="mon-folder-title-icon"><svg class="icon"><use href="#i-store"/></svg></span><div><h3 id="panPuntosTitulo">Puntos de venta</h3><p id="panPuntosZona"></p></div><button type="button" id="panPuntosCerrar" aria-label="Cerrar">×</button></div><div class="mon-folder-filters"><label class="mon-folder-search"><svg class="icon"><use href="#i-search"/></svg><input type="search" id="panPuntosBuscar" placeholder="Buscar punto de venta…" aria-label="Buscar punto de venta"></label><select id="panPuntosEstado" aria-label="Estado ANS"><option value="">Estado: Todos</option><option value="vencido">ANS vencido</option><option value="por-vencer">Por vencer</option><option value="al-dia">Al día</option></select><select id="panPuntosOrden" aria-label="Ordenar puntos"><option value="nombre">Ordenar por: Nombre</option><option value="tickets">Ordenar por: Tickets</option></select></div><div id="panPuntosLista" class="mon-folder-list"></div><div class="mon-folder-footer"><span id="panPuntosResumen"></span><div><button type="button" id="panPuntosAnterior" aria-label="Página anterior">‹</button><span id="panPuntosPagina"></span><button type="button" id="panPuntosSiguiente" aria-label="Página siguiente">›</button></div></div></dialog>
+<dialog id="panFichaModal" class="mon-point-dialog" aria-labelledby="panFichaTitulo"><header><span class="mon-folder-title-icon"><svg class="icon"><use href="#i-store"/></svg></span><div><h3 id="panFichaTitulo"></h3><p id="panFichaZona"></p></div><button type="button" id="panFichaCerrar" aria-label="Cerrar">×</button></header><div class="mon-point-grid"><section class="mon-point-general"><h4>Información general</h4><dl><div><dt>Nombre</dt><dd data-pan-ficha="nombre"></dd></div><div><dt>Zona</dt><dd data-pan-ficha="zona"></dd></div><div><dt>Correo</dt><dd data-pan-ficha="correo"></dd></div></dl></section><section><h4>Resumen de actividad</h4><div class="mon-point-metrics"><div><b data-pan-ficha="total"></b><small>Tickets</small></div><div><b data-pan-ficha="ans"></b><small>ANS vencidos</small></div><div><b data-pan-ficha="abiertos"></b><small>Abiertos</small></div><div><b data-pan-ficha="resueltos"></b><small>Resueltos</small></div></div></section><section><h4>Supervisor de la zona</h4><p data-pan-ficha="supervisor"></p></section><section><h4>Últimos tickets</h4><div class="mon-point-tickets"><div class="mon-point-ticket-head"><span>ID</span><span>ASUNTO</span><span>ESTADO</span><span>CREADO</span></div><div data-pan-ficha-tickets tabindex="0"></div></div></section></div></dialog>
 {{ panel|json_script:"pan-datos" }}
 <script>
 (function () {
@@ -203,7 +205,8 @@ la papelera se conectan antes de pintar nada).
             var key = card.getAttribute("data-pan-kpi");
             var values = series[key] || [];
             var spark = card.querySelector(".pan-kpi-spark");
-            if (!spark || !values.length || !values.some(function (value) { return value > 0; })) return;
+            if (!spark) return;
+            if (!values.length || !values.some(function (value) { return value > 0; })) { spark.textContent = 'Sin actividad en 7 días'; spark.classList.add('is-empty'); return; }
             var max = Math.max.apply(null, values.concat([1]));
             var step = 236 / Math.max(1, values.length - 1);
             var points = values.map(function (value, index) {
@@ -211,14 +214,14 @@ la papelera se conectan antes de pintar nada).
             });
             var dots = values.map(function (value, index) {
                 var p = points[index].split(",");
-                return '<circle class="spark-dot" data-index="' + index + '" cx="' + p[0] + '" cy="' + p[1] + '" r="2.4" />';
+                return '<circle class="spark-dot" tabindex="0" data-index="' + index + '" cx="' + p[0] + '" cy="' + p[1] + '" r="2.4" />';
             }).join("");
             spark.innerHTML = '<svg viewBox="0 0 240 36" preserveAspectRatio="none"><polygon class="spark-fill" points="2,36 ' + points.join(" ") + ' 238,36"/><polyline class="spark-line" points="' + points.join(" ") + '"/>' + dots + '</svg><span class="pan-kpi-tooltip" role="tooltip"></span>';
             var tip = spark.querySelector(".pan-kpi-tooltip");
             spark.querySelectorAll(".spark-dot").forEach(function (dot) {
                 function mostrarTip() {
                     var index = Number(dot.getAttribute("data-index"));
-                    tip.textContent = (labels[index] || "") + ": " + values[index];
+                    tip.textContent = (labels[index] || "") + ": " + values[index] + (key === 'abiertos' ? ' tickets abiertos creados' : ' altas');
                     tip.style.left = ((index / Math.max(1, values.length - 1)) * 100) + "%";
                     tip.classList.add("is-visible");
                 }
@@ -232,6 +235,51 @@ la papelera se conectan antes de pintar nada).
 
     var porClave = {};
     (((panel && panel.zonas) || [])).forEach(function (z) { porClave[z.clave] = z; });
+    var puntosModal = document.getElementById('panPuntosModal'), fichaModal = document.getElementById('panFichaModal');
+    var puntosZona = null, paginaPuntos = 1;
+    function mostrarFichaPan(u) {
+        document.getElementById('panFichaTitulo').textContent = u.nombre || 'Punto de venta';
+        document.getElementById('panFichaZona').textContent = 'Punto de venta · ' + puntosZona.nombre;
+        var datos = {nombre:u.nombre, zona:puntosZona.nombre, correo:u.email, total:u.total, ans:u.ans_vencidos, abiertos:u.abiertos, resueltos:u.resueltos, supervisor:panel.supervisor.nombre};
+        Object.keys(datos).forEach(function(k) { fichaModal.querySelector('[data-pan-ficha="' + k + '"]').textContent = datos[k] == null || datos[k] === '' ? '—' : datos[k]; });
+        var tickets = fichaModal.querySelector('[data-pan-ficha-tickets]'); tickets.replaceChildren();
+        (u.tickets || []).forEach(function(t) { var row = document.createElement('div'); [t.codigo,t.titulo,t.estado_display,t.fecha].forEach(function(v) { var cell = document.createElement('span'); cell.textContent = v || '—'; row.appendChild(cell); }); tickets.appendChild(row); });
+        if (!(u.tickets || []).length) tickets.textContent = 'Sin tickets recientes.';
+        fichaModal.showModal();
+    }
+    function pintarPuntosPan() {
+        var lista = document.getElementById('panPuntosLista'), q = document.getElementById('panPuntosBuscar').value.trim().toLocaleLowerCase();
+        lista.replaceChildren();
+        var estado = document.getElementById('panPuntosEstado').value, orden = document.getElementById('panPuntosOrden').value;
+        var usuarios = (puntosZona.usuarios || []).filter(function(u) { return /punto de venta/i.test(u.rol || '') && ((u.nombre || '') + ' ' + (u.email || '')).toLocaleLowerCase().includes(q) && (!estado || (estado === 'al-dia' ? !u.ans_estado : u.ans_estado === estado)); }).sort(function(a,b) { return orden === 'tickets' ? (b.total || 0) - (a.total || 0) || (a.nombre || '').localeCompare(b.nombre || '') : (a.nombre || '').localeCompare(b.nombre || ''); });
+        var paginas = Math.max(1, Math.ceil(usuarios.length / 5)); paginaPuntos = Math.min(Math.max(1, paginaPuntos), paginas);
+        usuarios.slice((paginaPuntos - 1) * 5, paginaPuntos * 5).forEach(function(u) {
+            var item = document.createElement('div'); item.className = 'mon-folder-item pan-punto-item';
+            var icon = document.createElement('span'); icon.className = 'mon-folder-icon'; icon.innerHTML = '<svg class="icon"><use href="#i-store"></use></svg>';
+            var nombre = document.createElement('span'); nombre.className = 'mon-folder-info'; nombre.textContent = u.nombre || '—';
+            var conteo = document.createElement('span'); conteo.textContent = (u.total || 0) + ' tickets';
+            var ans = document.createElement('span'); ans.textContent = (u.ans_vencidos || 0) + ' ANS vencidos';
+            var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'mon-folder-profile'; btn.textContent = 'Ver ficha ›'; btn.addEventListener('click', function() { mostrarFichaPan(u); });
+            item.append(icon,nombre,conteo,ans,btn); lista.appendChild(item);
+        });
+        if (!usuarios.length) lista.textContent = 'No hay puntos de venta para mostrar.';
+        document.getElementById('panPuntosResumen').textContent = usuarios.length ? 'Mostrando ' + ((paginaPuntos - 1) * 5 + 1) + '–' + Math.min(paginaPuntos * 5, usuarios.length) + ' de ' + usuarios.length + ' puntos de venta' : 'Sin resultados';
+        document.getElementById('panPuntosPagina').textContent = paginaPuntos + ' / ' + paginas;
+        document.getElementById('panPuntosAnterior').disabled = paginaPuntos === 1;
+        document.getElementById('panPuntosSiguiente').disabled = paginaPuntos === paginas;
+    }
+    grid.querySelectorAll('[data-pan-ver-puntos]').forEach(function(enlace) { enlace.addEventListener('click', function(event) {
+        var wrap = enlace.closest('[data-pan-wrap]'), zona = wrap && porClave[wrap.dataset.panWrap];
+        if (!zona || !puntosModal || typeof puntosModal.showModal !== 'function') return;
+        event.preventDefault(); puntosZona = zona; document.getElementById('panPuntosZona').textContent = 'Zona: ' + zona.nombre;
+        document.getElementById('panPuntosBuscar').value = ''; document.getElementById('panPuntosEstado').value = ''; document.getElementById('panPuntosOrden').value = 'nombre'; paginaPuntos = 1; pintarPuntosPan(); puntosModal.showModal();
+    }); });
+    ['panPuntosBuscar','panPuntosEstado','panPuntosOrden'].forEach(function(id) { document.getElementById(id).addEventListener(id === 'panPuntosBuscar' ? 'input' : 'change', function() { paginaPuntos = 1; pintarPuntosPan(); }); });
+    document.getElementById('panPuntosAnterior').addEventListener('click', function() { paginaPuntos--; pintarPuntosPan(); });
+    document.getElementById('panPuntosSiguiente').addEventListener('click', function() { paginaPuntos++; pintarPuntosPan(); });
+    document.getElementById('panPuntosCerrar').addEventListener('click', function() { puntosModal.close(); });
+    document.getElementById('panFichaCerrar').addEventListener('click', function() { fichaModal.close(); });
+    [puntosModal,fichaModal].forEach(function(modal) { modal.addEventListener('click', function(event) { if (event.target === modal) modal.close(); }); });
     var botones = grid.querySelectorAll("[data-pan-clave]");
     var actual = null;
 

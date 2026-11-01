@@ -598,7 +598,7 @@ class MonitoreoTecnicoTest(BaseTecnicoTest):
 
         html = self.client.get(reverse("tickets:tec_monitoreo")).content.decode()
         self.assertIn('id="zonas-que-vigilan"', html)
-        self.assertIn("Supervisa", html)
+        self.assertIn("Zona que supervisa", html)
         self.assertIn("Norte", html)
 
     def test_el_punto_del_ticket_tambien_dice_la_zona(self):

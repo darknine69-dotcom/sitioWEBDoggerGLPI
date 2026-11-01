@@ -33,6 +33,28 @@
             .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
+    // Actualiza solo la actividad; no interrumpe formularios ni navegación.
+    var actividad = document.querySelector('.pv-activity-list');
+    if (actividad) {
+        function actualizarActividad() {
+            if (document.hidden) return;
+            fetch(window.location.pathname + '?actividad=1', { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
+                .then(function (response) { if (!response.ok) throw new Error('actividad'); return response.json(); })
+                .then(function (data) {
+                    actividad.innerHTML = (data.eventos || []).map(function (ev) {
+                        var enlace = ev.ticket_url ? ' glpi-clickable' : '';
+                        return '<li class="pv-activity-item is-' + esc(ev.tono) + '"><button type="button" class="pv-activity-action' + enlace + '"' +
+                            (ev.ticket_url ? ' data-ticket-url="' + esc(ev.ticket_url) + '"' : ' disabled') + '>' +
+                            '<span class="pv-activity-icon"><svg class="icon"><use href="#' + esc(ev.icono) + '"></use></svg></span>' +
+                            '<span class="pv-activity-copy"><b>' + (ev.codigo ? esc(ev.codigo) + ': ' : '') + esc(ev.texto) + '</b><small>' + esc(ev.fecha_label) + '</small></span>' +
+                            (ev.ticket_url ? '<em>Abrir chat</em>' : '') + '</button></li>';
+                    }).join('') || '<li class="pv-empty">Sin actividad reciente.</li>';
+                }).catch(function () { /* Conservar la última información visible. */ });
+        }
+        window.setInterval(actualizarActividad, 15000);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) actualizarActividad(); });
+    }
+
     function postAsForm(url, data) {
         var fd = new URLSearchParams();
         Object.keys(data).forEach(function (k) { fd.append(k, data[k]); });

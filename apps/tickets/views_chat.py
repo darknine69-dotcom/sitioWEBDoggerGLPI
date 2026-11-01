@@ -13,6 +13,7 @@ caída). Sin ticket, sin adjuntos y sin GLPI; el usuario final no la ve.
 import logging
 
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -32,15 +33,6 @@ from apps.tickets.services.glpi_client import GlpiError, sync_followup_to_glpi
 
 logger = logging.getLogger(__name__)
 
-TIPOS_PERMITIDOS = (
-    "image/png", "image/jpeg", "image/gif", "image/webp",
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "text/plain",
-)
 MAX_ADJUNTO_BYTES = 8 * 1024 * 1024
 
 
@@ -89,7 +81,9 @@ def _puede_ver_hilo(usuario, ticket):
         return False
     rol = getattr(usuario, "rol", None)
     if rol == "usuario":
-        return (ticket.solicitante_email or "").lower() == (usuario.email or "").lower()
+        correo_ticket = (ticket.solicitante_email or "").strip().casefold()
+        correo_usuario = (usuario.email or "").strip().casefold()
+        return bool(correo_ticket and correo_usuario and correo_ticket == correo_usuario)
     if getattr(usuario, "es_staff_helpdesk", False):
         return True
     if rol == "observador":
@@ -524,19 +518,22 @@ def chat_responder(request, pk):
 @login_required
 @require_POST
 def chat_adjuntar(request, pk):
-    """Sube imagen, PDF o documento al hilo (máx. 8 MB)."""
+    """Sube una imagen validada o PDF al hilo (máx. 8 MB)."""
     ticket = get_object_or_404(Ticket, pk=pk)
     if not _puede_ver_hilo(request.user, ticket):
         return JsonResponse({"ok": False, "error": "Sin acceso."}, status=403)
     archivo = request.FILES.get("archivo")
     if not archivo:
         return JsonResponse({"ok": False, "error": "Sin archivo."}, status=400)
-    if (archivo.content_type or "") not in TIPOS_PERMITIDOS:
-        return JsonResponse(
-            {"ok": False, "error": "Solo imágenes, PDF o documentos."}, status=400)
     if archivo.size > MAX_ADJUNTO_BYTES:
         return JsonResponse(
             {"ok": False, "error": "Máximo 8 MB por archivo."}, status=400)
+    from .forms import validar_contenido_adjunto
+
+    try:
+        validar_contenido_adjunto(archivo)
+    except ValidationError as exc:
+        return JsonResponse({"ok": False, "error": exc.messages[0]}, status=400)
     adjunto = TicketAdjunto.objects.create(
         ticket=ticket, nombre_original=archivo.name[:255], archivo=archivo,
         mime_type=archivo.content_type or "application/octet-stream",

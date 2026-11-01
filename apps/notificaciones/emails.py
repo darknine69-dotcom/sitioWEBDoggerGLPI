@@ -40,7 +40,7 @@ def _enviar(asunto, texto, html, destinatarios):
             settings.DEFAULT_FROM_EMAIL,
             destinatarios,
             html_message=html,
-            fail_silently=True,
+            fail_silently=False,
         )
     except Exception as exc:  # pragma: no cover - red
         logger.error("Error enviando correo '%s': %s", asunto, exc)

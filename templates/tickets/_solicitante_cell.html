@@ -11,7 +11,9 @@
     </span>
     <span class="cell-user-text">
         <span class="cell-user-name">{{ t.solicitante_nombre }}</span>
-        {% if t.solicitante_punto %}
+        {% if mostrar_correo %}
+        {% if t.solicitante_email %}<span class="table-sub">{{ t.solicitante_email }}</span>{% elif u and u.email %}<span class="table-sub">{{ u.email }}</span>{% else %}<span class="table-sub">Sin correo registrado</span>{% endif %}
+        {% elif t.solicitante_punto %}
         <span class="table-sub">{{ t.solicitante_punto }}</span>
         {% endif %}
     </span>

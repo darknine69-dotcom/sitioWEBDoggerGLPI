@@ -290,6 +290,33 @@ class RecordatoriosTest(BaseNotificaciones):
 
 
 class EventoCalendarioTest(BaseNotificaciones):
+    def test_recordatorio_respeta_hora_y_anticipacion_y_oculta_aviso_anterior(self):
+        from datetime import datetime, timedelta
+        from unittest.mock import patch
+        from django.utils import timezone
+
+        inicio = timezone.make_aware(datetime(2026, 10, 30, 1, 4), timezone.get_current_timezone())
+        evento = CalendarioEvento.objects.create(tipo=CalendarioEvento.Tipo.RECORDATORIO, titulo="Factura", fecha=inicio.date(), hora=inicio.time(), tecnico=self.tecnico, metadatos={"anticipacion": "30_min"})
+        aviso = services.crear(self.tecnico, Notificacion.Tipo.EVENTO, "Recordatorio: Factura", "Programado", clave=f"evento:{evento.pk}:{evento.fecha.isoformat()}")
+        with patch("django.utils.timezone.now", return_value=inicio - timedelta(hours=2)):
+            self.assertNotIn(aviso, services.pendientes_de_emergente(self.tecnico, limite=10))
+            self.assertNotIn(aviso, services.lista(self.tecnico))
+            self.assertEqual(services.no_leidas(self.tecnico), 0)
+        with patch("django.utils.timezone.now", return_value=inicio - timedelta(minutes=30)):
+            self.assertIn(aviso, services.pendientes_de_emergente(self.tecnico, limite=10))
+
+    def test_recordatorio_compartido_se_genera_en_el_momento_configurado(self):
+        from datetime import datetime, timedelta
+        from unittest.mock import patch
+        from django.utils import timezone
+
+        inicio = timezone.make_aware(datetime(2026, 10, 30, 10, 0), timezone.get_current_timezone())
+        CalendarioEvento.objects.create(tipo=CalendarioEvento.Tipo.RECORDATORIO, titulo="Compartido", fecha=inicio.date(), hora=inicio.time(), metadatos={"anticipacion": "1_dia", "visibilidad": "todos"})
+        with patch("django.utils.timezone.now", return_value=inicio - timedelta(days=1, minutes=1)):
+            self.assertEqual([n for n in services.recordatorios(self.tecnico) if n.tipo == Notificacion.Tipo.EVENTO], [])
+        with patch("django.utils.timezone.now", return_value=inicio - timedelta(days=1)):
+            self.assertTrue(any(n.tipo == Notificacion.Tipo.EVENTO for n in services.recordatorios(self.tecnico)))
+
     def test_tarea_de_hoy_avisa_con_icono_de_calendario(self):
         from datetime import timedelta
 

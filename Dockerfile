@@ -24,11 +24,9 @@ COPY . .
 # No exponer .env de desarrollo dentro de la imagen
 RUN mkdir -p /app/staticfiles /app/media && rm -f .env
 
-ENV DJANGO_DEBUG=False \
-    DJANGO_SECURE_SSL_REDIRECT=False
+ENV DJANGO_DEBUG=False
 
-# Build: migraciones + estáticos (el volumen de media se monta en runtime)
-RUN python manage.py collectstatic --noinput || true
+# Los estáticos se recopilan en el arranque con la configuración de runtime.
 
 EXPOSE 8000
 

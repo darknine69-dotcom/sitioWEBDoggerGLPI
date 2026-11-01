@@ -77,11 +77,59 @@ html[data-theme="dark"] .tec-monitor-overview.is-vencido { background: linear-gr
 html[data-theme="dark"] .tec-monitor-overview.is-alerta { background: linear-gradient(115deg, rgba(183,121,31,.22), var(--surface, #24211f)); }
 html[data-theme="dark"] .tec-monitor-overview-icon,
 html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.1); }
+/* Distribución compacta del monitoreo, conservando las secciones y acciones existentes. */
+.tecnico-monitoreo-page .tec-monitor-page { max-width:none; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start; }
+.tec-monitor-page > .tec-monitor-kpis,.tec-monitor-page > .tec-monitor-overview,.tec-monitor-page > #tickets { grid-column:1 / -1; }
+.tec-monitor-page .tec-monitor-kpis { margin:0!important; gap:12px!important; }
+.tec-monitor-page .tec-monitor-overview { margin:0; padding:14px 18px; border-radius:14px; box-shadow:0 4px 16px rgba(15,23,42,.06); }
+.tec-monitor-page .tec-monitor-section { min-width:0; margin:0; padding:16px; border:1px solid #e2e8f0; border-radius:16px; background:#fff; box-shadow:0 4px 16px rgba(15,23,42,.06); }
+.tec-monitor-page .tec-monitor-section .obs-bloque-titulo { font-size:16px; }.tec-monitor-page .tec-monitor-section .obs-leyenda { margin-bottom:12px; font-size:12px; line-height:1.4; }
+.tec-monitor-page .pres-ficha,.tec-monitor-page .ans-ficha { min-height:0; padding:12px; border-radius:12px; }
+.tec-monitor-page .obs-tabla-wrap { max-width:100%; overflow-x:auto; }
+.tec-monitor-principales { grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.tec-monitor-primary { display:flex; gap:12px; align-items:center; min-height:110px; padding:16px; border:1px solid #e2e8f0; border-radius:16px; background:#fff; color:#172b4d; text-decoration:none; box-shadow:0 4px 16px #0f172a0f; }.tec-monitor-primary-icon { display:grid; place-items:center; flex:none; width:42px; height:42px; border-radius:12px; background:#fee2e2; color:#dc2626; }.tec-monitor-primary-icon .icon { width:22px; height:22px; }.tec-monitor-primary:nth-child(3) .tec-monitor-primary-icon { background:#fef3c7; color:#d97706; }.tec-monitor-primary-copy { display:grid; gap:3px; }.tec-monitor-primary-copy span { font-size:12px; font-weight:700; }.tec-monitor-primary-copy strong { font-size:30px; line-height:1; }.tec-monitor-primary-copy small { color:#64748b; font-size:11px; }
+.tec-puntos-table { width:100%; border-collapse:collapse; font-size:12px; }.tec-puntos-table th,.tec-puntos-table td { padding:8px; border-bottom:1px solid #e2e8f0; text-align:left; }.tec-puntos-table th { background:#f1f5f9; color:#64748b; font-size:10px; text-transform:uppercase; }.tec-puntos-bar { display:inline-block; width:70px; height:7px; overflow:hidden; border-radius:99px; background:#e2e8f0; }.tec-puntos-bar i { display:block; height:100%; border-radius:inherit; background:#ef3348; }
+.tec-monitor-page > .tec-monitor-principales { order:1; }.tec-monitor-page > #zonas-que-vigilan { order:2; }.tec-monitor-page > [aria-labelledby="tec-puntos-title"] { order:3; }.tec-monitor-page > #presion { order:4; }.tec-monitor-page > #por-vencer { order:5; }.tec-monitor-page > #tickets { order:6; }.tec-monitor-page > .tec-monitor-kpis { order:7; }.tec-monitor-page > .tec-monitor-overview { order:8; }
+.tec-monitor-primary { position:relative; align-items:flex-start; min-height:150px; padding:16px; background:#fff8f8; border-color:#ffe1e4; }.tec-monitor-primary:nth-child(3) { background:#fffbf2; border-color:#ffedc7; }.tec-monitor-primary-copy strong { font-size:32px; }.tec-monitor-primary-copy small { position:absolute; bottom:15px; left:16px; }.tec-monitor-primary::after { content:'›'; position:absolute; right:15px; bottom:12px; display:grid; place-items:center; width:32px; height:32px; border-radius:50%; background:#fff; color:#dc2626; box-shadow:0 3px 10px #0f172a18; font-size:24px; }
+.tec-monitor-mini { position:absolute; left:16px; right:55px; bottom:42px; display:flex; align-items:end; gap:4px; height:28px; }.tec-monitor-mini span { flex:1; min-width:0; border-radius:2px 2px 0 0; background:#fb7185; opacity:.65; }.tec-monitor-mini span:last-child { opacity:1; }
+.tec-monitor-primary:nth-child(3) .tec-monitor-mini span { background:#fbbf24; }
+.tec-monitor-primary { min-height:150px; padding:16px 18px; gap:20px; border-radius:14px; }
+.tec-monitor-primary-icon { width:54px; height:54px; border-radius:14px; background:#dc0028; color:#fff; box-shadow:0 6px 14px #dc002822; }
+.tec-monitor-primary:nth-child(2) .tec-monitor-primary-icon { background:#f32842; color:#fff; }
+.tec-monitor-primary:nth-child(3) .tec-monitor-primary-icon { background:#f59e0b; color:#fff; box-shadow:0 6px 14px #f59e0b22; }
+.tec-monitor-primary-icon .icon { width:25px; height:25px; }
+.tec-monitor-primary-copy { padding-top:3px; }.tec-monitor-primary-copy span { color:#0f172a; font-size:12px; }.tec-monitor-primary-copy strong { margin-top:4px; font-size:34px; }
+.tec-monitor-primary-copy small { left:18px; bottom:14px; display:flex; align-items:center; gap:7px; font-size:11px; }.tec-monitor-primary-copy small::before { content:""; width:9px; height:9px; flex:none; border-radius:50%; background:#ef233c; }.tec-monitor-primary:nth-child(3) .tec-monitor-primary-copy small::before { background:#f59e0b; }
+.tec-monitor-mini { left:18px; right:55px; bottom:43px; height:30px; justify-content:space-between; gap:4px; border-bottom:1px solid color-mix(in srgb, currentColor 25%, transparent); }.tec-monitor-mini span { flex:1 1 0; max-width:none; min-width:0; }
+.tec-monitor-mini span.is-zero { height:2px!important; opacity:.2; }.tec-monitor-mini span:not(.is-zero) { min-height:4px; }
+.tec-monitor-page #zonas-que-vigilan,.tec-monitor-page #presion,.tec-monitor-page #por-vencer,.tec-monitor-page [aria-labelledby="tec-puntos-title"] { align-self:stretch; }
+.tec-zone-list { display:grid; gap:10px; max-height:230px; overflow-y:auto; }.tec-zone-person { display:grid; grid-template-columns:48px minmax(0,1fr); gap:10px; align-items:center; padding:10px 0; border-top:1px solid #e2e8f0; }.tec-zone-avatar { display:grid; place-items:center; width:48px; height:48px; overflow:hidden; border-radius:50%; background:#e2e8f0; color:#425c80; font-weight:700; }.tec-zone-avatar img { width:100%; height:100%; object-fit:cover; }.tec-zone-info { min-width:0; }.tec-zone-info strong { color:#10203f; font-size:14px; }.tec-zone-role { display:inline-flex; margin-left:6px; padding:3px 8px; border-radius:999px; background:#e0f2fe; color:#1d4ed8; font-size:10px; font-weight:700; }.tec-zone-meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:7px; color:#64748b; font-size:11px; }.tec-zone-meta b { color:#172b4d; }.tec-zone-chip { padding:3px 8px; border-radius:99px; background:#e8f2ff; color:#1d4ed8; font-weight:700; }
+.tec-monitor-page #zonas-que-vigilan .obs-bloque-titulo,.tec-monitor-page [aria-labelledby="tec-puntos-title"] .obs-bloque-titulo { gap:12px; min-height:46px; margin:0; color:#0f172a; font-size:16px; }
+.tec-monitor-page #zonas-que-vigilan .obs-bloque-titulo > .icon,.tec-monitor-page [aria-labelledby="tec-puntos-title"] .obs-bloque-titulo > .icon { box-sizing:content-box; flex:none; width:22px; height:22px; padding:12px; border-radius:12px; background:#111f3a; color:#fff; }
+.tec-monitor-page [aria-labelledby="tec-puntos-title"] .obs-bloque-titulo > .icon { background:#f32e48; color:#fff; }
+.tec-monitor-page #zonas-que-vigilan .obs-leyenda,.tec-monitor-page [aria-labelledby="tec-puntos-title"] .obs-leyenda { margin:-12px 0 14px 58px; font-size:11px; }
+.tec-monitor-page .tec-zone-person { grid-template-columns:62px minmax(0,1fr); gap:12px; }.tec-monitor-page .tec-zone-avatar { width:62px; height:62px; }.tec-monitor-page .tec-zone-info strong { font-size:15px; }.tec-monitor-page .tec-zone-chip { padding:5px 11px; font-size:11px; }
+.tec-monitor-page .tec-puntos-table th,.tec-monitor-page .tec-puntos-table td { height:36px; box-sizing:border-box; padding:7px 10px; }.tec-monitor-page .tec-puntos-table th { font-size:10px; }.tec-monitor-page .tec-puntos-table td { font-size:12px; }.tec-monitor-page .tec-puntos-bar { width:90px; height:8px; }
+.tec-zone-meta { display:grid; grid-template-columns:minmax(120px,1fr) repeat(2,minmax(105px,1fr)); gap:0; margin-top:14px; }.tec-zone-meta > span { display:flex; align-items:flex-start; gap:8px; padding:0 10px; border-left:1px solid #e2e8f0; }.tec-zone-meta > span:first-child { padding-left:0; border:0; }.tec-zone-meta .tec-meta-icon { display:grid; place-items:center; width:30px; height:30px; flex:none; border-radius:8px; color:#dc2626; background:#fee2e2; }.tec-zone-meta .tec-meta-icon .icon { width:15px; height:15px; }.tec-zone-meta .tec-meta-copy { display:grid; gap:4px; color:#64748b; font-size:10px; }.tec-zone-meta .tec-meta-copy b { color:#10203f; font-size:17px; }.tec-zone-meta .tec-zone-label .tec-meta-icon { color:#365b8b; background:#eaf2ff; }.tec-zone-meta .tec-zone-chip { width:max-content; }
+.tec-zone-person { display:grid!important; grid-template-columns:62px minmax(0,1fr); align-items:center!important; gap:8px 14px!important; }.tec-zone-info { display:contents; }.tec-zone-identity { grid-column:2; grid-row:1; align-self:start; padding-top:5px; }.tec-zone-meta { grid-column:1 / -1; grid-row:2; width:100%; margin-top:8px; }.tec-zone-role { background:#d9f5e8; color:#07834a; }
+.tec-zone-list { max-height:none; overflow:visible; }.tec-zone-person[hidden] { display:none!important; }.tec-zone-carousel { display:flex; justify-content:center; align-items:center; gap:10px; margin-top:12px; }.tec-zone-carousel button { display:grid; place-items:center; width:30px; height:30px; border:1px solid #dbe5f0; border-radius:9px; background:#fff; color:#365b8b; font-size:18px; cursor:pointer; }.tec-zone-carousel button:disabled { opacity:.4; cursor:default; }.tec-zone-carousel button:focus-visible { outline:2px solid #dc2626; outline-offset:2px; }.tec-zone-carousel span { color:#64748b; font-size:11px; }
+.tec-puntos-name { display:inline-flex; align-items:center; gap:9px; }.tec-puntos-name .icon { width:16px; height:16px; color:#365b8b; }.tec-puntos-count { color:#dc2626; font-weight:700; margin-left:6px; }
+.tec-puntos-bar { vertical-align:middle; background:#e8edf4; }.tec-puntos-bar i { transition:width .25s ease,background-color .25s ease; }.tec-puntos-bar i.baja { background:#fb7185; }.tec-puntos-bar i.media { background:#f43f5e; }.tec-puntos-bar i.alta { background:#dc2626; }
+@media(prefers-reduced-motion:reduce){.tec-puntos-bar i{transition:none}}
+@media(max-width:600px){.tec-zone-meta { grid-template-columns:1fr; gap:8px; }.tec-zone-meta > span { padding:0; border:0; }}
+@media(max-width:760px){.tec-monitor-principales { grid-column:auto; grid-template-columns:1fr; }}
+@media(max-width:900px){.tecnico-monitoreo-page .tec-monitor-page { grid-template-columns:minmax(0,1fr); }.tec-monitor-page > .tec-monitor-kpis,.tec-monitor-page > .tec-monitor-overview,.tec-monitor-page > #tickets { grid-column:auto; }}
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="page tec-monitor-page">
+
+    <div class="tec-monitor-principales" aria-label="Indicadores de monitoreo">
+        <a class="tec-monitor-primary" href="#presion"><span class="tec-monitor-primary-icon"><svg class="icon"><use href="#i-message"/></svg></span><span class="tec-monitor-primary-copy"><span>Presiones recibidas</span><strong>{{ total_presiones }}</strong><small>Presiones registradas en tus tickets</small></span><span class="tec-monitor-mini" data-pressure-chart aria-label="Presiones de los últimos siete días"></span></a>
+        <a class="tec-monitor-primary" href="#por-vencer"><span class="tec-monitor-primary-icon"><svg class="icon"><use href="#i-alert"/></svg></span><span class="tec-monitor-primary-copy"><span>Tickets vencidos</span><strong>{{ total_vencidos }}</strong><small>Requieren atención</small></span><span class="tec-monitor-mini" data-ans-chart="vencido" aria-label="Tickets vencidos agrupados por fecha límite"></span></a>
+        <a class="tec-monitor-primary" href="#por-vencer"><span class="tec-monitor-primary-icon"><svg class="icon"><use href="#i-stopwatch"/></svg></span><span class="tec-monitor-primary-copy"><span>Próximos a vencer</span><strong>{{ total_por_vencer }}</strong><small>Dentro de la ventana de alerta ANS</small></span><span class="tec-monitor-mini" data-ans-chart="por-vencer" aria-label="Tickets próximos a vencer agrupados por fecha límite"></span></a>
+    </div>
 
     {% comment %}
     Cada indicador lleva a lo que nombra, dentro de esta misma página: los
@@ -178,32 +226,20 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
     </section>
 
     <section id="zonas-que-vigilan" class="obs-bloque tec-monitor-section corp-anim">
-        <h3 class="obs-bloque-titulo"><svg class="icon"><use href="#i-map-pin"/></svg>Zonas que te monitorean</h3>
-        <p class="obs-leyenda">
-            De qué carpeta sale la mirada sobre lo tuyo. Una tarjeta por zona:
-            quién la supervisa, quién te ha presionado desde ella y cuántos de
-            tus tickets tiene encima. Las fichas de aquí abajo llevan la misma
-            etiqueta en cada caso.
-        </p>
+        <h3 class="obs-bloque-titulo"><svg class="icon"><use href="#i-users"/></svg>Responsables de zona</h3>
+        <p class="obs-leyenda">Personas responsables de las zonas relacionadas con tus tickets.</p>
         {% if zonas_mirada %}
-        <div class="obs-tarjetas">
+        <div class="tec-zone-list">
             {% for f in zonas_mirada %}
-            <article class="obs-tarjeta obs-tarjeta--vigila">
-                <span class="obs-tarjeta-ico"><svg class="icon"><use href="#i-map-pin"/></svg></span>
-                <strong class="obs-tarjeta-nombre">{{ f.zona.nombre }}</strong>
-                <span class="obs-tarjeta-dato">
-                Supervisa <b>{{ f.zona.observador.nombre|default:f.zona.observador.email|default:"sin asignar" }}</b>
-                </span>
-                {% if f.quien %}
-                <span class="obs-tarjeta-dato">Te presionaron: {{ f.quien|join:", " }}</span>
-                {% endif %}
-                <span class="obs-tarjeta-cifras">
-                    <span class="obs-tarjeta-cifra"><b>{{ f.presiones }}</b> presión{{ f.presiones|pluralize }}</span>
-                    <span class="obs-tarjeta-cifra"><b>{{ f.tickets }}</b> ticket{{ f.tickets|pluralize }}</span>
-                </span>
+            <article class="tec-zone-person">
+                <span class="tec-zone-avatar">{% if f.zona.observador.avatar %}<img src="{{ f.zona.observador.avatar.url }}" alt="">{% else %}{{ f.zona.observador.nombre|default:"?"|slice:":1"|upper }}{% endif %}</span>
+                <div class="tec-zone-info"><div class="tec-zone-identity"><strong>{{ f.zona.observador.nombre|default:f.zona.observador.email|default:"Sin responsable" }}</strong>{% if f.zona.observador %}<span class="tec-zone-role">{{ f.zona.observador.get_rol_display }}</span>{% endif %}</div>
+                    <div class="tec-zone-meta"><span class="tec-zone-label"><i class="tec-meta-icon"><svg class="icon"><use href="#i-users"/></svg></i><span class="tec-meta-copy">Zona que supervisa <span class="tec-zone-chip">{{ f.zona.nombre }}</span></span></span><span><i class="tec-meta-icon"><svg class="icon"><use href="#i-mail"/></svg></i><span class="tec-meta-copy">Presiones enviadas <b title="Presiones enviadas por el responsable de esta zona sobre tus tickets">{{ f.presiones_enviadas }}</b></span></span><span class="tec-zone-label"><i class="tec-meta-icon"><svg class="icon"><use href="#i-layers"/></svg></i><span class="tec-meta-copy">Tus tickets en esta zona <b>{{ f.tickets }}</b></span></span></div>
+                </div>
             </article>
             {% endfor %}
         </div>
+        {% if zonas_mirada|length > 1 %}<div class="tec-zone-carousel" aria-label="Navegar entre zonas"><button type="button" data-zone-prev aria-label="Zona anterior">‹</button><span data-zone-position aria-live="polite"></span><button type="button" data-zone-next aria-label="Zona siguiente">›</button></div>{% endif %}
         {% else %}
         <p class="obs-tarjeta-dato">
             Ninguna zona tiene hoy vista sobre tus tickets: te presionan sin
@@ -215,7 +251,7 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
 
     {% if presiones %}
     <section id="presion" class="obs-bloque tec-monitor-section corp-anim">
-        <h3 class="obs-bloque-titulo"><svg class="icon"><use href="#i-message"/></svg>Presión de tus supervisores</h3>
+        <h3 class="obs-bloque-titulo"><svg class="icon"><use href="#i-message"/></svg>Presiones recibidas</h3>
         <p class="obs-leyenda">
             Mensajes que te dejaron los observadores y las personas de tus
             puntos desde el botón de «presionar». Si un caso aparece más de una
@@ -249,7 +285,7 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
     </section>
     {% else %}
     <section id="presion" class="obs-bloque tec-monitor-section">
-        <h3 class="obs-bloque-titulo"><svg class="icon"><use href="#i-message"/></svg>Presión de tus supervisores</h3>
+        <h3 class="obs-bloque-titulo"><svg class="icon"><use href="#i-message"/></svg>Presiones recibidas</h3>
         <p class="obs-leyenda">
             Nadie te ha presionado todavía. Cuando un observador o una persona
             de tus puntos use el botón de «presionar», el mensaje aparecerá
@@ -258,6 +294,7 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
     </section>
     {% endif %}
 
+    <section class="tec-monitor-section" aria-labelledby="tec-puntos-title"><h3 id="tec-puntos-title" class="obs-bloque-titulo"><svg class="icon"><use href="#i-store"/></svg>Puntos de venta que enviaron presión</h3><p class="obs-leyenda">Presiones registradas sobre tus tickets asignados.</p><div class="obs-tabla-wrap"><table class="tec-puntos-table"><thead><tr><th>Punto de venta</th><th>Presiones</th><th>Última presión</th></tr></thead><tbody>{% for punto in puntos_presion %}<tr><td><span class="tec-puntos-name"><svg class="icon"><use href="#i-store"/></svg>{{ punto.ticket__solicitante_punto }}</span></td><td><span class="tec-puntos-bar" role="img" aria-label="{{ punto.total }} presiones; longitud relativa al mayor conteo mostrado, con escala mínima de tres"><i class="{{ punto.intensidad }}" style="width:{{ punto.porcentaje }}%"></i></span><span class="tec-puntos-count">{{ punto.total }}</span></td><td>{{ punto.ultima|date:"d/m/Y H:i" }}</td></tr>{% empty %}<tr><td colspan="3">No hay presiones asociadas a puntos de venta.</td></tr>{% endfor %}</tbody></table></div></section>
     {% if por_vencer %}
     <section id="por-vencer" class="obs-bloque tec-monitor-section corp-anim">
         <h3 class="obs-bloque-titulo">
@@ -355,6 +392,13 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
 
     {% include "tickets/_ans_modal.html" %}
 </main>
+{{ presiones_dias|json_script:"tecPresionesDias" }}
+{{ ans_graficas|json_script:"tecAnsGraficas" }}
+<script>
+(function () { var list = document.querySelector('.tec-zone-list'), controls = document.querySelector('.tec-zone-carousel'); if (!list || !controls) return; var items = Array.from(list.querySelectorAll('.tec-zone-person')), index = 0, previous = controls.querySelector('[data-zone-prev]'), next = controls.querySelector('[data-zone-next]'), position = controls.querySelector('[data-zone-position]'); function render() { items.forEach(function (item, i) { item.hidden = i !== index; }); previous.disabled = index === 0; next.disabled = index === items.length - 1; position.textContent = (index + 1) + ' / ' + items.length; } previous.addEventListener('click', function () { if (index > 0) { index--; render(); } }); next.addEventListener('click', function () { if (index < items.length - 1) { index++; render(); } }); render(); })();
+(function () { var source = document.getElementById('tecPresionesDias'), chart = document.querySelector('[data-pressure-chart]'); if (!source || !chart) return; var values = JSON.parse(source.textContent || '[]'), max = Math.max.apply(null, values.concat([1])); values.forEach(function (value, index) { var bar = document.createElement('span'); bar.classList.toggle('is-zero', !value); bar.style.height = (value ? Math.max(3, value / max * 28) : 0) + 'px'; bar.title = (index === values.length - 1 ? 'Hoy' : 'Hace ' + (values.length - 1 - index) + ' días') + ': ' + value + ' presiones'; chart.appendChild(bar); }); })();
+(function () { var source = document.getElementById('tecAnsGraficas'); if (!source) return; var data = JSON.parse(source.textContent || '{}'); document.querySelectorAll('[data-ans-chart]').forEach(function (chart) { var serie = data[chart.dataset.ansChart] || {labels:[],values:[]}, max = Math.max.apply(null, serie.values.concat([1])); serie.values.forEach(function (value, index) { var bar = document.createElement('span'); bar.classList.toggle('is-zero', !value); bar.style.height = (value ? Math.max(3, value / max * 28) : 0) + 'px'; bar.title = 'Fecha límite ' + serie.labels[index] + ': ' + value + ' tickets'; chart.appendChild(bar); }); }); })();
+</script>
 {% endblock %}
 
 {% block extra_js %}

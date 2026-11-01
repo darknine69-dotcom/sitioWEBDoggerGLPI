@@ -3,8 +3,53 @@
   if (!dataNode) return;
   let data;
   try { data = JSON.parse(dataNode.textContent); } catch (_) { return; }
+  const zoneDialog = document.querySelector('.pv-zone-dialog');
+  if (zoneDialog) {
+    document.querySelectorAll('[data-zone-open]').forEach(button => button.addEventListener('click', () => {
+      const zone = (data.ranking || [])[Number(button.dataset.zoneOpen)];
+      if (!zone) return;
+      ['nombre', 'total', 'abiertos', 'en_progreso', 'resueltos', 'cerrados', 'vencidos'].forEach(key => {
+        const selector = { nombre: 'name', en_progreso: 'progreso' }[key] || key;
+        const target = zoneDialog.querySelector(`[data-zone-${selector}]`);
+        if (target) target.textContent = zone[key] == null ? '—' : String(zone[key]);
+      });
+      zoneDialog.showModal();
+    }));
+    zoneDialog.querySelector('[data-zone-close]').addEventListener('click', () => zoneDialog.close());
+    zoneDialog.addEventListener('click', event => { if (event.target === zoneDialog) zoneDialog.close(); });
+  }
   const esc = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const points = values => values.map((value, index) => `${index * (100 / Math.max(values.length - 1, 1))},${44 - (value / Math.max(...values, 1)) * 38}`).join(' ');
+  const segmentOverlay = (donut, values, colors) => {
+    const total = values.reduce((sum, n) => sum + n, 0);
+    if (!total) return () => {};
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.classList.add('pv-segment-overlay');
+    donut.style.background = 'none';
+    let cursor = 0;
+    const circumference = 2 * Math.PI * 42;
+    const arcs = values.map((value, index) => {
+      const start = cursor;
+      cursor += value / total;
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', '50'); circle.setAttribute('cy', '50'); circle.setAttribute('r', '42');
+      circle.setAttribute('fill', 'none'); circle.setAttribute('stroke', colors[index]);
+      circle.setAttribute('stroke-width', '16');
+      circle.setAttribute('stroke-dasharray', `${value / total * circumference} ${circumference}`);
+      circle.setAttribute('stroke-dashoffset', `${-start * circumference}`);
+      svg.appendChild(circle);
+      return { circle, middle: (start + value / total / 2) * Math.PI * 2 };
+    });
+    donut.appendChild(svg);
+    return index => arcs.forEach((arc, i) => {
+      const selected = i === index && values[i] > 0;
+      arc.circle.style.transform = selected ? `translate(${Math.cos(arc.middle) * 9}px, ${Math.sin(arc.middle) * 9}px)` : '';
+      arc.circle.classList.toggle('is-selected', selected);
+      if (selected) svg.appendChild(arc.circle);
+    });
+  };
   const bindChartDetails = (host, nodes, read) => {
     if (!host || !nodes.length) return;
     let popup = host.querySelector('.pv-chart-tooltip');
@@ -51,7 +96,17 @@
       return;
     }
     const title = item.serie.map((value, index) => `${data.etiquetas[index]}: ${value}`).join('\n');
-    node.innerHTML = `<svg viewBox="0 0 100 48" preserveAspectRatio="none" role="img"><title>${esc(title)}</title><polyline points="${points(item.serie)}"></polyline></svg>`;
+    const max = Math.max(...item.serie, 1);
+    const dots = item.serie.map((value, index) => {
+      const x = index * (100 / Math.max(item.serie.length - 1, 1));
+      const y = 44 - (value / max) * 38;
+      return `<span class="pv-spark-dot" style="left:${x}%;top:${y / 48 * 100}%" data-index="${index}"></span>`;
+    }).join('');
+    node.innerHTML = `<svg viewBox="0 0 100 48" preserveAspectRatio="none" role="img"><title>${esc(title)}</title><polyline vector-effect="non-scaling-stroke" points="${points(item.serie)}"></polyline></svg>${dots}`;
+    bindChartDetails(node, node.querySelectorAll('.pv-spark-dot[data-index]'), dot => {
+      const index = Number(dot.dataset.index);
+      return {title: data.etiquetas[index] || '', value: `${item.serie[index]} tickets`, meta: item.titulo || ''};
+    });
   });
   const donut = document.querySelector('[data-pv-donut]');
   if (donut) {
@@ -59,8 +114,8 @@
     const segments = [
       ['#F59E0B', Number(states.abiertos || 0)],
       ['#84CC16', Number(states.progreso || 0)],
-      ['#10B981', Number(states.resueltos || 0)],
-      ['#94A3B8', Number(states.cerrados || 0)]
+      ['#10B981', Number(states.resueltos_estado || 0)],
+      ['#94A3B8', Number(states.cerrados_estado || 0)]
     ];
     const total = Number(data.total || 0);
     let cursor = 0;
@@ -73,6 +128,62 @@
     donut.style.setProperty('--pv-donut', stops.length ? `conic-gradient(${stops.join(',')})` : 'conic-gradient(#E2E8F0 0 100%)');
     const label = donut.querySelector('strong');
     if (label) label.textContent = String(total);
+    const body = donut.closest('.pv-state-body');
+    const definitions = [
+      { key: 'abierto', name: 'Abiertos', value: Number(states.abiertos || 0) },
+      { key: 'progreso', name: 'En progreso', value: Number(states.progreso || 0) },
+      { key: 'resuelto', name: 'Resueltos', value: Number(states.resueltos || 0), chartValue: Number(states.resueltos_estado || 0) },
+      { key: 'cerrado', name: 'Cerrados', value: Number(states.cerrados || 0), chartValue: Number(states.cerrados_estado || 0) },
+      { key: 'vencido', name: 'ANS vencidos', value: Number(states.vencidos || 0) }
+    ];
+    const highlightState = segmentOverlay(donut, definitions.slice(0, 4).map(item => item.chartValue === undefined ? item.value : item.chartValue), segments.map(segment => segment[0]));
+    if (body) {
+      const popup = document.createElement('div');
+      popup.className = 'pv-chart-tooltip';
+      popup.setAttribute('role', 'status');
+      popup.innerHTML = '<b></b><span></span><small></small>';
+      body.appendChild(popup);
+      const showState = (item, event) => {
+        if (!item) { popup.classList.remove('is-visible'); return; }
+        highlightState(definitions.indexOf(item));
+        popup.querySelector('b').textContent = item.name;
+        popup.querySelector('span').textContent = `${item.value} ${item.value === 1 ? 'ticket' : 'tickets'}`;
+        popup.querySelector('small').textContent = `${total ? Math.round(item.value * 100 / total) : 0}% del total${item.key === 'vencido' ? ' · indicador ANS' : ''}`;
+        const rect = body.getBoundingClientRect();
+        const x = event && event.clientX ? event.clientX - rect.left : rect.width / 2;
+        const y = event && event.clientY ? event.clientY - rect.top : 30;
+        popup.style.left = `${Math.max(0, Math.min(x + 12, rect.width - 165))}px`;
+        popup.style.top = `${Math.max(0, Math.min(y - 55, rect.height - 70))}px`;
+        popup.classList.add('is-visible');
+      };
+      const hideState = () => { popup.classList.remove('is-visible'); highlightState(-1); };
+      body.querySelectorAll('[data-pv-state]').forEach(row => {
+        const item = definitions.find(entry => entry.key === row.dataset.pvState);
+        row.tabIndex = 0;
+        row.addEventListener('pointerenter', event => showState(item, event));
+        row.addEventListener('pointermove', event => showState(item, event));
+        row.addEventListener('pointerleave', hideState);
+        row.addEventListener('focus', () => showState(item));
+        row.addEventListener('blur', hideState);
+      });
+      donut.addEventListener('pointermove', event => {
+        const rect = donut.getBoundingClientRect();
+        const x = event.clientX - rect.left - rect.width / 2;
+        const y = event.clientY - rect.top - rect.height / 2;
+        const distance = Math.hypot(x, y);
+        const outer = rect.width / 2;
+        if (!total || distance > outer || distance < outer - 19) { hideState(); return; }
+        const fraction = ((Math.atan2(x, -y) / (2 * Math.PI)) + 1) % 1;
+        let accumulated = 0;
+        const item = definitions.slice(0, 4).find(entry => {
+          const chartValue = entry.chartValue === undefined ? entry.value : entry.chartValue;
+          accumulated += chartValue / total;
+          return chartValue > 0 && fraction < accumulated;
+        });
+        showState(item, event);
+      });
+      donut.addEventListener('pointerleave', hideState);
+    }
   }
   const renderBars = (target, rows, color) => {
     if (!target) return;
@@ -104,6 +215,27 @@
       return stop;
     });
     categories.innerHTML = `<div class="pv-category-chart"><div class="pv-chart-donut" style="background:conic-gradient(${stops.join(',')})"><span><b>${total}</b><small>Solicitudes</small></span></div><div class="pv-category-list">${rows.map((row, index) => `<div class="pv-category-item" data-pv-name="${esc(row.nombre)}" data-pv-total="${row.total}" data-pv-pct="${Math.round(row.total * 100 / total)}"><i style="background:${categoryColors[index % categoryColors.length]}"></i><span>${esc(row.nombre)}</span><b>${row.total}<small>${Math.round(row.total * 100 / total)}%</small></b></div>`).join('')}</div></div>`;
+    const categoryDonut = categories.querySelector('.pv-chart-donut');
+    const categoryItems = [...categories.querySelectorAll('.pv-category-item')];
+    const highlightCategory = segmentOverlay(categoryDonut, rows.map(row => Number(row.total || 0)), rows.map((_, index) => categoryColors[index % categoryColors.length]));
+    categoryItems.forEach((item, index) => {
+      item.addEventListener('pointerenter', () => highlightCategory(index));
+      item.addEventListener('pointerleave', () => highlightCategory(-1));
+      item.addEventListener('focus', () => highlightCategory(index));
+      item.addEventListener('blur', () => highlightCategory(-1));
+    });
+    categoryDonut.addEventListener('pointermove', event => {
+      const rect = categoryDonut.getBoundingClientRect();
+      const x = event.clientX - rect.left - rect.width / 2;
+      const y = event.clientY - rect.top - rect.height / 2;
+      const distance = Math.hypot(x, y);
+      if (distance > rect.width / 2 || distance < rect.width * .32) { highlightCategory(-1); return; }
+      const fraction = ((Math.atan2(x, -y) / (2 * Math.PI)) + 1) % 1;
+      let cumulative = 0;
+      const index = rows.findIndex(row => { cumulative += Number(row.total) / total; return fraction < cumulative; });
+      highlightCategory(index);
+    });
+    categoryDonut.addEventListener('pointerleave', () => highlightCategory(-1));
     bindChartDetails(categories, categories.querySelectorAll('.pv-category-item'), node => ({
       title: node.dataset.pvName,
       value: `${node.dataset.pvTotal} solicitudes`,

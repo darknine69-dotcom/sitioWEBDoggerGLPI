@@ -295,6 +295,10 @@
 #actions-flotante .accion-btn .accion-icon { width: 14px; height: 14px; flex: none; color: var(--ink-muted); }
 #actions-flotante .accion-btn.is-danger { color: var(--dogger-red); }
 #actions-flotante .accion-btn.is-danger .accion-icon { color: var(--dogger-red); }
+.lista-page .ticket-kpi-spark { pointer-events:auto; z-index:3; }
+.lista-page .tickets-kpis .dash-stat-value { z-index:4!important; }
+.lista-page .ticket-spark-tooltip { position:absolute; z-index:6; left:50%; bottom:100%; transform:translate(-50%,-6px); width:max-content; max-width:200px; padding:7px 10px; border:1px solid #dce5ef; border-radius:8px; background:#fff; color:#172b4d; box-shadow:0 6px 18px rgba(15,23,42,.16); font:600 11px/1.4 var(--font-body); pointer-events:none; }
+.lista-page .ticket-spark-tooltip[hidden] { display:none; }
 </style>
 {% endblock %}
 
@@ -614,6 +618,19 @@
         var max = Math.max.apply(null, values.concat([1]));
         stage.tabIndex = 0;
         stage.title = 'Tendencia de los últimos 7 días';
+        function activarDetalle() {
+            var tooltip = document.createElement('span');
+            tooltip.className = 'ticket-spark-tooltip';
+            tooltip.hidden = true;
+            stage.appendChild(tooltip);
+            stage.addEventListener('pointermove', function (event) {
+                var bounds = stage.getBoundingClientRect();
+                var index = Math.min(values.length - 1, Math.max(0, Math.floor((event.clientX - bounds.left) / bounds.width * values.length)));
+                tooltip.textContent = (labels[index] || '') + ': ' + values[index] + ' tickets';
+                tooltip.hidden = false;
+            });
+            stage.addEventListener('pointerleave', function () { tooltip.hidden = true; });
+        }
         if (bars[key]) {
             stage.classList.add('is-bars');
             var width = 240 / values.length;
@@ -623,6 +640,7 @@
                 return '<rect x="' + x + '" y="' + (36 - height) + '" width="' + Math.max(5, Math.round(width - 6)) + '" height="' + height + '" rx="3"><title>' + (labels[index] || '') + ': ' + value + ' tickets</title></rect>';
             }).join('');
             stage.innerHTML = '<svg viewBox="0 0 240 36" preserveAspectRatio="none" aria-hidden="true">' + rects + '</svg>';
+            activarDetalle();
             return;
         }
         var points = values.map(function (value, index) {
@@ -634,6 +652,7 @@
             return '<circle class="spark-dot" cx="' + point[0] + '" cy="' + point[1] + '" r="2.2"><title>' + (labels[index] || '') + ': ' + value + ' tickets</title></circle>';
         }).join('');
         stage.innerHTML = '<svg viewBox="0 0 240 36" preserveAspectRatio="none" aria-hidden="true"><polygon class="spark-fill" points="2,36 ' + points.join(' ') + ' 238,36"/><polyline class="spark-line" points="' + points.join(' ') + '"/>' + circles + '</svg>';
+        activarDetalle();
     });
 })();
 </script>
@@ -665,15 +684,12 @@
         e:'cerrado', l:'Cerrar ticket', icon:'#i-lock', danger:true,
         confirm:'¿Cerrar este ticket?\n\nEl solicitante dejará de verlo pendiente.'
     };
-    var REABRIR = {e:'abierto', l:'Reabrir ticket', icon:'#i-refresh', danger:false};
-    var REABRIR = {e:'abierto', l:'Reabrir ticket', icon:'#i-refresh', danger:false};
 
     function build(estado, eliminarUrl, codigo) {
         var items = [];
         var tr = ESTADO_ITEMS[estado] || [];
         for (var i = 0; i < tr.length; i++) items.push(tr[i]);
         if (estado !== 'cerrado') items.push(CERRAR);
-        else items.push(REABRIR);
         items.push({
             elim:true,
             l:'Mover a la papelera',

@@ -126,7 +126,7 @@ class ChatWidgetTest(TestCase):
     def test_adjuntar_valida_tipo_y_tamano(self):
         self.client.force_login(self.usuario)
         url = reverse("tickets:chat_adjuntar", args=[self.ticket.pk])
-        pdf = SimpleUploadedFile("doc.pdf", b"%PDF-1.4", content_type="application/pdf")
+        pdf = SimpleUploadedFile("doc.pdf", b"%PDF-1.4\n%%EOF\n", content_type="application/pdf")
         respuesta = self.client.post(url, {"archivo": pdf})
         self.assertEqual(respuesta.status_code, 200)
         self.assertTrue(respuesta.json()["ok"])
@@ -135,6 +135,10 @@ class ChatWidgetTest(TestCase):
         grande = SimpleUploadedFile("g.pdf", b"x" * (9 * 1024 * 1024),
                                     content_type="application/pdf")
         self.assertEqual(self.client.post(url, {"archivo": grande}).status_code, 400)
+        falso = SimpleUploadedFile("falso.png", b"<script>contenido</script>", content_type="image/png")
+        self.assertEqual(self.client.post(url, {"archivo": falso}).status_code, 400)
+        pdf_falso = SimpleUploadedFile("falso.pdf", b"no es un pdf", content_type="application/pdf")
+        self.assertEqual(self.client.post(url, {"archivo": pdf_falso}).status_code, 400)
 
     def test_adjunto_solo_dueno_y_staff(self):
         from apps.tickets.models import TicketAdjunto

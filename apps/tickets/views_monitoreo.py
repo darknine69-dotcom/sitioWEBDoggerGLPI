@@ -17,9 +17,17 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.models import Usuario
+
+
+def _retorno_monitoreo(request):
+    destino = (request.POST.get("volver") or "").strip()
+    if destino and url_has_allowed_host_and_scheme(destino, {request.get_host()}, require_https=request.is_secure()):
+        return destino
+    return reverse("tickets:monitoreo_admin")
 
 from . import ans_avisos
 from .decorators import admin_required
@@ -417,10 +425,19 @@ def monitoreo_admin(request):
         dia = _fecha_kpi(fecha)
         if dia in dias_kpi:
             abiertos_por_dia[dia] += 1
+    primeras_zonas = {}
+    for registro in registros_zona_kpi:
+        fecha = _fecha_kpi(registro["creado_en"])
+        supervisor_id = registro["observador_id"]
+        if fecha and (supervisor_id not in primeras_zonas or fecha < primeras_zonas[supervisor_id]):
+            primeras_zonas[supervisor_id] = fecha
+    altas_supervisores = Counter(primeras_zonas.values())
+    altas_zonas = Counter(fecha for fecha in fechas_zona_kpi if fecha)
+    altas_cuentas = Counter(fecha for fecha in fechas_cuenta_kpi if fecha)
     series_completas = {
-        "supervisores": supervisores_por_dia,
-        "zonas": _acumulada_kpi(fechas_zona_kpi),
-        "cuentas": _acumulada_kpi(fechas_cuenta_kpi),
+        "supervisores": [altas_supervisores[dia] for dia in dias_kpi],
+        "zonas": [altas_zonas[dia] for dia in dias_kpi],
+        "cuentas": [altas_cuentas[dia] for dia in dias_kpi],
         "abiertos": [abiertos_por_dia[dia] for dia in dias_kpi],
     }
 
@@ -603,6 +620,13 @@ def _zonas_creadas_por_observador():
         if (e.usuario_email or "").strip()
     }
     totales, abiertos, urgentes, tecnicos = {}, {}, {}, {}
+    ids_usuarios = {e.usuario_id for z in zonas for e in z.elementos.all() if e.usuario_id}
+    presiones = {}
+    if ids_usuarios:
+        for fila in (TicketComentario.objects.filter(es_presion=True, usuario_id__in=ids_usuarios)
+                     .values("usuario_id", "ticket__solicitante_email").annotate(n=Count("pk"))):
+            clave = (fila["usuario_id"], (fila["ticket__solicitante_email"] or "").strip().lower())
+            presiones[clave] = presiones.get(clave, 0) + fila["n"]
     if correos:
         for fila in (
             Ticket.objects.exclude(solicitante_email__in=[None, ""])
@@ -690,6 +714,7 @@ def _zonas_creadas_por_observador():
                     "codigo": ticket.codigo,
                     "titulo": ticket.titulo,
                     "estado": ticket.estado,
+                    "fue_resuelto": ticket.fue_resuelto,
                     "estado_display": ticket.get_estado_display(),
                     "fecha": timezone.localtime(ticket.fecha_creacion).strftime("%d/%m/%Y"),
                     "tecnico": (
@@ -724,11 +749,11 @@ def _zonas_creadas_por_observador():
             tickets = detalles_tickets.get(correo, [])
             resueltos = sum(
                 1 for ticket in tickets
-                if ticket["estado"] == Ticket.Estado.RESUELTO
+                if ticket["fue_resuelto"]
             )
             cerrados = sum(
                 1 for ticket in tickets
-                if ticket["estado"] == Ticket.Estado.CERRADO
+                if ticket["estado"] in (Ticket.Estado.CERRADO, Ticket.Estado.RESUELTO)
             )
             abiertos_cuenta = abiertos.get(correo, 0)
             total_cuenta = totales.get(correo, 0)
@@ -737,8 +762,11 @@ def _zonas_creadas_por_observador():
                     "elemento_id": e.pk,
                     "nombre": (e.usuario.nombre if e.usuario_id else "") or correo or "—",
                     "email": correo,
+                    "presiones": presiones.get((e.usuario_id, correo), 0),
                     "rol": e.usuario.get_rol_display() if e.usuario_id else "Sin cuenta",
                     "ubicacion": (e.usuario.ubicacion if e.usuario_id else "") or "—",
+                    "horario_atencion": (e.usuario.horario_atencion if e.usuario_id else ""),
+                    "cuenta_activa": e.usuario.activo and e.usuario.is_active if e.usuario_id else None,
                     "total": total_cuenta,
                     "abiertos": abiertos_cuenta,
                     "resueltos": resueltos,
@@ -783,7 +811,7 @@ def monitoreo_zona_color(request, pk):
     """Actualiza el color de una zona desde la tira del panel administrador."""
     from apps.tickets.views_observador import PALETA_ZONA
 
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     zona = ZonaObservador.objects.filter(pk=pk).first()
     if zona is None:
         raise Http404
@@ -846,7 +874,7 @@ def monitoreo_agregar(request):
     observador_id = request.POST.get("observador") or ""
     correo = (request.POST.get("email") or "").strip().lower()
     nombre_zona = (request.POST.get("zona") or "").strip()
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
 
     observador = Usuario.objects.filter(
         pk=observador_id, rol=Usuario.Rol.OBSERVADOR
@@ -947,7 +975,7 @@ def monitoreo_quitar_zona(request):
     """
     observador_id = request.POST.get("observador") or ""
     correo = (request.POST.get("email") or "").strip().lower()
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     observador = Usuario.objects.filter(
         pk=observador_id, rol=Usuario.Rol.OBSERVADOR
     ).first() if observador_id.isdigit() else None
@@ -985,7 +1013,7 @@ def monitoreo_quitar(request, pk):
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
     observador_id = request.POST.get("observador") or ""
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     sacado = ElementoMiLista.objects.filter(
         pk=pk, observador__pk=observador_id if observador_id.isdigit() else 0
     ).select_related("zona").first()
@@ -1011,7 +1039,7 @@ def monitoreo_zona_miembro_quitar(request, pk):
     """Saca una cuenta de la zona (queda en la lista, sin zona)."""
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     elemento = ElementoMiLista.objects.filter(pk=pk).select_related("zona", "punto").first()
     if elemento is None or elemento.zona_id is None:
         return redirect(volver)
@@ -1038,7 +1066,7 @@ def monitoreo_zona_miembros_quitar(request):
     """Saca las cuentas seleccionadas de una zona sin borrarlas de la lista."""
     from django.contrib import messages
 
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     zona_id = request.POST.get("zona_id") or ""
     ids = {valor for valor in request.POST.getlist("elemento_ids") if valor.isdigit()}
     zona = ZonaObservador.objects.filter(pk=zona_id).first() if zona_id.isdigit() else None
@@ -1077,7 +1105,7 @@ def monitoreo_zona_eliminar(request, pk):
     """Elimina una zona creada por un observador (su gente no se borra)."""
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     zona = ZonaObservador.objects.select_related("observador").filter(pk=pk).first()
     if zona is not None:
         _auditar(
@@ -1095,7 +1123,7 @@ def monitoreo_zona_renombrar(request, pk):
     """Renombra una zona desde el panel del administrador."""
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     zona = ZonaObservador.objects.select_related("observador").filter(pk=pk).first()
     if zona is None:
         return redirect(volver)
@@ -1128,7 +1156,7 @@ def monitoreo_zona_crear(request):
     """Crea una zona para un supervisor desde el panel del administrador."""
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     observador_id = request.POST.get("observador") or ""
     nombre = (request.POST.get("nombre") or "").strip()[:80]
     observador = Usuario.objects.filter(
@@ -1217,7 +1245,7 @@ def monitoreo_zona_miembro_agregar(request, pk):
     """Mete una cuenta a la zona desde el panel del administrador."""
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     zona = ZonaObservador.objects.select_related("observador").filter(pk=pk).first()
     if zona is None:
         return redirect(volver)
@@ -1360,7 +1388,7 @@ def monitoreo_zonas(request):
     """Asigna o quita una zona completa a un observador."""
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     observador_id = request.POST.get("observador") or ""
     nombre_zona = (request.POST.get("punto") or "").strip()
     accion = request.POST.get("accion") or "asignar"
@@ -1395,7 +1423,7 @@ def monitoreo_zona_alertas(request, pk):
     """Activa/desactiva las alertas ANS de una zona (resaltado de urgentes)."""
     if request.method != "POST":
         return redirect(reverse("tickets:monitoreo_admin"))
-    volver = request.POST.get("volver") or reverse("tickets:monitoreo_admin")
+    volver = _retorno_monitoreo(request)
     zona = ZonaObservador.objects.select_related("observador").filter(pk=pk).first()
     if zona is None:
         return redirect(volver)

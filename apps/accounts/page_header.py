@@ -50,7 +50,8 @@ def encabezado_pagina(request):
     resolver = getattr(request, "resolver_match", None)
     nombre = resolver.view_name if resolver else ""
     seccion, actual, padre = PAGINAS.get(nombre, ("MESA DE AYUDA TI", "", None))
-    user = request.user
+    from django.contrib.auth.models import AnonymousUser
+    user = getattr(request, "user", None) or AnonymousUser()
     inicio = landing_por_rol(user)
     inicio_texto, inicio_icono = {
         "admin": ("Panel administrador", "i-chart"),

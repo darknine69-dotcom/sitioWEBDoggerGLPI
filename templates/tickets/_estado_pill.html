@@ -14,8 +14,10 @@
 <span class="status-pill status-resuelto{% if id %} is-resuelto-pill{% endif %}"{% if id %} id="{{ id }}"{% endif %}>Resuelto</span>
 {% elif cerrado and filtro_estado == 'cerrado' %}
 <span class="status-pill status-cerrado{% if id %} is-cerrado-pill{% endif %}"{% if id %} id="{{ id }}"{% endif %}>Cerrado</span>
-{% elif cerrado %}
+{% elif cerrado and resuelto %}
 <span class="status-pills"><span class="status-pill status-resuelto{% if id %} is-resuelto-pill{% endif %}"{% if id %} id="{{ id }}"{% endif %}>Resuelto</span><span class="status-pill status-cerrado{% if id %} is-cerrado-pill{% endif %}"{% if id %} id="{{ id }}-cerrado"{% endif %}>Cerrado</span></span>
+{% elif cerrado %}
+<span class="status-pill status-cerrado{% if id %} is-cerrado-pill{% endif %}"{% if id %} id="{{ id }}"{% endif %}>Cerrado</span>
 {% elif resuelto %}
 <span class="status-pill status-resuelto{% if id %} is-resuelto-pill{% endif %}"{% if id %} id="{{ id }}"{% endif %}>Resuelto</span>
 {% else %}

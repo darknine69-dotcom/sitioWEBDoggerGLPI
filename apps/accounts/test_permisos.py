@@ -92,11 +92,9 @@ class PermisosRolesTest(TestCase):
             403,
         )
 
-    def test_reabrir_exige_permiso_al_tecnico(self):
+    def test_ticket_cerrado_no_puede_reabrirse(self):
         ticket = self._ticket(estado=Ticket.Estado.CERRADO)
         self.client.force_login(self.tec)
-        self.tec.puede_reabrir_tickets = False
-        self.tec.save()
         respuesta = self.client.post(
             reverse("tickets:cambiar_estado", args=[ticket.pk]),
             {"estado": Ticket.Estado.ABIERTO, "next": "/panel/tickets/"},
@@ -104,7 +102,7 @@ class PermisosRolesTest(TestCase):
         )
         ticket.refresh_from_db()
         self.assertEqual(ticket.estado, Ticket.Estado.CERRADO)
-        self.assertContains(respuesta, "no te permite reabrir")
+        self.assertContains(respuesta, "no pueden volver a abrirse")
 
     def test_acciones_hasta_resuelto_y_cerrado(self):
         self._ticket(estado=Ticket.Estado.EN_PROGRESO)
@@ -149,8 +147,9 @@ class PermisosRolesTest(TestCase):
         html = self.client.get(
             reverse("tickets:usuario_ficha", args=[self.usuario.pk])
         ).content.decode()
-        for etiqueta in ("Cerrar", "Eliminar", "Reabrir", "Crear", "Chatear"):
+        for etiqueta in ("Cerrar", "Eliminar", "Crear", "Chatear"):
             self.assertIn(etiqueta, html)
+        self.assertNotIn("Reabrir", html)
         cfg = ConfigSitio.cargar()
         cfg.whatsapp_activo = False
         cfg.save()

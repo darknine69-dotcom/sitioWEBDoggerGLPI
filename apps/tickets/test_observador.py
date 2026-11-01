@@ -1248,7 +1248,7 @@ class ZonasConAccionesEnLasTresVistasTest(TestCase):
         self._acciones(html)
         self.assertIn('name="volver" value="/observador/monitoreo/"', html)
         # El icono de la zona sigue mandando la tarjeta.
-        self.assertIn('class="obs-zona-ico"', html)
+        self.assertIn('class="zona-activa-icon"', html)
         self.assertIn("#i-map-pin", html)
 
     def test_el_panel_de_mi_lista_también(self):
@@ -1369,6 +1369,14 @@ class PaletaDeColorDeLasCarpetasTest(TestCase):
                 self.assertIn(
                     'action="%s"' % reverse("tickets:obs_zona_color"), html
                 )
+
+    def test_monitoreo_muestra_color_y_acceso_a_gestion_de_la_zona(self):
+        self.zona.color = "#D62B1F"
+        self.zona.save(update_fields=["color"])
+        html = self.client.get(reverse("tickets:obs_monitoreo")).content.decode()
+        self.assertIn('data-zona-slide="%d"' % self.zona.pk, html)
+        self.assertIn("--zona-color: #D62B1F", html)
+        self.assertIn(reverse("tickets:obs_zona_detalle", args=[self.zona.pk]), html)
 
     def test_el_color_elegido_se_guarda_y_pinta(self):
         respuesta = self.client.post(reverse("tickets:obs_zona_color"), {

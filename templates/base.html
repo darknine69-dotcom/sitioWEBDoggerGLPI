@@ -37,6 +37,11 @@
     <script defer src="{% asset 'js/dogger.js' %}"></script>
     <script defer src="{% asset 'js/tabla-ajax.js' %}"></script>
     {% block extra_css %}{% endblock %}
+    <style>
+        /* Los indicadores conservan sus datos y gráficas, sin comparativos. */
+        .dash-stat-trend, .mon-kpi-trend, .pan-kpi-trend,
+        .usr-kpi-trend, .pv-variation { display:none !important; }
+    </style>
 </head>
 <body class="{% block body_class %}{% endblock %}" data-tooltips="{% if request.user.tooltips_habilitado %}1{% else %}0{% endif %}"
       {% if request.user.is_authenticated %}data-url-latido="{% url 'accounts:latido' %}"{% endif %}>

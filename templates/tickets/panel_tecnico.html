@@ -384,6 +384,47 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 .corp-tec-select { display: block; }
 .corp-modal-hint { font-size: 13px; color: var(--ink-muted); margin: 0 0 6px; }
 .corp-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.dash-stat[data-tec-spark] { position:relative; }
+.dash-stat[data-tec-spark]::before { display:none!important; }
+.tec-kpi-spark { position:absolute; left:27px; right:27px; bottom:54px; height:57px; color:var(--kpi-color,#dc2626); z-index:2; }
+.tec-kpi-spark svg { width:100%; height:100%; overflow:visible; }.tec-kpi-spark polyline { fill:none; stroke:currentColor; stroke-width:2; vector-effect:non-scaling-stroke; }.tec-kpi-spark polygon { fill:currentColor; opacity:.12; }
+.tec-kpi-spark circle { fill:currentColor; vector-effect:non-scaling-stroke; }
+.tec-kpi-spark rect { fill:currentColor; opacity:.35; }.tec-kpi-spark rect:last-of-type { opacity:1; }
+.tec-kpi-tip { position:absolute; bottom:100%; left:50%; transform:translateX(-50%); padding:5px 8px; background:#fff; border:1px solid #e2e8f0; border-radius:7px; box-shadow:0 4px 12px #0f172a22; color:#172b4d; font-size:11px; white-space:nowrap; pointer-events:none; }.tec-kpi-tip[hidden] { display:none; }
+.dash-stat[data-tec-spark] .dash-stat-value { z-index:3!important; }
+@media(max-width:760px) { .tec-kpi-spark { left:18px; right:18px; bottom:47px; height:42px; } }
+.cola-solicitudes .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.cola-solicitudes .section-ic { display:grid; place-items:center; width:38px; height:38px; border-radius:10px; background:#1f2937; color:#fbbf24; }
+.cola-solicitudes .table-toolbar { display:flex; align-items:center; gap:10px; padding:12px; margin-bottom:10px; border:1px solid #e2e8f0; border-radius:14px; background:#fff; box-shadow:0 4px 14px rgba(15,23,42,.04); }
+.cola-solicitudes .search-field { flex:1; min-width:0; min-height:42px; border:1px solid #e2e8f0; border-radius:9px; background:#fff; }
+.cola-solicitudes .cola-filter { display:grid; gap:2px; min-width:115px; padding:5px 10px; border:1px solid #e2e8f0; border-radius:9px; color:#64748b; background:#fff; font-size:10px; }.cola-solicitudes .cola-filter select { width:100%; border:0; background:transparent; color:#172b4d; font:600 12px var(--font-body); }
+.cola-solicitudes .table-card { border:1px solid #e2e8f0; border-radius:14px; background:#fff; box-shadow:0 5px 18px rgba(15,23,42,.05); }
+@media(min-width:701px) { .cola-solicitudes #tablaSolicitudes thead th { padding:13px 14px; background:#e9edf3; color:#60738f; font-size:10px; font-weight:700; text-transform:uppercase; white-space:nowrap; }.cola-solicitudes #tablaSolicitudes tbody td { padding:12px 14px; border-bottom:1px solid #e9eef5; vertical-align:middle; }.cola-solicitudes #tablaSolicitudes tbody tr:hover { background:#f8fafc; }.cola-solicitudes #tablaSolicitudes .table-code { color:#dc2626; font-weight:800; } }
+.cola-solicitudes .cola-priority { display:inline-flex; padding:4px 10px; border-radius:999px; background:#fef3c7; color:#b45309; font-size:11px; font-weight:700; }.cola-solicitudes .cola-priority.urgente { background:#fee2e2; color:#dc2626; }.cola-solicitudes .cola-priority.baja { background:#dbeafe; color:#2563eb; }.cola-solicitudes .cola-priority.alta { background:#ffedd5; color:#c2410c; }
+.cola-solicitudes .cell-actions { white-space:nowrap; }.cola-solicitudes .cell-actions .btn { border-radius:9px; }
+.corp-results .corp-tabla-card { border:1px solid #e2e8f0; border-radius:14px; background:#fff; box-shadow:0 5px 18px rgba(15,23,42,.05); overflow:hidden; }
+@media(min-width:701px) { .corp-results #tablaAbiertas thead th { padding:13px 14px; background:#e9edf3; color:#60738f; font-size:10px; font-weight:700; text-transform:uppercase; white-space:nowrap; }.corp-results #tablaAbiertas tbody td { padding:8px 14px; border-bottom:1px solid #e9eef5; vertical-align:middle; font-size:12px; }.corp-results #tablaAbiertas tbody tr { transition:background .15s ease; }.corp-results #tablaAbiertas tbody tr:hover { background:#f1f6fd; }.corp-results #tablaAbiertas .table-code { color:#dc2626; font-weight:800; } }
+.corp-results .mis-tech { display:inline-flex; align-items:center; gap:6px; }.corp-results .mis-tech .role-icon { width:15px; height:15px; }.corp-results .mis-tech.admin { color:#dc2626; }.corp-results .mis-tech.tecnico { color:#2563eb; }.corp-results .mis-tech span { color:#172b4d; }
+.cola-solicitudes .cell-actions .cola-icon-action { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; min-width:34px; padding:0!important; }.cola-solicitudes .cell-actions .cola-icon-action .icon { width:16px; height:16px; }
+.cola-solicitudes #tablaSolicitudes th button { padding:0; border:0; color:inherit; background:transparent; font:inherit; text-transform:inherit; cursor:pointer; }.cola-solicitudes #tablaSolicitudes th button:focus-visible { outline:2px solid #dc2626; outline-offset:3px; }
+.cola-solicitudes .table-card[aria-busy="true"] { opacity:.55; pointer-events:none; transition:opacity .15s; }.cola-solicitudes .cola-loading[hidden] { display:none; }.cola-solicitudes .cola-loading { padding:8px 12px; color:#64748b; font-size:12px; }
+.cola-solicitudes .cola-tech { display:inline-flex; align-items:center; gap:6px; }.cola-solicitudes .cola-tech .role-icon { width:15px; height:15px; }.cola-solicitudes .cola-tech.admin { color:#dc2626; }.cola-solicitudes .cola-tech.tecnico { color:#2563eb; }.cola-solicitudes .cola-tech span { color:#172b4d; }
+.cola-solicitudes .section-head { min-height:46px; align-items:center; margin:0 0 12px; }
+.cola-solicitudes .cola-heading { display:flex; align-items:center; gap:10px; min-width:0; }.cola-solicitudes .cola-heading-copy { min-width:0; }.cola-solicitudes .section-title { margin:0; font-size:16px; font-weight:700; line-height:1.25; }.cola-solicitudes .cola-heading p { margin:2px 0 0; font-size:11px; line-height:1.25; color:#64748b; }
+.cola-solicitudes .section-ic { flex:none; width:38px; height:38px; }.cola-solicitudes .cola-head-actions { display:flex; align-items:center; gap:8px; }
+.cola-solicitudes .cola-period { display:flex; align-items:center; gap:6px; height:40px; padding:0 10px; border:1px solid #e2e8f0; border-radius:10px; color:#64748b; background:#fff; box-shadow:0 2px 8px #0f172a0a; }.cola-solicitudes .cola-period .icon { width:16px; height:16px; flex:none; }.cola-solicitudes .cola-period select { width:auto; min-width:120px; height:36px; padding:0 20px 0 0; border:0!important; box-shadow:none!important; background-color:transparent!important; font-size:11px; color:#405979; }
+.cola-solicitudes .cola-filter-toggle { display:grid; place-items:center; width:40px; height:40px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; color:#526985; cursor:pointer; }.cola-solicitudes .cola-filter-toggle .icon { width:16px; height:16px; }
+.cola-solicitudes .table-toolbar { min-height:64px; padding:10px 12px!important; gap:10px; }.cola-solicitudes .table-toolbar[hidden] { display:none!important; }.cola-solicitudes .search-field { height:42px!important; min-height:42px!important; padding:0 12px!important; }.cola-solicitudes .search-field input { height:40px!important; min-height:0!important; padding:0!important; font-size:12px!important; }
+.cola-solicitudes .cola-filter { box-sizing:border-box; min-width:110px; height:42px; padding:4px 10px; line-height:1.1; }.cola-solicitudes .cola-filter select { height:21px!important; min-height:0!important; padding:0 18px 0 0!important; border:0!important; box-shadow:none!important; border-radius:0!important; background-color:transparent!important; }
+.cola-solicitudes .cola-filter, .cola-solicitudes .cola-period { position:relative; overflow:visible; }
+.cola-solicitudes select.cola-native-enhanced { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+.cola-solicitudes .cola-picker { position:relative; min-width:0; }.cola-solicitudes .cola-picker summary { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:88px; color:#172b4d; font-size:12px; font-weight:700; list-style:none; cursor:pointer; }.cola-solicitudes .cola-picker summary::-webkit-details-marker { display:none; }.cola-solicitudes .cola-picker summary::after { content:'⌄'; color:#64748b; font-size:15px; line-height:1; }.cola-solicitudes .cola-picker[open] summary::after { transform:rotate(180deg); }
+.cola-solicitudes .cola-picker-menu { position:absolute; z-index:400; top:calc(100% + 9px); left:-10px; min-width:calc(100% + 20px); max-height:220px; overflow:auto; padding:5px; border:1px solid #e2e8f0; border-radius:11px; background:#fff; box-shadow:0 12px 26px #0f172a26; }.cola-solicitudes .cola-picker-menu button { display:block; width:100%; min-height:32px; padding:7px 10px; border:0; border-radius:7px; background:transparent; color:#334155; text-align:left; font:600 12px var(--font-body); white-space:nowrap; cursor:pointer; }.cola-solicitudes .cola-picker-menu button:hover,.cola-solicitudes .cola-picker-menu button[aria-selected="true"] { background:#fff1f2; color:#dc2626; }.cola-solicitudes .cola-picker summary:focus-visible,.cola-solicitudes .cola-picker-menu button:focus-visible { outline:2px solid #dc2626; outline-offset:2px; }
+.cola-solicitudes .cola-filter { padding-top:3px; align-content:start; gap:3px; }.cola-solicitudes .cola-picker summary { position:relative; padding-right:18px; }.cola-solicitudes .cola-picker summary::after { content:""; position:absolute; right:2px; top:50%; width:6px; height:6px; border-right:1.5px solid #64748b; border-bottom:1.5px solid #64748b; transform:translateY(-70%) rotate(45deg); }.cola-solicitudes .cola-picker[open] summary::after { transform:translateY(-25%) rotate(225deg); }
+.cola-solicitudes #filtrosCola button[type="submit"] { height:42px!important; min-height:42px!important; min-width:82px; padding:0 16px!important; border:0!important; border-radius:9px!important; background:#dc2626!important; color:#fff!important; box-shadow:0 4px 12px #dc262633!important; }
+@media(max-width:700px){.cola-solicitudes .section-head { flex-wrap:wrap; }.cola-solicitudes .cola-filter { flex:1 1 110px; }.cola-solicitudes .cola-head-actions { margin-left:auto; }}
+@media(min-width:701px) { .cola-solicitudes #tablaSolicitudes tbody td { padding:8px 14px; }.cola-solicitudes #tablaSolicitudes tbody tr { transition:background .15s ease; }.cola-solicitudes #tablaSolicitudes tbody tr:hover { background:#f1f6fd; }.cola-solicitudes #tablaSolicitudes .cell-actions .btn { min-height:30px; padding:0 10px; font-size:11px; } }
+@media(max-width:700px){.cola-solicitudes .table-toolbar { flex-wrap:wrap; }.cola-solicitudes .search-field { flex-basis:100%; }}
 </style>
 {% endblock %}
 
@@ -399,7 +440,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 
     {% if vista == 'panel' %}
         <div class="dash-stat-row dash-stat-row--tec dash-stat-row--mesas">
-            <a class="dash-stat dash-hov-total" href="?vista=mis&amp;sv=todas&amp;rango=" title="Todos tus tickets asignados, de cualquier estado">
+            <a class="dash-stat dash-hov-total" data-tec-spark="total" href="?vista=mis&amp;sv=todas&amp;rango=" title="Todos tus tickets asignados, de cualquier estado">
                 <span class="dash-stat-icon">
                     <span class="dash-stat-value">{{ stats.total|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-ticket"/></svg></span>
@@ -409,7 +450,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                     <span class="dash-stat-hint">de cualquier estado</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-abiertos" href="?vista=mis&amp;estado=abierto&amp;rango=" title="Tus solicitudes recién creadas, pendientes de atención">
+            <a class="dash-stat dash-hov-abiertos" data-tec-spark="abiertas" href="?vista=mis&amp;estado=abierto&amp;rango=" title="Tus solicitudes recién creadas, pendientes de atención">
                 <span class="dash-stat-icon st-ic-abiertos">
                     <span class="dash-stat-value st-abiertos">{{ stats.abiertos|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-alert"/></svg></span>
@@ -419,7 +460,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                     <span class="dash-stat-hint">en espera de atención</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-progreso" href="?vista=mis&amp;estado=en-progreso&amp;rango=" title="Tus solicitudes que ya estás atendiendo">
+            <a class="dash-stat dash-hov-progreso" data-tec-spark="progreso" href="?vista=mis&amp;estado=en-progreso&amp;rango=" title="Tus solicitudes que ya estás atendiendo">
                 <span class="dash-stat-icon st-ic-progreso">
                     <span class="dash-stat-value st-progreso">{{ stats.en_progreso|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-wrench"/></svg></span>
@@ -429,7 +470,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                     <span class="dash-stat-hint">siendo atendidos</span>
                 </span>
             </a>
-            <a class="dash-stat dash-hov-resueltos" href="?vista=mis&amp;estado=resuelto&amp;rango=" title="Tus solicitudes ya resueltas">
+            <a class="dash-stat dash-hov-resueltos" data-tec-spark="resueltas" href="?vista=mis&amp;estado=resuelto&amp;rango=" title="Tus solicitudes ya resueltas">
                 <span class="dash-stat-icon st-ic-resueltos">
                     <span class="dash-stat-value st-resueltos">{{ stats.resueltos|default:0 }}</span>
                     <span class="dash-stat-glyph"><svg class="icon"><use href="#i-check-circle"/></svg></span>
@@ -447,15 +488,14 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 
     {% elif vista == 'cola' %}
 
+    <section class="cola-solicitudes">
     <div class="section-head">
-        <div>
-            <div class="section-title">
-                <span class="section-ic"><svg class="icon"><use href="#i-layers"/></svg></span>
-                <span>Solicitudes de usuarios</span>
-            </div>
-            <p>Tickets montados desde el portal. Toma un ticket sin técnico para atenderlo.</p>
+        <div class="cola-heading">
+            <span class="section-ic"><svg class="icon"><use href="#i-layers"/></svg></span>
+            <div class="cola-heading-copy"><div class="section-title">Solicitudes de usuarios</div>
+            <p>Tickets montados desde el portal. Toma un ticket sin técnico para atenderlo.</p></div>
         </div>
-        <span class="section-count">{{ solicitudes_page.paginator.count }} no cerrado{{ solicitudes_page.paginator.count|pluralize }}</span>
+        <div class="cola-head-actions"><label class="cola-period"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><select name="cola_periodo" form="filtrosCola" aria-label="Período de solicitudes"><option value="">Todo el tiempo</option><option value="7"{% if cola_periodo == '7' %} selected{% endif %}>Últimos 7 días</option><option value="30"{% if cola_periodo == '30' %} selected{% endif %}>Últimos 30 días</option><option value="90"{% if cola_periodo == '90' %} selected{% endif %}>Últimos 90 días</option></select></label><button type="button" class="cola-filter-toggle" aria-label="Mostrar u ocultar filtros" aria-controls="filtrosCola" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-filter"/></svg></button></div>
     </div>
 
     <form method="get" class="table-toolbar" id="filtrosCola">
@@ -464,23 +504,28 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
             <svg class="icon icon-sm"><use href="#i-search"/></svg>
             <input type="search" data-vivo data-vivo-contenedor="#tablaSolicitudes tbody" name="q_cola" value="{{ q_cola }}" placeholder="Buscar por código HD, título, solicitante o punto…" />
         </label>
+        <label class="cola-filter">Estado<select name="cola_estado"><option value="">Todos</option>{% for value,label in estados %}<option value="{{ value }}"{% if cola_estado == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label class="cola-filter">Prioridad<select name="cola_prioridad"><option value="">Todas</option>{% for value,label in cola_prioridades %}<option value="{{ value }}"{% if cola_prioridad == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label class="cola-filter">Técnico<select name="cola_tecnico"><option value="">Todos</option>{% for tec in cola_tecnicos %}<option value="{{ tec.pk }}"{% if cola_tecnico == tec.pk|stringformat:'s' %} selected{% endif %}>{{ tec.nombre }}</option>{% endfor %}</select></label>
         <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
         {% if q_cola %}
         <a href="?vista=cola" class="link-clear">✕ Limpiar</a>
         {% endif %}
     </form>
 
-    <div class="table-card">
+    <p class="cola-loading" role="status" hidden>Actualizando solicitudes…</p>
+    <div class="table-card" data-cola-region aria-live="polite">
         <div class="table-scroll tabla-scroll-seis" data-filas="6">
             <table class="data-table cards-mobile" id="tablaSolicitudes">
                 <thead>
                     <tr>
-                        <th>Código</th>
-                        <th>Solicitante</th>
-                        <th>Prioridad</th>
-                        <th>Vencimiento</th>
-                        <th>Técnico</th>
-                        <th>Estado</th>
+                        <th><button type="submit" form="filtrosCola" name="cola_orden" value="{% if cola_orden == 'codigo' %}-{% endif %}codigo">Código ↕</button></th>
+                        <th><button type="submit" form="filtrosCola" name="cola_orden" value="{% if cola_orden == 'solicitante' %}-{% endif %}solicitante">Solicitante ↕</button></th>
+                        <th><button type="submit" form="filtrosCola" name="cola_orden" value="{% if cola_orden == 'punto' %}-{% endif %}punto">Punto de venta ↕</button></th>
+                        <th><button type="submit" form="filtrosCola" name="cola_orden" value="{% if cola_orden == 'prioridad' %}-{% endif %}prioridad">Prioridad ↕</button></th>
+                        <th><button type="submit" form="filtrosCola" name="cola_orden" value="{% if cola_orden == 'vencimiento' %}-{% endif %}vencimiento">Vencimiento ↕</button></th>
+                        <th><button type="submit" form="filtrosCola" name="cola_orden" value="{% if cola_orden == 'tecnico' %}-{% endif %}tecnico">Técnico ↕</button></th>
+                        <th><button type="submit" form="filtrosCola" name="cola_orden" value="{% if cola_orden == 'estado' %}-{% endif %}estado">Estado ↕</button></th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -488,17 +533,19 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                     {% for t in solicitudes %}
                     <tr class="tr-{{ t.prioridad }}">
                         <td data-label="Código"><span class="table-code">{{ t.codigo }}</span>{% if t.glpi_id %}<span class="row-icon" title="Sincronizado en GLPI"><svg class="icon icon-sm"><use href="#i-external"/></svg></span>{% endif %}</td>
-                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
-                        <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
+                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t mostrar_correo=True %}</td>
+                        <td data-label="Punto de venta">{{ t.solicitante_punto|default:"—" }}</td>
+                        <td data-label="Prioridad"><span class="cola-priority {{ t.prioridad }}">{{ t.get_prioridad_display }}</span></td>
                         <td data-label="Vencimiento">
+                            {% if t.fecha_limite_ans %}<small style="display:block;color:#526781">{{ t.fecha_limite_ans|date:"d M Y H:i" }}</small>{% endif %}
                             {% include "tickets/_ans_time.html" with t=t %}
                         </td>
                         <td data-label="Técnico">
                             {% if t.tecnico_asignado_id %}
                                 {% if t.tecnico_asignado == request.user %}
-                                <span class="status-pill status-en-progreso">Tuyo</span>
+                                <span class="cola-tech {{ t.tecnico_asignado.rol }}">{% include 'components/role_icon.html' with rol=t.tecnico_asignado.rol only %}<span>{{ t.tecnico_asignado.nombre }} (tuyo)</span></span>
                                 {% else %}
-                                <span class="row-icon" title="En atención"><svg class="icon icon-sm"><use href="#i-wrench"/></svg></span>{{ t.tecnico_asignado.nombre }}
+                                <span class="cola-tech {{ t.tecnico_asignado.rol }}">{% include 'components/role_icon.html' with rol=t.tecnico_asignado.rol only %}<span>{{ t.tecnico_asignado.nombre }}</span></span>
                                 {% endif %}
                             {% else %}
                             <span class="sin-asignar">Sin asignar</span>
@@ -508,18 +555,18 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                             {% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}
                         </td>
                         <td data-label="Acciones" class="cell-actions">
-                            <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}">Ver</a>
+                            <a class="btn btn-sm btn-outline cola-icon-action" href="{% url 'tickets:detalle' t.pk %}" aria-label="Ver ticket {{ t.codigo }}" title="Ver ticket"><svg class="icon icon-xs" aria-hidden="true"><use href="#i-eye"/></svg></a>
                             {% comment %}Tomar sale en los que no son míos: sin asignar o de otro técnico que no puede atenderlo.{% endcomment %}
-                            {% if t.tecnico_asignado_id != request.user.pk %}
-                            <form method="post" action="{% url 'tickets:panel_tecnico_tomar' t.pk %}" class="inline-form" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}{% if t.tecnico_asignado_id %} (ahora lo tiene {{ t.tecnico_asignado.nombre }}){% endif %}?');">
+                            {% if t.tecnico_asignado_id != request.user.pk and not t.esta_cerrado and not t.fue_resuelto %}
+                            <form method="post" action="{% url 'tickets:panel_tecnico_tomar' t.pk %}" class="inline-form" onsubmit="return confirm('¿Tomar {{ t.codigo|escapejs }}? La solicitud quedará asignada a ti.{% if t.tecnico_asignado_id %} Se reemplazará la asignación actual de {{ t.tecnico_asignado.nombre|escapejs }}.{% endif %} Si está conectada a GLPI, se intentará sincronizar la asignación.');">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-progress">Tomar</button>
+                                <button type="submit" class="btn btn-sm btn-progress cola-icon-action" aria-label="Tomar ticket {{ t.codigo }}" title="Tomar ticket"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h12v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M11 19h7l3-4a2 2 0 0 0-2-3l-2 1-2-2-3 1"/></svg></button>
                             </form>
                             {% endif %}
                         </td>
                     </tr>
                     {% empty %}
-                    <tr class="table-empty"><td colspan="7">No hay solicitudes de usuarios pendientes.</td></tr>
+                    <tr class="table-empty"><td colspan="8">No hay solicitudes de usuarios pendientes.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -538,7 +585,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                     <option value="0" {% if per_page_sol == 0 %}selected{% endif %}>Todas</option>
                 </select>
             </div>
-            <span class="pagination-info">Página {{ solicitudes_page.number }} de {{ solicitudes_page.paginator.num_pages }} — {{ solicitudes_page.paginator.count }} resultados</span>
+            <span class="pagination-info">Mostrando {{ solicitudes_page.start_index }}–{{ solicitudes_page.end_index }} de {{ solicitudes_page.paginator.count }} resultados</span>
             <div class="pagination-links">
                 {% if solicitudes_page.has_previous %}
                 <a class="page-pill" href="?{{ querystring_cola }}&page_sol={{ solicitudes_page.previous_page_number }}">‹ Anterior</a>
@@ -551,6 +598,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
         {% endif %}
     </div>
 
+    </section>
     {% elif vista == 'sin' %}
 
     <div class="section-head">
@@ -592,7 +640,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         <td data-label="Acciones" class="cell-actions">
                             <a class="btn btn-sm btn-outline" href="{% url 'tickets:detalle' t.pk %}">Ver</a>
                             {% if t.tecnico_asignado_id != request.user.pk %}
-                            <form method="post" action="{% url 'tickets:panel_tecnico_tomar' t.pk %}" class="inline-form" onsubmit="return confirm('¿Tomar el ticket {{ t.codigo }}?');">
+                            <form method="post" action="{% url 'tickets:panel_tecnico_tomar' t.pk %}" class="inline-form" onsubmit="return confirm('¿Tomar {{ t.codigo|escapejs }}? La solicitud quedará asignada a ti. Si está conectada a GLPI, se intentará sincronizar la asignación.');">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-progress">Tomar</button>
                             </form>
@@ -607,7 +655,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
         </div>
         {% if sin_page.paginator.num_pages > 1 %}
         <div class="pagination-bar">
-            <span class="pagination-info">Página {{ sin_page.number }} de {{ sin_page.paginator.num_pages }} — {{ sin_page.paginator.count }} resultados</span>
+            <span class="pagination-info">Mostrando {{ sin_page.start_index }}–{{ sin_page.end_index }} de {{ sin_page.paginator.count }} resultados</span>
             <div class="pagination-links">
                 {% if sin_page.has_previous %}
                 <a class="page-pill" href="?{{ querystring_sin }}&page_sin={{ sin_page.previous_page_number }}">‹ Anterior</a>
@@ -668,7 +716,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         <option value="0" {% if per_page == 0 %}selected{% endif %}>Todas</option>
                     </select>
                 </div>
-                <span class="pagination-info">Página {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+                <span class="pagination-info">Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} resultados</span>
                 <div class="pagination-links">
                     {% if page_obj.has_previous %}
                     <a class="page-pill" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>
@@ -885,13 +933,13 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                                 {% endif %}{% endwith %}
                             </div>
                         </td>
-                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t %}</td>
+                        <td data-label="Solicitante">{% include "tickets/_solicitante_cell.html" with t=t mostrar_correo=True %}</td>
                         <td data-label="Técnico">
                             {% if t.tecnico_asignado_id %}
                                 {% if t.tecnico_asignado == request.user %}
-                                <span class="status-pill status-en-progreso">Tuyo</span>
+                                <span class="mis-tech {{ t.tecnico_asignado.rol }}">{% include 'components/role_icon.html' with rol=t.tecnico_asignado.rol only %}<span>{{ t.tecnico_asignado.nombre }} (tuyo)</span></span>
                                 {% else %}
-                                <span class="row-icon" title="En atención"><svg class="icon icon-sm"><use href="#i-wrench"/></svg></span>{{ t.tecnico_asignado.nombre }}
+                                <span class="mis-tech {{ t.tecnico_asignado.rol }}">{% include 'components/role_icon.html' with rol=t.tecnico_asignado.rol only %}<span>{{ t.tecnico_asignado.nombre }}</span></span>
                                 {% endif %}
                             {% else %}
                             <span class="sin-asignar">Sin asignar</span>
@@ -969,6 +1017,13 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
         </div>
         {% endfor %}
     </div>
+    </div>
+
+    <div class="pagination-bar" id="misPaginacion" aria-live="polite">
+        <div class="per-page-bar"><label for="misPorPagina">Filas:</label><select id="misPorPagina" aria-label="Filas por página">
+            <option value="6"{% if per_page == 6 %} selected{% endif %}>6</option><option value="10"{% if per_page == 10 %} selected{% endif %}>10</option><option value="20"{% if per_page == 20 %} selected{% endif %}>20</option><option value="50"{% if per_page == 50 %} selected{% endif %}>50</option><option value="0"{% if per_page == 0 %} selected{% endif %}>Todas</option>
+        </select></div>
+        {% if mis_page %}<span class="pagination-info">Mostrando {{ mis_page.start_index }}–{{ mis_page.end_index }} de {{ mis_page.paginator.count }} resultados</span><div class="pagination-links">{% if mis_page.has_previous %}<a class="page-pill" href="?{{ querystring }}&amp;page={{ mis_page.previous_page_number }}">‹ Anterior</a>{% endif %}<span class="page-pill current">{{ mis_page.number }}</span>{% if mis_page.has_next %}<a class="page-pill" href="?{{ querystring }}&amp;page={{ mis_page.next_page_number }}">Siguiente ›</a>{% endif %}</div>{% endif %}
     </div>
 
     <div class="corp-msg" id="corpMsg" role="status"></div>
@@ -1076,6 +1131,86 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
 {% endblock %}
 
 {% block extra_js %}
+<script>
+(function () {
+    var pager = document.getElementById('misPaginacion'), table = document.querySelector('#tablaAbiertas tbody'), grid = document.getElementById('gridAbiertas');
+    if (!pager || !table || !grid) return;
+    var pending, version = 0;
+    function load(url, push) {
+        if (pending) pending.abort(); pending = new AbortController(); var current = ++version;
+        pager.setAttribute('aria-busy', 'true');
+        fetch(url, {credentials:'same-origin', headers:{'X-Requested-With':'XMLHttpRequest'}, signal:pending.signal}).then(function (response) { if (!response.ok || response.redirected) throw new Error('Error'); return response.text(); }).then(function (html) {
+            if (current !== version) return; var doc = new DOMParser().parseFromString(html, 'text/html');
+            var newRows = doc.querySelector('#tablaAbiertas tbody'), newGrid = doc.getElementById('gridAbiertas'), newPager = doc.getElementById('misPaginacion');
+            if (!newRows || !newGrid || !newPager) throw new Error('Respuesta incompleta');
+            table.innerHTML = newRows.innerHTML; grid.innerHTML = newGrid.innerHTML; pager.innerHTML = newPager.innerHTML;
+            document.dispatchEvent(new CustomEvent('dogger:mis-actualizadas'));
+            if (push) history.pushState({mis:true}, '', url.pathname + url.search);
+        }).catch(function (error) { if (error.name !== 'AbortError' && current === version) { var msg = document.getElementById('corpMsg'); if (msg) { msg.textContent = 'No se pudo actualizar la página. Intenta de nuevo.'; msg.style.display = 'block'; } } }).finally(function () { if (current === version) pager.removeAttribute('aria-busy'); });
+    }
+    pager.addEventListener('click', function (event) { var link = event.target.closest('.pagination-links a'); if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return; event.preventDefault(); load(new URL(link.href, location.href), true); });
+    pager.addEventListener('change', function (event) { if (event.target.id !== 'misPorPagina') return; var url = new URL(location.href); url.searchParams.set('per_page', event.target.value); url.searchParams.delete('page'); load(url, true); });
+    window.addEventListener('popstate', function () { if (new URL(location.href).searchParams.get('vista') === 'mis') load(new URL(location.href), false); });
+})();
+</script>
+<script>
+(function () {
+    var form = document.getElementById('filtrosCola'), region = document.querySelector('[data-cola-region]'), loading = document.querySelector('.cola-loading');
+    if (!form || !region) return;
+    document.querySelectorAll('.cola-solicitudes .cola-filter select, .cola-solicitudes .cola-period select').forEach(function (select) {
+        var picker = document.createElement('details'), summary = document.createElement('summary'), menu = document.createElement('div');
+        picker.className = 'cola-picker'; menu.className = 'cola-picker-menu';
+        function sync() { summary.textContent = select.selectedOptions[0] ? select.selectedOptions[0].textContent : ''; menu.querySelectorAll('button').forEach(function (button) { button.setAttribute('aria-selected', String(button.dataset.value === select.value)); }); }
+        Array.from(select.options).forEach(function (option) { var button = document.createElement('button'); button.type = 'button'; button.dataset.value = option.value; button.textContent = option.textContent; button.addEventListener('click', function () { select.value = option.value; select.dispatchEvent(new Event('change', {bubbles:true})); sync(); picker.open = false; summary.focus(); }); menu.appendChild(button); });
+        picker.append(summary, menu); select.insertAdjacentElement('afterend', picker); select.classList.add('cola-native-enhanced'); select.tabIndex = -1; sync(); select.addEventListener('change', sync);
+        picker.addEventListener('toggle', function () { if (picker.open) document.querySelectorAll('.cola-picker[open]').forEach(function (other) { if (other !== picker) other.open = false; }); });
+    });
+    document.addEventListener('click', function (event) { document.querySelectorAll('.cola-picker[open]').forEach(function (picker) { if (!picker.contains(event.target)) picker.open = false; }); });
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') document.querySelectorAll('.cola-picker[open]').forEach(function (picker) { picker.open = false; picker.querySelector('summary').focus(); }); });
+    var toggle = document.querySelector('.cola-filter-toggle');
+    if (toggle) toggle.addEventListener('click', function () { form.hidden = !form.hidden; toggle.setAttribute('aria-expanded', String(!form.hidden)); });
+    var version = 0, controller, timer;
+    function update(url, push) {
+        if (controller) controller.abort(); controller = new AbortController();
+        var current = ++version; region.setAttribute('aria-busy', 'true'); loading.hidden = false;
+        fetch(url, {credentials:'same-origin', headers:{'X-Requested-With':'XMLHttpRequest'}, signal:controller.signal})
+            .then(function (response) { if (!response.ok || response.redirected) throw new Error('Respuesta no disponible'); return response.text(); })
+            .then(function (html) { if (current !== version) return; var doc = new DOMParser().parseFromString(html, 'text/html'), replacement = doc.querySelector('[data-cola-region]'); if (!replacement) throw new Error('Respuesta incompleta'); region.innerHTML = replacement.innerHTML; if (push) history.pushState({cola:true}, '', url.pathname + url.search); region.dispatchEvent(new CustomEvent('dogger:tabla-actualizada', {bubbles:true})); })
+            .catch(function (error) { if (error.name !== 'AbortError' && current === version) { loading.textContent = 'No se pudo actualizar la cola. Intenta nuevamente.'; } })
+            .finally(function () { if (current === version) { region.removeAttribute('aria-busy'); if (loading.textContent.indexOf('No se pudo') !== 0) loading.hidden = true; } });
+    }
+    function fromForm(submitter) { var url = new URL(form.action || location.pathname, location.href); url.search = new URLSearchParams(new FormData(form)).toString(); if (submitter && submitter.name) url.searchParams.set(submitter.name, submitter.value); url.searchParams.delete('page_sol'); return url; }
+    form.addEventListener('submit', function (event) { event.preventDefault(); loading.textContent = 'Actualizando solicitudes…'; update(fromForm(event.submitter), true); });
+    Array.from(form.elements).forEach(function (field) { if (field.tagName === 'SELECT') field.addEventListener('change', function () { loading.textContent = 'Actualizando solicitudes…'; update(fromForm(), true); }); });
+    form.querySelector('input[name="q_cola"]').addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { loading.textContent = 'Actualizando solicitudes…'; update(fromForm(), true); }, 350); });
+    region.addEventListener('click', function (event) { var link = event.target.closest('.pagination-links a[href]'); if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return; event.preventDefault(); loading.textContent = 'Actualizando solicitudes…'; update(new URL(link.href, location.href), true); });
+    region.addEventListener('change', function (event) { var select = event.target.closest('[data-per-page-param]'); if (!select) return; event.stopImmediatePropagation(); var url = new URL(location.href); url.searchParams.set(select.dataset.perPageParam, select.value); url.searchParams.delete('page_sol'); loading.textContent = 'Actualizando solicitudes…'; update(url, true); }, true);
+    window.addEventListener('popstate', function () { var url = new URL(location.href); Array.from(form.elements).forEach(function (field) { if (field.name && field.name !== 'vista' && field.tagName !== 'BUTTON') field.value = url.searchParams.get(field.name) || ''; }); update(url, false); });
+})();
+</script>
+{{ tecnico_kpi_historico|json_script:"tecnicoKpiHistorico" }}
+<script>
+(function () {
+    var source = document.getElementById('tecnicoKpiHistorico'); if (!source) return;
+    var data = JSON.parse(source.textContent || '{}');
+    document.querySelectorAll('[data-tec-spark]').forEach(function (card) {
+        var values = (data.series || {})[card.dataset.tecSpark], labels = data.labels || [];
+        if (!Array.isArray(values) || !values.length) return;
+        var max = Math.max.apply(null, values.concat([1]));
+        var points = values.map(function (value, i) { return (values.length === 1 ? 120 : 2 + i * 236 / (values.length - 1)) + ',' + (36 - value * 30 / max); }).join(' ');
+        var last = points.split(' ').pop().split(',');
+        var graph = document.createElement('span'); graph.className = 'tec-kpi-spark';
+        var isBars = card.dataset.tecSpark === 'abiertas' || card.dataset.tecSpark === 'resueltas';
+        var graphic = isBars ? values.map(function (value, i) {
+            var width = 240 / values.length, height = value ? Math.max(2, value * 34 / max) : 0;
+            return '<rect x="' + (i * width + 2) + '" y="' + (39 - height) + '" width="' + Math.max(1, width - 4) + '" height="' + height + '" rx="2"/>';
+        }).join('') : '<polygon points="2,40 ' + points + ' 238,40"/><polyline points="' + points + '"/>' + points.split(' ').map(function (point) { var xy = point.split(','); return '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="1.8"/>'; }).join('');
+        graph.innerHTML = '<svg viewBox="0 0 240 40" preserveAspectRatio="none" aria-hidden="true">' + graphic + '</svg><span class="tec-kpi-tip" hidden></span>';
+        graph.addEventListener('pointermove', function (event) { var rect = graph.getBoundingClientRect(), index = Math.min(values.length - 1, Math.max(0, Math.floor((event.clientX - rect.left) / rect.width * values.length))), tip = graph.querySelector('.tec-kpi-tip'); tip.textContent = (labels[index] || '') + ': ' + values[index] + ' tickets'; tip.hidden = false; });
+        graph.addEventListener('pointerleave', function () { graph.querySelector('.tec-kpi-tip').hidden = true; }); card.appendChild(graph);
+    });
+})();
+</script>
 <script>
 (function () {
     /* ---- Conmutador Lista / Cuadrícula ----

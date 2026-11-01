@@ -35,9 +35,10 @@ class MiZonaSupervisorTest(TestCase):
         )
         self.punto = Punto.objects.create(nombre="Zona Uno")
         ObservadorPunto.objects.create(observador=self.sup, punto=self.punto)
+        self.carpeta_inicial = ZonaObservador.objects.create(observador=self.sup, nombre="Carpeta inicial")
         ElementoMiLista.objects.create(
             observador=self.sup, tipo=ElementoMiLista.TIPO_USUARIO,
-            usuario_email="ana@x.com",
+            usuario_email="ana@x.com", zona=self.carpeta_inicial,
         )
         self.ticket = Ticket.objects.create(
             titulo="Impresora", descripcion="d", solicitante_nombre="Ana",
@@ -191,7 +192,7 @@ class MiZonaSupervisorTest(TestCase):
         chart_data = json.loads(respuesta.context["dash_json"])
         self.assertEqual(
             sum(row["value"] for row in chart_data["pie_categoria"]["todas"]),
-            3,
+            2,
         )
         html = respuesta.content.decode()
         self.assertIn("Supervisor de", html)
@@ -244,7 +245,7 @@ class MiZonaSupervisorTest(TestCase):
         respuesta = self.client.get(reverse("tickets:mi_panel"))
         self.assertEqual(respuesta.status_code, 200)
         ranking = respuesta.content.decode().split(
-            "Ranking de zonas", 1
+            '<aside class="mz-side">', 1
         )[1].split("Alertas de desempeño", 1)[0]
         alertas = respuesta.content.decode().split(
             "Alertas de desempeño", 1
@@ -315,12 +316,12 @@ class MiZonaSupervisorTest(TestCase):
                 fila["value"]
                 for fila in todas_graficas["pie_categoria"]["todas"]
             ),
-            3,
+            2,
         )
         self.assertEqual(
             [(fila["label"], fila["total"]) for fila in
              todas_graficas["pivot"]["dimensiones"]["punto"]["rows"]],
-            [("Zona Dos", 1), ("Zona Uno", 2)],
+            [("Zona Dos", 1), ("Zona Uno", 1)],
         )
 
         filtro_ignorado = self.client.get(
@@ -333,13 +334,17 @@ class MiZonaSupervisorTest(TestCase):
                 fila["value"]
                 for fila in zona_graficas["pie_categoria"]["todas"]
             ),
-            3,
+            2,
         )
-        self.assertEqual(filtro_ignorado.context["zona_indicadores"]["tickets"], 0)
+        self.assertEqual(filtro_ignorado.context["zona_indicadores"]["tickets"], 2)
 
     def test_tabla_punto_muestra_todos_los_puntos_y_sus_tickets(self):
         punto_dos = Punto.objects.create(nombre="Punto Dos")
         ObservadorPunto.objects.create(observador=self.sup, punto=punto_dos)
+        carpeta = ZonaObservador.objects.create(observador=self.sup, nombre="Carpeta asignada")
+        ElementoMiLista.objects.filter(observador=self.sup, usuario_email=self.usuario.email).update(zona=carpeta)
+        for punto in (self.punto, punto_dos):
+            ElementoMiLista.objects.create(observador=self.sup, tipo=ElementoMiLista.TIPO_PUNTO, punto=punto, zona=carpeta)
         Ticket.objects.create(
             titulo="Solicitud de otra persona",
             descripcion="d",

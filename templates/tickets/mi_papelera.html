@@ -48,7 +48,7 @@ restaura lo que canceló sin pedirle ayuda a nadie.
 
     {% if page_obj.paginator.num_pages > 1 %}
     <div class="pagination-bar">
-        <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} — {{ page_obj.paginator.count }} en tu papelera</span>
+        <span class="pagination-info">Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} resultados</span>
         <div class="pagination-links">
             {% if page_obj.has_previous %}
             <a class="page-pill" href="?{% if q %}q={{ q|urlencode }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">‹ Anterior</a>
