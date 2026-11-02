@@ -67,7 +67,7 @@
             <table class="cat-sub-table">
                 <tbody>
                     {% for sub in grupo.subcategorias %}
-                    <tr>
+                    <tr id="buscar-categoria-{{ sub.pk }}">
                         <td class="cat-sub-name">
                             <strong class="cat-sub-title category-shared" data-category-label="{{ sub.nombre }}" data-category-group="{{ grupo.grupo }}"><span data-category-icon></span>{{ sub.nombre }}</strong>
                             {% if sub.cubre %}<span class="cat-sub-cubre">{{ sub.cubre }}</span>{% endif %}

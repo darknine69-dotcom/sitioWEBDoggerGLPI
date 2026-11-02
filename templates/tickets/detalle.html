@@ -128,7 +128,7 @@
                 <svg class="icon icon-xs"><use href="#i-alert"/></svg> {{ ticket.get_prioridad_display }}</span>
             <span class="meta-pill category-shared" data-category-label="{{ ticket.categoria.nombre|default:'Sin categoría' }}" data-category-group="{{ ticket.categoria.grupo|default:'' }}"><span data-category-icon></span> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
             <span class="meta-pill"><svg class="icon icon-xs"><use href="#i-clock"/></svg> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
-            <span class="meta-pill">{% include "tickets/_ans_time.html" with t=ticket %}</span>
+            <span class="meta-pill" id="ticket-ans">{% include "tickets/_ans_time.html" with t=ticket %}</span>
             {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
             {% if ticket.tecnico_asignado %}
             <span class="meta-pill"><svg class="icon icon-xs"><use href="#i-wrench"/></svg> {{ ticket.tecnico_asignado.nombre }}{% if ticket.asignacion_automatica %} (auto){% endif %}</span>
@@ -144,7 +144,7 @@
             </form>
             {% if not ticket.glpi_id %}<span class="corp-hint">Sin registro en GLPI (¿estaba apagado?). También: python manage.py sync_glpi_pendientes</span>{% endif %}
 
-            <div class="corp-state-actions">
+            <div class="corp-state-actions" id="ticket-estado">
                 <form method="post" action="{% url 'tickets:eliminar' ticket.pk %}"
                       onsubmit="return confirm('¿Mover el ticket {{ ticket.codigo }} a la papelera? Podrás restaurarlo desde la papelera.');">
                     {% csrf_token %}
@@ -240,7 +240,7 @@
                 </div>
             </section>
 
-            <section class="corp-subsection">
+            <section class="corp-subsection" id="ticket-actividad">
                 <div class="corp-subsection-head">
                     <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
                     <h3>Actividad</h3>
@@ -480,5 +480,12 @@
         });
     }
 })();
+
+if (location.hash === '#corp-seg-toggle') {
+    var seguimiento = document.getElementById('corp-seg-toggle');
+    var asignacion = document.getElementById('corp-tl-assign-toggle');
+    if (seguimiento && seguimiento.getAttribute('aria-expanded') === 'false') seguimiento.click();
+    if (asignacion && asignacion.getAttribute('aria-expanded') === 'false') asignacion.click();
+}
 </script>
 {% endblock %}

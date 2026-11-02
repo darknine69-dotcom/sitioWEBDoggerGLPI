@@ -1,37 +1,40 @@
 {% extends "base.html" %}
 
 {% block title %}Dogger · Panel de Administración{% endblock %}
-{% block body_class %}admin-shell{% endblock %}
+{% block body_class %}admin-shell admin-dashboard{% endblock %}
 {% block nav_dashboard %}is-active{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-chart"/></svg></span>{% endblock %}
 {% block header_title %}Panel Administrador{% endblock %}
 {% block header_desc %}Carga de los técnicos, el ANS y las últimas solicitudes.{% endblock %}
-{% block header_actions %}
-<div class="dash-header-actions">
-    <div class="dashboard-filter-popover" id="dashboardFilterPopover">
-        <button type="button" class="dashboard-period-button" data-filter-toggle aria-expanded="false" aria-controls="dashboardFilters">
-            <svg class="icon icon-sm"><use href="#i-calendar"/></svg>
-            <span>{% if filtros.periodo == "7" %}Últimos 7 días{% elif filtros.periodo == "90" %}Últimos 90 días{% else %}Últimos 30 días{% endif %}</span>
-            <svg class="icon icon-xs"><use href="#i-chevron-down"/></svg>
-        </button>
-        <form class="dashboard-filters" id="dashboardFilters" method="get" aria-label="Filtros globales del dashboard" hidden>
-            <div class="dashboard-filter-grid">
-                <label>Período<select name="periodo"><option value="7" {% if filtros.periodo == "7" %}selected{% endif %}>Últimos 7 días</option><option value="30" {% if filtros.periodo == "30" %}selected{% endif %}>Últimos 30 días</option><option value="90" {% if filtros.periodo == "90" %}selected{% endif %}>Últimos 90 días</option></select></label>
-                <label>Estado<select name="estado"><option value="">Todos</option>{% for value, label in estados %}<option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-                <label>Prioridad<select name="prioridad"><option value="">Todas</option>{% for value, label in prioridades %}<option value="{{ value }}" {% if filtros.prioridad == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-                <label>Categoría<select name="categoria"><option value="">Todas</option>{% for categoria in categorias_dashboard %}<option value="{{ categoria.pk }}" {% if filtros.categoria == categoria.pk|stringformat:"s" %}selected{% endif %}>{{ categoria.nombre }}</option>{% endfor %}</select></label>
-                <label>Técnico<select name="tecnico"><option value="">Todos</option>{% for tecnico in tecnicos_dashboard %}<option value="{{ tecnico.pk }}" {% if filtros.tecnico == tecnico.pk|stringformat:"s" %}selected{% endif %}>{{ tecnico.nombre|default:tecnico.email }}</option>{% endfor %}</select></label>
-                <label>Punto<select name="punto"><option value="">Todos</option>{% for punto in puntos_dashboard %}<option value="{{ punto }}" {% if filtros.punto == punto %}selected{% endif %}>{{ punto }}</option>{% endfor %}</select></label>
-            </div>
-            <div class="dashboard-filter-actions"><a class="btn btn-outline" href="{% url 'tickets:dashboard' %}">Limpiar</a><button class="btn btn-primary" type="submit">Aplicar filtros</button></div>
-        </form>
-    </div>
-    <button type="button" class="dash-refresh" data-dashboard-refresh title="Actualizar datos" aria-label="Actualizar datos del panel"><svg class="icon icon-sm"><use href="#i-refresh"/></svg></button>
-</div>
-{% endblock %}
+{% block header_actions %}<div class="dashboard-active-zone"><svg class="icon" aria-hidden="true"><use href="#i-map-pin"/></svg><span><small>{% if filtros.punto %}Punto filtrado{% else %}Zona activa{% endif %}</small><strong>{{ filtros.punto|default:"Todas las zonas" }}</strong></span></div>{% endblock %}
+
 
 {% block extra_css %}
 <style>
+.dashboard-active-zone { display:flex; align-items:center; gap:10px; min-width:170px; padding:10px 14px; border:1px solid #dce5ef; border-radius:12px; background:#fff; color:#17233c; }
+.dashboard-active-zone .icon { width:21px; height:21px; color:var(--sb-accent,#d62b1f); flex:none; }
+.dashboard-active-zone span { display:grid; gap:2px; min-width:0; }
+.dashboard-active-zone small { color:#64748b; font-size:11px; }
+.dashboard-active-zone strong { overflow:hidden; text-overflow:ellipsis; font-size:13px; }
+html[data-theme="dark"] .dashboard-active-zone { background:#202020; border-color:#424242; color:#d0d0d0; }
+html[data-theme="dark"] .dashboard-active-zone small { color:#aaa; }
+.admin-dashboard .header-actions > .dogger-page-meta { display:none; }
+.dashboard-greeting { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin:0 0 18px; }
+.dashboard-greeting h2 { margin:0; color:#111827; font-size:24px; line-height:1.2; }
+.dashboard-greeting p { margin:4px 0 0; color:#64748b; font-size:13px; }
+.dashboard-greeting-tools { display:flex; align-items:center; gap:12px; flex-wrap:wrap; min-width:0; }
+.dashboard-greeting-meta { display:flex; align-items:center; gap:0; max-width:100%; padding:8px 12px; border:1px solid #e8ebf0; border-radius:14px; background:#fff; box-shadow:0 4px 14px rgba(15,23,42,.08); }
+.dashboard-greeting-meta .dogger-header-clock,.dashboard-greeting-meta .dogger-header-session { width:auto; min-width:0; min-height:40px; border:0; background:transparent; box-shadow:none; }
+.dashboard-greeting-meta .dogger-header-clock { padding:0 16px 0 4px; border-right:1px solid #d6dce5; border-radius:0; }
+.dashboard-greeting-meta .dogger-header-clock time { white-space:normal; }
+.dashboard-greeting-meta .dogger-header-session { padding:0 4px 0 36px; white-space:nowrap; }
+.dashboard-greeting-meta .dogger-header-session::before { left:12px; top:2px; }
+.dashboard-greeting-tools .dashboard-period-button { min-height:54px; border-radius:14px; }
+html[data-theme="dark"] .dashboard-greeting h2 { color:#d5d5d5; }
+html[data-theme="dark"] .dashboard-greeting p { color:#aaa; }
+html[data-theme="dark"] .dashboard-greeting-meta { background:#202020; border-color:#424242; }
+html[data-theme="dark"] .dashboard-greeting-meta .dogger-header-clock,html[data-theme="dark"] .dashboard-greeting-meta .dogger-header-session { background:transparent; }
+@media(max-width:540px) { .dashboard-greeting-meta { flex-wrap:wrap; row-gap:10px; } .dashboard-greeting-meta .dogger-header-clock { border-right:0; } }
 /* Mantener las mini gráficas debajo del valor del indicador. */
 .dash-hero--plano .dash-stat-spark { height:37px !important; bottom:54px !important; }
 @media(max-width:760px) { .dash-hero--plano .dash-stat-spark { height:28px !important; bottom:47px !important; } }
@@ -285,6 +288,190 @@
 .performance-icon { display:grid; width:38px; height:38px; flex:0 0 38px; place-items:center; border-radius:11px; color:#fff; }
 .performance-icon .icon { width:20px; height:20px; }.performance-icon.green{background:#10B981}.performance-icon.violet{background:#7C3AED}.performance-icon.blue{background:#2563EB}.performance-icon.orange{background:#F59E0B}.performance-icon.red{background:#DC2626}.performance-card--critical{border-color:#FECACA;background:#FFF8F8}.performance-card--critical strong{color:#DC2626}.performance-card--critical small{color:#B91C1C}
 .attention-card { margin:0 0 18px; }.attention-table td { vertical-align:middle; }
+/* Tablas operativas compactas del panel de administración. */
+.attention-card,.mesa-tec-card { padding:16px; border:1px solid #e2e8f0; border-radius:18px; background:#fff; box-shadow:0 7px 20px rgba(15,23,42,.08); }
+.attention-card .chart-card-head,.mesa-tec-card .chart-card-head { display:flex; align-items:center; gap:10px; margin:0 0 10px; }
+.attention-card .chart-card-head h3,.mesa-tec-card .chart-card-head h3 { flex:1; margin:0; color:#101828; font-size:17px; font-weight:750; }
+.attention-card .chart-head-icon,.mesa-tec-card .chart-head-icon { display:grid; place-items:center; width:34px; height:34px; flex:none; border-radius:10px; color:#df1724; background:#ffe8ea; }
+.attention-card .chart-head-icon .icon,.mesa-tec-card .chart-head-icon .icon { width:18px; height:18px; }
+.attention-card .chart-card-head > a,.mesa-tec-card .chart-card-head > a { border:1px solid #e11d25; border-radius:999px; color:#b91c1c; background:#fff5f5; font-size:11px; font-weight:700; }
+.attention-card .table-scroll,.mesa-tec-card .table-scroll { overflow-x:auto; }
+.attention-card .attention-scroll { max-height:300px; overflow:auto; scrollbar-width:none; }
+.attention-card .attention-scroll::-webkit-scrollbar { display:none; }
+.attention-table thead th { position:sticky; top:0; z-index:2; box-sizing:border-box; height:36px; }
+.attention-table tbody tr:not(.table-empty) { height:44px; }
+.attention-table tbody tr[data-attention-url] { cursor:pointer; }
+.attention-table tbody tr[data-attention-url]:focus-visible { outline:2px solid #2563eb; outline-offset:-2px; }
+.attention-actions { position:fixed; z-index:9500; width:min(310px,calc(100vw - 24px)); max-height:min(80vh,480px); overflow-y:auto; padding:14px; border:1px solid #e1e5ea; border-radius:16px; background:#fff; color:#17233c; box-shadow:0 14px 35px rgba(15,23,42,.2); }
+.attention-actions[hidden] { display:none; }
+.attention-actions-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:2px 0 12px; border-bottom:1px solid #e9edf2; font-size:14px; font-weight:750; }
+.attention-actions-code { padding:4px 8px; border-radius:8px; color:#334155; background:#f1f3f5; font-size:11px; }
+.attention-actions-list { display:grid; gap:2px; padding-top:8px; }
+.attention-actions-list :is(a,button) { display:flex; align-items:center; gap:10px; width:100%; padding:9px 5px; border:0; border-radius:8px; background:transparent; color:inherit; font:inherit; font-size:12px; text-align:left; text-decoration:none; cursor:pointer; }
+.attention-actions-list :is(a,button):hover,.attention-actions-list :is(a,button):focus-visible { background:#f1f5f9; outline:2px solid #9bbcff; outline-offset:-2px; }
+.attention-actions-list .icon { width:16px; height:16px; color:#64748b; }
+.attention-actions-notice { margin:5px 0 0; color:#64748b; font-size:11px; }
+html[data-theme="dark"] .attention-actions { background:#1b1b1b; border-color:#424242; color:#d0d0d0; }
+html[data-theme="dark"] .attention-actions-head { border-color:#424242; }
+html[data-theme="dark"] .attention-actions-code { background:#0d0d0d; color:#d0d0d0; }
+html[data-theme="dark"] .attention-actions-list :is(a,button):hover,html[data-theme="dark"] .attention-actions-list :is(a,button):focus-visible { background:#303030; }
+.attention-table tbody td { box-sizing:border-box; padding-top:5px; padding-bottom:5px; }
+.attention-table .status-abierto { color:#fff; background:#dc1018; border:0; }
+.attention-table .status-abierto::before { display:none; }
+.attention-more { position:relative; display:inline-block; }
+.attention-more > summary { display:grid; place-items:center; width:30px; height:30px; border:0; border-radius:8px; background:transparent; color:#243044; cursor:pointer; list-style:none; font-size:20px; line-height:1; }
+.attention-more > summary::-webkit-details-marker { display:none; }
+.attention-more > summary:hover,.attention-more > summary:focus-visible { background:#e9edf3; outline:2px solid #9bbcff; outline-offset:1px; }
+.attention-more-menu { position:fixed; z-index:100; min-width:138px; padding:5px; border:1px solid #e2e8f0; border-radius:9px; background:#fff; box-shadow:0 8px 20px rgba(15,23,42,.18); }
+.attention-more-menu a { display:block; padding:8px; border-radius:6px; color:#243044; font-size:12px; text-decoration:none; }
+.attention-more-menu a:hover,.attention-more-menu a:focus-visible { background:#f1f5f9; }
+.attention-table,.mesa-tec-table { width:100%; border-collapse:separate; border-spacing:0; font-size:12px; }
+.attention-table thead th,.mesa-tec-table thead th { padding:7px 11px; color:#526782; background:#fff; border-bottom:1px solid #e9edf2; font-size:10px; font-weight:800; text-transform:uppercase; white-space:nowrap; }
+.attention-table tbody td,.mesa-tec-table tbody td { padding:8px 11px; border-bottom:1px solid #edf0f4; color:#17233c; vertical-align:middle; }
+.attention-table tbody tr:nth-child(even) { background:#f5f5f8; }
+.attention-table tbody tr:not(.table-empty) > td:first-child { border-left:3px solid #e11d25; }
+.attention-table .table-code { display:inline-flex; padding:4px 9px; border-radius:999px; color:#dc1f2b; background:#ffe3e5; font-weight:800; text-decoration:none; white-space:nowrap; }
+.attention-table tr[data-priority="urgente"] { --attention-color:#dc1f2b; --attention-soft:#ffe3e5; }
+.attention-table tr[data-priority="alta"] { --attention-color:#d65b13; --attention-soft:#fff0e2; }
+.attention-table tr[data-priority="media"] { --attention-color:#a86600; --attention-soft:#fff3d6; }
+.attention-table tr[data-priority="baja"] { --attention-color:#237b50; --attention-soft:#e4f6ec; }
+.attention-table tbody tr[data-priority] > td:first-child { border-left-color:var(--attention-color); }
+.attention-table tr[data-priority] .table-code { color:var(--attention-color); background:var(--attention-soft); }
+.attention-priority,.attention-technician { display:inline-flex; align-items:center; gap:6px; }
+.attention-priority .icon,.attention-technician .icon { width:15px; height:15px; color:#dc2626; }
+.attention-priority.is-media .icon,.attention-priority.is-baja .icon { color:#f59e0b; }
+.attention-table tr[data-priority] .attention-priority .icon { color:var(--attention-color); }
+.attention-table .attention-view { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border:1px solid #e11d25; border-radius:999px; color:#b91c1c; background:transparent; font-size:11px; font-weight:700; text-decoration:none; white-space:nowrap; }
+.attention-view .icon { width:14px; height:14px; }.attention-view:hover { color:#fff; background:#c91e29; }
+.mesa-tec-table tbody tr:hover,.mesa-tec-table tbody tr:focus-within { background:#fff0f1; }
+.mesa-tec-table .tec-open { display:flex; flex-direction:row; align-items:center; gap:9px; }
+.tec-table-avatar { display:grid; place-items:center; width:30px; height:30px; flex:none; border-radius:50%; color:#35466c; background:#e8e9f5; font-size:12px; font-weight:800; }
+.mesa-tec-table tbody tr:nth-child(4n+2) .tec-table-avatar { color:#be123c; background:#ffe4e6; }
+.tec-table-person { display:grid; gap:1px; min-width:0; }.mesa-tec-table .tec-name-txt { color:#17233c; font-size:12px; }.mesa-tec-table .tec-name-email { color:#64748b; font-size:10px; }.mesa-tec-table .tec-name-hint { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.mesa-tec-table .badge-vencido { background:#ffe0e2; color:#dc2626; }.mesa-tec-table .cell-link a { display:inline-grid; place-items:center; width:30px; height:30px; border-radius:8px; background:#ffe9ea; color:#cf222a; }.mesa-tec-table .cell-link .icon { width:16px; height:16px; }
+.tec-performance-layout { display:grid; grid-template-columns:minmax(270px,360px) minmax(0,1fr); gap:20px; align-items:center; }
+.tec-performance-summary { display:grid; grid-template-columns:minmax(130px,1fr) 116px; align-items:center; gap:12px; }
+.tec-team-donut { display:grid; place-items:center; position:relative; width:min(100%,180px); aspect-ratio:1; margin:auto; border-radius:50%; background:#d1d5db; box-shadow:0 0 0 6px #fff,0 0 0 9px #ffd5d8,0 8px 18px rgba(195,28,37,.2); }
+.tec-team-donut::before { content:""; position:absolute; inset:21px; border-radius:50%; background:#fff; }
+.tec-team-donut-content { z-index:1; display:grid; justify-items:center; gap:2px; color:#17233c; text-align:center; font-size:11px; }
+.tec-team-donut-content .icon { width:24px; height:24px; color:#dc2626; }.tec-team-donut-content strong { font-size:30px; line-height:1; }.tec-team-donut-content small { color:#64748b; font-size:10px; }
+.tec-team-metrics { display:grid; gap:8px; }.tec-team-metric { display:flex; align-items:center; gap:7px; padding:7px; border:1px solid #e5e7eb; border-radius:12px; background:#fafafa; color:#17233c; font-size:10px; }.tec-team-metric > .icon { width:28px; height:28px; flex:none; padding:6px; border-radius:50%; background:#ffe4e6; color:#dc2626; }.tec-team-metric:nth-child(2) > .icon { color:#2563eb; background:#dbeafe; }.tec-team-metric:nth-child(3) > .icon { color:#15803d; background:#dcfce7; }.tec-team-metric strong { display:block; font-size:18px; line-height:1; }.tec-team-metric small { color:#64748b; }
+.tec-performance-table-wrap { min-width:0; border:1px solid #dc2626; border-radius:20px; overflow:hidden; }
+.tec-performance-table-wrap .table-scroll { overflow:auto; max-height:360px; scrollbar-width:none; }.tec-performance-table-wrap .table-scroll::-webkit-scrollbar { display:none; }
+.tec-performance-table-wrap .mesa-tec-table { min-width:790px; }
+.tec-performance-table-wrap .mesa-tec-table thead th { position:sticky; top:0; z-index:2; background:#c80f1e; color:#fff; border:0; text-align:center; }
+.tec-performance-table-wrap .mesa-tec-table thead th:first-child { text-align:left; }.tec-performance-table-wrap .mesa-tec-table thead .icon { display:block; width:15px; height:15px; margin:0 auto 3px; }
+.tec-performance-table-wrap .mesa-tec-table tbody td { padding:9px 10px; }.tec-performance-table-wrap .mesa-tec-table .num { text-align:center; }
+.tec-sla { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }.tec-sla-ring { display:inline-block; width:30px; height:30px; flex:none; border-radius:50%; background:conic-gradient(#dc2626 calc(var(--sla, 0) * 1%),#e1e4eb 0); position:relative; }.tec-sla-ring::after { content:""; position:absolute; inset:4px; border-radius:50%; background:#fff; }
+.tec-summary-note { grid-column:1/-1; margin:2px 0 0; color:#64748b; font-size:10px; line-height:1.3; }
+.mesa-tec-card { padding:28px; border-radius:145px; }
+@media (min-width:1101px) { .mesa-tec-card { padding:36px 60px 36px 42px; } }
+.mesa-tec-card > .chart-card-head { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.tec-performance-layout { grid-template-columns:minmax(290px,370px) minmax(0,1fr); gap:14px; }
+.tec-performance-summary { grid-template-columns:minmax(150px,1fr) 130px; }
+.tec-team-donut { width:min(100%,205px); }
+.tec-team-metric { min-height:52px; border-radius:15px; }
+.tec-team-metric:first-child,.tec-team-metric:last-child { border-color:#ffb7bd; background:#fff1f2; }
+.tec-performance-table-wrap { border-radius:36px; }
+.tec-performance-table-wrap .mesa-tec-table { width:100%; min-width:0; table-layout:fixed; }
+.tec-performance-table-wrap .mesa-tec-table th:first-child { width:30%; }
+.tec-performance-table-wrap .mesa-tec-table th:not(:first-child) { width:11.66%; white-space:normal; overflow-wrap:anywhere; }
+.tec-performance-table-wrap .tec-open { max-width:100%; }
+.tec-performance-table-wrap .tec-table-person { overflow:hidden; }
+.tec-performance-table-wrap :is(.tec-name-txt,.tec-name-email) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tec-performance-table-wrap .mesa-tec-table thead th { padding:10px 7px; font-size:10px; }
+.tec-performance-table-wrap .mesa-tec-table tbody td { padding:9px 7px; }
+.tec-performance-table-wrap .mesa-tec-table .cell-link a { border-radius:50%; font-size:20px; line-height:1; }
+/* Encabezado y contorno de la tabla de rendimiento. */
+.tec-performance-table-wrap { border:2px solid #d51420; border-radius:38px 38px 54px 54px / 38px 38px 80px 80px; box-shadow:0 10px 22px rgba(190,18,30,.09); }
+.tec-performance-table-wrap .mesa-tec-table thead th { height:62px; padding:10px 5px; background:#bf0718; color:#fff; font-size:11px; font-weight:750; line-height:1.15; text-transform:none; }
+.tec-performance-table-wrap .mesa-tec-table thead th:first-child { padding-left:20px; }
+.tec-performance-table-wrap .mesa-tec-table thead .icon { width:18px; height:18px; margin-bottom:4px; }
+.tec-performance-table-wrap .mesa-tec-table thead .tec-header-name { display:flex; align-items:center; gap:9px; font-size:14px; }
+.tec-performance-table-wrap .mesa-tec-table thead .tec-header-name .icon { width:21px; height:21px; margin:0; }
+.tec-performance-table-wrap .mesa-tec-table tbody td { height:62px; padding:8px 5px; font-size:13px; }
+.tec-performance-table-wrap .mesa-tec-table tbody td:first-child { padding-left:14px; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:last-child td { border-bottom:0; }
+.tec-performance-table-wrap .table-scroll { max-height:390px; background:#bf0718; }
+.tec-performance-table-wrap .mesa-tec-table tbody { background:#fff; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr { background:#fff; }
+.tec-performance-table-wrap .mesa-tec-table tbody td { background:#fff; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:first-child td:first-child { border-top-left-radius:38px; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:first-child td:last-child { border-top-right-radius:38px; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:last-child td:first-child { border-bottom-left-radius:48px; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:last-child td:last-child { border-bottom-right-radius:48px; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:hover td,
+.tec-performance-table-wrap .mesa-tec-table tbody tr:focus-within td { background:#fff0f1; }
+.tec-performance-table-wrap table.mesa-tec-table tbody tr:hover { background:#fff0f1 !important; box-shadow:none; }
+.tec-performance-table-wrap table.mesa-tec-table tbody td:first-child { border-left:0; }
+.tec-performance-table-wrap .tec-table-avatar { width:40px; height:40px; font-size:15px; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:nth-child(4n+1) .tec-table-avatar { color:#104bb0; background:#c3ecfa; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:nth-child(4n+2) .tec-table-avatar { color:#bd1020; background:#ffdcdf; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:nth-child(4n+3) .tec-table-avatar { color:#42308b; background:#e3dcf9; }
+.tec-performance-table-wrap .mesa-tec-table tbody tr:nth-child(4n) .tec-table-avatar { color:#07563b; background:#cbf7e1; }
+.tec-performance-table-wrap .tec-name-txt { font-size:13px; font-weight:750; }
+.tec-performance-table-wrap .tec-name-email { font-size:10px; }
+.tec-performance-table-wrap .badge-vencido { min-width:32px; padding:4px 9px; font-size:12px; }
+.tec-performance-table-wrap .tec-sla-ring { width:34px; height:34px; }
+.tec-performance-table-wrap .mesa-tec-table .cell-link a { width:34px; height:34px; color:#17233c; background:#ffe9ea; }
+.tec-team-metric { transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease; }
+.tec-team-metric:hover { transform:translateY(-3px); box-shadow:0 8px 18px rgba(23,35,60,.12); }
+.tec-team-metric:nth-child(1) > .icon,.tec-team-metric:nth-child(4) > .icon { background:#e92331; color:#fff; }
+.tec-team-metric:nth-child(2) > .icon { background:#2878f0; color:#fff; }
+.tec-team-metric:nth-child(3) > .icon { background:#07965b; color:#fff; }
+.tec-team-metric:nth-child(1) strong,.tec-team-metric:nth-child(4) strong { color:#c91727; }
+.tec-team-metric:nth-child(2) strong { color:#1d60c9; }
+.tec-team-metric:nth-child(3) strong { color:#07834f; }
+.tec-team-donut { transition:transform .2s ease,box-shadow .2s ease; }
+.tec-team-donut:hover,.tec-team-donut:focus-visible { transform:translateY(-5px) scale(1.025); box-shadow:0 0 0 6px #fff,0 0 0 9px #ffd5d8,0 15px 26px rgba(195,28,37,.25); outline:2px solid #e11d48; outline-offset:7px; }
+.tec-donut-tooltip { position:absolute; z-index:5; bottom:calc(100% + 16px); left:50%; transform:translateX(-50%); min-width:150px; max-width:220px; padding:9px 11px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; color:#17233c; box-shadow:0 9px 22px rgba(15,23,42,.16); font-size:11px; pointer-events:none; }
+.tec-donut-tooltip[hidden] { display:none; }.tec-donut-tooltip strong,.tec-donut-tooltip span,.tec-donut-tooltip small { display:block; }.tec-donut-tooltip span { margin-top:3px; color:#d81e2b; font-size:13px; font-weight:750; }.tec-donut-tooltip small { margin-top:2px; color:#64748b; }
+@media(prefers-reduced-motion:reduce) { .tec-team-donut,.tec-team-metric { transition:none; } .tec-team-metric:hover { transform:none; } }
+.tec-summary-note,.tec-extra-info { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.tec-manage-link { grid-column:1/-1; justify-self:center; color:#b91c1c; font-size:11px; font-weight:700; text-decoration:none; }
+@media(max-width:1100px) { .mesa-tec-card { border-radius:36px; padding:20px; } }
+@media(max-width:680px) { .mesa-tec-card { border-radius:22px; padding:14px; } .tec-performance-table-wrap .mesa-tec-table { min-width:650px; } }
+@media(max-width:1100px) { .tec-performance-layout { grid-template-columns:1fr; }.tec-performance-summary { grid-template-columns:150px repeat(4,minmax(90px,1fr)); }.tec-team-metrics { grid-column:2/-1; grid-row:1; grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media(max-width:680px) { .tec-performance-summary { grid-template-columns:110px minmax(0,1fr); }.tec-team-metrics { grid-column:2; grid-template-columns:repeat(2,minmax(0,1fr)); }.tec-team-donut::before { inset:14px; }.tec-team-donut-content strong { font-size:23px; }.tec-team-metric { padding:5px; }.tec-team-metric strong { font-size:15px; } }
+html[data-theme="dark"] :is(.attention-card,.mesa-tec-card) { background:#171717; border-color:#424242; }
+html[data-theme="dark"] :is(.attention-card,.mesa-tec-card) .chart-card-head h3,html[data-theme="dark"] .mesa-tec-table .tec-name-txt { color:#d0d0d0; }
+html[data-theme="dark"] :is(.attention-table,.mesa-tec-table) thead th { background:#202020; color:#bdbdbd; border-color:#424242; }
+html[data-theme="dark"] :is(.attention-table,.mesa-tec-table) tbody td { color:#d0d0d0; border-color:#383838; }
+html[data-theme="dark"] .attention-table tbody tr:nth-child(even) { background:#202020; }
+html[data-theme="dark"] :is(.attention-table,.mesa-tec-table) tbody tr:hover { --table-hover-bg:#292929; }
+html[data-theme="dark"] :is(.attention-card,.mesa-tec-card) :is(.chart-head-icon,.tec-table-avatar,.badge-vencido,.table-code,.attention-view,.cell-link a) { background:#0d0d0d; border:1px solid rgba(255,255,255,.14); color:#ff929b; }
+html[data-theme="dark"] .tec-performance-table-wrap { border-color:#884047; }
+html[data-theme="dark"] .tec-performance-table-wrap .mesa-tec-table tbody tr .tec-table-avatar { background:#0d0d0d; color:#c4b5fd; border:1px solid rgba(255,255,255,.14); }
+html[data-theme="dark"] .tec-performance-table-wrap .mesa-tec-table .cell-link a { background:#0d0d0d; color:#ff929b; }
+html[data-theme="dark"] .tec-performance-table-wrap .mesa-tec-table thead th { background:#78111b; color:#f2f2f2; }
+html[data-theme="dark"] .tec-performance-table-wrap .table-scroll { background:#78111b; }
+html[data-theme="dark"] .tec-performance-table-wrap .mesa-tec-table tbody,
+html[data-theme="dark"] .tec-performance-table-wrap .mesa-tec-table tbody tr { background:#171717; }
+html[data-theme="dark"] .tec-performance-table-wrap .mesa-tec-table tbody td { background:#171717; }
+html[data-theme="dark"] .tec-performance-table-wrap .mesa-tec-table tbody tr:hover td,
+html[data-theme="dark"] .tec-performance-table-wrap .mesa-tec-table tbody tr:focus-within td { background:#292929; }
+html[data-theme="dark"] .tec-performance-table-wrap table.mesa-tec-table tbody tr:hover { background:#292929 !important; }
+html[data-theme="dark"] .tec-team-donut::before,html[data-theme="dark"] .tec-sla-ring::after { background:#171717; }
+html[data-theme="dark"] .tec-team-donut { box-shadow:0 0 0 6px #171717,0 0 0 9px #52272a; }
+html[data-theme="dark"] .tec-team-donut:hover,html[data-theme="dark"] .tec-team-donut:focus-visible { box-shadow:0 0 0 6px #171717,0 0 0 9px #52272a,0 15px 26px rgba(0,0,0,.45); }
+html[data-theme="dark"] .tec-donut-tooltip { background:#202020; border-color:#424242; color:#d0d0d0; }
+html[data-theme="dark"] .tec-donut-tooltip span { color:#ff929b; } html[data-theme="dark"] .tec-donut-tooltip small { color:#adadad; }
+html[data-theme="dark"] :is(.tec-team-donut-content,.tec-team-metric) { color:#d0d0d0; }
+html[data-theme="dark"] .tec-team-metric { background:#222; border-color:#424242; }
+html[data-theme="dark"] .tec-team-metric:first-child,html[data-theme="dark"] .tec-team-metric:last-child { background:#241b1c; border-color:#704047; }
+html[data-theme="dark"] .tec-manage-link { color:#ff9ba9; }
+html[data-theme="dark"] :is(.tec-summary-note,.tec-team-metric small,.tec-team-donut-content small) { color:#adadad; }
+html[data-theme="dark"] .attention-table tr[data-priority="urgente"] { --attention-color:#ff8a98; }
+html[data-theme="dark"] .attention-table tr[data-priority="alta"] { --attention-color:#ffad7a; }
+html[data-theme="dark"] .attention-table tr[data-priority="media"] { --attention-color:#ffc46b; }
+html[data-theme="dark"] .attention-table tr[data-priority="baja"] { --attention-color:#70dba5; }
+html[data-theme="dark"] .attention-table tr[data-priority] .table-code { color:var(--attention-color); background:#0d0d0d; }
+html[data-theme="dark"] .attention-table .status-abierto { background:#0d0d0d; color:#ff929b; border:1px solid rgba(255,255,255,.14); }
+html[data-theme="dark"] .attention-more > summary { color:#d0d0d0; }
+html[data-theme="dark"] .attention-more > summary:hover,html[data-theme="dark"] .attention-more > summary:focus-visible { background:#303030; }
+html[data-theme="dark"] .attention-more-menu { background:#202020; border-color:#424242; }
+html[data-theme="dark"] .attention-more-menu a { color:#d0d0d0; }
+html[data-theme="dark"] .attention-more-menu a:hover,html[data-theme="dark"] .attention-more-menu a:focus-visible { background:#303030; }
 .dash-hero.is-loading .dash-stat, .dash-compact.is-loading { opacity:.6; pointer-events:none; }
 @media (max-width:1240px) { .performance-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:680px) { .dashboard-filter-grid,.performance-grid { grid-template-columns:1fr; }.dashboard-filters { position:fixed; top:70px; right:14px; left:14px; width:auto; max-height:calc(100vh - 88px); overflow:auto; }.dashboard-filter-actions .btn { flex:1; justify-content:center; }.attention-table { min-width:760px; }.dashboard-period-button { min-width:150px; } }
@@ -298,6 +485,37 @@
 
 {% block content %}
 <main class="page page-corporate">
+    <section class="dashboard-greeting" aria-label="Bienvenida">
+        <div><h2>Hola, {{ request.user.nombre|default:request.user.email }} <span aria-hidden="true">👋</span></h2>
+        <p>Resumen de la operación, el ANS y las últimas solicitudes.</p></div>
+        <div class="dashboard-greeting-tools">
+            <div class="dashboard-greeting-meta">
+                <div class="dogger-header-clock" data-page-clock data-time-zone="{{ encabezado.zona }}"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><div><time data-page-date>{% now 'l, j \d\e F \d\e Y' %}</time><small data-page-time>{% now 'H:i:s' %}</small></div></div>
+                <div class="dogger-header-session"><strong>Sesión iniciada</strong>{% if encabezado.inicio_sesion %}<small><time datetime="{{ encabezado.inicio_sesion|date:'c' }}">{{ encabezado.inicio_sesion|date:'d/m/Y H:i' }}</time></small>{% endif %}</div>
+            </div>
+            <div class="dash-header-actions">
+    <div class="dashboard-filter-popover" id="dashboardFilterPopover">
+        <button type="button" class="dashboard-period-button" data-filter-toggle aria-expanded="false" aria-controls="dashboardFilters">
+            <svg class="icon icon-sm"><use href="#i-calendar"/></svg>
+            <span>{% if filtros.periodo == "7" %}Últimos 7 días{% elif filtros.periodo == "90" %}Últimos 90 días{% else %}Últimos 30 días{% endif %}</span>
+            <svg class="icon icon-xs"><use href="#i-chevron-down"/></svg>
+        </button>
+        <form class="dashboard-filters" id="dashboardFilters" method="get" aria-label="Filtros globales del dashboard" hidden>
+            <div class="dashboard-filter-grid">
+                <label>Período<select name="periodo"><option value="7" {% if filtros.periodo == "7" %}selected{% endif %}>Últimos 7 días</option><option value="30" {% if filtros.periodo == "30" %}selected{% endif %}>Últimos 30 días</option><option value="90" {% if filtros.periodo == "90" %}selected{% endif %}>Últimos 90 días</option></select></label>
+                <label>Estado<select name="estado"><option value="">Todos</option>{% for value, label in estados %}<option value="{{ value }}" {% if filtros.estado == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+                <label>Prioridad<select name="prioridad"><option value="">Todas</option>{% for value, label in prioridades %}<option value="{{ value }}" {% if filtros.prioridad == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+                <label>Categoría<select name="categoria"><option value="">Todas</option>{% for categoria in categorias_dashboard %}<option value="{{ categoria.pk }}" {% if filtros.categoria == categoria.pk|stringformat:"s" %}selected{% endif %}>{{ categoria.nombre }}</option>{% endfor %}</select></label>
+                <label>Técnico<select name="tecnico"><option value="">Todos</option>{% for tecnico in tecnicos_dashboard %}<option value="{{ tecnico.pk }}" {% if filtros.tecnico == tecnico.pk|stringformat:"s" %}selected{% endif %}>{{ tecnico.nombre|default:tecnico.email }}</option>{% endfor %}</select></label>
+                <label>Punto<select name="punto"><option value="">Todos</option>{% for punto in puntos_dashboard %}<option value="{{ punto }}" {% if filtros.punto == punto %}selected{% endif %}>{{ punto }}</option>{% endfor %}</select></label>
+            </div>
+            <div class="dashboard-filter-actions"><a class="btn btn-outline" href="{% url 'tickets:dashboard' %}">Limpiar</a><button class="btn btn-primary" type="submit">Aplicar filtros</button></div>
+        </form>
+    </div>
+    <button type="button" class="dash-refresh" data-dashboard-refresh title="Actualizar datos" aria-label="Actualizar datos del panel"><svg class="icon icon-sm"><use href="#i-refresh"/></svg></button>
+</div>
+        </div>
+    </section>
     <section class="dash-hero dash-hero--plano dashboard-primary" aria-label="Indicadores principales">
         <div class="dash-stat-row dash-stat-row--mesas">
             <a class="dash-stat dash-hov-abiertos" href="{% url 'tickets:lista' %}?sv=pendientes&amp;rango={{ filtros.periodo }}">
@@ -405,73 +623,93 @@
 
     <section class="chart-card attention-card" aria-labelledby="attentionTitle">
         <div class="chart-card-head">
-            <span class="chart-head-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
+            <span class="chart-head-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
             <h3 id="attentionTitle">Tickets que requieren atención</h3>
             <a href="{% url 'tickets:lista' %}?sv=vencidas" class="btn btn-outline btn-sm">Ver bandeja</a>
         </div>
-        <div class="table-scroll">
+        <div class="table-scroll attention-scroll" tabindex="0" aria-label="Tickets que requieren atención; desplázate para ver más">
             <table class="data-table attention-table">
-                <thead><tr><th>Código</th><th>Asunto</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Vencimiento SLA</th><th></th></tr></thead>
+                <thead><tr><th>Código</th><th>Asunto</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Vencimiento SLA</th></tr></thead>
                 <tbody>
                     {% for ticket in atencion %}
-                    <tr>
+                    <tr tabindex="0" role="button" aria-label="Acciones del ticket {{ ticket.codigo }}" data-attention-url="{% url 'tickets:detalle' ticket.pk %}" data-attention-code="{{ ticket.codigo }}" data-priority="{{ ticket.prioridad }}" aria-haspopup="dialog" aria-expanded="false">
                         <td><a class="table-code" href="{% url 'tickets:detalle' ticket.pk %}">{{ ticket.codigo }}</a></td>
                         <td>{{ ticket.titulo|truncatechars:52 }}</td>
-                        <td>{{ ticket.get_prioridad_display }}</td>
+                        <td><span class="attention-priority is-{{ ticket.prioridad }}"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{% if ticket.prioridad == 'urgente' or ticket.prioridad == 'alta' %}<path d="m4 14 8-7 8 7M4 19l8-7 8 7"/>{% else %}<path d="M4 9h16M4 15h16"/>{% endif %}</svg>{{ ticket.get_prioridad_display }}</span></td>
                         <td>{% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display resuelto=ticket.fue_resuelto cerrado=ticket.esta_cerrado %}</td>
-                        <td>{{ ticket.tecnico_asignado.nombre|default:"Sin asignar" }}</td>
+                        <td><span class="attention-technician"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>{{ ticket.tecnico_asignado.nombre|default:"Sin asignar" }}</span></td>
                         <td>{% include "tickets/_ans_time.html" with t=ticket %}</td>
-                        <td><a class="btn btn-outline btn-xs" href="{% url 'tickets:detalle' ticket.pk %}">Ver</a></td>
                     </tr>
-                    {% empty %}<tr class="table-empty"><td colspan="7">No hay tickets que requieran atención con los filtros aplicados.</td></tr>{% endfor %}
+                    {% empty %}<tr class="table-empty"><td colspan="6">No hay tickets que requieran atención con los filtros aplicados.</td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>
     </section>
 
+    <div id="attentionActions" class="attention-actions" role="dialog" aria-label="Acciones del ticket" hidden>
+        <div class="attention-actions-head"><span>Acciones del ticket</span><span class="attention-actions-code" data-attention-selected></span></div>
+        <div class="attention-actions-list">
+            <a data-attention-link=""><svg class="icon"><use href="#i-eye"/></svg>Ver detalles completos</a>
+            <a data-attention-link="#corp-seg-toggle"><svg class="icon"><use href="#i-user"/></svg>Gestionar técnico</a>
+            <a data-attention-link="#ticket-estado"><svg class="icon"><use href="#i-refresh"/></svg>Cambiar estado</a>
+            <a data-attention-link="#ticket-ans"><svg class="icon"><use href="#i-clock"/></svg>Consultar ANS</a>
+            <a data-attention-link="#ticket-actividad"><svg class="icon"><use href="#i-message"/></svg>Agregar observación</a>
+            <a data-attention-link="#ticket-actividad"><svg class="icon"><use href="#i-clock"/></svg>Historial de actividad</a>
+            <button type="button" data-attention-copy><svg class="icon"><use href="#i-copy"/></svg>Copiar código del ticket</button>
+        </div><p class="attention-actions-notice" role="status" hidden></p>
+    </div>
+
     <div class="chart-card mesa-tec-card">
-        <div class="chart-card-head">
-            <span class="chart-head-icon"><svg class="icon"><use href="#i-users"/></svg></span>
-            <h3>Rendimiento por técnico</h3>
-            <a href="{% url 'tickets:usuarios' %}" class="btn btn-outline btn-sm">Gestionar</a>
-        </div>
-        <div class="table-scroll">
+        <h3 class="tec-summary-note">Rendimiento por técnico</h3>
+        <div class="tec-performance-layout">
+        <aside class="tec-performance-summary" aria-label="Resumen del equipo técnico">
+            <div class="tec-team-donut" data-tec-donut tabindex="0" role="img" aria-label="Distribución de tickets asignados por técnico. Usa las flechas para consultar cada segmento." aria-describedby="tec-summary-description"><span class="tec-team-donut-content"><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg><strong>{{ tecnicos_stats|length }}</strong><b>Técnicos</b><small>en el equipo</small></span><span class="tec-donut-tooltip" data-tec-tooltip role="status" hidden><strong></strong><span></span><small></small></span></div>
+            <div class="tec-team-metrics">
+                <div class="tec-team-metric"><svg class="icon" aria-hidden="true"><use href="#i-ticket"/></svg><span><strong data-tec-total="asignados">—</strong><small>Asignados</small></span></div>
+                <div class="tec-team-metric"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span><strong data-tec-total="progreso">—</strong><small>En progreso</small></span></div>
+                <div class="tec-team-metric"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"/></svg><span><strong data-tec-total="resueltos">—</strong><small>Resueltos</small></span></div>
+                <div class="tec-team-metric"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><span><strong data-tec-total="vencidos">—</strong><small>Vencidos</small></span></div>
+            </div>
+            <p class="tec-summary-note" id="tec-summary-description">La gráfica muestra la proporción de asignados por técnico; los indicadores pueden coincidir entre sí.</p>
+            <a class="tec-manage-link" href="{% url 'tickets:usuarios' %}">Gestionar equipo</a>
+        </aside>
+        <div class="tec-performance-table-wrap"><div class="table-scroll" tabindex="0" aria-label="Rendimiento por técnico, desplázate para ver más">
             <table class="data-table mesa-tec-table">
                 <thead>
                     <tr>
-                        <th>Técnico</th>
-                        <th class="num">Asignados</th>
-                        <th class="num">En progreso</th>
-                        <th class="num">Resueltos</th>
-                        <th class="num col-vencido">Vencidos</th>
-                        <th>Prom. resolución</th>
-                        <th>Cumpl. SLA</th>
-                        <th></th>
+                        <th><span class="tec-header-name"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>Técnico</span></th>
+                        <th class="num"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 12 12 3h8v8l-9 9-8-8Z"/><circle cx="16" cy="7" r="1"/></svg>Asignados</th>
+                        <th class="num"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16l13-8L7 4Z"/></svg>En progreso</th>
+                        <th class="num"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"/></svg>Resueltos</th>
+                        <th class="num col-vencido"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>Vencidos</th>
+                        <th><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg>Cumpl. SLA</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for t in tecnicos_stats %}
-                    <tr>
+                    <tr data-tec-summary data-nombre="{{ t.nombre|default:t.email }}" data-asignados="{{ t.asignados }}" data-progreso="{{ t.espera }}" data-resueltos="{{ t.resueltos }}" data-vencidos="{{ t.vencido }}">
                         <td>
                             <button type="button" class="tec-open" data-pk="{{ t.id }}" data-nombre="{{ t.nombre }}" data-total="{{ t.abrir|add:t.espera }}">
-                                <span class="tec-name-txt">{{ t.nombre }}</span>
+                                <span class="tec-table-avatar" aria-hidden="true">{{ t.nombre|default:t.email|slice:":1"|upper }}</span>
+                                <span class="tec-table-person"><span class="tec-name-txt">{{ t.nombre }}</span>
                                 <span class="tec-name-email">{{ t.email }}</span>
-                                <span class="tec-name-hint">Ver sus tickets asignados</span>
+                                <span class="tec-name-hint">Ver sus tickets asignados</span><span class="tec-extra-info">Promedio de resolución: {{ t.promedio_resolucion|default:"Sin datos" }}</span></span>
                             </button>
                         </td>
                         <td class="num"><strong>{{ t.asignados }}</strong></td>
                         <td class="num">{{ t.espera }}</td>
                         <td class="num">{{ t.resueltos }}</td>
                         <td class="num col-vencido">{% if t.vencido %}<span class="badge-vencido">{{ t.vencido }}</span>{% else %}—{% endif %}</td>
-                        <td>{% if t.promedio_resolucion %}{{ t.promedio_resolucion }}{% else %}<span class="text-muted">Sin datos</span>{% endif %}</td>
-                        <td>{% if t.sla_pct != None %}{{ t.sla_pct }}%{% else %}<span class="text-muted">Sin datos</span>{% endif %}</td>
-                        <td class="cell-link"><a href="{% url 'tickets:lista' %}?tecnico={{ t.id }}" title="Historial completo de tickets">Historial</a></td>
+                        <td>{% if t.sla_pct != None %}<span class="tec-sla"><span class="tec-sla-ring" data-sla="{{ t.sla_pct }}" aria-hidden="true"></span><b>{{ t.sla_pct }}%</b></span>{% else %}<span class="text-muted">Sin datos</span>{% endif %}</td>
+                        <td class="cell-link"><a href="{% url 'tickets:lista' %}?tecnico={{ t.id }}" title="Historial completo de tickets" aria-label="Historial de tickets de {{ t.nombre }}"><span aria-hidden="true">⋮</span></a></td>
                     </tr>
                     {% empty %}
-                    <tr class="table-empty"><td colspan="8">Sin técnicos registrados.</td></tr>
+                    <tr class="table-empty"><td colspan="7">Sin técnicos registrados.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div></div>
         </div>
     </div>
 
@@ -578,6 +816,103 @@
 {% block extra_js %}
 {{ stats|json_script:"dashboardAnsStats" }}
 <script>
+(function () {
+    var rows = Array.from(document.querySelectorAll('.mesa-tec-table tbody [data-tec-summary]'));
+    var totals = { asignados: 0, progreso: 0, resueltos: 0, vencidos: 0 };
+    rows.forEach(function (row) {
+        Object.keys(totals).forEach(function (key) { totals[key] += Math.max(0, Number(row.dataset[key]) || 0); });
+    });
+    Object.keys(totals).forEach(function (key) {
+        var element = document.querySelector('[data-tec-total="' + key + '"]');
+        if (element) element.textContent = totals[key].toLocaleString('es-CO');
+    });
+    var donut = document.querySelector('[data-tec-donut]');
+    if (donut && totals.asignados > 0) {
+        var colors = ['#e31b23', '#fb8514', '#089d61', '#64748b', '#7c3aed', '#0284c7'];
+        var cursor = 0, stops = [], segments = [];
+        rows.forEach(function (row, index) {
+            var count = Math.max(0, Number(row.dataset.asignados) || 0);
+            if (!count) return;
+            var end = cursor + count / totals.asignados * 100;
+            stops.push(colors[index % colors.length] + ' ' + cursor + '% ' + end + '%');
+            segments.push({ name: row.dataset.nombre || 'Técnico', count: count, start: cursor, end: end });
+            cursor = end;
+        });
+        donut.style.background = 'conic-gradient(' + stops.join(',') + ')';
+        var tooltip = donut.querySelector('[data-tec-tooltip]'), selected = 0;
+        function showSegment(index) {
+            selected = (index + segments.length) % segments.length;
+            var segment = segments[selected];
+            tooltip.querySelector('strong').textContent = segment.name;
+            tooltip.querySelector('span').textContent = segment.count.toLocaleString('es-CO') + (segment.count === 1 ? ' ticket asignado' : ' tickets asignados');
+            tooltip.querySelector('small').textContent = (segment.count / totals.asignados * 100).toLocaleString('es-CO', { maximumFractionDigits: 1 }) + '% del total asignado';
+            tooltip.hidden = false;
+        }
+        donut.addEventListener('pointermove', function (event) {
+            var rect = donut.getBoundingClientRect();
+            var x = event.clientX - (rect.left + rect.width / 2), y = event.clientY - (rect.top + rect.height / 2);
+            var percent = ((Math.atan2(y, x) + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2) * 100;
+            var index = segments.findIndex(function (segment) { return percent >= segment.start && percent < segment.end; });
+            if (index >= 0) showSegment(index);
+        });
+        donut.addEventListener('pointerleave', function () { tooltip.hidden = true; });
+        donut.addEventListener('focus', function () { showSegment(selected); });
+        donut.addEventListener('blur', function () { tooltip.hidden = true; });
+        donut.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowRight' || event.key === 'ArrowDown') { event.preventDefault(); showSegment(selected + 1); }
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') { event.preventDefault(); showSegment(selected - 1); }
+            if (event.key === 'Escape') tooltip.hidden = true;
+        });
+    }
+    document.querySelectorAll('.tec-sla-ring[data-sla]').forEach(function (ring) {
+        var value = Number((ring.dataset.sla || '').replace(',', '.'));
+        ring.style.setProperty('--sla', String(Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0));
+    });
+})();
+(function () {
+    var menu = document.getElementById('attentionActions');
+    var table = document.querySelector('.attention-table');
+    if (!menu || !table) return;
+    var selected = null, notice = menu.querySelector('.attention-actions-notice');
+    function closeMenu(restoreFocus) {
+        menu.hidden = true;
+        if (selected) { selected.setAttribute('aria-expanded', 'false'); if (restoreFocus) selected.focus(); }
+        selected = null;
+    }
+    function openMenu(row) {
+        if (selected === row && !menu.hidden) { closeMenu(false); return; }
+        closeMenu(false);
+        selected = row;
+        row.setAttribute('aria-expanded', 'true');
+        menu.querySelector('[data-attention-selected]').textContent = row.dataset.attentionCode;
+        menu.querySelectorAll('[data-attention-link]').forEach(function (link) { link.href = row.dataset.attentionUrl + link.dataset.attentionLink; });
+        notice.hidden = true;
+        menu.hidden = false;
+        var rect = row.getBoundingClientRect(), width = menu.offsetWidth, height = menu.offsetHeight;
+        menu.style.left = Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12)) + 'px';
+        menu.style.top = Math.max(12, Math.min(rect.bottom + 6, window.innerHeight - height - 12)) + 'px';
+        menu.querySelector('a').focus();
+    }
+    table.addEventListener('click', function (event) {
+        var row = event.target.closest('[data-attention-url]');
+        if (!row || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        event.preventDefault(); openMenu(row);
+    });
+    table.addEventListener('keydown', function (event) {
+        var row = event.target.closest('[data-attention-url]');
+        if (row && event.target === row && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openMenu(row); }
+    });
+    document.addEventListener('click', function (event) { if (!menu.hidden && !menu.contains(event.target) && !event.target.closest('[data-attention-url]')) closeMenu(false); });
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !menu.hidden) closeMenu(true); });
+    window.addEventListener('resize', function () { if (!menu.hidden) closeMenu(false); });
+    document.querySelector('.attention-scroll').addEventListener('scroll', function () { if (!menu.hidden) closeMenu(false); });
+    menu.querySelector('[data-attention-copy]').addEventListener('click', function () {
+        var code = selected && selected.dataset.attentionCode;
+        if (!code) return;
+        if (!navigator.clipboard || !navigator.clipboard.writeText) { notice.textContent = 'No se pudo copiar automáticamente. Código: ' + code; notice.hidden = false; return; }
+        navigator.clipboard.writeText(code).then(function () { notice.textContent = 'Código copiado.'; notice.hidden = false; }).catch(function () { notice.textContent = 'No se pudo copiar automáticamente. Código: ' + code; notice.hidden = false; });
+    });
+})();
 (function () {
     var source = document.getElementById('dashboardAnsStats');
     var card = document.querySelector('[data-ans-summary]');

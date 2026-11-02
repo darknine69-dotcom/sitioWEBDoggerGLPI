@@ -1,5 +1,6 @@
 """Metadatos de navegación para la cabecera compartida."""
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.urls import reverse
 
 from .routing import landing_por_rol
@@ -85,4 +86,12 @@ def encabezado_pagina(request):
         icono = "i-ticket"
     else:
         icono = inicio_icono if request.path == inicio else "i-layers"
-    return {"encabezado": {"seccion": seccion, "actual": actual, "icono": icono, "padres": padres, "zona": timezone.get_current_timezone_name(), "perfil": nombre == "accounts:ajustes", "detalle_ticket": nombre in ("tickets:detalle", "tickets:mi_ticket", "tickets:mi_editar")}}
+    inicio_sesion = None
+    if user.is_authenticated:
+        inicio = request.session.get("inicio_sesion")
+        if isinstance(inicio, str):
+            try:
+                inicio_sesion = parse_datetime(inicio)
+            except (ValueError, OverflowError):
+                inicio_sesion = None
+    return {"encabezado": {"seccion": seccion, "actual": actual, "icono": icono, "padres": padres, "zona": timezone.get_current_timezone_name(), "perfil": nombre == "accounts:ajustes", "detalle_ticket": nombre in ("tickets:detalle", "tickets:mi_ticket", "tickets:mi_editar"), "inicio_sesion": inicio_sesion}}

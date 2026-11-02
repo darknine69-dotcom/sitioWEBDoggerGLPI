@@ -1,6 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.test import Client
+from django.utils import timezone
+from unittest.mock import patch
+from datetime import timedelta
 
 from apps.tickets.models import Ticket
 
@@ -44,3 +48,26 @@ class EncabezadoGlobalTest(TestCase):
         response = self.client.get(reverse("tickets:dashboard"))
         self.assertContains(response, '<span aria-current="page" data-current-crumb>Panel</span>')
         self.assertNotContains(response, 'Panel administrador</a>')
+
+    def test_inicio_sesion_es_independiente_y_no_cambia_con_actividad(self):
+        primero = timezone.now()
+        segundo = primero + timedelta(seconds=10)
+        otro_cliente = Client()
+        with patch("apps.accounts.signals.timezone.now", return_value=primero):
+            self.client.force_login(self.admin)
+        with patch("apps.accounts.signals.timezone.now", return_value=segundo):
+            otro_cliente.force_login(self.admin)
+        response = self.client.get(reverse("tickets:dashboard"))
+        self.assertEqual(response.context["encabezado"]["inicio_sesion"], primero)
+        self.assertEqual(otro_cliente.get(reverse("tickets:dashboard")).context["encabezado"]["inicio_sesion"], segundo)
+        self.admin.ultima_actividad = timezone.now()
+        self.admin.save(update_fields=["ultima_actividad"])
+        self.assertEqual(self.client.get(reverse("tickets:dashboard")).context["encabezado"]["inicio_sesion"], primero)
+
+    def test_sesion_antigua_sin_fecha_no_inventa_inicio(self):
+        self.client.force_login(self.admin)
+        session = self.client.session
+        del session["inicio_sesion"]
+        session.save()
+        response = self.client.get(reverse("tickets:dashboard"))
+        self.assertIsNone(response.context["encabezado"]["inicio_sesion"])

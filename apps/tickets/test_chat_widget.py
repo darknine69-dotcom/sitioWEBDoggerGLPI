@@ -294,3 +294,77 @@ class ChatWidgetTest(TestCase):
 
         # Menos de dos letras no consulta nada.
         self.assertEqual(self.client.get(url, {"q": "T"}).json()["tickets"], [])
+
+    def test_buscador_global_descripcion_y_aislamiento(self):
+        self.ticket.descripcion = "impresora especial bloqueada"
+        self.ticket.save(update_fields=["descripcion"])
+        self.ajeno.descripcion = "impresora especial ajena"
+        self.ajeno.save(update_fields=["descripcion"])
+        self.client.force_login(self.usuario)
+        url = reverse("tickets:buscar_tickets_tecnico")
+        data = self.client.get(url, {"q": "impresora especial", "global": "1"}).json()
+        self.assertEqual([t["codigo"] for t in data["tickets"]], [self.ticket.codigo])
+        self.assertIn("prioridad_display", data["tickets"][0])
+        self.assertIn("ans_vencido", data["tickets"][0])
+        self.assertFalse(self.client.get(url, {"q": "Zona Ajena", "global": "1"}).json()["puntos"])
+        self.assertEqual(self.client.get(url, {"q": "Zona Uno", "global": "1"}).json()["puntos"][0]["nombre"], "Zona Uno")
+
+    def test_buscador_funciones_por_rol_y_sinonimos(self):
+        url = reverse("tickets:buscar_tickets_tecnico")
+        for user in (self.admin, self.tec, self.usuario, self.obs):
+            self.client.force_login(user)
+            def ids(query):
+                return {x["id"] for x in self.client.get(url, {"q": query, "global": "1"}).json()["funciones"]}
+            self.assertIn("password", ids("contrasena"))
+            self.assertIn("notificaciones", ids("notificaciones"))
+            if user == self.admin:
+                self.assertIn("pagina", ids("dar permiso"))
+                self.assertIn("usuarios-admin", ids("cambiar rol"))
+            else:
+                self.assertNotIn("pagina", ids("permisos"))
+                self.assertNotIn("usuarios-admin", ids("crear cuenta"))
+        self.client.force_login(self.obs)
+        nombres = {x["id"] for x in self.client.get(url, {"q": "monitoreo", "global": "1"}).json()["funciones"]}
+        self.assertNotIn("monitoreo-admin", nombres)
+
+    def test_registro_funciones_destinos_existen(self):
+        from apps.tickets.search_registry import REGISTRY
+        from django.urls import resolve
+        for entry in REGISTRY:
+            with self.subTest(funcion=entry[0]):
+                self.assertIsNotNone(resolve(reverse(entry[5])))
+
+    def test_buscador_registros_independientes_y_zonas_privadas(self):
+        from apps.tickets.models import Categoria, ZonaObservador
+        Categoria.objects.create(nombre="Equipo sin tickets", grupo="Infraestructura", activo=True)
+        otro = Usuario.objects.create_user(email="sin-ticket@x.com", password="x", nombre="Cuenta singular", rol=Usuario.Rol.USUARIO)
+        ZonaObservador.objects.create(observador=self.obs, nombre="Zona privada única")
+        otro_obs = Usuario.objects.create_user(email="otro-obs@x.com", password="x", nombre="Otro observador", rol=Usuario.Rol.OBSERVADOR)
+        url = reverse("tickets:buscar_tickets_tecnico")
+        self.client.force_login(self.usuario)
+        data = self.client.get(url, {"q": "Equipo sin tickets", "global": "1"}).json()
+        self.assertIn("Equipo sin tickets", [x["nombre"] for x in data["registros"]])
+        data = self.client.get(url, {"q": "Cuenta singular", "global": "1"}).json()
+        self.assertNotIn("Cuenta singular", [x["nombre"] for x in data["registros"]])
+        self.client.force_login(self.admin)
+        data = self.client.get(url, {"q": "Cuenta singular", "global": "1"}).json()
+        cuenta = next(x for x in data["registros"] if x["nombre"] == otro.nombre)
+        self.assertIn("abrir=" + str(otro.pk), cuenta["url"])
+        self.client.force_login(self.obs)
+        data = self.client.get(url, {"q": "Zona privada", "global": "1"}).json()
+        self.assertIn("Zona privada única", [x["nombre"] for x in data["registros"]])
+        self.client.force_login(otro_obs)
+        data = self.client.get(url, {"q": "Zona privada", "global": "1"}).json()
+        self.assertNotIn("Zona privada única", [x["nombre"] for x in data["registros"]])
+
+    def test_buscador_devuelve_destinos_directos(self):
+        from apps.tickets.models import Categoria
+        categoria = Categoria.objects.create(nombre="Impresión directa", grupo="Equipos", activo=True)
+        self.client.force_login(self.admin)
+        url = reverse("tickets:buscar_tickets_tecnico")
+        data = self.client.get(url, {"q": "Impresión directa", "global": "1"}).json()
+        item = next(x for x in data["registros"] if x["nombre"] == categoria.nombre)
+        self.assertEqual(item["url"], reverse("tickets:categorias_arbol") + "#buscar-categoria-" + str(categoria.pk))
+        data = self.client.get(url, {"q": "crear usuario", "global": "1"}).json()
+        item = next(x for x in data["funciones"] if x["id"] == "crear-cuenta")
+        self.assertEqual(item["url"], reverse("tickets:usuarios") + "#buscar-crear-cuenta")

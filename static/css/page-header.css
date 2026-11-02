@@ -1,4 +1,8 @@
 .topbar > .header-row { align-items:center; min-height:0; gap:16px; padding:12px 24px; background:linear-gradient(110deg,#fff 55%,#fff3f4); }
+/* La barra de cuenta y la marca comparten la misma línea inferior en escritorio. */
+@media (min-width:1081px) {
+    .sidebar-top, .topbar-top { box-sizing:border-box; min-height:71px; }
+}
 .topbar-titles { position:relative; flex:1 1 auto; display:flex; flex-direction:column; min-width:0; }
 .topbar-titles:has(h1 .h1-ico) { min-height:72px; justify-content:center; padding-left:62px; }
 .topbar-titles .dogger-page-section { order:-1; margin-bottom:2px; color:#dc2626; font-size:10px; font-weight:700; letter-spacing:.1em; }

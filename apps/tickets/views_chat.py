@@ -189,25 +189,29 @@ def buscar_tickets_tecnico(request):
 
     # Se mira más allá del límite del chat: en una búsqueda no tiene sentido
     # quedarse en los 20 más recientes, pero tampoco barrer toda la tabla.
-    tickets = _tickets_del_rol(request.user, limite=400)
-    aguja = q.lower()
+    if request.user.rol not in ("admin", "tecnico", "usuario", "observador"):
+        return JsonResponse({"ok": True, "tickets": [], "tecnicos": [], "puntos": [], "categorias": []})
+    q = q[:150]
+    alcance = _tickets_del_rol(request.user, limite=None)
+    estados = [valor for valor, etiqueta in Ticket.Estado.choices if q.casefold() in etiqueta.casefold()]
+    tickets = alcance.filter(
+        Q(codigo__icontains=q) | Q(titulo__icontains=q) | Q(descripcion__icontains=q)
+        | Q(tecnico_asignado__nombre__icontains=q) | Q(tecnico_asignado__email__icontains=q)
+        | Q(solicitante_punto__icontains=q) | Q(categoria__nombre__icontains=q) | Q(estado__in=estados)
+    ).select_related("categoria")[:30]
     resultados = []
     for t in tickets:
         tecnico = ""
         if t.tecnico_asignado_id:
             tecnico = t.tecnico_asignado.nombre or t.tecnico_asignado.email or ""
-        pajar = " ".join([
-            t.codigo or "", t.titulo or "", t.get_estado_display() or "",
-            tecnico,
-        ]).lower()
-        if aguja not in pajar:
-            continue
         resultados.append({
             "pk": t.pk,
             "codigo": t.codigo,
             "titulo": t.titulo or "",
             "estado": t.estado,
             "estado_display": t.get_estado_display(),
+            "prioridad_display": t.get_prioridad_display(),
+            "ans_vencido": t.info_ans[0] == "vencido",
             "tecnico": tecnico,
             "tecnico_rol": t.tecnico_asignado.rol if t.tecnico_asignado_id else "",
             "url": reverse("tickets:detalle", args=[t.pk]),
@@ -215,7 +219,30 @@ def buscar_tickets_tecnico(request):
         })
         if len(resultados) >= 30:
             break
-    return JsonResponse({"ok": True, "tickets": resultados})
+    tecnicos, puntos, categorias, funciones, registros = [], [], [], [], []
+    if request.GET.get("global") == "1":
+        from apps.tickets.search_registry import buscar_funciones
+        from apps.tickets.search_records import buscar_registros
+        funciones = buscar_funciones(request.user, q, request.GET.get("contexto", "")[:300])
+        registros = buscar_registros(request.user, q)
+        encontrados = set()
+        for t in alcance.filter(Q(tecnico_asignado__nombre__icontains=q) | Q(tecnico_asignado__email__icontains=q))[:100]:
+            if t.tecnico_asignado_id not in encontrados:
+                encontrados.add(t.tecnico_asignado_id)
+                tecnicos.append({"nombre": t.tecnico_asignado.nombre or t.tecnico_asignado.email, "avatar": _avatar_url(t.tecnico_asignado), "ticket_pk": t.pk, "url": reverse("tickets:detalle", args=[t.pk])})
+            if len(tecnicos) >= 6:
+                break
+        for t in alcance.filter(solicitante_punto__icontains=q).exclude(solicitante_punto="")[:100]:
+            if t.solicitante_punto and t.solicitante_punto not in {p["nombre"] for p in puntos}:
+                puntos.append({"nombre": t.solicitante_punto, "ticket_pk": t.pk, "url": reverse("tickets:detalle", args=[t.pk])})
+            if len(puntos) >= 6:
+                break
+        for t in alcance.filter(categoria__nombre__icontains=q).select_related("categoria")[:100]:
+            if t.categoria_id and t.categoria.nombre not in {c["nombre"] for c in categorias}:
+                categorias.append({"nombre": t.categoria.nombre, "ticket_pk": t.pk, "url": reverse("tickets:detalle", args=[t.pk])})
+            if len(categorias) >= 6:
+                break
+    return JsonResponse({"ok": True, "tickets": resultados, "tecnicos": tecnicos, "puntos": puntos, "categorias": categorias, "funciones": funciones, "registros": registros})
 
 
 def _ticket_visible_al_rol(usuario, pk):

@@ -1,0 +1,373 @@
+/* Superficies comunes y fichas: se carga después de los estilos de cada vista. */
+html[data-theme="dark"] {
+    --dark-surface: #171717;
+    --dark-surface-raised: #222222;
+    --dark-surface-hover: #303030;
+    --dark-text: #d0d0d0;
+    --dark-muted: #adadad;
+    --dark-border: #424242;
+    --table-hover-bg: #292929;
+}
+
+html[data-theme="dark"] :is(.modal-box, .confirm-box, .force-pwd-modal, .ax-modal-card,
+    .pan-presionar-modal, .mon-folder-dialog, .mon-point-dialog, .aud-modal-caja,
+    .perfil-photo-dialog) {
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+
+html[data-theme="dark"] :is(.modal-box, .confirm-box, .force-pwd-modal,
+    .mon-folder-dialog, .mon-point-dialog, .aud-modal-caja, .perfil-photo-dialog)
+    :is(h1, h2, h3, h4, h5, label, dt, dd, strong, p) {
+    color: var(--dark-text);
+}
+
+html[data-theme="dark"] :is(.modal-box, .mon-folder-dialog, .mon-point-dialog,
+    .aud-modal-caja, .perfil-photo-dialog) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    background: var(--dark-surface-raised);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] :is(.modal-box, .mon-folder-dialog, .mon-point-dialog,
+    .aud-modal-caja, .perfil-photo-dialog) :is(input, textarea)::placeholder { color: var(--dark-muted); }
+
+/* Monitoreo: listas, ficha de punto y tablas interiores. */
+html[data-theme="dark"] :is(.mon-folder-item, .mon-folder-item:first-child,
+    .mon-folder-metric, .mon-folder-footer, .mon-point-grid > section,
+    .mon-point-ticket-head, .mon-point-tickets, .mon-point-metrics > div) {
+    background: var(--dark-surface-raised);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] :is(.mon-folder-info b, .mon-folder-metric b,
+    .mon-point-grid h4, .mon-point-grid dd, .mon-point-grid strong) { color: var(--dark-text); }
+html[data-theme="dark"] :is(.mon-folder-info small, .mon-folder-metric small,
+    .mon-folder-head p, .mon-point-grid dt, .mon-point-grid small,
+    .mon-point-ticket-head) { color: var(--dark-muted); }
+html[data-theme="dark"] :is(.mon-folder-item:hover, .mon-folder-item:focus-visible) {
+    background: var(--dark-surface-hover);
+    border-color: #8ab4f8;
+}
+html[data-theme="dark"] :is(.mon-folder-profile, .mon-folder-head button,
+    .mon-folder-footer button, .modal-close) {
+    background: var(--dark-surface-raised);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] .mon-folder-profile:hover { background: #c91d34; color: #fff; }
+
+/* Ficha de ticket, incluidos los bloques insertados dinámicamente. */
+html[data-theme="dark"] .ax-modal :is(.ax-modal-card, .ax-modal-cuerpo, .ax-modal-pie,
+    .ax-ficha-quien li, .ax-ficha-hilo, .ax-ans-panel, .ax-observador-panel,
+    .ax-observador-persona, .ax-observador-nota) {
+    background: var(--dark-surface-raised);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] .ax-modal :is(.ax-ficha-quien li > div strong,
+    .ax-ficha-desc, .ax-ficha-msg-txt, .ax-ans-datos b,
+    .ax-observador-persona strong) { color: var(--dark-text); }
+html[data-theme="dark"] .ax-modal :is(.ax-ficha-quien span, .ax-ficha-sec h4,
+    .ax-ficha-paneles h4, .ax-ans-datos span, .ax-ans-panel small,
+    .ax-observador-persona small, .ax-observador-panel li time) { color: var(--dark-muted); }
+html[data-theme="dark"] .ax-modal :is(.ax-ficha-pill:not(.ax-ficha-estado), .ax-ficha-detalle-completo) {
+    background: #303030;
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] .ax-modal .ax-ans-panel[data-estado="vencido"] { background:#442426; color:#ffadb4; }
+html[data-theme="dark"] .ax-modal .ax-ans-panel[data-estado="por-vencer"] { background:#46351d; color:#ffd68a; }
+html[data-theme="dark"] .ax-modal .ax-ans-panel[data-estado="ok"] { background:#203c2e; color:#a9eac0; }
+
+html[data-theme="dark"] :is(.modal-box, .confirm-box, .mon-folder-dialog,
+    .mon-point-dialog, .ax-modal-card, .perfil-photo-dialog) :focus-visible {
+    outline: 2px solid #92b9ff;
+    outline-offset: 2px;
+}
+
+/* Encabezado compartido entre roles. */
+html[data-theme="dark"] .topbar > .header-row {
+    background: #151515;
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] .topbar .topbar-titles h1 { color: var(--dark-text); }
+html[data-theme="dark"] .topbar :is(.dogger-page-description, .dogger-page-breadcrumb,
+    .dogger-crumb-root, .dogger-header-clock, .dogger-header-clock small,
+    .dogger-header-session small) { color: var(--dark-muted); }
+html[data-theme="dark"] .topbar :is(.dogger-header-clock, .dogger-header-session) {
+    background: var(--dark-surface-raised);
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] .topbar .dogger-header-session strong { color: #8de2ae; }
+html[data-theme="dark"] .topbar .user-chip { color: var(--dark-text); }
+html[data-theme="dark"] .topbar .user-chip-text { color: var(--dark-text); }
+html[data-theme="dark"] .topbar .user-chip-text small { color: var(--dark-muted); }
+html[data-theme="dark"] :is(.sidebar, .topbar-top) { background: #111111; }
+html[data-theme="dark"] .corp-fab-item {
+    background: #242424;
+    color: var(--dark-text);
+    border-color: #484848;
+}
+html[data-theme="dark"] .corp-fab-item:hover,
+html[data-theme="dark"] .corp-fab-item:focus-visible { background: #333333; }
+html[data-theme="dark"] .sidebar :is(.sidebar-brand-txt strong, .sidebar-link) { color: var(--dark-text); }
+
+/* Mi panel del punto de venta: las reglas originales tienen selectores con ID. */
+html[data-theme="dark"] .mi-panel-shell #pvDashboard {
+    --pv-ink: var(--dark-text);
+    --pv-muted: var(--dark-muted);
+    color: var(--dark-text);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-supervisor-strip, .pv-kpi, .pv-card) {
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .2);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-supervision-card,
+    .pv-supervision-escalate, .pv-middle-grid > .pv-card > header,
+    .pv-press-card > header, .pv-ranking li:not(.pv-empty),
+    .pv-ranking li:first-child:not(.pv-empty)) {
+    background: var(--dark-surface-raised);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-supervision-heading,
+    .pv-supervision-zone b, .pv-supervision-card b, .pv-supervision-escalate b,
+    .pv-kpi-main b, .pv-kpi-main strong, .pv-card h3, .pv-state-body li b,
+    .pv-ranking b, .pv-ranking strong, .pv-activity-copy b,
+    .pv-category-item b) { color: var(--dark-text); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-supervision-zone small,
+    .pv-supervision-card small, .pv-supervision-escalate small, .pv-kpi-bottom,
+    .pv-state-body li, .pv-activity-copy small, .pv-ranking small,
+    .pv-category-item span, .pv-donut span) { color: var(--dark-muted); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-donut::after { background: var(--dark-surface); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-kpi-bottom em,
+    .pv-ranking .pv-rank-link, .pv-chart-refresh, .pv-period-form label) {
+    background: var(--dark-surface-raised);
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-activity-action:hover,
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-activity-action:focus-visible {
+    background: var(--dark-surface-hover);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-activity-icon {
+    box-shadow: 0 0 0 4px var(--dark-surface);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-activity-item:not(:last-child)::after {
+    background: var(--dark-border);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-supervision-detail > .icon,
+    .pv-supervision-avatar, .pv-rank-avatar, .pv-ranking-heading > .icon) {
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, .14);
+    box-shadow: none;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-supervision-avatar, .pv-rank-avatar) {
+    color: #c4b5fd;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-supervision-card em {
+    color: #bdbdbd;
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, .14);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-supervision-card a {
+    color: #70dba5;
+    background: #0d0d0d;
+    border-color: rgba(112, 219, 165, .35);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-supervision-card a:hover {
+    background: #20352a;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-ranking li strong {
+    color: #ff9ba9;
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, .14);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-ranking > header > a {
+    color: #9bbcff;
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, .14);
+}
+/* Gráficas y tabla de seguimiento del punto de venta. */
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-chart-card > header > span:nth-child(2),
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-chart-donut b, .pv-bar-item b,
+    .pv-chart-tooltip b, .pv-press-table td, .pv-press-table td:nth-child(2) > a) {
+    color: var(--dark-text);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-period-label, .pv-period-legend,
+    .pv-chart-donut small, .pv-bar-item small, .pv-category-item b small,
+    .pv-chart-tooltip small, .pv-press-title small, .pv-press-table td small) {
+    color: var(--dark-muted);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-chart-donut::after { background: var(--dark-surface); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-period-line text { fill: var(--dark-muted); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-period-grid line { stroke: var(--dark-border); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-chart-tooltip, .pv-chart-controls select,
+    .pv-press-count, .pv-priority, .pv-ans) {
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, .15);
+    color: var(--dark-text);
+    box-shadow: none;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-chart-tooltip span { color: #ff8a98; }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-category-item.is-highlighted { background: var(--dark-surface-hover); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-press-title > .icon {
+    background: #0d0d0d;
+    color: #ff8a98;
+    border: 1px solid rgba(255, 255, 255, .15);
+    box-shadow: none;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-press-table { border-color: var(--dark-border); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-press-table th {
+    background: #202020;
+    color: var(--dark-muted);
+    border-color: var(--dark-border);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-press-table td { border-bottom-color: var(--dark-border); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-press-table :is(.pv-press-row, .pv-press-row.is-vencido, .pv-press-row.is-por-vencer) {
+    background: var(--dark-surface);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-press-table .pv-press-row:hover { background: var(--dark-surface-hover); }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-press-table td:first-child > a {
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, .15);
+    color: #ff8a98;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-press-count, .pv-ans.is-vencido, .pv-priority.is-urgente, .pv-priority.is-alta) { color: #ff8a98; }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-priority.is-media, .pv-ans.is-por-vencer) { color: #ffc46b; }
+html[data-theme="dark"] .pv-zone-dialog { background: var(--dark-surface); color: var(--dark-text); border-color: var(--dark-border); }
+html[data-theme="dark"] .pv-zone-dialog :is(h3, dd) { color: var(--dark-text); }
+html[data-theme="dark"] .pv-zone-dialog :is(p, dt) { color: var(--dark-muted); }
+html[data-theme="dark"] .pv-zone-dialog dl div { background: var(--dark-surface-raised); }
+
+/* Fondos de iconos neutros en modo oscuro; los trazos conservan su color. */
+html[data-theme="dark"] :is(.category-shared-icon, .corp-title-icon, .pv-kpi-icon,
+    .pv-supervision-icon, .pv-heading-icon, .pv-activity-icon, .pv-chart-heading-icon,
+    .mon-folder-icon, .mon-folder-title-icon, .modal-head-ic, .chart-head-icon,
+    .dash-stat-icon .dash-stat-glyph, .h1-ico) {
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, .13);
+    box-shadow: none;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-kpi-icon {
+    background: #0d0d0d;
+    color: var(--pv);
+    border: 1px solid rgba(255, 255, 255, .13);
+    box-shadow: none;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-activity-icon {
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, .13);
+    box-shadow: 0 0 0 4px var(--dark-surface);
+}
+
+/* Tabla de solicitudes y filtros del punto de venta. */
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card :is(.corp-title-wrap h3,
+    .td-code .stub-code, .td-title .row-title, .cat-chip, .tickets-table tbody td) {
+    color: var(--dark-text);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card :is(.search-field,
+    .toolbar-corp select, .pv-table-period, .tickets-table-wrap, .tickets-table thead th) {
+    background-color: #171717;
+    color: var(--dark-text);
+    border-color: rgba(255, 255, 255, .16);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table tbody td {
+    border-color: rgba(255, 255, 255, .12);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table tbody tr:hover {
+    background: var(--dark-surface-hover);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table tbody tr.ticket-row:hover > td,
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table tbody tr.ticket-row:focus-within > td {
+    background: #292929;
+    color: var(--dark-text);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu > summary {
+    background: #101010;
+    color: #c9c9c9;
+    border: 1px solid rgba(255, 255, 255, .18);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu > summary:hover,
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu[open] > summary {
+    background: #303030;
+    color: #ff8a98;
+    border-color: rgba(255, 138, 152, .5);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu > summary:focus-visible {
+    outline: 2px solid #92b9ff;
+    outline-offset: 2px;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu-popover {
+    background: #1b1b1b;
+    border-color: rgba(255, 255, 255, .18);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .5);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu-popover .icon-btn {
+    background: transparent;
+    color: var(--dark-text);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu-popover .icon-btn:hover,
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu-popover .icon-btn:focus-visible {
+    background: #303030;
+    color: #ff8a98;
+}
+
+/* Etiquetas de estado, prioridad y ANS sobre fondo negro en tema oscuro. */
+html[data-theme="dark"] :is(.status-pill, .meta-pill, .ans-time),
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card :is(.status-pill, .meta-pill, .ans-time) {
+    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, .14);
+}
+html[data-theme="dark"] :is(.status-resuelto, .meta-baja, .ans-resuelto, .ans-ok),
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card :is(.status-resuelto, .meta-baja, .ans-resuelto, .ans-ok) { color: #70dba5; }
+html[data-theme="dark"] .status-cerrado,
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .status-cerrado { color: #a5bce1; }
+html[data-theme="dark"] :is(.status-abierto, .meta-urgente, .ans-vencido),
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card :is(.status-abierto, .meta-urgente, .ans-vencido) { color: #ff8a98; }
+html[data-theme="dark"] :is(.status-en-progreso, .meta-alta, .meta-media, .ans-por-vencer),
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card :is(.status-en-progreso, .meta-alta, .meta-media, .ans-por-vencer) { color: #ffc46b; }
+
+/* Formulario de creación: análisis automático y confirmación. */
+html[data-theme="dark"] .user-ticket-form :is(.auto-category-card, .ticket-form-actions) {
+    background: var(--dark-surface-raised);
+    color: var(--dark-text);
+    border-color: var(--dark-border);
+    box-shadow: none;
+}
+html[data-theme="dark"] .user-ticket-form .auto-category-card-head { border-color: var(--dark-border); }
+html[data-theme="dark"] .user-ticket-form :is(.auto-category-card-head strong,
+    .auto-category-meta strong, .auto-category-techs-head, .cat-analysis-pending strong) { color: var(--dark-text); }
+html[data-theme="dark"] .user-ticket-form :is(.auto-category-card-head small, .cat-analysis-pending,
+    .auto-category-meta small, .auto-category-techs-head small, .auto-tech-empty,
+    .ticket-form-footnote) { color: var(--dark-muted); }
+html[data-theme="dark"] .user-ticket-form .cat-analysis-pending a { color: #a5c4ff; }
+html[data-theme="dark"] .user-ticket-form :is(.auto-category-icon, .auto-category-lock,
+    .auto-category-meta > span, .auto-tech-profile) {
+    background: #101010;
+    border: 1px solid rgba(255, 255, 255, .15);
+    color: #a5c4ff;
+    box-shadow: none;
+}
+html[data-theme="dark"] .user-ticket-form .auto-category-techs { border-color: var(--dark-border); }
+html[data-theme="dark"] .user-ticket-form .auto-category-card .cat-auto-hint {
+    background: #13261c;
+    border-color: #355f47;
+    color: #9adab3;
+}
+html[data-theme="dark"] .user-ticket-form .auto-category-card .cat-auto-hint strong { color: #b6ebc9; }
+html[data-theme="dark"] .user-ticket-form .auto-category-card .cat-suggest {
+    background: #292315;
+    border-color: #66532b;
+    color: #e5c98c;
+}
+html[data-theme="dark"] .user-ticket-form input[type="file"]::file-selector-button {
+    background: #101010;
+    color: var(--dark-text);
+    border: 1px solid var(--dark-border);
+    border-radius: 6px;
+    padding: 5px 9px;
+    cursor: pointer;
+}

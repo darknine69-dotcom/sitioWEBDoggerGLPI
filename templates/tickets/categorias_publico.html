@@ -48,7 +48,7 @@
 
                 <ul class="cat-grupo-lista">
                     {% for sub in grupo.subcategorias %}
-                    <li class="cat-item">
+                    <li class="cat-item" id="buscar-categoria-{{ sub.pk }}">
                         <div class="cat-item-head" data-toggle tabindex="0" role="button"
                              aria-expanded="false" aria-label="Ver detalles de {{ sub.nombre }}">
                             <svg class="icon icon-sm cat-sign cat-item-sign" aria-hidden="true"><use href="#i-plus"/></svg>
