@@ -1,6 +1,6 @@
 {% comment %}Tarjeta compacta de zona para el visor del supervisor.{% endcomment %}
 <div class="pan-zc-wrap pan-zc-{% if e.ans_vencidos %}rojo{% elif e.ans_por_vencer %}amarillo{% else %}{{ e.estado }}{% endif %}" data-pan-wrap="{{ e.clave }}"{% if e.color %} style="--zc: {{ e.color }}"{% endif %}>
-    <button type="button" class="pan-zc pan-zc-{% if e.ans_vencidos %}rojo{% elif e.ans_por_vencer %}amarillo{% else %}{{ e.estado }}{% endif %}" data-pan-clave="{{ e.clave }}" data-pan-nombre="{{ e.nombre }}">
+    <button type="button" class="pan-zc pan-zc-{% if e.ans_vencidos %}rojo{% elif e.ans_por_vencer %}amarillo{% else %}{{ e.estado }}{% endif %}" data-pan-clave="{{ e.clave }}" data-pan-nombre="{{ e.nombre }}" title="{{ e.nombre|default:'Sin nombre' }}">
         <span class="pan-zc-headline">
             <span class="pan-zc-ico"><svg class="icon"><use href="#i-store"/></svg></span>
             <span class="pan-zc-title"><b>{{ e.nombre|default:"Sin nombre" }}</b><small>{{ e.fecha|default:"Sin fecha" }}</small></span>

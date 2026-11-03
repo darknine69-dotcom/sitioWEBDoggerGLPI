@@ -76,7 +76,7 @@ la papelera se conectan antes de pintar nada).
     <div class="pan-left" id="panLeft">
         <article class="pan-sup">
             <header class="pan-sup-head">
-                <span class="pan-ava">{{ panel.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
+                <span class="pan-ava">{% if panel.supervisor.avatar %}<img src="{{ panel.supervisor.avatar.url }}" alt="" onerror="this.remove()">{% endif %}{{ panel.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
                 <div class="pan-sup-id">
                     <strong>Zonas del supervisor</strong>
                     <small>{{ panel.supervisor.email|default:"—" }}</small>

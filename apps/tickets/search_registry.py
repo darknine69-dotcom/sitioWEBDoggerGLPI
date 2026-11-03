@@ -13,6 +13,14 @@ STAFF = ("admin", "tecnico")
 # clave, nombre, descripción, términos, grupo, ruta, fragmento, icono, roles
 REGISTRY = (
     ("perfil", "Mi perfil", "Consultar y editar mis datos", "cuenta usuario nombre correo configuracion", "Configuraciones", "accounts:ajustes", "perfil", "i-user", ALL),
+    ("visualizacion", "Visualización y apariencia", "Abrir los ajustes de apariencia", "visualizacion apariencia tema claro oscuro modo sistema configuracion", "Configuraciones", "accounts:perfil", "preferencias-visualizacion", "i-eye", ALL),
+    ("general-cuenta", "Preferencias generales", "Abrir idioma y avisos generales", "general idioma correo resumen notificaciones configuracion", "Configuraciones", "accounts:perfil", "preferencias-general", "i-settings", ALL),
+    ("idioma", "Idioma de la interfaz", "Abrir preferencias generales", "idioma español ingles portugues configuracion", "Configuraciones", "accounts:perfil", "preferencias-general", "i-settings", ALL),
+    ("accesibilidad", "Accesibilidad", "Abrir ajustes de fuente y contraste", "accesibilidad letra texto fuente tamaño contraste configuracion", "Configuraciones", "accounts:perfil", "preferencias-accesibilidad", "i-help", ALL),
+    ("fuente", "Tamaño de fuente", "Abrir ajustes de accesibilidad", "letra tamaño texto fuente accesibilidad configuracion", "Configuraciones", "accounts:perfil", "preferencias-accesibilidad", "i-help", ALL),
+    ("contraste", "Contraste de pantalla", "Abrir ajustes de accesibilidad", "contraste alto estandar visibilidad accesibilidad configuracion", "Configuraciones", "accounts:perfil", "preferencias-accesibilidad", "i-eye", ALL),
+    ("navegacion", "Navegación y menú", "Abrir opciones del menú lateral", "navegacion menu iconos compacto pestañas configuracion", "Configuraciones", "accounts:perfil", "preferencias-navegacion", "i-layers", ALL),
+    ("color-menu", "Color del menú", "Abrir paletas y color personalizado", "color menu lateral paleta personalizar navegacion configuracion", "Configuraciones", "accounts:perfil", "preferencias-navegacion", "i-layers", ALL),
     ("password", "Cambiar contraseña", "Seguridad de mi cuenta", "clave password seguridad configuracion", "Configuraciones", "accounts:ajustes", "password", "i-lock", ALL),
     ("notificaciones", "Configurar notificaciones", "Elegir avisos y preferencias", "notificacion aviso correo configuracion", "Configuraciones", "accounts:ajustes", "notificaciones", "i-bell", ALL),
     ("atajos", "Configurar accesos rápidos", "Personalizar los accesos rápidos", "atajos enlaces preferencias configuracion", "Configuraciones", "accounts:ajustes", "atajos", "i-grid", ALL),

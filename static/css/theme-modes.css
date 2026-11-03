@@ -10,12 +10,24 @@ html[data-fontsize="lg"] { zoom: 1.1; }
 
 /* ---- Modo oscuro: variables base ---- */
 [data-theme="dark"] {
-    --dogger-cream: #0D0D0D;
-    --dogger-paper: #191919;
-    --ink: #D0D0D0;
-    --ink-muted: #ADADAD;
-    --line: #383838;
-    --dogger-black: #080808;
+    color-scheme: dark;
+    --theme-bg: #0d0d0d;
+    --theme-secondary: #151515;
+    --theme-panel: #1c1c1c;
+    --theme-raised: #252525;
+    --theme-input: #161616;
+    --theme-border: #484848;
+    --theme-text: #d9d9d9;
+    --theme-muted: #bdbdbd;
+    --theme-subtle: #ababab;
+    --theme-hover: #333333;
+    --theme-focus: #93c5fd;
+    --dogger-cream: var(--theme-bg);
+    --dogger-paper: var(--theme-panel);
+    --ink: var(--theme-text);
+    --ink-muted: var(--theme-muted);
+    --line: var(--theme-border);
+    --dogger-black: var(--theme-secondary);
     --shadow-card: 0 2px 4px rgba(0, 0, 0, .45), 0 10px 28px rgba(0, 0, 0, .5);
 }
 

@@ -326,7 +326,16 @@
                     <div class="ficha-row">
                         <span class="ficha-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
                         <span class="ficha-k">Prioridad</span>
-                        <span class="ficha-v meta-prio meta-prio-{{ ticket.prioridad }}">{{ ticket.get_prioridad_display }}</span>
+                        {% with info=ticket.datos_ans %}
+                        <button type="button" class="ficha-v meta-prio meta-prio-{{ ticket.prioridad }} ans-info{% if info.0 %} ans-{{ info.0 }}{% endif %}"
+                                data-ans-info data-ans-codigo="{{ ticket.codigo }}" data-ans-titulo="{{ ticket.titulo }}"
+                                data-ans-horas="{{ ticket.ans_horas|default_if_none:'' }}" data-ans-prioridad="{{ ticket.get_prioridad_display }}"
+                                data-ans-tecnico="{{ ticket.tecnico_asignado.nombre|default:'sin asignar' }}"
+                                title="{% if ticket.fecha_limite_ans %}Límite {{ ticket.fecha_limite_ans|date:'d/m/Y H:i' }}{% endif %}"
+                                aria-label="Ver ANS asignado: prioridad {{ ticket.get_prioridad_display }}">
+                            {{ ticket.get_prioridad_display }}<span data-ans-txt hidden>{{ info.1|default:'Sin ANS calculado' }}</span>
+                        </button>
+                        {% endwith %}
                     </div>
                     <div class="ficha-row ficha-destacada">
                         <span class="ficha-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
@@ -399,6 +408,7 @@
     </div>
 
     {% include "tickets/_share_row.html" %}
+    {% include "tickets/_ans_modal.html" %}
 </main>
 {% endblock %}
 

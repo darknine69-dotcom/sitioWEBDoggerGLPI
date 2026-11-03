@@ -398,25 +398,18 @@
     }
 
     // Tema
-    var tema = g("dogger:pv:theme") || "system";
+    var themeKey = root.getAttribute("data-theme-storage-key");
+    var tema = g(themeKey) || "system";
     var rTema = document.querySelector('input[name="prefTema"][value="' + tema + '"]');
     if (rTema) rTema.checked = true;
     document.querySelectorAll('input[name="prefTema"]').forEach(function (r) {
         r.addEventListener("change", function () {
             if (!r.checked) return;
-            s("dogger:pv:theme", r.value);
+            s(themeKey, r.value);
             setAttr("data-theme", resolveTheme(r.value));
             saved();
         });
     });
-    if (tema === "system" && window.matchMedia) {
-        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
-            if ((g("dogger:pv:theme") || "system") === "system") {
-                root.setAttribute("data-theme", e.matches ? "dark" : "light");
-            }
-        });
-    }
-
     // Fuente
     var fuente = g("dogger:pv:fontsize") || "md";
     var rFuente = document.querySelector('input[name="prefFuente"][value="' + fuente + '"]');
@@ -566,6 +559,27 @@
     }
     tabs.forEach(function (t) {
         t.addEventListener("click", function () { mostrar(t.getAttribute("data-tab")); });
+    });
+    function abrirPreferenciaBuscada() {
+        var mapa = {
+            "#preferencias-visualizacion": "visualizacion",
+            "#preferencias-general": "general",
+            "#preferencias-accesibilidad": "accesibilidad",
+            "#preferencias-navegacion": "navegacion"
+        };
+        var tab = mapa[window.location.hash];
+        if (!tab) return;
+        mostrar(tab);
+        var panel = document.querySelector('.profile-panel[data-panel="' + tab + '"]');
+        if (panel) panel.scrollIntoView({ block: "nearest" });
+    }
+    abrirPreferenciaBuscada();
+    window.addEventListener("hashchange", abrirPreferenciaBuscada);
+    document.addEventListener("click", function (event) {
+        var enlace = event.target.closest("[data-global-search-results] a[href]");
+        if (!enlace) return;
+        var destino = new URL(enlace.href, location.href);
+        if (destino.origin === location.origin && destino.pathname === location.pathname && destino.search === location.search && destino.hash === location.hash) abrirPreferenciaBuscada();
     });
 })();
 </script>

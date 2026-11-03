@@ -1297,6 +1297,41 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
 
         var filtroTecnico = $("filtroTecnico");
         var techPicker = $("techPicker"), techMenu = $("techPickerMenu"), techName = $("techPickerName");
+        var solicitudEstadosTecnicos = 0;
+        function cargarEstadosTecnicos() {
+            var fecha = state.fechaActiva || iso(new Date());
+            var partes = fecha.split("-");
+            var solicitud = ++solicitudEstadosTecnicos;
+            var items = techMenu.querySelectorAll('[data-tech-value]:not([data-tech-value=""])');
+            items.forEach(function (item) {
+                var estado = item.querySelector('.prog-tech-option-status');
+                if (!estado) { estado = document.createElement('span'); estado.className = 'prog-tech-option-status'; item.appendChild(estado); }
+                estado.textContent = 'Consultando…'; estado.dataset.estado = 'sin-marca';
+            });
+            fetch(U.datos + query({ anio: partes[0], mes: partes[1], tecnico_id: '' }), { headers: { Accept: 'application/json' } })
+                .then(function (r) { if (!r.ok) throw new Error('No disponible'); return r.json(); })
+                .then(function (res) {
+                    if (solicitud !== solicitudEstadosTecnicos) return;
+                    if (!res.ok) throw new Error('No se pudo consultar');
+                    items.forEach(function (item) {
+                        var marca = (res.disponibilidad || {})[item.dataset.techValue + '|' + fecha];
+                        var estados = { ausencia: ['No disponible', 'ausencia'], falta: ['Ocupado', 'ocupado'], no_ausencia: ['Disponible', 'disponible'] };
+                        var tecnico = (res.tecnicos || []).find(function (t) { return String(t.id) === item.dataset.techValue; });
+                        var diaSemana = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2])).getDay();
+                        var valor = (res.festivos || {})[fecha] || diaSemana === 0 || diaSemana === 6
+                            ? ['No disponible', 'ausencia']
+                            : marca && estados[marca.tipo] ? estados[marca.tipo]
+                            : !tecnico ? ['Sin datos', 'sin-marca']
+                            : tecnico.activo ? ['Disponible', 'disponible'] : ['No disponible', 'ausencia'];
+                        var estado = item.querySelector('.prog-tech-option-status');
+                        estado.textContent = valor[0]; estado.dataset.estado = valor[1];
+                        estado.title = 'Disponibilidad para ' + formatFecha(fecha);
+                    });
+                }).catch(function () {
+                    if (solicitud !== solicitudEstadosTecnicos) return;
+                    items.forEach(function (item) { item.querySelector('.prog-tech-option-status').textContent = 'Sin conexión'; });
+                });
+        }
         function sincronizarSelectorTecnico() {
             var opcion = filtroTecnico.options[filtroTecnico.selectedIndex];
             if (techName) techName.textContent = opcion ? opcion.textContent : "Todos los técnicos";
@@ -1311,6 +1346,7 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
                 var abierto = !techMenu.hidden;
                 techMenu.hidden = abierto;
                 techPicker.setAttribute("aria-expanded", String(!abierto));
+                if (!abierto) cargarEstadosTecnicos();
             });
             techMenu.querySelectorAll("[data-tech-value]").forEach(function (item) {
                 item.addEventListener("click", function () {

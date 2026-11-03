@@ -761,6 +761,7 @@ def _zonas_creadas_por_observador():
                 {
                     "elemento_id": e.pk,
                     "nombre": (e.usuario.nombre if e.usuario_id else "") or correo or "—",
+                    "avatar": e.usuario.avatar if e.usuario_id else None,
                     "email": correo,
                     "presiones": presiones.get((e.usuario_id, correo), 0),
                     "rol": e.usuario.get_rol_display() if e.usuario_id else "Sin cuenta",

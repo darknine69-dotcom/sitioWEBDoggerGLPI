@@ -13,7 +13,9 @@
     (function(){
         function g(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
         var root = document.documentElement;
-        var pref = g('dogger:pv:theme') || 'system';
+        var themeKey = 'dogger:pv:theme:{% if request.user.is_authenticated %}user-{{ request.user.pk }}{% else %}guest{% endif %}';
+        root.setAttribute('data-theme-storage-key', themeKey);
+        var pref = g(themeKey) || 'system';
         var sys = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
         root.setAttribute('data-theme', pref === 'system' ? sys : (pref === 'dark' ? 'dark' : 'light'));
         root.setAttribute('data-fontsize', g('dogger:pv:fontsize') || 'md');
@@ -33,7 +35,9 @@
     <link rel="stylesheet" href="{% asset 'css/page-header.css' %}">
     <link rel="stylesheet" href="{% asset 'css/ticket-ficha.css' %}">
     <script defer src="{% asset 'js/page-header.js' %}"></script>
+    <script defer src="{% asset 'js/theme-runtime.js' %}"></script>
     <script defer src="{% asset 'js/buscador-global.js' %}"></script>
+    <script defer src="{% asset 'js/buscador-ruta.js' %}"></script>
     <script defer src="{% asset 'js/buscador-destinos.js' %}"></script>
     <script defer src="{% asset 'js/lucide-icons.js' %}"></script>
     <script defer src="{% asset 'js/dogger.js' %}"></script>

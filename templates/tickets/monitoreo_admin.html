@@ -338,7 +338,7 @@ main.obs-page { font-family: var(--font-corp); }
                 {% for bloque in zonas_creadas %}
                 <article class="mon-sup pan-sup" data-sup="{{ bloque.supervisor.pk }}">
                     <header class="mon-sup-head pan-sup-head">
-                        <span class="mon-ava pan-ava"{% if bloque.supervisor.avatar %} data-supervisor-avatar="{{ bloque.supervisor.avatar.url }}"{% endif %}>{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
+                        <span class="mon-ava pan-ava"{% if bloque.supervisor.avatar %} data-supervisor-avatar="{{ bloque.supervisor.avatar.url }}"{% endif %}>{% if bloque.supervisor.avatar %}<img src="{{ bloque.supervisor.avatar.url }}" alt="" onerror="this.remove()">{% endif %}{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
                         <div class="mon-sup-id pan-sup-id">
                             <strong>{{ bloque.supervisor.nombre }}</strong>
                             <small>{{ bloque.supervisor.email|default:"—" }}</small>
@@ -349,7 +349,7 @@ main.obs-page { font-family: var(--font-corp); }
                     <p class="pan-sub-tit">Mis zonas</p><div class="mon-zonas pan-cards">
                         {% for z in bloque.zonas %}
                         <div class="mon-zc-wrap pan-zc-wrap"{% if z.zona.color %} style="--mon-zc-color: {{ z.zona.color }}; --zc: {{ z.zona.color }}"{% endif %}>
-                            <button type="button" class="mon-zc pan-zc mon-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %} pan-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %}" data-mon-zona="{{ z.zona.pk }}" data-mon-sup="{{ bloque.supervisor.pk }}" data-mon-nombre="{{ z.zona.nombre }}">
+                            <button type="button" class="mon-zc pan-zc mon-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %} pan-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %}" data-mon-zona="{{ z.zona.pk }}" data-mon-sup="{{ bloque.supervisor.pk }}" data-mon-nombre="{{ z.zona.nombre }}" title="{{ z.zona.nombre }}">
                                 <span class="pan-zc-headline"><span class="pan-zc-ico"><svg class="icon"><use href="#i-store"/></svg></span><span class="pan-zc-title"><b>{{ z.zona.nombre }}</b><small>{{ z.zona.creado_en|date:"d/m/Y" }}</small></span><span class="pan-zc-state"><i></i>{% if z.urgentes %}Con incidencia{% elif z.abiertos %}Pendiente{% else %}Al día{% endif %}</span></span>
                                 <span class="pan-zc-middle"><span class="pan-zc-metrics"><span><svg class="icon"><use href="#i-users"/></svg><b>{{ z.miembros|length }}</b> cuentas</span><span><svg class="icon"><use href="#i-ticket"/></svg><b>{{ z.abiertos }}</b> abiertos</span><span><svg class="icon"><use href="#i-check-circle"/></svg><b>{{ z.cerrados|default:0 }}</b> cerrados</span></span></span>
                                 <span class="pan-zc-progress"><span><i style="width:{{ z.avance }}%"></i></span><b>{{ z.avance }}%</b></span>
@@ -428,7 +428,7 @@ main.obs-page { font-family: var(--font-corp); }
             <summary>Administrar zonas (crear, renombrar, cuentas, técnicos)</summary>
         {% for bloque in zonas_creadas %}
         <div class="obs-sup-tit">
-            <span class="obs-avatar">{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
+            <span class="obs-avatar">{% if bloque.supervisor.avatar %}<img src="{{ bloque.supervisor.avatar.url }}" alt="" onerror="this.remove()">{% endif %}{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
             <div class="obs-miembro-id">
                 <strong>{{ bloque.supervisor.nombre }}</strong>
                 <small>{{ bloque.supervisor.email }} · {% if bloque.supervisor.rol == 'observador' %}Supervisor a cargo{% else %}creó la zona cuando era supervisor (rol actual: {{ bloque.supervisor.get_rol_display }}){% endif %}{% if bloque.puntos %} · {% for p in bloque.puntos %}{{ p }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</small>
@@ -480,7 +480,7 @@ main.obs-page { font-family: var(--font-corp); }
                          data-elemento="{{ m.elemento_id }}" data-ubicacion="{{ m.ubicacion }}" data-horario="{{ m.horario_atencion }}" data-cuenta-activa="{% if m.cuenta_activa == None %}desconocido{% elif m.cuenta_activa %}activo{% else %}inactivo{% endif %}" data-total="{{ m.total }}" data-presiones="{{ m.presiones }}" data-resueltos="{{ m.resueltos }}" data-cerrados="{{ m.cerrados }}" data-avance="{{ m.avance }}"
                          data-ans-vencidos="{{ m.ans_vencidos }}" data-ans-por-vencer="{{ m.ans_por_vencer }}" data-abiertos="{{ m.abiertos }}" data-urgentes="{{ m.urgentes }}">
                     <div class="obs-miembro-top" data-href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}" style="cursor:pointer">
-                        <span class="obs-avatar">{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
+                        <span class="obs-avatar"{% if m.avatar %} data-avatar-url="{{ m.avatar.url }}"{% endif %}>{% if m.avatar %}<img src="{{ m.avatar.url }}" alt="" onerror="this.remove()">{% endif %}{{ m.nombre|default:"?"|slice:":1"|upper }}</span>
                         <span class="obs-miembro-id">
                             <strong><a href="{% url 'tickets:monitoreo_cuenta_detalle' m.elemento_id %}" title="Abrir la vista principal de {{ m.nombre }}: todo lo de esta cuenta">{{ m.nombre }}</a></strong>
                             <small><svg class="icon"><use href="#i-mail"/></svg> {{ m.email|default:"—" }} · <svg class="icon"><use href="#i-user"/></svg> {{ m.rol }} · <svg class="icon"><use href="#i-wrench"/></svg> {{ m.tecnico }}</small>
@@ -944,6 +944,7 @@ main.obs-page { font-family: var(--font-corp); }
                         cuentaActiva: f.getAttribute("data-cuenta-activa") || "desconocido",
                         rol: (partes[1] || "").trim(),
                         ava: av ? av.textContent.trim() : "?",
+                        avatarUrl: av ? av.getAttribute("data-avatar-url") || "" : "",
                         ansEstado: ansEstado,
                         ansVencidos: vencidos,
                         ansPorVencer: porVencer,
@@ -1065,7 +1066,7 @@ main.obs-page { font-family: var(--font-corp); }
                     return '<div class="mon-user-wrap pan-user-wrap' + estadoClase + '" data-elemento="' + esc(u.elementoId) + '">' +
                         '<label class="mon-user pan-user">' +
                             '<input type="checkbox" class="mon-user-chk" aria-label="Seleccionar ' + esc(u.nombre) + '">' +
-                            '<span class="mon-user-ava pan-user-ava">' + esc(u.ava) + "</span>" +
+                            '<span class="mon-user-ava pan-user-ava">' + (u.avatarUrl ? '<img src="' + esc(u.avatarUrl) + '" alt="" onerror="this.remove()">' : '') + esc(u.ava) + "</span>" +
                             '<span class="mon-user-id pan-user-id"><strong>' + esc(u.nombre) + "</strong><small>" + esc(u.correo) + "</small></span>" +
                             semaforo + prioridad +
                             '<span class="mon-user-rol">' + esc(u.rol || "Usuario") + "</span>" +

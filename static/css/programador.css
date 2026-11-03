@@ -930,6 +930,11 @@
 #modalDetalleEvento.is-announcement-detail .prog-anuncio-add { margin-left:auto; border-color:#ffc928; color:#172033; background:#ffc928; }
 @media(max-width:620px) { #modalDetalleEvento.is-announcement-detail .modal-box { width:95vw; max-height:85dvh; } #modalDetalleEvento.is-announcement-detail .modal-head { padding:14px 16px; } #modalDetalleEvento.is-announcement-detail .modal-head-ic { width:48px; height:48px; } #modalDetalleEvento.is-announcement-detail .modal-head-txt h3 { font-size:21px; } #modalDetalleEvento.is-announcement-detail .modal-body { padding:14px; } .prog-anuncio-data { grid-template-columns:1fr; gap:5px; padding:14px; } .prog-anuncio-data dt { margin-top:7px; } #modalDetalleEvento.is-announcement-detail .corp-modal-actions { padding:12px 14px; flex-wrap:wrap; } #modalDetalleEvento.is-announcement-detail .corp-modal-actions .btn { flex:1 1 100%; justify-content:center; } #modalDetalleEvento.is-announcement-detail .prog-anuncio-add { margin-left:0; } }
 .prog-modal-abierto { overflow:hidden; }
+.prog-tech-menu button[data-tech-value] { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.prog-tech-option-status { flex:none; padding:3px 8px; border-radius:999px; background:#e8edf3; color:#475569; font-size:11px; font-weight:700; }
+.prog-tech-option-status[data-estado="disponible"] { background:#087e45; color:#fff; }
+.prog-tech-option-status[data-estado="ocupado"] { background:#975300; color:#fff; }
+.prog-tech-option-status[data-estado="ausencia"] { background:#bd1e30; color:#fff; }
 #modalEvento .corp-field[hidden] { display:none !important; }
 .prog-save-spinner { display:inline-block; width:15px; height:15px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:prog-save-spin .65s linear infinite; }
 @keyframes prog-save-spin { to { transform:rotate(360deg); } }

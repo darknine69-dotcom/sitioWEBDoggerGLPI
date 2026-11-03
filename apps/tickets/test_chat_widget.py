@@ -334,6 +334,26 @@ class ChatWidgetTest(TestCase):
             with self.subTest(funcion=entry[0]):
                 self.assertIsNotNone(resolve(reverse(entry[5])))
 
+    def test_busqueda_opciones_visualizacion_para_todos_los_roles(self):
+        url = reverse("tickets:buscar_tickets_tecnico")
+        opciones = {"visualizacion": "preferencias-visualizacion", "accesibilidad": "preferencias-accesibilidad", "color del menú": "preferencias-navegacion", "idioma": "preferencias-general"}
+        for usuario in (self.admin, self.tec, self.usuario, self.obs):
+            self.client.force_login(usuario)
+            for consulta, destino in opciones.items():
+                with self.subTest(rol=usuario.rol, consulta=consulta):
+                    data = self.client.get(url, {"q": consulta, "global": "1"}).json()
+                    self.assertTrue(any(x["url"] == reverse("accounts:perfil") + "#" + destino for x in data["funciones"]))
+
+    def test_visualizacion_no_repite_los_modos(self):
+        url = reverse("tickets:buscar_tickets_tecnico")
+        for usuario in (self.admin, self.tec, self.usuario, self.obs):
+            self.client.force_login(usuario)
+            for consulta in ("visualización", "modo claro", "modo oscuro"):
+                with self.subTest(rol=usuario.rol, consulta=consulta):
+                    data = self.client.get(url, {"q": consulta, "global": "1"}).json()
+                    ids = [item["id"] for item in data["funciones"] if item["url"] == reverse("accounts:perfil") + "#preferencias-visualizacion"]
+                    self.assertEqual(ids, ["visualizacion"])
+
     def test_buscador_registros_independientes_y_zonas_privadas(self):
         from apps.tickets.models import Categoria, ZonaObservador
         Categoria.objects.create(nombre="Equipo sin tickets", grupo="Infraestructura", activo=True)
