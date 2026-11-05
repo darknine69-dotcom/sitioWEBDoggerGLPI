@@ -227,6 +227,13 @@
 .mon-miembro .mon-m-id strong a { color: inherit; }
 .mon-miembro .mon-m-id small { color: var(--ink-muted); font-size: 11px; }
 .obs-dashboard-graficas { margin-bottom: 28px; }
+.obs-page .obs-dashboard-graficas .dash-compact .charts-grid { gap:12px; margin-bottom:14px; }
+.obs-page .obs-dashboard-graficas .dash-compact .chart-card { padding:14px 16px; border-radius:14px; }
+.obs-page .obs-dashboard-graficas .dash-compact .chart-stage { height:190px; }
+.obs-page .obs-dashboard-graficas .dash-compact .chart-stage.canvas-sm { height:185px; }
+.obs-page .obs-dashboard-graficas .pivot-table-scroll--observador { max-height:230px; overflow:auto; }
+.obs-page .obs-dashboard-graficas .pivot-table thead th { padding:6px 8px; }
+.obs-page .obs-dashboard-graficas .pivot-table tbody td { padding:5px 8px; }
 /* El componente de gráficas es el mismo del panel del administrador
    (_dash_widgets.html). Su diseño y sus efectos viven ahora en
    dogger-theme.css, bajo .dash-compact, para que todas las vistas que lo
