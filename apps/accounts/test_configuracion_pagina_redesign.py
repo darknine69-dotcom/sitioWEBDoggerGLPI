@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.admin.models import LogEntry
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.tickets.models import ConfigSitio
@@ -29,6 +29,70 @@ class ConfiguracionPaginaRedesignTest(TestCase):
         self.client.force_login(self.user)
         self.assertEqual(self.client.post(self.url, {"ajustes_pagina": "1"}).status_code, 404)
         self.assertEqual(self.client.post(reverse("accounts:permisos"), {"uid": self.user.pk}).status_code, 404)
+
+    def test_administrador_edita_horario_sin_modificar_contacto(self):
+        self.client.force_login(self.admin)
+        cfg = ConfigSitio.cargar()
+        cfg.whatsapp_numero = "3233742562"
+        cfg.save()
+        respuesta = self.client.post(self.url, {"ajustes_horario": "1", "horario_dias": ["Lunes", "Domingo"], "horario_hora": ["08:00 - 17:00", "Cerrado"], "horario_nota": ["Soporte", ""]})
+        self.assertEqual(respuesta.status_code, 302)
+        cfg.refresh_from_db()
+        self.assertEqual(cfg.whatsapp_numero, "3233742562")
+        self.assertEqual(cfg.horario_detalle[1]["hora"], "Cerrado")
+        from apps.tickets.context_processors import dogger_config
+        from django.test import RequestFactory
+        request = RequestFactory().get("/")
+        request.user = self.admin
+        self.assertEqual(dogger_config(request)["DOGGER"]["horario_detalle"], cfg.horario_detalle)
+
+    def test_horario_incompleto_no_se_guarda(self):
+        self.client.force_login(self.admin)
+        self.client.post(self.url, {"ajustes_horario": "1", "horario_dias": ["Lunes"], "horario_hora": [""], "horario_nota": [""]})
+        self.assertIsNone(ConfigSitio.cargar().horario_detalle)
+
+    def test_limites_inactividad_solo_administrador_y_validacion(self):
+        datos = {"ajustes_inactividad": "1", "inactividad_urgente": "1", "inactividad_alta": "4", "inactividad_media": "12", "inactividad_baja": "24"}
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.post(self.url, datos).status_code, 404)
+        self.client.force_login(self.admin)
+        self.client.post(self.url, datos)
+        self.assertEqual(ConfigSitio.cargar().limites_inactividad, {"urgente": 1, "alta": 4, "media": 12, "baja": 24})
+        datos["inactividad_urgente"] = "0"
+        self.client.post(self.url, datos)
+        self.assertEqual(ConfigSitio.cargar().limites_inactividad["urgente"], 1)
+
+    def test_escalamiento_requiere_administrador_plazo_y_destinatario(self):
+        datos = {"ajustes_escalamiento": "1", "habilitado": "1", "horas": "2", "administradores": "1"}
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.post(self.url, datos).status_code, 404)
+        self.client.force_login(self.admin)
+        self.client.post(self.url, {"ajustes_escalamiento": "1", "habilitado": "1", "horas": "2"})
+        self.assertEqual(ConfigSitio.cargar().escalamiento_inactividad, {})
+        self.client.post(self.url, datos)
+        self.assertEqual(ConfigSitio.cargar().escalamiento_inactividad["horas"], 2)
+        self.assertTrue(ConfigSitio.cargar().escalamiento_inactividad["habilitado"])
+
+    def test_escalamiento_admite_tecnico_y_solicitante(self):
+        self.client.force_login(self.admin)
+        self.client.post(self.url, {"ajustes_escalamiento": "1", "habilitado": "1", "horas": "2", "tecnico": "1", "solicitante": "1"})
+        regla = ConfigSitio.cargar().escalamiento_inactividad
+        self.assertTrue(regla["habilitado"])
+        self.assertTrue(regla["tecnico"])
+        self.assertTrue(regla["solicitante"])
+        self.assertFalse(regla["administradores"])
+        self.assertFalse(regla["observadores"])
+
+    def test_usuario_no_puede_editar_horario(self):
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.post(self.url, {"ajustes_horario": "1"}).status_code, 404)
+
+    @override_settings(STORAGES={"default": {"BACKEND": "django.core.files.storage.FileSystemStorage"}, "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})
+    def test_editor_solo_presenta_horarios_existentes(self):
+        self.client.force_login(self.admin)
+        respuesta = self.client.get(reverse("accounts:ajustes"))
+        self.assertContains(respuesta, 'class="horario-fila"', count=3)
+        self.assertContains(respuesta, "Agregar horario")
 
     def test_permiso_ajax(self):
         self.client.force_login(self.admin)

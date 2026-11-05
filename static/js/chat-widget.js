@@ -16,6 +16,7 @@
     var emojiBtn = document.getElementById("swEmojiBtn");
     var cerrar = document.getElementById("swCerrar");
     var count = document.getElementById("swCount");
+    var panelPendientes = document.getElementById("swPendientes");
     var modoSoporteBtn = document.getElementById("swModoSoporte");
     var modoCorpBtn = document.getElementById("swModoCorp");
     var colegaSel = document.getElementById("swColega");
@@ -60,12 +61,12 @@
        servidor cuenta lo pendiente para la burbuja, esté o no abierto. */
     var visto = { sala: 0, dm: {} };
     try {
-        var gv = JSON.parse(localStorage.getItem("dogger:chat:vistoCorp") || "null");
+        var gv = JSON.parse(localStorage.getItem("dogger:chat:vistoCorp:user-" + urls.usuarioId) || "null");
         if (gv && typeof gv.sala === "number") { visto.sala = gv.sala; }
         if (gv && gv.dm && typeof gv.dm === "object") { visto.dm = gv.dm; }
     } catch (e) { }
     function guardarVisto() {
-        try { localStorage.setItem("dogger:chat:vistoCorp", JSON.stringify(visto)); } catch (e) { }
+        try { localStorage.setItem("dogger:chat:vistoCorp:user-" + urls.usuarioId, JSON.stringify(visto)); } catch (e) { }
     }
     /* Al pintar mensajes corporativos, esa conversación queda vista. */
     function marcarVisto(lista) {
@@ -259,6 +260,25 @@
             count.textContent = total > 9 ? "9+" : String(total);
         } else { count.hidden = true; }
     }
+    function pintarPendientes() {
+        if (!panelPendientes) return;
+        var botones = [];
+        if (novedadesCache.sala > 0 && !(abierto && esCorp() && !colegaPk)) botones.push('<button type="button" data-pendiente="0">Sala general · ' + novedadesCache.sala + '</button>');
+        Object.keys(novedadesCache.dms).forEach(function (id) {
+            var dato = novedadesCache.dms[id];
+            if (dato.nuevos > 0 && !(abierto && esCorp() && String(colegaPk) === id)) botones.push('<button type="button" data-pendiente="' + esc(id) + '">' + esc(dato.nombre || 'Usuario') + ' · ' + dato.nuevos + '</button>');
+        });
+        if (noLeidos > 0) botones.push('<button type="button" data-pendiente="soporte">Conversación de soporte seleccionada · ' + noLeidos + '</button>');
+        panelPendientes.hidden = !botones.length;
+        panelPendientes.innerHTML = botones.length ? '<strong>Mensajes pendientes</strong><div class="sw-pendientes-scroll" tabindex="0" aria-label="Desplazar conversaciones pendientes">' + botones.join('') + '</div>' : '';
+    }
+    if (panelPendientes) panelPendientes.addEventListener("click", function (evento) {
+        var boton = evento.target.closest("[data-pendiente]"); if (!boton) return;
+        if (boton.dataset.pendiente === "soporte") { ponerModo("soporte"); return; }
+        colegaPk = parseInt(boton.dataset.pendiente, 10) || 0;
+        dmPendiente = colegaPk;
+        ponerModo("corporativo");
+    });
     /* Sondeo de pendientes del corporativo: corre siempre (abierto o no)
        para que la burbuja avise con el número aunque se escriba en otro
        hilo o con el chat cerrado. */
@@ -283,6 +303,7 @@
                 novedadesCache.sala = (d.sala && d.sala.nuevos) || 0;
                 novedadesCache.dms = d.dms || {};
                 pintarEtiquetasColegas();
+                pintarPendientes();
             })
             .catch(function () { });
     }
@@ -692,7 +713,7 @@
                 ? "Coordínate con técnicos, admins y observadores."
                 : "Elige una conversación de abajo para ver el hilo, o escríbenos y te atendemos.") + "</p>" +
             (filas
-                ? '<div class="sw-bien-lista"><span class="sw-bien-lista-tit">Tus conversaciones</span>' + filas + "</div>"
+                ? '<div class="sw-bien-lista"><span class="sw-bien-lista-tit">Últimas conversaciones</span>' + filas + "</div>"
                 : "") +
             "</div>";
     }

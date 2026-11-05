@@ -37,8 +37,11 @@
 .hist-busca input { width: 100%; height: 38px; padding: 0 12px 0 34px; border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: 13px; background: #fff; }
 .hist-busca input:focus { outline: none; border-color: var(--dogger-red); box-shadow: 0 0 0 3px rgba(200,16,46,.12); }
 .hist-page .dash-stat[data-hist-spark] { position:relative; min-height:190px; }
-.hist-spark { position:absolute; left:22px; right:22px; bottom:48px; height:42px; color:var(--kpi-color,#dc2626); z-index:1; }
+.hist-page .dash-stat[data-hist-spark]::before { display:none !important; }
+.hist-spark { position:absolute; left:22px; right:22px; bottom:52px; height:48px; color:var(--kpi-color,#dc2626); z-index:4; }
 .hist-spark svg { width:100%; height:100%; overflow:visible; }.hist-spark polyline { fill:none; stroke:currentColor; stroke-width:2; vector-effect:non-scaling-stroke; }.hist-spark polygon { fill:currentColor; opacity:.12; }
+.hist-spark .hist-point { fill:currentColor; stroke:var(--theme-panel,#fff); stroke-width:2; vector-effect:non-scaling-stroke; cursor:pointer; }.hist-spark .hist-point:focus { outline:none; stroke:#2563eb; stroke-width:3; }
+.hist-page [data-hist-spark="registros"] .hist-spark { color:#d30934; }.hist-page [data-hist-spark="respuestas"] .hist-spark { color:#00a65c; }.hist-page [data-hist-spark="resueltos"] .hist-spark { color:#f12745; }
 .hist-spark-tip { position:absolute; bottom:100%; left:50%; transform:translateX(-50%); padding:5px 8px; border:1px solid #e2e8f0; border-radius:7px; background:#fff; color:#172b4d; box-shadow:0 4px 12px #0f172a22; font-size:11px; white-space:nowrap; pointer-events:none; }.hist-spark-tip[hidden] { display:none; }
 .hist-page .dash-stat-value { z-index:3!important; }
 </style>
@@ -188,12 +191,16 @@
     var source = document.getElementById('historialSeries'); if (!source) return;
     var data = JSON.parse(source.textContent || '{}');
     document.querySelectorAll('[data-hist-spark]').forEach(function (card) {
-        var values = data.series[card.dataset.histSpark], max = Math.max.apply(null, values.concat([1]));
+        var values = data.series[card.dataset.histSpark]; if (!Array.isArray(values) || !values.length) return;
+        var max = Math.max.apply(null, values.concat([1]));
         var points = values.map(function (value, i) { return (2 + i * 236 / Math.max(1, values.length - 1)) + ',' + (36 - value * 30 / max); }).join(' ');
         var graph = document.createElement('span'); graph.className = 'hist-spark';
-        graph.innerHTML = '<svg viewBox="0 0 240 40" preserveAspectRatio="none" aria-hidden="true"><polygon points="2,40 ' + points + ' 238,40"/><polyline points="' + points + '"/></svg><span class="hist-spark-tip" hidden></span>';
+        var circles = values.map(function (value, i) { var x = 2 + i * 236 / Math.max(1, values.length - 1), y = 36 - value * 30 / max; return '<circle class="hist-point" tabindex="0" role="img" aria-label="' + data.labels[i] + ': ' + value + '" data-index="' + i + '" cx="' + x + '" cy="' + y + '" r="3"/>'; }).join('');
+        graph.innerHTML = '<svg viewBox="0 0 240 40" preserveAspectRatio="none" aria-label="Actividad de los últimos siete días"><polygon points="2,40 ' + points + ' 238,40"/><polyline points="' + points + '"/>' + circles + '</svg><span class="hist-spark-tip" hidden></span>';
         graph.addEventListener('pointermove', function (event) { var bounds = graph.getBoundingClientRect(), index = Math.min(values.length - 1, Math.max(0, Math.floor((event.clientX - bounds.left) / bounds.width * values.length))), tip = graph.querySelector('.hist-spark-tip'); tip.textContent = data.labels[index] + ': ' + values[index] + ' registros'; tip.hidden = false; });
         graph.addEventListener('pointerleave', function () { graph.querySelector('.hist-spark-tip').hidden = true; });
+        graph.addEventListener('focusin', function (event) { var index = Number(event.target.dataset.index); if (!Number.isInteger(index)) return; var tip = graph.querySelector('.hist-spark-tip'); tip.textContent = data.labels[index] + ': ' + values[index] + ' registros'; tip.hidden = false; });
+        graph.addEventListener('focusout', function () { graph.querySelector('.hist-spark-tip').hidden = true; });
         card.appendChild(graph);
     });
 })();

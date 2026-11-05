@@ -489,7 +489,7 @@
            de Ajustes, así que los dos sitios controlan lo mismo. */
         function plegarA(mini) {
             document.documentElement.setAttribute("data-navcompact", mini ? "1" : "0");
-            try { localStorage.setItem("dogger:pv:navcompact", mini ? "1" : "0"); } catch (e) {}
+            try { localStorage.setItem("dogger:pv:navcompact" + (document.documentElement.getAttribute("data-preference-suffix") || ":guest"), mini ? "1" : "0"); } catch (e) {}
             actualizarBorde();
         }
         /* La flecha mira hacia donde va el borde: a la derecha para
@@ -799,6 +799,9 @@
         });
     });
     function openSettingsPanel(name) {
+        var destinosInternos = {"ajustes-horario-atencion": "horario-editor", "ajustes-limites-inactividad": "inactividad-editor", "ajustes-escalamiento-inactividad": "escalamiento-editor"};
+        var interno = destinosInternos[name];
+        if (interno) name = "pagina";
         var tab = document.querySelector('[data-settings-tab="' + name + '"]');
         var panel = document.querySelector('[data-settings-panel="' + name + '"]');
         if (!tab || !panel) return;
@@ -808,7 +811,9 @@
         panel.classList.add("active");
         tituloAjustes(name);
         setTimeout(function () {
-            if (panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+            var destino = interno && document.getElementById(interno);
+            if (destino) destino.scrollIntoView({ behavior: "smooth", block: "start" });
+            else if (panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 50);
     }
     if (location.hash && location.hash.length > 1) {
@@ -1386,7 +1391,8 @@
                     "X-CSRFToken": csrf(),
                     "X-Requested-With": "XMLHttpRequest"
                 },
-                credentials: "same-origin"
+                credentials: "same-origin",
+                keepalive: true
             }).then(function (r) {
                 return r.ok ? r.json() : null;
             }).then(function (data) {
@@ -1436,7 +1442,7 @@
 
         // Al hacer clic en "Ver" se marca como mostrada, como la emergente.
         el.querySelector("a").addEventListener("click", function () {
-            pedir(baseDe("data-url-mostrada", n.id));
+            pedir(baseDe("data-url-leer", n.id));
         });
         // Mismo auto-cierre con pausa al pasar el mouse que los toasts del servidor.
         var delay = 7000;
@@ -1507,7 +1513,7 @@
     }
 
     function mostrarEmergenteSiguiente() {
-        if (emergenteViva || !colaEmergente.length) { return; }
+        if (emergenteViva || document.getElementById("notifPopup") || !colaEmergente.length) { return; }
         var n = colaEmergente.shift();
         emergenteViva = true;
         var dlg = document.createElement("dialog");
@@ -1531,7 +1537,7 @@
                 ? '<a class="btn btn-accent notif-popup-ver" href="' + esc(n.url) + '" data-notif-cerrar>' +
                   'Ver <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg></a>'
                 : "") +
-            '<button type="submit" class="btn notif-popup-ok" data-notif-cerrar>OK</button>' +
+            '<button type="submit" class="btn notif-popup-ok" data-notif-cerrar>Cerrar</button>' +
             '</div>' +
             (colaEmergente.length
                 ? '<small class="notif-popup-foot notif-popup-faltan">Quedan ' +
@@ -1548,7 +1554,7 @@
             if (ev.target === dlg) { dlg.close(); }
         });
         dlg.querySelectorAll("a").forEach(function (a) {
-            a.addEventListener("click", function () { pedir(baseDe("data-url-mostrada", n.id)); });
+            a.addEventListener("click", function () { pedir(baseDe("data-url-leer", n.id)); });
         });
     }
 
@@ -1576,19 +1582,7 @@
             if (panel && Array.isArray(data.avisos)) {
                 var lista = panel.querySelector(".notif-list");
                 if (lista) {
-                    var actuales = {};
-                    lista.querySelectorAll(".notif-row[data-id]").forEach(function (f) {
-                        actuales[f.getAttribute("data-id")] = true;
-                    });
-                    var frescos = data.avisos.filter(function (n) { return !actuales[n.id]; });
-                    if (frescos.length) {
-                        var vacia = lista.querySelector(".notif-empty");
-                        if (vacia) { vacia.remove(); }
-                        lista.insertAdjacentHTML("afterbegin", frescos.reverse().map(function (n) {
-                            return filaHTML(n);
-                        }).join(""));
-                    }
-                    // Las filas ya traen su fecha y hora fija: no se tocan.
+                    lista.innerHTML = data.avisos.length ? data.avisos.map(filaHTML).join("") : vacioHTML();
                 }
             }
 
@@ -1632,13 +1626,6 @@
         function abrir() {
             panel.classList.add("open");
             bell.setAttribute("aria-expanded", "true");
-            var nuevas = panel.querySelectorAll(".notif-row.is-new");
-            if (nuevas.length) {
-                Array.prototype.forEach.call(nuevas, function (fila) {
-                    fila.classList.remove("is-new");
-                });
-                pedir(baseDe("data-url-todas"));
-            }
             refrescar();
         }
 
@@ -1659,6 +1646,14 @@
         });
 
         panel.addEventListener("click", function (ev) {
+            var enlaceAviso = ev.target.closest(".notif-link");
+            if (enlaceAviso) {
+                var filaAviso = enlaceAviso.closest(".notif-row");
+                if (filaAviso && enlaceAviso.getAttribute("href") !== "#") {
+                    pedir(baseDe("data-url-leer", filaAviso.getAttribute("data-id")));
+                }
+                return;
+            }
             var quitar = ev.target.closest("[data-notif-quitar]");
             if (quitar) {
                 ev.preventDefault();
@@ -1681,6 +1676,7 @@
             ev.stopPropagation();
             var tipo = accion.getAttribute("data-notif");
             if (tipo === "leer-todas") {
+                colaEmergente = [];
                 pedir(baseDe("data-url-todas"));
                 Array.prototype.forEach.call(
                     panel.querySelectorAll(".notif-row"), function (f) { f.classList.remove("is-new"); }
@@ -1689,8 +1685,7 @@
                 pedir(baseDe("data-url-limpiar"));
                 var lista2 = panel.querySelector(".notif-list");
                 if (lista2) { lista2.innerHTML = vacioHTML(); }
-                var botones = panel.querySelectorAll(".notif-head-btn");
-                Array.prototype.forEach.call(botones, function (b) { b.remove(); });
+                colaEmergente = [];
             }
         });
     }
@@ -1708,6 +1703,7 @@
             var id = popup.getAttribute("data-id");
             popup.remove();
             if (wrap) { pedir(baseDe("data-url-mostrada", id)); }
+            setTimeout(mostrarEmergenteSiguiente, 450);
         });
         popup.addEventListener("click", function (ev) {
             if (ev.target === popup) { popup.close(); }
@@ -1719,7 +1715,7 @@
         popup.querySelectorAll("[data-notif-cerrar]").forEach(function (el) {
             el.addEventListener("click", function () {
                 var id = popup.getAttribute("data-id");
-                if (wrap) { pedir(baseDe("data-url-mostrada", id)); }
+                if (wrap && el.tagName === "A") { pedir(baseDe("data-url-leer", id)); }
                 try { popup.close(); } catch (e) { /* ya estaba cerrada */ }
             });
         });
@@ -2171,6 +2167,7 @@
         document.addEventListener("click", function (e) {
             if (e.defaultPrevented || e.button !== 0) { return; }
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { return; }
+            if (e.target.closest && e.target.closest('.modal-close, .modal-close-cancel, .btn-close, [data-modal-close], [data-close-modal], #axModalCerrar')) { return; }
             var a = e.target.closest ? e.target.closest("a[href]") : null;
             if (!a) { return; }
             if (a.hasAttribute("data-ticket-ficha")) { return; }
@@ -2198,6 +2195,10 @@
         document.addEventListener("submit", function (e) {
             var f = e.target;
             if (!f || f.tagName !== "FORM") { return; }
+            // Los formularios de un <dialog> solo cierran la ventana; no navegan.
+            if ((f.getAttribute("method") || "").toLowerCase() === "dialog" ||
+                (e.submitter && (e.submitter.getAttribute("formmethod") || "").toLowerCase() === "dialog")) { return; }
+            if (e.submitter && e.submitter.closest('.modal-close, .modal-close-cancel, .btn-close, [data-modal-close], [data-close-modal]')) { return; }
             if (f.hasAttribute("data-no-page-loader")) { return; }
             if (e.defaultPrevented) { return; }
             if (f.target && f.target !== "" && f.target !== "_self") { return; }
@@ -2221,7 +2222,7 @@
         }, true);
 
         document.addEventListener("click", function (e) {
-            if (e.target.closest && e.target.closest(".modal-close, .modal-close-cancel, [data-modal-close], #axModalCerrar")) {
+            if (e.target.closest && e.target.closest(".modal-close, .modal-close-cancel, .btn-close, [data-modal-close], [data-close-modal], #axModalCerrar")) {
                 cancelarProgramado();
                 if (mostrando) ocultar();
             }

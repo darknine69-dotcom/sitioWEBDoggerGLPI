@@ -589,37 +589,26 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
             return;
         }
         var dias = new Date(state.anio, state.mes, 0).getDate();
-        var html = "";
+        var html = '<div class="disp-otros-scroll"><table class="disp-otros-matriz"><thead><tr><th scope="col">Técnico</th>';
+        for (var h = 1; h <= dias; h++) {
+            var hd = new Date(state.anio, state.mes - 1, h);
+            html += '<th scope="col" title="' + esc(NOMBRES_DIA[hd.getDay()]) + '"><span>' + LETRAS[hd.getDay()] + '</span><br>' + h + '</th>';
+        }
+        html += '</tr></thead><tbody>';
         tecs.forEach(function (tec) {
-            var marcas = [], d;
+            html += '<tr><th scope="row"><span class="disp-otros-persona">' + perfilTecnico(tec, "mx-avatar") + '<span>' + esc(tec.nombre) + '</span></span></th>';
+            var d;
             for (d = 1; d <= dias; d++) {
                 var dd = new Date(state.anio, state.mes - 1, d);
                 var disp = data.disponibilidad[tec.id + "|" + iso(dd)];
-                if (disp) {
-                    marcas.push({ dia: d, dow: dd.getDay(), tipo: disp.tipo, hora: disp.hora, nota: disp.nota });
-                }
+                var est = estadoCelda(tec, dd);
+                var detalle = disp ? (DISP_LABEL[disp.tipo] || disp.tipo || "Novedad") : (ESTADO_TITULO[est] || "Sin marca");
+                var titulo = NOMBRES_DIA[dd.getDay()] + " " + d + " · " + tec.nombre + " — " + detalle + (disp && disp.hora ? " · " + disp.hora : "") + (disp && disp.nota ? " · " + disp.nota : "");
+                html += '<td class="mx-cel td-' + esc(est) + '" title="' + esc(titulo) + '" aria-label="' + esc(titulo) + '">' + (disp ? '<span class="disp-otros-marca" aria-hidden="true">' + esc(disp.tipo === "ausencia" ? "A" : disp.tipo === "falta" ? "F" : disp.tipo === "no_ausencia" ? "D" : "•") + '</span>' : '') + '</td>';
             }
-            html += '<div class="disp-otro">' +
-                '<span class="mx-avatar">' + esc(String(tec.nombre || "?").slice(0, 2).toUpperCase()) + "</span>" +
-                '<span class="disp-otro-id"><strong>' + esc(tec.nombre) + "</strong>" +
-                (tec.activo ? "" : '<small class="mx-offline-tag">sin conexión</small>') + "</span>" +
-                '<span class="disp-otro-marcas">';
-            if (!marcas.length) {
-                html += '<span class="disp-chip d-libre" title="Ni ausencias ni faltas marcadas en este mes">' +
-                    "Sin marcas · disponible todo el mes</span>";
-            } else {
-                marcas.forEach(function (m) {
-                    var etiqueta = DISP_LABEL[m.tipo] || m.tipo || "Marca";
-                    html += '<span class="disp-chip ' + (DISP_CLASE[m.tipo] || "") + '" title="' +
-                        esc(NOMBRES_DIA[m.dow]) + " " + m.dia + " de " + MESES[state.mes - 1] +
-                        (m.hora ? " · desde las " + esc(m.hora) : "") +
-                        (m.nota ? " · " + esc(m.nota) : "") + '">' +
-                        LETRAS[m.dow] + " " + m.dia + " · " + esc(etiqueta) + "</span>";
-                });
-            }
-            html += "</span></div>";
+            html += '</tr>';
         });
-        box.innerHTML = html;
+        box.innerHTML = html + '</tbody></table></div><p class="disp-otros-ayuda">Pasa el cursor sobre cada día para ver su estado y novedades. La cuadrícula es de consulta.</p>';
     }
 
     /* ---------- listas ---------- */

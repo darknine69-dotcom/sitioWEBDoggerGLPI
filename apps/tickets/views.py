@@ -912,7 +912,15 @@ def _calificacion_de(tecnico):
         ).count()
     except Exception:
         resueltos = 0
-    cobertura = min(100, round(total * 100 / resueltos)) if resueltos else None
+    tickets_calificados = CalificacionTecnico.objects.filter(
+        tecnico=tecnico, ticket__tecnico_asignado=tecnico,
+    ).filter(
+        Q(ticket__fecha_resolucion__isnull=False)
+        | Q(ticket__estado=Ticket.Estado.RESUELTO)
+        | Q(ticket__estado=Ticket.Estado.CERRADO)
+    ).values("ticket_id").distinct().count()
+    cobertura = round(tickets_calificados * 100 / resueltos) if resueltos else None
+    aprobacion = round(me_gusta * 100 / total) if total else None
     return {
         "me_gusta": me_gusta,
         "no_me_gusta": no_me_gusta,
@@ -920,9 +928,9 @@ def _calificacion_de(tecnico):
         "balance": me_gusta - no_me_gusta,
         "resueltos": resueltos,
         "cobertura": cobertura,
-        # Alias histórico: la plantilla lateral lee "porcentaje" como cobertura
-        # (% de resueltos con voto), no como aprobación entre votos.
-        "porcentaje": cobertura,
+        "tickets_calificados": tickets_calificados,
+        "aprobacion": aprobacion,
+        "porcentaje": aprobacion,
     }
 
 
@@ -5002,6 +5010,11 @@ def detalle_ticket(request, pk):
                 return redirect("tickets:detalle", pk=pk)
 
     timeline_data_ = _timeline_ticket(ticket, include_internos=True)
+    from django.contrib.auth import get_user_model
+    cuenta_solicitante = (
+        get_user_model().objects.filter(email__iexact=ticket.solicitante_email).first()
+        if ticket.solicitante_email else None
+    )
     vinculo_principal = (
         TicketVinculo.objects.filter(ticket_secundario=ticket)
         .select_related("ticket_principal", "ticket_principal__categoria", "creado_por")
@@ -5018,6 +5031,7 @@ def detalle_ticket(request, pk):
         {
             "ticket": ticket,
             "timeline": timeline_data_,
+            "cuenta_solicitante": cuenta_solicitante,
             "eventos_count": sum(1 for i in timeline_data_ if i["tipo"] == "sistema"),
             "comentario_form": comentario_form,
             "asignar_form": asignar_form,

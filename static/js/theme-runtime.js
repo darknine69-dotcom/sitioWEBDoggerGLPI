@@ -1,6 +1,7 @@
 (function () {
     "use strict";
     var root = document.documentElement;
+    if (root.getAttribute("data-appearance-fixed") === "1") return;
     var media = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
     var themeKey = root.getAttribute("data-theme-storage-key") || "dogger:pv:theme:guest";
     function preference() { try { return localStorage.getItem(themeKey) || "system"; } catch (_) { return "system"; } }

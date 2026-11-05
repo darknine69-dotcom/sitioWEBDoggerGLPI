@@ -170,6 +170,277 @@ class TicketCerradoTest(BaseNotificaciones):
 
 
 class RecordatoriosTest(BaseNotificaciones):
+    def test_clave_reservada_por_usuario_y_liberada_al_borrar(self):
+        primero = services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Uno", "", clave="estable")
+        self.assertIsNone(services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Dos", "", clave="estable"))
+        self.assertIsNotNone(services.crear(self.usuario, Notificacion.Tipo.SISTEMA, "Otro", "", clave="estable"))
+        primero.delete()
+        self.assertIsNotNone(services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Nuevo", "", clave="estable"))
+
+    def test_base_de_datos_rechaza_reservas_duplicadas(self):
+        from django.db import IntegrityError, transaction
+        from apps.notificaciones.models import ClaveNotificacion
+
+        primero = services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Uno", "", clave="unica")
+        segundo = services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Dos", "")
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            ClaveNotificacion.objects.create(usuario=self.tecnico, clave="unica", notificacion=segundo)
+        self.assertEqual(ClaveNotificacion.objects.get(notificacion=primero).clave, "unica")
+
+    def test_alerta_ans_se_crea_una_vez_con_historial(self):
+        from apps.notificaciones.models import AlertaOperativa
+        from apps.tickets.ans_avisos import avisos_en_campana
+        from django.utils import timezone
+
+        ticket = self.ticket()
+        Ticket.objects.filter(pk=ticket.pk).update(fecha_creacion=timezone.now() - timezone.timedelta(days=30))
+        ticket.refresh_from_db()
+        avisos_en_campana(ticket, "Vencido")
+        avisos_en_campana(ticket, "Vencido")
+        alerta = AlertaOperativa.objects.get(ticket=ticket)
+        self.assertEqual(alerta.estado, AlertaOperativa.Estado.ABIERTA)
+        self.assertEqual(alerta.historial.count(), 1)
+
+    def test_bandeja_presenta_inactividad_en_formato_legible(self):
+        from django.utils import timezone
+
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:inactivo:1", "ticket_inactivo", ticket, self.tecnico)
+        alerta.ultima_actividad_en = timezone.now() - timezone.timedelta(hours=3)
+        alerta.inactividad_segundos = 12600
+        alerta.save(update_fields=["ultima_actividad_en", "inactividad_segundos"])
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.get(reverse("notificaciones:alertas_operativas"))
+        self.assertContains(respuesta, "3h 30min")
+        self.assertNotContains(respuesta, "12600 segundos")
+
+    def test_bandeja_conserva_estado_en_selector_y_boton_accesible(self):
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.get(reverse("notificaciones:alertas_operativas"), {"estado": "reconocida"})
+        self.assertContains(respuesta, 'value="reconocida" checked')
+        self.assertContains(respuesta, 'aria-label="Aplicar filtro"')
+        self.assertContains(respuesta, 'id="estado-alerta-actual">Reconocidas')
+
+    def test_reconocimiento_de_alerta_es_individual_y_controla_acceso(self):
+        from apps.notificaciones.models import AlertaOperativa
+
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:ans_vencido", "ans_vencido", ticket, self.tecnico)
+        otro_tecnico = get_user_model().objects.create_user(email="otro@example.com", password="x", nombre="Otro", rol="tecnico")
+        url = reverse("notificaciones:accion_alerta", args=[alerta.pk])
+        self.client.force_login(otro_tecnico)
+        self.assertEqual(self.client.post(url, {"accion": "reconocer"}).status_code, 404)
+        self.client.force_login(self.tecnico)
+        self.assertContains(self.client.get(reverse("notificaciones:alertas_operativas")), ticket.codigo)
+        self.client.post(url, {"accion": "reconocer"})
+        self.client.post(url, {"accion": "reconocer"})
+        alerta.refresh_from_db()
+        self.assertEqual(alerta.estado, AlertaOperativa.Estado.RECONOCIDA)
+        self.assertEqual(alerta.historial.count(), 2)
+        respuesta = self.client.get(reverse("notificaciones:alertas_operativas"))
+        self.assertContains(respuesta, "Esta alerta ya fue reconocida")
+        self.assertContains(respuesta, 'alertas-status is-reconocida')
+        self.client.post(url, {"accion": "resolver"})
+        alerta.refresh_from_db()
+        self.assertEqual(alerta.estado, AlertaOperativa.Estado.RECONOCIDA)
+        ticket.estado = Ticket.Estado.RESUELTO
+        ticket.save(update_fields=["estado"])
+        self.client.post(url, {"accion": "resolver"})
+        alerta.refresh_from_db()
+        self.assertEqual(alerta.estado, AlertaOperativa.Estado.RESUELTA)
+
+    def test_seguimiento_de_alerta_registra_actor_y_respeta_alcance(self):
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:ans_vencido", "ans_vencido", ticket, self.tecnico)
+        otro = get_user_model().objects.create_user(email="otro-seguimiento@example.com", password="x", nombre="Otro", rol="tecnico")
+        url = reverse("notificaciones:accion_alerta", args=[alerta.pk])
+        self.client.force_login(otro)
+        self.assertEqual(self.client.post(url, {"accion": "seguimiento", "detalle": "No autorizado"}).status_code, 404)
+        self.client.force_login(self.tecnico)
+        self.client.post(url, {"accion": "seguimiento", "detalle": "Se contactó al punto"})
+        entrada = alerta.historial.get(accion="seguimiento")
+        self.assertEqual(entrada.actor, self.tecnico)
+        self.assertEqual(entrada.detalle, "Se contactó al punto")
+        self.assertContains(self.client.get(reverse("notificaciones:alertas_operativas")), "Se contactó al punto")
+        self.client.post(url, {"accion": "seguimiento", "detalle": " "})
+        self.assertEqual(alerta.historial.filter(accion="seguimiento").count(), 1)
+
+    def test_reconocer_y_cerrar_muestran_confirmacion_sin_cambiar_ticket(self):
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"presion:test:{ticket.pk}", "presion_pendiente", ticket, self.tecnico)
+        url = reverse("notificaciones:accion_alerta", args=[alerta.pk])
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.post(url, {"accion": "reconocer"}, follow=True)
+        self.assertContains(respuesta, "Alerta reconocida. El ticket continúa sin cambios.")
+        respuesta = self.client.post(url, {"accion": "resolver"}, follow=True)
+        self.assertContains(respuesta, "Alerta cerrada correctamente. El ticket no se modificó.")
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.estado, Ticket.Estado.ABIERTO)
+
+    def test_historial_de_alerta_sobrevive_a_eliminacion_del_ticket(self):
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:ans_vencido", "ans_vencido", ticket, self.tecnico)
+        codigo = ticket.codigo
+        ticket.delete()
+        alerta.refresh_from_db()
+        self.assertIsNone(alerta.ticket_id)
+        self.assertEqual(alerta.codigo_ticket, codigo)
+        self.assertEqual(alerta.historial.count(), 1)
+
+    def test_presion_crea_alerta_idempotente(self):
+        from apps.tickets.models import TicketComentario
+        from apps.tickets.notifications import notificar_presion_observadores
+        from apps.notificaciones.models import AlertaOperativa
+
+        ticket = self.ticket()
+        presion = TicketComentario.objects.create(ticket=ticket, usuario=self.usuario, comentario="Solicito seguimiento", es_presion=True)
+        notificar_presion_observadores(ticket, self.usuario, presion)
+        notificar_presion_observadores(ticket, self.usuario, presion)
+        alerta = AlertaOperativa.objects.get(clave_origen=f"presion:{presion.pk}")
+        self.assertEqual(alerta.tipo, "presion_pendiente")
+        self.assertEqual(alerta.historial.count(), 1)
+
+    def test_inactividad_critica_requiere_umbral_y_se_deduplica(self):
+        from apps.notificaciones.models import AlertaOperativa
+        from apps.tickets.ans_avisos import _revisar_inactividad
+        from django.utils import timezone
+
+        ticket = self.ticket()
+        Ticket.objects.filter(pk=ticket.pk).update(fecha_actualizacion=timezone.now() - timezone.timedelta(hours=25))
+        _revisar_inactividad()
+        _revisar_inactividad()
+        self.assertEqual(AlertaOperativa.objects.filter(ticket=ticket, tipo="ticket_inactivo").count(), 1)
+        self.assertEqual(AlertaOperativa.objects.get(ticket=ticket, tipo="ticket_inactivo").responsable, self.tecnico)
+
+    def test_revision_cierra_alerta_cuando_ticket_se_resuelve_y_audita_una_vez(self):
+        from apps.notificaciones.models import AlertaOperativa
+        from apps.tickets.ans_avisos import _revisar_inactividad
+
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:ans_vencido", "ans_vencido", ticket, self.tecnico)
+        ticket.estado = Ticket.Estado.RESUELTO
+        ticket.save(update_fields=["estado"])
+        _revisar_inactividad()
+        _revisar_inactividad()
+        alerta.refresh_from_db()
+        self.assertEqual(alerta.estado, AlertaOperativa.Estado.RESUELTA)
+        self.assertIsNotNone(alerta.resuelta_en)
+        self.assertEqual(alerta.historial.filter(accion="ticket_cerrado").count(), 1)
+
+    def test_escalamiento_desactivado_y_una_sola_vez_por_destinatario(self):
+        from apps.tickets.models import ConfigSitio
+        from apps.tickets.ans_avisos import _escalar_inactividad
+        from apps.notificaciones.models import EntregaEscalamiento
+        from django.utils import timezone
+
+        admin = get_user_model().objects.create_user(email="jefe-escalamiento@example.com", password="x", nombre="Jefe", rol="admin")
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:inactivo:test", "ticket_inactivo", ticket, self.tecnico)
+        alerta.ultima_actividad_en = ticket.fecha_actualizacion
+        alerta.save(update_fields=["ultima_actividad_en"])
+        type(alerta).objects.filter(pk=alerta.pk).update(creada_en=timezone.now() - timezone.timedelta(hours=3))
+        _escalar_inactividad()
+        self.assertFalse(EntregaEscalamiento.objects.filter(alerta=alerta).exists())
+        cfg = ConfigSitio.cargar()
+        cfg.escalamiento_inactividad = {"habilitado": True, "horas": 2, "administradores": True, "observadores": False}
+        cfg.save(update_fields=["escalamiento_inactividad"])
+        _escalar_inactividad()
+        _escalar_inactividad()
+        self.assertEqual(EntregaEscalamiento.objects.filter(alerta=alerta, usuario=admin).count(), 1)
+        self.assertEqual(Notificacion.objects.filter(usuario=admin, clave=f"escalamiento:{alerta.pk}:{admin.pk}").count(), 1)
+        self.assertEqual(alerta.historial.filter(accion="escalada").count(), 1)
+
+    def test_escalamiento_no_ocurre_si_hay_seguimiento(self):
+        from apps.tickets.models import ConfigSitio
+        from apps.tickets.ans_avisos import _escalar_inactividad
+        from apps.notificaciones.models import EntregaEscalamiento, HistorialAlerta
+        from django.utils import timezone
+
+        get_user_model().objects.create_user(email="jefe-ocupado@example.com", password="x", nombre="Jefe", rol="admin")
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:inactivo:seguido", "ticket_inactivo", ticket, self.tecnico)
+        type(alerta).objects.filter(pk=alerta.pk).update(creada_en=timezone.now() - timezone.timedelta(hours=3), ultima_actividad_en=ticket.fecha_actualizacion)
+        HistorialAlerta.objects.create(alerta=alerta, actor=self.tecnico, accion="seguimiento", detalle="Atendiendo")
+        cfg = ConfigSitio.cargar()
+        cfg.escalamiento_inactividad = {"habilitado": True, "horas": 2, "administradores": True}
+        cfg.save(update_fields=["escalamiento_inactividad"])
+        _escalar_inactividad()
+        self.assertFalse(EntregaEscalamiento.objects.filter(alerta=alerta).exists())
+
+    def test_escalamiento_notifica_tecnico_y_solicitante_sin_duplicados(self):
+        from apps.tickets.models import ConfigSitio
+        from apps.tickets.ans_avisos import _escalar_inactividad
+        from apps.notificaciones.models import EntregaEscalamiento
+        from django.utils import timezone
+
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:inactivo:destinos", "ticket_inactivo", ticket, self.tecnico)
+        type(alerta).objects.filter(pk=alerta.pk).update(creada_en=timezone.now() - timezone.timedelta(hours=3), ultima_actividad_en=ticket.fecha_actualizacion)
+        cfg = ConfigSitio.cargar()
+        cfg.escalamiento_inactividad = {"habilitado": True, "horas": 2, "tecnico": True, "solicitante": True}
+        cfg.save(update_fields=["escalamiento_inactividad"])
+        _escalar_inactividad()
+        _escalar_inactividad()
+        self.assertEqual(EntregaEscalamiento.objects.filter(alerta=alerta).count(), 2)
+        aviso_tecnico = Notificacion.objects.get(usuario=self.tecnico, clave=f"escalamiento:{alerta.pk}:{self.tecnico.pk}")
+        aviso_usuario = Notificacion.objects.get(usuario=self.usuario, clave=f"escalamiento:{alerta.pk}:{self.usuario.pk}")
+        self.assertEqual(aviso_tecnico.url, reverse("tickets:detalle", args=[ticket.pk]))
+        self.assertEqual(aviso_usuario.url, reverse("tickets:mi_ticket", args=[ticket.pk]))
+        self.assertIn("sigue pendiente", aviso_usuario.titulo)
+
+    def test_escalamiento_observadores_solo_zona_autorizada(self):
+        from apps.tickets.models import ConfigSitio, ElementoMiLista, ZonaObservador
+        from apps.tickets.ans_avisos import _escalar_inactividad
+        from apps.notificaciones.models import EntregaEscalamiento
+        from django.utils import timezone
+
+        User = get_user_model()
+        autorizado = User.objects.create_user(email="obs-autorizado@example.com", password="x", nombre="Obs", rol="observador")
+        ajeno = User.objects.create_user(email="obs-ajeno@example.com", password="x", nombre="Ajeno", rol="observador")
+        zona = ZonaObservador.objects.create(observador=autorizado, nombre="Zona", alertas_ans=True)
+        ElementoMiLista.objects.create(observador=autorizado, usuario=self.usuario, usuario_email=self.usuario.email, zona=zona)
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:inactivo:zona", "ticket_inactivo", ticket, self.tecnico)
+        type(alerta).objects.filter(pk=alerta.pk).update(creada_en=timezone.now() - timezone.timedelta(hours=3), ultima_actividad_en=ticket.fecha_actualizacion)
+        cfg = ConfigSitio.cargar()
+        cfg.escalamiento_inactividad = {"habilitado": True, "horas": 2, "observadores": True}
+        cfg.save(update_fields=["escalamiento_inactividad"])
+        _escalar_inactividad()
+        self.assertTrue(EntregaEscalamiento.objects.filter(alerta=alerta, usuario=autorizado).exists())
+        self.assertFalse(EntregaEscalamiento.objects.filter(alerta=alerta, usuario=ajeno).exists())
+
+    def test_escalamiento_se_detiene_si_el_ticket_se_actualizo(self):
+        from apps.tickets.models import ConfigSitio
+        from apps.tickets.ans_avisos import _escalar_inactividad
+        from apps.notificaciones.models import EntregaEscalamiento
+        from django.utils import timezone
+
+        get_user_model().objects.create_user(email="admin-actividad@example.com", password="x", nombre="Admin", rol="admin")
+        ticket = self.ticket()
+        alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:inactivo:actividad", "ticket_inactivo", ticket, self.tecnico)
+        type(alerta).objects.filter(pk=alerta.pk).update(creada_en=timezone.now() - timezone.timedelta(hours=3), ultima_actividad_en=ticket.fecha_actualizacion - timezone.timedelta(minutes=1))
+        cfg = ConfigSitio.cargar()
+        cfg.escalamiento_inactividad = {"habilitado": True, "horas": 2, "administradores": True}
+        cfg.save(update_fields=["escalamiento_inactividad"])
+        _escalar_inactividad()
+        self.assertFalse(EntregaEscalamiento.objects.filter(alerta=alerta).exists())
+
+    def test_aviso_prioritario_identifica_ans_vencido(self):
+        from django.utils import timezone
+
+        vencido = self.ticket(titulo="Ticket vencido")
+        vigente = self.ticket(titulo="Ticket vigente")
+        Ticket.objects.filter(pk=vencido.pk).update(fecha_creacion=timezone.now() - timezone.timedelta(days=30))
+        aviso = next(n for n in services.recordatorios(self.tecnico) if n.clave.startswith("rec:urgentes:"))
+        self.assertIn("1 con ANS vencido", aviso.mensaje)
+        self.assertIn(vencido.codigo, aviso.mensaje)
+        self.assertNotIn(vigente.codigo, aviso.mensaje)
+
+    def test_aviso_prioritario_sin_ans_vencido(self):
+        self.ticket()
+        aviso = next(n for n in services.recordatorios(self.tecnico) if n.clave.startswith("rec:urgentes:"))
+        self.assertIn("Ninguno tiene el ANS vencido", aviso.mensaje)
+
     def test_aviso_de_prioridad_alta_o_urgente_abre_la_lista_filtrada(self):
         from django.contrib.auth import get_user_model
 
@@ -195,7 +466,7 @@ class RecordatoriosTest(BaseNotificaciones):
         self.assertEqual(aviso.titulo, "2 tickets de prioridad alta o urgente")
         self.assertEqual(
             aviso.url,
-            reverse("tickets:lista") + "?prioridad=alta,urgente",
+            reverse("tickets:lista") + "?prioridad=alta,urgente#filtrosTickets",
         )
 
         self.client.force_login(admin)
@@ -222,7 +493,7 @@ class RecordatoriosTest(BaseNotificaciones):
         self.assertEqual(aviso.titulo, "1 ticket de prioridad alta o urgente")
         self.assertEqual(
             aviso.url,
-            reverse("tickets:lista") + "?prioridad=alta,urgente",
+            reverse("tickets:lista") + "?prioridad=alta,urgente#filtrosTickets",
         )
 
     def test_tecnico_con_ticket_activo(self):
@@ -416,14 +687,97 @@ class VentanaEmergenteTest(BaseNotificaciones):
         respuesta = self.client.get(reverse("tickets:panel_tecnico"))
         self.assertContains(respuesta, "notifPopup")
 
-        # Al cerrarla se marca como mostrada y leida.
+        # Al cerrarla se marca como mostrada, pero permanece sin leer.
         self.client.post(reverse("notificaciones:marcar_mostrada", args=[aviso.pk]))
         aviso.refresh_from_db()
         self.assertIsNotNone(aviso.mostrada_en)
-        self.assertTrue(aviso.leida)
+        self.assertFalse(aviso.leida)
 
         respuesta = self.client.get(reverse("tickets:panel_tecnico"))
         self.assertNotContains(respuesta, "notifPopup")
+
+    def test_cerrar_y_leer_solo_afecta_al_aviso_elegido(self):
+        primero = services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Primero", "Uno")
+        segundo = services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Segundo", "Dos")
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.post(reverse("notificaciones:marcar_mostrada", args=[primero.pk]))
+        self.assertEqual(respuesta.json()["pendientes"], 2)
+        primero.refresh_from_db()
+        segundo.refresh_from_db()
+        self.assertIsNotNone(primero.mostrada_en)
+        self.assertFalse(primero.leida)
+        self.assertIsNone(segundo.mostrada_en)
+        self.assertFalse(segundo.leida)
+        respuesta = self.client.post(reverse("notificaciones:marcar_leida", args=[primero.pk]))
+        self.assertEqual(respuesta.json()["pendientes"], 1)
+        primero.refresh_from_db()
+        segundo.refresh_from_db()
+        self.assertTrue(primero.leida)
+        self.assertIsNotNone(primero.leida_en)
+        self.assertFalse(segundo.leida)
+        self.assertIsNone(segundo.mostrada_en)
+
+    def test_no_puede_marcar_aviso_de_otra_cuenta(self):
+        aviso = services.crear(self.usuario, Notificacion.Tipo.SISTEMA, "Privado", "Otro usuario")
+        self.client.force_login(self.tecnico)
+        for nombre in ("marcar_mostrada", "marcar_leida"):
+            self.assertEqual(self.client.post(reverse("notificaciones:" + nombre, args=[aviso.pk])).status_code, 404)
+        aviso.refresh_from_db()
+        self.assertFalse(aviso.leida)
+        self.assertIsNone(aviso.mostrada_en)
+
+    def test_visitar_panel_no_marca_avisos_como_leidos(self):
+        aviso = services.crear(self.tecnico, Notificacion.Tipo.TICKET_NUEVO, "Pendiente", "Aviso")
+        self.client.force_login(self.tecnico)
+        self.client.get(reverse("tickets:panel_tecnico"))
+        aviso.refresh_from_db()
+        self.assertFalse(aviso.leida)
+
+    def test_centro_muestra_solo_avisos_propios_y_filtra(self):
+        propio = services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Aviso propio", "Detalle")
+        services.crear(self.usuario, Notificacion.Tipo.SISTEMA, "Aviso privado ajeno", "Detalle")
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.get(reverse("notificaciones:centro"), {"q": "propio"})
+        self.assertContains(respuesta, propio.titulo)
+        self.assertNotContains(respuesta, "Aviso privado ajeno")
+
+    def test_centro_impide_accion_sobre_aviso_ajeno(self):
+        ajeno = services.crear(self.usuario, Notificacion.Tipo.SISTEMA, "Ajeno", "Detalle")
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.post(reverse("notificaciones:accion_centro", args=[ajeno.pk]), {"accion": "leer"})
+        self.assertEqual(respuesta.status_code, 404)
+        ajeno.refresh_from_db()
+        self.assertFalse(ajeno.leida)
+
+    def test_archivar_y_restaurar_conserva_lectura_y_contador(self):
+        aviso = services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Prueba archivo", "Detalle")
+        otro = services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Otro", "Detalle")
+        self.client.force_login(self.tecnico)
+        url = reverse("notificaciones:accion_centro", args=[aviso.pk])
+        respuesta_archivar = self.client.post(url, {"accion": "archivar"})
+        self.assertEqual(respuesta_archivar.url, reverse("notificaciones:centro") + "?filtro=archivadas")
+        aviso.refresh_from_db()
+        self.assertIsNotNone(aviso.archivada_en)
+        self.assertFalse(aviso.leida)
+        self.assertEqual(services.no_leidas(self.tecnico), 1)
+        self.assertNotIn(aviso, services.lista(self.tecnico))
+        self.assertNotIn(aviso, services.pendientes_de_emergente(self.tecnico, limite=10))
+        respuesta = self.client.get(reverse("notificaciones:centro"), {"filtro": "archivadas"})
+        self.assertContains(respuesta, "Prueba archivo")
+        self.assertNotIn(otro, respuesta.context["pagina_avisos"].object_list)
+        self.assertContains(respuesta, "Carpetas de notificaciones")
+        self.client.post(url, {"accion": "restaurar"})
+        aviso.refresh_from_db()
+        self.assertIsNone(aviso.archivada_en)
+        self.assertEqual(services.no_leidas(self.tecnico), 2)
+
+    def test_centro_no_redirige_a_url_externa(self):
+        aviso = services.crear(self.tecnico, Notificacion.Tipo.SISTEMA, "Enlace", "Detalle", url="https://ejemplo-malicioso.invalid/")
+        self.client.force_login(self.tecnico)
+        respuesta = self.client.post(reverse("notificaciones:accion_centro", args=[aviso.pk]), {"accion": "abrir"})
+        self.assertRedirects(respuesta, reverse("notificaciones:centro"))
+        aviso.refresh_from_db()
+        self.assertFalse(aviso.leida)
 
 
 @override_settings(STORAGES=STATIC_SIN_MANIFEST)

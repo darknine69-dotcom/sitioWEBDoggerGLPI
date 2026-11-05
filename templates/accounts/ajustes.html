@@ -6,7 +6,10 @@
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-user"/></svg></span>{% endblock %}
 {% block header_title %}Mi perfil{% endblock %}
 {% block header_desc %}Tu cuenta, tu contraseña y cómo te avisamos.{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% asset 'css/ajustes-perfil.css' %}">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% asset 'css/ajustes-perfil.css' %}">
+<style>
+.horario-editor .horario-lista{border:1px solid #dce4ee;border-radius:14px;overflow:hidden;background:#fff}.horario-editor .horario-columnas,.horario-editor .horario-fila{display:grid;grid-template-columns:minmax(145px,1fr) minmax(170px,1fr) minmax(180px,1.4fr) 36px;gap:12px;align-items:center;padding:10px 14px}.horario-editor .horario-columnas{background:#f5f7fb;color:#667892;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}.horario-editor .horario-fila+.horario-fila{border-top:1px solid #edf1f5}.horario-editor .horario-fila input{width:100%;min-width:0;height:42px;border:1px solid #dce4ee;border-radius:9px;background:#fff;color:#17233b;padding:0 11px;font:inherit}.horario-editor .horario-fila input:focus{outline:2px solid #91b8fa;outline-offset:1px;border-color:#4b8ce8}.horario-editor .horario-quitar{border:0;background:transparent;color:#8391a3;cursor:pointer;font-size:22px;line-height:1;width:36px;height:36px;border-radius:8px}.horario-editor .horario-quitar:hover{background:#fff0f0;color:#dc2626}.horario-editor .horario-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px}.horario-editor .horario-agregar{border:1px dashed #a9bed9;background:transparent;color:#2459a1;padding:9px 13px;border-radius:9px;font-weight:700;cursor:pointer}.horario-editor .horario-agregar:disabled{opacity:.5;cursor:not-allowed}.horario-editor .horario-info{margin:14px 0 0;color:#637693;font-size:13px}.horario-editor .horario-empty{padding:18px;color:#637693;font-size:13px}.horario-editor .horario-empty[hidden]{display:none}html[data-theme="dark"] .horario-editor .horario-lista,html[data-theme="dark"] .horario-editor .horario-fila input{background:#202020;color:#f1f5f9;border-color:#484848}html[data-theme="dark"] .horario-editor .horario-columnas{background:#2b2b2b;color:#c1cad7}html[data-theme="dark"] .horario-editor .horario-fila+.horario-fila{border-color:#404040}html[data-theme="dark"] .horario-editor .horario-info,html[data-theme="dark"] .horario-editor .horario-empty{color:#b4c0d1}html[data-theme="dark"] .horario-editor .horario-agregar{color:#a9caff;border-color:#607d9e}@media(max-width:760px){.horario-editor .horario-columnas{display:none}.horario-editor .horario-fila{grid-template-columns:1fr 1fr 36px}.horario-editor .horario-fila .horario-nota{grid-column:1/3;grid-row:2}.horario-editor .horario-quitar{grid-column:3;grid-row:1}}
+</style>{% endblock %}
 
 {% block content %}
 <main class="page perfil-page">
@@ -626,6 +629,43 @@
                     </div><div class="pagina-save"><span id="pagina-save-status" role="status" aria-live="polite"></span><button type="submit" class="btn btn-primary">Guardar cambios</button></div>
                 </form>
 
+                <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form pagina-section horario-editor" id="horario-editor" aria-label="Horario publicado">
+                    {% csrf_token %}<input type="hidden" name="ajustes_horario" value="1">
+                    <div class="pagina-section-header"><span class="pagina-section-icon"><svg class="icon"><use href="#i-clock"/></svg></span><div><h3>Horario de atención publicado</h3><p>Organiza los horarios que verán los usuarios en la página de inicio.</p></div></div>
+                    <div class="horario-lista"><div class="horario-columnas" aria-hidden="true"><span>Días</span><span>Horario</span><span>Nota opcional</span><span></span></div><div id="horario-filas">
+                    {% for fila in horario_filas %}
+                    {% if fila.dias or fila.hora or fila.nota %}<div class="horario-fila">
+                        <input aria-label="Días" type="text" name="horario_dias" value="{{ fila.dias|default:'' }}" maxlength="80" placeholder="Ej. Lunes a jueves">
+                        <input aria-label="Horario" type="text" name="horario_hora" value="{{ fila.hora|default:'' }}" maxlength="80" placeholder="Ej. 8:00 a. m. – 5:30 p. m.">
+                        <input class="horario-nota" aria-label="Nota opcional" type="text" name="horario_nota" value="{{ fila.nota|default:'' }}" maxlength="120" placeholder="Nota opcional">
+                        <button class="horario-quitar" type="button" aria-label="Quitar horario" title="Quitar horario">&times;</button>
+                    </div>{% endif %}
+                    {% endfor %}
+                    </div><div class="horario-empty" id="horario-vacio" hidden>No hay horarios publicados. Agrega uno para comenzar.</div></div>
+                    <div class="horario-tools"><button class="horario-agregar" type="button" id="horario-agregar">＋ Agregar horario</button><button type="submit" class="btn btn-primary">Guardar horario</button></div>
+                    <p class="horario-info">Este horario se muestra en la portada; no modifica los ANS ni las alertas.</p>
+                </form>
+
+                <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form pagina-section" id="inactividad-editor">
+                    {% csrf_token %}<input type="hidden" name="ajustes_inactividad" value="1">
+                    <div class="pagina-section-header"><span class="pagina-section-icon"><svg class="icon"><use href="#i-clock"/></svg></span><div><h3>Alertas por inactividad</h3><p>Tiempo transcurrido en horas. Estos límites no modifican el ANS.</p></div></div>
+                    <div class="inactividad-campos">
+                        <label><span>Urgente</span><span class="inactividad-valor"><input type="number" name="inactividad_urgente" value="{{ limites_inactividad.urgente }}" min="1" max="8760" required><small>h</small></span></label>
+                        <label><span>Alta</span><span class="inactividad-valor"><input type="number" name="inactividad_alta" value="{{ limites_inactividad.alta }}" min="1" max="8760" required><small>h</small></span></label>
+                        <label><span>Media</span><span class="inactividad-valor"><input type="number" name="inactividad_media" value="{{ limites_inactividad.media }}" min="1" max="8760" required><small>h</small></span></label>
+                        <label><span>Baja</span><span class="inactividad-valor"><input type="number" name="inactividad_baja" value="{{ limites_inactividad.baja }}" min="1" max="8760" required><small>h</small></span></label>
+                    </div><div class="pagina-save"><button type="submit" class="btn btn-primary">Guardar límites</button></div>
+                </form>
+                <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form pagina-section" id="escalamiento-editor">
+                    {% csrf_token %}<input type="hidden" name="ajustes_escalamiento" value="1">
+                    <div class="pagina-section-header"><span class="pagina-section-icon"><svg class="icon"><use href="#i-bell"/></svg></span><div class="esc-heading"><h3>Escalamiento por inactividad <span class="esc-badge {% if escalamiento_inactividad.habilitado %}is-on{% endif %}">{% if escalamiento_inactividad.habilitado %}Activo{% else %}Desactivado{% endif %}</span></h3><p>Avisa a otros responsables si una alerta abierta continúa sin atención.</p></div></div>
+                    <div class="esc-layout">
+                        <div class="esc-control"><div><strong>Activar escalamiento</strong><small>Solo se revisan alertas abiertas sin seguimiento.</small></div><label class="toggle-switch"><input type="checkbox" name="habilitado" value="1" aria-label="Activar escalamiento" {% if escalamiento_inactividad.habilitado %}checked{% endif %}><span class="toggle-slider"></span></label></div>
+                        <div class="esc-control"><div><label for="escalamiento-horas"><strong>Tiempo de espera</strong></label><small>Desde la alerta inicial, en horas transcurridas.</small></div><div class="esc-hours"><input id="escalamiento-horas" type="number" name="horas" value="{{ escalamiento_inactividad.horas|default_if_none:'' }}" min="1" max="8760" placeholder="Ej. 2"><span>h</span></div></div>
+                        <fieldset class="esc-destinos"><legend>¿A quién avisar?</legend><label class="esc-choice"><input type="checkbox" name="tecnico" value="1" {% if escalamiento_inactividad.tecnico %}checked{% endif %}><span class="esc-choice-icon"><svg class="icon"><use href="#i-user"/></svg></span><span><strong>Técnico responsable</strong><small>Recordatorio al asignado</small></span></label><label class="esc-choice"><input type="checkbox" name="solicitante" value="1" {% if escalamiento_inactividad.solicitante %}checked{% endif %}><span class="esc-choice-icon"><svg class="icon"><use href="#i-store"/></svg></span><span><strong>Punto de venta</strong><small>Informa a quien reportó el ticket</small></span></label><label class="esc-choice"><input type="checkbox" name="administradores" value="1" {% if escalamiento_inactividad.administradores %}checked{% endif %}><span class="esc-choice-icon"><svg class="icon"><use href="#i-user"/></svg></span><span><strong>Administradores</strong><small>Solo cuentas activas</small></span></label><label class="esc-choice"><input type="checkbox" name="observadores" value="1" {% if escalamiento_inactividad.observadores %}checked{% endif %}><span class="esc-choice-icon"><svg class="icon"><use href="#i-eye"/></svg></span><span><strong>Observadores</strong><small>Autorizados en la zona</small></span></label></fieldset>
+                    </div>
+                    <div class="pagina-save"><button type="submit" class="btn btn-primary">Guardar escalamiento</button></div>
+                </form>
                 <div class="pagina-section pagina-permisos"><div class="pagina-section-header">
                     <span class="pagina-section-icon"><svg class="icon"><use href="#i-shield"/></svg></span><div><h3>Permisos por cuenta</h3><p>Visualiza y administra los permisos asignados a los usuarios de la plataforma.</p></div>
                 </div>
@@ -705,6 +745,40 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+(function () {
+    var editor = document.getElementById("horario-editor");
+    if (!editor) return;
+    var lista = document.getElementById("horario-filas");
+    var agregar = document.getElementById("horario-agregar");
+    var vacio = document.getElementById("horario-vacio");
+    function actualizar() {
+        var cantidad = lista.querySelectorAll(".horario-fila").length;
+        agregar.disabled = cantidad >= 8;
+        vacio.hidden = cantidad !== 0;
+    }
+    agregar.addEventListener("click", function () {
+        if (lista.querySelectorAll(".horario-fila").length >= 8) return;
+        var fila = document.createElement("div");
+        fila.className = "horario-fila";
+        fila.innerHTML = '<input aria-label="Días" name="horario_dias" maxlength="80" placeholder="Ej. Lunes a jueves">' +
+            '<input aria-label="Horario" name="horario_hora" maxlength="80" placeholder="Ej. 8:00 a. m. – 5:30 p. m.">' +
+            '<input class="horario-nota" aria-label="Nota opcional" name="horario_nota" maxlength="120" placeholder="Nota opcional">' +
+            '<button class="horario-quitar" type="button" aria-label="Quitar horario" title="Quitar horario">&times;</button>';
+        lista.appendChild(fila);
+        actualizar();
+        fila.querySelector("input").focus();
+    });
+    lista.addEventListener("click", function (evento) {
+        var boton = evento.target.closest(".horario-quitar");
+        if (!boton) return;
+        boton.closest(".horario-fila").remove();
+        actualizar();
+        agregar.focus();
+    });
+    actualizar();
+})();
+</script>
 <script src="{% asset 'js/ajustes-perfil.js' %}"></script>
 <script src="{% asset 'js/ajustes-pagina.js' %}"></script>
 <script>

@@ -88,7 +88,7 @@
             </div>
             <div class="corp-kpi is-static">
                 <span class="corp-kpi-num corp-kpi-green">{% if calificacion.cobertura != None %}{{ calificacion.cobertura }}%{% else %}—{% endif %}</span>
-                <span class="corp-kpi-label">Calificación{% if calificacion.resueltos %} de {{ calificacion.resueltos }} resueltos{% endif %}</span>
+                <span class="corp-kpi-label">Tickets calificados · {{ calificacion.tickets_calificados }} de {{ calificacion.resueltos }} resueltos</span>
             </div>
         </div>
         {% elif asignados %}

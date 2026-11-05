@@ -89,6 +89,11 @@ def procesar_una():
         tarea.ultimo_error = type(exc).__name__[:120]
         tarea.save(update_fields=["estado", "ultimo_error", "actualizado_en"])
         logger.error("Tarea diferida %s requiere revisión (%s)", pk, type(exc).__name__)
+        try:
+            from apps.notificaciones.services import crear_alerta_operativa
+            crear_alerta_operativa(f"tarea:{tarea.pk}", "sistema_fallo")
+        except Exception:
+            logger.exception("No se pudo registrar la alerta de la tarea %s", pk)
     else:
         tarea.estado = TareaDiferida.Estado.COMPLETADA
         tarea.datos = ""  # Eliminar del registro códigos y contenido ya entregado.

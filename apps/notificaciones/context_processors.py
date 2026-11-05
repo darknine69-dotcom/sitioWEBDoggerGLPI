@@ -28,9 +28,6 @@ def notificaciones(request):
         # La ventana emergente se arma primero: es este mismo aviso, el que
         # saltara y quedara marcado como visto al entrar a la pagina.
         emergente = services.pendientes_de_emergente(usuario, limite=1)
-        # Entrar a una pantalla es revisarla: sus avisos dejan de contar y el
-        # morrito del menu baja a cero hasta que pase algo nuevo.
-        _revisar_la_vista(request, usuario)
         return {
             "notif_no_leidas": services.no_leidas(usuario),
             "notif_lista": services.lista(usuario),

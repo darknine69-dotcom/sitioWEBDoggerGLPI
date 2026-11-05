@@ -46,6 +46,7 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
         </div>
         {% endif %}
     </div>
+    <div class="sw-pendientes" id="swPendientes" aria-label="Conversaciones con mensajes pendientes" hidden></div>
     <div class="sw-thread" id="swThread"></div>
     <div class="sw-composer">
         <button type="button" class="sw-icon-btn" id="swAdjuntar" title="Adjuntar imagen, PDF o documento" aria-label="Adjuntar archivo">
@@ -62,6 +63,7 @@ Se muestra a todo rol autenticado; el hilo y los permisos salen del backend.{% e
 <script>
 window.__SW_URLS__ = {
     rol: "{{ request.user.rol }}",
+    usuarioId: "{{ request.user.pk }}",
     tickets: "{% url 'tickets:chat_tickets' %}",
     usuarios: "{% url 'tickets:chat_usuarios' %}",
     hilo: "{% url 'tickets:chat_hilo' 0 %}",

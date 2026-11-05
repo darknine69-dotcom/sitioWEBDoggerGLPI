@@ -334,6 +334,17 @@ class ChatWidgetTest(TestCase):
             with self.subTest(funcion=entry[0]):
                 self.assertIsNotNone(resolve(reverse(entry[5])))
 
+    def test_buscador_ajustes_horario_e_inactividad_solo_admin(self):
+        from apps.tickets.search_registry import buscar_funciones
+
+        opciones = (("horario de atención", "horario-atencion", "ajustes-horario-atencion"),
+                    ("inactividad", "limites-inactividad", "ajustes-limites-inactividad"))
+        for consulta, clave, ancla in opciones:
+            resultados = buscar_funciones(self.admin, consulta)
+            self.assertTrue(any(x["id"] == clave and x["url"].endswith("#" + ancla) for x in resultados))
+            for usuario in (self.tec, self.usuario, self.obs):
+                self.assertNotIn(clave, {x["id"] for x in buscar_funciones(usuario, consulta)})
+
     def test_busqueda_opciones_visualizacion_para_todos_los_roles(self):
         url = reverse("tickets:buscar_tickets_tecnico")
         opciones = {"visualizacion": "preferencias-visualizacion", "accesibilidad": "preferencias-accesibilidad", "color del menú": "preferencias-navegacion", "idioma": "preferencias-general"}

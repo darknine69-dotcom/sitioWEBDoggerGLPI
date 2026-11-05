@@ -18,7 +18,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.tickets.forms import TicketForm
-from apps.tickets.models import Ticket
+from apps.tickets.models import Ticket, TicketComentario
 
 BASE = Path(__file__).resolve().parents[2]
 
@@ -138,6 +138,48 @@ class AnsEnVivoEnLasVistasTest(TestCase):
             self._html(reverse("tickets:detalle", args=[self.ticket.pk]), self.admin),
             "Detalle del ticket",
         )
+
+    def test_detalle_redisenado_conserva_secciones_y_acciones(self):
+        html = self._html(reverse("tickets:detalle", args=[self.ticket.pk]), self.admin)
+        for fragmento in ('id="ticket-descripcion"', 'id="ticket-seguimiento"',
+                          'id="ticket-actividad"', 'id="ticket-ficha"',
+                          'id="ticket-ans-resumen"', 'id="ticket-acciones"',
+                          'id="ticket-vinculos"', 'name="action" value="comentario"'):
+            self.assertIn(fragmento, html)
+        self.assertIn(reverse("tickets:cambiar_estado", args=[self.ticket.pk]), html)
+        self.assertIn(reverse("tickets:staff_reenviar_glpi", args=[self.ticket.pk]), html)
+
+    def test_seguimiento_integra_formulario_y_comentarios_reales(self):
+        TicketComentario.objects.create(ticket=self.ticket, usuario=self.tecnico, comentario="Novedad de prueba")
+        html = self._html(reverse("tickets:detalle", args=[self.ticket.pk]), self.admin)
+        seguimiento = html.split('id="ticket-seguimiento"', 1)[1].split('id="ticket-actividad"', 1)[0]
+        self.assertLess(seguimiento.index('name="action" value="comentario"'), seguimiento.index('id="corp-timeline"'))
+        self.assertIn("Novedad de prueba", seguimiento)
+        self.assertIn("Tecnico", seguimiento)
+        self.assertEqual(html.count('name="action" value="comentario"'), 1)
+        self.assertIn('id="td-abrir-chat"', seguimiento)
+        self.assertIn(self.ticket.fecha_asignacion_tecnico.strftime("%d/%m/%Y"), seguimiento)
+        actividad = html.split('id="ticket-actividad"', 1)[1].split('id="ticket-vinculos"', 1)[0]
+        self.assertIn("Actividad reciente", actividad)
+        self.assertIn("Nuevo seguimiento registrado", actividad)
+        self.assertIn("Tecnico", actividad)
+        self.assertIn("Ticket creado", actividad)
+        self.assertNotIn('class="chat-scroll"', actividad)
+
+    def test_fecha_asignacion_cambia_solo_al_cambiar_tecnico(self):
+        fecha = self.ticket.fecha_asignacion_tecnico
+        self.ticket.titulo = "Actualizado"
+        self.ticket.save(update_fields=["titulo"])
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.fecha_asignacion_tecnico, fecha)
+        self.ticket.tecnico_asignado = self.admin
+        self.ticket.save(update_fields=["tecnico_asignado"])
+        self.ticket.refresh_from_db()
+        self.assertGreaterEqual(self.ticket.fecha_asignacion_tecnico, fecha)
+        self.ticket.tecnico_asignado = None
+        self.ticket.save(update_fields=["tecnico_asignado"])
+        self.ticket.refresh_from_db()
+        self.assertIsNone(self.ticket.fecha_asignacion_tecnico)
 
     def test_dashboard(self):
         self._exige_reloj(self._html(reverse("tickets:dashboard"), self.admin), "Dashboard")

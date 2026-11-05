@@ -1062,6 +1062,33 @@ html[data-theme="dark"] #rolModal .rol-op-txt strong { color:var(--theme-text); 
 html[data-theme="dark"] #rolModal .rol-op-txt small { color:var(--theme-muted); }
 html[data-theme="dark"] #rolModal .rol-badge-base { background:#087e45; color:#fff; border-color:#087e45; }
 html[data-theme="dark"] #rolModal .rol-badge-activo { background:#975300; color:#fff; border-color:#975300; }
+
+/* Monitoreo del observador: zonas y actividad. */
+html[data-theme="dark"] :is(.zona-activa, .zona-activa-sin-zona, .zona-activa-tools, .zona-activa-persona, .zona-activa-respuesta) {
+    background:var(--theme-panel); color:var(--theme-text); border-color:var(--theme-border);
+}
+html[data-theme="dark"] .zona-activa-head { color:#fff; }
+html[data-theme="dark"] .zona-activa-tools label { background:var(--theme-raised); color:var(--theme-text); border-color:var(--theme-border); }
+html[data-theme="dark"] .zona-activa-tools label input { background:transparent; color:var(--theme-text); border:0; box-shadow:none; }
+html[data-theme="dark"] :is(.zona-activa-sin-zona, .zona-activa-persona) :is(strong, b) { color:var(--theme-text); }
+html[data-theme="dark"] :is(.zona-activa-sin-zona, .zona-activa-persona) :is(p, small, li span) { color:var(--theme-muted); }
+html[data-theme="dark"] .zona-activa-sin-zona li { border-color:var(--theme-border); }
+html[data-theme="dark"] .zona-activa-sin-zona a, html[data-theme="dark"] .zona-activa-tools a { color:#a8caff; }
+html[data-theme="dark"] .zona-activa .obs-zona-acc { background:var(--theme-raised); border-color:var(--theme-border); }
+html[data-theme="dark"] .zona-activa .obs-zona-acc .obs-acc-ico { background:var(--theme-panel); color:var(--theme-text); border-color:var(--theme-border); }
+html[data-theme="dark"] .zona-carrusel-controls :is(.zona-carrusel-arrow, .zona-carrusel-dot:not(.is-active)) { background:var(--theme-raised); color:var(--theme-text); border-color:var(--theme-border); }
+html[data-theme="dark"] .zona-carrusel-controls .zona-carrusel-dot.is-active { background:#2856b8; color:#fff; }
+html[data-theme="dark"] .obs-reference-section :is(.obs-reference-card, .obs-reference-head, .obs-modern-ticket-columns, .obs-live-tech-columns) { background:var(--theme-panel); color:var(--theme-text); border-color:var(--theme-border); box-shadow:none; }
+html[data-theme="dark"] .obs-reference-section :is(.obs-reference-copy h3, .obs-modern-ticket-code, .obs-modern-ticket-request b, .obs-modern-tech-person strong, .obs-modern-tech-count b, .obs-modern-tech-percent) { color:var(--theme-text); }
+html[data-theme="dark"] .obs-reference-section :is(.obs-reference-copy p, .obs-modern-ticket-request small, .obs-modern-ticket-owner, .obs-modern-ticket-date, .obs-modern-tech-person small, .obs-modern-tech-count small) { color:var(--theme-muted); }
+html[data-theme="dark"] .obs-reference-section :is(.obs-modern-ticket-row, .obs-modern-tech-row) { background:transparent; border-color:var(--theme-border); color:var(--theme-text); }
+html[data-theme="dark"] .obs-reference-section :is(.obs-modern-ticket-row, .obs-modern-tech-row):is(:hover, :focus-visible) { background:var(--theme-hover); }
+html[data-theme="dark"] .obs-reference-section :is(.obs-modern-tech-load, .obs-tech-load) { background:#444; }
+html[data-theme="dark"] .obs-reference-section .obs-tech-tip { background:#1b3047; color:#c8dfff; }
+html[data-theme="dark"] .obs-reference-section .obs-tech-tip strong { color:#c8dfff; }
+html[data-theme="dark"] .obs-reference-section .obs-modern-ticket-status.is-abierto { background:#bd1e30; color:#fff; }
+html[data-theme="dark"] .obs-reference-section .obs-modern-ticket-status.is-en-progreso { background:#975300; color:#fff; }
+html[data-theme="dark"] .obs-reference-section .obs-modern-ticket-status:is(.is-resuelto, .is-cerrado) { background:#087e45; color:#fff; }
 html[data-theme="dark"] .rpt-filter-panel :is(.rpt-fld select, .rpt-fld input[type="date"], .rpt-persona-input input[type="text"]) {
     background:var(--theme-input); color:var(--theme-text); border:1px solid #444; box-shadow:none; color-scheme:dark;
 }

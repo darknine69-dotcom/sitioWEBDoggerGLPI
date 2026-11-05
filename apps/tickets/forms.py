@@ -363,7 +363,7 @@ class ComentarioForm(forms.ModelForm):
         model = TicketComentario
         fields = ["comentario", "es_interno"]
         widgets = {
-            "comentario": forms.Textarea(attrs={"rows": 3, "placeholder": "Escribe un seguimiento..."}),
+            "comentario": forms.Textarea(attrs={"rows": 3, "placeholder": "Escribe un seguimiento, respuesta o novedad..."}),
         }
 
 

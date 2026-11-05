@@ -747,6 +747,12 @@ html[data-theme="dark"] .nav-list > li:first-child > .nav-link { color: var(--in
 [data-theme="dark"] .notif-popup-actions .notif-popup-ok { background: #3B342D; border-color: #62584D; color: #F5EFE6; }
 [data-theme="dark"] .notif-popup-actions .notif-popup-ok:hover { background: #4A4037; border-color: #887968; color: #fff; }
 [data-theme="dark"] .notif-popup-foot { color: #B9AFA4; }
+.notif-center-link { padding:12px 16px; text-align:center; border-top:1px solid rgba(100,116,139,.2); }
+.notif-center-link a { color:#2563eb; font-weight:700; text-decoration:none; }
+.notif-center-link a:hover { text-decoration:underline; }
+[data-theme="dark"] .notif-center-link a { color:#93c5fd; }
+[data-theme="dark"] .notif-popup-x { background:#303030; color:#f1f5f9; }
+[data-theme="dark"] .notif-popup-kicker { color:#cbd5e1; }
 [data-theme="dark"] .pan-presionar-modal { background: var(--dogger-black-soft, #202020); color: var(--ink); }
 [data-theme="dark"] .pan-presionar-modal select,
 [data-theme="dark"] .pan-presionar-modal textarea { background: #302922; border-color: #51483F; color: #F5EFE6; }

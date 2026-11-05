@@ -272,8 +272,20 @@ class CalificacionConPulgares(TestCase):
         self.client.force_login(self.tecnico)
         html = self.client.get(reverse("tickets:panel_tecnico")).content.decode()
         self.assertIn("Tu calificación", html)
-        # 3 votos de 60 resueltos: 5% de cobertura, no 100% de 3.
-        self.assertIn("3 votos · 5% de 60 resueltos", html)
+        self.assertIn("Aprobación · 2 positivos de 3 votos", html)
+        self.assertIn("Tickets calificados: 0 de 60 · 0%", html)
+        self.assertIn("67%", html)
+
+    def test_cobertura_cuenta_tickets_resueltos_distintos(self):
+        from apps.tickets.views import _calificacion_de
+        ticket = Ticket.objects.create(titulo="Resuelto", solicitante_nombre="U", solicitante_email="u@x.com", estado=Ticket.Estado.CERRADO, tecnico_asignado=self.tecnico)
+        otro = get_user_model().objects.create_user("otro-voto@dogger.com.co", "Otro", "dogger1234", rol="usuario")
+        CalificacionTecnico.objects.create(tecnico=self.tecnico, usuario=self.usuario, ticket=ticket, valor=1)
+        CalificacionTecnico.objects.create(tecnico=self.tecnico, usuario=otro, ticket=ticket, valor=-1)
+        datos = _calificacion_de(self.tecnico)
+        self.assertEqual(datos["aprobacion"], 50)
+        self.assertEqual(datos["tickets_calificados"], 1)
+        self.assertEqual(datos["cobertura"], 100)
 
     def test_sin_votos_el_panel_no_enseña_porcentaje(self):
         self.client.force_login(self.tecnico)

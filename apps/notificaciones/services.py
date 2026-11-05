@@ -7,12 +7,27 @@ usuario, no se vuelve a crear (así los recordatorios son uno por día).
 """
 
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.routing import landing_por_rol
 
-from .models import Notificacion
+from .models import AlertaOperativa, ClaveNotificacion, HistorialAlerta, Notificacion
+
+
+def crear_alerta_operativa(clave, tipo, ticket=None, responsable=None):
+    """Registra una ocurrencia operativa y su historial de forma idempotente."""
+    with transaction.atomic():
+        alerta, creada = AlertaOperativa.objects.get_or_create(
+            clave_origen=clave,
+            defaults={"tipo": tipo, "ticket": ticket, "responsable": responsable,
+                      "codigo_ticket": ticket.codigo if ticket else "",
+                      "titulo_ticket": (ticket.titulo or "")[:200] if ticket else ""},
+        )
+        if creada:
+            HistorialAlerta.objects.create(alerta=alerta, accion="creada")
+        return alerta
 
 ICONO_POR_TIPO = {
     Notificacion.Tipo.BIENVENIDA: "i-star",
@@ -41,9 +56,7 @@ def crear(usuario, tipo, titulo, mensaje, url="", icono="", clave="", actor="",
     preferencia = PREFERENCIA_POR_TIPO.get(tipo)
     if preferencia and (getattr(usuario, "preferencias_notificaciones", None) or {}).get(preferencia, True) is False:
         return None
-    if clave and Notificacion.objects.filter(usuario_id=usuario.pk, clave=clave).exists():
-        return None
-    return Notificacion.objects.create(
+    datos = dict(
         usuario=usuario,
         tipo=tipo,
         titulo=(titulo or "")[:140],
@@ -54,6 +67,19 @@ def crear(usuario, tipo, titulo, mensaje, url="", icono="", clave="", actor="",
         actor=(actor or "")[:100],
         actor_rol=(actor_rol or "")[:20],
     )
+    if not clave:
+        return Notificacion.objects.create(**datos)
+    try:
+        with transaction.atomic():
+            if Notificacion.objects.filter(usuario_id=usuario.pk, clave=clave).exists():
+                return None
+            aviso = Notificacion.objects.create(**datos)
+            ClaveNotificacion.objects.create(usuario=usuario, clave=clave, notificacion=aviso)
+            return aviso
+    except IntegrityError:
+        if ClaveNotificacion.objects.filter(usuario=usuario, clave=clave).exists():
+            return None
+        raise
 
 
 def _rol_de(actor):
@@ -85,7 +111,7 @@ TIPOS_TRABAJO = (
 # ------------------------------------------------- contadores "sin revisar"
 def _filtro_pendientes(usuario, tipos=None, claves=None, clave_prefijo="", url=""):
     """Consulta con los avisos que el usuario todavía no ha revisado."""
-    q = Notificacion.objects.filter(usuario_id=usuario.pk, leida=False)
+    q = Notificacion.objects.filter(usuario_id=usuario.pk, leida=False, archivada_en__isnull=True)
     if tipos is not None:
         q = q.filter(tipo__in=list(tipos))
     if claves:
@@ -160,14 +186,14 @@ def _ocultar_recordatorios_anticipados(queryset):
 def no_leidas(usuario):
     if usuario is None or not getattr(usuario, "is_authenticated", False):
         return 0
-    return _ocultar_recordatorios_anticipados(Notificacion.objects.filter(usuario_id=usuario.pk, leida=False)).count()
+    return _ocultar_recordatorios_anticipados(Notificacion.objects.filter(usuario_id=usuario.pk, leida=False, archivada_en__isnull=True)).count()
 
 
 def lista(usuario, limite=15):
     if usuario is None or not getattr(usuario, "is_authenticated", False):
         return []
     return list(
-        _ocultar_recordatorios_anticipados(Notificacion.objects.filter(usuario_id=usuario.pk)).order_by("-creada_en", "-id")[:limite]
+        _ocultar_recordatorios_anticipados(Notificacion.objects.filter(usuario_id=usuario.pk, archivada_en__isnull=True)).order_by("-creada_en", "-id")[:limite]
     )
 
 
@@ -176,7 +202,7 @@ def pendientes_de_emergente(usuario, limite=1):
     if usuario is None or not getattr(usuario, "is_authenticated", False):
         return []
     return list(
-        _ocultar_recordatorios_anticipados(Notificacion.objects.filter(usuario_id=usuario.pk, mostrada_en__isnull=True))
+        _ocultar_recordatorios_anticipados(Notificacion.objects.filter(usuario_id=usuario.pk, mostrada_en__isnull=True, leida=False, archivada_en__isnull=True))
         .order_by("-creada_en", "-id")[:limite]
     )
 
@@ -418,7 +444,7 @@ def sincronizar(usuario, clave, tipo, titulo, mensaje, url="", icono=""):
     if not titulo:
         # El aviso se retira; no se devuelve porque no hay nada nuevo que ver.
         Notificacion.objects.filter(
-            pk__in=[n.pk for n in existentes]
+            pk__in=[n.pk for n in existentes], archivada_en__isnull=True
         ).delete()
         return None
     titulo = titulo[:140]
@@ -429,7 +455,7 @@ def sincronizar(usuario, clave, tipo, titulo, mensaje, url="", icono=""):
         aviso = existentes[0]
         # Los avisos duplicados de días anteriores se limpian.
         Notificacion.objects.filter(
-            pk__in=[n.pk for n in existentes[1:]]
+            pk__in=[n.pk for n in existentes[1:]], archivada_en__isnull=True
         ).delete()
         if (
             aviso.titulo != titulo
@@ -441,9 +467,10 @@ def sincronizar(usuario, clave, tipo, titulo, mensaje, url="", icono=""):
             aviso.url = url
             aviso.icono = icono
             aviso.leida = False
+            aviso.leida_en = None
             aviso.save(
                 update_fields=[
-                    "titulo", "mensaje", "url", "icono", "leida",
+                    "titulo", "mensaje", "url", "icono", "leida", "leida_en",
                 ]
             )
             return aviso
@@ -537,7 +564,21 @@ def recordatorios(usuario, forzar=False):
         )
         if not es_admin:
             prioritarios = prioritarios.filter(tecnico_asignado=usuario)
-        urgentes = prioritarios.count()
+        tickets_prioritarios = list(prioritarios.select_related("categoria").order_by("fecha_creacion", "pk"))
+        urgentes = len(tickets_prioritarios)
+        ahora = timezone.now()
+        vencidos = [t for t in tickets_prioritarios if t.fecha_limite_ans and t.fecha_limite_ans <= ahora]
+        if vencidos:
+            codigos = ", ".join(t.codigo for t in vencidos[:3])
+            mas = f" y {len(vencidos) - 3} más" if len(vencidos) > 3 else ""
+            detalle_prioritarios = (
+                f"{len(vencidos)} con ANS vencido: {codigos}{mas}. "
+                f"Revisa también los demás tickets prioritarios."
+                if len(vencidos) < urgentes else
+                f"ANS vencido en {len(vencidos)} ticket{'s' if len(vencidos) != 1 else ''}: {codigos}{mas}. Revisa su atención."
+            )
+        else:
+            detalle_prioritarios = "Ninguno tiene el ANS vencido en este momento. Revisa los plazos de atención."
         nuevas.append(
             sincronizar(
                 usuario,
@@ -545,9 +586,8 @@ def recordatorios(usuario, forzar=False):
                 Notificacion.Tipo.TICKET_RECORDATORIO,
                 f"{urgentes} ticket{'s' if urgentes > 1 else ''} de prioridad alta o urgente"
                 if urgentes else "",
-                "Atiende primero los casos con mayor impacto."
-                if urgentes else "",
-                url=reverse("tickets:lista") + "?prioridad=alta,urgente",
+                detalle_prioritarios if urgentes else "",
+                url=reverse("tickets:lista") + "?prioridad=alta,urgente#filtrosTickets",
             )
         )
     elif usuario.rol == User.Rol.USUARIO:
@@ -644,6 +684,7 @@ def _recordatorio_eventos(usuario, hoy):
         usuario_id=usuario.pk,
         tipo=Notificacion.Tipo.EVENTO,
         clave__startswith="evento:",
+        archivada_en__isnull=True,
     ).exclude(clave__in=claves).filter(clave__endswith=f":{hoy}").delete()
 
     return nuevas

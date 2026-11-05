@@ -37,6 +37,9 @@ def dogger_config(request):
         from apps.tickets.models import ConfigSitio
 
         cfg = ConfigSitio.cargar()
+        if cfg.horario_detalle is not None:
+            d["horario_detalle"] = cfg.horario_detalle
+            d["horario_atencion"] = " · ".join(f"{fila['dias']} {fila['hora']}" for fila in cfg.horario_detalle)
         d.update({
             "pagina_mostrar_redes": cfg.pagina_mostrar_redes,
             "correo_activo": cfg.correo_activo,

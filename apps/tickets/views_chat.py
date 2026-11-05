@@ -684,6 +684,8 @@ def chat_novedades(request):
     )
     dms = {}
     total = sala["nuevos"] or 0
+    from django.contrib.auth import get_user_model
+    nombres = dict(get_user_model().objects.filter(pk__in=de_partners | a_partners).values_list("pk", "nombre"))
     for otro in sorted(de_partners | a_partners)[:50]:
         hilo = MensajeCorporativo.objects.filter(
             Q(usuario=request.user, destinatario_id=otro)
@@ -692,7 +694,7 @@ def chat_novedades(request):
             ultimo=Max("pk"),
             nuevos=Count("pk", filter=Q(pk__gt=vistos_dm.get(otro, 0))),
         )
-        dms[otro] = {"ultimo": hilo["ultimo"] or 0, "nuevos": hilo["nuevos"] or 0}
+        dms[otro] = {"ultimo": hilo["ultimo"] or 0, "nuevos": hilo["nuevos"] or 0, "nombre": nombres.get(otro) or "Usuario no disponible"}
         total += hilo["nuevos"] or 0
     return JsonResponse({
         "ok": True,

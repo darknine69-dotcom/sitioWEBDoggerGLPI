@@ -313,16 +313,16 @@ class AvisoDeAnsTest(BaseAnsTest):
         self.assertTrue(
             Notificacion.objects.filter(
                 usuario=self.solicitante,
-                clave=f"ans-{ticket.pk}:solicitante:{self.solicitante.pk}",
+                clave=f"ans-{ticket.pk}:solicitante:{self.solicitante.pk}:vencido",
             ).exists()
         )
         self.assertTrue(
             Notificacion.objects.filter(
-                usuario=self.tecnico, clave=f"ans-{ticket.pk}:tecnico"
+                usuario=self.tecnico, clave=f"ans-{ticket.pk}:tecnico:vencido"
             ).exists()
         )
         aviso_obs = Notificacion.objects.get(
-            usuario=self.observador, clave=f"ans-{ticket.pk}"
+            usuario=self.observador, clave=f"ans-{ticket.pk}:vencido"
         )
         self.assertTrue(aviso_obs.url.endswith(f"#ans-ticket-{ticket.pk}"))
         self.assertEqual(len(mail.outbox), 0)
@@ -402,6 +402,20 @@ class AvisoDeAnsTest(BaseAnsTest):
         call_command("avisar_ans_por_vencer", stdout=salida)
         self.assertIn("Ningún ticket por vencer sin avisar.", salida.getvalue())
 
+    def test_el_comando_revisa_inactividad_sin_candidatos_ans(self):
+        from unittest.mock import patch
+
+        with patch("apps.tickets.ans_avisos._revisar_inactividad") as revisar:
+            call_command("avisar_ans_por_vencer", stdout=StringIO())
+        revisar.assert_called_once()
+
+    def test_el_comando_seco_no_revisa_inactividad(self):
+        from unittest.mock import patch
+
+        with patch("apps.tickets.ans_avisos._revisar_inactividad") as revisar:
+            call_command("avisar_ans_por_vencer", "--seco", stdout=StringIO())
+        revisar.assert_not_called()
+
     def test_lo_que_ya_se_avisó_el_comando_lo_deja_en_paz(self):
         self._ticket(horas=HORAS_MEDIA - 0.5)
         call_command("avisar_ans_por_vencer", stdout=StringIO())
@@ -416,6 +430,33 @@ class AvisoDeAnsTest(BaseAnsTest):
 class ReglaDelUmbralTest(BaseAnsTest):
     """El aviso usa el mismo umbral que la etiqueta: ninguno de los dos
     puede decir algo distinto delante del usuario."""
+
+    def test_transicion_a_vencido_genera_aviso_nuevo_una_sola_vez(self):
+        ticket = self._ticket(horas=HORAS_MEDIA - 0.5)
+        ans_avisos.revisar_y_avisar()
+        self.assertTrue(Notificacion.objects.filter(usuario=self.tecnico, clave=f"ans-{ticket.pk}:tecnico").exists())
+        self._envejecer(ticket, HORAS_MEDIA + 1)
+        ans_avisos.revisar_y_avisar()
+        ans_avisos.revisar_y_avisar()
+        avisos = Notificacion.objects.filter(usuario=self.tecnico, clave=f"ans-{ticket.pk}:tecnico:vencido")
+        self.assertEqual(avisos.count(), 1)
+        self.assertIn("vencido", avisos.get().titulo.lower())
+
+    def test_reserva_ans_impide_segundo_envio(self):
+        ticket = self._ticket(horas=HORAS_MEDIA - 0.5)
+        ans_avisos.avisar(ticket)
+        cantidad = len(mail.outbox)
+        self.assertEqual(ans_avisos.avisar(ticket), 0)
+        self.assertEqual(len(mail.outbox), cantidad)
+
+    def test_fallo_de_correo_libera_reserva(self):
+        from unittest.mock import patch
+        ticket = self._ticket(horas=HORAS_MEDIA - 0.5)
+        with patch("apps.notificaciones.emails.correo_ans_por_vencer_tecnico", return_value=False):
+            with self.assertRaises(RuntimeError):
+                ans_avisos.avisar(ticket)
+        ticket.refresh_from_db()
+        self.assertIsNone(ticket.ans_alertado_en)
 
     def test_con_tiempo_de_sobra_es_ok_y_no_se_avisa(self):
         ticket = self._ticket(horas=2)

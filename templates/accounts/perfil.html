@@ -380,8 +380,9 @@
 <script>
 (function () {
     var root = document.documentElement;
-    function g(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-    function s(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    function clave(k) { return /^dogger:pv:(fontsize|contrast|navcompact|navicons|navpalette|navcolor)$/.test(k) ? k + (root.getAttribute("data-preference-suffix") || ":guest") : k; }
+    function g(k) { try { return localStorage.getItem(clave(k)); } catch (e) { return null; } }
+    function s(k, v) { try { localStorage.setItem(clave(k), v); } catch (e) {} }
 
     var toast = document.getElementById("profileToast");
     var toastTimer;
@@ -500,8 +501,8 @@
         pinColor.value = hexa;
         hexColor.textContent = hexa.toUpperCase();
     }
-    function quitarGuardado(clave) {
-        try { localStorage.removeItem(clave); } catch (e) {}
+    function quitarGuardado(nombre) {
+        try { localStorage.removeItem(clave(nombre)); } catch (e) {}
     }
     /* Un solo sitio decide el color: siempre se escribe el color resultante en
        la variable de <html>, sin depender de que la hoja de estilo la resuelva,

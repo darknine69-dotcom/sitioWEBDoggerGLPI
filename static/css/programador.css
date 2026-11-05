@@ -818,8 +818,20 @@
 .prog-availability .prog-disp-otros-head { padding-bottom:8px; border-bottom:1px solid #DBEAFE; }
 @media (max-width:1050px) { .prog-filters { grid-template-columns:minmax(320px,1fr) minmax(220px,1fr); } .prog-filters .prog-disp-toggle { grid-column:1 / -1; justify-self:start; } }
 
-/* ---- Disponibilidad de los demás técnicos (campo que abre el botón de
-        los filtros): una fila por técnico con sus marcas del mes. ---- */
+/* Cuadrícula de disponibilidad de los demás técnicos. */
+.disp-otros-scroll { overflow-x:auto; border:1px solid #d8e2ef; border-radius:10px; }
+.disp-otros-matriz { width:100%; min-width:1100px; border-collapse:collapse; color:#253550; font-size:12px; }
+.disp-otros-matriz th { padding:7px 5px; background:#edf3fa; border:1px solid #d8e2ef; text-align:center; }
+.disp-otros-matriz th:first-child { position:sticky; left:0; z-index:1; min-width:180px; text-align:left; }
+.disp-otros-matriz .mx-cel { min-width:28px; height:42px; border:1px solid #ffffff55; cursor:default; }
+.disp-otros-marca { display:block; color:#172033; font-size:12px; font-weight:800; text-align:center; }
+.disp-otros-persona { display:flex; align-items:center; gap:8px; }
+.disp-otros-ayuda { margin:9px 0 0; color:#526680; font-size:12px; }
+html[data-theme="dark"] .prog-disp-otros { background:#1d2229; color:#e6edf6; border-color:#42546b; }
+html[data-theme="dark"] .disp-otros-scroll { border-color:#475363; }
+html[data-theme="dark"] .disp-otros-matriz th { background:#262d36; border-color:#475363; color:#e6edf6; }
+html[data-theme="dark"] .disp-otros-ayuda { color:#b4c2d5; }
+/* Controles del panel de disponibilidad. */
 .prog-disp-toggle { margin-left: auto; align-self: flex-end; }
 .prog-disp-toggle[aria-expanded="true"] {
     background: var(--dogger-red);

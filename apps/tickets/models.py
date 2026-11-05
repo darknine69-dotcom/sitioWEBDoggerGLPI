@@ -198,6 +198,7 @@ class Ticket(models.Model):
         related_name="tickets_asignados",
         db_column="TecnicoAsignadoId",
     )
+    fecha_asignacion_tecnico = models.DateTimeField(null=True, blank=True)
     asignacion_automatica = models.BooleanField(
         "Asignación automática",
         default=False,
@@ -297,6 +298,15 @@ class Ticket(models.Model):
         return min(fechas) if fechas else None
 
     def save(self, *args, **kwargs):
+        campos = kwargs.get("update_fields")
+        if campos is None or "tecnico_asignado" in campos or "tecnico_asignado_id" in campos:
+            anterior = None
+            if self.pk:
+                anterior = type(self).con_eliminados.filter(pk=self.pk).values_list("tecnico_asignado_id", flat=True).first()
+            if anterior != self.tecnico_asignado_id:
+                self.fecha_asignacion_tecnico = timezone.now() if self.tecnico_asignado_id else None
+                if campos is not None:
+                    kwargs["update_fields"] = set(campos) | {"fecha_asignacion_tecnico"}
         if not self.codigo:
             self.codigo = self._generar_codigo()
         if self.estado in (self.Estado.RESUELTO, self.Estado.CERRADO) and not self.fecha_cierre:
@@ -726,6 +736,9 @@ class ConfigSitio(models.Model):
     teams_url = models.CharField(
         "URL de Teams", max_length=250, blank=True, default=""
     )
+    horario_detalle = models.JSONField("Horario de atención publicado", null=True, blank=True, default=None)
+    limites_inactividad = models.JSONField("Límites de inactividad en horas", default=dict, blank=True)
+    escalamiento_inactividad = models.JSONField("Escalamiento de inactividad", default=dict, blank=True)
     panel_mostrar_actividad_glpi = models.BooleanField(
         "Mostrar actividad de GLPI en los paneles",
         default=False,

@@ -46,6 +46,11 @@ class Command(BaseCommand):
         candidatos = por_vencer(limite=limite)
 
         if not candidatos:
+            # La revisión también procesa inactividad y transiciones ANS ya
+            # advertidas; no depende de que existan correos ANS nuevos.
+            # El modo seco debe seguir siendo exclusivamente de lectura.
+            if not opciones["seco"]:
+                revisar_y_avisar(limite=limite)
             self.stdout.write(
                 self.style.SUCCESS("Ningún ticket por vencer sin avisar.")
             )

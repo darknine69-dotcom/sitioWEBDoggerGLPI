@@ -147,4 +147,6 @@ def notificar_comentario(ticket, autor, comentario, es_interno=False, actor=None
 def notificar_presion_observadores(ticket, actor, comentario):
     from apps.notificaciones import services
 
+    if comentario.es_presion and not comentario.es_interno:
+        _notificar_app(services.crear_alerta_operativa, f"presion:{comentario.pk}", "presion_pendiente", ticket, ticket.tecnico_asignado)
     _notificar_app(services.presion_observadores, ticket, actor, comentario)

@@ -3,6 +3,60 @@ from django.db import models
 from django.utils import timezone
 
 
+class ClaveNotificacion(models.Model):
+    """Reserva atómica de claves no vacías por destinatario."""
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    clave = models.CharField(max_length=140)
+    notificacion = models.OneToOneField("Notificacion", on_delete=models.CASCADE, related_name="reserva_clave")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["usuario", "clave"], name="uq_notif_usuario_clave")]
+
+
+class AlertaOperativa(models.Model):
+    class Estado(models.TextChoices):
+        ABIERTA = "abierta", "Abierta"
+        RECONOCIDA = "reconocida", "Reconocida"
+        RESUELTA = "resuelta", "Resuelta"
+
+    ticket = models.ForeignKey("tickets.Ticket", null=True, blank=True, on_delete=models.SET_NULL, related_name="alertas_operativas")
+    clave_origen = models.CharField(max_length=160, unique=True)
+    codigo_ticket = models.CharField(max_length=40, blank=True, default="")
+    titulo_ticket = models.CharField(max_length=200, blank=True, default="")
+    tipo = models.CharField(max_length=30, default="ans_vencido")
+    severidad = models.CharField(max_length=16, default="alta")
+    estado = models.CharField(max_length=16, choices=Estado.choices, default=Estado.ABIERTA)
+    responsable = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="alertas_operativas")
+    creada_en = models.DateTimeField(auto_now_add=True)
+    reconocida_en = models.DateTimeField(null=True, blank=True)
+    resuelta_en = models.DateTimeField(null=True, blank=True)
+    ultima_actividad_en = models.DateTimeField(null=True, blank=True)
+    inactividad_segundos = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["estado", "-creada_en"], name="alerta_estado_fecha_idx")]
+
+
+class HistorialAlerta(models.Model):
+    alerta = models.ForeignKey(AlertaOperativa, on_delete=models.CASCADE, related_name="historial")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    accion = models.CharField(max_length=24)
+    detalle = models.CharField(max_length=500, blank=True, default="")
+    creada_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creada_en", "-pk"]
+
+
+class EntregaEscalamiento(models.Model):
+    alerta = models.ForeignKey(AlertaOperativa, on_delete=models.CASCADE, related_name="escalamientos")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    creada_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["alerta", "usuario"], name="uq_escalamiento_alerta_usuario")]
+
+
 class Notificacion(models.Model):
     """Aviso que vive en la campana del encabezado de Dogger.
 
@@ -46,6 +100,7 @@ class Notificacion(models.Model):
     leida = models.BooleanField(default=False, db_column="Leida")
     mostrada_en = models.DateTimeField(null=True, blank=True, db_column="MostradaEn")
     leida_en = models.DateTimeField(null=True, blank=True, db_column="LeidaEn")
+    archivada_en = models.DateTimeField(null=True, blank=True, db_column="ArchivadaEn")
     creada_en = models.DateTimeField(auto_now_add=True, db_column="CreadaEn")
 
     class Meta:

@@ -367,6 +367,14 @@ def ajustes_cuenta(request):
         from apps.tickets.models import ConfigSitio
 
         ctx["config_sitio"] = ConfigSitio.cargar()
+        from django.conf import settings as dj_settings
+        horario_guardado = ctx["config_sitio"].horario_detalle
+        filas_horario = horario_guardado if horario_guardado is not None else dj_settings.DOGGER.get("horario_detalle", [])
+        ctx["horario_filas"] = list(filas_horario) + [{} for _ in range(max(0, 8 - len(filas_horario)))]
+        limites = {"urgente": 1, "alta": 4, "media": 12, "baja": 24}
+        limites.update(ctx["config_sitio"].limites_inactividad or {})
+        ctx["limites_inactividad"] = limites
+        ctx["escalamiento_inactividad"] = ctx["config_sitio"].escalamiento_inactividad or {}
         # Si falta la migracion, el interruptor de GLPI no tendria efecto: se
         # avisa en vez de dejar al administrador creyendo que si lo guardo.
         try:
@@ -938,6 +946,61 @@ def configuracion_pagina(request):
     from apps.tickets.models import ConfigSitio
 
     cfg = ConfigSitio.cargar()
+
+    if request.POST.get("ajustes_escalamiento") == "1":
+        habilitado = request.POST.get("habilitado") == "1"
+        administradores = request.POST.get("administradores") == "1"
+        observadores = request.POST.get("observadores") == "1"
+        tecnico = request.POST.get("tecnico") == "1"
+        solicitante = request.POST.get("solicitante") == "1"
+        try:
+            horas = int(request.POST.get("horas") or "0")
+            if horas < 0 or horas > 8760 or (habilitado and (horas < 1 or not (administradores or observadores or tecnico or solicitante))):
+                raise ValueError
+        except (TypeError, ValueError):
+            messages.error(request, "Para activar el escalamiento indica horas válidas y al menos un destinatario.")
+            return redirect(reverse("accounts:ajustes") + "#pagina")
+        cfg.escalamiento_inactividad = {"habilitado": habilitado, "horas": horas, "administradores": administradores, "observadores": observadores, "tecnico": tecnico, "solicitante": solicitante}
+        cfg.save(update_fields=["escalamiento_inactividad", "fecha_actualizacion"])
+        messages.success(request, "Configuración de escalamiento actualizada.")
+        return redirect(reverse("accounts:ajustes") + "#pagina")
+
+    if request.POST.get("ajustes_inactividad") == "1":
+        limites = {}
+        try:
+            for prioridad in ("urgente", "alta", "media", "baja"):
+                valor = int(request.POST.get("inactividad_" + prioridad, ""))
+                if not 1 <= valor <= 8760:
+                    raise ValueError
+                limites[prioridad] = valor
+        except (TypeError, ValueError):
+            messages.error(request, "Los límites deben ser horas enteras entre 1 y 8760.")
+            return redirect(reverse("accounts:ajustes") + "#pagina")
+        cfg.limites_inactividad = limites
+        cfg.save(update_fields=["limites_inactividad", "fecha_actualizacion"])
+        messages.success(request, "Límites de inactividad actualizados.")
+        return redirect(reverse("accounts:ajustes") + "#pagina")
+
+    if request.POST.get("ajustes_horario") == "1":
+        dias = request.POST.getlist("horario_dias")
+        horas = request.POST.getlist("horario_hora")
+        notas = request.POST.getlist("horario_nota")
+        if not (len(dias) == len(horas) == len(notas)) or len(dias) > 8:
+            messages.error(request, "No se pudo guardar el horario: revisa las filas enviadas.")
+            return redirect(reverse("accounts:ajustes") + "#pagina")
+        filas = []
+        for dia, hora, nota in zip(dias, horas, notas):
+            dia, hora, nota = dia.strip(), hora.strip(), nota.strip()
+            if not (dia or hora or nota):
+                continue
+            if not dia or not hora or len(dia) > 80 or len(hora) > 80 or len(nota) > 120:
+                messages.error(request, "Cada fila necesita días y horario válidos; la nota es opcional.")
+                return redirect(reverse("accounts:ajustes") + "#pagina")
+            filas.append({"dias": dia, "hora": hora, "nota": nota})
+        cfg.horario_detalle = filas
+        cfg.save(update_fields=["horario_detalle", "fecha_actualizacion"])
+        messages.success(request, "Horario de atención publicado actualizado.")
+        return redirect(reverse("accounts:ajustes") + "#pagina")
 
     if request.POST.get("ajustes_pagina") == "1":
         from django.core.exceptions import ValidationError

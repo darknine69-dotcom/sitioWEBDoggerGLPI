@@ -10,6 +10,7 @@
 {% block extra_css %}
 <style>
 .lista-page .brand-titles { display: none; }
+.lista-page #filtrosTickets { scroll-margin-top: 96px; }
 
 /* ---- Conmutador Lista / Cuadrícula ---- */
 .corp-view-toggle { display: inline-flex; padding: 3px; gap: 2px; background: #F4EFE6; border: 1px solid var(--line); border-radius: 10px; }
@@ -682,7 +683,7 @@
     };
     var CERRAR  = {
         e:'cerrado', l:'Cerrar ticket', icon:'#i-lock', danger:true,
-        confirm:'¿Cerrar este ticket?\n\nEl solicitante dejará de verlo pendiente.'
+        confirm:'¿Deseas cerrar este ticket? Su estado cambiará a Cerrado.'
     };
 
     function build(estado, eliminarUrl, codigo) {

@@ -1,3 +1,4 @@
+{% load secure_json %}
 <div class="chat-thread" id="chat-thread">
     {% for item in timeline %}
         {% if item.tipo == 'sistema' %}
@@ -18,7 +19,7 @@
             <span class="chat-event-icon">
                 <svg class="icon icon-sm"><use href="#i-lock"/></svg>
             </span>
-            <span class="chat-event-text"><strong>INTERNO · {{ item.autor }}</strong> — {{ item.texto }}</span>
+            <span class="chat-event-text"><strong>INTERNO · {{ item.autor }}</strong> — {{ item.texto|seguimiento_formato }}</span>
             <span class="chat-event-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
         </div>
         {% else %}
@@ -29,7 +30,7 @@
                 {% if item.insignia %}<span class="chat-badge chat-badge-{{ item.tipo }}">{{ item.insignia }}</span>{% endif %}
                 <span class="chat-meta-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
             </div>
-            <div class="chat-bubble">{{ item.texto }}</div>
+            <div class="chat-bubble">{{ item.texto|seguimiento_formato }}</div>
         </div>
         {% endif %}
     {% empty %}

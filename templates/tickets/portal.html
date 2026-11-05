@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% block fixed_public_appearance %}true{% endblock %}
 
 {% block title %}Mesa de Ayuda TI · Productos Alimenticios Dogger S.A.S.{% endblock %}
 {% block body_class %}landing-page{% endblock %}
@@ -13,6 +14,9 @@
 
 {% block extra_css %}
 <style>
+.landing-hero-copy h1.landing-h1 { color:#ffc72c !important; }
+.landing-hero-copy .btn.btn-accent { background:#ffc72c !important; border-color:#ffc72c !important; color:#401000 !important; }
+.landing-hero-copy .btn.btn-accent:hover { background:#ffdb69 !important; }
 .landing-nav {
     position: fixed;
     top: 0;
@@ -532,7 +536,7 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
 {% if not request.user.is_authenticated %}
 <nav class="landing-nav" aria-label="Navegación del portal">
     <a class="ln-brand" href="#top" aria-label="Dogger, volver arriba">
-        <img src="{% static 'images/dogger-logo.png' %}" alt="Dogger" />
+        <img src="{% static 'images/dogger-transparente.png' %}" alt="Dogger" />
     </a>
     <div class="ln-acciones">
         <div class="ln-links" id="ln-links">
@@ -628,7 +632,7 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
                 {% endif %}
             </div>
             <div class="landing-hero-card">
-                <img src="{% static 'images/dogger-logo.png' %}" alt="Dogger logo" class="hero-logo">
+                <img src="{% static 'images/dogger-transparente.png' %}" alt="Dogger logo" class="hero-logo">
                 <div class="lp-lookup" id="consulta">
                     <span class="lp-lookup-label">
                         <svg class="icon" aria-hidden="true"><use href="#i-ticket"/></svg> Consultar un ticket
@@ -842,7 +846,7 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
             <div class="lp-contact-col">
                 <div class="lp-contact-head">
                     <span class="fcard-icon"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></span>
-                    <span><strong>Horario de atención</strong><small>Hora Colombia · el ANS se cuenta en horas hábiles</small></span>
+                    <span><strong>Horario de atención</strong><small>Hora Colombia</small></span>
                 </div>
                 <ul class="lp-horario">
                     {% for h in DOGGER.horario_detalle %}
@@ -1041,7 +1045,7 @@ a.lp-contact-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px r
     <!-- LLAMADO A CREAR CUENTA -->
     <section class="page account-cta-section">
         <div class="account-cta-panel">
-            {% if request.user.is_authenticated %}<img src="{% static 'images/dogger-logo.png' %}" alt="" class="cta-mini-logo">{% endif %}
+            {% if request.user.is_authenticated %}<img src="{% static 'images/dogger-transparente.png' %}" alt="" class="cta-mini-logo">{% endif %}
             <div class="account-cta-copy">
                 {% if request.user.is_authenticated and request.user.rol == 'admin' %}
                 <h2>Centro de administración</h2>

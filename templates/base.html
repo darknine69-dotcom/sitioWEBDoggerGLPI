@@ -13,19 +13,23 @@
     (function(){
         function g(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
         var root = document.documentElement;
+        var appearanceFixed = {% block fixed_public_appearance %}false{% endblock %};
+        var prefSuffix = ':{% if request.user.is_authenticated %}user-{{ request.user.pk }}{% else %}guest{% endif %}';
+        root.setAttribute('data-preference-suffix', prefSuffix);
         var themeKey = 'dogger:pv:theme:{% if request.user.is_authenticated %}user-{{ request.user.pk }}{% else %}guest{% endif %}';
         root.setAttribute('data-theme-storage-key', themeKey);
         var pref = g(themeKey) || 'system';
         var sys = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-        root.setAttribute('data-theme', pref === 'system' ? sys : (pref === 'dark' ? 'dark' : 'light'));
-        root.setAttribute('data-fontsize', g('dogger:pv:fontsize') || 'md');
-        root.setAttribute('data-contrast', g('dogger:pv:contrast') || 'normal');
-        root.setAttribute('data-navcompact', g('dogger:pv:navcompact') === '1' ? '1' : '0');
-        root.setAttribute('data-navicons', g('dogger:pv:navicons') === '0' ? '0' : '1');
+        if (appearanceFixed) root.setAttribute('data-appearance-fixed', '1');
+        root.setAttribute('data-theme', appearanceFixed ? 'light' : (pref === 'system' ? sys : (pref === 'dark' ? 'dark' : 'light')));
+        root.setAttribute('data-fontsize', appearanceFixed ? 'md' : (g('dogger:pv:fontsize' + prefSuffix) || 'md'));
+        root.setAttribute('data-contrast', appearanceFixed ? 'normal' : (g('dogger:pv:contrast' + prefSuffix) || 'normal'));
+        root.setAttribute('data-navcompact', g('dogger:pv:navcompact' + prefSuffix) === '1' ? '1' : '0');
+        root.setAttribute('data-navicons', g('dogger:pv:navicons' + prefSuffix) === '0' ? '0' : '1');
         /* Color del menú lateral: la paleta elegida o, si hay uno, el color
            personalizado. Se aplica aquí para que no se vea el color anterior. */
-        var paleta = g('dogger:pv:navpalette');
-        var color = g('dogger:pv:navcolor');
+        var paleta = appearanceFixed ? null : g('dogger:pv:navpalette' + prefSuffix);
+        var color = appearanceFixed ? null : g('dogger:pv:navcolor' + prefSuffix);
         if (paleta) root.setAttribute('data-navpalette', paleta);
         if (color && /^#[0-9a-f]{6}$/i.test(color)) root.style.setProperty('--sb-accent', color);
     })();
@@ -187,7 +191,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
     <aside class="sidebar" id="sidebar" aria-label="Menú principal">
         <div class="sidebar-top">
             <a href="{% url 'tickets:portal' %}" class="sidebar-brand">
-                <img class="sidebar-logo" src="{% static 'images/dogger-logo.png' %}" alt="Dogger">
+                <img class="sidebar-logo" src="{% static 'images/dogger-transparente.png' %}" alt="Dogger">
                 <span class="sidebar-brand-txt">
                     <strong>Mesa de Ayuda TI</strong>
                 </span>
@@ -369,8 +373,9 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                 {% if calif_lateral.total %}
                 <div class="side-calif">
                     <strong class="side-calif-num">{% if calif_lateral.porcentaje != None %}{{ calif_lateral.porcentaje }}%{% else %}—{% endif %}</strong>
-                    <span class="side-calif-bar" role="img" aria-label="{{ calif_lateral.total }} votos de {{ calif_lateral.resueltos }} resueltos"><span style="width: {{ calif_lateral.porcentaje|default:0 }}%"></span></span>
-                    <small>{{ calif_lateral.total }} voto{{ calif_lateral.total|pluralize:"s" }}{% if calif_lateral.porcentaje != None %} · {{ calif_lateral.porcentaje }}% de {{ calif_lateral.resueltos }} resueltos{% endif %}</small>
+                    <span class="side-calif-bar" role="img" aria-label="{{ calif_lateral.porcentaje }}% de votos positivos"><span style="width: {{ calif_lateral.porcentaje|default:0 }}%"></span></span>
+                    <small>Aprobación · {{ calif_lateral.me_gusta }} positivos de {{ calif_lateral.total }} votos</small>
+                    <small>Tickets calificados: {{ calif_lateral.tickets_calificados }} de {{ calif_lateral.resueltos }}{% if calif_lateral.cobertura != None %} · {{ calif_lateral.cobertura }}%{% endif %}</small>
                 </div>
                 {% else %}
                 <small class="side-calif-vacia">Todavía no hay votos. Cuando un usuario te califique, aparecerá aquí.</small>
@@ -567,7 +572,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             <div class="footer-brand">
                 <span class="footer-kicker">Mesa de ayuda TI</span>
                 <div class="footer-brand-body">
-                    <img src="{% static 'images/dogger-logo.png' %}" alt="" class="footer-logo">
+                    <img src="{% static 'images/dogger-transparente.png' %}" alt="" class="footer-logo">
                     <div class="footer-brand-text">
                         <h3>{{ DOGGER.nombre_completo|default:"Productos Alimenticios Dogger S.A.S." }}</h3>
                         <p>{{ DOGGER.direccion_detalle|default:DOGGER.direccion }}</p>
@@ -657,7 +662,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             <div class="footer-brand">
                 <span class="footer-kicker">Mesa de ayuda TI</span>
                 <div class="footer-brand-body">
-                    <img src="{% static 'images/dogger-logo.png' %}" alt="" class="footer-logo">
+                    <img src="{% static 'images/dogger-transparente.png' %}" alt="" class="footer-logo">
                     <div class="footer-brand-text">
                         <h3>{{ DOGGER.nombre_completo|default:"Productos Alimenticios Dogger S.A.S." }}</h3>
                         <p>{{ DOGGER.direccion_detalle|default:DOGGER.direccion }}</p>

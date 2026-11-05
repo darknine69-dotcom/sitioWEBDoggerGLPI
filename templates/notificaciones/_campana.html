@@ -5,6 +5,7 @@
      data-url-todas="{% url 'notificaciones:marcar_todas' %}"
      data-url-descartar="{% url 'notificaciones:descartar_una' 0 %}"
      data-url-mostrada="{% url 'notificaciones:marcar_mostrada' 0 %}"
+     data-url-leer="{% url 'notificaciones:marcar_leida' 0 %}"
      data-url-api="{% url 'notificaciones:api' %}"
      data-url-limpiar="{% url 'notificaciones:descartar_todas' %}">
 
@@ -21,10 +22,8 @@
         <div class="notif-head">
             <strong>Notificaciones</strong>
             <div class="notif-head-actions">
-                {% if notif_lista %}
                 <button type="button" class="notif-head-btn" data-notif="leer-todas">Marcar leídas</button>
                 <button type="button" class="notif-head-btn is-danger" data-notif="limpiar">Borrar todo</button>
-                {% endif %}
             </div>
         </div>
 
@@ -50,6 +49,7 @@
             </li>
             {% endfor %}
         </ul>
+        <div class="notif-center-link"><a href="{% url 'notificaciones:centro' %}">Ver todas las notificaciones <span aria-hidden="true">→</span></a></div>
     </div>
 </div>
 {% endif %}
