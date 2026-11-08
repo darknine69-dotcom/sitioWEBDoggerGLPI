@@ -10,8 +10,8 @@ class ContadoresResolucionTest(TestCase):
         usuario = get_user_model().objects.create_user("punto@example.com", "Punto", "clave", rol="usuario")
         comun = {"titulo": "Prueba", "descripcion": "Detalle", "solicitante_nombre": "Punto", "solicitante_email": usuario.email}
         resuelto = Ticket.objects.create(**comun, estado=Ticket.Estado.RESUELTO)
-        resuelto.estado = Ticket.Estado.CERRADO
-        resuelto.save()
+        from apps.tickets.services.transiciones_ans import cambiar_estado_ans
+        resuelto = cambiar_estado_ans(resuelto.pk, Ticket.Estado.CERRADO)
         directo = Ticket.objects.create(**comun, estado=Ticket.Estado.CERRADO)
         self.assertTrue(resuelto.fue_resuelto)
         self.assertFalse(directo.fue_resuelto)

@@ -136,10 +136,8 @@ class MonitoreoZonasAdminTest(TestCase):
             solicitante_nombre="Ana", solicitante_email="ana@x.com",
             solicitante_punto="Zona Uno", prioridad=Ticket.Prioridad.URGENTE,
         )
-        Ticket.objects.filter(pk=urgente.pk).update(
-            fecha_creacion=timezone.now() - timedelta(hours=50),
-            solicitante_email="Ana@X.com",
-        )
+        from apps.tickets.tests_ans_fixtures import envejecer_ticket
+        envejecer_ticket(urgente, timezone.now() - timedelta(hours=50), solicitante_email="Ana@X.com")
 
         respuesta = self.client.get(reverse("tickets:monitoreo_admin"))
         miembro = respuesta.context["zonas_creadas"][0]["zonas"][0]["miembros"][0]
@@ -157,9 +155,8 @@ class MonitoreoZonasAdminTest(TestCase):
 
     def test_muestra_accion_presionar_en_lugar_de_quitar_si_ans_esta_por_vencer(self):
         ticket = Ticket.objects.get(solicitante_email="ana@x.com")
-        Ticket.objects.filter(pk=ticket.pk).update(
-            fecha_creacion=timezone.now() - timedelta(hours=ticket.ans_horas - 1)
-        )
+        from apps.tickets.tests_ans_fixtures import envejecer_ticket
+        envejecer_ticket(ticket, timezone.now() - timedelta(hours=ticket.ans_horas - 1))
 
         respuesta = self.client.get(reverse("tickets:monitoreo_admin"))
         miembro = respuesta.context["zonas_creadas"][0]["zonas"][0]["miembros"][0]
@@ -175,9 +172,8 @@ class MonitoreoZonasAdminTest(TestCase):
         from apps.tickets.models import TicketComentario
 
         ticket = Ticket.objects.get(solicitante_email="ana@x.com")
-        Ticket.objects.filter(pk=ticket.pk).update(
-            fecha_creacion=timezone.now() - timedelta(hours=ticket.ans_horas - 1)
-        )
+        from apps.tickets.tests_ans_fixtures import envejecer_ticket
+        envejecer_ticket(ticket, timezone.now() - timedelta(hours=ticket.ans_horas - 1))
 
         respuesta = self.client.post(
             reverse("tickets:monitoreo_presionar", args=[ticket.pk]),
@@ -195,7 +191,8 @@ class MonitoreoZonasAdminTest(TestCase):
         )
         self.assertTrue(Notificacion.objects.filter(usuario=self.tec).exists())
 
-        Ticket.objects.filter(pk=ticket.pk).update(estado=Ticket.Estado.RESUELTO)
+        from apps.tickets.services.transiciones_ans import cambiar_estado_ans
+        cambiar_estado_ans(ticket.pk, Ticket.Estado.RESUELTO)
         respuesta = self.client.post(
             reverse("tickets:monitoreo_presionar", args=[ticket.pk]),
             {"mensaje": "Ya no aplica"},

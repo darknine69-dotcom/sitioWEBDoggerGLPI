@@ -156,8 +156,8 @@ class TicketCerradoTest(BaseNotificaciones):
         from apps.tickets.notifications import notificar_ticket_actualizado
 
         ticket = self.ticket()
-        ticket.estado = Ticket.Estado.CERRADO
-        ticket.save()
+        from apps.tickets.services.transiciones_ans import cambiar_estado_ans
+        ticket = cambiar_estado_ans(ticket.pk, Ticket.Estado.CERRADO)
         notificar_ticket_actualizado(ticket, "cambiado a Cerrado", actor=self.tecnico)
 
         aviso = Notificacion.objects.get(usuario=self.usuario, tipo=Notificacion.Tipo.TICKET_CERRADO)
@@ -193,7 +193,11 @@ class RecordatoriosTest(BaseNotificaciones):
         from django.utils import timezone
 
         ticket = self.ticket()
-        Ticket.objects.filter(pk=ticket.pk).update(fecha_creacion=timezone.now() - timezone.timedelta(days=30))
+        from django.db.models import QuerySet
+        inicio = timezone.now() - timezone.timedelta(days=30)
+        QuerySet.update(Ticket.objects.filter(pk=ticket.pk), fecha_creacion=inicio,
+                        ans_inicio_original=inicio,
+                        ans_limite_original=inicio + timezone.timedelta(hours=ticket.ans_horas))
         ticket.refresh_from_db()
         avisos_en_campana(ticket, "Vencido")
         avisos_en_campana(ticket, "Vencido")
@@ -243,8 +247,8 @@ class RecordatoriosTest(BaseNotificaciones):
         self.client.post(url, {"accion": "resolver"})
         alerta.refresh_from_db()
         self.assertEqual(alerta.estado, AlertaOperativa.Estado.RECONOCIDA)
-        ticket.estado = Ticket.Estado.RESUELTO
-        ticket.save(update_fields=["estado"])
+        from apps.tickets.services.transiciones_ans import cambiar_estado_ans
+        ticket = cambiar_estado_ans(ticket.pk, Ticket.Estado.RESUELTO)
         self.client.post(url, {"accion": "resolver"})
         alerta.refresh_from_db()
         self.assertEqual(alerta.estado, AlertaOperativa.Estado.RESUELTA)
@@ -318,8 +322,8 @@ class RecordatoriosTest(BaseNotificaciones):
 
         ticket = self.ticket()
         alerta = services.crear_alerta_operativa(f"ticket:{ticket.pk}:ans_vencido", "ans_vencido", ticket, self.tecnico)
-        ticket.estado = Ticket.Estado.RESUELTO
-        ticket.save(update_fields=["estado"])
+        from apps.tickets.services.transiciones_ans import cambiar_estado_ans
+        ticket = cambiar_estado_ans(ticket.pk, Ticket.Estado.RESUELTO)
         _revisar_inactividad()
         _revisar_inactividad()
         alerta.refresh_from_db()
@@ -430,7 +434,11 @@ class RecordatoriosTest(BaseNotificaciones):
 
         vencido = self.ticket(titulo="Ticket vencido")
         vigente = self.ticket(titulo="Ticket vigente")
-        Ticket.objects.filter(pk=vencido.pk).update(fecha_creacion=timezone.now() - timezone.timedelta(days=30))
+        from django.db.models import QuerySet
+        inicio = timezone.now() - timezone.timedelta(days=30)
+        QuerySet.update(Ticket.objects.filter(pk=vencido.pk), fecha_creacion=inicio,
+                        ans_inicio_original=inicio,
+                        ans_limite_original=inicio + timezone.timedelta(hours=vencido.ans_horas))
         aviso = next(n for n in services.recordatorios(self.tecnico) if n.clave.startswith("rec:urgentes:"))
         self.assertIn("1 con ANS vencido", aviso.mensaje)
         self.assertIn(vencido.codigo, aviso.mensaje)
@@ -458,8 +466,8 @@ class RecordatoriosTest(BaseNotificaciones):
         )
         self.ticket(titulo="Baja activa", prioridad=Ticket.Prioridad.BAJA)
         cerrada = self.ticket(titulo="Urgente cerrada", prioridad=Ticket.Prioridad.URGENTE)
-        cerrada.estado = Ticket.Estado.CERRADO
-        cerrada.save(update_fields=["estado"])
+        from apps.tickets.services.transiciones_ans import cambiar_estado_ans
+        cerrada = cambiar_estado_ans(cerrada.pk, Ticket.Estado.CERRADO)
 
         servicios = services.recordatorios(admin)
         aviso = next(n for n in servicios if n.clave.startswith("rec:urgentes:"))
@@ -533,16 +541,15 @@ class RecordatoriosTest(BaseNotificaciones):
         self.assertEqual(aviso.titulo, "Tienes 2 tickets activos")
 
         # Se cierra uno: el aviso del día debe decir 1, no 2.
-        segundo.estado = Ticket.Estado.CERRADO
-        segundo.save(update_fields=["estado"])
+        from apps.tickets.services.transiciones_ans import cambiar_estado_ans
+        segundo = cambiar_estado_ans(segundo.pk, Ticket.Estado.CERRADO)
 
         services.recordatorios(self.tecnico)
         aviso.refresh_from_db()
         self.assertEqual(aviso.titulo, "Tienes 1 ticket activo")
 
         # Se cierran todos: el aviso desaparece en vez de mentir con "0".
-        primero.estado = Ticket.Estado.CERRADO
-        primero.save(update_fields=["estado"])
+        primero = cambiar_estado_ans(primero.pk, Ticket.Estado.CERRADO)
 
         services.recordatorios(self.tecnico)
         self.assertFalse(

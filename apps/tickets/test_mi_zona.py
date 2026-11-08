@@ -283,9 +283,8 @@ class MiZonaSupervisorTest(TestCase):
             solicitante_nombre="Luis", solicitante_email="luis@x.com",
             solicitante_punto="Otro punto", tecnico_asignado=self.tec,
         )
-        Ticket.objects.filter(pk=vencido.pk).update(
-            fecha_creacion=timezone.now() - timedelta(days=30)
-        )
+        from apps.tickets.tests_ans_fixtures import envejecer_ticket
+        envejecer_ticket(vencido, timezone.now() - timedelta(days=30))
 
         respuesta = self.client.get(reverse("tickets:mi_panel"))
 
@@ -382,9 +381,8 @@ class MiZonaSupervisorTest(TestCase):
         self.assertTrue(all(not fila["tickets"] for fila in pivot_punto["rows"]))
 
     def test_tabla_punto_cuenta_ans_vencidos_aun_sin_detalle(self):
-        Ticket.objects.filter(pk=self.ticket.pk).update(
-            fecha_creacion=timezone.now() - timedelta(days=3)
-        )
+        from apps.tickets.tests_ans_fixtures import envejecer_ticket
+        envejecer_ticket(self.ticket, timezone.now() - timedelta(days=3))
 
         respuesta = self.client.get(reverse("tickets:mi_panel"))
         pivot_punto = json.loads(respuesta.context["dash_json"])["pivot"]["dimensiones"]["punto"]

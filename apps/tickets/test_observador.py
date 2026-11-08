@@ -131,11 +131,8 @@ class ObservadorListaTest(TestCase):
             "Afectado", "Zona Uno", email="afectado@x.com",
             prioridad=Ticket.Prioridad.URGENTE,
         )
-        Ticket.objects.filter(pk=ticket.pk).update(
-            fecha_creacion=timezone.now() - timedelta(hours=50),
-            tecnico_asignado=tecnico,
-            solicitante_email="Afectado@X.com",
-        )
+        from apps.tickets.tests_ans_fixtures import envejecer_ticket
+        envejecer_ticket(ticket, timezone.now() - timedelta(hours=50), tecnico_asignado=tecnico, solicitante_email="Afectado@X.com")
         self._ticket(
             "Afectado", "Zona Uno", email="afectado@x.com",
             estado=Ticket.Estado.RESUELTO,
@@ -183,10 +180,8 @@ class ObservadorListaTest(TestCase):
             rol=Usuario.Rol.TECNICO,
         )
         ticket = self._ticket("Mostrador", "Zona Uno")
-        Ticket.objects.filter(pk=ticket.pk).update(
-            fecha_creacion=timezone.now() - timedelta(hours=50),
-            tecnico_asignado=tecnico,
-        )
+        from apps.tickets.tests_ans_fixtures import envejecer_ticket
+        envejecer_ticket(ticket, timezone.now() - timedelta(hours=50), tecnico_asignado=tecnico)
         zona_obs = ZonaObservador.objects.create(
             observador=self.observador, nombre="Norte"
         )
@@ -371,9 +366,8 @@ class ObservadorListaTest(TestCase):
         self._ticket("Luis", "Otro Punto", email="luis@x.com")
         self._ticket("Fuera", "Punto Ajeno", email="fuera@x.com")
         vencido = self._ticket("Ana", "Punto Ajeno", email="ana@x.com")
-        Ticket.objects.filter(pk=vencido.pk).update(
-            fecha_creacion=timezone.now() - timedelta(days=5)
-        )
+        from apps.tickets.tests_ans_fixtures import envejecer_ticket
+        envejecer_ticket(vencido, timezone.now() - timedelta(days=5))
 
         respuesta = self.client.get(
             reverse("tickets:obs_monitoreo"),

@@ -15,7 +15,8 @@ class PanelAnsFilterTest(TestCase):
         other = get_user_model().objects.create_user("otro@example.com", "Otro", "clave", rol="tecnico")
         for tecnico in (user, other):
             ticket = Ticket.objects.create(titulo="Caso", descripcion="Caso", solicitante_email="a@example.com", solicitante_nombre="A", tecnico_asignado=tecnico)
-            Ticket.objects.filter(pk=ticket.pk).update(fecha_creacion=timezone.now() - timedelta(days=30))
+            from apps.tickets.tests_ans_fixtures import envejecer_ticket
+            envejecer_ticket(ticket, timezone.now() - timedelta(days=30))
         self.client.force_login(user)
         vencidos = self.client.get(reverse("tickets:panel_tecnico"), {"vista": "mis", "sv": "vencidas"})
         self.assertEqual(vencidos.status_code, 200)

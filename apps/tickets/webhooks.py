@@ -3,6 +3,7 @@ import logging
 
 from django.conf import settings
 from django.core.exceptions import RequestDataTooBig
+from django.db import transaction
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -186,11 +187,6 @@ def glpi_webhook(request):
             ticket.glpi_id = glpi_id
             update_fields.append("glpi_id")
 
-        if nuevo_estado and nuevo_estado != ticket.estado:
-            ticket.estado = nuevo_estado
-            update_fields.append("estado")
-            logger.info("Ticket %s actualizado desde GLPI a %s", ticket.codigo, nuevo_estado)
-
         titulo_nuevo = None
         for key in ("title", "name"):
             value = _find_first_value(data, key)
@@ -201,9 +197,14 @@ def glpi_webhook(request):
             ticket.titulo = titulo_nuevo
             update_fields.append("titulo")
 
-        if update_fields:
-            update_fields.append("fecha_actualizacion")
-            ticket.save(update_fields=update_fields)
+        with transaction.atomic():
+            if update_fields:
+                update_fields.append("fecha_actualizacion")
+                ticket.save(update_fields=update_fields)
+            if nuevo_estado and nuevo_estado != ticket.estado:
+                from .services.transiciones_ans import cambiar_estado_ans
+                ticket = cambiar_estado_ans(ticket.pk, nuevo_estado, estado_esperado=ticket.estado)
+                logger.info("Ticket %s actualizado desde GLPI a %s", ticket.codigo, nuevo_estado)
 
         GlpiEvento.objects.create(
             ticket=ticket,

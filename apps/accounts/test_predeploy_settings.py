@@ -10,7 +10,7 @@ class ProductionEmailSettingsTest(SimpleTestCase):
     def _settings(self, user, password, code="import config.settings", extra=None):
         env = os.environ.copy()
         env.update({"DJANGO_DEBUG": "False", "DJANGO_SECRET_KEY": "test-only-not-a-production-secret-1234567890", "SMOKE_TEST_SQLITE": "False", "DJANGO_EMAIL_BACKEND": "django.core.mail.backends.smtp.EmailBackend", "DJANGO_EMAIL_HOST_USER": user, "DJANGO_EMAIL_HOST_PASSWORD": password, "EMAIL_USER": "", "EMAIL_PASSWORD": ""})
-        env.update({"DOGGER_FONDO_DURABLE": "True", "DOGGER_FERNET_KEY": Fernet.generate_key().decode()})
+        env.update({"DOGGER_FONDO_DURABLE": "True", "DOGGER_FERNET_KEY": Fernet.generate_key().decode(), "DOGGER_DB_ENGINE": "mssql", "DATABASE_URL": ""})
         env.update(extra or {})
         return subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, timeout=20)
 
@@ -27,6 +27,22 @@ class ProductionEmailSettingsTest(SimpleTestCase):
         result = self._settings("test@example.invalid", "test-only-password", "from config.settings import DATABASES; print(DATABASES['default']['OPTIONS']['extra_params'])", {"DATABASE_URL": "", "DB_EXTRA_PARAMS": ""})
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "TrustServerCertificate=no")
+
+    def test_mysql_requires_url_without_falling_back(self):
+        result = self._settings("test@example.invalid", "test-only-password", extra={"DOGGER_DB_ENGINE": "mysql", "DATABASE_URL": ""})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("requiere DATABASE_URL", result.stderr)
+
+    def test_mysql_url_uses_utf8mb4(self):
+        code = "from config.settings import DATABASES; d=DATABASES['default']; print(d['ENGINE'], d['OPTIONS']['charset'])"
+        result = self._settings("test@example.invalid", "test-only-password", code, {"DOGGER_DB_ENGINE": "mysql", "DATABASE_URL": "mysql://test:example@localhost/test_db"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "django.db.backends.mysql utf8mb4")
+
+    def test_mismatched_engine_is_rejected(self):
+        result = self._settings("test@example.invalid", "test-only-password", extra={"DOGGER_DB_ENGINE": "mssql", "DATABASE_URL": "mysql://test:example@localhost/test_db"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no coincide", result.stderr)
 
     def test_smoke_database_does_not_inherit_database_url(self):
         result = self._settings("", "", "from config.settings import DATABASES; print(DATABASES['default']['ENGINE'])", {"SMOKE_TEST_SQLITE": "True", "DATABASE_URL": "postgres://test:test@invalid.example/test"})

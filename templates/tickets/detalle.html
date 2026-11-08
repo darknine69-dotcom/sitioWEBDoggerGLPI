@@ -11,6 +11,11 @@
 <link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
 <style>
 .ticket-detail-page { --td-card:#fff; --td-soft:#f5f7fb; --td-text:#14213c; --td-muted:#61718d; --td-border:#dfe6ef; }
+.ticket-detail-page .td-ans-adjust { margin-top:12px; color:var(--td-text); }
+.ticket-detail-page .td-ans-adjust summary { cursor:pointer; font-weight:700; }
+.ticket-detail-page .td-ans-adjust form { display:flex; flex-wrap:wrap; gap:10px; align-items:end; }
+.ticket-detail-page .td-ans-adjust label { display:grid; gap:4px; font-size:12px; }
+.ticket-detail-page .td-ans-adjust input { max-width:100%; border:1px solid var(--td-border); border-radius:8px; padding:8px; background:var(--td-card); color:var(--td-text); }
 .ticket-detail-page .ticket-detail-hero { background:var(--td-card); border:1px solid var(--td-border); border-radius:16px; padding:20px; margin-bottom:12px; }
 .ticket-detail-page .corp-detail-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
 .ticket-detail-page .corp-title-icon { border-radius:10px; }
@@ -452,6 +457,19 @@ html[data-theme="dark"] .ticket-detail-page .ficha-row { background:transparent;
                 <div class="corp-subsection-head"><span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-clock"/></svg></span><h3>ANS · Acuerdo de Nivel de Servicio</h3></div>
                 <div class="td-ans-row"><div class="td-ans-track" id="td-ans-track" role="progressbar" aria-label="Tiempo del ANS transcurrido" aria-valuemin="0" aria-valuemax="100" data-start="{{ ticket.fecha_creacion|date:'c' }}" data-limit="{{ ticket.fecha_limite_ans|date:'c' }}" data-end="{{ ticket.fecha_finalizacion|date:'c' }}"><span class="td-ans-fill"></span></div>{% include "tickets/_ans_time.html" with t=ticket %}</div>
                 <div class="td-ans-note">Plazo de resolución: <strong>{{ ticket.ans_horas }} horas</strong> · {% if ticket.fecha_limite_ans %}Límite {{ ticket.fecha_limite_ans|date:"d/m/Y H:i" }}{% else %}Sin límite disponible{% endif %}</div>
+                {% if request.user.rol == 'admin' and request.user.activo %}
+                <details class="td-ans-note td-ans-adjust">
+                    <summary>Ajustar plazo ANS</summary>
+                    <p>Plazo original: {% if ticket.ans_limite_original %}{{ ticket.ans_limite_original|date:"d/m/Y H:i" }}{% else %}No verificado{% endif %} · Vigente: {{ ticket.fecha_limite_ans|date:"d/m/Y H:i"|default:"Sin datos" }}</p>
+                    <form method="post" action="{% url 'tickets:ajustar_ans_ticket' ticket.pk %}" onsubmit="return confirm('¿Registrar este ajuste del plazo ANS?');">
+                        {% csrf_token %}<input type="hidden" name="clave" value="{{ ans_ajuste_clave }}"><input type="hidden" name="version" value="{{ ticket.ans_version_ajuste }}">
+                        <label>Nuevo plazo <input type="datetime-local" name="limite" required></label>
+                        <label>Motivo <input type="text" name="motivo" maxlength="500" required></label>
+                        <button type="submit" class="btn btn-outline btn-sm">Guardar ajuste</button>
+                    </form>
+                    {% for ajuste in ticket.ajustes_ans.all %}<p>{{ ajuste.creado_en|date:"d/m/Y H:i" }} · {{ ajuste.actor.nombre|default:ajuste.actor.email }} · {{ ajuste.limite_anterior|date:"d/m/Y H:i"|default:"Sin datos" }} → {{ ajuste.limite_nuevo|date:"d/m/Y H:i" }} · {{ ajuste.motivo }}</p>{% empty %}<p>Sin ajustes registrados.</p>{% endfor %}
+                </details>
+                {% endif %}
             </section>
 
             <section class="corp-subsection" id="ticket-acciones">

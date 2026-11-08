@@ -37,6 +37,7 @@ def _retorno_seguro(request, fallback):
     return reverse(fallback)
 
 from . import ans_avisos
+from .services.motor_ans import calcular_ans, evaluar_lote
 from .models import (
     ElementoMiLista,
     MonitoreoAuditoria,
@@ -120,18 +121,14 @@ def _visible_a_observador(usuario, consulta):
     return consulta.filter(solicitante_punto__in=puntos)
 
 
-def _estado_de(ticket, ahora):
+def _estado_de(ticket, ahora, resultado=None):
     """Traduce un ticket al color del panel de monitoreo."""
     if ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
         return ESTADO_VERDE
     # Una solicitud activa que ya superó su ANS es una incidencia aunque su
     # prioridad original no fuese urgente. Antes solo se marcaban en rojo las
     # urgentes abiertas y se escondían varios vencimientos reales.
-    if (
-        ticket.estado in _ACTIVOS
-        and ticket.fecha_limite_ans
-        and ahora >= ticket.fecha_limite_ans
-    ):
+    if ticket.estado in _ACTIVOS and (resultado or calcular_ans(ticket, ahora=ahora, permitir_provisional=True)).estado == "vencido":
         return ESTADO_ROJO
     if ticket.prioridad == _URGENTE and ticket.estado == Ticket.Estado.ABIERTO:
         return ESTADO_ROJO
@@ -142,8 +139,11 @@ def _estado_de(ticket, ahora):
 
 def _contar_por_estado(queryset):
     conteo = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
-    for t in queryset.only("estado", "prioridad"):
-        conteo[_estado_de(t, timezone.now())] += 1
+    tickets = list(queryset.select_related("categoria"))
+    ahora = timezone.now()
+    resultados = evaluar_lote(tickets, ahora=ahora, permitir_provisional=True)
+    for t in tickets:
+        conteo[_estado_de(t, ahora, resultados[t.pk])] += 1
     return conteo
 
 
@@ -168,15 +168,15 @@ def _resumen_por_punto(usuario):
             "amarillo": 0,
             "abiertos": 0,
         }
-    for t in consulta.select_related("tecnico_asignado").only(
-        "solicitante_punto", "estado", "prioridad", "codigo", "tecnico_asignado__nombre"
-    ):
+    tickets = list(consulta.select_related("tecnico_asignado", "categoria"))
+    resultados = evaluar_lote(tickets, ahora=ahora, permitir_provisional=True)
+    for t in tickets:
         clave = (t.solicitante_punto or "").strip()
         if clave not in puntos:
             continue
         fila = por_punto[clave]
         fila["total"] += 1
-        estado = _estado_de(t, ahora)
+        estado = _estado_de(t, ahora, resultados[t.pk])
         fila[estado] += 1
         if t.estado in _ACTIVOS:
             fila["abiertos"] += 1
@@ -297,10 +297,10 @@ def panel_observador(request):
     # Personas que aparecen en los tickets de esos puntos.
     visibles = _visible_a_observador(usuario, Ticket.objects.all())
     personas = {}
-    for t in visibles.only(
-        "solicitante_email", "solicitante_nombre", "solicitante_punto",
-        "estado", "prioridad", "codigo", "id",
-    ):
+    tickets_visibles = list(visibles.select_related("categoria"))
+    ahora = timezone.now()
+    resultados = evaluar_lote(tickets_visibles, ahora=ahora, permitir_provisional=True)
+    for t in tickets_visibles:
         correo = (t.solicitante_email or "").strip().lower()
         clave = correo or (t.solicitante_nombre or "").strip().lower()
         if not clave:
@@ -321,7 +321,7 @@ def panel_observador(request):
             fila["puntos"].add(t.solicitante_punto.strip())
         if t.estado in _ACTIVOS:
             fila["abiertos"] += 1
-        estado = _estado_de(t, timezone.now())
+        estado = _estado_de(t, ahora, resultados[t.pk])
         orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
         if orden[estado] > orden[fila["estado"]]:
             fila["estado"] = estado
@@ -774,8 +774,9 @@ def _filas_de_mi_lista(usuario, elementos, global_scope=False):
         )
         estado = ESTADO_VERDE
         orden = {ESTADO_VERDE: 0, ESTADO_AMARILLO: 1, ESTADO_ROJO: 2}
+        resultados = evaluar_lote(tickets, ahora=ahora, permitir_provisional=True)
         for t in tickets:
-            est = _estado_de(t, ahora)
+            est = _estado_de(t, ahora, resultados[t.pk])
             if orden[est] > orden[estado]:
                 estado = est
         r = resumen.get(correo, {})
@@ -1311,10 +1312,11 @@ def _contexto_monitoreo(usuario, zona_grafica=""):
     )
     conteo_graficas = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
     ahora_graficas = timezone.now()
+    resultados_graficas = evaluar_lote(tickets_analisis, ahora=ahora_graficas, permitir_provisional=True)
     por_punto = {}
     por_tecnico = Counter()
     for ticket in tickets_analisis:
-        conteo_graficas[_estado_de(ticket, ahora_graficas)] += 1
+        conteo_graficas[_estado_de(ticket, ahora_graficas, resultados_graficas[ticket.pk])] += 1
         punto = (ticket.solicitante_punto or "Sin zona").strip() or "Sin zona"
         fila = por_punto.setdefault(punto, {"tickets": 0, "abiertos": 0})
         fila["tickets"] += 1
@@ -1357,12 +1359,14 @@ def _contexto_monitoreo(usuario, zona_grafica=""):
             ))
         return valores
 
+    resultados_kpi = evaluar_lote(tickets_analisis, ahora=ahora_indicadores, permitir_provisional=True)
+
     def serie_por_limite(objetos, condicion=lambda objeto: True):
         return [sum(
             1 for objeto in objetos
             if condicion(objeto)
-            and objeto.fecha_limite_ans
-            and timezone.localtime(objeto.fecha_limite_ans).date() == fecha
+            and resultados_kpi[objeto.pk].limite
+            and timezone.localtime(resultados_kpi[objeto.pk].limite).date() == fecha
         ) for fecha in fechas_kpi]
 
     zonas_kpi = [g["zona"] for g in grupos if g["zona"] is not None]
@@ -1371,12 +1375,10 @@ def _contexto_monitoreo(usuario, zona_grafica=""):
     finalizados_kpi = lambda ticket: ticket.estado in (
         Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO
     )
-    por_vencer_kpi = lambda ticket: (
-        activos_kpi(ticket) and ticket.fecha_limite_ans >= ahora_indicadores
-    )
-    vencido_kpi = lambda ticket: (
-        activos_kpi(ticket) and ticket.fecha_limite_ans < ahora_indicadores
-    )
+    estados_kpi = {ticket.pk: resultados_kpi[ticket.pk].estado
+                   for ticket in tickets_analisis if activos_kpi(ticket)}
+    por_vencer_kpi = lambda ticket: estados_kpi.get(ticket.pk) in ("vigente", "por_vencer")
+    vencido_kpi = lambda ticket: estados_kpi.get(ticket.pk) == "vencido"
     monitor_kpi_series = {
         "zonas": {"labels": etiquetas_kpi, "values": serie_por_fecha(zonas_kpi, "creado_en")},
         "tickets": {"labels": etiquetas_kpi, "values": serie_por_fecha(tickets_analisis, "fecha_creacion")},

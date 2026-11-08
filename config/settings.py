@@ -124,6 +124,9 @@ except ImportError:
     pass
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+DB_ENGINE = os.getenv("DOGGER_DB_ENGINE", "").strip().lower()
+if DB_ENGINE not in ("", "mysql", "mssql", "postgresql"):
+    raise ImproperlyConfigured("DOGGER_DB_ENGINE debe ser mysql, mssql o postgresql.")
 
 if os.getenv("SMOKE_TEST_SQLITE", "False").lower() in ("1", "true", "yes"):
     # Las pruebas aisladas nunca deben heredar DATABASE_URL de producción.
@@ -134,11 +137,25 @@ if os.getenv("SMOKE_TEST_SQLITE", "False").lower() in ("1", "true", "yes"):
         }
     }
 elif DATABASE_URL:
-    # PostgreSQL en la nube (Render, Railway, etc.)
+    # Una URL explícita selecciona el motor; nunca recurrir a otra base.
+    _database = dj_database_url.parse(DATABASE_URL)
+    _engines = {"mysql": "django.db.backends.mysql", "postgresql": "django.db.backends.postgresql"}
+    if _database.get("ENGINE") not in _engines.values():
+        raise ImproperlyConfigured("DATABASE_URL debe usar MySQL o PostgreSQL.")
+    if DB_ENGINE and _engines.get(DB_ENGINE) != _database["ENGINE"]:
+        raise ImproperlyConfigured("DOGGER_DB_ENGINE no coincide con DATABASE_URL.")
+    if _database["ENGINE"] == _engines["mysql"]:
+        if not all(_database.get(k) for k in ("NAME", "USER", "HOST")):
+            raise ImproperlyConfigured("DATABASE_URL de MySQL requiere base, usuario y servidor.")
+        _database.setdefault("OPTIONS", {})["charset"] = "utf8mb4"
     DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL)
+        "default": _database
     }
 else:
+    if DB_ENGINE in ("mysql", "postgresql"):
+        raise ImproperlyConfigured("El motor seleccionado requiere DATABASE_URL.")
+    if not DEBUG and DB_ENGINE != "mssql":
+        raise ImproperlyConfigured("Sin DATABASE_URL, configura DOGGER_DB_ENGINE=mssql explícitamente.")
     DATABASES = {
         "default": {
             "ENGINE": "mssql",

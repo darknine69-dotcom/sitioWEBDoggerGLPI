@@ -57,32 +57,49 @@ class ContadoresPorRevisionTest(TestCase):
         avisos.ticket_cerrado(ticket)
         self.assertEqual(self._no_leidas(self.usuario), base + 1)
 
-        # Entrar a Mi panel es revisarlo: el contador queda en cero.
+        aviso = Notificacion.objects.get(usuario=self.usuario, clave=f"ticket:{ticket.pk}:cerrado:{self.usuario.pk}")
+        # Navegar no equivale a marcar el aviso como leído.
         self.client.get(reverse("tickets:mi_panel"))
-        self.assertEqual(self._no_leidas(self.usuario), 0)
+        aviso.refresh_from_db()
+        self.assertFalse(aviso.leida)
+        antes = avisos.no_leidas(self.usuario)
+        self.assertEqual(self.client.post(reverse("notificaciones:marcar_leida", args=[aviso.pk])).status_code, 200)
+        self.assertEqual(avisos.no_leidas(self.usuario), antes - 1)
 
     def test_entrar_al_dashboard_limpia_el_contador_del_admin(self):
         ticket = _crear_ticket("HD-5002", asignado=self.tecnico)
         avisos.ticket_creado(ticket)
         self.assertGreater(self._no_leidas(self.admin), 0)
-
+        aviso = Notificacion.objects.filter(usuario=self.admin, leida=False, archivada_en__isnull=True).first()
         self.client.get(reverse("tickets:dashboard"))
-        self.assertEqual(self._no_leidas(self.admin), 0)
+        aviso.refresh_from_db()
+        self.assertFalse(aviso.leida)
+        antes = avisos.no_leidas(self.admin)
+        self.assertEqual(self.client.post(reverse("notificaciones:marcar_leida", args=[aviso.pk])).status_code, 200)
+        self.assertEqual(avisos.no_leidas(self.admin), antes - 1)
 
     def test_al_usuario_no_le_cuenta_el_aviso_de_su_propia_solicitud(self):
         """Crear un ticket no es "algo por revisar" para quien lo pidió."""
-        _crear_ticket("HD-5003")
-        self.client.force_login(self.usuario)
-        self.client.get(reverse("tickets:mi_panel"))
-        html = self.client.get(reverse("tickets:mi_panel")).content.decode()
-        self.assertNotIn("por revisar</span>", html)
+        from apps.tickets.context_processors import _tipos_por_revisar
+
+        ticket = _crear_ticket("HD-5003")
+        tipos = _tipos_por_revisar("usuario")
+        antes = avisos.sin_revisar(self.usuario, tipos=tipos)
+        avisos.ticket_creado(ticket)
+        aviso = Notificacion.objects.get(usuario=self.usuario, clave=f"ticket:{ticket.pk}:nuevo:{self.usuario.pk}")
+        self.assertFalse(aviso.leida)
+        self.assertNotIn(aviso.tipo, tipos)
+        self.assertEqual(avisos.sin_revisar(self.usuario, tipos=tipos), antes)
 
     def test_tras_cancelar_una_solicitud_el_usuario_no_queda_con_avisos(self):
         ticket = _crear_ticket("HD-5004", asignado=self.tecnico)
         self.client.force_login(self.usuario)
+        aviso = Notificacion.objects.create(usuario=self.usuario, tipo=Notificacion.Tipo.TICKET_CERRADO, titulo="Aviso pendiente")
         self.client.post(reverse("tickets:mi_api_eliminar", args=[ticket.pk]))
         self.client.get(reverse("tickets:mi_papelera"))
-        self.assertEqual(self._no_leidas(self.usuario), 0)
+        aviso.refresh_from_db()
+        self.assertFalse(aviso.leida)
+        self.assertGreaterEqual(avisos.no_leidas(self.usuario), 1)
 
     # ---------------- el texto según el rol ----------------
     def test_al_admin_se_le_dice_que_se_registraron_tickets(self):
@@ -121,23 +138,27 @@ class ContadoresPorRevisionTest(TestCase):
         ticket = _crear_ticket("HD-5020")
         avisos.ticket_cerrado(ticket)
         self.client.force_login(self.usuario)
-        html = self.client.get(reverse("tickets:mi_panel")).content.decode()
+        respuesta = self.client.get(reverse("tickets:mi_panel"))
+        html = respuesta.content.decode()
         self.assertIn("notifPopup", html)
         self.assertIn("notif-popup-ver", html)
         self.assertIn("notif-popup-ok", html)
-        self.assertIn(">OK<", html)
+        self.assertIn(">Cerrar</button>", html)
         self.assertIn('type="submit" class="btn notif-popup-ok"', html)
         with open(finders.find("css/dogger-theme.css"), encoding="utf-8") as archivo:
             css = archivo.read()
         self.assertIn(".notif-popup-actions .notif-popup-ok {", css)
         self.assertIn("background: #F5F2EC;", css)
         self.assertIn("color: #39332D;", css)
-        # Se marca como vista para que no vuelva a saltar sola.
-        self.assertFalse(
-            Notificacion.objects.filter(
-                usuario=self.usuario, mostrada_en__isnull=True
-            ).exists()
-        )
+        # La presentación se registra mediante una acción explícita, sin leer.
+        aviso = respuesta.context["notif_emergente"]
+        self.assertIsNotNone(aviso)
+        aviso.refresh_from_db()
+        self.assertIsNone(aviso.mostrada_en)
+        self.assertEqual(self.client.post(reverse("notificaciones:marcar_mostrada", args=[aviso.pk])).status_code, 200)
+        aviso.refresh_from_db()
+        self.assertIsNotNone(aviso.mostrada_en)
+        self.assertFalse(aviso.leida)
 
 
 @override_settings(STORAGES={"staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})

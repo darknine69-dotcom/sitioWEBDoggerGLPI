@@ -24,6 +24,7 @@ contradecirían delante del usuario.
 """
 
 import logging
+from itertools import islice
 
 from django.db import transaction
 from django.db.models import Q
@@ -31,6 +32,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import ElementoMiLista, Ticket
+from .services.motor_ans import evaluar_lote
 
 logger = logging.getLogger(__name__)
 
@@ -65,21 +67,31 @@ def por_vencer(consulta=None, limite=LIMITE_POR_EJECUCION, solo_sin_avisar=True)
     pendientes = _abiertos(consulta)
     if solo_sin_avisar:
         pendientes = pendientes.filter(ans_alertado_en__isnull=True)
-    for ticket in pendientes.iterator():
-        estado, texto, detalle, _limite, _aviso = ticket.datos_ans
-        if estado not in AVISABLES:
-            continue
-        ticket.ans_estado = estado
-        ticket.ans_texto = texto
-        ticket.ans_detalle = detalle
-        salen.append(ticket)
+    iterador = pendientes.iterator(chunk_size=200)
+    ahora = timezone.now()
+    while True:
+        bloque = list(islice(iterador, 200))
+        if not bloque:
+            break
+        resultados = evaluar_lote(bloque, ahora=ahora, permitir_provisional=True)
+        for ticket in bloque:
+            resultado = resultados[ticket.pk]
+            estado, texto, detalle, _limite, _aviso = ticket.datos_ans_desde_resultado(resultado)
+            if estado not in AVISABLES:
+                continue
+            ticket.ans_estado = estado
+            ticket.ans_texto = texto
+            ticket.ans_detalle = detalle
+            salen.append((ticket, resultado.limite))
+            if limite is not None and len(salen) >= limite:
+                break
         if limite is not None and len(salen) >= limite:
             break
     # Vencidos primero, y dentro de cada grupo lo que se va antes.
     salen.sort(
-        key=lambda t: (t.ans_estado != "vencido", t.fecha_limite_ans or timezone.now())
+        key=lambda item: (item[0].ans_estado != "vencido", item[1] or ahora)
     )
-    return salen
+    return [ticket for ticket, _ in salen]
 
 
 def observadores_de(ticket):
@@ -237,7 +249,12 @@ def _enviar_aviso_reclamado(ticket, observadores=None):
         correo_ans_por_vencer_usuario,
     )
 
-    restante = ticket.fecha_limite_ans - timezone.now()
+    from .services.motor_ans import calcular_ans
+    ahora = timezone.now()
+    resultado = calcular_ans(ticket, ahora=ahora, permitir_provisional=True)
+    if resultado.limite is None:
+        raise ValueError("El ticket no tiene un plazo ANS evaluable")
+    restante = resultado.limite - ahora
     enviados = 0
 
     tecnico = ticket.tecnico_asignado

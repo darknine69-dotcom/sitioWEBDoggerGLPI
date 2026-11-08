@@ -119,7 +119,36 @@ class CategoriaGrupo(models.Model):
         return self.nombre
 
 
-class TicketActivosManager(models.Manager):
+class TicketQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        protegidos = {"estado", "fecha_resolucion", "fecha_cierre", "ans_inicio_original",
+                      "ans_limite_original", "ans_duracion_original", "ans_prioridad_original",
+                      "ans_categoria_original", "ans_categoria_original_id", "ans_fuente_original",
+                      "ans_verificacion", "ans_version_ajuste"}
+        if protegidos.intersection(kwargs):
+            raise ValueError("Los campos protegidos requieren el servicio transaccional ANS.")
+        return super().update(**kwargs)
+
+    def _actualizar_estado_ans(self, estado):
+        """Uso interno: el servicio debe registrar el evento en la misma transacción."""
+        return super().update(estado=estado)
+
+    def _reservar_version_ajuste(self, version):
+        return super().update(ans_version_ajuste=version)
+
+    def _establecer_instantanea_inicial(self, valores):
+        if set(valores) != {"ans_inicio_original", "ans_limite_original", "ans_duracion_original",
+                            "ans_prioridad_original", "ans_categoria_original", "ans_categoria_original_id",
+                            "ans_fuente_original", "ans_verificacion"}:
+            raise ValueError("Instantánea inicial incompleta")
+        return super(TicketQuerySet, self.filter(ans_limite_original__isnull=True)).update(**valores)
+
+    def bulk_create(self, objs, *args, **kwargs):
+        # Django omite save() en bulk_create: no permitir tickets sin plazo.
+        raise NotImplementedError("Crea los tickets individualmente para conservar su ANS.")
+
+
+class TicketActivosManager(models.Manager.from_queryset(TicketQuerySet)):
     """Por defecto NO se ven los tickets enviados a la papelera.
 
     Todas las vistas, el dashboard, los reportes y la sincronización con GLPI
@@ -131,7 +160,7 @@ class TicketActivosManager(models.Manager):
         return super().get_queryset().filter(eliminado_en__isnull=True)
 
 
-class TicketConEliminadosManager(models.Manager):
+class TicketConEliminadosManager(models.Manager.from_queryset(TicketQuerySet)):
     """Acceso sin filtrar, para la papelera y las gráficas "eliminadas"."""
 
 
@@ -214,6 +243,15 @@ class Ticket(models.Model):
     # campo es lo que permite mostrar el distintivo "Resuelto" con verdad y
     # filtrar por "Resueltas" sin incluir los que solo se cerraron.
     fecha_resolucion = models.DateTimeField(null=True, blank=True)
+    ans_inicio_original = models.DateTimeField(null=True, blank=True, editable=False)
+    ans_limite_original = models.DateTimeField(null=True, blank=True, editable=False)
+    ans_duracion_original = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    ans_prioridad_original = models.CharField(max_length=10, null=True, blank=True, editable=False)
+    ans_categoria_original = models.CharField(max_length=180, null=True, blank=True, editable=False)
+    ans_categoria_original_id = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    ans_fuente_original = models.CharField(max_length=20, null=True, blank=True, editable=False)
+    ans_verificacion = models.CharField(max_length=20, default="desconocido", editable=False, choices=[("verificado", "Verificado"), ("reconstruido", "Reconstruido"), ("desconocido", "Desconocido")])
+    ans_version_ajuste = models.PositiveIntegerField(default=0, editable=False)
     # --- ANS: cuándo se avisó por última vez de que el ticket iba a vencer ---
     # Un solo aviso por ticket. Ni el cron ni el panel vuelven a mandar nada
     # mientras esta marca exista, así el técnico, el usuario y el observador
@@ -298,6 +336,46 @@ class Ticket(models.Model):
         return min(fechas) if fechas else None
 
     def save(self, *args, **kwargs):
+        nuevo = self._state.adding
+        if not nuevo:
+            campos = kwargs.get("update_fields")
+            protegidos = {"estado", "fecha_resolucion", "fecha_cierre", "ans_inicio_original",
+                          "ans_limite_original", "ans_duracion_original", "ans_prioridad_original",
+                          "ans_categoria_original", "ans_categoria_original_id", "ans_fuente_original",
+                          "ans_verificacion", "ans_version_ajuste"}
+            a_revisar = protegidos if campos is None else protegidos.intersection(campos)
+            a_revisar -= self.get_deferred_fields()
+            if self.pk and a_revisar:
+                anterior = type(self).con_eliminados.using(kwargs.get("using") or self._state.db).filter(pk=self.pk).values(*a_revisar).first()
+                if anterior:
+                    cambios = {nombre for nombre in a_revisar if getattr(self, nombre) != anterior[nombre]}
+                    instantaneas = cambios - {"estado", "fecha_resolucion", "fecha_cierre"}
+                    if instantaneas:
+                        raise ValueError("La instantánea ANS no puede modificarse mediante save().")
+                    if cambios and not getattr(self, "_ans_transicion_autorizada", False):
+                        raise ValueError("Los cambios de estado o fechas de cierre requieren el servicio ANS.")
+            return self._guardar_compatibilidad(*args, **kwargs)
+        with transaction.atomic(using=kwargs.get("using")):
+            self._guardar_compatibilidad(*args, **kwargs)
+            if self.fecha_creacion and self.ans_limite_original is None:
+                categoria = self.categoria if self.categoria_id else None
+                horas = (categoria.ans_horas if categoria and categoria.ans_horas
+                         else horas_por_prioridad(self.prioridad))
+                valores = {
+                    "ans_inicio_original": self.fecha_creacion,
+                    "ans_limite_original": self.fecha_creacion + timedelta(hours=horas),
+                    "ans_duracion_original": horas,
+                    "ans_prioridad_original": self.prioridad,
+                    "ans_categoria_original": str(categoria) if categoria else None,
+                    "ans_categoria_original_id": self.categoria_id,
+                    "ans_fuente_original": "categoria" if categoria and categoria.ans_horas else "prioridad",
+                    "ans_verificacion": "verificado",
+                }
+                type(self).con_eliminados.using(self._state.db).filter(pk=self.pk)._establecer_instantanea_inicial(valores)
+                for nombre, valor in valores.items():
+                    setattr(self, nombre, valor)
+
+    def _guardar_compatibilidad(self, *args, **kwargs):
         campos = kwargs.get("update_fields")
         if campos is None or "tecnico_asignado" in campos or "tecnico_asignado_id" in campos:
             anterior = None
@@ -309,15 +387,14 @@ class Ticket(models.Model):
                     kwargs["update_fields"] = set(campos) | {"fecha_asignacion_tecnico"}
         if not self.codigo:
             self.codigo = self._generar_codigo()
-        if self.estado in (self.Estado.RESUELTO, self.Estado.CERRADO) and not self.fecha_cierre:
-            self.fecha_cierre = timezone.now()
-        if self.estado in (self.Estado.ABIERTO, self.Estado.EN_PROGRESO):
-            self.fecha_cierre = None
-            # Al reabrir se pierde la marca de resolución: si vuelve a
-            # resolverse, se vuelve a registrar con la fecha de ese momento.
-            self.fecha_resolucion = None
-        if self.estado == self.Estado.RESUELTO and not self.fecha_resolucion:
-            self.fecha_resolucion = timezone.now()
+        if self._state.adding or getattr(self, "_ans_transicion_autorizada", False):
+            if self.estado in (self.Estado.RESUELTO, self.Estado.CERRADO) and not self.fecha_cierre:
+                self.fecha_cierre = timezone.now()
+            if self.estado in (self.Estado.ABIERTO, self.Estado.EN_PROGRESO):
+                self.fecha_cierre = None
+                self.fecha_resolucion = None
+            if self.estado == self.Estado.RESUELTO and not self.fecha_resolucion:
+                self.fecha_resolucion = timezone.now()
         try:
             super().save(*args, **kwargs)
         except IntegrityError:
@@ -372,12 +449,20 @@ class Ticket(models.Model):
     # ------------------------------------------------------------------
     @property
     def ans_horas(self) -> int:
+        if self.ans_duracion_original is not None:
+            return self.ans_duracion_original
         if self.categoria_id and self.categoria and self.categoria.ans_horas:
             return self.categoria.ans_horas
         return horas_por_prioridad(self.prioridad)
 
     @property
     def fecha_limite_ans(self):
+        if self.pk and self.ans_version_ajuste:
+            ajuste = self.ajustes_ans.order_by("-version").first()
+            if ajuste:
+                return ajuste.limite_nuevo
+        if self.ans_limite_original is not None:
+            return self.ans_limite_original
         if not self.fecha_creacion:
             return None
         return self.fecha_creacion + timedelta(hours=self.ans_horas)
@@ -406,6 +491,12 @@ class Ticket(models.Model):
         Los dos los decide aquí el servidor con la misma regla para todos, así
         la etiqueta y el cronómetro nunca se contradicen.
         """
+        return self.datos_ans_desde_resultado()
+
+    def datos_ans_desde_resultado(self, resultado=None):
+        """Adaptador de presentación compatible; puede reutilizar un cálculo por lote."""
+        from apps.tickets.services.motor_ans import calcular_ans
+
         if self.estado in (self.Estado.RESUELTO, self.Estado.CERRADO):
             if self.fecha_finalizacion and self.fecha_creacion:
                 duracion = self.fecha_finalizacion - self.fecha_creacion
@@ -413,11 +504,13 @@ class Ticket(models.Model):
             return ("resuelto", "Resuelto", None, None, None)
         if not self.fecha_creacion or not self.ans_horas:
             return (None, "Sin ANS", None, None, None)
-        ahora = timezone.now()
-        limite = self.fecha_limite_ans
+        resultado = resultado or calcular_ans(self, permitir_provisional=True)
+        if resultado.estado == "sin_informacion":
+            return (None, "Sin ANS", None, None, None)
+        limite = resultado.limite
         detalle = f"Límite {limite:%d/%m %H:%M} · ANS {self.ans_horas}h · {self.get_prioridad_display()}"
         limite_ts = int(limite.timestamp())
-        if ahora >= limite:
+        if resultado.estado == "vencido":
             return (
                 "vencido",
                 "Vencido",
@@ -425,11 +518,11 @@ class Ticket(models.Model):
                 limite_ts,
                 limite_ts,
             )
-        restante = limite - ahora
+        restante = resultado.restante
         # La alerta se abre exactamente en las dos últimas horas. La última
         # hora queda incluida, sin anticipar el aviso por porcentajes ANS.
         aviso_dt = limite - timedelta(hours=2)
-        estado = "por-vencer" if restante <= timedelta(hours=2) else "ok"
+        estado = "por-vencer" if resultado.estado == "por_vencer" else "ok"
         return (
             estado,
             f"Faltan {formatear_duracion(restante)}",
@@ -485,6 +578,33 @@ def adjunto_upload_to(instance, filename):
     ext = Path(filename).suffix.lower() or ".bin"
     codigo = instance.ticket.codigo if instance.ticket_id else "tmp"
     return f"adjuntos/{codigo}/{uuid.uuid4().hex}{ext}"
+
+
+class TicketAjusteANS(models.Model):
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="ajustes_ans")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    limite_anterior = models.DateTimeField(null=True, blank=True)
+    limite_nuevo = models.DateTimeField()
+    motivo = models.TextField()
+    creado_en = models.DateTimeField(default=timezone.now)
+    clave = models.CharField(max_length=64, unique=True)
+    version = models.PositiveIntegerField()
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["ticket", "version"], name="uq_ans_ajuste_version")]
+
+
+class TicketTransicionANS(models.Model):
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="transiciones_ans")
+    estado_anterior = models.CharField(max_length=15)
+    estado_nuevo = models.CharField(max_length=15)
+    ocurrido_en = models.DateTimeField(default=timezone.now)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    ciclo = models.PositiveIntegerField(default=1)
+    tipo = models.CharField(max_length=20, choices=[("resolucion", "Resolución"), ("cierre", "Cierre"), ("reapertura", "Reapertura"), ("estado", "Estado")])
+
+    class Meta:
+        ordering = ["ocurrido_en", "pk"]
 
 
 class TicketAdjunto(models.Model):

@@ -9,13 +9,14 @@ import re
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login as auth_login
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.db.models import CharField, Count, F, Min, Prefetch, Q, Value
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render, reverse
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.dateformat import DateFormat
@@ -63,6 +64,7 @@ from .forms import (
     UsuarioPanelForm,
 )
 from .context_processors import _tipos_por_revisar
+from .services.motor_ans import calcular_ans, evaluar_lote
 from .models import (
     Categoria,
     CategoriaGrupo,
@@ -310,14 +312,15 @@ def _build_chart_context(tickets):
     ]
 
     # Cumplimiento ANS entre los tickets abiertos/en progreso
+    resultados_ans = evaluar_lote(tickets, permitir_provisional=True)
     ans_vencidos = ans_por_vencer = ans_ok = 0
     for t in tickets:
-        estado = t.info_ans[0]
+        estado = resultados_ans[t.pk].estado
         if estado == "vencido":
             ans_vencidos += 1
-        elif estado == "por-vencer":
+        elif estado == "por_vencer":
             ans_por_vencer += 1
-        elif estado == "ok":
+        elif estado == "vigente":
             ans_ok += 1
     ans_total = max(ans_vencidos + ans_por_vencer + ans_ok, 1)
     ans_stats = {
@@ -417,12 +420,17 @@ def _agrupar_vencidos(tickets, dimension):
     vacía aunque hubiera incumplido el ANS (y en contra de lo que sí cuenta
     el comparativo de 20 días, que mira `fecha_cierre`).
     """
+    tickets = list(tickets)
+    guardados = [ticket for ticket in tickets if not ticket._state.adding]
+    ahora = timezone.now()
+    resultados = evaluar_lote(guardados, ahora=ahora, permitir_provisional=True) if guardados else {}
     agg = {}
     for t in tickets:
         clave, label = dimension(t)
+        resultado = resultados[t.pk] if not t._state.adding else calcular_ans(t, ahora=ahora, permitir_provisional=True)
         if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
-            estado_ans = t.info_ans[0]
-            if estado_ans not in ("vencido", "por-vencer"):
+            estado_ans = resultado.estado
+            if estado_ans not in ("vencido", "por_vencer"):
                 continue
             if clave not in agg:
                 agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0}
@@ -430,11 +438,9 @@ def _agrupar_vencidos(tickets, dimension):
             # Antes se escribía en las claves equivocadas ("por-vencer" y
             # "riesgo"), así que el JS leía `vencidos` como undefined y la
             # gráfica salía en blanco.
-            agg[clave]["riesgo" if estado_ans == "por-vencer" else "vencidos"] += 1
+            agg[clave]["riesgo" if estado_ans == "por_vencer" else "vencidos"] += 1
         elif t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
-            if not (t.fecha_cierre and t.fecha_creacion and t.ans_horas):
-                continue
-            if (t.fecha_cierre - t.fecha_creacion) <= timedelta(hours=t.ans_horas):
+            if resultado.estado != "incumplido":
                 continue  # resolvió dentro del ANS
             if clave not in agg:
                 agg[clave] = {"label": label, "vencidos": 0, "riesgo": 0}
@@ -476,6 +482,7 @@ def _build_tecnico_dashboard(
             qs_pap = qs_pap.filter(tecnico_asignado_id=tecnico_id)
         papelera = list(qs_pap.order_by("fecha_creacion"))
     tickets_abiertas = tickets + papelera
+    estados_ans = evaluar_lote(tickets_abiertas, permitir_provisional=True)
     abiertos = [
         t
         for t in tickets
@@ -530,13 +537,13 @@ def _build_tecnico_dashboard(
             # solicitud puede ser Cerrada y Resuelta a la vez.
             if t.fue_resuelto:
                 fila["resueltos"] += 1
-            ans = t.info_ans[0]
+            ans = estados_ans[t.pk].estado
             # El pivote resumido por punto no incluye filas de detalle, pero
             # sí tiene que contar el ANS vencido y por vencer.
             if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
                 if ans == "vencido":
                     fila["vencido"] += 1
-                elif ans == "por-vencer":
+                elif ans == "por_vencer":
                     fila["riesgo"] += 1
             if incluir_detalle and t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
                 cat = "Sin categoría"
@@ -762,7 +769,7 @@ def _build_tecnico_dashboard(
                 dc = _key_fecha(t.fecha_cierre)
                 if dc in dias:
                     dias[dc]["completado"] += 1
-            if d in dias and t.info_ans[0] == "vencido":
+            if d in dias and estados_ans[t.pk].estado == "vencido":
                 dias[d]["vencido"] += 1
 
         ordenadas = sorted(dias)
@@ -804,23 +811,24 @@ def _build_tecnico_dashboard(
 
     def _brecha_abierta(t):
         """Un ticket abierto cuenta como brecha si ya venció su ANS."""
-        return t.info_ans[0] == "vencido"
+        return estados_ans[t.pk].estado == "vencido"
 
     def _brecha_cerrada(t):
         """Resuelto/cerrado: breach si tardó más de `ans_horas`."""
-        if not (t.fecha_cierre and t.fecha_creacion and t.ans_horas):
-            return False
-        return (t.fecha_cierre - t.fecha_creacion) > timedelta(hours=t.ans_horas)
+        resultado = estados_ans[t.pk]
+        return None if resultado.estado == "sin_informacion" else resultado.estado == "incumplido"
 
     recibidas = []
     for t in tickets:
         if t.fecha_creacion:
-            recibidas.append((_key_fecha(t.fecha_creacion), t.info_ans[0] == "vencido"))
+            recibidas.append((_key_fecha(t.fecha_creacion), estados_ans[t.pk].estado == "vencido"))
 
     completadas = []
     for t in tickets:
         if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) and t.fecha_cierre:
-            completadas.append((_key_fecha(t.fecha_cierre), _brecha_cerrada(t)))
+            brecha = _brecha_cerrada(t)
+            if brecha is not None:
+                completadas.append((_key_fecha(t.fecha_cierre), brecha))
 
     # Un ámbito por estado. La fecha que manda es "cuándo pasó a ese estado":
     #   - abiertas / en progreso  -> día de creación (siguen sin cerrar)
@@ -990,10 +998,13 @@ def _eventos_panel_punto(usuario):
         eventos.append(SimpleNamespace(ticket=ticket, ticket_id=ticket.pk,
             tipo=GlpiEvento.Tipo.OTRO, descripcion="Solicitud enviada a la papelera", fecha=ticket.eliminado_en))
     ahora = timezone.now()
-    for ticket in propios.select_related("categoria").iterator():
-        limite = ticket.fecha_limite_ans
-        fin = ticket.fecha_finalizacion or ticket.eliminado_en
-        if limite and limite <= ahora and (not fin or fin > limite):
+    tickets_ans = list(propios.select_related("categoria"))
+    resultados_ans = evaluar_lote(tickets_ans, ahora=ahora, permitir_provisional=True)
+    for ticket in tickets_ans:
+        resultado = resultados_ans[ticket.pk]
+        limite = resultado.limite
+        if (resultado.estado in ("vencido", "incumplido") and limite
+                and (not ticket.eliminado_en or ticket.eliminado_en > limite)):
             eventos.append(SimpleNamespace(ticket=ticket, ticket_id=ticket.pk,
                 tipo=GlpiEvento.Tipo.OTRO, descripcion="Ticket vencido (ANS)", fecha=limite))
     eventos.sort(key=lambda evento: evento.fecha, reverse=True)
@@ -1031,6 +1042,7 @@ def _punto_venta_panel_datos(usuario, zona_context):
     tickets = list(Ticket.objects.select_related("categoria", "tecnico_asignado").filter(
         solicitante_email=usuario.email
     ).order_by("fecha_creacion"))
+    resultados_ans = evaluar_lote(tickets, permitir_provisional=True)
     # Las series cubren las siete fechas reales más recientes con actividad.
     # Así no se muestra un gráfico vacío cuando los tickets son anteriores
     # a la semana actual.
@@ -1053,7 +1065,7 @@ def _punto_venta_panel_datos(usuario, zona_context):
         "resueltos_estado": sum(t.estado == Ticket.Estado.RESUELTO for t in tickets),
         "cerrados": sum(t.estado in (Ticket.Estado.CERRADO, Ticket.Estado.RESUELTO) for t in tickets),
         "cerrados_estado": sum(t.estado == Ticket.Estado.CERRADO for t in tickets),
-        "vencidos": sum(t.info_ans[0] == "vencido" for t in tickets),
+        "vencidos": sum(resultados_ans[t.pk].estado == "vencido" for t in tickets),
     }
     definiciones = (
         ("solicitudes", "Solicitudes", len(tickets), "i-ticket", "red", "incluye cerradas", "?"),
@@ -1106,12 +1118,9 @@ def _punto_venta_panel_datos(usuario, zona_context):
     vencidos_periodo = [
         sum(
             1 for t in tickets
-            if t.fecha_limite_ans
-            and timezone.localtime(t.fecha_limite_ans).date() == dia
-            and (
-                t.info_ans[0] == "vencido"
-                or (t.fecha_finalizacion and t.fecha_finalizacion > t.fecha_limite_ans)
-            )
+            if resultados_ans[t.pk].limite
+            and timezone.localtime(resultados_ans[t.pk].limite).date() == dia
+            and resultados_ans[t.pk].estado in ("vencido", "incumplido")
         )
         for dia in dias_periodo
     ]
@@ -1120,7 +1129,7 @@ def _punto_venta_panel_datos(usuario, zona_context):
     # vencido o dentro de las dos últimas horas, y con técnico asignado.
     presionables = []
     for t in tickets:
-        estado_ans, texto_ans, _ = t.info_ans
+        estado_ans, texto_ans, _detalle, _limite, _aviso = t.datos_ans_desde_resultado(resultados_ans[t.pk])
         if (
             t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
             and t.tecnico_asignado_id
@@ -1135,7 +1144,7 @@ def _punto_venta_panel_datos(usuario, zona_context):
                 "prioridad_clase": t.prioridad,
                 "ans_estado": estado_ans,
                 "ans_texto": texto_ans,
-                "limite": t.fecha_limite_ans,
+                "limite": resultados_ans[t.pk].limite,
                 "tecnico": t.tecnico_asignado.nombre,
             })
     presionables.sort(key=lambda item: item["limite"] or timezone.now())
@@ -1237,6 +1246,9 @@ def _reportes_filtros(request):
 
 
 def _reportes_metricas_kpis(tickets):
+    tickets = list(tickets)
+    guardados = [ticket for ticket in tickets if not ticket._state.adding]
+    resultados_ans = evaluar_lote(guardados) if guardados else {}
     abiertos = en_progreso = resueltos = cerrados = 0
     vencidos = sla_ok = sla_no = 0
     horas_resolucion = 0.0
@@ -1250,11 +1262,12 @@ def _reportes_metricas_kpis(tickets):
             resueltos += 1
         if t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
             cerrados += 1
-        estado_ans = t.info_ans[0] if t.info_ans else None
-        if estado_ans == "vencido":
+        resultado = resultados_ans.get(t.pk) if not t._state.adding else calcular_ans(t)
+        estado_ans = resultado.estado
+        if estado_ans in ("vencido", "incumplido"):
             vencidos += 1
             sla_no += 1
-        elif estado_ans == "ok":
+        elif estado_ans in ("vigente", "por_vencer", "cumplido"):
             sla_ok += 1
         if t.fecha_finalizacion and t.fecha_creacion:
             horas = (t.fecha_finalizacion - t.fecha_creacion).total_seconds() / 3600.0
@@ -1673,12 +1686,14 @@ def exportar_tickets_admin(request):
         ahora = timezone.now()
         inicio_hoy = timezone.localtime(ahora).replace(hour=0, minute=0, second=0, microsecond=0)
         fin_hoy = inicio_hoy + timedelta(days=1)
+        tickets = list(tickets)
+        resultados_ans = evaluar_lote(tickets, ahora=ahora, permitir_provisional=True)
         tickets = [
             ticket for ticket in tickets
-            if ticket.estado in abiertos and ticket.fecha_limite_ans
+            if ticket.estado in abiertos and resultados_ans[ticket.pk].limite
             and (
-                inicio_hoy <= ticket.fecha_limite_ans < fin_hoy
-                if sv == "vencen-hoy" else ticket.fecha_limite_ans < ahora
+                inicio_hoy <= resultados_ans[ticket.pk].limite < fin_hoy
+                if sv == "vencen-hoy" else resultados_ans[ticket.pk].estado == "vencido"
             )
         ]
     return generar_excel_tickets(tickets, titulo="Dogger Helpdesk · Reporte de Tickets")
@@ -1992,7 +2007,7 @@ def usuarios_lista(request):
             .select_related("tecnico_asignado")
             .order_by("-fecha_creacion")[:300]
         ):
-            if tk.fecha_limite_ans and tk.fecha_limite_ans < ahora:
+            if calcular_ans(tk, ahora=ahora, permitir_provisional=True).estado == "vencido":
                 vencidos_por_tec.setdefault(tk.tecnico_asignado_id, []).append(tk)
 
     for u in page_obj.object_list:
@@ -2307,7 +2322,7 @@ def _ficha_usuario(u):
             .select_related("tecnico_asignado")
             .order_by("-fecha_creacion")[:300]
         ):
-            if tk.fecha_limite_ans and tk.fecha_limite_ans < ahora:
+            if calcular_ans(tk, ahora=ahora, permitir_provisional=True).estado == "vencido":
                 vencidos.append(tk)
         alertas = [
             {
@@ -2938,8 +2953,9 @@ def _zona_dashboard(user, zonas_info, incluir_vacias=False, consulta_base=None):
             qs.select_related("categoria", "tecnico_asignado")
             .order_by("-fecha_creacion")[:500]
         )
-        vencidos = sum(1 for t in muestra if (t.info_ans[0] if t.info_ans else None) == "vencido")
-        en_plazo = sum(1 for t in muestra if (t.info_ans[0] if t.info_ans else None) == "ok")
+        resultados_ans = evaluar_lote(muestra, permitir_provisional=True)
+        vencidos = sum(resultados_ans[t.pk].estado == "vencido" for t in muestra)
+        en_plazo = sum(resultados_ans[t.pk].estado == "vigente" for t in muestra)
         sin_asignar = sum(
             1 for t in muestra
             if not t.tecnico_asignado_id
@@ -3262,12 +3278,9 @@ def _dashboard_de_mis_tickets(user):
     muestra = list(
         qs.select_related("categoria").order_by("-fecha_creacion")[:500]
     )
-    vencidos = sum(
-        1 for t in muestra if (t.info_ans[0] if t.info_ans else None) == "vencido"
-    )
-    en_plazo = sum(
-        1 for t in muestra if (t.info_ans[0] if t.info_ans else None) == "ok"
-    )
+    resultados_ans = evaluar_lote(muestra, permitir_provisional=True)
+    vencidos = sum(resultados_ans[t.pk].estado == "vencido" for t in muestra)
+    en_plazo = sum(resultados_ans[t.pk].estado == "vigente" for t in muestra)
     horas = [
         (t.fecha_finalizacion - t.fecha_creacion).total_seconds() / 3600.0
         for t in muestra
@@ -4134,20 +4147,23 @@ def _dashboard_metricas(tickets):
     sla_dentro = sla_proximos = sla_sin = 0
     sla_tickets = {clave: [] for clave in ("dentro", "vencidos", "proximos", "sin")}
     duraciones = []
+    ahora_ans = timezone.now()
+    guardados = [ticket for ticket in tickets if not ticket._state.adding]
+    resultados_ans = evaluar_lote(guardados, ahora=ahora_ans) if guardados else {}
+    resultados_operativos = evaluar_lote(guardados, ahora=ahora_ans, permitir_provisional=True) if guardados else {}
     for ticket in tickets:
-        limite = ticket.fecha_limite_ans
+        resultado_ans = resultados_ans[ticket.pk] if not ticket._state.adding else calcular_ans(ticket, ahora=ahora_ans)
         final = ticket.fecha_finalizacion
         if final and ticket.fecha_creacion and final >= ticket.fecha_creacion:
             duraciones.append(final - ticket.fecha_creacion)
-        if not limite or not ticket.ans_horas or (ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) and not final):
+        if resultado_ans.estado == "sin_informacion":
             sla_sin += 1
             sla_tickets["sin"].append(ticket)
             continue
         sla_total += 1
-        referencia = final or timezone.now()
-        if referencia <= limite:
+        if resultado_ans.estado in ("vigente", "por_vencer", "cumplido"):
             sla_ok += 1
-            if not final and ticket.info_ans[0] == "por-vencer":
+            if resultado_ans.estado == "por_vencer":
                 sla_proximos += 1
                 sla_tickets["proximos"].append(ticket)
             else:
@@ -4188,7 +4204,9 @@ def _dashboard_metricas(tickets):
     positivos = votos.filter(valor=CalificacionTecnico.Valor.ME_GUSTA).count()
     return {
         "total": total, "abiertos": abiertos, "progreso": progreso, "pendientes": abiertos + progreso,
-        "vencidos_pendientes": sum(t.estado in activos and t.info_ans[0] == "vencido" for t in tickets),
+        "vencidos_pendientes": sum(t.estado in activos and
+            (resultados_operativos[t.pk] if not t._state.adding else calcular_ans(t, ahora=ahora_ans, permitir_provisional=True)).estado == "vencido"
+            for t in tickets),
         "completados_actuales": sum(t.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) for t in tickets),
         "sin_asignar": sin_asignar, "urgentes": urgentes, "altas": altas,
         "en_progreso": progreso,
@@ -4218,7 +4236,12 @@ def _dashboard_sparks(tickets, dias=7):
               "cerrados": [0] * dias, "vencidos": [0] * dias}
     for clave in ("sin_asignar", "urgentes", "altas", "sla_total", "pendientes", "vencidos_pendientes", "completados_actuales"):
         series[clave] = [0] * dias
+    ahora_ans = timezone.now()
+    guardados = [ticket for ticket in tickets if not ticket._state.adding]
+    resultados_ans = evaluar_lote(guardados, ahora=ahora_ans) if guardados else {}
+    resultados_operativos = evaluar_lote(guardados, ahora=ahora_ans, permitir_provisional=True) if guardados else {}
     for ticket in tickets:
+        resultado_ans = resultados_ans[ticket.pk] if not ticket._state.adding else calcular_ans(ticket, ahora=ahora_ans)
         fecha = _key_fecha(ticket.fecha_creacion)
         if fecha not in fechas:
             continue
@@ -4227,7 +4250,8 @@ def _dashboard_sparks(tickets, dias=7):
         activo = ticket.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)
         if activo:
             series["pendientes"][indice] += 1
-            if ticket.info_ans[0] == "vencido":
+            resultado_operativo = resultados_operativos[ticket.pk] if not ticket._state.adding else calcular_ans(ticket, ahora=ahora_ans, permitir_provisional=True)
+            if resultado_operativo.estado == "vencido":
                 series["vencidos_pendientes"][indice] += 1
         if ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO):
             series["completados_actuales"][indice] += 1
@@ -4237,7 +4261,7 @@ def _dashboard_sparks(tickets, dias=7):
             series["urgentes"][indice] += 1
         if activo and ticket.prioridad == Ticket.Prioridad.ALTA:
             series["altas"][indice] += 1
-        if ticket.fecha_limite_ans:
+        if resultado_ans.estado != "sin_informacion":
             series["sla_total"][indice] += 1
         if ticket.estado == Ticket.Estado.ABIERTO:
             series["abiertos"][indice] += 1
@@ -4245,7 +4269,7 @@ def _dashboard_sparks(tickets, dias=7):
             series["progreso"][indice] += 1
         elif ticket.estado == Ticket.Estado.CERRADO:
             series["cerrados"][indice] += 1
-        if ticket.fecha_limite_ans and (ticket.fecha_finalizacion or timezone.now()) > ticket.fecha_limite_ans:
+        if resultado_ans.estado in ("vencido", "incumplido"):
             series["vencidos"][indice] += 1
     return series
 
@@ -4254,7 +4278,9 @@ def _dashboard_atencion(tickets):
     orden = {Ticket.Prioridad.URGENTE: 0, Ticket.Prioridad.ALTA: 1,
              Ticket.Prioridad.MEDIA: 2, Ticket.Prioridad.BAJA: 3}
     pendientes = [t for t in tickets if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO)]
-    pendientes.sort(key=lambda t: (t.info_ans[0] != "vencido", orden.get(t.prioridad, 9), t.fecha_limite_ans or timezone.now()))
+    ahora = timezone.now()
+    resultados_ans = evaluar_lote(pendientes, ahora=ahora, permitir_provisional=True)
+    pendientes.sort(key=lambda t: (resultados_ans[t.pk].estado != "vencido", orden.get(t.prioridad, 9), resultados_ans[t.pk].limite or ahora))
     return pendientes[:8]
 
 
@@ -4279,6 +4305,29 @@ def _dashboard_comparacion_resueltos(request, filtros, actual):
             base = base.filter(**{campo: valor})
     anterior = base.count()
     return round((actual - anterior) * 100 / anterior) if anterior else None
+
+
+@admin_required
+def registro_seguimientos_api(request):
+    """Fuente parcial: solo seguimientos reales, disponible al administrador."""
+    from .actividad_registro import consultar_seguimientos
+
+    pagina, conteos = consultar_seguimientos(request.GET)
+    eventos = []
+    for comentario in pagina:
+        eventos.append({
+            "id": comentario.pk,
+            "tipo": "presion" if comentario.es_presion else "seguimiento",
+            "ticket": comentario.ticket.codigo,
+            "ticket_url": reverse("tickets:detalle", args=[comentario.ticket_id]),
+            "actor": comentario.autor_nombre or (comentario.usuario.nombre if comentario.usuario else "Sistema"),
+            "rol_actual": comentario.usuario.rol if comentario.usuario else None,
+            "interno": comentario.es_interno,
+            "fecha": timezone.localtime(comentario.fecha).isoformat(),
+        })
+    return JsonResponse({"eventos": eventos, "conteos_por_rol_actual": conteos,
+                         "pagina": pagina.number, "paginas": pagina.paginator.num_pages,
+                         "total": pagina.paginator.count})
 
 
 @admin_required
@@ -4388,10 +4437,22 @@ def dashboard_data_api(request):
     metricas["puntos"] = qs.exclude(solicitante_punto__isnull=True).exclude(
         solicitante_punto=""
     ).values("solicitante_punto").distinct().count()
+    tecnicos_stats = _tecnicos_resumen(tickets)
+    busqueda = (request.GET.get("busqueda_equipo") or "").strip()[:150].casefold()
+    coincidencias = {
+        ticket.tecnico_asignado_id for ticket in tickets
+        if busqueda and (busqueda in (ticket.codigo or "").casefold()
+                         or busqueda in (ticket.titulo or "").casefold())
+    }
+    for tecnico in tecnicos_stats:
+        tecnico["oculto_busqueda"] = bool(busqueda and tecnico["id"] not in coincidencias
+            and busqueda not in (tecnico["nombre"] or "").casefold()
+            and busqueda not in (tecnico["email"] or "").casefold())
     return JsonResponse({
         "kpis": metricas,
         "sparks": {**_dashboard_sparks(tickets), "resueltos_periodo": _dashboard_sparks_resueltos(resueltos_qs)},
         "charts": json.loads(_build_tecnico_dashboard(consulta=qs)),
+        "tecnicos_html": render_to_string("tickets/_dashboard_tecnicos_rows.html", {"tecnicos_stats": tecnicos_stats}, request=request),
         "updated_at": timezone.localtime().strftime("%H:%M"),
     })
 
@@ -4449,13 +4510,22 @@ def _tecnicos_resumen(tickets=None):
     """
     tecnicos = {
         u.id: u
-        for u in User.objects.filter(activo=True, rol__in=["tecnico", "admin"]).order_by("nombre")
+        for u in User.objects.filter(activo=True).filter(
+            Q(rol__in=["tecnico", "admin"]) |
+            Q(cambio_rol_habilitado=True, rol_base__in=["tecnico", "admin"])
+        ).order_by("nombre")
     }
     agg = {
         uid: {
             "id": uid,
             "nombre": u.nombre or u.email,
             "email": u.email,
+            "cambio_rol_habilitado": u.cambio_rol_habilitado,
+            "rol_actual": u.get_rol_display(),
+            "rol_base": u.get_rol_base_display() if u.rol_base else u.get_rol_display(),
+            "rol_actual_codigo": u.rol,
+            "rol_base_codigo": u.rol_base or u.rol,
+            "rol_cambiado": bool(u.rol_base and u.rol_base != u.rol),
             "abrir": 0,
             "espera": 0,
             "vencido": 0,
@@ -4471,17 +4541,19 @@ def _tecnicos_resumen(tickets=None):
         }
         for uid, u in tecnicos.items()
     }
-    origen = tickets if tickets is not None else Ticket.objects.select_related("categoria", "tecnico_asignado").iterator(chunk_size=500)
+    origen = list(tickets if tickets is not None else Ticket.objects.select_related("categoria", "tecnico_asignado"))
+    evaluados = evaluar_lote(origen) if origen else {}
+    operativos = evaluar_lote(origen, permitir_provisional=True) if origen else {}
     for t in origen:
         tid = t.tecnico_asignado_id
         if not tid or tid not in agg:
             continue
         r = agg[tid]
         r["asignados"] += 1
-        limite = t.fecha_limite_ans
-        if limite:
+        resultado_ans = evaluados[t.pk]
+        if resultado_ans.estado != "sin_informacion":
             r["sla_total"] += 1
-            if (t.fecha_finalizacion or timezone.now()) <= limite:
+            if resultado_ans.estado in ("vigente", "por_vencer", "cumplido"):
                 r["sla_ok"] += 1
         final = t.fecha_finalizacion
         if final and t.fecha_creacion and final >= t.fecha_creacion:
@@ -4496,10 +4568,10 @@ def _tecnicos_resumen(tickets=None):
         elif t.estado == Ticket.Estado.CERRADO:
             r["cerrado"] += 1
         if t.estado in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
-            ans = t.info_ans[0]
+            ans = operativos[t.pk].estado
             if ans == "vencido":
                 r["vencido"] += 1
-            elif ans == "por-vencer":
+            elif ans == "por_vencer":
                 r["riesgo"] += 1
             if t.categoria_id:
                 r["categorias"].add(
@@ -4535,8 +4607,10 @@ def tec_tickets_api(request, pk):
         .order_by("-fecha_creacion")
     )
     tickets = []
-    for t in qs:
-        ans = t.info_ans[0]
+    origen = list(qs)
+    resultados_ans = evaluar_lote(origen, permitir_provisional=True)
+    for t in origen:
+        ans = t.datos_ans_desde_resultado(resultados_ans[t.pk])[0]
         tickets.append(
             {
                 "id": t.pk,
@@ -4895,8 +4969,11 @@ def lista_tickets(request):
 
     filtros_activos = any([estado, prioridad, categoria, tecnico, q, solicitante_email, zona, sv != "todas", rango, mias])
     tickets = _adjuntar_solicitantes(page_obj.object_list)
-    if sv == "vencen-hoy":
+    if sv in ("vencen-hoy", "vencidas"):
+        tickets = list(tickets)
         ahora = timezone.now()
+        resultados_ans = evaluar_lote(tickets, ahora=ahora, permitir_provisional=True)
+    if sv == "vencen-hoy":
         inicio_hoy = timezone.localtime(ahora).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
@@ -4905,16 +4982,15 @@ def lista_tickets(request):
             t
             for t in tickets
             if t.estado in abiertos
-            and t.fecha_limite_ans
-            and inicio_hoy <= t.fecha_limite_ans < fin_hoy
+            and resultados_ans[t.pk].limite
+            and inicio_hoy <= resultados_ans[t.pk].limite < fin_hoy
         ]
     elif sv == "vencidas":
         tickets = [
             t
             for t in tickets
             if t.estado in abiertos
-            and t.fecha_limite_ans
-            and t.fecha_limite_ans < timezone.now()
+            and resultados_ans[t.pk].estado == "vencido"
         ]
     return render(
         request,
@@ -5031,6 +5107,7 @@ def detalle_ticket(request, pk):
         {
             "ticket": ticket,
             "timeline": timeline_data_,
+            "ans_ajuste_clave": secrets.token_hex(24),
             "cuenta_solicitante": cuenta_solicitante,
             "eventos_count": sum(1 for i in timeline_data_ if i["tipo"] == "sistema"),
             "comentario_form": comentario_form,
@@ -5059,15 +5136,14 @@ def cambiar_estado(request, pk):
     elif ticket.estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO) and nuevo in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
         messages.error(request, "Las solicitudes finalizadas no pueden volver a abrirse.")
     else:
-        if nuevo == Ticket.Estado.RESUELTO:
-            # Marcar resuelto cierra el ticket: queda registrado que se
-            # resolvió y desde cuándo, y el solicitante lo ve cerrado. Por eso
-            # no se puede reabrir como "resuelto" sin volver a cerrarse.
-            ticket.estado = Ticket.Estado.CERRADO
-            ticket.fecha_resolucion = timezone.now()
-        else:
-            ticket.estado = nuevo
-        ticket.save()
+        from .services.transiciones_ans import cambiar_estado_ans, EstadoTicketModificado
+        try:
+            ticket = cambiar_estado_ans(ticket.pk, nuevo, actor=request.user,
+                                        estado_esperado=ticket.estado,
+                                        resolver_y_cerrar=nuevo == Ticket.Estado.RESUELTO)
+        except EstadoTicketModificado:
+            messages.error(request, "El ticket cambió; actualiza la página e inténtalo de nuevo.")
+            return redirect(_destino_seguro(request, "tickets:lista"))
         if nuevo == Ticket.Estado.RESUELTO:
             aviso = f"{ticket.codigo} quedó resuelto y cerrado."
         else:
@@ -5080,6 +5156,25 @@ def cambiar_estado(request, pk):
             logger.warning("GLPI estado sync: %s", exc)
         messages.success(request, aviso)
     return redirect(_destino_seguro(request, "tickets:lista"))
+
+
+@admin_required
+@require_POST
+def ajustar_ans_ticket(request, pk):
+    from django.utils.dateparse import parse_datetime
+    from .services.transiciones_ans import ajustar_plazo_ans, EstadoTicketModificado
+    get_object_or_404(Ticket, pk=pk)
+    try:
+        fecha = parse_datetime(request.POST.get("limite", ""))
+        if fecha and timezone.is_naive(fecha):
+            fecha = timezone.make_aware(fecha, timezone.get_current_timezone())
+        version = int(request.POST.get("version", ""))
+        ajustar_plazo_ans(pk, fecha, actor=request.user, motivo=request.POST.get("motivo"),
+                          clave=request.POST.get("clave"), version_esperada=version)
+        messages.success(request, "El ajuste ANS quedó registrado.")
+    except (ValueError, ValidationError, EstadoTicketModificado):
+        messages.error(request, "No se pudo registrar el ajuste. Revisa los datos o actualiza la página.")
+    return redirect("tickets:detalle", pk=pk)
 
 
 def _destino_seguro(request, nombre_ruta):
@@ -5510,8 +5605,11 @@ def mi_ticket_cerrar_ajax(request, pk):
             {"ok": False, "error": "Este ticket ya está resuelto o cerrado."},
             status=400,
         )
-    ticket.estado = ticket.Estado.CERRADO
-    ticket.save()
+    from .services.transiciones_ans import cambiar_estado_ans, EstadoTicketModificado
+    try:
+        ticket = cambiar_estado_ans(ticket.pk, ticket.Estado.CERRADO, actor=request.user, estado_esperado=ticket.estado)
+    except EstadoTicketModificado:
+        return JsonResponse({"ok": False, "error": "El ticket cambió; actualiza la página."}, status=409)
     notificar_ticket_actualizado(ticket, "Cerrado", "El solicitante cerro el ticket.")
     try:
         sync_estado_to_glpi(ticket)
@@ -5711,9 +5809,10 @@ def panel_tecnico(request):
         cola_qs = cola_qs.order_by(("-" if cola_orden.startswith("-") else "") + campo_orden, "pk")
     elif cola_orden.lstrip("-") == "vencimiento":
         tickets_cola = list(cola_qs)
-        con_limite = [t for t in tickets_cola if t.fecha_limite_ans]
-        sin_limite = [t for t in tickets_cola if not t.fecha_limite_ans]
-        con_limite.sort(key=lambda t: t.fecha_limite_ans, reverse=cola_orden.startswith("-"))
+        resultados_cola = evaluar_lote(tickets_cola, permitir_provisional=True)
+        con_limite = [t for t in tickets_cola if resultados_cola[t.pk].limite]
+        sin_limite = [t for t in tickets_cola if not resultados_cola[t.pk].limite]
+        con_limite.sort(key=lambda t: resultados_cola[t.pk].limite, reverse=cola_orden.startswith("-"))
         cola_qs = con_limite + sin_limite
     solicitudes_page = _paginar(
         cola_qs,
@@ -5849,9 +5948,12 @@ def panel_tecnico(request):
         ahora_ans = timezone.now()
         limite_hoy = inicio_hoy + timedelta(days=1)
         ids_ans = []
-        for item in mis_qs.iterator():
-            limite = item.fecha_limite_ans
-            if limite and (inicio_hoy <= limite < limite_hoy if sv == "vencen-hoy" else limite < ahora_ans):
+        candidatos_ans = list(mis_qs)
+        resultados_ans = evaluar_lote(candidatos_ans, ahora=ahora_ans, permitir_provisional=True)
+        for item in candidatos_ans:
+            resultado_ans = resultados_ans[item.pk]
+            limite = resultado_ans.limite
+            if limite and (inicio_hoy <= limite < limite_hoy if sv == "vencen-hoy" else resultado_ans.estado == "vencido"):
                 ids_ans.append(item.pk)
         mis_qs = mis_qs.filter(pk__in=ids_ans)
     mis_qs = mis_qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(
@@ -6080,8 +6182,11 @@ def panel_tecnico_lote(request):
         for t in tickets:
             if t.estado == Ticket.Estado.CERRADO:
                 continue
-            t.estado = Ticket.Estado.CERRADO
-            t.save(update_fields=["estado", "fecha_cierre", "fecha_resolucion", "fecha_actualizacion"])
+            from .services.transiciones_ans import cambiar_estado_ans, EstadoTicketModificado
+            try:
+                t = cambiar_estado_ans(t.pk, Ticket.Estado.CERRADO, actor=request.user, estado_esperado=t.estado)
+            except EstadoTicketModificado:
+                continue
             notificar_ticket_actualizado(t, "cambiado a Cerrado")
             try:
                 sync_estado_to_glpi(t)

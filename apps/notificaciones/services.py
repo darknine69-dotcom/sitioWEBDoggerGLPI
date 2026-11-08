@@ -567,7 +567,9 @@ def recordatorios(usuario, forzar=False):
         tickets_prioritarios = list(prioritarios.select_related("categoria").order_by("fecha_creacion", "pk"))
         urgentes = len(tickets_prioritarios)
         ahora = timezone.now()
-        vencidos = [t for t in tickets_prioritarios if t.fecha_limite_ans and t.fecha_limite_ans <= ahora]
+        from apps.tickets.services.motor_ans import evaluar_lote
+        resultados_ans = evaluar_lote(tickets_prioritarios, ahora=ahora, permitir_provisional=True)
+        vencidos = [t for t in tickets_prioritarios if resultados_ans[t.pk].estado == "vencido"]
         if vencidos:
             codigos = ", ".join(t.codigo for t in vencidos[:3])
             mas = f" y {len(vencidos) - 3} más" if len(vencidos) > 3 else ""

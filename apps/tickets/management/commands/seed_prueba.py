@@ -2,7 +2,9 @@ import random
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction, models
 from django.utils import timezone
 
 from apps.tickets.models import Categoria, Ticket
@@ -104,6 +106,7 @@ class Command(BaseCommand):
     help = "Crea 5 solicitantes con tickets realistas para demostración"
 
     def add_arguments(self, parser):
+        parser.add_argument("--permitir-demo", action="store_true", help="Confirma la creación de datos ficticios en un entorno de desarrollo.")
         parser.add_argument(
             "--clean",
             action="store_true",
@@ -111,6 +114,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        if not settings.DEBUG or not options.get("permitir_demo"):
+            raise CommandError("Solo se permite con DEBUG activado y --permitir-demo; nunca en producción.")
         if options["clean"]:
             self._limpiar()
 
@@ -182,14 +187,17 @@ class Command(BaseCommand):
                 tecnico_asignado=tecnico,
                 asignacion_automatica=cat is not None and cat.tecnico_default is not None,
             )
-            ticket.save()
-            # Forzar fecha de creación y cierre realistas
-            updates = {"fecha_creacion": fecha_creacion}
-            if estado in ("resuelto", "cerrado"):
-                # Cierre entre 1h y 48h después de creación
-                horas_cierre = random.randint(1, 48)
-                updates["fecha_cierre"] = fecha_creacion + timedelta(hours=horas_cierre)
-            Ticket.objects.filter(pk=ticket.pk).update(**updates)
+            with transaction.atomic():
+                ticket.save()
+                # Solo para datos ficticios: ajustar origen y límite en conjunto.
+                updates = {"fecha_creacion": fecha_creacion, "ans_inicio_original": fecha_creacion,
+                           "ans_limite_original": fecha_creacion + timedelta(hours=ticket.ans_duracion_original)}
+                if estado in ("resuelto", "cerrado"):
+                    cierre = fecha_creacion + timedelta(hours=random.randint(1, 48))
+                    updates["fecha_cierre"] = cierre
+                    if estado == "resuelto":
+                        updates["fecha_resolucion"] = cierre
+                models.QuerySet.update(Ticket.objects.filter(pk=ticket.pk), **updates)
             tickets_creados += 1
 
         self.stdout.write(

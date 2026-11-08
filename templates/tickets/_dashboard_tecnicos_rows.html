@@ -1,0 +1,16 @@
+{% for t in tecnicos_stats %}
+<tr data-tec-summary {% if t.oculto_busqueda %}hidden{% endif %} data-nombre="{{ t.nombre|default:t.email }}" data-asignados="{{ t.asignados }}" data-progreso="{{ t.espera }}" data-resueltos="{{ t.resueltos }}" data-vencidos="{{ t.vencido }}">
+    <td><button type="button" class="tec-open" data-pk="{{ t.id }}" data-nombre="{{ t.nombre }}" data-total="{{ t.abrir|add:t.espera }}">
+        <span class="tec-table-avatar" aria-hidden="true">{{ t.nombre|default:t.email|slice:":1"|upper }}</span>
+        <span class="tec-table-person"><span class="tec-name-txt">{{ t.nombre }}</span>{% if t.cambio_rol_habilitado %}<span class="tec-role-badge" title="Rol base: {{ t.rol_base }}">{% include 'components/role_icon.html' with rol=t.rol_base_codigo only %}{{ t.rol_base }}</span>{% if t.rol_cambiado %}<span class="tec-role-badge" title="Rol actual: {{ t.rol_actual }}">{% include 'components/role_icon.html' with rol=t.rol_actual_codigo only %}{{ t.rol_actual }}</span>{% endif %}{% endif %}<span class="tec-name-email">{{ t.email }}</span><span class="tec-name-hint">Ver sus tickets asignados</span><span class="tec-extra-info">Promedio de resolución: {{ t.promedio_resolucion|default:"Sin datos" }}</span></span>
+    </button></td>
+    <td class="num"><strong>{{ t.asignados }}</strong></td>
+    <td class="num">{{ t.espera }}</td>
+    <td class="num">{{ t.resueltos }}</td>
+    <td class="num col-vencido">{% if t.vencido %}<span class="badge-vencido">{{ t.vencido }}</span>{% else %}—{% endif %}</td>
+    <td>{% if t.sla_pct != None %}<span class="tec-sla"><span class="tec-sla-ring" data-sla="{{ t.sla_pct }}" aria-hidden="true"></span><b>{{ t.sla_pct }}%</b></span>{% else %}<span class="text-muted">Sin datos</span>{% endif %}</td>
+</tr>
+{% empty %}
+<tr class="table-empty"><td colspan="6">Sin técnicos registrados.</td></tr>
+{% endfor %}
+<tr data-tec-no-results hidden><td colspan="6">No se encontraron técnicos ni tickets.</td></tr>

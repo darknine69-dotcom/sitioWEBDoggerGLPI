@@ -45,8 +45,9 @@ class PapeleraDelUsuario(TestCase):
         from django.utils import timezone
 
         resuelta = self.ticket("HD-2001", estado=Ticket.Estado.CERRADO)
-        resuelta.fecha_resolucion = timezone.now()
-        resuelta.save(update_fields=["fecha_resolucion"])
+        from apps.tickets.services.transiciones_ans import cambiar_estado_ans
+        cambiar_estado_ans(resuelta.pk, Ticket.Estado.ABIERTO)
+        resuelta = cambiar_estado_ans(resuelta.pk, Ticket.Estado.RESUELTO, resolver_y_cerrar=True)
         self.ticket("HD-2002", estado=Ticket.Estado.CERRADO)
         self.ticket("HD-2003", estado=Ticket.Estado.ABIERTO)
         self.client.force_login(self.user)
@@ -186,16 +187,18 @@ class PapeleraDelUsuario(TestCase):
 
         # Evento: el personal responde. El contador sube sin recargar, que es
         # como lo ve la campana con su refresco automático.
-        avisos.ticket_cerrado(t)
+        aviso = next(n for n in avisos.ticket_cerrado(t) if n.usuario_id == self.user.pk)
         self.assertEqual(
             self.client.get(reverse("notificaciones:api")).json()["no_leidas"], antes + 1
         )
 
-        # Al entrar a Mi panel ya está revisado: el contador vuelve a cero.
+        # Entrar al panel no lee los avisos; leer uno sí reduce la campana.
         self.client.get(reverse("tickets:mi_panel"))
-        self.assertEqual(
-            self.client.get(reverse("notificaciones:api")).json()["no_leidas"], 0
-        )
+        aviso.refresh_from_db()
+        self.assertFalse(aviso.leida)
+        antes = avisos.no_leidas(self.user)
+        self.assertEqual(self.client.post(reverse("notificaciones:marcar_leida", args=[aviso.pk])).status_code, 200)
+        self.assertEqual(avisos.no_leidas(self.user), antes - 1)
 
     def test_cancelar_una_solicitud_no_cuenta_como_abierta(self):
         """La papelera no engaña: lo cancelado sale de la lista de solicitudes."""

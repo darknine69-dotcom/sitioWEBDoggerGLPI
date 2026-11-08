@@ -45,10 +45,7 @@ class CalificarDesdeElDetalle(TestCase):
         return Ticket.objects.create(**datos)
 
     def resuelto(self, **extra):
-        t = self.ticket(**extra)
-        t.fecha_resolucion = t.fecha_creacion
-        t.save(update_fields=["fecha_resolucion"])
-        return t
+        return self.ticket(**extra)
 
     def url(self, ticket):
         return reverse("tickets:mi_ticket", args=[ticket.pk])
@@ -309,8 +306,6 @@ class BackfillDeVotosViejos(TestCase):
             estado=Ticket.Estado.RESUELTO,
             tecnico_asignado=self.tec,
         )
-        t.fecha_resolucion = t.fecha_creacion
-        t.save(update_fields=["fecha_resolucion"])
         return t
 
     def atar(self):

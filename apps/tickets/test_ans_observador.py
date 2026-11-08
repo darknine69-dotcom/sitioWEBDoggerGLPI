@@ -76,8 +76,11 @@ class BaseAnsTest(TestCase):
         `fecha_creacion` es auto_now_add, así que se corrige con un update
         directo y no se puede desde el objeto recién creado.
         """
-        Ticket.objects.filter(pk=ticket.pk).update(
-            fecha_creacion=timezone.now() - timedelta(hours=horas)
+        inicio = timezone.now() - timedelta(hours=horas)
+        from django.db.models import QuerySet
+        QuerySet.update(Ticket.objects.filter(pk=ticket.pk),
+            fecha_creacion=inicio, ans_inicio_original=inicio,
+            ans_limite_original=inicio + timedelta(hours=ticket.ans_horas),
         )
         ticket.refresh_from_db()
         return ticket

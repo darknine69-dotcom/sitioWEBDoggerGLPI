@@ -62,9 +62,8 @@ class BaseTecnicoTest(TestCase):
             codigo=codigo,
         )
         if horas is not None:
-            Ticket.objects.filter(pk=ticket.pk).update(
-                fecha_creacion=timezone.now() - timedelta(hours=horas)
-            )
+            from apps.tickets.tests_ans_fixtures import envejecer_ticket
+            envejecer_ticket(ticket, timezone.now() - timedelta(hours=horas))
             ticket.refresh_from_db()
         mail.outbox.clear()
         return ticket
@@ -261,10 +260,8 @@ class HistorialTecnicoTest(BaseTecnicoTest):
         ticket.save(update_fields=["fecha_creacion"])
         comentario = self._responder(ticket, texto="Se actualizó el sistema.")
 
-        ticket.estado = Ticket.Estado.RESUELTO
-        ticket.fecha_resolucion = timezone.now()
-        ticket.fecha_cierre = ticket.fecha_resolucion
-        ticket.save(update_fields=["estado", "fecha_resolucion", "fecha_cierre"])
+        from apps.tickets.services.transiciones_ans import cambiar_estado_ans
+        ticket = cambiar_estado_ans(ticket.pk, Ticket.Estado.RESUELTO)
 
         respuesta = self.client.get(
             reverse("tickets:tec_historial"), {"tipo": "respuestas"}
@@ -320,7 +317,8 @@ class HistorialTecnicoTest(BaseTecnicoTest):
 
     def test_el_mas_reciente_sale_primero(self):
         viejo = self._ticket(codigo="HD-0300", estado=Ticket.Estado.RESUELTO)
-        Ticket.objects.filter(pk=viejo.pk).update(
+        from django.db.models import QuerySet
+        QuerySet.update(Ticket.objects.filter(pk=viejo.pk),
             fecha_resolucion=timezone.now() - timedelta(days=30)
         )
         self._ticket(codigo="HD-0301", estado=Ticket.Estado.RESUELTO)

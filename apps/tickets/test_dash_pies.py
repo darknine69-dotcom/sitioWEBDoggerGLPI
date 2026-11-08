@@ -79,8 +79,8 @@ class DashPiesTest(SmokeTestCase):
         resuelta = self._ticket(
             Ticket.Estado.CERRADO, Ticket.Prioridad.ALTA, self.cat_a, "Resuelta"
         )
-        resuelta.fecha_resolucion = timezone.now()
-        resuelta.save(update_fields=["fecha_resolucion"])
+        from django.db.models import QuerySet
+        QuerySet.update(Ticket.objects.filter(pk=resuelta.pk), fecha_resolucion=timezone.now())
         self._ticket(
             Ticket.Estado.CERRADO, Ticket.Prioridad.MEDIA, self.cat_a, "Cerrada"
         )
@@ -188,15 +188,17 @@ class DashSancionesAnsTest(SmokeTestCase):
         t.tecnico_asignado = self.tecnico
         t.save()
         ahora = timezone.now()
+        from django.db.models import QuerySet
+        inicio = ahora - timedelta(days=3)
+        historico = {"fecha_creacion": inicio, "ans_inicio_original": inicio,
+                     "ans_limite_original": inicio + timedelta(hours=ans_horas)}
         if duracion_horas is None:
             # abierto y con el limite ANS ya vencido
-            Ticket.objects.filter(pk=t.pk).update(fecha_creacion=ahora - timedelta(days=3))
+            QuerySet.update(Ticket.objects.filter(pk=t.pk), **historico)
         else:
             # historia: creado hace 3 dias, cerrado despues de `duracion_horas`
-            Ticket.objects.filter(pk=t.pk).update(
-                fecha_creacion=ahora - timedelta(days=3),
-                fecha_cierre=ahora - timedelta(days=3) + timedelta(hours=duracion_horas),
-            )
+            historico["fecha_cierre"] = inicio + timedelta(hours=duracion_horas)
+            QuerySet.update(Ticket.objects.filter(pk=t.pk), **historico)
         t.refresh_from_db()
         return t
 
@@ -376,8 +378,9 @@ class FiltroResueltasTest(SmokeTestCase):
             categoria=self.cat,
         )
         if resuelta:
-            t.fecha_resolucion = timezone.now()
-            t.save()
+            from django.db.models import QuerySet
+            QuerySet.update(Ticket.objects.filter(pk=t.pk), fecha_resolucion=timezone.now())
+            t.refresh_from_db()
         return t
 
     def _listado(self, estado):
@@ -521,7 +524,9 @@ class FiltroResueltasTest(SmokeTestCase):
         html = self.client.get(
             reverse("tickets:detalle", args=[ticket.pk])
         ).content.decode()
-        self.assertIn("chat-scroll", html)
+        self.assertIn('id="td-followup-list"', html)
+        self.assertIn(".td-followup-list { max-height:150px; overflow-y:auto", html)
+        self.assertIn('aria-label="Seguimientos del ticket; desplázate para ver más"', html)
         self.assertIn("Agregar seguimiento", html)
         self.assertIn('name="action" value="comentario"', html)
         self.assertNotIn("corp-notif-toggle", html)

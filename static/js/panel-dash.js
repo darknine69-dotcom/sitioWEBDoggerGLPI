@@ -924,8 +924,9 @@
         var title = document.getElementById('tecModalTitle');
         var meta = document.getElementById('tecModalMeta');
         var list = document.getElementById('tecModalList');
-        Array.prototype.forEach.call(card.querySelectorAll('.tec-open'), function (btn) {
-            btn.addEventListener('click', function () {
+        card.addEventListener('click', function (event) {
+                var btn = event.target.closest('.tec-open');
+                if (!btn || !card.contains(btn)) return;
                 var pk = btn.dataset.pk;
                 title.textContent = btn.dataset.nombre || 'Técnico';
                 meta.textContent = 'Tiene ' + (btn.dataset.total || 0) + ' tickets a cargo.';
@@ -945,7 +946,6 @@
                     .catch(function () {
                         list.innerHTML = '<li class="tec-modal-empty">No se pudieron cargar los tickets.</li>';
                     });
-            });
         });
     }
 

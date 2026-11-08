@@ -11,7 +11,8 @@ class ActividadPuntoTest(TestCase):
     def test_vencimiento_se_muestra_solo_si_supero_el_limite(self):
         usuario = get_user_model().objects.create_user("punto@example.com", "Punto", "clave", rol="usuario")
         ticket = Ticket.objects.create(titulo="Vencido", descripcion="Detalle", solicitante_nombre="Punto", solicitante_email=usuario.email)
-        Ticket.objects.filter(pk=ticket.pk).update(fecha_creacion=timezone.now() - timedelta(days=30))
+        from apps.tickets.tests_ans_fixtures import envejecer_ticket
+        envejecer_ticket(ticket, timezone.now() - timedelta(days=30))
         otro = Ticket.objects.create(titulo="A tiempo", descripcion="Detalle", solicitante_nombre="Punto", solicitante_email=usuario.email)
         self.client.force_login(usuario)
         eventos = self.client.get(reverse("tickets:mi_panel"), {"actividad": "1"}).json()["eventos"]

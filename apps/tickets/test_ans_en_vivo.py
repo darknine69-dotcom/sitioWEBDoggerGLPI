@@ -38,13 +38,21 @@ def _crear_ticket(codigo, prioridad="normal", asignado=None, estado=Ticket.Estad
     t.save()
     # fecha_creacion es auto_now_add: para simular un ticket viejo hay que
     # escribirla después de creado, como hace la sincronización con GLPI.
-    Ticket.objects.filter(pk=t.pk).update(
+    from django.db.models import QuerySet
+    QuerySet.update(Ticket.objects.filter(pk=t.pk),
         fecha_creacion=timezone.now() - creado_hace,
         fecha_cierre=(
             timezone.now() - creado_hace + timedelta(hours=2)
             if estado in (Ticket.Estado.RESUELTO, Ticket.Estado.CERRADO)
             else None
         ),
+    )
+    t.refresh_from_db()
+    # El fixture altera la fecha de creación por SQL; ajusta también la
+    # instantánea para representar un ticket creado realmente en ese momento.
+    QuerySet.update(Ticket.objects.filter(pk=t.pk),
+        ans_inicio_original=t.fecha_creacion,
+        ans_limite_original=t.fecha_creacion + timedelta(hours=t.ans_horas),
     )
     t.refresh_from_db()
     return t
