@@ -22,14 +22,35 @@ def _absoluta(path):
     return f"{settings.SITE_URL.rstrip('/')}{path}" if getattr(settings, "SITE_URL", "") else path
 
 
-def _enviar(asunto, texto, html, destinatarios):
-    """Envía el correo si hay destinatarios y SMTP configurado."""
+def destinatarios_con_preferencia(destinatarios, preferencia):
+    """Respeta la preferencia de cuentas conocidas sin excluir correos externos."""
+    from django.contrib.auth import get_user_model
+    from django.db.models.functions import Lower
+
     destinatarios = [d for d in dict.fromkeys(destinatarios or []) if d]
+    correos = [d.strip().lower() for d in destinatarios]
+    usuarios = get_user_model().objects.annotate(_correo_normalizado=Lower("email")).filter(
+        _correo_normalizado__in=correos
+    ).values_list("_correo_normalizado", "preferencias_notificaciones")
+    bloqueados = {correo for correo, prefs in usuarios if (prefs or {}).get(preferencia, True) is False}
+    return [d for d in destinatarios if d.strip().lower() not in bloqueados]
+
+
+
+def _enviar(asunto, texto, html, destinatarios, *, preferencia=None):
+    """Envía correos mediante el backend configurado en Django."""
+    destinatarios = [d for d in dict.fromkeys(destinatarios or []) if d]
+
     if not destinatarios:
         return False
-    if not settings.EMAIL_HOST_USER:
-        logger.warning("SMTP sin configurar (EMAIL_USER vacío). No se envió: %s", asunto)
-        return False
+
+    if preferencia:
+        destinatarios = destinatarios_con_preferencia(
+            destinatarios, preferencia
+        )
+        if not destinatarios:
+            return True
+
     try:
         from apps.tickets.services.fondo import en_fondo
 
@@ -42,9 +63,11 @@ def _enviar(asunto, texto, html, destinatarios):
             html_message=html,
             fail_silently=False,
         )
-    except Exception as exc:  # pragma: no cover - red
-        logger.error("Error enviando correo '%s': %s", asunto, exc)
+
+    except Exception as exc:
+        logger.error("Error al enviar correo de notificaciones (%s)", type(exc).__name__)
         return False
+
 
 
 def _render(nombre, ctx):
@@ -111,6 +134,7 @@ def correo_ticket_tecnico(ticket, tecnico, url_detalle=""):
         texto,
         html,
         [tecnico.email],
+        preferencia="correo_tickets",
     )
 
 
@@ -141,6 +165,7 @@ def correo_ticket_bandeja(ticket, tecnicos):
         texto,
         html,
         correos,
+        preferencia="correo_tickets",
     )
 
 
@@ -171,6 +196,7 @@ def correo_ticket_usuario(ticket):
         texto,
         html,
         [ticket.solicitante_email],
+        preferencia="correo_tickets",
     )
 
 
@@ -217,6 +243,7 @@ def correo_ticket_cerrado(ticket, url_detalle=""):
         texto,
         html,
         destinatarios,
+        preferencia="correo_tickets",
     )
 
 
@@ -279,6 +306,7 @@ def correo_ans_por_vencer_tecnico(ticket, restante):
         texto,
         html,
         [tecnico.email],
+        preferencia="correo_ans",
     )
 
 
@@ -315,4 +343,5 @@ def correo_ans_por_vencer_usuario(ticket, restante):
         texto,
         html,
         [correo],
+        preferencia="correo_ans",
     )

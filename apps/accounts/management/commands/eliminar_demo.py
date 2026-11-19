@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from apps.tickets.models import Ticket
+from apps.tickets.services.autoasignacion_transaccional import asignar_manual, coordinacion_asignacion
 
 User = get_user_model()
 
@@ -78,15 +79,16 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"Usuario no encontrado: {email}"))
             return False
 
-        # Eliminar tickets donde es solicitante
-        tickets_solicitante = Ticket.objects.filter(solicitante_email=email).count()
-        Ticket.objects.filter(solicitante_email=email).delete()
-
-        # Desasignar tickets donde es técnico
-        tickets_asignados = Ticket.objects.filter(tecnico_asignado=user).update(tecnico_asignado=None)
-
-        nombre = user.nombre
-        user.delete()
+        with coordinacion_asignacion():
+            # El bloqueo global precede a cualquier bloqueo de tickets.
+            tickets_solicitante = Ticket.objects.filter(solicitante_email=email).count()
+            Ticket.objects.filter(solicitante_email=email).delete()
+            ids = list(Ticket.objects.filter(tecnico_asignado=user).order_by("pk").values_list("pk", flat=True))
+            for ticket_id in ids:
+                asignar_manual(ticket_id, None)
+            tickets_asignados = len(ids)
+            nombre = user.nombre
+            user.delete()
 
         if not silent:
             self.stdout.write(

@@ -499,8 +499,8 @@ html[data-theme="dark"] .attention-more-menu a:hover,html[data-theme="dark"] .at
         <p>Resumen de la operación, el ANS y las últimas solicitudes.</p></div>
         <div class="dashboard-greeting-tools">
             <div class="dashboard-greeting-meta">
-                <div class="dogger-header-clock" data-page-clock data-time-zone="{{ encabezado.zona }}"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><div><time data-page-date>{% now 'l, j \d\e F \d\e Y' %}</time><small data-page-time>{% now 'H:i:s' %}</small></div></div>
-                <div class="dogger-header-session"><strong>Sesión iniciada</strong>{% if encabezado.inicio_sesion %}<small><time datetime="{{ encabezado.inicio_sesion|date:'c' }}">{{ encabezado.inicio_sesion|date:'d/m/Y H:i' }}</time></small>{% endif %}</div>
+                <div class="dogger-header-clock" data-page-clock data-time-zone="{{ encabezado.zona }}"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><div><time data-page-date>{% now 'l, j \d\e F \d\e Y' %}</time><small data-page-time>{% now 'h:i:s A' %}</small></div></div>
+                <div class="dogger-header-session"><strong>Sesión iniciada</strong>{% if encabezado.inicio_sesion %}<small><time datetime="{{ encabezado.inicio_sesion|date:'c' }}">{{ encabezado.inicio_sesion|date:'d/m/Y h:i A' }}</time></small>{% endif %}</div>
             </div>
             <div class="dash-header-actions">
     <div class="dashboard-filter-popover" id="dashboardFilterPopover">
@@ -733,7 +733,7 @@ html[data-theme="dark"] .attention-more-menu a:hover,html[data-theme="dark"] .at
                                 <td data-label="Prioridad">{{ t.get_prioridad_display }}</td>
                                 <td data-label="ANS">{% include "tickets/_ans_time.html" with t=t %}</td>
                                 <td data-label="Estado">{% include "tickets/_estado_pill.html" with estado=t.estado label=t.get_estado_display resuelto=t.fue_resuelto cerrado=t.esta_cerrado %}</td>
-                                <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                                <td data-label="Fecha">{{ t.fecha_creacion|date:"d/m/Y h:i A" }}</td>
                             </tr>
                             {% empty %}
                             <tr class="table-empty"><td colspan="7">Sin tickets registrados.</td></tr>

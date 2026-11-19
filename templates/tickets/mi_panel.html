@@ -170,26 +170,32 @@
         </header>
 
         {% with zona_seguimiento=mi_zona.zonas_seguimiento|first zona_punto=mi_zona.zonas|first supervisor=mi_zona.supervisores|first %}
-        <section class="pv-supervisor-strip" aria-label="Mi zona y supervisor">
-            <div class="pv-supervision-zone">
-                <span class="pv-supervision-heading"><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg> Mi zona y supervisor</span>
-                <span class="pv-supervision-detail"><svg class="icon" aria-hidden="true"><use href="#i-map-pin"/></svg><span><small>Zona actual</small><b>{% if zona_seguimiento %}{{ zona_seguimiento.nombre }}{% elif zona_punto %}{{ zona_punto.nombre }}{% else %}Sin zona asignada{% endif %}</b></span></span>
+        {% now 'H' as hora_actual %}
+        <section class="pv-welcome" aria-label="Resumen de tus solicitudes">
+            <span class="pv-welcome-avatar">{% if request.user.avatar %}<img src="{{ request.user.avatar.url }}" alt="">{% else %}{{ request.user.iniciales }}{% endif %}</span>
+            <div class="pv-welcome-copy">
+                <h2>{% if hora_actual >= '06' and hora_actual < '12' %}☀️ Buenos días{% elif hora_actual >= '12' and hora_actual < '18' %}🌤️ Buenas tardes{% else %}🌙 Buenas noches{% endif %}, {{ request.user.nombre }}</h2>
+                {% with abiertos=punto_dashboard.estados.abiertos|default:0 progreso=punto_dashboard.estados.progreso|default:0 %}
+                <p>{% if abiertos or progreso %}En el período seleccionado: {{ abiertos }} solicitud{{ abiertos|pluralize:'es' }} abierta{{ abiertos|pluralize }} y {{ progreso }} en progreso.{% else %}No tienes solicitudes abiertas ni en progreso en el período seleccionado.{% endif %}</p>
+                {% endwith %}
+                <span class="pv-welcome-zone"><svg class="icon" aria-hidden="true"><use href="#i-map-pin"/></svg>{% if zona_seguimiento %}{{ zona_seguimiento.nombre }}{% elif zona_punto %}{{ zona_punto.nombre }}{% else %}Sin zona asignada{% endif %}</span>
             </div>
+        </section>
+        <section class="pv-supervisor-strip" aria-label="Mi zona y supervisor">
             <div class="pv-supervision-card pv-supervision-person">
-                <span class="pv-supervision-avatar">{% if supervisor and supervisor.avatar %}<img src="{{ supervisor.avatar }}" alt="">{% elif supervisor %}{{ supervisor.nombre|slice:':1'|upper }}{% else %}<svg class="icon"><use href="#i-user"/></svg>{% endif %}</span>
-                <span><small>Supervisor</small><b>{% if supervisor %}{{ supervisor.nombre }}{% else %}Sin supervisor asignado{% endif %}</b><em>{% if supervisor %}{% if supervisor.en_linea %}Disponible{% else %}Fuera de línea{% endif %}{% else %}Sin asignación activa{% endif %}</em></span>
+                <div class="pv-contact-head"><span class="pv-contact-head-icon"><svg class="icon"><use href="#i-user"/></svg></span><span><b>Supervisor</b><small>Tu supervisor de zona</small></span></div>
+                <div class="pv-person-detail"><span class="pv-supervision-avatar">{% if supervisor and supervisor.avatar %}<img src="{{ supervisor.avatar }}" alt="">{% elif supervisor %}{{ supervisor.nombre|slice:':1'|upper }}{% else %}<svg class="icon"><use href="#i-user"/></svg>{% endif %}</span><span><b>{% if supervisor %}{{ supervisor.nombre }}{% else %}Sin supervisor asignado{% endif %}</b><em>{% if supervisor %}{% if supervisor.en_linea %}Disponible{% else %}Fuera de línea{% endif %}{% else %}Sin asignación activa{% endif %}</em></span></div>
+                <small class="pv-contact-note">Consulta con tu supervisor cuando necesites seguimiento.</small>
             </div>
             <div class="pv-supervision-card pv-supervision-contact">
-                <span class="pv-supervision-icon"><svg class="icon" aria-hidden="true"><use href="{% if DOGGER.whatsapp_activo and DOGGER.whatsapp_soporte %}#i-whatsapp{% else %}#i-message{% endif %}"/></svg></span>
-                <span><small>Contacto</small>{% if DOGGER.whatsapp_activo and DOGGER.whatsapp_soporte %}<a href="https://wa.me/57{{ DOGGER.whatsapp_soporte }}" target="_blank" rel="noopener">Enviar mensaje</a>{% elif supervisor and supervisor.correo %}<a href="mailto:{{ supervisor.correo }}">Enviar mensaje</a>{% else %}<b>Sin contacto disponible</b>{% endif %}</span>
-            </div>
-            <div class="pv-supervision-card pv-supervision-hours">
-                <span class="pv-supervision-icon"><svg class="icon"><use href="#i-clock"/></svg></span>
-                <span><small>Horario de atención</small><b>{{ DOGGER.horario_atencion|default:'Horario no configurado' }}</b></span>
+                <div class="pv-contact-head"><span class="pv-contact-head-icon pv-contact-green"><svg class="icon" aria-hidden="true"><use href="{% if DOGGER.whatsapp_activo and DOGGER.whatsapp_soporte %}#i-whatsapp{% else %}#i-message{% endif %}"/></svg></span><span><b>Contacto</b><small>Comunícate directamente</small></span></div>
+                <small>Envía un mensaje para resolver tus consultas.</small>
+                {% if DOGGER.whatsapp_activo and DOGGER.whatsapp_soporte %}<a class="pv-contact-button" href="https://wa.me/57{{ DOGGER.whatsapp_soporte }}" target="_blank" rel="noopener">Enviar mensaje <span aria-hidden="true">→</span></a>{% elif supervisor and supervisor.correo %}<a class="pv-contact-button" href="mailto:{{ supervisor.correo }}">Enviar mensaje <span aria-hidden="true">→</span></a>{% else %}<b>Sin contacto disponible</b>{% endif %}
             </div>
             <div class="pv-supervision-escalate">
-                <span class="pv-supervision-icon"><svg class="icon"><use href="#i-alert"/></svg></span>
-                <span><b>¿Tu caso se demora?</b><small>Revisa tus solicitudes y solicita seguimiento al responsable.</small><a href="#mis-solicitudes">Escalar ticket</a></span>
+                <div class="pv-contact-head"><span class="pv-contact-head-icon pv-contact-red"><svg class="icon"><use href="#i-alert"/></svg></span><span><b>¿Tu caso se demora?</b><small>Solicita seguimiento</small></span></div>
+                <small>Si tu solicitud se está demorando, revisa tus solicitudes y solicita seguimiento al responsable.</small>
+                <a class="pv-contact-button" href="#mis-solicitudes">Escalar ticket <span aria-hidden="true">→</span></a>
             </div>
         </section>
         {% endwith %}
@@ -626,7 +632,7 @@
                         </p>
                         <span class="glpi-activity-time">
                             {% if ev.fecha_formateada %}{{ ev.fecha_formateada }}
-                            {% else %}{{ ev.fecha|date:"d/m/Y H:i" }}{% endif %}
+                            {% else %}{{ ev.fecha|date:"d/m/Y h:i A" }}{% endif %}
                             {% if ev.ticket and ev.ticket.pk %}&nbsp;&middot;&nbsp;{{ ev.ticket.codigo }}{% endif %}
                         </span>
                     </div>

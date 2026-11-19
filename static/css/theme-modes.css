@@ -11,16 +11,33 @@ html[data-fontsize="lg"] { zoom: 1.1; }
 /* ---- Modo oscuro: variables base ---- */
 [data-theme="dark"] {
     color-scheme: dark;
-    --theme-bg: #0d0d0d;
-    --theme-secondary: #151515;
-    --theme-panel: #1c1c1c;
-    --theme-raised: #252525;
-    --theme-input: #161616;
-    --theme-border: #484848;
-    --theme-text: #d9d9d9;
-    --theme-muted: #bdbdbd;
-    --theme-subtle: #ababab;
-    --theme-hover: #333333;
+    --bg-main: #0F1117;
+    --bg-sidebar: #111827;
+    --card-bg: #1A1D24;
+    --card-bg-hover: #232933;
+    --border-color: rgba(255,255,255,.08);
+    --text-primary: #F9FAFB;
+    --text-secondary: #9CA3AF;
+    --dogger-red: #DC2626;
+    --dogger-red-hover: #EF4444;
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --info: #3B82F6;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,.15);
+    --shadow-md: 0 8px 24px rgba(0,0,0,.20);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,.25);
+    --theme-bg: var(--bg-main);
+    --theme-secondary: var(--bg-sidebar);
+    --theme-panel: var(--card-bg);
+    --theme-raised: #202632;
+    --theme-input: var(--card-bg);
+    --theme-border: var(--border-color);
+    --theme-text: var(--text-primary);
+    --theme-muted: #b0bac9;
+    --theme-subtle: #a5b0c0;
+    --theme-hover: var(--card-bg-hover);
     --theme-focus: #93c5fd;
     --dogger-cream: var(--theme-bg);
     --dogger-paper: var(--theme-panel);
@@ -28,7 +45,7 @@ html[data-fontsize="lg"] { zoom: 1.1; }
     --ink-muted: var(--theme-muted);
     --line: var(--theme-border);
     --dogger-black: var(--theme-secondary);
-    --shadow-card: 0 2px 4px rgba(0, 0, 0, .45), 0 10px 28px rgba(0, 0, 0, .5);
+    --shadow-card: var(--shadow-md);
 }
 
 /* ---- Tabla pivote "Solicitudes por técnico": indicadores como el dashboard ---- */

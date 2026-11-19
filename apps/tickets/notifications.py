@@ -42,16 +42,24 @@ def _destinatarios(ticket, incluir_solicitante=True, incluir_tecnico=True):
     return list(set(destinatarios))
 
 
+
 def _enviar(asunto, mensaje, destinatarios, html=""):
+    """Envía avisos de tickets respetando preferencias."""
     if not destinatarios:
         return
-    if not settings.EMAIL_HOST_USER:
-        logger.warning("SMTP no configurado (EMAIL_USER vacio). Correo no enviado: %s", asunto)
+
+    from apps.notificaciones.emails import destinatarios_con_preferencia
+
+    destinatarios = destinatarios_con_preferencia(
+        destinatarios, "correo_tickets"
+    )
+
+    if not destinatarios:
         return
+
     try:
         from apps.tickets.services.fondo import en_fondo
 
-        # El SMTP tarda segundos: va a fondo para no frenar el request.
         return en_fondo(
             send_mail,
             asunto,
@@ -61,8 +69,12 @@ def _enviar(asunto, mensaje, destinatarios, html=""):
             html_message=html or None,
             fail_silently=False,
         )
+
     except Exception as exc:
-        logger.error("Error enviando correo '%s': %s", asunto, exc)
+        logger.error("Error al enviar correo relacionado con un ticket (%s)", type(exc).__name__)
+        return False
+
+
 
 
 def _notificar_app(fn, *args, **kwargs):

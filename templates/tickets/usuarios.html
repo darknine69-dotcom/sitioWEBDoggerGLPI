@@ -623,6 +623,12 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
 .usuarios-page #tablaUsuarios .row-menu-btn { width:36px; height:36px; border-color:#d7e0eb; background:#fff; color:#294669; }
 .usuarios-page #tablaUsuarios .role-heading { display:inline-flex; align-items:center; gap:6px; }
 .usuarios-page #tablaUsuarios .role-heading .icon { width:14px; height:14px; color:#647b9b; }
+/* Mantener avatar, presencia e identidad juntos incluso con correos largos. */
+.usuarios-page #tablaUsuarios .ue-name-line { display:flex; flex-wrap:nowrap; align-items:center; gap:10px; min-width:0; width:100%; }
+.usuarios-page #tablaUsuarios .ue-avatar-wrap { position:relative; display:inline-flex; flex:none; }
+.usuarios-page #tablaUsuarios .ue-name-line .ue-dot-w { left:auto; right:0; bottom:0; margin:0; }
+.usuarios-page #tablaUsuarios .ue-user-identity { flex:1 1 auto; min-width:0; }
+.usuarios-page #tablaUsuarios .ue-name-line .file-chip { flex:none; }
 </style>
 {% endblock %}
 
@@ -712,6 +718,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                         title="Clic en la fila para ver la ficha">
                         <td data-label="Nombre">
                             <span class="ue-name-line">
+                                <span class="ue-avatar-wrap">
                                 <span class="ue-user-avatar"{% if not u.avatar %} aria-hidden="true"{% endif %}>{% if u.avatar %}<img src="{{ u.avatar.url }}" alt="Foto de {{ u.nombre }}" loading="lazy">{% else %}{{ u.nombre|slice:":1"|upper }}{% endif %}</span>
                                 {% if u.activo %}
                                 <span class="ue-dot-w{% if u.ficha.dot == 'red' %} is-hidden{% endif %}" id="ue-dot-{{ u.pk }}" data-uid="{{ u.pk }}"
@@ -725,6 +732,7 @@ table.data-table tbody tr.ue-row.is-open { background: #FFF9ED; box-shadow: 0 10
                                     <span class="ue-dot red"></span>
                                 </span>
                                 {% endif %}
+                                </span>
                                 <span class="ue-user-identity"><strong>{{ u.nombre }}</strong><small>{{ u.email }}</small></span>{% if u.pk == request.user.pk %} <span class="file-chip">tú</span>{% endif %}
                             </span>
                             {% if u.ficha.es_nuevo %}<span class="ue-badge ue-nuevo">▸ Recién registrado</span>{% endif %}

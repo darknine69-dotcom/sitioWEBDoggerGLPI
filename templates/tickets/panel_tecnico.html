@@ -537,7 +537,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         <td data-label="Punto de venta">{{ t.solicitante_punto|default:"—" }}</td>
                         <td data-label="Prioridad"><span class="cola-priority {{ t.prioridad }}">{{ t.get_prioridad_display }}</span></td>
                         <td data-label="Vencimiento">
-                            {% if t.fecha_limite_ans %}<small style="display:block;color:#526781">{{ t.fecha_limite_ans|date:"d M Y H:i" }}</small>{% endif %}
+                            {% if t.fecha_limite_ans %}<small style="display:block;color:#526781">{{ t.fecha_limite_ans|date:"d M Y h:i A" }}</small>{% endif %}
                             {% include "tickets/_ans_time.html" with t=t %}
                         </td>
                         <td data-label="Técnico">
@@ -745,7 +745,7 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                     {% if ticket.solicitante_email %}<span>· {{ ticket.solicitante_email }}</span>{% endif %}
                     {% if ticket.solicitante_punto %}<span>· {{ ticket.solicitante_punto }}</span>{% endif %}
                     <span>· Prioridad: {{ ticket.get_prioridad_display }}</span>
-                    <span>· {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                    <span>· {{ ticket.fecha_creacion|date:"d/m/Y h:i A" }}</span>
                     {% if ticket.categoria %}<span>· {{ ticket.categoria.grupo }} › {{ ticket.categoria.nombre }}</span>{% endif %}
                 </div>
                 <div class="tec-state-row">
@@ -766,20 +766,20 @@ table.data-table.corp-table tbody tr:hover { background: #FFF3E3; box-shadow: in
                         <div class="chat-event">
                             <span class="chat-event-icon"><svg class="icon icon-sm"><use href="#i-message"/></svg></span>
                             <span class="chat-event-text">{{ item.texto }}</span>
-                            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+                            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y h:i A" }}</span>
                         </div>
                         {% elif item.tipo == 'interno' %}
                         <div class="chat-event chat-event-interno">
                             <span class="chat-event-icon"><svg class="icon icon-sm"><use href="#i-lock"/></svg></span>
                             <span class="chat-event-text"><strong>INTERNO · {{ item.autor }}</strong> — {{ item.texto }}</span>
-                            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+                            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y h:i A" }}</span>
                         </div>
                         {% else %}
                         <div class="chat-msg chat-msg-{{ item.tipo }}">
                             <div class="chat-meta">
                                 <span class="chat-avatar">{{ item.autor|slice:":1"|upper }}</span>
                                 <strong>{{ item.autor }}</strong>
-                                <span class="chat-meta-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+                                <span class="chat-meta-time">{{ item.fecha|date:"d/m/Y h:i A" }}</span>
                             </div>
                             <div class="chat-bubble">{{ item.texto }}</div>
                         </div>

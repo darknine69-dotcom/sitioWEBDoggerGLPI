@@ -1,9 +1,10 @@
 from django.urls import path
-from . import views, views_chat, views_monitoreo, views_observador, webhooks
+from . import views, views_autoasignacion, views_chat, views_monitoreo, views_observador, webhooks
 
 app_name = "tickets"
 
 urlpatterns = [
+    path("configuracion/asignacion-automatica/", views_autoasignacion.configuracion_autoasignacion, name="configuracion_autoasignacion"),
     path("", views.portal, name="portal"),
     path("reportes/", views.reportes, name="reportes"),
     path("reportes/exportar/", views.exportar_tickets_admin, name="exportar_admin"),

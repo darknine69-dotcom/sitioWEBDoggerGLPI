@@ -47,7 +47,7 @@
             <div><b><svg class="icon"><use href="#i-phone"/></svg>Teléfono</b><span>{{ u.telefono|default:"Sin número" }}</span></div>
             <div><b><svg class="icon"><use href="#i-map-pin"/></svg>Ubicación</b><span>{{ u.ubicacion|default:"—" }}</span></div>
             {% if u.ficha.punto %}<div><b>Punto usu.</b><span>{{ u.ficha.punto }}</span></div>{% endif %}
-            <div><b><svg class="icon"><use href="#i-calendar"/></svg>Registrado</b><span>{{ u.ficha.registrado|date:"d/m/Y H:i" }}</span></div>
+            <div><b><svg class="icon"><use href="#i-calendar"/></svg>Registrado</b><span>{{ u.ficha.registrado|date:"d/m/Y h:i A" }}</span></div>
             <div><b><svg class="icon"><use href="#i-clock"/></svg>Últ. acceso</b><span id="ue-access-f-{{ u.pk }}">{% if u.ficha.ultimo_acceso %}{{ u.ficha.acceso_label }}{% else %}Nunca{% endif %}</span></div>
         </div>
     </div>
@@ -76,7 +76,7 @@
     <div class="ue-box">
         <h4><svg class="icon"><use href="#i-clock"/></svg> Disponibilidad</h4>
         {% for d in u.ficha.disponibilidad|slice:":6" %}
-        <span class="ue-disp ue-availability-event is-{{ d.tipo }}"><b>{{ d.fecha|date:"d/m/Y" }}</b>{% if d.hora %}<span class="ue-evento-hora">{{ d.hora|time:"H:i" }}</span>{% endif %}<small>{{ d.get_tipo_display }}{% if d.nota %} — {{ d.nota }}{% endif %}</small></span>
+        <span class="ue-disp ue-availability-event is-{{ d.tipo }}"><b>{{ d.fecha|date:"d/m/Y" }}</b>{% if d.hora %}<span class="ue-evento-hora">{{ d.hora|time:"h:i A" }}</span>{% endif %}<small>{{ d.get_tipo_display }}{% if d.nota %} — {{ d.nota }}{% endif %}</small></span>
         {% empty %}
         <p class="ue-empty">Sin ausencias registradas · disponible por defecto.</p>
         {% endfor %}
@@ -93,7 +93,7 @@
         <h4><svg class="icon"><use href="#i-layers"/></svg> Tareas y eventos próximos</h4>
         {% for e in u.ficha.eventos %}
         <span class="ue-evento">
-            <span class="ue-evento-date">{{ e.fecha|date:"d/m/Y" }}</span>{% if e.hora %}<span class="ue-evento-hora">{{ e.hora|time:"H:i" }}</span>{% endif %}
+            <span class="ue-evento-date">{{ e.fecha|date:"d/m/Y" }}</span>{% if e.hora %}<span class="ue-evento-hora">{{ e.hora|time:"h:i A" }}</span>{% endif %}
             <span class="ue-evento-type st-{{ e.tipo }}">{{ e.get_tipo_display }}</span>
             {% if e.ticket %}<a href="{% url 'tickets:detalle' e.ticket.pk %}">{% endif %}
             <span>{{ e.titulo }}</span>

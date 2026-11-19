@@ -197,7 +197,10 @@ def glpi_webhook(request):
             ticket.titulo = titulo_nuevo
             update_fields.append("titulo")
 
-        with transaction.atomic():
+        # Tomar el bloqueo global antes de escribir el ticket, también cuando
+        # llega una actualización de título junto con una transición de estado.
+        from .services.autoasignacion_transaccional import coordinacion_asignacion
+        with coordinacion_asignacion():
             if update_fields:
                 update_fields.append("fecha_actualizacion")
                 ticket.save(update_fields=update_fields)

@@ -611,7 +611,7 @@ html[data-theme="dark"] .obs-page #por-vencer .obs-carousel-controls button { bo
                 <span class="obs-alert-meta"><span><svg class="icon"><use href="#i-user"/></svg>{{ t.solicitante_nombre|default:"Sin nombre" }}</span><span><svg class="icon"><use href="#i-wrench"/></svg>Técnico: {{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</span><span class="obs-alert-priority obs-prio-{{ t.prioridad }}">{{ t.get_prioridad_display }}</span></span>
             </summary>
             <div class="ans-alerta-detalle">
-            <div class="obs-alert-extra">{% if t.solicitante_punto %}<span>Punto: {{ t.solicitante_punto }}</span>{% endif %}<span>Última actualización: {{ t.fecha_actualizacion|date:"d/m/Y H:i" }}</span>{% if t.fecha_limite_ans %}<span>Límite ANS: {{ t.fecha_limite_ans|date:"d/m/Y H:i" }}</span><span data-obs-ans-limit="{{ t.fecha_limite_ans|date:'c' }}"></span>{% endif %}</div>
+            <div class="obs-alert-extra">{% if t.solicitante_punto %}<span>Punto: {{ t.solicitante_punto }}</span>{% endif %}<span>Última actualización: {{ t.fecha_actualizacion|date:"d/m/Y h:i A" }}</span>{% if t.fecha_limite_ans %}<span>Límite ANS: {{ t.fecha_limite_ans|date:"d/m/Y h:i A" }}</span><span data-obs-ans-limit="{{ t.fecha_limite_ans|date:'c' }}"></span>{% endif %}</div>
             <div class="ans-ficha-pie">
                 <form method="post" action="{% url 'tickets:obs_presionar' t.pk %}" class="act-nudge">
                     {% csrf_token %}
@@ -674,7 +674,7 @@ html[data-theme="dark"] .obs-page #por-vencer .obs-carousel-controls button { bo
                 <strong class="obs-modern-ticket-code">{{ t.codigo }}</strong>
                 <span class="obs-modern-ticket-request"><b>{{ t.titulo }}</b><small>{{ t.solicitante_nombre }} · {{ t.tecnico_asignado.nombre|default:"Sin asignar" }}</small></span>
                 <span class="obs-modern-ticket-owner">{{ t.solicitante_nombre }}<small>Técnico: {{ t.tecnico_asignado.nombre|default:"sin asignar" }}</small></span>
-                <span class="obs-modern-ticket-date"><b>{{ t.fecha_creacion|timesince }}</b><small>{{ t.fecha_creacion|date:"d/m/Y H:i" }}</small></span>
+                <span class="obs-modern-ticket-date"><b>{{ t.fecha_creacion|timesince }}</b><small>{{ t.fecha_creacion|date:"d/m/Y h:i A" }}</small></span>
                 <span class="obs-modern-ticket-more" aria-hidden="true">•••</span>
             </a>
             {% empty %}

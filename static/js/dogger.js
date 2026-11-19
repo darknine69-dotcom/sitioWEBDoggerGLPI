@@ -634,6 +634,10 @@
     document.querySelectorAll('input[type="file"][multiple], input[type="file"]').forEach(function (input) {
         /* El del chat está oculto y sube el archivo solo: ahí no pinta chips. */
         if (input.hidden) return;
+        var esAdjuntoTicket = Boolean(input.closest(".ticket-file-control") && input.multiple);
+        var seleccionAnterior = [];
+        var actualizacionInterna = false;
+        var vistasTemporales = [];
         function cajaPreview() {
             var box = document.getElementById(input.id + "-preview") ||
                       input.closest(".form-group")?.querySelector(".file-preview");
@@ -646,12 +650,38 @@
             return box;
         }
         input.addEventListener("change", function () {
+            if (esAdjuntoTicket && !actualizacionInterna && typeof DataTransfer !== "undefined") {
+                var unidos = new DataTransfer();
+                var nuevos = Array.from(input.files);
+                seleccionAnterior.concat(nuevos).forEach(function (archivo) {
+                    var repetido = Array.from(unidos.files).some(function (existente) {
+                        return existente.name === archivo.name && existente.size === archivo.size && existente.lastModified === archivo.lastModified;
+                    });
+                    if (!repetido) unidos.items.add(archivo);
+                });
+                input.files = unidos.files;
+            }
+            if (esAdjuntoTicket) seleccionAnterior = Array.from(input.files);
+            vistasTemporales.forEach(function (url) { URL.revokeObjectURL(url); });
+            vistasTemporales = [];
             var box = cajaPreview();
             box.innerHTML = "";
             Array.from(input.files).slice(0, 6).forEach(function (f, idx) {
                 var item = document.createElement("span");
                 item.className = "file-chip";
-                item.textContent = f.name + " (" + Math.round(f.size / 1024) + " KB)";
+                if (esAdjuntoTicket && /^image\/(jpeg|png|gif|webp)$/i.test(f.type)) {
+                    var miniatura = document.createElement("img");
+                    var url = URL.createObjectURL(f);
+                    vistasTemporales.push(url);
+                    miniatura.src = url;
+                    miniatura.alt = "Vista previa de " + f.name;
+                    miniatura.className = "file-chip-preview";
+                    item.appendChild(miniatura);
+                }
+                var nombre = document.createElement("span");
+                nombre.className = "file-chip-name";
+                nombre.textContent = f.name + " (" + Math.round(f.size / 1024) + " KB)";
+                item.appendChild(nombre);
                 var btn = document.createElement("button");
                 btn.type = "button";
                 btn.className = "file-chip-x";
@@ -664,7 +694,9 @@
                         if (i !== idx) dt.items.add(file);
                     });
                     input.files = dt.files;
+                    actualizacionInterna = true;
                     input.dispatchEvent(new Event("change", { bubbles: true }));
+                    actualizacionInterna = false;
                 });
                 item.appendChild(btn);
                 box.appendChild(item);

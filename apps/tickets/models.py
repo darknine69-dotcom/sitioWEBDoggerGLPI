@@ -34,6 +34,17 @@ class TareaDiferida(models.Model):
         indexes = [models.Index(fields=["estado", "disponible_en"], name="tarea_estado_disponible_idx")]
 
 
+class ConfiguracionAutoasignacion(models.Model):
+    """Configuración opt-in; la migración no activa el motor automáticamente."""
+    activa = models.BooleanField(default=False)
+    peso_urgente = models.PositiveIntegerField(default=5)
+    peso_alta = models.PositiveIntegerField(default=3)
+    peso_media = models.PositiveIntegerField(default=2)
+    peso_baja = models.PositiveIntegerField(default=1)
+    margen_puntos = models.PositiveSmallIntegerField(default=20)
+    secuencia = models.PositiveBigIntegerField(default=0)
+
+
 class Categoria(models.Model):
     """
     Categorias alineadas a la infraestructura Dogger (STATU QUO):
@@ -232,6 +243,10 @@ class Ticket(models.Model):
         "Asignación automática",
         default=False,
         help_text="True cuando el técnico se asignó por regla de categoría",
+    )
+    asignacion_manual_protegida = models.BooleanField(
+        default=False, editable=False,
+        help_text="Impide que el motor anule una decisión manual, incluso si deja el ticket sin técnico.",
     )
     glpi_id = models.PositiveIntegerField("ID GLPI", null=True, blank=True, db_index=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -1466,3 +1481,30 @@ class MonitoreoAuditoria(models.Model):
                            self.QUITAR_LISTA, self.QUITAR_PUNTO):
             return "no"
         return "info"
+
+
+class PerfilAutoasignacion(models.Model):
+    tecnico = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil_autoasignacion")
+    habilitado = models.BooleanField(default=False)
+    cobertura_general = models.BooleanField(default=False, help_text="Permite atender cualquier punto; desactivar para limitar a los puntos seleccionados.")
+    capacidad = models.PositiveIntegerField(default=1)
+    orden_rotacion = models.PositiveBigIntegerField(default=0)
+    categorias = models.ManyToManyField(Categoria, blank=True, related_name="perfiles_autoasignacion")
+    puntos_cobertura = models.ManyToManyField(Punto, blank=True, related_name="perfiles_autoasignacion")
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=Q(capacidad__gt=0), name="autoasig_capacidad_positiva")]
+
+
+class DecisionAutoasignacion(models.Model):
+    ticket = models.ForeignKey(Ticket, on_delete=models.PROTECT, related_name="decisiones_autoasignacion")
+    tecnico = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True)
+    fecha = models.DateTimeField(default=timezone.now)
+    motivo = models.CharField(max_length=60)
+    carga = models.PositiveIntegerField(null=True, blank=True)
+    capacidad = models.PositiveIntegerField(null=True, blank=True)
+    prioridad = models.CharField(max_length=20)
+    categoria_nombre = models.CharField(max_length=160, blank=True, default="")
+
+    class Meta:
+        ordering = ["-fecha", "-pk"]

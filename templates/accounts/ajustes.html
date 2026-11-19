@@ -5,7 +5,7 @@
 {% block body_class %}admin-shell perfil-shell{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-user"/></svg></span>{% endblock %}
 {% block header_title %}Mi perfil{% endblock %}
-{% block header_desc %}Tu cuenta, tu contraseña y cómo te avisamos.{% endblock %}
+{% block header_desc %}Administra tus datos personales, contraseña y opciones de tu cuenta.{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% asset 'css/ajustes-perfil.css' %}">
 <style>
 .horario-editor .horario-lista{border:1px solid #dce4ee;border-radius:14px;overflow:hidden;background:#fff}.horario-editor .horario-columnas,.horario-editor .horario-fila{display:grid;grid-template-columns:minmax(145px,1fr) minmax(170px,1fr) minmax(180px,1.4fr) 36px;gap:12px;align-items:center;padding:10px 14px}.horario-editor .horario-columnas{background:#f5f7fb;color:#667892;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}.horario-editor .horario-fila+.horario-fila{border-top:1px solid #edf1f5}.horario-editor .horario-fila input{width:100%;min-width:0;height:42px;border:1px solid #dce4ee;border-radius:9px;background:#fff;color:#17233b;padding:0 11px;font:inherit}.horario-editor .horario-fila input:focus{outline:2px solid #91b8fa;outline-offset:1px;border-color:#4b8ce8}.horario-editor .horario-quitar{border:0;background:transparent;color:#8391a3;cursor:pointer;font-size:22px;line-height:1;width:36px;height:36px;border-radius:8px}.horario-editor .horario-quitar:hover{background:#fff0f0;color:#dc2626}.horario-editor .horario-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px}.horario-editor .horario-agregar{border:1px dashed #a9bed9;background:transparent;color:#2459a1;padding:9px 13px;border-radius:9px;font-weight:700;cursor:pointer}.horario-editor .horario-agregar:disabled{opacity:.5;cursor:not-allowed}.horario-editor .horario-info{margin:14px 0 0;color:#637693;font-size:13px}.horario-editor .horario-empty{padding:18px;color:#637693;font-size:13px}.horario-editor .horario-empty[hidden]{display:none}html[data-theme="dark"] .horario-editor .horario-lista,html[data-theme="dark"] .horario-editor .horario-fila input{background:#202020;color:#f1f5f9;border-color:#484848}html[data-theme="dark"] .horario-editor .horario-columnas{background:#2b2b2b;color:#c1cad7}html[data-theme="dark"] .horario-editor .horario-fila+.horario-fila{border-color:#404040}html[data-theme="dark"] .horario-editor .horario-info,html[data-theme="dark"] .horario-editor .horario-empty{color:#b4c0d1}html[data-theme="dark"] .horario-editor .horario-agregar{color:#a9caff;border-color:#607d9e}@media(max-width:760px){.horario-editor .horario-columnas{display:none}.horario-editor .horario-fila{grid-template-columns:1fr 1fr 36px}.horario-editor .horario-fila .horario-nota{grid-column:1/3;grid-row:2}.horario-editor .horario-quitar{grid-column:3;grid-row:1}}
@@ -40,6 +40,11 @@
             </div>
 
             <nav class="settings-nav">
+                {% if request.user.is_superuser %}
+                <a href="{% url 'tickets:configuracion_autoasignacion' %}" class="settings-nav-link">
+                    <svg class="icon icon-sm"><use href="#i-settings"/></svg> Asignación automática
+                </a>
+                {% endif %}
                 <a href="#perfil" class="settings-nav-link active" data-settings-tab="perfil">
                     <svg class="icon icon-sm"><use href="#i-user"/></svg>
                     Datos
@@ -304,7 +309,7 @@
                 </div>
                 <form method="post" action="{% url 'accounts:ajustes' %}" class="settings-form">
                     {% csrf_token %}<input type="hidden" name="guardar_notificaciones" value="1">
-                    <p class="perfil-notif-note">Estas preferencias controlan los nuevos avisos de la campana; no modifican el envío de correos ni los avisos anteriores.</p>
+                    <p class="perfil-notif-note">Configura por separado los nuevos avisos de la campana y los correos. Los avisos anteriores no se modifican.</p>
                     <div class="notif-item">
                         <div class="notif-info">
                             <strong>Tickets nuevos</strong>
@@ -346,6 +351,10 @@
                         </label>
                     </div>
                     <div class="notif-item"><div class="notif-info"><strong>Eventos del programador</strong><small>Avisos de tareas y eventos de tu agenda.</small></div><label class="toggle-switch"><input type="checkbox" name="eventos" value="1"{% if preferencias_avisos.eventos %} checked{% endif %} aria-label="Avisos de eventos del programador"><span class="toggle-slider"></span></label></div>
+                    <input type="hidden" name="incluir_preferencias_correo" value="1">
+                    <div class="notif-item"><div class="notif-info"><strong>Correos de tickets</strong><small>Avisos por correo sobre tus tickets y sus actualizaciones.</small></div><label class="toggle-switch"><input type="checkbox" name="correo_tickets" value="1"{% if preferencias_avisos.correo_tickets %} checked{% endif %} aria-label="Correos de tickets"><span class="toggle-slider"></span></label></div>
+                    <div class="notif-item"><div class="notif-info"><strong>Correos de vencimientos ANS</strong><small>Alertas por correo de tickets próximos a vencer.</small></div><label class="toggle-switch"><input type="checkbox" name="correo_ans" value="1"{% if preferencias_avisos.correo_ans %} checked{% endif %} aria-label="Correos de vencimientos ANS"><span class="toggle-slider"></span></label></div>
+                    <div class="notif-item"><div class="notif-info"><strong>Resumen semanal</strong><small>Se envía si el servicio de correo y la tarea semanal están configurados y activos.</small></div><label class="toggle-switch"><input type="checkbox" name="correo_resumen" value="1"{% if correo_resumen_activo %} checked{% endif %} aria-label="Resumen semanal"><span class="toggle-slider"></span></label></div>
                     <div class="settings-actions"><button type="submit" class="btn btn-primary">Guardar preferencias</button></div>
                 </form>
             </section>

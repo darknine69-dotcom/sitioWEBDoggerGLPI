@@ -1499,7 +1499,7 @@ def _xlsx_auditoria(
     for n, a in enumerate(filas, start=3):
         vals = [
             a.pk,
-            timezone.localtime(a.fecha).strftime("%d/%m/%Y %H:%M") if a.fecha else "",
+            timezone.localtime(a.fecha).strftime("%d/%m/%Y %I:%M %p") if a.fecha else "",
             a.get_accion_display(),
             a.zona_nombre or "",
             getattr(a.observador, "nombre", "") or "",

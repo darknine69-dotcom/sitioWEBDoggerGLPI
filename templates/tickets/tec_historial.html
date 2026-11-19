@@ -126,7 +126,7 @@
                 <tbody>
                 {% for e in entradas %}
                     <tr>
-                        <td class="hist-cell-strong">{{ e.fecha|date:"d/m/Y H:i:s" }}</td>
+                        <td class="hist-cell-strong">{{ e.fecha|date:"d/m/Y h:i:s A" }}</td>
                         <td><strong class="hist-cell-strong">{{ e.registro_id }}</strong></td>
                         <td>
                             {% if e.tipo == 'resuelto' %}

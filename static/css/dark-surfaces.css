@@ -9,6 +9,7 @@ html[data-theme="dark"] {
     --table-hover-bg: var(--theme-hover);
 }
 
+
 html[data-theme="dark"] :is(.modal-box, .confirm-box, .force-pwd-modal, .ax-modal-card,
     .pan-presionar-modal, .mon-folder-dialog, .mon-point-dialog, .aud-modal-caja,
     .perfil-photo-dialog) {
@@ -1143,3 +1144,58 @@ html[data-theme="dark"] .ans-modal .ans-modal-leyenda { background:var(--theme-p
 html[data-theme="dark"] .ticket-detail-grid .chat-thread { background:var(--theme-raised); color:var(--theme-text); border-color:var(--theme-border); box-shadow:none; }
 html[data-theme="dark"] :is(.pan-zc, .mon-zc) { background:var(--theme-raised); }
 html[data-theme="dark"] :is(.pan-zc, .mon-zc):is(:hover, :focus-visible) { background:var(--theme-hover); }
+/* Leyenda de la gráfica de estado del punto de venta en modo oscuro. */
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-state-body li:hover,
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-state-body li:focus-visible {
+    background: #30333a;
+    color: #f1f5f9;
+}
+
+/* Contornos discretos en ventanas y tarjetas del panel de punto de venta. */
+html[data-theme="dark"] :is(.modal-box, .confirm-box, .force-pwd-modal,
+    .ax-modal-card, .pan-presionar-modal, .mon-folder-dialog, .mon-point-dialog,
+    .aud-modal-caja, .perfil-photo-dialog, .pv-zone-dialog) {
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, .14);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-supervisor-strip, .pv-kpi, .pv-card) {
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, .14);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header {
+    border-radius: 14px 14px 0 0;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-supervision-person, .pv-supervision-contact, .pv-supervision-escalate) {
+    background:#111820; border-color:#293341;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-contact-head-icon { background:#202b38; color:#bdc9d9; }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-contact-green { background:#153b2e; color:#14d77c; }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-contact-red { background:#38212f; color:#ff3150; }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-contact-note { border-color:#293341; }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-supervision-contact .pv-contact-button { background:#12ad5d; border-color:#12ad5d; color:#fff; }
+
+/* Sistema visual compartido: solo afecta superficies en modo oscuro. */
+html[data-theme="dark"] .sidebar { background:var(--bg-sidebar); border-color:var(--theme-border); }
+html[data-theme="dark"] :is(.topbar-top, .topbar > .header-row) { background:var(--bg-main); border-color:var(--theme-border); }
+html[data-theme="dark"] .sidebar .sidebar-link { border-radius:10px; transition:background-color .2s ease,color .2s ease; }
+html[data-theme="dark"] .sidebar .sidebar-link:hover { background:var(--theme-hover); color:var(--theme-text); }
+html[data-theme="dark"] .sidebar .sidebar-link:is(.active, .is-active, [aria-current="page"]) {
+    background:linear-gradient(90deg,rgba(220,38,38,.25),transparent);
+    box-shadow:inset 4px 0 var(--dogger-red); color:var(--theme-text);
+}
+html[data-theme="dark"] :is(.chart-card, .corp-card, .table-card, .profile-card, .cat-group-card, .side-card) {
+    border-radius:var(--radius-lg); border-color:var(--theme-border); box-shadow:var(--shadow-sm);
+}
+html[data-theme="dark"] :is(.modal-box, .confirm-box, .ax-modal-card, .mon-folder-dialog, .mon-point-dialog, .perfil-photo-dialog) {
+    border-radius:20px; border-color:var(--theme-border); box-shadow:var(--shadow-lg);
+}
+html[data-theme="dark"] :is(.modal-overlay, .confirm-overlay) { backdrop-filter:blur(4px); }
+html[data-theme="dark"] :is(.btn-primary, .btn-accent):not(:disabled) { background:var(--dogger-red); border-color:var(--dogger-red); color:#fff; }
+html[data-theme="dark"] :is(.btn-primary, .btn-accent):not(:disabled):hover { background:var(--dogger-red-hover); border-color:var(--dogger-red-hover); }
+html[data-theme="dark"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea):focus-visible {
+    border-color:var(--dogger-red-hover); box-shadow:0 0 0 3px rgba(220,38,38,.2); outline:2px solid #ff9ba4; outline-offset:2px;
+}
+html[data-theme="dark"] :is(a, button, summary):focus-visible { outline:2px solid #a8caff; outline-offset:2px; }
+@media (prefers-reduced-motion: reduce) {
+    html[data-theme="dark"] .sidebar .sidebar-link { transition:none; }
+}

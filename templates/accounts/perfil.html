@@ -5,7 +5,7 @@
 {% block body_class %}admin-shell{% endblock %}
 {% block header_icon %}<span class="h1-ico"><svg class="icon"><use href="#i-settings"/></svg></span>{% endblock %}
 {% block header_title %}Ajustes de cuenta{% endblock %}
-{% block header_desc %}Cómo se ve la plataforma y qué te avisamos: aquí están tus preferencias.{% endblock %}
+{% block header_desc %}Personaliza la apariencia, las notificaciones y la navegación.{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -220,7 +220,7 @@
 
             <div class="profile-ident-actions">
                 <a class="btn btn-primary btn-sm" href="{% url 'accounts:ajustes' %}">
-                    <svg class="icon"><use href="#i-settings"/></svg> Mi cuenta
+                    <svg class="icon"><use href="#i-user"/></svg> Mi perfil
                 </a>
             </div>
         </aside>
@@ -268,28 +268,30 @@
             <!-- Preferencias generales -->
             <section class="profile-card profile-panel" data-panel="general">
                 <div class="profile-panel-head">
-                    <div><h3>Preferencias generales</h3><p>Idioma y notificaciones de la cuenta.</p></div>
+                    <div><h3>{{ perfil_textos.0 }}</h3><p>{{ perfil_textos.1 }}</p></div>
                 </div>
                 <div class="prof-row">
-                    <div class="prof-row-label"><b>Idioma</b><small>Idioma de la interfaz.</small></div>
-                    <select id="prefIdioma">
-                        <option value="es">Español</option>
-                        <option value="en">English</option>
-                        <option value="pt">Português</option>
+                    <div class="prof-row-label"><b>{{ perfil_textos.2 }}</b><small>{{ perfil_textos.3 }}</small></div>
+                    <select id="prefIdioma" aria-label="{{ perfil_textos.2 }}">
+                        <option value="es" {% if idioma_perfil == 'es' %}selected{% endif %}>Español</option>
+                        <option value="en" {% if idioma_perfil == 'en' %}selected{% endif %}>English</option>
+                        <option value="pt" {% if idioma_perfil == 'pt' %}selected{% endif %}>Português</option>
                     </select>
                 </div>
                 <div class="prof-row">
-                    <div class="prof-row-label"><b>Notificaciones por correo</b><small>Recibir avisos sobre el estado de mis tickets.</small></div>
-                    <label class="switch"><input type="checkbox" id="prefNotifMail" checked><span class="slider"></span></label>
+                    <div class="prof-row-label"><b>{{ perfil_textos.4 }}</b><small>{{ perfil_textos.5 }}</small></div>
+                    <label class="switch"><input type="checkbox" id="prefNotifMail" {% if correo_tickets_activo %}checked{% endif %} aria-label="Notificaciones por correo"><span class="slider"></span></label>
                 </div>
                 <div class="prof-row">
-                    <div class="prof-row-label"><b>Aviso de vencimientos ANS</b><small>Alertas cuando un ticket de mi área está por vencer.</small></div>
-                    <label class="switch"><input type="checkbox" id="prefNotifAns" checked><span class="slider"></span></label>
+                    <div class="prof-row-label"><b>{{ perfil_textos.6 }}</b><small>{{ perfil_textos.7 }}</small></div>
+                    <label class="switch"><input type="checkbox" id="prefNotifAns" {% if correo_ans_activo %}checked{% endif %} aria-label="Aviso de vencimientos ANS por correo"><span class="slider"></span></label>
                 </div>
                 <div class="prof-row">
-                    <div class="prof-row-label"><b>Resumen semanal</b><small>Un correo con el resumen de mi actividad semanal.</small></div>
-                    <label class="switch"><input type="checkbox" id="prefNotifResumen"><span class="slider"></span></label>
+                    <div class="prof-row-label"><b>{{ perfil_textos.8 }}</b><small>{{ perfil_textos.9 }}</small></div>
+                    <label class="switch"><input type="checkbox" id="prefNotifResumen" {% if correo_resumen_activo %}checked{% endif %} aria-label="Resumen semanal"><span class="slider"></span></label>
                 </div>
+                <form id="preferenciasCorreoCsrf" hidden>{% csrf_token %}</form>
+                <p id="preferenciasCorreoError" role="alert" hidden></p>
             </section>
 
             <!-- Accesibilidad -->
@@ -437,30 +439,57 @@
         });
     });
 
-    // Idioma
-    var idioma = g("dogger:pv:lang") || "es";
-    var selIdioma = document.getElementById("prefIdioma");
-    selIdioma.value = idioma;
-    selIdioma.addEventListener("change", function () {
-        s("dogger:pv:lang", selIdioma.value);
-        document.documentElement.lang = selIdioma.value;
-        saved();
+    var idioma = document.getElementById("prefIdioma");
+    idioma.addEventListener("change", async function () {
+        idioma.disabled = true;
+        try {
+            var csrf = document.querySelector('#preferenciasCorreoCsrf [name="csrfmiddlewaretoken"]').value;
+            var respuesta = await fetch("{% url 'accounts:preferencias_correo' %}", {
+                method: "POST", credentials: "same-origin",
+                headers: {"X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+                body: new URLSearchParams({clave: "idioma_perfil", valor: idioma.value}).toString()
+            });
+            if (!respuesta.ok) throw new Error("No se guardó");
+            location.reload();
+        } catch (_) {
+            idioma.value = "{{ idioma_perfil|escapejs }}";
+            var error = document.getElementById("preferenciasCorreoError");
+            error.textContent = "No se pudo guardar la preferencia. Inténtalo de nuevo.";
+            error.hidden = false;
+            idioma.disabled = false;
+        }
     });
-
-    // Notificaciones (preferencias guardadas localmente)
-    function bindSwitch(id, key, def) {
+    // Las preferencias de correo pertenecen a la cuenta, no al navegador.
+    function bindSwitch(id, key) {
         var el = document.getElementById(id);
         if (!el) return;
-        el.checked = (g(key) || def) !== "0" && (g(key) !== null ? g(key) === "1" : def);
-        el.checked = g(key) === null ? def : g(key) === "1";
-        el.addEventListener("change", function () {
-            s(key, el.checked ? "1" : "0");
-            saved();
+        el.addEventListener("change", async function () {
+            var anterior = !el.checked;
+            var error = document.getElementById("preferenciasCorreoError");
+            error.hidden = true;
+            el.disabled = true;
+            try {
+                var datos = new URLSearchParams({clave: key, valor: el.checked ? "1" : "0"});
+                var csrf = document.querySelector('#preferenciasCorreoCsrf [name="csrfmiddlewaretoken"]').value;
+                var respuesta = await fetch("{% url 'accounts:preferencias_correo' %}", {
+                    method: "POST", credentials: "same-origin",
+                    headers: {"X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+                    body: datos.toString()
+                });
+                if (!respuesta.ok || !(await respuesta.json()).ok) throw new Error("No se guardó");
+                saved();
+            } catch (_) {
+                el.checked = anterior;
+                error.textContent = "No se pudo guardar la preferencia. Inténtalo de nuevo.";
+                error.hidden = false;
+            } finally {
+                el.disabled = false;
+            }
         });
     }
-    bindSwitch("prefNotifMail", "dogger:pv:notif:mail", true);
-    bindSwitch("prefNotifAns", "dogger:pv:notif:ans", true);
-    bindSwitch("prefNotifResumen", "dogger:pv:notif:resumen", false);
+    bindSwitch("prefNotifMail", "correo_tickets");
+    bindSwitch("prefNotifAns", "correo_ans");
+    bindSwitch("prefNotifResumen", "correo_resumen");
 
     // Navegación compacta e iconos
     var navCompact = document.getElementById("prefNavCompact");

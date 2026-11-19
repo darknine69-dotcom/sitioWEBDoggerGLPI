@@ -12,7 +12,7 @@
                 </svg>
             </span>
             <span class="chat-event-text">{{ item.texto }}</span>
-            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y h:i A" }}</span>
         </div>
         {% elif item.tipo == 'interno' %}
         <div class="chat-event chat-event-interno">
@@ -20,7 +20,7 @@
                 <svg class="icon icon-sm"><use href="#i-lock"/></svg>
             </span>
             <span class="chat-event-text"><strong>INTERNO · {{ item.autor }}</strong> — {{ item.texto|seguimiento_formato }}</span>
-            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+            <span class="chat-event-time">{{ item.fecha|date:"d/m/Y h:i A" }}</span>
         </div>
         {% else %}
         <div class="chat-msg chat-msg-{{ item.tipo }}">
@@ -28,7 +28,7 @@
                 <span class="chat-avatar">{{ item.autor|slice:":1"|upper }}</span>
                 <strong>{{ item.autor }}</strong>
                 {% if item.insignia %}<span class="chat-badge chat-badge-{{ item.tipo }}">{{ item.insignia }}</span>{% endif %}
-                <span class="chat-meta-time">{{ item.fecha|date:"d/m/Y H:i" }}</span>
+                <span class="chat-meta-time">{{ item.fecha|date:"d/m/Y h:i A" }}</span>
             </div>
             <div class="chat-bubble">{{ item.texto|seguimiento_formato }}</div>
         </div>

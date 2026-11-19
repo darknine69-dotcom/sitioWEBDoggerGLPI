@@ -42,8 +42,8 @@ def en_fondo(func, *args, _reset_token_id=None, **kwargs):
         try:
             close_old_connections()
             func(*args, **kwargs)
-        except Exception:
-            logger.exception("Fallo tarea de fondo %s", getattr(func, "__name__", func))
+        except Exception as exc:
+            logger.error("Fallo tarea de fondo %s (%s)", getattr(func, "__name__", "tarea"), type(exc).__name__)
         finally:
             try:
                 close_old_connections()

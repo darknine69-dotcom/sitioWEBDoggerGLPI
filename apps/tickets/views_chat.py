@@ -287,7 +287,7 @@ def _ficha_ticket(ticket, usuario):
             continue
         mensajes.append({
             "autor": c.autor_nombre or (c.usuario.nombre if c.usuario_id else "Mesa de ayuda"),
-            "fecha": c.fecha.strftime("%d/%m/%Y %H:%M") if c.fecha else "",
+            "fecha": c.fecha.strftime("%d/%m/%Y %I:%M %p") if c.fecha else "",
             "texto": c.comentario,
             "interno": bool(c.es_interno),
             "presion": bool(c.es_presion),
@@ -295,7 +295,7 @@ def _ficha_ticket(ticket, usuario):
         if c.es_presion and c.usuario_id and c.usuario.rol == "observador":
             presiones_observador.append({
                 "autor": c.autor_nombre or c.usuario.nombre,
-                "fecha": timezone.localtime(c.fecha).strftime("%d/%m/%Y %H:%M") if c.fecha else "",
+                "fecha": timezone.localtime(c.fecha).strftime("%d/%m/%Y %I:%M %p") if c.fecha else "",
                 "fecha_ts": int(c.fecha.timestamp()) if c.fecha else None,
                 "texto": c.comentario,
                 "avatar": c.usuario.avatar.url if c.usuario.avatar else "",
@@ -317,7 +317,7 @@ def _ficha_ticket(ticket, usuario):
         "prioridad_display": ticket.get_prioridad_display(),
         "categoria": ticket.categoria.nombre if ticket.categoria_id else "Sin categoría",
         "fecha": (
-            ticket.fecha_creacion.strftime("%d/%m/%Y %H:%M")
+            ticket.fecha_creacion.strftime("%d/%m/%Y %I:%M %p")
             if ticket.fecha_creacion else ""
         ),
         "solicitante_nombre": ticket.solicitante_nombre or "",
@@ -336,7 +336,7 @@ def _ficha_ticket(ticket, usuario):
             "estado": estado_ans, "texto": texto_ans, "detalle": detalle_ans,
             "inicio_ts": int(inicio.timestamp()) if inicio else None,
             "limite_ts": limite_ts, "aviso_ts": aviso_ts,
-            "limite": timezone.localtime(limite).strftime("%d/%m/%Y %H:%M") if limite else "",
+            "limite": timezone.localtime(limite).strftime("%d/%m/%Y %I:%M %p") if limite else "",
             "horas": ticket.ans_horas,
         },
         # Solo se puede presionar un ticket vivo y con técnico. El mensaje va
@@ -480,14 +480,14 @@ def chat_hilo(request, pk):
             "insignia": _insignia(c.usuario) if c.usuario_id else "Mesa de ayuda",
             "avatar": _avatar_url(c.usuario),
             "texto": c.comentario,
-            "fecha": timezone.localtime(c.fecha).strftime("%d/%m/%Y %H:%M"),
+            "fecha": timezone.localtime(c.fecha).strftime("%d/%m/%Y %I:%M %p"),
             "propio": bool(c.usuario_id and request.user.pk and c.usuario_id == request.user.pk),
         })
     adjuntos = [
         {"id": a.pk, "nombre": a.nombre_original,
          "url": reverse("tickets:adjunto", args=[a.pk]) if a.archivo else "",
          "es_imagen": a.es_imagen,
-         "fecha": timezone.localtime(a.fecha_subida).strftime("%d/%m/%Y %H:%M")}
+         "fecha": timezone.localtime(a.fecha_subida).strftime("%d/%m/%Y %I:%M %p")}
         for a in ticket.adjuntos.all().order_by("fecha_subida", "id")[:20]
     ]
     return JsonResponse({
@@ -536,7 +536,7 @@ def chat_responder(request, pk):
         "mensaje": {
             "id": comentario.pk, "autor": u.nombre, "insignia": _insignia(u),
             "avatar": _avatar_url(u), "texto": texto,
-            "fecha": timezone.localtime(comentario.fecha).strftime("%d/%m/%Y %H:%M"),
+            "fecha": timezone.localtime(comentario.fecha).strftime("%d/%m/%Y %I:%M %p"),
             "propio": True,
         },
     })
@@ -572,7 +572,7 @@ def chat_adjuntar(request, pk):
             "id": adjunto.pk, "nombre": adjunto.nombre_original,
             "url": reverse("tickets:adjunto", args=[adjunto.pk]),
             "es_imagen": adjunto.es_imagen,
-            "fecha": timezone.localtime(adjunto.fecha_subida).strftime("%d/%m/%Y %H:%M"),
+            "fecha": timezone.localtime(adjunto.fecha_subida).strftime("%d/%m/%Y %I:%M %p"),
         },
     })
 
@@ -593,7 +593,7 @@ def _mensaje_corp_json(m, lector):
         "insignia": _insignia(m.usuario) if m.usuario_id else "Mesa de ayuda",
         "avatar": _avatar_url(m.usuario),
         "texto": m.texto,
-        "fecha": timezone.localtime(m.fecha).strftime("%d/%m/%Y %H:%M"),
+        "fecha": timezone.localtime(m.fecha).strftime("%d/%m/%Y %I:%M %p"),
         "propio": bool(m.usuario_id and lector.pk and m.usuario_id == lector.pk),
     }
 

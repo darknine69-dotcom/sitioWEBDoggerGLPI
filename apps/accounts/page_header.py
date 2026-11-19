@@ -23,6 +23,7 @@ PAGINAS = {
     "tickets:categorias_arbol": ("ADMINISTRACIÓN", "Categorías", None),
     "tickets:categorias_publico": ("CONSULTA", "Categorías", None),
     "tickets:usuarios": ("ADMINISTRACIÓN", "Usuarios", None),
+    "tickets:configuracion_autoasignacion": ("CONFIGURACIÓN", "Asignación automática", "configuracion"),
     "tickets:reportes": ("ANÁLISIS Y ESTADÍSTICAS", "Reportes", None),
     "tickets:monitoreo_admin": ("SEGUIMIENTO OPERATIVO", "Monitoreo", None),
     "tickets:monitoreo_cuenta_detalle": ("SEGUIMIENTO OPERATIVO", "Detalle de cuenta", "monitoreo"),
@@ -67,7 +68,9 @@ def encabezado_pagina(request):
             padres.append({"texto": "Tickets", "url": reverse(ruta)})
     elif padre == "monitoreo" and user.is_authenticated and user.rol == "admin":
         padres.append({"texto": "Monitoreo", "url": reverse("tickets:monitoreo_admin")})
-    iconos = {"tickets": "i-ticket", "monitoreo": "i-eye"}
+    elif padre == "configuracion" and user.is_authenticated:
+        padres.append({"texto": "Mi perfil", "url": reverse("accounts:ajustes")})
+    iconos = {"tickets": "i-ticket", "monitoreo": "i-eye", "configuracion": "i-settings"}
     if padre:
         icono = iconos.get(padre, "i-layers")
     elif nombre.startswith("accounts:"):

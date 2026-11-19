@@ -38,8 +38,9 @@ def ajustar_plazo_ans(ticket_id, limite_nuevo, *, actor, motivo, clave, version_
 
 def crear_tickets_ans(tickets):
     """Alternativa atómica a bulk_create: conserva save e instantáneas ANS."""
+    from .autoasignacion_transaccional import coordinacion_asignacion
     creados = []
-    with transaction.atomic():
+    with coordinacion_asignacion():
         for ticket in tickets:
             if not ticket._state.adding:
                 raise ValueError("Todos los tickets deben ser nuevos")
@@ -51,7 +52,8 @@ def crear_tickets_ans(tickets):
 def cambiar_estado_ans(ticket_id, estado, *, actor=None, estado_esperado=None, resolver_y_cerrar=False):
     if estado not in dict(Ticket.Estado.choices):
         raise ValueError("Estado de ticket inválido")
-    with transaction.atomic():
+    from .autoasignacion_transaccional import coordinacion_asignacion
+    with coordinacion_asignacion():
         ticket = Ticket.objects.select_for_update().get(pk=ticket_id)
         anterior = ticket.estado
         if estado_esperado is not None and anterior != estado_esperado:

@@ -52,7 +52,7 @@ def _abiertos(consulta=None):
     ).select_related("categoria", "tecnico_asignado")
 
 
-def por_vencer(consulta=None, limite=LIMITE_POR_EJECUCION, solo_sin_avisar=True):
+def por_vencer(consulta=None, limite=LIMITE_POR_EJECUCION, solo_sin_avisar=True, solo_verificados=False):
     """Tickets abiertos cuyo ANS ya está «por vencer» o vencido.
 
     Cada fila sale con `ans_estado`, `ans_texto` y `ans_detalle` puestos, que
@@ -73,9 +73,11 @@ def por_vencer(consulta=None, limite=LIMITE_POR_EJECUCION, solo_sin_avisar=True)
         bloque = list(islice(iterador, 200))
         if not bloque:
             break
-        resultados = evaluar_lote(bloque, ahora=ahora, permitir_provisional=True)
+        resultados = evaluar_lote(bloque, ahora=ahora, permitir_provisional=not solo_verificados)
         for ticket in bloque:
             resultado = resultados[ticket.pk]
+            if solo_verificados and resultado.calidad != "verificado":
+                continue
             estado, texto, detalle, _limite, _aviso = ticket.datos_ans_desde_resultado(resultado)
             if estado not in AVISABLES:
                 continue
@@ -161,6 +163,11 @@ def _aviso_campana(usuario, ticket, texto, *, clave, url):
 def avisos_en_campana(ticket, texto, observadores=None):
     """Notifica en la aplicación al técnico, solicitante y supervisores."""
     from django.contrib.auth import get_user_model
+    from .services.motor_ans import calcular_ans
+
+    resultado = calcular_ans(ticket)
+    if resultado.calidad != "verificado" or resultado.estado not in ("por_vencer", "vencido"):
+        return []
 
     User = get_user_model()
     creadas = []
@@ -235,12 +242,18 @@ def avisar(ticket, observadores=None):
     mirando: el compromiso de tiempo es del helpdesk, no de la supervisión.
     """
     with transaction.atomic():
+        from .services.motor_ans import calcular_ans
+
+        ticket_actual = Ticket.objects.select_for_update().select_related("categoria", "tecnico_asignado").get(pk=ticket.pk)
+        resultado = calcular_ans(ticket_actual)
+        if resultado.calidad != "verificado" or resultado.estado not in ("por_vencer", "vencido"):
+            return 0
         # La reserva y el encolado durable se confirman juntos; otras pasadas
         # no pueden reclamar el mismo ticket al mismo tiempo.
         reclamado = Ticket.objects.filter(pk=ticket.pk, ans_alertado_en__isnull=True).update(ans_alertado_en=timezone.now())
         if not reclamado:
             return 0
-        return _enviar_aviso_reclamado(ticket, observadores)
+        return _enviar_aviso_reclamado(ticket_actual, observadores)
 
 
 def _enviar_aviso_reclamado(ticket, observadores=None):
@@ -251,8 +264,8 @@ def _enviar_aviso_reclamado(ticket, observadores=None):
 
     from .services.motor_ans import calcular_ans
     ahora = timezone.now()
-    resultado = calcular_ans(ticket, ahora=ahora, permitir_provisional=True)
-    if resultado.limite is None:
+    resultado = calcular_ans(ticket, ahora=ahora)
+    if resultado.calidad != "verificado" or resultado.estado not in ("por_vencer", "vencido"):
         raise ValueError("El ticket no tiene un plazo ANS evaluable")
     restante = resultado.limite - ahora
     enviados = 0
@@ -282,6 +295,7 @@ def completar_campanas_pendientes(limite=LIMITE_POR_EJECUCION):
     tickets = por_vencer(
         limite=limite,
         solo_sin_avisar=False,
+        solo_verificados=True,
     )
     avisos = []
     for ticket in tickets:
@@ -300,7 +314,7 @@ def revisar_y_avisar(consulta=None, limite=LIMITE_POR_EJECUCION):
     if consulta is None:
         _escalar_inactividad(limite=limite)
     avisados = []
-    for ticket in por_vencer(consulta=consulta, limite=limite):
+    for ticket in por_vencer(consulta=consulta, limite=limite, solo_verificados=True):
         try:
             if ticket.ans_estado == "vencido":
                 # La alerta operativa no depende de que SMTP esté disponible.
@@ -312,7 +326,7 @@ def revisar_y_avisar(consulta=None, limite=LIMITE_POR_EJECUCION):
         avisados.append(ticket)
     # La marca histórica de correo es única; la campana sí debe reflejar
     # la transición posterior a vencido sin reenviar el correo anterior.
-    for ticket in por_vencer(consulta=consulta, limite=limite, solo_sin_avisar=False):
+    for ticket in por_vencer(consulta=consulta, limite=limite, solo_sin_avisar=False, solo_verificados=True):
         if ticket.ans_alertado_en and ticket.ans_estado == "vencido":
             avisos_en_campana(ticket, ticket.ans_texto)
     return avisados

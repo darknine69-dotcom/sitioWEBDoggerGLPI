@@ -302,8 +302,15 @@ def ajustes_cuenta(request):
     if request.method == "POST":
         if request.POST.get("guardar_notificaciones") == "1":
             claves = ("tickets_nuevos", "cambios_ticket", "tickets_cerrados", "recordatorios", "eventos")
-            user.preferencias_notificaciones = {clave: request.POST.get(clave) == "1" for clave in claves}
-            user.save(update_fields=["preferencias_notificaciones"])
+            from django.db import transaction
+            with transaction.atomic():
+                cuenta = User.objects.select_for_update().get(pk=user.pk)
+                preferencias = dict(cuenta.preferencias_notificaciones or {})
+                preferencias.update({clave: request.POST.get(clave) == "1" for clave in claves})
+                if request.POST.get("incluir_preferencias_correo") == "1":
+                    preferencias.update({clave: request.POST.get(clave) == "1" for clave in ("correo_tickets", "correo_ans", "correo_resumen")})
+                cuenta.preferencias_notificaciones = preferencias
+                cuenta.save(update_fields=["preferencias_notificaciones"])
             messages.success(request, "Preferencias de notificaciones guardadas.")
             return redirect(reverse("accounts:ajustes") + "#notificaciones")
         es_staff = bool(getattr(user, "es_staff_helpdesk", False))
@@ -313,19 +320,23 @@ def ajustes_cuenta(request):
             user.borrar_glpi_al_eliminar = False
         form = PerfilForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
-            form.save()
+            try:
+                form.save()
+            except OSError:
+                form.add_error("avatar", "No se pudo guardar la foto. Comprueba que el almacenamiento de archivos esté disponible y vuelve a intentarlo.")
+            else:
             # Sync Dogger → GLPI: perfil + avatar
-            if glpi_enabled:
-                try:
-                    from apps.tickets.services.glpi_client import sync_perfil_to_glpi, sync_avatar_to_glpi
-                    sync_perfil_to_glpi(user)
-                    avatar_result = sync_avatar_to_glpi(user)
-                    if avatar_result and not avatar_result.get("ok"):
-                        messages.warning(request, f"Foto GLPI: {avatar_result.get('detalle', '')}")
-                except Exception:
-                    pass
-            messages.success(request, "Perfil actualizado correctamente.")
-            return redirect(reverse("accounts:ajustes") + "#perfil")
+                if glpi_enabled:
+                    try:
+                        from apps.tickets.services.glpi_client import sync_perfil_to_glpi, sync_avatar_to_glpi
+                        sync_perfil_to_glpi(user)
+                        avatar_result = sync_avatar_to_glpi(user)
+                        if avatar_result and not avatar_result.get("ok"):
+                            messages.warning(request, f"Foto GLPI: {avatar_result.get('detalle', '')}")
+                    except Exception:
+                        pass
+                messages.success(request, "Perfil actualizado correctamente.")
+                return redirect(reverse("accounts:ajustes") + "#perfil")
     else:
         form = PerfilForm(instance=user)
 
@@ -352,7 +363,8 @@ def ajustes_cuenta(request):
         "atajos_elegidos": elegidos,
         "atajos_enlaces": normaliza_enlaces(getattr(user, "atajos_enlaces", None)),
         "atajos_iconos": ICONOS_ENLACE,
-        "preferencias_avisos": {clave: (user.preferencias_notificaciones or {}).get(clave, True) for clave in ("tickets_nuevos", "cambios_ticket", "tickets_cerrados", "recordatorios", "eventos")},
+        "preferencias_avisos": {clave: (user.preferencias_notificaciones or {}).get(clave, True) for clave in ("tickets_nuevos", "cambios_ticket", "tickets_cerrados", "recordatorios", "eventos", "correo_tickets", "correo_ans")},
+        "correo_resumen_activo": (user.preferencias_notificaciones or {}).get("correo_resumen", False),
     }
     from apps.tickets.models import Categoria, Ticket
 
@@ -554,7 +566,9 @@ def cambiar_rol_cuenta(request):
         user.rol_base = user.rol
     user.rol = nuevo
     user.is_staff = nuevo in (Usuario.Rol.ADMIN, Usuario.Rol.TECNICO)
-    user.save(update_fields=["rol", "rol_base", "is_staff"])
+    from apps.tickets.services.autoasignacion_transaccional import coordinacion_asignacion
+    with coordinacion_asignacion():
+        user.save(update_fields=["rol", "rol_base", "is_staff"])
     messages.success(
         request,
         f"Vista cambiada de {anterior} a {user.get_rol_display()}; "
@@ -928,8 +942,40 @@ def perfil_usuario(request):
     """
     ctx = {
         "nav_perfil": "is-active",
+        "correo_tickets_activo": (request.user.preferencias_notificaciones or {}).get("correo_tickets", True),
+        "correo_ans_activo": (request.user.preferencias_notificaciones or {}).get("correo_ans", True),
+        "correo_resumen_activo": (request.user.preferencias_notificaciones or {}).get("correo_resumen", False),
     }
+    idioma = (request.user.preferencias_notificaciones or {}).get("idioma_perfil", "es")
+    traducciones = {
+        "es": ("Preferencias generales", "Idioma y notificaciones de la cuenta.", "Idioma", "Traducción disponible solo en esta sección.", "Notificaciones por correo", "Recibir avisos sobre el estado de mis tickets.", "Aviso de vencimientos ANS", "Recibir por correo alertas de tickets próximos a vencer.", "Resumen semanal", "Los lunes a las 8:00 a. m. (Colombia), cuando esté programado el envío."),
+        "en": ("General preferences", "Account language and notifications.", "Language", "Translation is available only in this section.", "Email notifications", "Receive updates about my tickets by email.", "SLA deadline alerts", "Receive email alerts about tickets approaching their deadline.", "Weekly summary", "Mondays at 8:00 a.m. (Colombia), once delivery is scheduled."),
+        "pt": ("Preferências gerais", "Idioma e notificações da conta.", "Idioma", "Tradução disponível apenas nesta seção.", "Notificações por e-mail", "Receber avisos sobre o estado dos meus chamados.", "Avisos de prazo ANS", "Receber alertas por e-mail de chamados próximos do vencimento.", "Resumo semanal", "Às segundas-feiras às 8h (Colômbia), quando o envio estiver programado."),
+    }
+    ctx["idioma_perfil"] = idioma if idioma in traducciones else "es"
+    ctx["perfil_textos"] = traducciones[ctx["idioma_perfil"]]
     return render(request, "accounts/perfil.html", ctx)
+
+
+@login_required
+@require_POST
+def preferencias_correo(request):
+    """Actualiza exclusivamente la preferencia de correo de la cuenta autenticada."""
+    from django.db import transaction
+
+    clave = request.POST.get("clave")
+    valor = request.POST.get("valor")
+    es_idioma = clave == "idioma_perfil" and valor in ("es", "en", "pt")
+    es_correo = clave in ("correo_tickets", "correo_ans", "correo_resumen") and valor in ("0", "1")
+    if not (es_idioma or es_correo):
+        return JsonResponse({"ok": False, "error": "Preferencia inválida"}, status=400)
+    with transaction.atomic():
+        usuario = User.objects.select_for_update().get(pk=request.user.pk)
+        preferencias = dict(usuario.preferencias_notificaciones or {})
+        preferencias[clave] = valor if es_idioma else valor == "1"
+        usuario.preferencias_notificaciones = preferencias
+        usuario.save(update_fields=["preferencias_notificaciones"])
+    return JsonResponse({"ok": True, "valor": preferencias[clave]})
 
 
 @require_POST

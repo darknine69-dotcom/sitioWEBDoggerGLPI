@@ -987,6 +987,12 @@ def sync_ticket_to_glpi(ticket) -> int | None:
         date_mod = ticket.fecha_actualizacion.strftime("%Y-%m-%d %H:%M:%S") if ticket.fecha_actualizacion else None
         status = STATE_TO_GLPI_STATUS.get(ticket.estado, 1)
 
+        if ticket.tecnico_asignado_id and not _glpi_ids_asignados(ticket):
+            logger.warning(
+                "Ticket %s: el técnico %s no tiene ID GLPI; se sincronizará sin responsable remoto",
+                ticket.codigo, ticket.tecnico_asignado_id,
+            )
+
         result = client.create_ticket(
             name=ticket.titulo,
             content=_contenido_ticket(ticket),

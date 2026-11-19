@@ -13,10 +13,6 @@
 
 {% block content %}
 <main class="page page-corporate ticket-detail-page">
-    <a class="ticket-back" href="{% if solo_lectura %}{% url 'tickets:obs_monitoreo' %}{% else %}{% url 'tickets:mi_panel' %}{% endif %}" title="{% if solo_lectura %}Volver al monitoreo{% else %}Volver a Mis tickets{% endif %}" aria-label="{% if solo_lectura %}Volver al monitoreo{% else %}Volver a Mis tickets{% endif %}">
-        <svg class="icon"><use href="#i-arrow-left"/></svg>
-    </a>
-
     <div class="corp-detail-layout">
         <div class="corp-detail-main">
             <section class="corp-card corp-detail-card">
@@ -35,7 +31,7 @@
                     <span class="meta-pill meta-prio meta-prio-{{ ticket.prioridad }}">
                         <svg class="icon icon-sm"><use href="#i-alert"/></svg> {{ ticket.get_prioridad_display }}</span>
                     <span class="meta-pill category-shared" data-category-label="{{ ticket.categoria.nombre|default:'Sin categoría' }}" data-category-group="{{ ticket.categoria.grupo|default:'' }}"><span data-category-icon></span> {{ ticket.categoria.nombre|default:"Sin categoría" }}</span>
-                    <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-clock"/></svg> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                    <span class="meta-pill"><svg class="icon icon-sm"><use href="#i-clock"/></svg> {{ ticket.fecha_creacion|date:"d/m/Y h:i A" }}</span>
                     <span class="meta-pill">{% include "tickets/_ans_time.html" with t=ticket %}</span>
                     {% if ticket.glpi_id %}<span class="meta-pill meta-glpi">GLPI #{{ ticket.glpi_id }}</span>{% endif %}
                     {% if ticket.tecnico_asignado %}
@@ -86,7 +82,7 @@
                                 <span class="corp-tl-marker"><svg class="icon"><use href="#i-check"/></svg></span>
                                 <div class="corp-tl-body">
                                     <strong>Solicitud creada</strong>
-                                    <small>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                                    <small>{{ ticket.fecha_creacion|date:"d/m/Y h:i A" }}</small>
                                 </div>
                             </div>
 
@@ -106,7 +102,7 @@
                                 </span>
                                 <div class="corp-tl-body">
                                     <strong>Entregar solución</strong>
-                                    <small>{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}{% if ticket.fecha_cierre %}{{ ticket.fecha_cierre|date:"d/m/Y H:i" }}{% else %}Tarea completada{% endif %}{% else %}Pendiente{% endif %}</small>
+                                    <small>{% if ticket.estado == 'resuelto' or ticket.estado == 'cerrado' %}{% if ticket.fecha_cierre %}{{ ticket.fecha_cierre|date:"d/m/Y h:i A" }}{% else %}Tarea completada{% endif %}{% else %}Pendiente{% endif %}</small>
                                 </div>
                             </div>
                         </div>

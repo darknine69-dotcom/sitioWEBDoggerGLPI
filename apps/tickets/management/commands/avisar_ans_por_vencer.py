@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opciones):
         limite = max(1, int(opciones["limite"]))
-        candidatos = por_vencer(limite=limite)
+        candidatos = por_vencer(limite=limite, solo_verificados=True)
 
         if not candidatos:
             # La revisión también procesa inactividad y transiciones ANS ya

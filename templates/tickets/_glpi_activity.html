@@ -23,7 +23,7 @@
             </p>
             <span class="glpi-activity-time">
                 {% if ev.fecha_formateada %}{{ ev.fecha_formateada }}
-                {% else %}{{ ev.fecha|date:"d/m/Y H:i" }}{% endif %}
+                {% else %}{{ ev.fecha|date:"d/m/Y h:i A" }}{% endif %}
                 {% if ev.pendiente and ev.pendiente != '0min' %}&nbsp;&middot;&nbsp;hace {{ ev.pendiente }}{% endif %}
             </span>
         </div>

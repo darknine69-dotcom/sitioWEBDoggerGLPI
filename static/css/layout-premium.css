@@ -1,0 +1,321 @@
+/* Navegación compartida: no altera el marcado ni la lógica de los controles. */
+html[data-theme="dark"] .sidebar {
+    background: #111827;
+    border-right: 1px solid rgba(255, 255, 255, .08);
+    box-shadow: 8px 0 24px rgba(0, 0, 0, .12);
+}
+html[data-theme="dark"] .sidebar-top { border-color: rgba(255, 255, 255, .08); }
+html[data-theme="dark"] .sidebar-group-title { color: #aab6c9; letter-spacing: .08em; }
+html[data-theme="dark"] .sidebar-link {
+    gap: 12px; border-radius: 10px; color: #c6d0df;
+    transition: background-color .2s ease, color .2s ease;
+}
+html[data-theme="dark"] .sidebar-link .sidebar-ico { flex: none; color: #aabbd2; }
+html[data-theme="dark"] .sidebar-link:hover { background: #232d3d; color: #fff; }
+html[data-theme="dark"] .sidebar-link.is-active {
+    color: #fff; background: linear-gradient(90deg, rgba(220,38,38,.25), rgba(220,38,38,.04));
+}
+html[data-theme="dark"] .sidebar-link.is-active .sidebar-ico { color: #ff6b73; }
+html[data-theme="dark"] .topbar-top { background: #0f1117; border-bottom: 1px solid rgba(255,255,255,.08); }
+html[data-theme="dark"] .topbar .global-search-field {
+    background: #1a2230; border: 1px solid rgba(255,255,255,.10);
+    border-radius: 12px; color: #e6edf7; box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+html[data-theme="dark"] .topbar .global-search-field input { background: transparent; box-shadow: none; color: inherit; }
+/* El contorno de foco pertenece al campo completo, no al input interno. */
+html[data-theme="dark"] .topbar .global-search-field input:is(:focus, :focus-visible) {
+    border: 0; outline: none; box-shadow: none;
+}
+html[data-theme="dark"] .topbar .global-search-field input::placeholder { color: #b0bac9; opacity: 1; }
+html[data-theme="dark"] .topbar .global-search-field:focus-within { border-color: #ef4444; outline: 2px solid #fca5a5; outline-offset: 2px; }
+html[data-theme="dark"] .topbar :is(.user-chip, .notif-bell, .rol-cambio-btn) {
+    background: #1a1d24; color: #f9fafb; border-color: rgba(255,255,255,.12);
+}
+html[data-theme="dark"] .topbar :is(.user-chip, .notif-bell, .rol-cambio-btn):hover { background: #232933; border-color: rgba(255,255,255,.24); }
+html[data-theme="dark"] .topbar :is(.user-avatar, .user-avatar-img) { border: 1px solid rgba(255,255,255,.18); border-radius: 50%; }
+html[data-theme="dark"] .topbar :is(.user-dropdown, .notif-panel, .global-search-results) {
+    background: #1a1d24; color: #f9fafb; border: 1px solid rgba(255,255,255,.12);
+    border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.35);
+}
+html[data-theme="dark"] .topbar :is(.user-dropdown-item, .notif-link) { color: #f9fafb; }
+html[data-theme="dark"] .topbar .user-dropdown-item:hover { background: #232933; }
+html[data-theme="dark"] .topbar .notif-badge:not(.is-empty) { background: #dc2626; color: #fff; }
+html[data-theme="dark"] .dogger-page-breadcrumb { color: #b0bac9; }
+html[data-theme="dark"] .dogger-page-breadcrumb a { color: #b0c7e6; }
+html[data-theme="dark"] .dogger-page-breadcrumb [aria-current="page"] { color: #ff8b92; }
+html[data-theme="dark"] :is(.sidebar-link, .topbar button, .dogger-page-breadcrumb a):focus-visible {
+    outline: 2px solid #a8caff; outline-offset: 2px;
+}
+/* Interiores de las tarjetas de solicitudes y actividad del punto de venta. */
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card :is(.search-field, .toolbar-corp select, .pv-table-period, .tickets-table-wrap, .tickets-table thead th) {
+    background-color: #202632; color: #f9fafb; border-color: rgba(255,255,255,.10);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .search-field input {
+    background: transparent; color: #f9fafb; border: 0; box-shadow: none;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .search-field:focus-within {
+    border-color: #ef4444; outline: 2px solid #fca5a5; outline-offset: 2px;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .search-field input:focus-visible {
+    outline: 0; border: 0; box-shadow: none;
+}
+html[data-theme="dark"] .mi-panel-shell :is(.corp-table-card, .corp-activity-panel) {
+    background: #1a1d24; border-color: rgba(255,255,255,.10);
+}
+html[data-theme="dark"] .mi-panel-shell .corp-activity-panel .corp-card-head {
+    background: #202632; border-color: rgba(255,255,255,.10); border-radius: 12px;
+}
+html[data-theme="dark"] :is(.modal-box, .confirm-box, .ax-modal-card) :is(.modal-head, .modal-body, .modal-footer, .modal-actions) {
+    background-color: #1a1d24; color: #f9fafb; border-color: rgba(255,255,255,.10);
+}
+/* Gráficas y tablas del panel: alinear cabeceras y conservar el contraste. */
+.mi-panel-shell #pvDashboard .pv-chart-card > header {
+    box-sizing: border-box;
+    min-height: 92px;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-chart-card > header, .pv-press-table thead th) {
+    background: #202632; color: #f9fafb; border-color: rgba(255,255,255,.10);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-press-table tbody tr > td,
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table tbody tr > td {
+    background: #1a1d24; color: #f9fafb; border-color: rgba(255,255,255,.08);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-press-table, .tickets-table) tbody tr:hover > td,
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table tbody tr:hover > td {
+    background: #232933;
+}
+html[data-theme="dark"] .pv-row-menu-popover.pv-menu-flotante {
+    background: #202632; border-color: rgba(255,255,255,.14); box-shadow: 0 12px 32px rgba(0,0,0,.35);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu > summary {
+    background: #202632; color: #e6edf7; border-color: rgba(255,255,255,.16);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard ~ .corp-table-card .pv-row-menu > summary:is(:hover, :focus-visible) {
+    background: #303a49; color: #fff;
+}
+html[data-theme="dark"] .pv-row-menu-popover.pv-menu-flotante .icon-btn {
+    background: transparent; color: #f9fafb;
+}
+html[data-theme="dark"] .pv-row-menu-popover.pv-menu-flotante .icon-btn:is(:hover, :focus-visible) {
+    background: #303a49; color: #fff;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-chart-controls select, .pv-chart-refresh, .pv-chart-tooltip) {
+    background: #202632; color: #f9fafb; border-color: rgba(255,255,255,.14);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-chart-refresh, .pv-chart-controls select):focus-visible {
+    outline: 2px solid #a8caff; outline-offset: 2px;
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard :is(.pv-state-body li, .pv-category-item):is(:hover, :focus-visible, .is-highlighted) {
+    background: #303a49; color: #f9fafb;
+}
+@media (prefers-reduced-motion: reduce) {
+    .mi-panel-shell #pvDashboard :is(.pv-state-body li, .pv-category-item) { transition: none; }
+    .mi-panel-shell #pvDashboard :is(.pv-state-body li:hover, .pv-category-item.is-highlighted) { transform: none; }
+}
+/* En escritorio las columnas comparten el ancho disponible; el menú flotante
+   conserva su comportamiento y no queda fuera de la tabla. */
+@media (min-width: 901px) {
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table {
+        width: 100%; min-width: 0; table-layout: fixed;
+    }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(th, td) {
+        box-sizing: border-box; padding-left: 5px; padding-right: 5px;
+        overflow-wrap: anywhere;
+    }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(th, td):nth-child(1) { width: 10%; }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(th, td):nth-child(2) { width: 14%; }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(th, td):nth-child(3) { width: 13%; }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(th, td):nth-child(4) { width: 12%; }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(th, td):nth-child(5) { width: 14%; }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(th, td):nth-child(6) { width: 15%; }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(th, td):nth-child(7) { width: 12%; }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(th, td):nth-child(8) { width: 10%; text-align: center; }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table :is(.status-pill, .meta-pill, .ans-time) {
+        box-sizing: border-box; min-width: 0; max-width: 100%; white-space: normal;
+    }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .tickets-table .meta-pill {
+        white-space: nowrap; overflow-wrap: normal; word-break: normal;
+    }
+    .mi-panel-shell #pvDashboard ~ .corp-table-card .td-title .row-title { max-width: 100%; }
+}
+
+/* Bienvenida y tarjetas de acompañamiento del punto de venta. */
+.mi-panel-shell #pvDashboard .pv-welcome {
+    display:flex; align-items:center; gap:16px; box-sizing:border-box; min-height:110px;
+    padding:16px 20px; border:1px solid #dbe3ef; border-radius:18px;
+    color:#172238; background:linear-gradient(120deg,#f8fafc,#eef3fa);
+    box-shadow:0 8px 24px rgba(15,23,42,.08);
+}
+.mi-panel-shell #pvDashboard .pv-welcome-avatar {
+    display:grid; place-items:center; flex:none; width:54px; height:54px; overflow:hidden;
+    border-radius:50%; color:#fff; background:#dc2626; font-size:18px; font-weight:800;
+}
+.mi-panel-shell #pvDashboard .pv-welcome-avatar img { width:100%; height:100%; object-fit:cover; }
+.mi-panel-shell #pvDashboard .pv-welcome-copy { min-width:0; }
+.mi-panel-shell #pvDashboard .pv-welcome-copy h2 { margin:0 0 5px; color:inherit; font-size:21px; line-height:1.2; }
+.mi-panel-shell #pvDashboard .pv-welcome-copy p { margin:0 0 6px; color:#52647d; font-size:13px; }
+.mi-panel-shell #pvDashboard .pv-welcome-zone { display:flex; align-items:center; gap:5px; color:#52647d; font-size:12px; }
+.mi-panel-shell #pvDashboard .pv-welcome-zone .icon { width:15px; height:15px; }
+.mi-panel-shell #pvDashboard .pv-supervisor-strip {
+    display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;
+    padding:0; border:0; background:transparent; box-shadow:none; min-height:0;
+}
+.mi-panel-shell #pvDashboard :is(.pv-supervision-person,.pv-supervision-contact,.pv-supervision-escalate) {
+    min-width:0; min-height:110px; padding:10px 14px; gap:6px;
+}
+.mi-panel-shell #pvDashboard .pv-person-detail .pv-supervision-avatar { width:36px; height:36px; font-size:14px; }
+.mi-panel-shell #pvDashboard .pv-contact-note { margin:0; padding-top:5px; }
+.mi-panel-shell #pvDashboard :is(.pv-supervision-contact,.pv-supervision-escalate) .pv-contact-button { padding:6px 12px; }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-welcome {
+    background:linear-gradient(120deg,#1b2637,#1a1d24 65%,#292027); color:#f9fafb; border-color:rgba(255,255,255,.10);
+}
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-welcome-copy :is(p,.pv-welcome-zone) { color:#b0bac9; }
+html[data-theme="dark"] .mi-panel-shell #pvDashboard .pv-supervisor-strip { background:transparent; border:0; box-shadow:none; }
+@media (max-width: 820px) {
+    .mi-panel-shell #pvDashboard .pv-supervisor-strip { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 560px) {
+    .mi-panel-shell #pvDashboard .pv-supervisor-strip { grid-template-columns:1fr; }
+    .mi-panel-shell #pvDashboard .pv-welcome { align-items:flex-start; padding:14px; }
+    .mi-panel-shell #pvDashboard .pv-welcome-copy h2 { font-size:18px; }
+}
+
+/* Pie de página integrado con la paleta oscura de la aplicación. */
+html[data-theme="dark"] .brand-footer {
+    background: #111827;
+    color: #f9fafb;
+    border-top: 1px solid rgba(255,255,255,.08);
+}
+html[data-theme="dark"] .brand-footer .footer-kicker { color: #b0bac9; }
+html[data-theme="dark"] .brand-footer .footer-brand-text h3 { color: #f9fafb; }
+html[data-theme="dark"] .brand-footer :is(.footer-brand-text p, .footer-copy) { color: #b0bac9; }
+html[data-theme="dark"] .brand-footer .footer-info a { color: #e6edf7; }
+html[data-theme="dark"] .brand-footer .footer-info a:hover { color: #ff8b92; }
+html[data-theme="dark"] .brand-footer .footer-social-row a {
+    background: #1a1d24; color: #c6d0df; border-color: rgba(255,255,255,.12);
+}
+html[data-theme="dark"] .brand-footer .footer-social-row a:hover {
+    background: #232933; color: #fff; border-color: rgba(255,255,255,.24);
+}
+html[data-theme="dark"] .brand-footer .footer-copy { border-color: rgba(255,255,255,.08); }
+html[data-theme="dark"] .brand-footer a:focus-visible { outline: 2px solid #a8caff; outline-offset: 3px; }
+
+/* Actividad del detalle: reutiliza la estructura y los roles del chat existente. */
+html[data-theme="dark"] .ticket-detail-page .corp-detail-card {
+    background: #1a1d24; border-color: rgba(255,255,255,.10);
+    color: #f9fafb; box-shadow: 0 8px 24px rgba(0,0,0,.20);
+}
+html[data-theme="dark"] .ticket-detail-page .corp-detail-card :is(.corp-detail-head h2, .corp-kicker) {
+    color: #f9fafb;
+}
+html[data-theme="dark"] .ticket-detail-page .corp-detail-card :is(.corp-detail-toolbar, .corp-detail-badges) {
+    border-color: rgba(255,255,255,.10);
+}
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-thread {
+    background: transparent; color: #f9fafb;
+    border: 1px solid transparent; box-shadow: none;
+}
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-thread .chat-msg {
+    background: transparent; border: 0; color: #f9fafb;
+}
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-thread .chat-bubble {
+    max-width: 100%; box-sizing: border-box; color: #f9fafb;
+    background: #252e3d; border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-thread :is(.chat-msg-user,.chat-msg-usuario) .chat-bubble {
+    background: #3b242c; border-color: rgba(239,68,68,.32);
+}
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-meta strong { color: #f9fafb; }
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-meta-time { color: #b0bac9; background: transparent; }
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-badge-usuario { color: #ffadb5; background: #4a222b; }
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-badge-soporte { color: #b8c8ff; background: #28365b; }
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-badge-observador { color: #d7c1ff; background: #392b54; }
+html[data-theme="dark"] .ticket-detail-page .chat-scroll .chat-event { background: #202632; color: #dbe5f2; border-color: rgba(255,255,255,.10); }
+
+/* Ficha y controles de valoración del técnico en el detalle del ticket. */
+html[data-theme="dark"] .ticket-detail-page .dash-panel-tecnicos .tec-card {
+    background: transparent; color: #f9fafb; border-color: transparent;
+}
+html[data-theme="dark"] .ticket-detail-page .dash-panel-tecnicos :is(.tec-nombre, .tec-voto-registrado) { color: #f9fafb; }
+html[data-theme="dark"] .ticket-detail-page .dash-panel-tecnicos :is(.tec-estado small, .tec-barra-pct, .tec-voto-aviso) { color: #b0bac9; }
+html[data-theme="dark"] .ticket-detail-page .dash-panel-tecnicos .tec-estado-ocupado { color: #fbbf68; }
+html[data-theme="dark"] .ticket-detail-page .dash-panel-tecnicos .tec-pulgar {
+    background: #1a1d24; color: #c6d0df; border-color: rgba(255,255,255,.16);
+}
+html[data-theme="dark"] .ticket-detail-page .dash-panel-tecnicos .tec-pulgar:not(:disabled):is(:hover, :focus-visible) {
+    background: #303a49; color: #fff; border-color: #a8caff;
+}
+
+/* Buscador flotante de accesos rápidos en modo oscuro. */
+html[data-theme="dark"] .ax-fab .ax-busca { background:#1a1d24; border-color:rgba(255,255,255,.12); }
+html[data-theme="dark"] .ax-fab .ax-busca-head { background:#1a1d24; border-color:rgba(255,255,255,.10); }
+html[data-theme="dark"] .ax-fab .ax-busca-head input[type="search"] { background:transparent; color:#f9fafb; }
+html[data-theme="dark"] .ax-fab .ax-busca-head input[type="search"]:is(:focus, :focus-visible) {
+    border:0; outline:none; box-shadow:none;
+}
+html[data-theme="dark"] .ax-fab .ax-busca-head:focus-within { box-shadow:inset 0 -2px #fca5a5; }
+html[data-theme="dark"] .ax-fab .ax-busca-head input[type="search"]::placeholder { color:#b0bac9; }
+html[data-theme="dark"] .ax-fab .ax-busca-lista { background:#202632; color:#f9fafb; }
+html[data-theme="dark"] .ax-fab .ax-busca-vacio { color:#b0bac9; }
+html[data-theme="dark"] .ax-fab .ax-busca-x { background:#303a49; color:#e6edf7; }
+html[data-theme="dark"] .ax-fab .ax-busca-row { background:#202632; color:#f9fafb; border-color:rgba(255,255,255,.10); }
+html[data-theme="dark"] .ax-fab .ax-busca-row:is(:hover, :focus-visible) { background:#303a49; }
+html[data-theme="dark"] .ax-fab .ax-busca-nombre { color:#f9fafb; }
+html[data-theme="dark"] .ax-fab .ax-busca-tec { color:#b8c8df; }
+html[data-theme="dark"] .ax-fab .ax-busca-meta { color:#ff7680; background:#45242e; }
+html[data-theme="dark"] .ax-fab .ax-busca-estado { color:#ffd3d6; background:#702934; }
+
+/* Resultados y conversaciones del chat flotante. */
+html[data-theme="dark"] .sw-win .sw-bien-row { background:#202632; border-color:rgba(255,255,255,.12); color:#f9fafb; }
+html[data-theme="dark"] .sw-win .sw-bien-row-txt b { color:#f9fafb; }
+html[data-theme="dark"] .sw-win .sw-bien-row-ico { color:#ff7680; background:#45242e; }
+html[data-theme="dark"] .sw-win .sw-bien-row-est { color:#ffd3d6; background:#702934; }
+html[data-theme="dark"] .sw-win .sw-dd-estado { color:#ffd3d6; background:#702934; border-radius:999px; padding:2px 8px; }
+
+/* Formulario de solicitud y panel lateral de tiempos ANS. */
+html[data-theme="dark"] .user-ticket-form .form-group :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+    background:#202632; color:#f9fafb; border:1px solid rgba(255,255,255,.12);
+}
+html[data-theme="dark"] .user-ticket-form .form-group :is(input, textarea)::placeholder { color:#b0bac9; opacity:1; }
+html[data-theme="dark"] .user-ticket-form .form-group :is(input, select, textarea):focus-visible {
+    border-color:#ef4444; outline:2px solid #fca5a5; outline-offset:2px; box-shadow:none;
+}
+html[data-theme="dark"] .ticket-form-side :is(.ans-scale-item, .ticket-form-info-list li) {
+    background:#202632; color:#f9fafb; border-color:rgba(255,255,255,.10); box-shadow:none;
+}
+html[data-theme="dark"] .ticket-form-side .ans-scale-chip-clock { background:#202632; }
+html[data-theme="dark"] .ticket-form-side .ans-scale-urgente .ans-scale-name { color:#ff8b92; }
+html[data-theme="dark"] .ticket-form-side .ans-scale-alta .ans-scale-name { color:#ffb27a; }
+html[data-theme="dark"] .ticket-form-side .ans-scale-media .ans-scale-name { color:#fcd34d; }
+html[data-theme="dark"] .ticket-form-side .ans-scale-baja .ans-scale-name { color:#86efac; }
+html[data-theme="dark"] .ticket-form-side .ticket-form-info-list li span { color:#c5cfdd; }
+
+/* Adjuntos: los nombres y sus botones de quitar quedan dentro del campo. */
+.user-ticket-form .ticket-file-control {
+    display:flex; align-items:center; flex-wrap:wrap; gap:6px;
+    padding:6px 8px; border:1px solid var(--line); border-radius:12px;
+    background:var(--dogger-paper);
+}
+.user-ticket-form .ticket-file-control input[type="file"] {
+    flex:0 0 130px; width:130px; max-width:100%; padding:0; border:0; background:transparent;
+    font-size:0; color:transparent;
+}
+.user-ticket-form .ticket-file-control input[type="file"]::file-selector-button {
+    font-size:13px; cursor:pointer;
+}
+.user-ticket-form .ticket-file-control .file-preview {
+    flex:1 1 180px; min-width:0; margin:0;
+}
+.user-ticket-form .ticket-file-control .file-preview:empty::before {
+    content:"Ningún archivo seleccionado"; color:var(--ink-muted); font-size:12px;
+}
+.user-ticket-form .ticket-file-control .file-chip { max-width:100%; min-width:0; padding:3px 7px; overflow-wrap:anywhere; }
+.user-ticket-form .ticket-file-control .file-chip-name { min-width:0; overflow-wrap:anywhere; }
+.user-ticket-form .ticket-file-control .file-chip-preview { width:28px; height:28px; flex:none; border-radius:6px; object-fit:cover; }
+html[data-theme="dark"] .user-ticket-form .ticket-file-control {
+    background:#202632; border-color:rgba(255,255,255,.12);
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-theme="dark"] .sidebar-link { transition: none; }
+}

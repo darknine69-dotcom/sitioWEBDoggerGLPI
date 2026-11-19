@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load asset %}
+{% block title %}Dogger · Asignación automática{% endblock %}
+{% block body_class %}admin-shell{% endblock %}
+{% block header_title %}Asignación automática{% endblock %}
+{% block header_desc %}Reglas, cobertura y carga del equipo técnico.{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% asset 'css/configuracion-autoasignacion.css' %}">{% endblock %}
+{% block content %}
+<main class="auto-config page">
+  <section class="auto-card auto-status" aria-label="Estado del motor">
+    <div class="auto-status-copy">
+      <h2>Estado del motor <span class="auto-status-badge {% if config.activa %}is-active{% endif %}">{% if config.activa %}Activado{% else %}Desactivado{% endif %}</span></h2>
+      <p>{% if config.activa %}El motor evalúa los tickets según las reglas y la capacidad configuradas.{% else %}Los tickets permanecerán sin asignación automática.{% endif %}</p>
+    </div>
+    <form method="post" class="auto-form">{% csrf_token %}{% if config.activa %}<input type="hidden" name="accion" value="desactivar"><button type="submit">Desactivar motor</button>{% else %}<input type="hidden" name="accion" value="activar"><button type="submit">Activar motor</button>{% endif %}</form>
+  </section>
+  <div class="auto-grid">
+    <section class="auto-card">
+      <h2>Reglas de distribución</h2>
+      <p>Los pesos definen la carga de cada prioridad; el margen es una diferencia de puntos porcentuales.</p>
+      <p>El técnico predeterminado se administra en <a href="{% url 'tickets:categorias_arbol' %}">categorías</a>.</p>
+      <form method="post" class="auto-form">{% csrf_token %}<input type="hidden" name="accion" value="reglas">
+        {{ reglas_form.non_field_errors }}
+        {% for campo in reglas_form %}<div class="auto-field">{{ campo.label_tag }}{{ campo }}{{ campo.errors }}</div>{% endfor %}
+        <button type="submit">Guardar reglas</button>
+      </form>
+    </section>
+    <section class="auto-card">
+      <h2>Perfil de atención</h2>
+      <p>Selecciona un técnico y define su capacidad, especialidades y cobertura. Para editar uno existente, selecciónalo en la lista inferior.</p>
+      <form method="post" class="auto-form">{% csrf_token %}<input type="hidden" name="accion" value="perfil">
+        {{ perfil_form.non_field_errors }}
+        {% for campo in perfil_form %}<div class="auto-field{% if campo.field.widget.input_type == 'checkbox' %} auto-field--check{% endif %}">{{ campo.label_tag }}{{ campo }}{% if campo.help_text %}<small>{{ campo.help_text }}</small>{% endif %}{{ campo.errors }}</div>{% endfor %}
+        <button type="submit">Guardar perfil</button>
+      </form>
+    </section>
+  </div>
+  <section class="auto-card">
+    <h2>Capacidad y ocupación</h2>
+    <div class="auto-table-wrap"><table><thead><tr><th>Técnico</th><th>Estado</th><th>Cobertura</th><th>Carga</th><th>Capacidad</th><th>Ocupación</th><th></th></tr></thead><tbody>
+      {% for perfil in perfiles %}<tr><td>{{ perfil.tecnico.nombre|default:perfil.tecnico.email }}</td><td>{% if not perfil.tecnico.activo or not perfil.tecnico.is_active %}Cuenta inactiva{% elif perfil.tecnico.rol != 'admin' and perfil.tecnico.rol != 'tecnico' %}Rol no elegible{% elif perfil.habilitado %}Habilitado{% else %}Deshabilitado{% endif %}</td><td>{% if perfil.cobertura_general %}General{% else %}Restringida: {% for punto in perfil.puntos_cobertura.all %}{{ punto.nombre }}{% if not forloop.last %}, {% endif %}{% empty %}sin puntos{% endfor %}{% endif %}</td><td>{{ perfil.carga_actual|default_if_none:"No disponible" }}</td><td>{{ perfil.capacidad }}</td><td>{% if perfil.ocupacion_actual != None %}{{ perfil.ocupacion_actual }} %{% else %}No disponible{% endif %}</td><td><a href="?tecnico={{ perfil.tecnico_id }}">Editar</a></td></tr>{% empty %}<tr><td colspan="7">No hay perfiles configurados.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+  <section class="auto-card">
+    <h2>Historial reciente</h2>
+    <div class="auto-table-wrap"><table><thead><tr><th>Fecha</th><th>Ticket</th><th>Categoría</th><th>Prioridad</th><th>Técnico</th><th>Motivo</th><th>Carga / capacidad</th></tr></thead><tbody>
+      {% for decision in decisiones %}<tr><td>{{ decision.fecha|date:"d/m/Y H:i" }}</td><td>{{ decision.ticket.codigo }}</td><td>{{ decision.categoria_nombre|default:"—" }}</td><td>{{ decision.prioridad }}</td><td>{{ decision.tecnico.nombre|default:"Sin asignar" }}</td><td>{{ decision.motivo }}</td><td>{{ decision.carga|default_if_none:"—" }} / {{ decision.capacidad|default_if_none:"—" }}</td></tr>{% empty %}<tr><td colspan="7">No hay decisiones registradas.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+</main>
+{% endblock %}

@@ -809,9 +809,10 @@ class FechaNotificacionesTest(TestCase):
 
     def test_la_campana_muestra_fecha_y_hora(self):
         from django.utils import timezone
+        from django.utils.dateformat import format as formato_fecha
 
         aviso = self._aviso()
-        esperada = timezone.localtime(aviso.creada_en).strftime("%d/%m/%Y %H:%M")
+        esperada = formato_fecha(timezone.localtime(aviso.creada_en), "d/m/Y h:i A")
         html = self.client.get(reverse("tickets:panel_tecnico")).content.decode()
         self.assertIn(esperada, html)
         self.assertIn("notif-time", html)

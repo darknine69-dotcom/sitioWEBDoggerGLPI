@@ -18,6 +18,34 @@ from apps.tickets.services.glpi_client import sync_followup_to_glpi
 
 
 class ColaDurableTest(TestCase):
+    @override_settings(DOGGER_FONDO_ASINCRONO=True, DOGGER_FONDO_DURABLE=True, DEFAULT_FROM_EMAIL="origen@example.invalid")
+    def test_ticket_creado_registra_dos_correos_sin_enviar(self):
+        from apps.tickets.notifications import notificar_ticket_creado
+
+        tecnico = Usuario.objects.create_user(email="tecnico@example.invalid", password="x", nombre="Técnico", rol=Usuario.Rol.TECNICO)
+        ticket = Ticket.objects.create(titulo="Caso", descripcion="Prueba", solicitante_nombre="Persona",
+                                       solicitante_email="persona@example.invalid", tecnico_asignado=tecnico)
+        with patch("apps.tickets.services.fondo.en_pruebas", return_value=False), patch("django.core.mail.backends.locmem.EmailBackend.send_messages") as enviar:
+            notificar_ticket_creado(ticket)
+            self.assertEqual(TareaDiferida.objects.filter(tipo="correo", estado=TareaDiferida.Estado.PENDIENTE).count(), 2)
+            enviar.assert_not_called()
+
+    @override_settings(DOGGER_FONDO_ASINCRONO=True, DOGGER_FONDO_DURABLE=True, DEFAULT_FROM_EMAIL="origen@example.invalid")
+    def test_ticket_y_correos_se_revierten_juntos(self):
+        from apps.tickets.notifications import notificar_ticket_creado
+
+        with patch("apps.tickets.services.fondo.en_pruebas", return_value=False):
+            try:
+                with transaction.atomic():
+                    ticket = Ticket.objects.create(titulo="Caso rollback", descripcion="Prueba", solicitante_nombre="Persona", solicitante_email="persona@example.invalid")
+                    notificar_ticket_creado(ticket)
+                    self.assertTrue(TareaDiferida.objects.filter(tipo="correo").exists())
+                    raise ValueError("provocar rollback")
+            except ValueError:
+                pass
+        self.assertFalse(Ticket.objects.filter(titulo="Caso rollback").exists())
+        self.assertFalse(TareaDiferida.objects.filter(tipo="correo").exists())
+
     def _correo(self):
         return encolar(send_mail, ("Asunto", "codigo-secreto-123", "origen@example.test", ["destino@example.test"]), {"html_message": "<p>Hola</p>"})
 

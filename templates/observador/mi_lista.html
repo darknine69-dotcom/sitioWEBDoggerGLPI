@@ -30,7 +30,7 @@
             </div>
             <div class="aud-meta">
                 <span class="aud-meta-item" title="Usuario conectado"><svg class="icon icon-sm"><use href="#i-user"/></svg>{{ request.user.nombre|default:request.user.email }}</span>
-                <span class="aud-meta-item" title="Fecha y hora actual"><svg class="icon icon-sm"><use href="#i-calendar"/></svg>{% now "d/m/Y H:i" %}</span>
+                <span class="aud-meta-item" title="Fecha y hora actual"><svg class="icon icon-sm"><use href="#i-calendar"/></svg>{% now "d/m/Y h:i A" %}</span>
                 <span class="aud-chip"><b>{{ aud_hoy }}</b> hoy</span>
                 <span class="aud-chip"><b>{{ aud_semana }}</b> últimos 7 días</span>
                 <span class="aud-estado" title="Estado del sistema"><span class="obs-dot obs-dot-verde"></span>Operativo</span>
@@ -95,7 +95,7 @@
                         <tr{% if a.fecha|date:"Y-m-d" == hoy_ymd %} class="aud-reciente"{% endif %}
                             data-accion="{{ a.get_accion_display }}" data-resultado="{{ a.resultado|default:'' }}" data-fecha="{{ a.fecha|date:'Y-m-d' }}">
                             <td class="num">#{{ a.pk }}</td>
-                            <td style="white-space:nowrap" title="{{ a.fecha|date:'d/m/Y H:i' }}">{{ a.fecha|date:"d/m/Y H:i" }}</td>
+                            <td style="white-space:nowrap" title="{{ a.fecha|date:'d/m/Y h:i A' }}">{{ a.fecha|date:"d/m/Y h:i A" }}</td>
                             <td style="white-space:nowrap"><span class="aud-hace">{{ a.hace }}</span></td>
                             <td><span class="aud-badge aud-badge-{{ a.clase_accion }}">{{ a.get_accion_display }}</span></td>
                             <td>{% if a.zona_nombre %}<span class="zona-badge">{{ a.zona_nombre }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>

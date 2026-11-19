@@ -274,7 +274,7 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
             <span class="pres-ficha-meta">
                 <span><b>{{ m.ticket.titulo }}</b></span>
                 {% if m.ticket.solicitante_punto %}<span>{{ m.ticket.solicitante_punto }}</span>{% endif %}
-                <span>{{ m.fecha|date:"d/m/Y H:i" }}</span>
+                <span>{{ m.fecha|date:"d/m/Y h:i A" }}</span>
             </span>
             <div class="pres-ficha-pie">
                 <a class="ans-ficha-detalle" data-ticket-ficha="{{ m.ticket.pk }}" href="{% url 'tickets:detalle' m.ticket.pk %}">Abrir el ticket ›</a>
@@ -294,7 +294,7 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
     </section>
     {% endif %}
 
-    <section class="tec-monitor-section" aria-labelledby="tec-puntos-title"><h3 id="tec-puntos-title" class="obs-bloque-titulo"><svg class="icon"><use href="#i-store"/></svg>Puntos de venta que enviaron presión</h3><p class="obs-leyenda">Presiones registradas sobre tus tickets asignados.</p><div class="obs-tabla-wrap"><table class="tec-puntos-table"><thead><tr><th>Punto de venta</th><th>Presiones</th><th>Última presión</th></tr></thead><tbody>{% for punto in puntos_presion %}<tr><td><span class="tec-puntos-name"><svg class="icon"><use href="#i-store"/></svg>{{ punto.ticket__solicitante_punto }}</span></td><td><span class="tec-puntos-bar" role="img" aria-label="{{ punto.total }} presiones; longitud relativa al mayor conteo mostrado, con escala mínima de tres"><i class="{{ punto.intensidad }}" style="width:{{ punto.porcentaje }}%"></i></span><span class="tec-puntos-count">{{ punto.total }}</span></td><td>{{ punto.ultima|date:"d/m/Y H:i" }}</td></tr>{% empty %}<tr><td colspan="3">No hay presiones asociadas a puntos de venta.</td></tr>{% endfor %}</tbody></table></div></section>
+    <section class="tec-monitor-section" aria-labelledby="tec-puntos-title"><h3 id="tec-puntos-title" class="obs-bloque-titulo"><svg class="icon"><use href="#i-store"/></svg>Puntos de venta que enviaron presión</h3><p class="obs-leyenda">Presiones registradas sobre tus tickets asignados.</p><div class="obs-tabla-wrap"><table class="tec-puntos-table"><thead><tr><th>Punto de venta</th><th>Presiones</th><th>Última presión</th></tr></thead><tbody>{% for punto in puntos_presion %}<tr><td><span class="tec-puntos-name"><svg class="icon"><use href="#i-store"/></svg>{{ punto.ticket__solicitante_punto }}</span></td><td><span class="tec-puntos-bar" role="img" aria-label="{{ punto.total }} presiones; longitud relativa al mayor conteo mostrado, con escala mínima de tres"><i class="{{ punto.intensidad }}" style="width:{{ punto.porcentaje }}%"></i></span><span class="tec-puntos-count">{{ punto.total }}</span></td><td>{{ punto.ultima|date:"d/m/Y h:i A" }}</td></tr>{% empty %}<tr><td colspan="3">No hay presiones asociadas a puntos de venta.</td></tr>{% endfor %}</tbody></table></div></section>
     {% if por_vencer %}
     <section id="por-vencer" class="obs-bloque tec-monitor-section corp-anim">
         <h3 class="obs-bloque-titulo">
@@ -378,7 +378,7 @@ html[data-theme="dark"] .tec-monitor-overview-count { background: rgba(255,255,2
                         <td>{{ t.titulo|truncatechars:80 }}</td>
                         <td><span class="obs-pill obs-pill-{% if t.estado == 'abierto' %}rojo{% elif t.estado == 'en-progreso' %}amarillo{% else %}verde{% endif %}">{{ t.get_estado_display }}</span></td>
                         <td>{{ t.get_prioridad_display }}</td>
-                        <td style="white-space:nowrap">{{ t.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
+                        <td style="white-space:nowrap">{{ t.fecha_actualizacion|date:"d/m/Y h:i A" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

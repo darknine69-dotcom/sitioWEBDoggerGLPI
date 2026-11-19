@@ -24,7 +24,7 @@
         <p class="panel-sub">
             <span class="stamp stamp-{{ ticket.estado }}">{{ ticket.get_estado_display }}</span>
             · {{ ticket.get_prioridad_display }}
-            · {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}
+            · {{ ticket.fecha_creacion|date:"d/m/Y h:i A" }}
             {% if ticket.categoria %} · {{ ticket.categoria.nombre }}{% endif %}
         </p>
         <p class="ticket-desc">{{ ticket.descripcion }}</p>
@@ -33,7 +33,7 @@
         <h3 class="section-title">Seguimientos publicos</h3>
         {% for c in ticket.comentarios.all %}
         <div class="followup followup-publico">
-            <div class="followup-meta">{{ c.autor_nombre|default:"Staff" }} · {{ c.fecha|date:"d/m/Y H:i" }}</div>
+            <div class="followup-meta">{{ c.autor_nombre|default:"Staff" }} · {{ c.fecha|date:"d/m/Y h:i A" }}</div>
             <div class="followup-text">{{ c.comentario }}</div>
         </div>
         {% endfor %}

@@ -1586,7 +1586,7 @@ def _panel_de_supervision(usuario, filas):
             "estado": t.estado,
             "estado_display": t.get_estado_display(),
             "fecha": (
-                t.fecha_creacion.strftime("%d/%m/%Y %H:%M")
+                t.fecha_creacion.strftime("%d/%m/%Y %I:%M %p")
                 if t.fecha_creacion else ""
             ),
             "tecnico": (
@@ -1706,7 +1706,7 @@ def _panel_de_supervision(usuario, filas):
                         or r.autor_nombre or ""
                     ),
                     "codigo": r.ticket.codigo if r.ticket_id else "",
-                    "fecha": r.fecha.strftime("%d/%m/%Y %H:%M") if r.fecha else "",
+                    "fecha": r.fecha.strftime("%d/%m/%Y %I:%M %p") if r.fecha else "",
                     "texto": (r.comentario or "")[:180],
                 }
                 for r in (f.get("respuestas") or [])[:3]
@@ -1723,7 +1723,7 @@ def _panel_de_supervision(usuario, filas):
                 if correo else reverse("tickets:obs_usuarios")
             ),
             "ultima_actividad": (
-                f.get("ultimo").strftime("%d/%m/%Y %H:%M")
+                f.get("ultimo").strftime("%d/%m/%Y %I:%M %p")
                 if f.get("ultimo") else ""
             ),
             "_ultima_actividad": f.get("ultimo"),
@@ -1757,7 +1757,7 @@ def _panel_de_supervision(usuario, filas):
             default=None,
         )
         tarjeta["ultima_actividad"] = (
-            ultima.strftime("%d/%m/%Y %H:%M") if ultima else "Sin actividad"
+            ultima.strftime("%d/%m/%Y %I:%M %p") if ultima else "Sin actividad"
         )
         # Barras relativas a cifras reales de la zona; no son una serie ficticia.
         spark_origen = [
@@ -2645,7 +2645,7 @@ def _xlsx_zona(zona, filas, tickets, nombre="dogger_zona"):
                 t.get_estado_display(),
                 (t.tecnico_asignado.nombre or t.tecnico_asignado.email or "")
                 if t.tecnico_asignado_id else "Sin asignar",
-                timezone.localtime(t.fecha_creacion).strftime("%d/%m/%Y %H:%M")
+                timezone.localtime(t.fecha_creacion).strftime("%d/%m/%Y %I:%M %p")
                 if t.fecha_creacion else "",
             ]
             for t in tickets

@@ -161,7 +161,7 @@
                 {# Los tickets de la cuenta, uno a uno: el mismo chip que en Monitoreo. #}
                 <div class="obs-tickets">
                     {% for t in f.tickets %}
-                    <span class="obs-ticket t-{{ t.estado }}" title="{{ t.get_estado_display }} · {{ t.fecha_creacion|date:'d/m/Y H:i' }}">{{ t.codigo }} <small>{{ t.get_estado_display }}</small></span>
+                    <span class="obs-ticket t-{{ t.estado }}" title="{{ t.get_estado_display }} · {{ t.fecha_creacion|date:'d/m/Y h:i A' }}">{{ t.codigo }} <small>{{ t.get_estado_display }}</small></span>
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -189,7 +189,7 @@
                         <li class="obs-resultado">
                             <span class="obs-resultado-ic"><svg class="icon"><use href="#i-message"/></svg></span>
                             <span class="obs-resultado-txt">
-                                <strong>{{ r.usuario.nombre|default:r.autor_nombre }} · {{ r.ticket.codigo }} · {{ r.fecha|date:"d/m/Y H:i" }}</strong>
+                                <strong>{{ r.usuario.nombre|default:r.autor_nombre }} · {{ r.ticket.codigo }} · {{ r.fecha|date:"d/m/Y h:i A" }}</strong>
                                 <small>{{ r.comentario|truncatechars:180 }}</small>
                             </span>
                         </li>

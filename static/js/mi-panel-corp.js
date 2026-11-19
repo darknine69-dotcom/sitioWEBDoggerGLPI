@@ -436,6 +436,52 @@
         }, { passive: false });
     });
 
+    /* Mantener el menú fuera del recorte de la tabla y dentro de la pantalla. */
+    var menusSolicitud = document.querySelectorAll(".pv-row-menu");
+    menusSolicitud.forEach(function (menu) {
+        menu._panelSolicitud = menu.querySelector(".pv-row-menu-popover");
+    });
+    function colocarMenu(menu) {
+        if (!menu.open) return;
+        var boton = menu.querySelector("summary"), panel = menu._panelSolicitud;
+        if (!boton || !panel) return;
+        var rect = boton.getBoundingClientRect();
+        var ancho = panel.offsetWidth, alto = panel.offsetHeight, margen = 8;
+        var izquierda = Math.max(margen, Math.min(rect.right - ancho, window.innerWidth - ancho - margen));
+        var abajo = rect.bottom + 4;
+        var arriba = rect.top - alto - 4;
+        panel.style.left = izquierda + "px";
+        panel.style.top = Math.max(margen, abajo + alto <= window.innerHeight - margen ? abajo : arriba) + "px";
+    }
+    menusSolicitud.forEach(function (menu) {
+        menu.addEventListener("toggle", function () {
+            var panel = menu._panelSolicitud;
+            if (!panel) return;
+            if (!menu.open) {
+                panel.classList.remove("pv-menu-flotante");
+                panel.style.left = "";
+                panel.style.top = "";
+                menu.appendChild(panel);
+                return;
+            }
+            menusSolicitud.forEach(function (otro) { if (otro !== menu) otro.open = false; });
+            panel.classList.add("pv-menu-flotante");
+            document.body.appendChild(panel);
+            colocarMenu(menu);
+        });
+    });
+    window.addEventListener("resize", function () { menusSolicitud.forEach(colocarMenu); });
+    document.addEventListener("scroll", function () { menusSolicitud.forEach(colocarMenu); }, true);
+    document.addEventListener("click", function (e) {
+        menusSolicitud.forEach(function (menu) { if (menu.open && !menu.contains(e.target) && !menu._panelSolicitud.contains(e.target)) menu.open = false; });
+    });
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "Escape") return;
+        menusSolicitud.forEach(function (menu) {
+            if (menu.open) { menu.open = false; menu.querySelector("summary").focus(); }
+        });
+    });
+
     /* Delegación de acciones de fila de la tabla */
     document.addEventListener("click", function (e) {
         var btn = e.target.closest("[data-action]");
@@ -443,6 +489,9 @@
         var accion = btn.getAttribute("data-action");
         var pk = btn.getAttribute("data-pk");
         var codigo = btn.getAttribute("data-codigo") || "";
+        menusSolicitud.forEach(function (menu) {
+            if (menu.open && menu._panelSolicitud && menu._panelSolicitud.contains(btn)) menu.open = false;
+        });
         e.preventDefault();
         if (accion === "respuestas") {
             showRespuestas(pk, codigo);

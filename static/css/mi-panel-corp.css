@@ -27,6 +27,21 @@
 .pv-export { color:#fff !important; border-color:#059669 !important; background:#059669 !important; box-shadow:0 6px 15px rgba(5,150,105,.18); }
 .pv-export:hover { background:#047857 !important; }
 .pv-supervisor-strip { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1.12fr) minmax(0,.82fr) minmax(0,1.04fr) minmax(0,1.22fr); gap:12px; align-items:stretch; min-height:104px; margin-bottom:16px; padding:12px 14px; border:1px solid #FDE2E4; border-radius:16px; background:linear-gradient(100deg,#FFF7F8 0%,#FFFDFD 60%,#FFF7F8 100%); box-shadow:0 8px 20px rgba(225,29,72,.05); }
+@media (min-width: 961px) {
+    .mi-panel-shell #pvDashboard .pv-supervisor-strip {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 0;
+        padding: 8px 12px;
+        align-items: stretch;
+        grid-template-columns: minmax(180px, 1fr) repeat(3, minmax(0, 220px));
+    }
+    .mi-panel-shell #pvDashboard .pv-supervision-zone { gap: 5px; padding: 2px 8px; }
+    .mi-panel-shell #pvDashboard :is(.pv-supervision-card, .pv-supervision-escalate) {
+        min-height: 0;
+        padding: 6px 10px;
+    }
+}
 .pv-supervision-zone,.pv-supervision-card,.pv-supervision-escalate { display:flex; align-items:center; min-width:0; overflow:hidden; border-radius:10px; }
 .pv-supervision-zone { align-items:flex-start; flex-direction:column; justify-content:center; gap:13px; padding:7px 14px; }
 .pv-supervision-heading { display:flex; align-items:center; gap:9px; color:#0F172A; font-size:16px; font-weight:800; white-space:nowrap; }
@@ -1448,6 +1463,14 @@
     overscroll-behavior:auto;
     scrollbar-width:auto;
 }
+/* El menú se posiciona respecto a la ventana para no quedar recortado por
+   el desplazamiento horizontal de la tabla. */
+.pv-row-menu-popover.pv-menu-flotante {
+    position: fixed;
+    z-index: 1100;
+    right: auto;
+    margin-top: 0;
+}
 .mi-panel-shell #pvDashboard .pv-press-table-wrap {
     overflow-x:auto;
     overflow-y:visible;
@@ -1645,6 +1668,8 @@
 .mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header {
     display:flex;
     justify-content:space-between;
+    box-sizing:border-box;
+    min-height:86px;
 }
 .mi-panel-shell #pvDashboard .pv-middle-grid > .pv-card > header > h3 {
     text-align:left;
@@ -1660,7 +1685,7 @@
 .pv-segment-overlay circle.is-selected { filter:drop-shadow(0 2px 3px rgba(15,23,42,.28)); }
 .pv-donut > div, .pv-chart-donut > span { position:relative; z-index:2; }
 .mi-panel-shell #pvDashboard .pv-state-body li { margin:0 -7px; padding:5px 7px; border-radius:7px; transition:background .18s ease, transform .18s ease; }
-.mi-panel-shell #pvDashboard .pv-state-body li:hover { background:#f1f5fb; transform:translateX(3px); }
+.mi-panel-shell #pvDashboard .pv-state-body li:hover { background:#f1f5fb; transform:translateY(2px); }
 .mi-panel-shell #pvDashboard .pv-state-body li:hover i { box-shadow:0 0 0 4px rgba(100,116,139,.12); }
 .mi-panel-shell #pvDashboard .pv-ranking ol { gap:10px; padding:16px; }
 .mi-panel-shell #pvDashboard .pv-ranking li:not(.pv-empty) { grid-template-columns:32px minmax(0,1fr) auto; gap:10px; padding:12px; border:1px solid #e8eef7; border-radius:11px; background:#f8faff; transition:background .18s ease, box-shadow .18s ease; }
@@ -1733,3 +1758,28 @@
 .pv-zone-dialog dl div { padding:10px; border-radius:9px; background:#f8fafc; }
 .pv-zone-dialog dt { color:#64748b; font-size:11px; }
 .pv-zone-dialog dd { margin:4px 0 0; font-size:17px; font-weight:700; }
+
+/* Tarjetas de contacto: misma estructura y altura, con contenido legible. */
+.mi-panel-shell #pvDashboard :is(.pv-supervision-person, .pv-supervision-contact, .pv-supervision-escalate) {
+    box-sizing: border-box; display: flex; flex-direction: column; align-items: stretch;
+    gap: 12px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 14px;
+    background: #fff; box-shadow: 0 4px 12px rgba(15,23,42,.04);
+}
+.mi-panel-shell #pvDashboard .pv-contact-head { display:flex; align-items:center; gap:10px; }
+.mi-panel-shell #pvDashboard .pv-contact-head > span:last-child,
+.mi-panel-shell #pvDashboard .pv-person-detail > span:last-child { display:grid; min-width:0; gap:3px; }
+.mi-panel-shell #pvDashboard .pv-contact-head-icon { display:grid; flex:none; place-items:center; width:38px; height:38px; border-radius:11px; color:#64748b; background:#eef2f7; }
+.mi-panel-shell #pvDashboard .pv-contact-head-icon .icon { width:20px; height:20px; }
+.mi-panel-shell #pvDashboard .pv-contact-green { color:#00a85a; background:#dcfce7; }
+.mi-panel-shell #pvDashboard .pv-contact-red { color:#e11d48; background:#fff1f2; }
+.mi-panel-shell #pvDashboard .pv-person-detail { display:flex; align-items:center; gap:10px; }
+.mi-panel-shell #pvDashboard .pv-supervision-avatar { width:50px; height:50px; font-size:18px; }
+.mi-panel-shell #pvDashboard :is(.pv-supervision-card, .pv-supervision-escalate) b { white-space:normal; overflow-wrap:anywhere; }
+.mi-panel-shell #pvDashboard :is(.pv-supervision-card, .pv-supervision-escalate) small { font-size:11px; line-height:1.4; }
+.mi-panel-shell #pvDashboard .pv-contact-note { border-top:1px solid #e2e8f0; padding-top:10px; font-style:italic; }
+.mi-panel-shell #pvDashboard :is(.pv-supervision-contact, .pv-supervision-escalate) .pv-contact-button {
+    box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; width:100%; max-width:none;
+    margin-top:auto; padding:9px 13px; border-radius:999px; font-size:11px; text-decoration:none;
+}
+.mi-panel-shell #pvDashboard .pv-supervision-contact .pv-contact-button { color:#fff; background:#12ad5d; border-color:#12ad5d; }
+.mi-panel-shell #pvDashboard .pv-supervision-escalate .pv-contact-button { color:#e11d48; border:1px solid #e11d48; background:transparent; }

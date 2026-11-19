@@ -65,6 +65,7 @@ from .forms import (
 )
 from .context_processors import _tipos_por_revisar
 from .services.motor_ans import calcular_ans, evaluar_lote
+from .services.autoasignacion_transaccional import asignar_manual, coordinacion_asignacion, escritura_coordinada
 from .models import (
     Categoria,
     CategoriaGrupo,
@@ -155,47 +156,21 @@ def _tecnicos_disponibles_para_formulario():
 
 
 def _auto_asignar_tecnico(ticket) -> bool:
-    """
-    Asignación automática por categoría, prioridad y disponibilidad:
-      - Candidatos: técnicos/administradores activos del sistema.
-      - Urgente/Alta: se elige al técnico con MENOR carga activa (disponibilidad);
-        en caso de empate, gana el técnico por defecto de la categoría.
-      - Media/Baja: se respeta primero el técnico por defecto de la categoría
-        y, si no existe, se elige al de menor carga activa.
-    """
+    """Invoca el único motor sobre el ticket ya guardado, sin alterar asignaciones manuales."""
     if ticket.tecnico_asignado_id or not ticket.categoria_id:
         return False
-    categoria = Categoria.objects.filter(pk=ticket.categoria_id).select_related("tecnico_default").first()
-    if not categoria:
-        return False
-    Usuario = get_user_model()
-    candidatos = list(
-        Usuario.objects.filter(
-            activo=True,
-            is_active=True,
-            rol__in=(Usuario.Rol.TECNICO, Usuario.Rol.ADMIN),
-        ).order_by("pk")
-    )
-    if not candidatos:
-        return False
-    cargas = _cargas_activas([c.pk for c in candidatos])
-    default = categoria.tecnico_default
+    from .services.autoasignacion_transaccional import asignar_ticket
 
-    def clave(c):
-        carga = cargas.get(c.pk, 0)
-        es_default = bool(default and c.pk == default.pk)
-        if ticket.prioridad in (Ticket.Prioridad.URGENTE, Ticket.Prioridad.ALTA):
-            # Prioridad alta/urgente: importa la disponibilidad.
-            return (carga, not es_default, c.pk)
-        # Media/Baja: primero el técnico por defecto, luego el de menor carga.
-        return (not es_default, carga, c.pk)
-
-    elegido = min(candidatos, key=clave)
-    if not elegido:
+    try:
+        decision = asignar_ticket(ticket.pk, using=ticket._state.db or "default")
+    except Exception:
+        # La creación local no debe perderse por un fallo de autoasignación.
+        logger.exception("No se pudo autoasignar el ticket %s", ticket.pk)
         return False
-    ticket.tecnico_asignado = elegido
-    ticket.asignacion_automatica = True
-    return True
+    if decision and decision.candidato:
+        ticket.refresh_from_db(fields=["tecnico_asignado", "asignacion_automatica"])
+        return True
+    return False
 
 
 @require_POST
@@ -1337,14 +1312,23 @@ def _reportes_metricas_tecnicos(tickets):
 
 
 def _reportes_metricas_usuarios(tickets):
+    from django.db.models.functions import Lower
+
     grupos = {}
+    tickets_vistos = set()
     for t in tickets:
+        if t.pk is not None:
+            if t.pk in tickets_vistos:
+                continue
+            tickets_vistos.add(t.pk)
         nombre = t.solicitante_nombre or t.solicitante_email or "Anónimo"
+        correo = (t.solicitante_email or "").strip()
+        clave = ("correo", correo.lower()) if correo else ("nombre", nombre.strip().casefold())
         g = grupos.setdefault(
-            nombre,
+            clave,
             {
                 "nombre": nombre,
-                "email": t.solicitante_email or "",
+                "email": correo,
                 "creados": 0,
                 "abiertos": 0,
                 "resueltos": 0,
@@ -1365,8 +1349,11 @@ def _reportes_metricas_usuarios(tickets):
         if not g["ultimo_fecha"] or (t.fecha_creacion and t.fecha_creacion > g["ultimo_fecha"]):
             g["ultimo_fecha"] = t.fecha_creacion
             g["ultimo_estado"] = t.get_estado_display()
-        if t.fecha_finalizacion and t.fecha_creacion:
-            horas = (t.fecha_finalizacion - t.fecha_creacion).total_seconds() / 3600.0
+            g["nombre"] = nombre
+        # Un cierre directo no es una resolución. ANS también mide tiempo
+        # transcurrido real, no horas hábiles ni el plazo de la categoría.
+        if t.fecha_resolucion and t.fecha_creacion:
+            horas = (t.fecha_resolucion - t.fecha_creacion).total_seconds() / 3600.0
             if horas >= 0:
                 g["horas"] += horas
                 g["n_cerrados"] += 1
@@ -1374,7 +1361,7 @@ def _reportes_metricas_usuarios(tickets):
     correos = [g["email"].lower() for g in filas if g["email"]]
     cuentas = {
         u.email.lower(): u
-        for u in User.objects.filter(email__in=correos).only(
+        for u in User.objects.annotate(_correo_normalizado=Lower("email")).filter(_correo_normalizado__in=correos).only(
             "id", "email", "activo", "avatar", "glpi_user_id"
         )
         if u.email
@@ -1789,6 +1776,7 @@ def categoria_crear(request):
 
 @admin_required
 @require_POST
+@escritura_coordinada
 def categoria_toggle(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
     categoria.activo = not categoria.activo
@@ -1800,6 +1788,7 @@ def categoria_toggle(request, pk):
 
 @staff_required
 @require_POST
+@escritura_coordinada
 def categoria_actualizar(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
     nombre = request.POST.get("nombre", "").strip()
@@ -1833,6 +1822,7 @@ def categoria_actualizar(request, pk):
 
 @admin_required
 @require_POST
+@escritura_coordinada
 def categoria_eliminar(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
     n_tickets = categoria.tickets.count()
@@ -2501,6 +2491,7 @@ def usuario_sync_glpi(request, pk):
 
 @admin_required
 @require_POST
+@escritura_coordinada
 def usuario_guardar(request):
     pk = request.POST.get("pk") or None
     instancia = User.objects.filter(pk=pk).first() if pk else None
@@ -2542,6 +2533,7 @@ def usuario_guardar(request):
 
 @admin_required
 @require_POST
+@escritura_coordinada
 def usuario_toggle(request, pk):
     usuario = get_object_or_404(User, pk=pk)
     if usuario.pk == request.user.pk:
@@ -2557,6 +2549,7 @@ def usuario_toggle(request, pk):
 
 @admin_required
 @require_POST
+@escritura_coordinada
 def usuario_eliminar(request, pk):
     """Elimina definitivamente una cuenta. Los tickets asignados quedan sin técnico."""
     usuario = get_object_or_404(User, pk=pk)
@@ -2728,8 +2721,6 @@ def portal(request):
         if form.is_valid():
             ticket = form.save()
             _auto_asignar_tecnico(ticket)
-            if ticket.asignacion_automatica:
-                ticket.save(update_fields=["tecnico_asignado", "asignacion_automatica"])
             files = form.cleaned_data.get("adjuntos") or []
             for f in files:
                 TicketAdjunto.objects.create(
@@ -3456,8 +3447,8 @@ def mi_panel(request):
         ticket = form.save(commit=False)
         ticket.solicitante_email = request.user.email
         ticket.solicitante_nombre = request.user.nombre or ticket.solicitante_nombre
-        _auto_asignar_tecnico(ticket)
         ticket.save()
+        _auto_asignar_tecnico(ticket)
         if ticket.asignacion_automatica:
             messages.info(
                 request,
@@ -3696,8 +3687,8 @@ def crear_ticket(request):
         if es_usuario_final:
             ticket.solicitante_email = request.user.email
             ticket.solicitante_nombre = request.user.nombre or ticket.solicitante_nombre
-        _auto_asignar_tecnico(ticket)
         ticket.save()
+        _auto_asignar_tecnico(ticket)
         if ticket.asignacion_automatica:
             messages.info(
                 request,
@@ -4070,14 +4061,20 @@ def editar_mi_ticket(request, pk):
 
     form = TicketEdicionForm(request.POST or None, instance=ticket)
     if request.method == "POST" and form.is_valid():
-        antes_categoria = Ticket.objects.get(pk=ticket.pk).categoria_id
-        ticket = form.save()
+        with coordinacion_asignacion():
+            ticket = Ticket.objects.select_for_update().get(pk=ticket.pk)
+            if ticket.estado != Ticket.Estado.ABIERTO:
+                messages.warning(request, "El ticket ya está siendo atendido y no puede editarse.")
+                return redirect("tickets:mi_ticket", pk=pk)
+            antes_categoria = ticket.categoria_id
+            for campo in form.Meta.fields:
+                setattr(ticket, campo, form.cleaned_data[campo])
+            ticket.save(update_fields=[*form.Meta.fields, "fecha_actualizacion"])
         reasignar = (
             not ticket.tecnico_asignado_id
             or (ticket.categoria_id != antes_categoria and ticket.asignacion_automatica)
         )
         if reasignar and _auto_asignar_tecnico(ticket):
-            ticket.save(update_fields=["tecnico_asignado", "asignacion_automatica"])
             messages.info(
                 request,
                 f"Reasignado automáticamente a {ticket.tecnico_asignado.nombre} según la nueva categoría.",
@@ -4672,11 +4669,7 @@ def sin_asignar(request):
                     return redirect("tickets:sin_asignar")
             else:
                 tec = None
-            ticket.tecnico_asignado = tec
-            ticket.asignacion_automatica = False
-            ticket.save(
-                update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"]
-            )
+            ticket, _ = asignar_manual(ticket.pk, tec)
             if tec:
                 try:
                     if sync_asignacion_to_glpi(ticket):
@@ -4689,11 +4682,10 @@ def sin_asignar(request):
                 messages.success(request, f"{ticket.codigo} quedó sin técnico (por si otro lo toma).")
             return redirect("tickets:sin_asignar")
         if accion == "tomar":
-            ticket.tecnico_asignado = request.user
-            ticket.asignacion_automatica = False
-            ticket.save(
-                update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"]
-            )
+            ticket, tomado = asignar_manual(ticket.pk, request.user, solo_sin_asignar=True)
+            if not tomado:
+                messages.warning(request, "La solicitud ya fue asignada por otro usuario.")
+                return redirect("tickets:sin_asignar")
             if request.user.glpi_user_id:
                 try:
                     if sync_asignacion_to_glpi(ticket):
@@ -5058,11 +5050,7 @@ def detalle_ticket(request, pk):
         elif action == "asignar":
             asignar_form = AsignarTecnicoForm(request.POST)
             if asignar_form.is_valid():
-                ticket.tecnico_asignado = asignar_form.cleaned_data["tecnico"]
-                ticket.asignacion_automatica = False
-                ticket.save(
-                    update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"]
-                )
+                ticket, _ = asignar_manual(ticket.pk, asignar_form.cleaned_data["tecnico"])
                 if ticket.tecnico_asignado_id:
                     try:
                         if sync_asignacion_to_glpi(ticket):
@@ -6115,9 +6103,7 @@ def panel_tecnico_tomar(request, pk):
             if ticket.tecnico_asignado else "otro técnico"
         )
 
-    ticket.tecnico_asignado = request.user
-    ticket.asignacion_automatica = False
-    ticket.save(update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"])
+    ticket, _ = asignar_manual(ticket.pk, request.user)
     tomado = (
         f"Ticket {ticket.codigo} tomado (antes lo tenía {anterior})."
         if anterior else f"Ticket {ticket.codigo} tomado."
@@ -6163,9 +6149,10 @@ def panel_tecnico_lote(request):
             if t.tecnico_asignado_id:
                 ya_asignados += 1
                 continue
-            t.tecnico_asignado = request.user
-            t.asignacion_automatica = False
-            t.save(update_fields=["tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"])
+            t, tomado = asignar_manual(t.pk, request.user, solo_sin_asignar=True)
+            if not tomado:
+                ya_asignados += 1
+                continue
             tomados += 1
             if request.user.glpi_user_id:
                 try:
@@ -6234,14 +6221,12 @@ def panel_tecnico_lote(request):
 
         asignados = 0
         for t in tickets:
-            if sitio and t.solicitante_punto != sitio:
-                t.solicitante_punto = sitio
-            if categoria and t.categoria_id != categoria.pk:
-                t.categoria = categoria
-            if tecnico_id:
-                t.tecnico_asignado = tecnico
-                t.asignacion_automatica = False
-            t.save(update_fields=["solicitante_punto", "categoria", "tecnico_asignado", "asignacion_automatica", "fecha_actualizacion"])
+            cambios = {}
+            if sitio:
+                cambios["solicitante_punto"] = sitio
+            if categoria:
+                cambios["categoria"] = categoria
+            t, _ = asignar_manual(t.pk, tecnico, cambiar_tecnico=bool(tecnico_id), cambios=cambios)
             if tecnico and tecnico.glpi_user_id:
                 try:
                     sync_asignacion_to_glpi(t)
