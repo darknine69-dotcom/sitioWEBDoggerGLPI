@@ -681,7 +681,7 @@ if (data.festivos[fecha]) nota = "Festivo: " + data.festivos[fecha];
                 "</div>" +
                 '<div class="prog-ev-actions">' +
                 (cfg.check ? '<input type="checkbox" class="prog-ev-check" ' + (e.completado ? "checked" : "") + ' data-evento="' + e.id + '" title="Marcar completada">' : "") +
-                (e.puede_editar ? '<button type="button" class="prog-ev-del" data-eliminar="' + e.id + '" title="Eliminar"><svg class="icon"><use href="#i-trash"/></svg></button>' : "") +
+                (e.puede_editar ? '<button type="button" class="prog-ev-del" data-eliminar="' + e.id + '" title="Eliminar" aria-label="Eliminar evento"><svg class="icon"><use href="#i-trash"/></svg></button>' : '<span class="prog-ev-del prog-ev-del-disabled" title="Solo el creador o un administrador puede eliminar este evento" aria-label="Solo el creador o un administrador puede eliminar este evento"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></span>') +
                 "</div>";
             box.appendChild(item);
         });

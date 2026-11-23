@@ -154,6 +154,34 @@ def _ajustar_impresion(ws):
     ws.oddFooter.center.text = "Dogger HelpDesk · Reporte corporativo"
 
 
+def preparar_libro_reunion(wb):
+    """Aplica presentación y protege los datos de texto en todas las hojas."""
+    for ws in wb.worksheets:
+        ws.sheet_view.showGridLines = False
+        ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
+        ws.page_setup.orientation = "landscape"
+        ws.page_setup.fitToWidth = 1
+        ws.page_setup.fitToHeight = 0
+        ws.print_options.horizontalCentered = True
+        ws.row_dimensions[1].height = 28
+        ws.sheet_properties.outlinePr.summaryBelow = True
+        if ws.auto_filter.ref:
+            from openpyxl.utils.cell import range_boundaries
+
+            min_col, header_row, max_col, _ = range_boundaries(ws.auto_filter.ref)
+            ws.auto_filter.ref = (
+                f"{get_column_letter(min_col)}{header_row}:"
+                f"{get_column_letter(max_col)}{max(header_row, ws.max_row)}"
+            )
+            ws.print_title_rows = f"1:{header_row}"
+            ws.row_dimensions[header_row].height = 30
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.data_type == "f":
+                    cell.value = "'" + cell.value
+    return wb
+
+
 def _serie_con_color(chart, color):
     serie = chart.series[-1]
     serie.graphicalProperties.solidFill = color
@@ -398,6 +426,7 @@ def generar_excel_reportes(kpis, tecnicos, usuarios, tickets, filtros_txt="Sin f
 
 def _responder_xlsx(wb, prefijo):
     buffer = BytesIO()
+    preparar_libro_reunion(wb)
     wb.save(buffer)
     buffer.seek(0)
     filename = f"{prefijo}_{timezone.localtime(timezone.now()).strftime('%Y%m%d_%H%M')}.xlsx"

@@ -583,15 +583,48 @@ def monitoreo_zona_detalle(request, pk):
     )
 
 
-def _auditoria_enriquecida(limite=20):
+def _auditoria_enriquecida(limite=20, consulta=None):
     """Últimos cambios con etiqueta relativa de tiempo para la tabla."""
     ahora = timezone.now()
     filas = list(
-        MonitoreoAuditoria.objects.select_related("actor", "observador")[:limite]
+        (consulta if consulta is not None else MonitoreoAuditoria.objects.all()).select_related("actor", "observador")[:limite]
     )
     for a in filas:
         a.hace = _hace(a.fecha, ahora)
     return filas
+
+
+@admin_required
+@require_GET
+def monitoreo_actividad_supervisor(request, pk):
+    """Actividad reciente de las zonas actualmente asignadas al supervisor."""
+    from apps.notificaciones.models import AlertaOperativa
+    from .models import TicketTransicionANS
+
+    zonas = list(ZonaObservador.objects.filter(observador_id=pk).values_list("pk", "nombre"))
+    if not zonas:
+        raise Http404
+    nombres = [nombre for _, nombre in zonas]
+    miembros = ElementoMiLista.objects.filter(zona_id__in=[identificador for identificador, _ in zonas])
+    correos = set(miembros.exclude(usuario_email="").values_list("usuario_email", flat=True))
+    correos = {correo.strip().lower() for correo in correos if correo and correo.strip()}
+    tickets = Ticket.objects.annotate(_correo_zona=Lower("solicitante_email")).filter(_correo_zona__in=correos)
+    eventos = []
+    def agregar(fecha, titulo, detalle, url=""):
+        if fecha:
+            eventos.append((fecha, {"titulo": titulo, "detalle": detalle, "url": url, "fecha": timezone.localtime(fecha).strftime("%d/%m/%Y %I:%M %p")}))
+    for registro in MonitoreoAuditoria.objects.filter(observador_id=pk, zona_nombre__in=nombres)[:30]:
+        agregar(registro.fecha, registro.get_accion_display(), f"{registro.zona_nombre} · {registro.detalle or registro.cuenta}")
+    for ticket in tickets.order_by("-fecha_creacion")[:30]:
+        agregar(ticket.fecha_creacion, f"Nuevo ticket {ticket.codigo}", ticket.titulo, reverse("tickets:detalle", args=[ticket.pk]))
+    for comentario in TicketComentario.objects.filter(ticket__in=tickets).select_related("ticket").order_by("-fecha")[:30]:
+        agregar(comentario.fecha, f"Respuesta en {comentario.ticket.codigo}", comentario.comentario[:180], reverse("tickets:detalle", args=[comentario.ticket_id]))
+    for cambio in TicketTransicionANS.objects.filter(ticket__in=tickets).select_related("ticket").order_by("-ocurrido_en")[:30]:
+        agregar(cambio.ocurrido_en, f"Cambio de estado · {cambio.ticket.codigo}", f"{cambio.estado_anterior} → {cambio.estado_nuevo}", reverse("tickets:detalle", args=[cambio.ticket_id]))
+    for alerta in AlertaOperativa.objects.filter(ticket__in=tickets, tipo="ans_vencido").select_related("ticket").order_by("-creada_en")[:30]:
+        agregar(alerta.creada_en, f"ANS vencido · {alerta.codigo_ticket}", alerta.titulo_ticket, reverse("tickets:detalle", args=[alerta.ticket_id]))
+    eventos.sort(key=lambda evento: evento[0], reverse=True)
+    return JsonResponse({"eventos": [evento for _, evento in eventos[:30]]})
 
 
 def _zonas_creadas_por_observador():
@@ -1518,6 +1551,9 @@ def _xlsx_auditoria(
             c.alignment = Alignment(vertical="center", wrap_text=True)
             if n % 2 == 0:
                 c.fill = zebra
+    from .exports import preparar_libro_reunion
+
+    preparar_libro_reunion(wb)
     buffer = BytesIO()
     wb.save(buffer)
     buffer.seek(0)

@@ -120,12 +120,13 @@ class TicketCreadoTest(BaseNotificaciones):
 
         from apps.tickets.notifications import notificar_ticket_creado
 
-        notificar_ticket_creado(self.ticket())
+        ticket = self.ticket()
+        notificar_ticket_creado(ticket)
         correos = {c.to[0]: c for c in mail.outbox}
 
         self.assertIn("tec@dogger.com.co", correos)
         self.assertIn("ana@dogger.com.co", correos)
-        self.assertIn("HD-", correos["tec@dogger.com.co"].subject)
+        self.assertIn(ticket.codigo, correos["tec@dogger.com.co"].subject)
         # El correo al técnico va con diseño HTML.
         self.assertIn("<html", correos["tec@dogger.com.co"].alternatives[0][0])
 

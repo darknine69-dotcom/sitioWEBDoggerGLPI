@@ -11,6 +11,39 @@
 {% block extra_css %}
 <style>
 main.obs-page { font-family: var(--font-corp); }
+.mon-supervisor-collapse > summary.mon-sup-head { display:flex; list-style:none; cursor:pointer; margin:0; padding:0; border:0; align-items:center; gap:12px; }
+.mon-supervisor-collapse > summary::-webkit-details-marker { display:none; }
+.mon-supervisor-collapse[open] > summary.mon-sup-head { margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--line); }
+.mon-supervisor-collapse .mon-sup-id { flex:1; min-width:0; }
+.mon-supervisor-collapse .mon-sup-n { flex:none; margin-left:auto; }
+.mon-supervisor-bell { display:grid; place-items:center; width:30px; height:30px; flex:none; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--ink-muted); cursor:pointer; }
+.mon-supervisor-bell .icon { width:16px; height:16px; }
+.mon-actividad-dialog { width:min(420px, calc(100vw - 32px)); max-height:80vh; padding:18px; border:1px solid #d9e2ee; border-radius:16px; background:#fff; color:#17233c; box-shadow:0 18px 50px #0005; }
+.mon-actividad-dialog::backdrop { background:#0c111bb3; }
+.mon-actividad-head { display:flex; align-items:center; gap:8px; }
+.mon-actividad-head h3 { flex:1; margin:0; font-size:16px; }
+.mon-actividad-head button { border:1px solid #cbd5e1; border-radius:8px; background:transparent; color:inherit; padding:6px 9px; cursor:pointer; }
+.mon-actividad-lista { max-height:55vh; overflow:auto; margin-top:12px; }
+.mon-actividad-item { display:grid; gap:4px; padding:10px 2px; border-bottom:1px solid #dce4ee; font-size:13px; }
+.mon-actividad-item small { color:#64748b; }
+.mon-actividad-item a { color:#d62b1f; }
+html[data-theme="dark"] .mon-actividad-dialog { background:#191e27; border-color:#354356; color:#edf2f9; }
+html[data-theme="dark"] .mon-actividad-item { border-color:#354356; }
+html[data-theme="dark"] .mon-actividad-item small { color:#aebed1; }
+html[data-theme="dark"] .mon-actividad-item a { color:#ff7885; }
+.mon-supervisor-collapse > summary:focus-visible { outline:2px solid #4f8df7; outline-offset:4px; border-radius:8px; }
+.mon-supervisor-arrow { display:grid; place-items:center; width:28px; height:28px; flex:none; border-radius:8px; background:rgba(120,140,165,.12); color:var(--ink-muted); transition:transform .2s ease; }
+.mon-supervisor-arrow svg { width:16px; height:16px; }
+.mon-supervisor-collapse[open] .mon-supervisor-arrow { transform:rotate(180deg); }
+.mon-grid .mon-right { position:static; max-height:none; }
+.mon-grid .mon-lista { overflow:visible; }
+.mon-grid .mon-user-wrap[hidden] { display:none; }
+.mon-paginacion { display:flex; align-items:center; justify-content:flex-end; gap:7px; margin-top:12px; font-size:12px; color:var(--ink-muted); }
+.mon-paginacion[hidden] { display:none; }
+.mon-paginacion select, .mon-paginacion button { min-height:30px; border:1px solid var(--line); border-radius:8px; background:var(--surface,#fff); color:var(--ink); }
+.mon-paginacion select { padding:3px 6px; }
+.mon-paginacion button { min-width:30px; cursor:pointer; }
+.mon-paginacion button:disabled { opacity:.45; cursor:default; }
 /* Formularios cortos dentro de las tarjetas de zona: misma línea, sin aire de más. */
 .obs-admin-form { display: flex; gap: 6px; margin: 10px 0 4px; align-items: center; }
 /* Fila renombrar + más + correo al ladito. */
@@ -282,14 +315,20 @@ main.obs-page { font-family: var(--font-corp); }
                         </span>
                         <small class="cz-error" id="cz-error-nombre" hidden>Escribe un nombre para la zona.</small>
                     </label>
-                    <label class="cz-campo">Supervisor de la zona
-                        <select name="observador" id="cz-supervisor" required>
+                    <div class="cz-campo"><span>Supervisor de la zona</span>
+                        <select name="observador" id="cz-supervisor" required hidden aria-label="Supervisor de la zona">
                             <option value="">Elige…</option>
                             {% for pk, nombre in observadores %}
-                            <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }}</option>
+                            <option value="{{ pk }}"{% if observador and observador.pk == pk %} selected{% endif %}>{{ nombre }} · Activo</option>
                             {% endfor %}
                         </select>
-                    </label>
+                        <div class="cz-supervisor-select">
+                            <button type="button" class="cz-supervisor-trigger" id="cz-supervisor-trigger" aria-expanded="false" aria-controls="cz-supervisor-lista"><span id="cz-supervisor-label">{% if observador %}{{ observador.nombre }}{% else %}Elige un supervisor{% endif %}</span><span class="cz-supervisor-chevron" aria-hidden="true"></span></button>
+                            <div class="cz-supervisor-lista" id="cz-supervisor-lista" hidden>
+                                {% for pk, nombre in observadores %}<button type="button" class="cz-supervisor-option" data-supervisor-id="{{ pk }}" data-supervisor-nombre="{{ nombre }}"><span class="cz-supervisor-avatar">{{ nombre|slice:":1"|upper }}</span><span class="cz-supervisor-info"><strong>{{ nombre }}</strong><small><i></i>Activo</small></span><span class="cz-supervisor-mark" aria-hidden="true">✓</span></button>{% empty %}<span class="cz-supervisor-empty">No hay supervisores activos.</span>{% endfor %}
+                            </div>
+                        </div>
+                    </div>
                     <div class="cz-campo"><span class="cz-desplegable">Agregar usuarios
                         <button type="button" class="cz-toggle" data-cz-toggle="cz-bloque-usuarios" aria-expanded="false" title="Desplegar buscador">✓</button></span>
                         <div id="cz-bloque-usuarios" hidden>
@@ -307,6 +346,7 @@ main.obs-page { font-family: var(--font-corp); }
                     </fieldset>
                     </div>
                     <div data-cz-panel="permisos" hidden>
+                        <input type="hidden" name="notif_correo" value="off"><input type="hidden" name="notif_popup" value="off"><input type="hidden" name="perm_exportar" value="off"><input type="hidden" name="perm_historial" value="off">
                         <p class="muted">Permisos del administrador en esta zona.</p>
                         <label class="cz-perm"><span><b>Notificaciones por correo</b><small>Avisos de la zona al correo</small></span><input type="checkbox" name="notif_correo" checked></label>
                         <label class="cz-perm"><span><b>Notificaciones emergentes</b><small>Campana en el panel</small></span><input type="checkbox" name="notif_popup" checked></label>
@@ -323,6 +363,7 @@ main.obs-page { font-family: var(--font-corp); }
             </div>
         </div>
         {% if zonas_creadas %}
+        <dialog class="mon-actividad-dialog" id="monActividadDialog" aria-labelledby="monActividadTitulo"><div class="mon-actividad-head"><h3 id="monActividadTitulo">Actividad de las zonas</h3><button type="button" id="monActividadActualizar" aria-label="Actualizar actividad">↻</button><button type="button" id="monActividadCerrar" aria-label="Cerrar">×</button></div><div class="mon-actividad-lista" id="monActividadLista" aria-live="polite"></div></dialog>
         <dialog class="mon-folder-dialog" id="monFolderDialog" aria-labelledby="monFolderTitle">
             <div class="mon-folder-head"><span class="mon-folder-title-icon"><svg class="icon"><use href="#i-store"/></svg></span><div><h3 id="monFolderTitle">Puntos de venta</h3><p id="monFolderSupervisor"></p></div><span id="monFolderCount" class="mon-folder-count"></span><button type="button" id="monFolderClose" aria-label="Cerrar">×</button></div>
             <div class="mon-folder-filters"><label class="mon-folder-search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input id="monFolderSearch" type="search" placeholder="Buscar punto de venta…" aria-label="Buscar punto de venta"></label><select id="monFolderStatus" aria-label="Estado ANS"><option value="">Estado: Todos</option><option value="vencido">ANS vencido</option><option value="por-vencer">Por vencer</option><option value="al-dia">Al día</option></select><select id="monFolderSort" aria-label="Ordenar puntos"><option value="nombre">Ordenar por: Nombre</option><option value="tickets">Ordenar por: Tickets</option></select></div>
@@ -336,21 +377,22 @@ main.obs-page { font-family: var(--font-corp); }
         <div class="mon-grid pan-grid" data-url-presionar="{% url 'tickets:monitoreo_presionar' 0 %}">
             <div class="mon-left pan-left" id="monLeft">
                 {% for bloque in zonas_creadas %}
-                <article class="mon-sup pan-sup" data-sup="{{ bloque.supervisor.pk }}">
-                    <header class="mon-sup-head pan-sup-head">
+                <details class="mon-sup pan-sup mon-supervisor-collapse" data-sup="{{ bloque.supervisor.pk }}">
+                    <summary class="mon-sup-head pan-sup-head">
                         <span class="mon-ava pan-ava"{% if bloque.supervisor.avatar %} data-supervisor-avatar="{{ bloque.supervisor.avatar.url }}"{% endif %}>{% if bloque.supervisor.avatar %}<img src="{{ bloque.supervisor.avatar.url }}" alt="" onerror="this.remove()">{% endif %}{{ bloque.supervisor.nombre|default:"?"|slice:":1"|upper }}</span>
                         <div class="mon-sup-id pan-sup-id">
                             <strong>{{ bloque.supervisor.nombre }}</strong>
                             <small>{{ bloque.supervisor.email|default:"—" }}</small>
-                            <span class="mon-rol">{% if bloque.supervisor.rol == 'observador' %}Supervisor a cargo{% else %}{{ bloque.supervisor.get_rol_display }}{% endif %}</span>
                         </div>
                         <span class="mon-sup-n pan-sup-n">{{ bloque.zonas|length }} zona{{ bloque.zonas|length|pluralize }}</span>
-                    </header>
+                        <button type="button" class="mon-supervisor-bell" data-actividad-url="{% url 'tickets:monitoreo_actividad_supervisor' bloque.supervisor.pk %}" data-actividad-nombre="{{ bloque.supervisor.nombre }}" aria-label="Ver actividad de las zonas de {{ bloque.supervisor.nombre }}"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg></button>
+                        <span class="mon-supervisor-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+                    </summary>
                     <p class="pan-sub-tit">Mis zonas</p><div class="mon-zonas pan-cards">
                         {% for z in bloque.zonas %}
                         <div class="mon-zc-wrap pan-zc-wrap"{% if z.zona.color %} style="--mon-zc-color: {{ z.zona.color }}; --zc: {{ z.zona.color }}"{% endif %}>
-                            <button type="button" class="mon-zc pan-zc mon-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %} pan-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %}" data-mon-zona="{{ z.zona.pk }}" data-mon-sup="{{ bloque.supervisor.pk }}" data-mon-nombre="{{ z.zona.nombre }}" title="{{ z.zona.nombre }}">
-                                <span class="pan-zc-headline"><span class="pan-zc-ico"><svg class="icon"><use href="#i-store"/></svg></span><span class="pan-zc-title"><b>{{ z.zona.nombre }}</b><small>{{ z.zona.creado_en|date:"d/m/Y" }}</small></span><span class="pan-zc-state"><i></i>{% if z.urgentes %}Con incidencia{% elif z.abiertos %}Pendiente{% else %}Al día{% endif %}</span></span>
+                            <button type="button" class="mon-zc pan-zc mon-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %} pan-zc-{% if z.urgentes %}rojo{% elif z.abiertos %}amarillo{% else %}verde{% endif %}" style="border: 1px solid var(--mon-zc-color, {% if z.urgentes %}#ef4444{% elif z.abiertos %}#f59e0b{% else %}#16a34a{% endif %});" data-mon-zona="{{ z.zona.pk }}" data-mon-sup="{{ bloque.supervisor.pk }}" data-mon-nombre="{{ z.zona.nombre }}" title="{{ z.zona.nombre }}">
+                                <span class="pan-zc-headline"><span class="pan-zc-ico"><svg class="icon"><use href="#i-store"/></svg></span><span class="pan-zc-title"><b>{{ z.zona.nombre }}</b><small>{{ z.zona.creado_en|date:"d/m/Y" }}</small></span><span class="pan-zc-state"><svg class="icon" aria-hidden="true"><use href="{% if z.urgentes %}#i-alert{% elif z.abiertos %}#i-clock{% else %}#i-check-circle{% endif %}"/></svg>{% if z.urgentes %}Con incidencia{% elif z.abiertos %}Pendiente{% else %}Al día{% endif %}</span></span>
                                 <span class="pan-zc-middle"><span class="pan-zc-metrics"><span><svg class="icon"><use href="#i-users"/></svg><b>{{ z.miembros|length }}</b> cuentas</span><span><svg class="icon"><use href="#i-ticket"/></svg><b>{{ z.abiertos }}</b> abiertos</span><span><svg class="icon"><use href="#i-check-circle"/></svg><b>{{ z.cerrados|default:0 }}</b> cerrados</span></span></span>
                                 <span class="pan-zc-progress"><span><i style="width:{{ z.avance }}%"></i></span><b>{{ z.avance }}%</b></span>
                                 {% if z.urgentes %}<span class="pan-zc-activity"><svg class="icon"><use href="#i-alert"/></svg>{{ z.urgentes }} urgentes</span>{% endif %}
@@ -361,7 +403,7 @@ main.obs-page { font-family: var(--font-corp); }
                         <p class="muted mon-sin">Sin zonas.</p>
                         {% endfor %}
                     </div>
-                </article>
+                </details>
                 {% endfor %}
             </div>
             <aside class="mon-right pan-right" id="monRight" aria-live="polite">
@@ -377,6 +419,7 @@ main.obs-page { font-family: var(--font-corp); }
                 </div>
                 <div class="mon-busca pan-busca"><svg class="icon icon-sm"><use href="#i-search"/></svg><input type="search" id="monBuscar" placeholder="Buscar usuario…" aria-label="Buscar usuario" autocomplete="off"></div>
                 <div class="mon-lista pan-lista" id="monLista"><p class="muted mon-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p></div>
+                <div class="mon-paginacion" id="monPaginacion" hidden><label for="monPorPagina">Mostrar</label><select id="monPorPagina" aria-label="Resultados por página"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option><option value="50">50</option></select><button type="button" id="monPaginaAnterior" aria-label="Página anterior">‹</button><span id="monPaginaTexto"></span><button type="button" id="monPaginaSiguiente" aria-label="Página siguiente">›</button></div>
                 <div class="mon-right-pie">
                     <form method="post" action="{% url 'tickets:monitoreo_zona_miembros_quitar' %}"
                           id="monQuitarSeleccionados" data-motivo-tipo="sacar"
@@ -424,6 +467,11 @@ main.obs-page { font-family: var(--font-corp); }
             </form>
         </dialog>
 
+        <style>
+        .mon-admin .obs-zona-card { padding:0; gap:0; margin-bottom:10px; }
+        .mon-admin .obs-zona-head { padding:10px 14px; gap:10px; }
+        .mon-admin .obs-zona-ico { width:36px; height:36px; flex:none; }
+        </style>
         <details class="mon-admin">
             <summary>Administrar zonas (crear, renombrar, cuentas, técnicos)</summary>
         {% for bloque in zonas_creadas %}
@@ -864,6 +912,62 @@ main.obs-page { font-family: var(--font-corp); }
             var alternarZonas = document.getElementById("monAlternarZonas");
             var botones = grid.querySelectorAll(".mon-zc");
             var actual = null;
+            var actividadDialog = document.getElementById("monActividadDialog");
+            var actividadLista = document.getElementById("monActividadLista");
+            var actividadUrl = "";
+            var actividadSolicitud = 0;
+            async function cargarActividad() {
+                var solicitud = ++actividadSolicitud;
+                actividadLista.textContent = "Cargando actividad…";
+                try {
+                    var respuesta = await fetch(actividadUrl, {headers:{"Accept":"application/json"}});
+                    if (!respuesta.ok) { throw new Error("No se pudo consultar la actividad"); }
+                    var datos = await respuesta.json();
+                    if (solicitud !== actividadSolicitud) { return; }
+                    actividadLista.replaceChildren();
+                    if (!datos.eventos.length) { actividadLista.textContent = "Sin actividad registrada en estas zonas."; return; }
+                    datos.eventos.forEach(function (evento) {
+                        var fila = document.createElement("div"); fila.className = "mon-actividad-item";
+                        var titulo = document.createElement(evento.url ? "a" : "strong"); titulo.textContent = evento.titulo;
+                        if (evento.url) { titulo.href = evento.url; }
+                        var detalle = document.createElement("span"); detalle.textContent = evento.detalle;
+                        var fecha = document.createElement("small"); fecha.textContent = evento.fecha;
+                        fila.append(titulo, detalle, fecha); actividadLista.appendChild(fila);
+                    });
+                } catch (error) { if (solicitud === actividadSolicitud) { actividadLista.textContent = "No se pudo cargar la actividad. Intenta actualizar."; } }
+            }
+            grid.querySelectorAll("[data-actividad-url]").forEach(function (boton) {
+                boton.addEventListener("click", function (evento) {
+                    evento.preventDefault(); evento.stopPropagation();
+                    actividadUrl = boton.dataset.actividadUrl;
+                    document.getElementById("monActividadTitulo").textContent = "Actividad · " + boton.dataset.actividadNombre;
+                    if (!actividadDialog.open) { actividadDialog.showModal(); }
+                    cargarActividad();
+                });
+            });
+            document.getElementById("monActividadActualizar").addEventListener("click", cargarActividad);
+            document.getElementById("monActividadCerrar").addEventListener("click", function () { actividadDialog.close(); });
+            var paginacion = document.getElementById("monPaginacion");
+            var porPagina = document.getElementById("monPorPagina");
+            var paginaAnterior = document.getElementById("monPaginaAnterior");
+            var paginaSiguiente = document.getElementById("monPaginaSiguiente");
+            var paginaTexto = document.getElementById("monPaginaTexto");
+            var paginaActual = 1;
+
+            function aplicarPagina() {
+                var filas = pane.querySelectorAll(".mon-user-wrap");
+                var cantidad = parseInt(porPagina.value, 10) || 10;
+                var paginas = Math.max(1, Math.ceil(filas.length / cantidad));
+                paginaActual = Math.min(Math.max(1, paginaActual), paginas);
+                filas.forEach(function (fila, indice) { fila.hidden = indice < (paginaActual - 1) * cantidad || indice >= paginaActual * cantidad; });
+                paginacion.hidden = filas.length === 0;
+                paginaTexto.textContent = paginaActual + " / " + paginas;
+                paginaAnterior.disabled = paginaActual === 1;
+                paginaSiguiente.disabled = paginaActual === paginas;
+            }
+            porPagina.addEventListener("change", function () { paginaActual = 1; aplicarPagina(); });
+            paginaAnterior.addEventListener("click", function () { paginaActual--; aplicarPagina(); });
+            paginaSiguiente.addEventListener("click", function () { paginaActual++; aplicarPagina(); });
 
             function actualizaBotonZonas(plegadas) {
                 if (!alternarZonas) { return; }
@@ -1022,6 +1126,7 @@ main.obs-page { font-family: var(--font-corp); }
                 }
             }
             function pinta(usuarios) {
+                paginaActual = 1;
                 var q = (buscar && buscar.value || "").toLowerCase().trim();
                 var vis = usuarios.filter(function (u) {
                     return !q || (u.nombre + " " + u.correo + " " + u.rol).toLowerCase().indexOf(q) !== -1;
@@ -1029,11 +1134,13 @@ main.obs-page { font-family: var(--font-corp); }
                 if (contador) { contador.textContent = vis.length + " de " + usuarios.length; }
                 if (!usuarios.length) {
                     pane.innerHTML = '<p class="muted mon-vacio">Esta zona no tiene cuentas todavía.</p>';
+                    aplicarPagina();
                     actualizaAcciones();
                     return;
                 }
                 if (!vis.length) {
                     pane.innerHTML = '<p class="muted mon-vacio">Sin coincidencias para «' + esc(q) + '».</p>';
+                    aplicarPagina();
                     actualizaAcciones();
                     return;
                 }
@@ -1087,6 +1194,7 @@ main.obs-page { font-family: var(--font-corp); }
                             (chips ? '<div class="obs-tickets pan-tickets">' + chips + "</div>" : "") +
                         '</div><span hidden>' + ansData + '</span></div>';
                 }).join("");
+                aplicarPagina();
                 actualizaAcciones();
             }
             (function configuraPresion() {
@@ -1159,6 +1267,23 @@ main.obs-page { font-family: var(--font-corp); }
                 if (buscar) { buscar.value = ""; }
                 pinta(us);
             }
+            grid.querySelectorAll(".mon-supervisor-collapse").forEach(function (supervisor) {
+                supervisor.addEventListener("toggle", function () {
+                    if (supervisor.open) {
+                        var primeraZona = supervisor.querySelector(".mon-zc");
+                        if (primeraZona) { activa(primeraZona); }
+                    } else if (actual && supervisor.contains(actual)) {
+                        actual.classList.remove("is-on");
+                        actual = null;
+                        if (rotulo) { rotulo.textContent = "—"; }
+                        if (contador) { contador.textContent = ""; }
+                        if (buscar) { buscar.value = ""; }
+                        if (pane) { pane.innerHTML = '<p class="muted mon-vacio">Elige una zona del panel izquierdo para ver sus usuarios.</p>'; }
+                        aplicarPagina();
+                        actualizaAcciones();
+                    }
+                });
+            });
             botones.forEach(function (b) {
                 b.addEventListener("click", function () { activa(b); });
             });
@@ -1712,6 +1837,18 @@ main.obs-page { font-family: var(--font-corp); }
         if (czModal) { czModal.addEventListener("click", function (e) { if (e.target === czModal) { czModal.hidden = true; } }); }
         if (czNombre) { czNombre.addEventListener("input", czValida); }
         if (czSup) { czSup.addEventListener("change", czValida); }
+        var czSupTrigger = document.getElementById("cz-supervisor-trigger");
+        var czSupLista = document.getElementById("cz-supervisor-lista");
+        var czSupLabel = document.getElementById("cz-supervisor-label");
+        function czCerrarSupervisores() { czSupLista.hidden = true; czSupTrigger.setAttribute("aria-expanded", "false"); }
+        if (czSupTrigger && czSupLista && czSup) {
+            function czMarcarSupervisor() { czSupLista.querySelectorAll("[data-supervisor-id]").forEach(function (op) { op.classList.toggle("is-selected", op.dataset.supervisorId === czSup.value); }); }
+            czMarcarSupervisor();
+            czSupTrigger.addEventListener("click", function () { czSupLista.hidden = !czSupLista.hidden; czSupTrigger.setAttribute("aria-expanded", String(!czSupLista.hidden)); });
+            czSupLista.querySelectorAll("[data-supervisor-id]").forEach(function (op) { op.addEventListener("click", function () { czSup.value = op.dataset.supervisorId; czSupLabel.textContent = op.dataset.supervisorNombre; czMarcarSupervisor(); czSup.dispatchEvent(new Event("change", {bubbles:true})); czCerrarSupervisores(); czSupTrigger.focus(); }); });
+            document.addEventListener("click", function (e) { if (!e.target.closest(".cz-supervisor-select")) { czCerrarSupervisores(); } });
+            czSupTrigger.addEventListener("keydown", function (e) { if (e.key === "Escape") { czCerrarSupervisores(); } });
+        }
         /* Pestañas Datos / Permisos del modal. */
         document.querySelectorAll("[data-cz-tab]").forEach(function (tab) {
             tab.addEventListener("click", function () {

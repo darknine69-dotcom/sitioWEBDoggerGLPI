@@ -30,7 +30,7 @@
         </div>
         {% endif %}
 
-        <form method="post" novalidate>
+        <form method="post">
             {% csrf_token %}
             {% if form.non_field_errors %}
             <div class="login-error">
@@ -39,7 +39,7 @@
             {% endif %}
 
             {% if correo_fijado %}
-            <input type="hidden" name="email" value="{{ form.email.value|default:'' }}">
+            <input type="hidden" name="email" value="{{ correo_fijado_valor }}">
             <div class="correo-fijo-box">
                 <svg class="correo-fijo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 <p>Enviaremos el código a<br><strong class="correo-fijo-mail">{{ correo_fijado_mostrado }}</strong></p>
@@ -49,7 +49,7 @@
             {% endfor %}
             <button type="submit" class="btn btn-primary">Enviar código a este correo</button>
             <p class="login-register-link">
-                <a href="{% url 'accounts:reset_solicitar' %}?manual=1">Usar otro correo</a>
+                {% if request.session.reset_pwd_destino_fijado %}<a href="{% url 'accounts:reset_solicitar' %}?cancelar=1">Cancelar y volver a iniciar sesión</a>{% else %}<a href="{% url 'accounts:reset_solicitar' %}?manual=1">Usar otro correo</a>{% endif %}
             </p>
             {% else %}
             <div class="form-group">
@@ -58,7 +58,7 @@
                        value="{{ form.email.value|default:'' }}" required
                        pattern="[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}"
                        title="Ingresa un correo válido, por ejemplo: nombre@dogger.com.co"
-                       placeholder="usuario@dogger.com.co">
+                       placeholder="usuario@dogger.com.co" autocomplete="email">
                 {% for error in form.email.errors %}
                 <div class="login-error">{{ error }}</div>
                 {% endfor %}

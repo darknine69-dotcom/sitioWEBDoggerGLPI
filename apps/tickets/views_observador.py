@@ -714,6 +714,12 @@ def mi_lista_observador(request):
     conteo = {ESTADO_VERDE: 0, ESTADO_ROJO: 0, ESTADO_AMARILLO: 0}
     for f in filas:
         conteo[f["estado"]] += 1
+    zonas_historial = ZonaObservador.objects.filter(
+        observador=usuario, perm_historial=True
+    ).values_list("nombre", flat=True)
+    auditoria_visible = MonitoreoAuditoria.objects.filter(
+        observador=usuario
+    ).filter(Q(zona_nombre__in=zonas_historial) | Q(zona_nombre=""))
     return render(
         request,
         "observador/mi_lista.html",
@@ -728,12 +734,10 @@ def mi_lista_observador(request):
             "puede_exportar_auditoria": ZonaObservador.objects.filter(
                 observador=usuario, perm_exportar=True
             ).exists(),
-            # Historial igual que el del administrador: todos los registros,
-            # con sus contadores de hoy y de la semana.
-            "auditoria": _auditoria_enriquecida(),
-            "aud_hoy": MonitoreoAuditoria.objects.filter(
+            "auditoria": _auditoria_enriquecida(consulta=auditoria_visible),
+            "aud_hoy": auditoria_visible.filter(
                 fecha__date=timezone.localdate()).count(),
-            "aud_semana": MonitoreoAuditoria.objects.filter(
+            "aud_semana": auditoria_visible.filter(
                 fecha__gte=timezone.now() - timedelta(days=7)).count(),
         },
     )
@@ -2536,7 +2540,7 @@ def obs_auditoria_exportar(request):
         )
         return redirect(reverse("tickets:obs_mi_lista"))
 
-    consulta = MonitoreoAuditoria.objects.all()
+    consulta = MonitoreoAuditoria.objects.filter(observador=request.user)
     if bloqueadas:
         # El «no» de la zona manda sobre las filas suyas también: el permiso
         # se quitó en la carpeta, no en la persona.
@@ -2653,6 +2657,9 @@ def _xlsx_zona(zona, filas, tickets, nombre="dogger_zona"):
         "Tickets",
     )
 
+    from .exports import preparar_libro_reunion
+
+    preparar_libro_reunion(wb)
     buffer = BytesIO()
     wb.save(buffer)
     buffer.seek(0)

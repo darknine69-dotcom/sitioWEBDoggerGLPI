@@ -539,6 +539,8 @@
 .prog-ev-check { width: 20px; height: 20px; accent-color: var(--dogger-red); cursor: pointer; }
 .prog-ev-del { border: none; background: none; padding: 5px; border-radius: 8px; cursor: pointer; color: var(--ink-muted); }
 .prog-ev-del:hover { background: #FEE2E2; color: var(--dogger-red); }
+.prog-ev-del-disabled { display:inline-flex; align-items:center; justify-content:center; opacity:.45; cursor:not-allowed; }
+.prog-ev-del-disabled:hover { background:transparent; color:var(--ink-muted); }
 .prog-ev-del .icon { width: 15px; height: 15px; }
 .prog-event-empty { text-align: center; padding: 40px 16px; color: var(--ink-muted); background: var(--dogger-paper); border: 1px dashed var(--line); border-radius: var(--radius); font-size: 13.5px; }
 
@@ -726,6 +728,12 @@
 .prog-subview .prog-ev-title { font-size:13px; }
 .prog-subview .prog-ev-meta { font-size:11px; line-height:1.45; }
 .prog-subview .prog-ev-desc { font-size:12px; line-height:1.45; }
+:is(#panel-tareas, #panel-recordatorios, #panel-anuncios) .prog-event-list { grid-template-columns:repeat(auto-fill, minmax(min(100%, 260px), 1fr)); align-items:start; gap:10px; }
+:is(#panel-tareas, #panel-recordatorios, #panel-anuncios) .prog-ev-item { min-height:0; padding:11px; gap:9px; }
+:is(#panel-tareas, #panel-recordatorios, #panel-anuncios) .prog-ev-ic { width:34px; height:34px; flex:0 0 34px; }
+:is(#panel-tareas, #panel-recordatorios, #panel-anuncios) .prog-ev-body { min-width:0; }
+:is(#panel-tareas, #panel-recordatorios, #panel-anuncios) :is(.prog-ev-title, .prog-ev-meta, .prog-ev-desc) { overflow-wrap:anywhere; }
+:is(#panel-tareas, #panel-recordatorios, #panel-anuncios) .prog-event-empty { grid-column:1 / -1; }
 .prog-availability .tec-matrix-scroll { margin:0; border:1px solid #E2E8F0; border-radius:12px; box-shadow:none; background:#fff; }
 .prog-availability .tec-matrix-legend { margin:14px 0 0; padding:10px 12px; border-radius:10px; box-shadow:none; font-size:11px; }
 .prog-availability .prog-chart-note { margin:12px 0 0; padding:9px 11px; border-radius:8px; background:#EFF6FF; color:#1D4ED8; font-size:11px; }

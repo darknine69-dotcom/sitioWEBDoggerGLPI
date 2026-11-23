@@ -127,6 +127,16 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         "Preferencias de notificaciones", default=dict, blank=True,
         help_text="Preferencias individuales de avisos en la campana.",
     )
+    @property
+    def modulos_restringidos(self):
+        from .modulos import restringidos
+        return restringidos(self)
+
+    @property
+    def modulos_disponibles(self):
+        from .modulos import POR_ROL
+        return POR_ROL.get(self.rol, set())
+
     glpi_user_id = models.PositiveIntegerField(
         "ID usuario GLPI",
         null=True,

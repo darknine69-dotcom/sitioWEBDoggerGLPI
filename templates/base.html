@@ -214,15 +214,15 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                     {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} por revisar</span>{% endif %}
                 </a>
-                <a href="{% url 'tickets:crear_ticket' %}" class="sidebar-link{% nav_active 'crear_ticket' %}"{% nav_current 'crear_ticket' %} data-title="Reportar incidencia">
+                <a href="{% url 'tickets:crear_ticket' %}" class="sidebar-link{% nav_active 'crear_ticket' %}"{% nav_current 'crear_ticket' %} data-title="Reportar incidencia" {% if 'reportar' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-plus"/></svg>
                     <span class="sidebar-label">Reportar incidencia</span>
                 </a>
-                <a href="{% url 'tickets:categorias_publico' %}" class="sidebar-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %} data-title="Categoría">
+                <a href="{% url 'tickets:categorias_publico' %}" class="sidebar-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %} data-title="Categoría" {% if 'categorias' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder-closed"/></svg>
                     <span class="sidebar-label">Categoría</span>
                 </a>
-                <a href="{% url 'tickets:mi_papelera' %}" class="sidebar-link{% nav_active 'mi_papelera' %}"{% nav_current 'mi_papelera' %} data-title="Papelera">
+                <a href="{% url 'tickets:mi_papelera' %}" class="sidebar-link{% nav_active 'mi_papelera' %}"{% nav_current 'mi_papelera' %} data-title="Papelera" {% if 'papelera' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-trash"/></svg>
                     <span class="sidebar-label">Papelera</span>
                     {% if mi_papelera_total %}<span class="sidebar-count" data-nivel="bajo">{{ mi_papelera_total }}</span>{% endif %}
@@ -240,20 +240,20 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                     {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} por revisar</span>{% endif %}
                 </a>
-                <a href="{% url 'tickets:lista' %}" class="sidebar-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %} data-title="Tickets">
+                <a href="{% url 'tickets:lista' %}" class="sidebar-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %} data-title="Tickets" {% if 'tickets' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-ticket"/></svg>
                     <span class="sidebar-label">Tickets</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} avisos por ver</span>{% endif %}
                 </a>
-                <a href="{% url 'tickets:categorias_arbol' %}" class="sidebar-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %} data-title="Categorías">
+                <a href="{% url 'tickets:categorias_arbol' %}" class="sidebar-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %} data-title="Categorías" {% if 'categorias' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder-closed"/></svg>
                     <span class="sidebar-label">Categorías</span>
                 </a>
             </div>
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Agenda</p>
-                <a href="{% url 'programador:panel_programador' %}" class="sidebar-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %} data-title="Calendario">
+                <a href="{% url 'programador:panel_programador' %}" class="sidebar-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %} data-title="Calendario" {% if 'calendario' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-calendar-clock"/></svg>
                     <span class="sidebar-label">Calendario</span>
                 </a>
@@ -263,15 +263,15 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             corriendo, y la papelera desde la que puede deshacer un borrado.{% endcomment %}
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Seguimiento</p>
-                <a href="{% url 'tickets:tec_monitoreo' %}" class="sidebar-link{% nav_active 'tec_monitoreo' %}"{% nav_current 'tec_monitoreo' %} data-title="Monitoreo">
+                <a href="{% url 'tickets:tec_monitoreo' %}" class="sidebar-link{% nav_active 'tec_monitoreo' %}"{% nav_current 'tec_monitoreo' %} data-title="Monitoreo" {% if 'monitoreo' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-monitor"/></svg>
                     <span class="sidebar-label">Monitoreo</span>
                 </a>
-                <a href="{% url 'tickets:tec_historial' %}" class="sidebar-link{% nav_active 'tec_historial' %}"{% nav_current 'tec_historial' %} data-title="Historial">
+                <a href="{% url 'tickets:tec_historial' %}" class="sidebar-link{% nav_active 'tec_historial' %}"{% nav_current 'tec_historial' %} data-title="Historial" {% if 'historial' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-history"/></svg>
                     <span class="sidebar-label">Historial</span>
                 </a>
-                <a href="{% url 'tickets:papelera' %}" class="sidebar-link{% nav_active 'papelera' %}"{% nav_current 'papelera' %} data-title="Papelera">
+                <a href="{% url 'tickets:papelera' %}" class="sidebar-link{% nav_active 'papelera' %}"{% nav_current 'papelera' %} data-title="Papelera" {% if 'papelera' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-trash"/></svg>
                     <span class="sidebar-label">Papelera</span>
                 </a>
@@ -287,7 +287,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                     {% if menu_total %}<span class="sidebar-count" data-nivel="{% if menu_urgentes %}alto{% else %}bajo{% endif %}">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} por revisar</span>{% endif %}
                 </a>
-                <a href="{% url 'tickets:lista' %}" class="sidebar-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %} data-title="Tickets">
+                <a href="{% url 'tickets:lista' %}" class="sidebar-link{% nav_active 'lista' 'detalle' %}"{% nav_current 'lista' %} data-title="Tickets" {% if 'tickets' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-ticket"/></svg>
                     <span class="sidebar-label">Tickets</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
@@ -296,26 +296,26 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             </div>
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Análisis</p>
-                <a href="{% url 'tickets:reportes' %}" class="sidebar-link{% nav_active 'reportes' %}"{% nav_current 'reportes' %} data-title="Reportes">
+                <a href="{% url 'tickets:reportes' %}" class="sidebar-link{% nav_active 'reportes' %}"{% nav_current 'reportes' %} data-title="Reportes" {% if 'reportes' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-chart-column-increasing"/></svg>
                     <span class="sidebar-label">Reportes</span>
                 </a>
             </div>
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Administración</p>
-                <a href="{% url 'tickets:usuarios' %}" class="sidebar-link{% nav_active 'usuarios' %}"{% nav_current 'usuarios' %} data-title="Accesos">
+                <a href="{% url 'tickets:usuarios' %}" class="sidebar-link{% nav_active 'usuarios' %}"{% nav_current 'usuarios' %} data-title="Accesos" {% if 'accesos' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-shield-check"/></svg>
                     <span class="sidebar-label">Accesos</span>
                 </a>
-                <a href="{% url 'tickets:categorias_arbol' %}" class="sidebar-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %} data-title="Categorías">
+                <a href="{% url 'tickets:categorias_arbol' %}" class="sidebar-link{% nav_active 'categorias_arbol' %}"{% nav_current 'categorias_arbol' %} data-title="Categorías" {% if 'categorias' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder-closed"/></svg>
                     <span class="sidebar-label">Categorías</span>
                 </a>
-                <a href="{% url 'tickets:monitoreo_admin' %}" class="sidebar-link{% nav_active 'monitoreo_admin' %}"{% nav_current 'monitoreo_admin' %} data-title="Monitoreo">
+                <a href="{% url 'tickets:monitoreo_admin' %}" class="sidebar-link{% nav_active 'monitoreo_admin' %}"{% nav_current 'monitoreo_admin' %} data-title="Monitoreo" {% if 'monitoreo' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-monitor"/></svg>
                     <span class="sidebar-label">Monitoreo</span>
                 </a>
-                <a href="{% url 'tickets:papelera' %}" class="sidebar-link{% nav_active 'papelera' %}"{% nav_current 'papelera' %} data-title="Papelera">
+                <a href="{% url 'tickets:papelera' %}" class="sidebar-link{% nav_active 'papelera' %}"{% nav_current 'papelera' %} data-title="Papelera" {% if 'papelera' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-trash"/></svg>
                     <span class="sidebar-label">Papelera</span>
                     {% if papelera_total %}<span class="sidebar-count" data-nivel="bajo">{{ papelera_total }}</span>{% endif %}
@@ -324,7 +324,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             </div>
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Agenda</p>
-                <a href="{% url 'programador:panel_programador' %}" class="sidebar-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %} data-title="Calendario">
+                <a href="{% url 'programador:panel_programador' %}" class="sidebar-link{% nav_active 'panel_programador' %}"{% nav_current 'panel_programador' %} data-title="Calendario" {% if 'calendario' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-calendar-clock"/></svg>
                     <span class="sidebar-label">Calendario</span>
                 </a>
@@ -334,23 +334,23 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             {% if request.user.rol == 'observador' %}
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Observación</p>
-                <a href="{% url 'tickets:obs_monitoreo' %}" class="sidebar-link{% nav_active 'obs_monitoreo' %}"{% nav_current 'obs_monitoreo' %} data-title="Monitoreo">
+                <a href="{% url 'tickets:obs_monitoreo' %}" class="sidebar-link{% nav_active 'obs_monitoreo' %}"{% nav_current 'obs_monitoreo' %} data-title="Monitoreo" {% if 'monitoreo' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-monitor"/></svg>
                     <span class="sidebar-label">Monitoreo</span>
                     {% if menu_total %}<span class="sidebar-count" data-nivel="alto">{{ menu_total }}</span>{% endif %}
                     {% if menu_total %}<span class="nav-count-sr">{{ menu_total }} tickets en tus zonas</span>{% endif %}
                 </a>
-                <a href="{% url 'tickets:obs_usuarios' %}" class="sidebar-link{% nav_active 'obs_usuarios' %}"{% nav_current 'obs_usuarios' %} data-title="Usuarios">
+                <a href="{% url 'tickets:obs_usuarios' %}" class="sidebar-link{% nav_active 'obs_usuarios' %}"{% nav_current 'obs_usuarios' %} data-title="Usuarios" {% if 'accesos' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-user"/></svg>
                     <span class="sidebar-label">Usuarios</span>
                 </a>
-                <a href="{% url 'tickets:obs_mi_lista' %}" class="sidebar-link{% nav_active 'obs_mi_lista' %}"{% nav_current 'obs_mi_lista' %} data-title="Mi lista">
+                <a href="{% url 'tickets:obs_mi_lista' %}" class="sidebar-link{% nav_active 'obs_mi_lista' %}"{% nav_current 'obs_mi_lista' %} data-title="Mi lista" {% if 'mi_lista' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-layers"/></svg>
                     <span class="sidebar-label">Mi lista</span>
                     {% if menu_mios %}<span class="sidebar-count" data-nivel="bajo">{{ menu_mios }}</span>{% endif %}
                     {% if menu_mios %}<span class="nav-count-sr">{{ menu_mios }} elementos en tu lista</span>{% endif %}
                 </a>
-                <a href="{% url 'tickets:categorias_publico' %}" class="sidebar-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %} data-title="Categorías">
+                <a href="{% url 'tickets:categorias_publico' %}" class="sidebar-link{% nav_active 'categorias_publico' %}"{% nav_current 'categorias_publico' %} data-title="Categorías" {% if 'categorias' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-folder-closed"/></svg>
                     <span class="sidebar-label">Categorías</span>
                 </a>
@@ -359,11 +359,11 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
 
             <div class="sidebar-group">
                 <p class="sidebar-group-title">Ayuda</p>
-                <a href="{% url 'tickets:faq' %}" class="sidebar-link{% nav_active 'faq' %}"{% nav_current 'faq' %} data-title="Preguntas frecuentes">
+                <a href="{% url 'tickets:faq' %}" class="sidebar-link{% nav_active 'faq' %}"{% nav_current 'faq' %} data-title="Preguntas frecuentes" {% if 'faq' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-help"/></svg>
                     <span class="sidebar-label">Preguntas frecuentes</span>
                 </a>
-                <a href="{% url 'tickets:consultar' %}" class="sidebar-link{% nav_active 'consultar' %}"{% nav_current 'consultar' %} data-title="Consultar ticket HD">
+                <a href="{% url 'tickets:consultar' %}" class="sidebar-link{% nav_active 'consultar' %}"{% nav_current 'consultar' %} data-title="Consultar ticket HD" {% if 'consultar' in request.user.modulos_restringidos %}hidden{% endif %}>
                     <svg class="sidebar-ico" aria-hidden="true"><use href="#i-headset"/></svg>
                     <span class="sidebar-label">Consultar ticket HD</span>
                 </a>
@@ -773,6 +773,10 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             <span class="confirm-icon"><svg class="icon"><use href="#confirm-icon-use" id="confirm-icon-use"/></svg></span>
             <h3 id="confirm-title">¿Confirmar acción?</h3>
             <p class="confirm-msg" id="confirm-msg"></p>
+            <div id="confirm-motivo-wrap" hidden style="text-align:left; margin:14px 0;">
+                <label for="confirm-motivo" style="display:block; margin-bottom:6px; font-size:13px; font-weight:700;">Motivo de eliminación <span style="font-weight:400;">(opcional)</span></label>
+                <textarea id="confirm-motivo" maxlength="2000" rows="3" placeholder="Escribe por qué se envía a la papelera" style="box-sizing:border-box; width:100%; resize:vertical; border:1px solid var(--line); border-radius:10px; padding:10px; font:inherit;"></textarea>
+            </div>
             <p class="modal-note" id="confirm-note" hidden></p>
             <div class="confirm-actions">
                 <button type="button" class="btn btn-cancel" id="confirm-cancel">Cancelar</button>
@@ -828,10 +832,11 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                 <div><dt>Prioridad</dt><dd><span class="meta-pill meta-prio meta-prio-{{ ti.prioridad }}"><svg class="icon icon-xs"><use href="#i-alert"/></svg> {{ ti.prioridad_label }}</span></dd></div>
                 <div><dt>Técnico asignado</dt><dd>
                     {% if ti.tecnico_nombre %}<span class="ticket-ok-tec"><span class="user-avatar">{{ ti.tecnico_iniciales }}</span>{{ ti.tecnico_nombre }}</span>
-                    {% else %}<span class="ticket-ok-pendiente">En asignación</span>{% endif %}
+                    {% else %}<span class="ticket-ok-pendiente"><svg class="icon icon-xs" aria-hidden="true"><use href="#i-clock"/></svg> Pendiente de asignación</span>{% endif %}
                 </dd></div>
             </dl>
-            <p class="ticket-ok-note">El técnico fue asignado automáticamente según la categoría, la prioridad y su disponibilidad.</p>
+            <p class="ticket-ok-note">{% if ti.tecnico_nombre %}Tu solicitud ya tiene un técnico asignado.{% else %}Tu solicitud fue registrada y aún no tiene un técnico asignado.{% endif %}</p>
+            <button type="button" class="ticket-ok-done" id="ticket-ok-done">Entendido</button>
         </div>
     </div>
     <script>
@@ -855,6 +860,7 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
             } catch (e) {}
         }
         document.getElementById('ticket-ok-close').addEventListener('click', cerrar);
+        document.getElementById('ticket-ok-done').addEventListener('click', cerrar);
         ov.addEventListener('click', function (e) { if (e.target === ov) cerrar(); });
     })();
     </script>
@@ -1097,6 +1103,59 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
     </div>
     {% endif %}
 
+    {% if request.user.is_authenticated and request.user.preferencias_notificaciones.cierre_inactividad %}
+    <style>
+    .sesion-expirada { width:min(390px, calc(100vw - 32px)); box-sizing:border-box; padding:26px; border:1px solid #e2e8f0; border-radius:18px; background:#fff; color:#17233b; box-shadow:0 24px 70px #0005; text-align:center; }
+    .sesion-expirada::backdrop { background:rgba(8,12,20,.72); backdrop-filter:blur(4px); }
+    .sesion-expirada-icon { display:grid; place-items:center; width:52px; height:52px; margin:0 auto 15px; border-radius:16px; background:#fee9ea; color:#dc2626; }
+    .sesion-expirada-icon .icon { width:25px; height:25px; }
+    .sesion-expirada h2 { margin:0; color:inherit; font-size:20px; line-height:1.25; }
+    .sesion-expirada p { margin:10px 0 20px; color:#64748b; font-size:14px; line-height:1.5; }
+    .sesion-expirada a { display:flex; align-items:center; justify-content:center; min-height:44px; padding:0 16px; border-radius:10px; background:#df2028; color:#fff; font-weight:700; text-decoration:none; }
+    .sesion-expirada a:hover { background:#bb1720; color:#fff; }
+    .sesion-expirada a:focus-visible { outline:3px solid #7dafff; outline-offset:3px; }
+    html[data-theme="dark"] .sesion-expirada { background:#1b2029; color:#f1f4f9; border-color:#3b4554; }
+    html[data-theme="dark"] .sesion-expirada p { color:#bac5d4; }
+    html[data-theme="dark"] .sesion-expirada-icon { background:#46262d; color:#ff8a92; }
+    </style>
+    <dialog class="sesion-expirada" id="sesionExpirada" aria-labelledby="sesionExpiradaTitulo" aria-describedby="sesionExpiradaDescripcion">
+        <span class="sesion-expirada-icon" aria-hidden="true"><svg class="icon"><use href="#i-clock"/></svg></span>
+        <h2 id="sesionExpiradaTitulo">Tu sesión se cerró</h2>
+        <p id="sesionExpiradaDescripcion">Por seguridad, cerramos tu sesión después de un tiempo sin actividad. Vuelve a ingresar para continuar.</p>
+        <a href="{% url 'accounts:login' %}">Volver a ingresar</a>
+    </dialog>
+    <script>
+    (function () {
+        var url = "{% url 'accounts:actividad_sesion' %}", modal = document.getElementById("sesionExpirada"), expirada = false;
+        var csrf = document.querySelector('meta[name="csrfmiddlewaretoken"]').content;
+        var ultimoEnvio = 0;
+        function mostrarCierre() {
+            if (expirada) return;
+            expirada = true;
+            clearInterval(temporizador);
+            modal.showModal();
+            modal.querySelector("a").focus();
+        }
+        modal.addEventListener("cancel", function (event) { event.preventDefault(); });
+        function comprobar(method) {
+            if (expirada) return;
+            fetch(url, {method:method, credentials:"same-origin", headers:{"X-CSRFToken":csrf,"X-Requested-With":"XMLHttpRequest"}})
+                .then(function (r) { if (r.status === 401 || r.redirected) mostrarCierre(); })
+                .catch(function () {});
+        }
+        function actividad(event) {
+            if (!event.isTrusted) return;
+            var ahora = Date.now();
+            if (ahora - ultimoEnvio < 10000) return;
+            ultimoEnvio = ahora; comprobar("POST");
+        }
+        ["pointerdown", "keydown", "touchstart", "wheel"].forEach(function (tipo) {
+            document.addEventListener(tipo, actividad, {passive:true});
+        });
+        var temporizador = setInterval(function () { comprobar("GET"); }, 15000);
+    }());
+    </script>
+    {% endif %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

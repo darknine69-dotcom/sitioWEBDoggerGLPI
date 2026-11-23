@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 import re
 
 User = get_user_model()
@@ -72,18 +74,18 @@ class UserRegisterForm(forms.Form):
     )
     password1 = forms.CharField(
         label="Contraseña",
-        widget=forms.PasswordInput(attrs={"placeholder": "••••••••"}),
+        widget=forms.PasswordInput(attrs={"placeholder": "••••••••", "autocomplete": "new-password", "minlength": 8, "aria-describedby": "registro-password-ayuda"}),
     )
     password2 = forms.CharField(
         label="Confirmar contraseña",
-        widget=forms.PasswordInput(attrs={"placeholder": "Repite tu contraseña"}),
+        widget=forms.PasswordInput(attrs={"placeholder": "Repite tu contraseña", "autocomplete": "new-password"}),
     )
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
         if not EMAIL_STRICT.match(email):
             raise forms.ValidationError(EMAIL_STRICT_MSG)
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("Este correo ya está registrado. Intenta iniciar sesión.")
         return email
 
@@ -91,6 +93,12 @@ class UserRegisterForm(forms.Form):
         cleaned_data = super().clean()
         password1 = cleaned_data.get("password1")
         password2 = cleaned_data.get("password2")
+        if password1:
+            usuario = User(email=cleaned_data.get("email", ""), nombre=cleaned_data.get("nombre", ""))
+            try:
+                validate_password(password1, user=usuario)
+            except ValidationError as exc:
+                self.add_error("password1", exc)
         if password1 and password2 and password1 != password2:
             self.add_error("password2", "Las contraseñas no coinciden.")
         return cleaned_data
@@ -189,7 +197,7 @@ class SolicitarResetForm(forms.Form):
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
         # No revelar si la cuenta existe o no (seguridad).
-        self.usuario = User.objects.filter(email__iexact=email, activo=True).first()
+        self.usuario = User.objects.filter(email__iexact=email, activo=True, is_active=True).first()
         return email
 
 

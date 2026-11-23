@@ -14,7 +14,7 @@
         <p class="eyebrow">Dogger · Premium Quality</p>
         <h2>Crear cuenta</h2>
 
-        <form method="post" novalidate class="register-form">
+        <form method="post" class="register-form">
             {% csrf_token %}
             {% if form.non_field_errors %}
             <div class="login-error">
@@ -51,6 +51,7 @@
                             <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                     </div>
+                    <small id="registro-password-ayuda">Usa al menos 8 caracteres; evita contraseñas comunes, solo números o datos similares a tu correo.</small>
                     {% if form.password1.errors %}<div class="field-error">{{ form.password1.errors }}</div>{% endif %}
                 </div>
 

@@ -6846,6 +6846,7 @@ button.icon-only:disabled, .icon-only[aria-disabled="true"] { opacity:.48; curso
 .ans-ok { color: #217A3E; }
 .ans-por-vencer { color: #B7791F; }
 .ans-vencido { color: #D62B1F; }
+.ans-time.ans-vencido { background:transparent; border-color:transparent; color:#c5222c; }
 .ans-resuelto { color: #1D4ED8; }
 /* El cronómetro que ya está por vencer o vencido late: es la señal de que
    el tiempo sigue corriendo y que alguien tiene que moverse. Solo en esos
@@ -8505,6 +8506,11 @@ html[data-navpalette="rosa"]      { --sb-accent: #C02A6B; }
 /* El margen del contenido solo existe si la página trae sidebar; el portal
    y las páginas públicas reescriben el bloque header y no lo tienen. */
 body:has(> .sidebar) { padding-left: 272px; }
+@media (min-width:1081px) and (prefers-reduced-motion: no-preference) {
+  body:has(> .sidebar) { transition: padding-left .38s cubic-bezier(.22, 1, .36, 1); }
+  .sidebar { transition: width .38s cubic-bezier(.22, 1, .36, 1); }
+  html .sidebar-edge { transition: left .38s cubic-bezier(.22, 1, .36, 1), background .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease; }
+}
 
 .sidebar {
   position: fixed;
@@ -8563,24 +8569,28 @@ html[data-theme="dark"] .sw-pendientes button { background:#303e50; border-color
    plegar. En móvil asoma desde el filo izquierdo y acompaña al cajón. */
 .sidebar-edge {
   position: fixed;
-  top: 50%;
+  bottom: 28px;
   left: 272px;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   z-index: 96;
-  width: 30px;
-  height: 46px;
+  width: 28px;
+  height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, .30);
-  border-radius: 999px;
-  background: var(--sb-bg);
-  color: #fff;
+  border: 1px solid #465163;
+  border-radius: 9px;
+  background: #202937;
+  color: #e5eaf2;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .30);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .24);
   transition: background .15s ease;
 }
-.sidebar-edge:hover { filter: brightness(1.12); }
+.sidebar-edge:hover { background:#ad2029; border-color:#e24b53; color:#fff; }
+html:not([data-theme="dark"]) .sidebar-edge { background:var(--sb-bg); border-color:rgba(255,255,255,.5); color:#fff; }
+html:not([data-theme="dark"]) .sidebar-edge:hover { background:color-mix(in srgb, var(--sb-bg) 85%, #000); border-color:rgba(255,255,255,.8); }
+.sidebar .sidebar-link[hidden] { display:none !important; }
+.sidebar-edge:focus-visible { outline:2px solid #ff9ba4; outline-offset:3px; }
 .sidebar-edge .icon { width: 15px; height: 15px; }
 html[data-navcompact="1"] .sidebar-edge { left: 84px; }
 /* La hamburguesa vive en la banda de color, así que se pinta clara.
@@ -8658,14 +8668,7 @@ html[data-navcompact="1"] .sidebar-foot { display: none; }
   color: #fff;
 }
 .sidebar-link.is-active::before {
-  content: "";
-  position: absolute;
-  left: -12px;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--sb-accent);
+  content: none;
 }
 .sidebar-ico {
   flex: none;
@@ -8919,6 +8922,17 @@ html[data-navcompact="1"] .sidebar-count {
   min-width: 16px;
   padding: 1px 4px;
   font-size: 9px;
+}
+
+/* Mantener la geometría de los enlaces y sus grupos al abrir o plegar. */
+@media (min-width:1081px) {
+  .sidebar .sidebar-link { box-sizing:border-box; height:42px; }
+  html[data-navcompact="1"] .sidebar-top { padding-top:15px; padding-bottom:15px; }
+  html[data-navcompact="1"] .sidebar-nav { padding:12px 12px 20px; }
+  html[data-navcompact="1"] .sidebar-group-title { display:block; visibility:hidden; white-space:nowrap; overflow:hidden; }
+  html[data-navcompact="1"] .sidebar-group + .sidebar-group { margin-top:16px; padding-top:0; border-top:0; }
+  html[data-navcompact="1"] .sidebar-link { justify-content:flex-start; padding:10px 12px; }
+  html[data-navcompact="1"] .sidebar-count { left:24px; margin-left:2px; }
 }
 
 /* Rótulo flotante del enlace, creado desde JS fuera del menú desplazable. */

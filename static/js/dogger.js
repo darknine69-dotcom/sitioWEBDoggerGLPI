@@ -43,6 +43,8 @@
     var confirmOkBtn = document.getElementById("confirm-ok");
     var confirmCancelBtn = document.getElementById("confirm-cancel");
     var confirmCallback = null;
+    var confirmMotivoWrap = document.getElementById("confirm-motivo-wrap");
+    var confirmMotivo = document.getElementById("confirm-motivo");
 
     function cerrarConfirm() {
         if (!confirmOverlay) return;
@@ -59,12 +61,14 @@
         if (!confirmOverlay || !confirmMsgEl) return;
         var op = opciones || {};
         var textoAccion = (mensaje || "") + " " + (textoOk || "") + " " + (op.titulo || "");
-        var accion = /eliminar|borrar|purgar/iu.test(textoAccion) ? { titulo:"Confirmar eliminación", icono:"#i-trash", boton:"Eliminar" } :
+        var accion = /eliminar|borrar|purgar|mover.+papelera/iu.test(textoAccion) ? { titulo:"Confirmar eliminación", icono:"#i-trash", boton:"Eliminar" } :
             /restaurar|recuperar/iu.test(textoAccion) ? { titulo:"Confirmar restauración", icono:"#i-refresh", boton:"Restaurar" } :
             /cerrar|cancelar ticket|cancelar solicitud/iu.test(textoAccion) ? { titulo:"Confirmar cierre", icono:"#i-lock", boton:"Cerrar" } :
             /asignar|tomar/iu.test(textoAccion) ? { titulo:"Confirmar asignación", icono:"#i-user-round-check", boton:"Confirmar" } :
             { titulo:"Confirmar acción", icono:"#i-circle-alert", boton:"Continuar" };
         confirmMsgEl.textContent = mensaje;
+        if (confirmMotivoWrap) confirmMotivoWrap.hidden = !op.solicitarMotivo;
+        if (confirmMotivo) confirmMotivo.value = "";
         confirmCallback = onOk;
         if (confirmTitleEl) confirmTitleEl.textContent = op.titulo || accion.titulo;
         if (confirmIconUse) confirmIconUse.setAttribute("href", op.icono || accion.icono);
@@ -85,7 +89,10 @@
     if (confirmOkBtn) confirmOkBtn.addEventListener("click", function () {
         var cb = confirmCallback;
         cerrarConfirm();
-        if (cb) cb();
+        if (cb) {
+            if (confirmMotivo && confirmMotivoWrap && !confirmMotivoWrap.hidden) cb(confirmMotivo.value);
+            else cb();
+        }
     });
     if (confirmCancelBtn) confirmCancelBtn.addEventListener("click", cerrarConfirm);
     if (confirmOverlay) confirmOverlay.addEventListener("click", function (e) {
@@ -105,10 +112,16 @@
         if (!mm) return;
         e.preventDefault();
         e.stopImmediatePropagation();
-        confirmarAction(mm[1] || mm[2], function () {
+        var motivoPapelera = f.hasAttribute("data-motivo-papelera");
+        confirmarAction(mm[1] || mm[2], function (motivo) {
+            if (motivoPapelera) {
+                var campo = f.querySelector('input[name="motivo_eliminacion"]');
+                if (!campo) { campo = document.createElement("input"); campo.type = "hidden"; campo.name = "motivo_eliminacion"; f.appendChild(campo); }
+                campo.value = motivo;
+            }
             f.removeAttribute("onsubmit");
             try { f.submit(); } catch (err) { location.reload(); }
-        });
+        }, motivoPapelera ? "Enviar a papelera" : undefined, motivoPapelera ? {titulo:"Enviar a la papelera", icono:"#i-trash", solicitarMotivo:true} : undefined);
     }, true);
 
     /* ---- Buscadores con resultado automático ----
@@ -484,6 +497,33 @@
         var borde = document.getElementById("sidebarEdge");
         var burger = document.getElementById("sidebarBurger");
         var backdrop = document.getElementById("sidebarBackdrop");
+        var expansionTemporal = false;
+        var cierreTemporal = null;
+        var ratonEscritorio = window.matchMedia("(min-width: 1081px) and (hover: hover) and (pointer: fine)");
+
+        function abrirAlPasar() {
+            clearTimeout(cierreTemporal);
+            if (!ratonEscritorio.matches || document.documentElement.getAttribute("data-navcompact") !== "1") return;
+            expansionTemporal = true;
+            document.documentElement.setAttribute("data-navcompact", "0");
+            ocultarTip();
+            actualizarBorde();
+        }
+        function cerrarAlSalir() {
+            clearTimeout(cierreTemporal);
+            cierreTemporal = setTimeout(function () {
+                if (!expansionTemporal) return;
+                expansionTemporal = false;
+                document.documentElement.setAttribute("data-navcompact", "1");
+                actualizarBorde();
+            }, 180);
+        }
+        side.addEventListener("mouseenter", abrirAlPasar);
+        side.addEventListener("mouseleave", cerrarAlSalir);
+        if (borde) {
+            borde.addEventListener("mouseenter", abrirAlPasar);
+            borde.addEventListener("mouseleave", cerrarAlSalir);
+        }
 
         /* Plegado: se guarda igual que la preferencia de "navegación compacta"
            de Ajustes, así que los dos sitios controlan lo mismo. */
@@ -507,7 +547,13 @@
         if (borde) {
             borde.addEventListener("click", function () {
                 ocultarTip();
-                plegarA(document.documentElement.getAttribute("data-navcompact") !== "1");
+                if (expansionTemporal) {
+                    expansionTemporal = false;
+                    clearTimeout(cierreTemporal);
+                    plegarA(false);
+                } else {
+                    plegarA(document.documentElement.getAttribute("data-navcompact") !== "1");
+                }
             });
         }
         actualizarBorde();
@@ -537,6 +583,11 @@
         // Si la ventana crece y deja de ser móvil, el cajón se olvida.
         // Al cambiar de modo se repinta la flecha de la pestaña.
         window.addEventListener("resize", function () {
+            if (!ratonEscritorio.matches && expansionTemporal) {
+                expansionTemporal = false;
+                clearTimeout(cierreTemporal);
+                document.documentElement.setAttribute("data-navcompact", "1");
+            }
             if (window.innerWidth > 1080) abrir(false);
             else actualizarBorde();
         });

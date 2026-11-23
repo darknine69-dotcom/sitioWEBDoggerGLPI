@@ -1,9 +1,11 @@
 """Exportaciones a Excel: estilo corporativo y gráficas de trazabilidad."""
 
 from io import BytesIO
+from types import SimpleNamespace
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from openpyxl import load_workbook
 
 from apps.accounts.models import Usuario
@@ -60,3 +62,39 @@ class ExportesCorporativosTest(TestCase):
         textos = [ws.cell(row=r, column=14).value for r in range(4, 10)]
         self.assertIn("Resumen por estado", textos)
         self.assertTrue(getattr(ws, "_charts", []))
+
+    def test_datos_no_se_interpretan_como_formulas(self):
+        Ticket.objects.create(
+            titulo="=1+1", descripcion="d", solicitante_nombre="Ana",
+            solicitante_email="ana@x.com",
+        )
+        respuesta = self.client.get(reverse("tickets:exportar_admin"))
+        ws = load_workbook(BytesIO(respuesta.content))["Tickets"]
+        celda = next(c for row in ws.iter_rows(min_col=2, max_col=2) for c in row if c.value == "'=1+1")
+        self.assertEqual(celda.data_type, "s")
+        self.assertFalse(ws.sheet_view.showGridLines)
+        self.assertEqual(ws.page_setup.fitToWidth, 1)
+
+    def test_auditoria_y_zona_filtran_todas_las_filas(self):
+        from apps.tickets.views_monitoreo import _xlsx_auditoria
+        from apps.tickets.views_observador import _xlsx_zona
+
+        auditoria = SimpleNamespace(
+            pk=1, fecha=timezone.now(), get_accion_display=lambda: "Cambio",
+            zona_nombre="Zona", observador=None, cuenta="=1+1", actor=None,
+            detalle="", comentarios="", motivo="", resultado="", ip_origen="",
+            version_sistema="",
+        )
+        response = _xlsx_auditoria([auditoria, auditoria])
+        ws = load_workbook(BytesIO(response.content))["Auditoría"]
+        self.assertEqual(ws.auto_filter.ref, "A2:L4")
+        self.assertEqual(ws["F3"].value, "'=1+1")
+        self.assertEqual(ws.print_title_rows, "$1:$2")
+
+        filas = [{"nombre": "=1+1", "email": "a@x.com", "total": 0,
+                  "abiertos": 0, "cerrados_total": 0, "avance": 0, "estado": "verde"}]
+        response = _xlsx_zona(SimpleNamespace(nombre="Zona"), filas, [])
+        wb = load_workbook(BytesIO(response.content))
+        self.assertEqual(wb["Zona"].auto_filter.ref, "A2:G3")
+        self.assertEqual(wb["Zona"]["A3"].value, "'=1+1")
+        self.assertEqual(wb["Tickets"].auto_filter.ref, "A2:F2")

@@ -28,6 +28,57 @@ class PermisosRolesTest(TestCase):
             tecnico_asignado=self.tec,
         )
 
+    def test_restricciones_modulos_guardado_y_urls_directas(self):
+        self.client.force_login(self.admin)
+        respuesta = self.client.post(reverse("accounts:permisos"), {
+            "modulos_cuenta": "1", "cuenta_modulos": self.tec.pk,
+            "modulos_restringidos": ["calendario", "categorias", "papelera", "monitoreo"],
+        })
+        self.assertEqual(respuesta.status_code, 302)
+        self.tec.refresh_from_db()
+        self.assertIn("calendario", self.tec.modulos_restringidos)
+        self.client.force_login(self.tec)
+        for nombre in ("programador:panel_programador", "programador:datos", "tickets:categorias_arbol", "tickets:papelera", "tickets:tec_monitoreo"):
+            with self.subTest(ruta=nombre):
+                self.assertEqual(self.client.get(reverse(nombre)).status_code, 403)
+        self.assertEqual(self.client.post(reverse("programador:agregar")).status_code, 403)
+        self.assertContains(self.client.get(reverse("tickets:lista")), 'data-title="Calendario" hidden')
+
+    def test_restricciones_no_autorizadas_ni_autorestriccion(self):
+        self.client.force_login(self.tec)
+        datos = {"modulos_cuenta": "1", "cuenta_modulos": self.tec.pk, "modulos_restringidos": ["calendario"]}
+        self.assertEqual(self.client.post(reverse("accounts:permisos"), datos).status_code, 404)
+        self.client.force_login(self.admin)
+        datos["cuenta_modulos"] = self.admin.pk
+        self.assertEqual(self.client.post(reverse("accounts:permisos"), datos).status_code, 302)
+        self.admin.refresh_from_db()
+        self.assertFalse(self.admin.modulos_restringidos)
+
+    def test_autoguardado_individual_preserva_otros_modulos_y_valida_rol(self):
+        self.tec.preferencias_notificaciones = {"modulos_restringidos": ["calendario"], "correo_ans": False}
+        self.tec.save(update_fields=["preferencias_notificaciones"])
+        self.client.force_login(self.admin)
+        url = reverse("accounts:permisos")
+        datos = {"modulo_individual": "historial", "cuenta_modulos": self.tec.pk, "valor": "1"}
+        self.assertEqual(self.client.post(url, datos).status_code, 200)
+        self.tec.refresh_from_db()
+        self.assertEqual(self.tec.modulos_restringidos, {"calendario", "historial"})
+        self.assertFalse(self.tec.preferencias_notificaciones["correo_ans"])
+        datos["modulo_individual"] = "reportes"
+        self.assertEqual(self.client.post(url, datos).status_code, 400)
+        self.client.force_login(self.tec)
+        self.assertEqual(self.client.get(reverse("tickets:tec_historial")).status_code, 403)
+
+    def test_modulos_admin_y_sin_restriccion(self):
+        otro_admin = get_user_model().objects.create_user(email="otro@x.com", password="x", nombre="Otro", rol="admin")
+        self.client.force_login(self.admin)
+        self.client.post(reverse("accounts:permisos"), {"modulos_cuenta": "1", "cuenta_modulos": otro_admin.pk, "modulos_restringidos": ["reportes", "accesos"]})
+        self.client.force_login(otro_admin)
+        self.assertEqual(self.client.get(reverse("tickets:reportes")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("tickets:usuarios")).status_code, 403)
+        self.assertEqual(self.client.post(reverse("tickets:usuario_guardar")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("accounts:ajustes")).status_code, 200)
+
     def test_pagina_solo_admin_y_guarda(self):
         self.client.force_login(self.usuario)
         self.assertEqual(

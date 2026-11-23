@@ -6,6 +6,57 @@ nunca usa.
 """
 
 
+class CierreInactividadMiddleware:
+    """Expira la sesión sin contar solicitudes automáticas como actividad."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        import time
+        from django.contrib.auth import logout
+        from django.http import JsonResponse
+        from django.shortcuts import redirect
+
+        user = getattr(request, "user", None)
+        if getattr(user, "is_authenticated", False):
+            prefs = user.preferencias_notificaciones or {}
+            if prefs.get("cierre_inactividad") is True:
+                minutos = prefs.get("cierre_inactividad_minutos", 30)
+                if type(minutos) is not int or not 1 <= minutos <= 480:
+                    minutos = 30
+                ahora = int(time.time())
+                anterior = request.session.get("ultima_actividad_usuario")
+                if isinstance(anterior, (int, float)) and ahora - anterior >= minutos * 60:
+                    logout(request)
+                    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                        return JsonResponse({"error": "sesion_expirada"}, status=401)
+                    return redirect("accounts:login")
+                if anterior is None:
+                    request.session["ultima_actividad_usuario"] = ahora
+            else:
+                request.session.pop("ultima_actividad_usuario", None)
+        return self.get_response(request)
+
+
+class RestriccionModulosMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        from django.http import HttpResponseForbidden
+        from apps.accounts.modulos import modulo_ruta, restringidos
+
+        if request.user.is_authenticated:
+            modulo = modulo_ruta(request.resolver_match)
+            if modulo and modulo in restringidos(request.user):
+                return HttpResponseForbidden("No tienes acceso a este módulo. Contacta al administrador.")
+        return None
+
+
 class SeguridadHeadersMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response

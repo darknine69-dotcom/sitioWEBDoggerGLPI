@@ -1,4 +1,6 @@
 import uuid
+import re
+import unicodedata
 from datetime import timedelta
 from pathlib import Path
 
@@ -400,7 +402,8 @@ class Ticket(models.Model):
                 self.fecha_asignacion_tecnico = timezone.now() if self.tecnico_asignado_id else None
                 if campos is not None:
                     kwargs["update_fields"] = set(campos) | {"fecha_asignacion_tecnico"}
-        if not self.codigo:
+        codigo_generado = not self.codigo
+        if codigo_generado:
             self.codigo = self._generar_codigo()
         if self._state.adding or getattr(self, "_ans_transicion_autorizada", False):
             if self.estado in (self.Estado.RESUELTO, self.Estado.CERRADO) and not self.fecha_cierre:
@@ -411,46 +414,44 @@ class Ticket(models.Model):
             if self.estado == self.Estado.RESUELTO and not self.fecha_resolucion:
                 self.fecha_resolucion = timezone.now()
         try:
-            super().save(*args, **kwargs)
+            with transaction.atomic(using=kwargs.get("using")):
+                super().save(*args, **kwargs)
         except IntegrityError:
             es_insert = not self.pk or kwargs.get("force_insert")
-            if es_insert and self.codigo and self.codigo.startswith("HD-"):
+            if es_insert and codigo_generado and type(self).con_eliminados.filter(codigo=self.codigo).exists():
                 # Colisión de código (p. ej. por concurrencia o porque otro
                 # ticket usa el código): se avanza hasta encontrar uno libre.
                 for _ in range(20):
                     self.codigo = self._generar_codigo()
                     kwargs["force_insert"] = True
                     try:
-                        super().save(*args, **kwargs)
+                        with transaction.atomic(using=kwargs.get("using")):
+                            super().save(*args, **kwargs)
                         break
                     except IntegrityError:
+                        if not type(self).con_eliminados.filter(codigo=self.codigo).exists():
+                            raise
                         continue
                 else:
                     raise
             else:
                 raise
 
-    @staticmethod
-    def _generar_codigo():
-        """Siguiente código correlativo libre, en el formato HD-0001.
-
-        Se mira el histórico completo (incluida la papelera) porque `codigo`
-        es único en la base: si solo se consideraran los tickets vivos, al
-        borrar el último ticket se volvería a generar su código y la
-        inserción fallaría con IntegrityError.
-        """
-        from django.db.models import Max
-
-        historico = Ticket.con_eliminados.all()
-        mayor = historico.aggregate(m=Max("codigo"))["m"] or ""
-        try:
-            numero = int(str(mayor).split("-")[-1]) + 1
-        except (ValueError, AttributeError):
-            numero = historico.count() + 1
-        numero = max(numero, historico.count() + 1)
-        while Ticket.con_eliminados.filter(codigo=f"HD-{numero:04d}").exists():
-            numero += 1
-        return f"HD-{numero:04d}"
+    def _generar_codigo(self):
+        """Código DG con iniciales del punto y consecutivo del historial completo."""
+        punto = unicodedata.normalize("NFKD", self.solicitante_punto or "")
+        letras = "".join(c for c in punto.upper() if "A" <= c <= "Z")
+        iniciales = letras[:2] if len(letras) >= 2 else "XX"
+        historico = type(self).con_eliminados.all()
+        mayor = 0
+        for codigo in historico.values_list("codigo", flat=True).iterator():
+            match = re.fullmatch(r"(?:HD|DG-[A-Z]{2})-(\d+)", codigo or "", re.IGNORECASE)
+            if match:
+                mayor = max(mayor, int(match.group(1)))
+        numero = max(mayor + 1, historico.count() + 1)
+        if numero > 999999:
+            raise ValueError("El consecutivo de tickets superó la capacidad del código.")
+        return f"DG-{iniciales}-{numero:04d}"
 
     @property
     def adjuntos_pendientes_glpi(self) -> bool:
@@ -1491,6 +1492,7 @@ class PerfilAutoasignacion(models.Model):
     orden_rotacion = models.PositiveBigIntegerField(default=0)
     categorias = models.ManyToManyField(Categoria, blank=True, related_name="perfiles_autoasignacion")
     puntos_cobertura = models.ManyToManyField(Punto, blank=True, related_name="perfiles_autoasignacion")
+    cuentas_cobertura = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name="perfiles_cobertura_autoasignacion")
 
     class Meta:
         constraints = [models.CheckConstraint(condition=Q(capacidad__gt=0), name="autoasig_capacidad_positiva")]

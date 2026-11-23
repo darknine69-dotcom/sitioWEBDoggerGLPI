@@ -241,13 +241,13 @@ class AvisoDeAnsTest(BaseAnsTest):
         return self.client.get(reverse("tickets:obs_monitoreo"))
 
     def test_avisa_al_tecnico_y_a_quien_abrio_el_ticket(self):
-        self._ticket(horas=HORAS_MEDIA - 0.5)
+        ticket = self._ticket(horas=HORAS_MEDIA - 0.5)
         self._entrar()
         correos = {c.to[0] for c in mail.outbox}
         self.assertEqual(correos, {"tec@x.com", "ana@x.com"})
         tecnico = [c for c in mail.outbox if c.to == ["tec@x.com"]][0]
         self.assertIn("Por vencer", tecnico.subject)
-        self.assertIn("HD-", tecnico.subject)
+        self.assertIn(ticket.codigo, tecnico.subject)
         self.assertIn("ANS", tecnico.body)
 
     def test_avisa_al_observador_por_campana(self):

@@ -271,6 +271,15 @@ class PapeleraTest(SmokeTestCase):
         t = Ticket.objects.get(pk=self.ticket.pk)
         self.assertIsNone(t.eliminado_en)
 
+    def test_motivo_papelera_se_conserva_en_historial_al_restaurar(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("tickets:eliminar", args=[self.ticket.pk]), {"motivo_eliminacion": "Solicitud duplicada"})
+        self.client.post(reverse("tickets:restaurar", args=[self.ticket.pk]))
+        comentario = self.ticket.comentarios.get()
+        self.assertEqual(comentario.comentario, "Motivo de envío a la papelera: Solicitud duplicada")
+        self.assertTrue(comentario.es_interno)
+        self.assertEqual(comentario.usuario, self.admin)
+
     def test_purgar_es_el_unico_borrado_definitivo(self):
         self.ticket.mandar_a_la_papelera(self.admin)
         self.client.force_login(self.admin)
@@ -339,7 +348,7 @@ class CodigoTicketTest(SmokeTestCase):
         codigos = set(Ticket.con_eliminados.values_list("codigo", flat=True))
         self.assertEqual(len(codigos), 3)
         self.assertNotEqual(tercero.codigo, primero.codigo)
-        self.assertEqual(tercero.codigo, "HD-0003")
+        self.assertEqual(tercero.codigo, "DG-XX-0003")
 
     def test_se_puede_crear_despues_de_borrar_todo_el_historico(self):
         for i in range(3):
@@ -349,7 +358,27 @@ class CodigoTicketTest(SmokeTestCase):
         nuevo = self._crear("Nuevo")
 
         self.assertIsNotNone(nuevo.pk)
-        self.assertEqual(nuevo.codigo, "HD-0004")
+        self.assertEqual(nuevo.codigo, "DG-XX-0004")
+
+    def test_codigo_con_iniciales_de_punto_y_acentos(self):
+        ticket = Ticket.objects.create(
+            titulo="T", descripcion="d", solicitante_nombre="User",
+            solicitante_punto="Éxito Colombia",
+        )
+        self.assertEqual(ticket.codigo, "DG-EX-0001")
+
+    def test_consecutivo_respeta_codigos_anteriores(self):
+        Ticket.objects.create(codigo="HD-0051", titulo="Anterior", descripcion="d", solicitante_nombre="User")
+        ticket = Ticket.objects.create(titulo="Nuevo", descripcion="d", solicitante_nombre="User", solicitante_punto="Norte")
+        self.assertEqual(ticket.codigo, "DG-NO-0052")
+
+    def test_consulta_publica_acepta_codigos_nuevos_y_anteriores(self):
+        anterior = Ticket.objects.create(codigo="HD-0051", titulo="Anterior", descripcion="d", solicitante_nombre="User")
+        nuevo = Ticket.objects.create(titulo="Nuevo", descripcion="d", solicitante_nombre="User", solicitante_punto="Norte")
+        for ticket in (anterior, nuevo):
+            with self.subTest(codigo=ticket.codigo):
+                respuesta = self.client.get(reverse("tickets:consultar"), {"codigo": ticket.codigo.lower()})
+                self.assertEqual(respuesta.context["ticket"].pk, ticket.pk)
 
 
 class FiltroResueltasTest(SmokeTestCase):

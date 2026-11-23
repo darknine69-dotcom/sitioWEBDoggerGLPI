@@ -105,15 +105,16 @@ def asignar_ticket(ticket_id, *, using="default"):
         ticket = Ticket.objects.using(using).select_for_update().get(pk=ticket_id)
         if ticket.tecnico_asignado_id or ticket.asignacion_manual_protegida or not ticket.categoria_id or not ticket.categoria.activo or ticket.estado not in (Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROGRESO):
             return None
-        perfiles = list(PerfilAutoasignacion.objects.using(using).select_related("tecnico").prefetch_related("categorias", "puntos_cobertura").filter(
+        perfiles = list(PerfilAutoasignacion.objects.using(using).select_related("tecnico").prefetch_related("categorias", "puntos_cobertura", "cuentas_cobertura").filter(
             habilitado=True, tecnico__activo=True, tecnico__is_active=True,
             tecnico__rol__in=("tecnico", "admin"),
         ).order_by("tecnico_id"))
         perfiles = [p for p in perfiles if not p.categorias.all() or any(c.pk == ticket.categoria_id for c in p.categorias.all())]
         punto_ticket = (ticket.solicitante_punto or "").strip().casefold()
+        correo_ticket = (ticket.solicitante_email or "").strip().casefold()
         perfiles = [p for p in perfiles if p.cobertura_general or any(
             punto.activo and punto.nombre.strip().casefold() == punto_ticket for punto in p.puntos_cobertura.all()
-        )]
+        ) or any(cuenta.activo and cuenta.is_active and cuenta.rol == "usuario" and correo_ticket and cuenta.email.strip().casefold() == correo_ticket for cuenta in p.cuentas_cobertura.all())]
         pesos = {"urgente": config.peso_urgente, "alta": config.peso_alta, "media": config.peso_media, "baja": config.peso_baja}
         cargas = {p.tecnico_id: 0 for p in perfiles}
         filas = Ticket.objects.using(using).filter(

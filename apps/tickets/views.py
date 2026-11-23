@@ -2750,7 +2750,7 @@ def portal(request):
 
 
 def consultar_ticket(request):
-    """Consulta publica por codigo HD-XXXX (sin datos internos)."""
+    """Consulta pública por código, incluidos los códigos históricos HD."""
     ticket = None
     form = ConsultaTicketForm(request.GET or None)
     if form.is_valid():
@@ -4936,7 +4936,7 @@ def lista_tickets(request):
     if punto_dashboard:
         qs = qs.filter(solicitante_punto=punto_dashboard)
     if q:
-        match_codigo = re.match(r"^HD-(\d+)$", q.upper())
+        match_codigo = re.match(r"^(?:HD|DG-[A-Z]{2})-\d+$", q.upper())
         condicion = (
             Q(codigo__iexact=q.upper())
             | Q(titulo__icontains=q)
@@ -5203,9 +5203,18 @@ def eliminar_ticket(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     if not _puede_gestionar_papelera(request, ticket):
         raise PermissionDenied("Solo puedes eliminar tus propias solicitudes.")
+    motivo = request.POST.get("motivo_eliminacion", "").strip()
+    if len(motivo) > 2000:
+        messages.error(request, "El motivo no puede superar los 2000 caracteres.")
+        return redirect(_destino_seguro(request, "tickets:lista"))
     codigo = ticket.codigo
     had_glpi = bool(ticket.glpi_id)
-    ticket.mandar_a_la_papelera(request.user)
+    with transaction.atomic():
+        if motivo:
+            TicketComentario.objects.create(ticket=ticket, usuario=request.user,
+                autor_nombre=request.user.nombre, comentario="Motivo de envío a la papelera: " + motivo,
+                es_interno=True)
+        ticket.mandar_a_la_papelera(request.user)
     mensaje = f"Ticket {codigo} enviado a la papelera."
     if had_glpi:
         mensaje += " Se conserva en GLPI hasta que se purge definitivamente."
@@ -5733,7 +5742,7 @@ def panel_tecnico(request):
     )
     qs = _filtrar_estado(qs, estado)
     if q:
-        match_codigo = re.match(r"^HD-(\d+)$", q.upper())
+        match_codigo = re.match(r"^(?:HD|DG-[A-Z]{2})-\d+$", q.upper())
         condicion = (
             Q(codigo__iexact=q.upper())
             | Q(titulo__icontains=q)
@@ -5765,7 +5774,7 @@ def panel_tecnico(request):
         .order_by("-fecha_creacion", "_prioridad_orden", "-pk")
     )
     if q_cola:
-        match_cola = re.match(r"^HD-(\d+)$", q_cola.upper())
+        match_cola = re.match(r"^(?:HD|DG-[A-Z]{2})-\d+$", q_cola.upper())
         condicion_cola = (
             Q(codigo__iexact=q_cola.upper())
             | Q(titulo__icontains=q_cola)
@@ -5955,7 +5964,7 @@ def panel_tecnico(request):
         ).select_related("ticket_secundario"):
             combinadas_map.setdefault(v.ticket_principal_id, []).append(v.ticket_secundario)
         if q:
-            match_codigo = re.match(r"^HD-(\d+)$", q.upper())
+            match_codigo = re.match(r"^(?:HD|DG-[A-Z]{2})-\d+$", q.upper())
             condicion = (
                 Q(codigo__iexact=q.upper())
                 | Q(titulo__icontains=q)

@@ -11,6 +11,26 @@
 <style>
 /* ============ Perfil corporativo Dogger ============ */
 .profile-page { max-width: 1080px; }
+.cierre-config { display:flex; flex-direction:column; gap:15px; padding:18px; margin:0 0 18px; border:1px solid #dce3ed; border-radius:14px; background:#f7f9fc; }
+.cierre-config-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.cierre-config-copy { display:flex; gap:12px; align-items:flex-start; }
+.cierre-config-icon { display:grid; place-items:center; flex:none; width:38px; height:38px; border-radius:11px; background:#fee8ea; color:#dc2626; }
+.cierre-config-icon .icon { width:19px; height:19px; }
+.cierre-config-copy b { display:block; color:#17233b; font-size:14px; }
+.cierre-config-copy small { display:block; margin-top:4px; color:#61718a; line-height:1.4; }
+.cierre-config-controls { display:flex; align-items:end; flex-wrap:wrap; gap:10px; padding-left:50px; }
+.cierre-config-controls label { display:grid; gap:5px; color:#475569; font-size:12px; font-weight:600; }
+.cierre-config-controls input { width:100px; height:39px; padding:0 10px; border:1px solid #ccd5e1; border-radius:9px; background:#fff; color:#17233b; }
+.cierre-config-controls .btn { min-height:39px; }
+.cierre-toast { position:fixed; z-index:10000; top:18px; left:50%; transform:translateX(-50%); padding:11px 16px; border:1px solid #258856; border-radius:10px; background:#e9f9ef; color:#17643b; box-shadow:0 8px 28px #0003; font-size:13px; font-weight:700; }
+.cierre-toast[hidden] { display:none; }
+html[data-theme="dark"] .cierre-config { background:#202733; border-color:#394454; }
+html[data-theme="dark"] .cierre-config-copy b { color:#f0f2f7; }
+html[data-theme="dark"] .cierre-config-copy small, html[data-theme="dark"] .cierre-config-controls label { color:#b8c4d4; }
+html[data-theme="dark"] .cierre-config-icon { background:#47282e; color:#ff8a91; }
+html[data-theme="dark"] .cierre-config-controls input { background:#171c24; border-color:#485465; color:#f0f2f7; }
+html[data-theme="dark"] .cierre-toast { background:#193c2b; color:#b6efc9; border-color:#367d52; }
+@media(max-width:480px) { .cierre-config-controls { padding-left:0; } }
 .profile-grid {
     display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start;
 }
@@ -270,14 +290,18 @@
                 <div class="profile-panel-head">
                     <div><h3>{{ perfil_textos.0 }}</h3><p>{{ perfil_textos.1 }}</p></div>
                 </div>
-                <div class="prof-row">
-                    <div class="prof-row-label"><b>{{ perfil_textos.2 }}</b><small>{{ perfil_textos.3 }}</small></div>
-                    <select id="prefIdioma" aria-label="{{ perfil_textos.2 }}">
-                        <option value="es" {% if idioma_perfil == 'es' %}selected{% endif %}>Español</option>
-                        <option value="en" {% if idioma_perfil == 'en' %}selected{% endif %}>English</option>
-                        <option value="pt" {% if idioma_perfil == 'pt' %}selected{% endif %}>Português</option>
-                    </select>
-                </div>
+                <form id="cierreInactividadForm" class="cierre-config" action="{% url 'accounts:configurar_cierre_inactividad' %}" method="post">
+                    {% csrf_token %}
+                    <div class="cierre-config-head"><div class="cierre-config-copy"><span class="cierre-config-icon"><svg class="icon"><use href="#i-clock"/></svg></span><div><b>Cierre por inactividad</b><small>Protege tu cuenta cerrando la sesión cuando no la estés usando.</small></div></div>
+                    <label class="switch"><input type="checkbox" name="habilitado" value="1" aria-label="Activar cierre por inactividad" {% if request.user.preferencias_notificaciones.cierre_inactividad %}checked{% endif %}><span class="slider"></span></label></div>
+                    <div class="cierre-config-controls">
+                        <label for="cierreMinutos">Tiempo en minutos (1–480)
+                        <input id="cierreMinutos" name="minutos" type="number" min="1" max="480" required value="{{ request.user.preferencias_notificaciones.cierre_inactividad_minutos|default:30 }}"></label>
+                        <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                        <small id="cierreInactividadMensaje" role="status"></small>
+                    </div>
+                </form>
+                <div id="cierreInactividadToast" class="cierre-toast" role="status" hidden></div>
                 <div class="prof-row">
                     <div class="prof-row-label"><b>{{ perfil_textos.4 }}</b><small>{{ perfil_textos.5 }}</small></div>
                     <label class="switch"><input type="checkbox" id="prefNotifMail" {% if correo_tickets_activo %}checked{% endif %} aria-label="Notificaciones por correo"><span class="slider"></span></label>
@@ -439,27 +463,28 @@
         });
     });
 
-    var idioma = document.getElementById("prefIdioma");
-    idioma.addEventListener("change", async function () {
-        idioma.disabled = true;
-        try {
-            var csrf = document.querySelector('#preferenciasCorreoCsrf [name="csrfmiddlewaretoken"]').value;
-            var respuesta = await fetch("{% url 'accounts:preferencias_correo' %}", {
-                method: "POST", credentials: "same-origin",
-                headers: {"X-CSRFToken": csrf, "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
-                body: new URLSearchParams({clave: "idioma_perfil", valor: idioma.value}).toString()
-            });
-            if (!respuesta.ok) throw new Error("No se guardó");
-            location.reload();
-        } catch (_) {
-            idioma.value = "{{ idioma_perfil|escapejs }}";
-            var error = document.getElementById("preferenciasCorreoError");
-            error.textContent = "No se pudo guardar la preferencia. Inténtalo de nuevo.";
-            error.hidden = false;
-            idioma.disabled = false;
-        }
-    });
     // Las preferencias de correo pertenecen a la cuenta, no al navegador.
+    var cierreForm = document.getElementById("cierreInactividadForm");
+    var cierreAviso = sessionStorage.getItem("dogger:cierre-aviso");
+    if (cierreAviso) {
+        sessionStorage.removeItem("dogger:cierre-aviso");
+        var cierreToast = document.getElementById("cierreInactividadToast");
+        cierreToast.textContent = cierreAviso;
+        cierreToast.hidden = false;
+        setTimeout(function () { cierreToast.hidden = true; }, 4000);
+    }
+    cierreForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        var mensaje = document.getElementById("cierreInactividadMensaje");
+        try {
+            var respuesta = await fetch(cierreForm.action, {method:"POST", credentials:"same-origin", body:new FormData(cierreForm)});
+            var resultado = await respuesta.json();
+            if (!respuesta.ok || !resultado.ok) throw new Error(resultado.error || "No se pudo guardar.");
+            sessionStorage.setItem("dogger:cierre-aviso", cierreForm.querySelector('[name="habilitado"]').checked ? "Cierre por inactividad activado." : "Cierre por inactividad desactivado.");
+            location.hash = "preferencias-general";
+            location.reload();
+        } catch (error) { mensaje.textContent = error.message || "No se pudo guardar."; }
+    });
     function bindSwitch(id, key) {
         var el = document.getElementById(id);
         if (!el) return;

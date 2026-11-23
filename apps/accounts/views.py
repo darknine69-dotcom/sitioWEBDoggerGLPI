@@ -233,6 +233,54 @@ def permisos_roles(request):
     from django.db import transaction
     from django.http import JsonResponse
 
+    if request.POST.get("modulo_individual"):
+        from .modulos import CLAVES, POR_ROL, restringidos
+        clave = request.POST.get("modulo_individual")
+        uid = request.POST.get("cuenta_modulos", "")
+        valor = request.POST.get("valor")
+        if clave not in CLAVES or not uid.isdigit() or valor not in ("0", "1") or int(uid) == request.user.pk:
+            return JsonResponse({"ok": False, "error": "Configuración inválida."}, status=400)
+        with transaction.atomic():
+            u = User.objects.select_for_update().filter(pk=int(uid)).first()
+            if u is None:
+                return JsonResponse({"ok": False, "error": "Cuenta no encontrada."}, status=404)
+            if clave not in POR_ROL.get(u.rol, set()):
+                return JsonResponse({"ok": False, "error": "El módulo no corresponde al rol."}, status=400)
+            prefs = dict(u.preferencias_notificaciones or {})
+            anteriores = restringidos(u)
+            actuales = set(anteriores)
+            if valor == "1": actuales.add(clave)
+            else: actuales.discard(clave)
+            if actuales != anteriores:
+                prefs["modulos_restringidos"] = sorted(actuales)
+                u.preferencias_notificaciones = prefs
+                u.save(update_fields=["preferencias_notificaciones"])
+                LogEntry.objects.log_action(user_id=request.user.pk, content_type_id=ContentType.objects.get_for_model(User).pk, object_id=str(u.pk), object_repr=str(u)[:200], action_flag=CHANGE, change_message=f"Módulo {clave}: {'restringido' if valor == '1' else 'habilitado'}")
+        return JsonResponse({"ok": True})
+
+    if request.POST.get("modulos_cuenta") == "1":
+        from .modulos import CLAVES
+        uid = request.POST.get("cuenta_modulos", "")
+        valores = request.POST.getlist("modulos_restringidos")
+        if not uid.isdigit() or not set(valores) <= CLAVES:
+            return JsonResponse({"ok": False, "error": "Configuración inválida."}, status=400)
+        if int(uid) == request.user.pk:
+            messages.error(request, "No puedes restringir tu propia cuenta.")
+            return redirect(reverse("accounts:ajustes") + "#pagina")
+        with transaction.atomic():
+            u = User.objects.select_for_update().filter(pk=int(uid)).first()
+            if u is None:
+                raise Http404("Cuenta no encontrada")
+            prefs = dict(u.preferencias_notificaciones or {})
+            anteriores = prefs.get("modulos_restringidos", [])
+            prefs["modulos_restringidos"] = sorted(set(valores))
+            u.preferencias_notificaciones = prefs
+            u.save(update_fields=["preferencias_notificaciones"])
+            if anteriores != prefs["modulos_restringidos"]:
+                LogEntry.objects.log_action(user_id=request.user.pk, content_type_id=ContentType.objects.get_for_model(User).pk, object_id=str(u.pk), object_repr=str(u)[:200], action_flag=CHANGE, change_message="Restricciones de módulos: " + ", ".join(prefs["modulos_restringidos"]))
+        messages.success(request, "Restricciones de módulos actualizadas.")
+        return redirect(reverse("accounts:ajustes") + "#pagina")
+
     permiso_unico = request.POST.get("permiso_unico")
     mapa_permisos = {
         "cerrar": "puede_cerrar_tickets", "eliminar": "puede_eliminar_tickets",
@@ -400,6 +448,8 @@ def ajustes_cuenta(request):
         if rol_perm:
             cuentas = cuentas.filter(rol=rol_perm)
         ctx["cuentas_permisos"] = cuentas
+        from .modulos import MODULOS
+        ctx["modulos_restringibles"] = MODULOS
         ctx["rol_perm_sel"] = rol_perm
         from django.conf import settings as dj_settings
 
@@ -680,11 +730,32 @@ def solicitar_reset(request):
     autenticado o el de un intento previo), la pantalla NO pide el correo:
     solo muestra "Enviar código". Si viene con ?manual= se vuelve a pedir.
     """
+    if request.method == "GET" and request.GET.get("cancelar") == "1":
+        request.session.pop("reset_pwd_destino_fijado", None)
+        return redirect("accounts:login")
+
+    if request.method == "POST" and request.POST.get("accion") == "preparar_correo":
+        form = SolicitarResetForm(request.POST)
+        if form.is_valid():
+            anterior = request.session.get("reset_pwd_destino_fijado", "")
+            if anterior and anterior.casefold() != form.cleaned_data["email"].casefold():
+                form.add_error(None, "El correo ya está fijado para esta solicitud.")
+                return render(request, "accounts/reset_solicitar.html", {
+                    "form": form, "correo_fijado": True,
+                    "correo_fijado_mostrado": _enmascarar_correo(anterior),
+                    "correo_fijado_valor": anterior,
+                })
+            request.session["reset_pwd_destino_fijado"] = form.cleaned_data["email"]
+            return redirect("accounts:reset_solicitar")
+        return render(request, "accounts/reset_solicitar.html", {"form": form, "correo_fijado": False})
+
     if request.GET.get("manual"):
+        request.session.pop("reset_pwd_destino_fijado", None)
         pre = ""
     else:
         pre = (
-            (request.GET.get("email") or "").strip()
+            request.session.get("reset_pwd_destino_fijado", "")
+            or (request.GET.get("email") or "").strip()
             or (request.user.email if request.user.is_authenticated else "")
             or request.session.get("reset_pwd_email", "")
         )
@@ -695,10 +766,13 @@ def solicitar_reset(request):
         form = SolicitarResetForm(request.POST)
         if correo_fijado:
             form.fields["email"].widget.attrs["readonly"] = True
+            if request.POST.get("email", "").strip().casefold() != pre.strip().casefold():
+                form.add_error(None, "El correo cambió. Actualiza la página o selecciona otro correo.")
         if form.is_valid():
             usuario = form.usuario
             if usuario is None:
                 # No revelar si la cuenta existe: mismo mensaje general.
+                request.session.pop("reset_pwd_destino_fijado", None)
                 messages.success(request, "Si el correo está registrado, recibirás un código.")
                 return redirect("accounts:login")
             try:
@@ -718,8 +792,10 @@ def solicitar_reset(request):
                         "form": form,
                         "correo_fijado": correo_fijado,
                         "correo_fijado_mostrado": correo_fijado_mostrado,
+                        "correo_fijado_valor": pre,
                     },
                 )
+            request.session.pop("reset_pwd_destino_fijado", None)
             messages.success(
                 request,
                 "Te enviamos un código de verificación a tu correo (revisa también el spam).",
@@ -732,6 +808,7 @@ def solicitar_reset(request):
                 "form": form,
                 "correo_fijado": correo_fijado,
                 "correo_fijado_mostrado": correo_fijado_mostrado,
+                "correo_fijado_valor": pre,
             },
         )
 
@@ -745,6 +822,7 @@ def solicitar_reset(request):
             "form": form,
             "correo_fijado": correo_fijado,
             "correo_fijado_mostrado": correo_fijado_mostrado,
+            "correo_fijado_valor": pre,
         },
     )
 
@@ -771,7 +849,7 @@ def restablecer_password(request):
         form = CodigoResetForm(request.POST)
         if form.is_valid():
             codigo = form.cleaned_data["codigo"]
-            usuario = User.objects.filter(email__iexact=email, activo=True).first()
+            usuario = User.objects.filter(email__iexact=email, activo=True, is_active=True).first()
             if usuario is None:
                 messages.error(request, "El código no es válido para este correo.")
                 request.session.pop("reset_pwd_email", None)
@@ -976,6 +1054,38 @@ def preferencias_correo(request):
         usuario.preferencias_notificaciones = preferencias
         usuario.save(update_fields=["preferencias_notificaciones"])
     return JsonResponse({"ok": True, "valor": preferencias[clave]})
+
+
+@login_required
+def actividad_sesion(request):
+    if request.method not in ("GET", "POST"):
+        return JsonResponse({"ok": False}, status=405)
+    if request.method == "POST":
+        import time
+        request.session["ultima_actividad_usuario"] = int(time.time())
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def configurar_cierre_inactividad(request):
+    from django.db import transaction
+
+    habilitado = request.POST.get("habilitado") == "1"
+    try:
+        minutos = int(request.POST.get("minutos", ""))
+    except (ValueError, TypeError):
+        minutos = 0
+    if not 1 <= minutos <= 480:
+        return JsonResponse({"ok": False, "error": "El tiempo debe estar entre 1 y 480 minutos."}, status=400)
+    with transaction.atomic():
+        usuario = User.objects.select_for_update().get(pk=request.user.pk)
+        preferencias = dict(usuario.preferencias_notificaciones or {})
+        preferencias.update(cierre_inactividad=habilitado, cierre_inactividad_minutos=minutos)
+        usuario.preferencias_notificaciones = preferencias
+        usuario.save(update_fields=["preferencias_notificaciones"])
+    request.session.pop("ultima_actividad_usuario", None)
+    return JsonResponse({"ok": True})
 
 
 @require_POST

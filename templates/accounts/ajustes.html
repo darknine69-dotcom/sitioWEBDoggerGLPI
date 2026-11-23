@@ -676,11 +676,11 @@
                     <div class="pagina-save"><button type="submit" class="btn btn-primary">Guardar escalamiento</button></div>
                 </form>
                 <div class="pagina-section pagina-permisos"><div class="pagina-section-header">
-                    <span class="pagina-section-icon"><svg class="icon"><use href="#i-shield"/></svg></span><div><h3>Permisos por cuenta</h3><p>Visualiza y administra los permisos asignados a los usuarios de la plataforma.</p></div>
+                    <span class="pagina-section-icon"><svg class="icon"><use href="#i-shield"/></svg></span><div><h3>Permisos por cuenta</h3></div>
+                    <button type="button" class="modulos-abrir" id="abrirModulos" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg> Acceso a módulos</button>
                 </div>
+                <p id="modulosDescripcion" role="status" aria-live="polite" hidden>Marcado: restringido · —: no aplica</p>
                 <form method="get" action="{% url 'accounts:ajustes' %}#pagina" class="settings-form pagina-filter-form">
-                    <div class="pagina-filter-bar">
-                        <span class="pagina-filter-title">Ver rol<small>Filtra las cuentas por tipo de usuario</small></span>
                         <div class="pagina-filter-controls"><div class="pagina-search" id="pagina-search">
                             <button type="button" id="pagina-search-toggle" class="pagina-search-toggle" aria-expanded="false" aria-controls="pagina-search-field" aria-label="Buscar cuentas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
                             <div id="pagina-search-field" class="pagina-search-field" hidden><label class="visually-hidden" for="pagina-search-input">Buscar por nombre o correo</label><input id="pagina-search-input" type="search" placeholder="Buscar nombre o correo" autocomplete="off"></div>
@@ -693,7 +693,6 @@
                             <option value="observador"{% if rol_perm_sel == 'observador' %} selected{% endif %}>Observadores</option>
                         </select>
                         </div>
-                    </div>
                     <p class="pagina-search-count" id="pagina-search-count" role="status" aria-live="polite"></p>
                 </form>
                 <form method="post" action="{% url 'accounts:permisos' %}" class="settings-form">
@@ -705,11 +704,12 @@
                             <thead>
                                 <tr>
                                     <th>Usuario</th><th>Correo</th><th>Rol</th>
-                                    <th>Cerrar</th>
-                                    <th>Eliminar</th>
-                                    <th>Crear</th>
-                                    <th>Chatear</th>
-                                    <th>Editar anuncios propios</th>
+                                    <th data-perm-vista="acciones">Cerrar</th>
+                                    <th data-perm-vista="acciones">Eliminar</th>
+                                    <th data-perm-vista="acciones">Crear</th>
+                                    <th data-perm-vista="acciones">Chatear</th>
+                                    <th data-perm-vista="acciones">Editar anuncios propios</th>
+                                    {% for clave, nombre in modulos_restringibles %}<th data-perm-vista="modulos" hidden>{{ nombre }}</th>{% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
@@ -719,11 +719,12 @@
                                         <span class="pagina-user">{% if u.avatar %}<img src="{{ u.avatar.url }}" alt="">{% else %}<span class="pagina-user-placeholder">{{ u.iniciales }}</span>{% endif %}<strong>{{ u.nombre }}</strong></span>
                                         <input type="hidden" name="uid" value="{{ u.pk }}">
                                     </td><td>{{ u.email }}</td><td><span class="badge-role {{ u.rol }}" style="display:inline-flex;align-items:center;gap:6px">{% include 'components/role_icon.html' with rol=u.rol only %}{{ u.get_rol_display }}</span></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}" onchange="this.form.submit()"></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}" onchange="this.form.submit()"></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_crear" value="1"{% if u.puede_crear_tickets %} checked{% endif %} aria-label="Crear para {{ u.email }}" onchange="this.form.submit()"></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_responder" value="1"{% if u.puede_responder_chat %} checked{% endif %} aria-label="Chatear para {{ u.email }}" onchange="this.form.submit()"></td>
-                                    <td><input type="checkbox" name="perm_{{ u.pk }}_editar_anuncios" value="1"{% if u.puede_editar_anuncios %} checked{% endif %} aria-label="Editar anuncios propios para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td data-perm-vista="acciones"><input type="checkbox" name="perm_{{ u.pk }}_cerrar" value="1"{% if u.puede_cerrar_tickets %} checked{% endif %} aria-label="Cerrar para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td data-perm-vista="acciones"><input type="checkbox" name="perm_{{ u.pk }}_eliminar" value="1"{% if u.puede_eliminar_tickets %} checked{% endif %} aria-label="Eliminar para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td data-perm-vista="acciones"><input type="checkbox" name="perm_{{ u.pk }}_crear" value="1"{% if u.puede_crear_tickets %} checked{% endif %} aria-label="Crear para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td data-perm-vista="acciones"><input type="checkbox" name="perm_{{ u.pk }}_responder" value="1"{% if u.puede_responder_chat %} checked{% endif %} aria-label="Chatear para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    <td data-perm-vista="acciones"><input type="checkbox" name="perm_{{ u.pk }}_editar_anuncios" value="1"{% if u.puede_editar_anuncios %} checked{% endif %} aria-label="Editar anuncios propios para {{ u.email }}" onchange="this.form.submit()"></td>
+                                    {% for clave, nombre in modulos_restringibles %}<td data-perm-vista="modulos" hidden>{% if clave in u.modulos_disponibles %}<input type="checkbox" data-modulo="{{ clave }}" data-cuenta="{{ u.pk }}" {% if clave in u.modulos_restringidos %}checked{% endif %} {% if u.pk == request.user.pk %}disabled title="No puedes restringir tu propia cuenta"{% endif %} aria-label="Restringir {{ nombre }} para {{ u.email }}">{% else %}<span aria-label="No disponible para este rol">—</span>{% endif %}</td>{% endfor %}
                                 </tr>
                                 {% empty %}
                                 <tr><td colspan="8" class="obs-sin-datos">Sin cuentas.</td></tr>
@@ -733,7 +734,8 @@
                         </table>
                     </div>
                     </div>
-                </form></div>
+                </form>
+                </div>
             </section>
             {% endif %}
         </div>
@@ -754,6 +756,48 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+(function () {
+    var lateral = document.querySelector(".perfil-page .settings-sidebar");
+    if (!lateral) return;
+    function medir() { lateral.style.setProperty("--settings-sidebar-height", lateral.offsetHeight + "px"); }
+    medir();
+    if (window.ResizeObserver) new ResizeObserver(medir).observe(lateral);
+    window.addEventListener("resize", medir);
+})();
+</script>
+<script>
+(function () {
+    var boton = document.getElementById("abrirModulos"), descripcion = document.getElementById("modulosDescripcion");
+    if (!boton || !descripcion) return;
+    function mostrar(modulos) {
+        document.querySelectorAll("[data-perm-vista]").forEach(function (celda) { celda.hidden = celda.dataset.permVista !== (modulos ? "modulos" : "acciones"); });
+        boton.setAttribute("aria-pressed", String(modulos));
+        boton.innerHTML = modulos ? '<svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> Permisos de acciones' : '<svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg> Acceso a módulos';
+        descripcion.hidden = !modulos;
+    }
+    mostrar(sessionStorage.getItem("dogger:permisos-vista") === "modulos");
+    boton.addEventListener("click", function () { var activo = boton.getAttribute("aria-pressed") !== "true"; sessionStorage.setItem("dogger:permisos-vista", activo ? "modulos" : "acciones"); mostrar(activo); });
+    document.querySelectorAll("[data-modulo][data-cuenta]").forEach(function (campo) {
+        campo.addEventListener("change", async function () {
+            var nuevo = campo.checked;
+            campo.disabled = true;
+            descripcion.textContent = "Guardando cambio…";
+            try {
+                var datos = new URLSearchParams({modulo_individual:campo.dataset.modulo, cuenta_modulos:campo.dataset.cuenta, valor:nuevo ? "1" : "0"});
+                var csrf = document.querySelector('meta[name="csrfmiddlewaretoken"]').content;
+                var r = await fetch("{% url 'accounts:permisos' %}", {method:"POST", credentials:"same-origin", headers:{"X-CSRFToken":csrf,"X-Requested-With":"XMLHttpRequest","Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"}, body:datos.toString()});
+                var respuesta = await r.json();
+                if (!r.ok || !respuesta.ok) throw new Error(respuesta.error || "No se pudo guardar el cambio.");
+                descripcion.textContent = "Cambio guardado. Marca una casilla para restringir el módulo.";
+            } catch (error) {
+                campo.checked = !nuevo;
+                descripcion.textContent = error.message || "No se pudo guardar el cambio.";
+            } finally { campo.disabled = false; }
+        });
+    });
+})();
+</script>
 <script>
 (function () {
     var editor = document.getElementById("horario-editor");

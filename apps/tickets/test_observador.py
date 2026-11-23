@@ -521,6 +521,7 @@ class ObservadorAuditoriaMiListaTest(TestCase):
             rol=Usuario.Rol.OBSERVADOR,
         )
         self.client.force_login(self.observador)
+        ZonaObservador.objects.create(observador=self.observador, nombre="Norte")
         MonitoreoAuditoria.objects.create(
             actor=self.observador, observador=self.observador,
             accion=MonitoreoAuditoria.CREAR_ZONA, zona_nombre="Norte",
@@ -552,8 +553,7 @@ class ObservadorAuditoriaMiListaTest(TestCase):
         self.assertEqual(respuesta.context["aud_hoy"], 1)
         self.assertEqual(respuesta.context["aud_semana"], 1)
 
-    def test_muestra_todos_los_registros_igual_que_el_administrador(self):
-        """A un observador le sale también lo que hicieron los demás."""
+    def test_historial_no_muestra_los_registros_de_otro_supervisor(self):
         MonitoreoAuditoria.objects.create(
             actor=self.otro, observador=self.otro,
             accion=MonitoreoAuditoria.ELIMINAR_ZONA, zona_nombre="Sur",
@@ -561,7 +561,13 @@ class ObservadorAuditoriaMiListaTest(TestCase):
         )
         html = self.client.get(reverse("tickets:obs_mi_lista")).content.decode()
         self.assertIn("crea la zona Norte", html)
-        self.assertIn("borra la zona Sur", html)
+        self.assertNotIn("borra la zona Sur", html)
+
+    def test_historial_respeta_el_permiso_de_la_zona(self):
+        ZonaObservador.objects.filter(observador=self.observador, nombre="Norte").update(perm_historial=False)
+        respuesta = self.client.get(reverse("tickets:obs_mi_lista"))
+        self.assertNotContains(respuesta, "crea la zona Norte")
+        self.assertEqual(respuesta.context["aud_hoy"], 0)
 
     def test_el_historial_no_ofrece_la_exportacion_del_administrador(self):
         """Lo único que no puede bajar es el Excel completo del
@@ -666,6 +672,21 @@ class ObservadorCrearZonaTest(TestCase):
         base = {"nombre": "Sede norte", "volver": reverse("tickets:obs_usuarios")}
         base.update(datos)
         return self.client.post(reverse("tickets:obs_zona_crear"), base, follow=follow)
+
+    def test_admin_puede_desmarcar_opciones_al_crear_zona(self):
+        admin = Usuario.objects.create_user(email="admin-zona@x.com", password="x", nombre="Admin", rol=Usuario.Rol.ADMIN)
+        self.client.force_login(admin)
+        respuesta = self.client.post(reverse("tickets:monitoreo_zona_crear"), {
+            "nombre": "Sin permisos", "observador": self.observador.pk,
+            "notif_correo": "off", "notif_popup": "off",
+            "perm_exportar": "off", "perm_historial": "off",
+        })
+        self.assertEqual(respuesta.status_code, 302)
+        zona = ZonaObservador.objects.get(observador=self.observador, nombre="Sin permisos")
+        self.assertFalse(zona.notif_correo)
+        self.assertFalse(zona.notif_popup)
+        self.assertFalse(zona.perm_exportar)
+        self.assertFalse(zona.perm_historial)
 
     def test_usuarios_trae_el_boton_y_la_ventana_de_crear_zona(self):
         html = self.client.get(reverse("tickets:obs_usuarios")).content.decode()
@@ -1036,6 +1057,11 @@ class ObservadorExportarAuditoriaTest(TestCase):
         self.assertNotIn(reverse("tickets:monitoreo_auditoria_exportar"), html)
 
     def test_descarga_solo_lo_que_es_suyo(self):
+        MonitoreoAuditoria.objects.create(
+            actor=self.ajeno, observador=self.ajeno,
+            accion=MonitoreoAuditoria.CREAR_ZONA, zona_nombre="Norte",
+            detalle="zona ajena del mismo nombre",
+        )
         respuesta = self.client.get(reverse("tickets:obs_auditoria_exportar"))
         self.assertEqual(respuesta.status_code, 200)
         self.assertIn("spreadsheetml", respuesta["Content-Type"])
@@ -1043,6 +1069,7 @@ class ObservadorExportarAuditoriaTest(TestCase):
         self.assertIn("crea la zona Norte", texto)
         self.assertIn("agrega a Ana", texto)
         self.assertNotIn("crea la zona Sur", texto)
+        self.assertNotIn("zona ajena del mismo nombre", texto)
 
     def test_si_su_zona_no_permite_no_hay_boton_ni_descarga(self):
         self.zona.perm_exportar = False

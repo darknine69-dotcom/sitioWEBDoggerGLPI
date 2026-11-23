@@ -9,22 +9,29 @@
 {% block extra_css %}
 {% load static asset %}
 <link rel="stylesheet" href="{% asset 'css/mi-panel-corp.css' %}">
+{% include "tickets/_detalle_estilos.html" %}
 {% endblock %}
 
 {% block content %}
 <main class="page page-corporate ticket-detail-page">
-    <div class="corp-detail-layout">
-        <div class="corp-detail-main">
-            <section class="corp-card corp-detail-card">
+            <section class="ticket-detail-hero">
                 <div class="corp-detail-head">
                     <div class="corp-title-wrap">
                         <span class="corp-title-icon"><svg class="icon"><use href="#i-ticket"/></svg></span>
                         <div>
                             <p class="corp-kicker"><span class="corp-dot"></span> Ticket {{ ticket.codigo }}</p>
                             <h2>{{ ticket.titulo }}</h2>
+                            <p class="corp-sub">{{ ticket.solicitante_nombre }}{% if ticket.solicitante_email %} · {{ ticket.solicitante_email }}{% endif %}{% if ticket.solicitante_punto %} · {{ ticket.solicitante_punto }}{% endif %}</p>
                         </div>
                     </div>
                     {% include "tickets/_estado_pill.html" with estado=ticket.estado label=ticket.get_estado_display id="corp-estado-pill" resuelto=ticket.fue_resuelto cerrado=ticket.esta_cerrado %}
+                </div>
+
+                <div class="td-context" aria-label="Datos principales del ticket">
+                    <div class="td-context-item"><span class="td-context-icon"><svg class="icon"><use href="#i-user"/></svg></span><div><small>Solicitante</small><strong>{{ ticket.solicitante_nombre|default:"Sin nombre" }}</strong></div></div>
+                    <div class="td-context-item"><span class="td-context-icon"><svg class="icon"><use href="#i-store"/></svg></span><div><small>Punto de venta</small><strong>{{ ticket.solicitante_punto|default:"Sin registrar" }}</strong></div></div>
+                    <div class="td-context-item" data-category-label="{{ ticket.categoria.nombre|default:'Sin categoría' }}" data-category-group="{{ ticket.categoria.grupo|default:'' }}"><span class="td-context-icon"><span data-category-icon><svg class="icon"><use href="#i-folder"/></svg></span></span><div><small>Categoría</small><strong>{{ ticket.categoria.nombre|default:"Sin categoría" }}</strong></div></div>
+                    <div class="td-context-item"><span class="td-context-icon">{% if ticket.tecnico_asignado.avatar %}<img src="{{ ticket.tecnico_asignado.avatar.url }}" alt="">{% else %}<svg class="icon"><use href="#i-wrench"/></svg>{% endif %}</span><div><small>Técnico asignado</small><strong>{{ ticket.tecnico_asignado.nombre|default:"Sin asignar" }}</strong></div></div>
                 </div>
 
                 <div class="corp-detail-badges ticket-meta-row">
@@ -63,8 +70,11 @@
                     {% endif %}
                 </div>
 
-                <div class="corp-detail-sections">
-                    <section class="corp-subsection" id="chat-soporte">
+            </section>
+            <nav class="td-nav" aria-label="Secciones del ticket"><a href="#ticket-descripcion">Detalle</a><a href="#ticket-seguimiento">Seguimiento</a><a href="#chat-soporte">Actividad</a><a href="#ticket-ficha">Ficha y ANS</a></nav>
+            <div class="ticket-detail-grid">
+                <div class="ticket-main-col">
+                    <section class="corp-subsection" id="ticket-descripcion">
                         <div class="corp-subsection-head">
                             <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-info"/></svg></span>
                             <h3>Descripción</h3>
@@ -72,7 +82,7 @@
                         <p class="ticket-description">{{ ticket.descripcion }}</p>
                     </section>
 
-                    <section class="corp-subsection">
+                    <section class="corp-subsection" id="ticket-seguimiento">
                         <div class="corp-subsection-head">
                             <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-clock"/></svg></span>
                             <h3>Avance · {{ ticket.codigo }}</h3>
@@ -108,7 +118,7 @@
                         </div>
                     </section>
 
-                    <section class="corp-subsection">
+                    <section class="corp-subsection" id="chat-soporte">
                         <div class="corp-subsection-head">
                             <span class="corp-title-icon corp-title-icon-acc"><svg class="icon"><use href="#i-message"/></svg></span>
                             <h3>Actividad</h3>
@@ -126,11 +136,9 @@
                         {% include "tickets/_share_row.html" %}
                     </section>
                 </div>
-            </section>
-        </div>
 
-        <aside class="corp-detail-aside">
-            <section class="dash-panel dash-properties">
+        <aside class="ticket-side-col">
+            <section class="dash-panel dash-properties corp-subsection" id="ticket-ficha">
                 <header class="dash-panel-head">
                     <span class="dash-panel-icon"><svg class="icon"><use href="#i-layers"/></svg></span>
                     <h2>Propiedades</h2>

@@ -18,6 +18,53 @@ class PreferenciasPerfilTests(TestCase):
         )
         self.client.force_login(self.usuario)
 
+    def test_cierre_inactividad_configuracion_y_validacion(self):
+        url = reverse("accounts:configurar_cierre_inactividad")
+        self.assertEqual(self.client.post(url, {"habilitado": "1", "minutos": "0"}).status_code, 400)
+        self.assertEqual(self.client.post(url, {"habilitado": "1", "minutos": "5"}).status_code, 200)
+        self.usuario.refresh_from_db()
+        self.assertTrue(self.usuario.preferencias_notificaciones["cierre_inactividad"])
+        self.assertEqual(self.usuario.preferencias_notificaciones["cierre_inactividad_minutos"], 5)
+
+    def test_cierre_inactividad_no_se_renueva_con_consultas_automaticas(self):
+        self.usuario.preferencias_notificaciones = {"cierre_inactividad": True, "cierre_inactividad_minutos": 5}
+        self.usuario.save(update_fields=["preferencias_notificaciones"])
+        sesion = self.client.session
+        sesion["ultima_actividad_usuario"] = 1000
+        sesion.save()
+        url = reverse("accounts:actividad_sesion")
+        with patch("time.time", return_value=1299):
+            self.assertEqual(self.client.get(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest").status_code, 200)
+        with patch("time.time", return_value=1300):
+            self.assertEqual(self.client.get(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest").status_code, 401)
+
+    def test_consulta_automatica_html_no_reinicia_inactividad(self):
+        self.usuario.preferencias_notificaciones = {"cierre_inactividad": True, "cierre_inactividad_minutos": 5}
+        self.usuario.save(update_fields=["preferencias_notificaciones"])
+        sesion = self.client.session
+        sesion["ultima_actividad_usuario"] = 1000
+        sesion.save()
+        with patch("time.time", return_value=1299):
+            self.client.get(reverse("accounts:actividad_sesion"), HTTP_ACCEPT="text/html")
+        with patch("time.time", return_value=1300):
+            self.assertEqual(self.client.get(reverse("accounts:actividad_sesion"), HTTP_X_REQUESTED_WITH="XMLHttpRequest").status_code, 401)
+
+    def test_interaccion_renueva_y_opcion_desactivada_no_expira(self):
+        self.usuario.preferencias_notificaciones = {"cierre_inactividad": True, "cierre_inactividad_minutos": 5}
+        self.usuario.save(update_fields=["preferencias_notificaciones"])
+        sesion = self.client.session
+        sesion["ultima_actividad_usuario"] = 1000
+        sesion.save()
+        url = reverse("accounts:actividad_sesion")
+        with patch("time.time", return_value=1299):
+            self.assertEqual(self.client.post(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest").status_code, 200)
+        with patch("time.time", return_value=1400):
+            self.assertEqual(self.client.get(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest").status_code, 200)
+        self.usuario.preferencias_notificaciones["cierre_inactividad"] = False
+        self.usuario.save(update_fields=["preferencias_notificaciones"])
+        with patch("time.time", return_value=9999):
+            self.assertEqual(self.client.get(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest").status_code, 200)
+
     @patch("apps.accounts.views._glpi_available", return_value=False)
     def test_guardar_y_aplicar_preferencias_individuales(self, _glpi):
         respuesta = self.client.post(reverse("accounts:ajustes"), {

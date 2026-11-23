@@ -4,7 +4,7 @@
         <span class="pan-zc-headline">
             <span class="pan-zc-ico"><svg class="icon"><use href="#i-store"/></svg></span>
             <span class="pan-zc-title"><b>{{ e.nombre|default:"Sin nombre" }}</b><small>{{ e.fecha|default:"Sin fecha" }}</small></span>
-            <span class="pan-zc-state"><i></i>{% if e.ans_vencidos or e.estado == "rojo" %}Con incidencia{% elif e.ans_por_vencer or e.estado == "amarillo" %}Pendiente{% else %}Al día{% endif %}</span>
+            <span class="pan-zc-state"><svg class="icon" aria-hidden="true"><use href="{% if e.ans_vencidos or e.estado == 'rojo' %}#i-alert{% elif e.ans_por_vencer or e.estado == 'amarillo' %}#i-clock{% else %}#i-check-circle{% endif %}"/></svg>{% if e.ans_vencidos or e.estado == "rojo" %}Con incidencia{% elif e.ans_por_vencer or e.estado == "amarillo" %}Pendiente{% else %}Al día{% endif %}</span>
         </span>
         <span class="pan-zc-middle">
             <span class="pan-zc-metrics">

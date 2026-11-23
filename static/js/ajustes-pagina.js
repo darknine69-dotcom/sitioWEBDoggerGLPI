@@ -60,7 +60,7 @@
     campoBusqueda.addEventListener("input", filtrarCuentas);
     campoBusqueda.addEventListener("keydown", function (evento) { if (evento.key === "Enter") evento.preventDefault(); if (evento.key === "Escape") { evento.preventDefault(); toggleBusqueda.click(); } });
     campoBusqueda.addEventListener("search", filtrarCuentas);
-    permisos.querySelectorAll('input[type="checkbox"]').forEach(function (campo) {
+    permisos.querySelectorAll('input[type="checkbox"][name^="perm_"]').forEach(function (campo) {
         campo.removeAttribute("onchange");
         campo.addEventListener("change", function () {
             var nuevo = campo.checked, fila = campo.closest("tr"); campo.checked = !nuevo;

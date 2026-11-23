@@ -11,6 +11,13 @@
 .dash-compact .dash-widgets-unified .chart-switch { display:inline-flex; align-items:center; gap:6px; }
 .dash-compact .dash-widgets-unified .chart-switch-btn { min-height:36px; padding:6px 10px; font-size:12px; }
 .dash-compact .dash-widgets-unified .chart-refresh-btn { display:inline-flex; align-items:center; justify-content:center; flex:none; width:36px; height:36px; margin:0; }
+.dash-widgets-unified .pivot-table :is(th, td) { border-radius:0; border-color:rgba(130,145,165,.16); }
+.dash-widgets-unified .pivot-table .pivot-total-row td { border-top:1px solid rgba(130,145,165,.25); background:#f5f7fa; }
+html[data-theme="dark"] .dash-widgets-unified .pivot-table :is(th, td) { border-color:rgba(160,175,195,.12); }
+html[data-theme="dark"] .dash-widgets-unified .pivot-table .pivot-total-row td { background:#222a35; border-top:1px solid rgba(160,175,195,.2); }
+html[data-theme="dark"] .dash-widgets-unified .funnel-label { fill:#c2cddd; }
+html[data-theme="dark"] .dash-widgets-unified :is(.chart-empty,.chart-count small) { color:#c2cddd; }
+html[data-theme="dark"] .dash-widgets-unified .chart-count strong { color:#f0f3f8; }
 @media(max-width:760px) { .dash-compact .dash-widgets-unified .chart-card-head h3 { flex:1 1 calc(100% - 42px); } .dash-compact .dash-widgets-unified .dash-head-tools { width:100%; justify-content:flex-start; } .dash-compact .dash-widgets-unified .chart-card-head .dash-select { width:auto; } }
 </style>
 <div class="charts-grid dash-widgets-unified">

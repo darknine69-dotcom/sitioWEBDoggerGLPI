@@ -14,22 +14,22 @@
 .pap-hero {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 16px;
     flex-wrap: wrap;
     padding: 20px 22px;
     margin-bottom: 18px;
     border: 1px solid var(--line, #E7E2DB);
-    border-left: 4px solid var(--dogger-red, #D62B1F);
-    border-radius: 14px;
-    background: linear-gradient(180deg, #FFFFFF 0%, #FBF9F7 100%);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+    border-radius: 16px;
+    background: linear-gradient(110deg, #fff4f3 0%, #fff 42%);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, .05);
 }
 .pap-hero-icon {
     display: inline-flex; align-items: center; justify-content: center;
     width: 46px; height: 46px; flex: 0 0 auto;
     border-radius: 12px;
-    background: rgba(214, 43, 31, .10);
-    color: var(--dogger-red, #D62B1F);
+    background: linear-gradient(145deg, #ef4444, #bc1828);
+    color: #fff;
+    box-shadow: 0 5px 14px rgba(214, 43, 31, .22);
 }
 .pap-hero-icon .icon { width: 22px; height: 22px; }
 .pap-hero-text { display: flex; align-items: baseline; gap: 10px; flex: 1 1 auto; min-width: 0; }
@@ -39,6 +39,12 @@
     color: var(--ink);
 }
 .pap-hero-text span { font-size: 15px; color: var(--ink-muted); }
+html[data-theme="dark"] .pap-page .pap-hero {
+    background: linear-gradient(110deg, #302128 0%, #191e27 48%);
+    border-color: #3a3037;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
+}
+html[data-theme="dark"] .pap-page .pap-hero-text span { color: #bbc8da; }
 
 /* ------------------------------------------------------- nota al pie */
 .pap-note {
@@ -91,8 +97,8 @@
 /* ------------------------------------------------------- tarjetas */
 .pap-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
     margin: 0 0 22px;
     padding: 0;
     list-style: none;
@@ -100,8 +106,8 @@
 .pap-card {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 18px 20px 16px;
+    gap: 8px;
+    padding: 14px;
     border: 1px solid var(--line, #E7E2DB);
     border-radius: 14px;
     background: #FFFFFF;
@@ -115,7 +121,7 @@
 }
 
 .pap-card-top {
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
 }
 .pap-code {
     display: inline-flex; align-items: center; gap: 6px;
@@ -130,7 +136,7 @@
 .pap-when {
     display: inline-flex; align-items: center; gap: 5px;
     margin-left: auto;
-    font-size: 12.5px;
+    font-size: 11.5px;
     color: #9C938A;
 }
 .pap-when .icon { width: 14px; height: 14px; }
@@ -138,8 +144,8 @@
 .pap-card-title {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 16.5px;
-    line-height: 1.4;
+    font-size: 15px;
+    line-height: 1.3;
     color: var(--ink);
 }
 .pap-card-title a { color: inherit; text-decoration: none; }
@@ -147,10 +153,10 @@
 
 .pap-card-meta {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px 12px;
     margin: 0;
-    padding: 12px 0 0;
+    padding: 8px 0 0;
     border-top: 1px dashed var(--line, #E7E2DB);
 }
 .pap-meta-item dt {
@@ -160,7 +166,7 @@
 }
 .pap-meta-item dd {
     margin: 3px 0 0;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--ink);
     display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
 }
@@ -172,7 +178,7 @@
 }
 .pap-meta-avatar {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 24px; height: 24px; flex: 0 0 auto;
+    width: 21px; height: 21px; flex: 0 0 auto;
     border-radius: 50%;
     background: rgba(29, 78, 216, .12);
     color: #1D4ED8;
@@ -182,15 +188,15 @@
 .pap-meta-none { color: #9C938A; font-style: italic; }
 
 .pap-card-actions {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     margin-top: auto;
     padding-top: 4px;
 }
 .pap-card-actions form { margin: 0; }
 .pap-card-actions .btn {
-    min-height: 40px;
-    padding: 0 16px;
-    font-size: 14px;
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 12.5px;
 }
 
 /* ---------------------------------------------------- estado vacío */

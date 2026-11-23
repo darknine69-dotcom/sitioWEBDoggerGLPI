@@ -2,6 +2,13 @@
 (function () {
     'use strict';
     var NS = 'http://www.w3.org/2000/svg';
+    function temaOscuro() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
+    function colorArea(color) {
+        var valor = /^#([\da-f]{6})$/i.exec(color || '');
+        if (!valor) return 'rgba(59,130,246,.24)';
+        var n = parseInt(valor[1], 16);
+        return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',.24)';
+    }
 
     var dataEl = document.getElementById('dashData');
     if (!dataEl) return;
@@ -29,7 +36,7 @@
                     var v = ds.data[i];
                     if (!v) return;
                     ctx.save();
-                    ctx.fillStyle = '#6B6259';
+                    ctx.fillStyle = temaOscuro() ? '#d8e2ef' : '#4b5563';
                     ctx.font = 'bold 11px sans-serif';
                     ctx.textAlign = 'center';
                     ctx.fillText(v, el.x, (stacked ? el.y : el.base) - 5);
@@ -253,6 +260,7 @@
             t.textContent = p.value;
             g.appendChild(t);
             var lb = document.createElementNS(NS, 'text');
+            lb.setAttribute('class', 'funnel-label');
             lb.setAttribute('x', x - 10); lb.setAttribute('y', y + hh / 2 + 4);
             lb.setAttribute('text-anchor', 'end'); lb.setAttribute('fill', '#6B6259');
             lb.setAttribute('font-size', '11');
@@ -348,7 +356,7 @@
                     return {
                         label: ds.label,
                         data: ds.data,
-                        backgroundColor: colores ? realcePorIndice(colores) : realceFijo(ds.color),
+                        backgroundColor: tipo === 'area' ? colorArea(ds.color) : (colores ? realcePorIndice(colores) : realceFijo(ds.color)),
                         borderColor: colores || ds.color,
                         borderWidth: bw,
                         borderRadius: 4,
@@ -369,8 +377,10 @@
         }
 
         var data, opts;
-        var scalesX = { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } };
-        var scalesY = { beginAtZero: true, ticks: { precision: 0 } };
+        var textoGrafico = temaOscuro() ? '#c2cddd' : '#53647a';
+        var lineasGrafico = temaOscuro() ? 'rgba(190,205,225,.18)' : 'rgba(70,85,105,.16)';
+        var scalesX = { grid: { display: false }, ticks: { color: textoGrafico, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } };
+        var scalesY = { beginAtZero: true, grid: { color: lineasGrafico }, ticks: { color: textoGrafico, precision: 0 } };
         var hasMulti = (multi.datasets && multi.datasets.length > 1) || widget === 'linea' || widget === 'sla' || widget === 'comp20' || widget === 'recibidas' || widget === 'completadas';
 
         if (tipo === 'bar' || tipo === 'line' || tipo === 'area') {
@@ -386,9 +396,9 @@
                     datasets: [{
                         label: undefined,
                         data: prs.map(function (p) { return p.value; }),
-                        backgroundColor: realcePorIndice(bg2),
-                        borderColor: bg2,
-                        borderWidth: 1, borderRadius: 4,
+                        backgroundColor: tipo === 'area' ? colorArea(bg2[0]) : realcePorIndice(bg2),
+                        borderColor: tipo === 'bar' ? bg2 : (bg2[0] || '#3b82f6'),
+                        borderWidth: tipo === 'bar' ? 1 : 2, borderRadius: 4,
                         fill: tipo === 'area' ? 'origin' : false,
                         tension: 0.35,
                         hoverBorderWidth: 2,
@@ -402,7 +412,7 @@
                 };
             }
             var scales = tipo === 'bar'
-                ? { x: stacked ? { stacked: true } : scalesX, y: stacked ? { stacked: true, beginAtZero: true, ticks: { precision: 0 } } : scalesY }
+                ? { x: stacked ? { stacked: true, grid: { display: false }, ticks: { color: textoGrafico } } : scalesX, y: stacked ? { stacked: true, beginAtZero: true, grid: { color: lineasGrafico }, ticks: { color: textoGrafico, precision: 0 } } : scalesY }
                 : { x: scalesX, y: scalesY };
             opts = {
                 responsive: true, maintainAspectRatio: false,
@@ -437,7 +447,7 @@
                        con leyenda propia se apaga para no duplicar. */
                     legend: conLeyendaPropia
                         ? { display: false }
-                        : { position: 'bottom', labels: { boxWidth: 12, padding: 12 },
+                        : { position: 'bottom', labels: { boxWidth: 12, padding: 12, color: textoGrafico },
                             onHover: function (e) { if (e.native) { e.native.target.style.cursor = 'pointer'; } },
                             onLeave: function (e) { if (e.native) { e.native.target.style.cursor = 'default'; } } },
                     tooltip: { callbacks: { label: tooltipPct } }
@@ -856,6 +866,13 @@
                 });
             }
         });
+        if (window.MutationObserver) {
+            new MutationObserver(function () {
+                document.querySelectorAll('.chart-modal[data-widget]').forEach(function (card) {
+                    render(card, card.dataset.widget);
+                });
+            }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        }
         // Selector de ámbito de las dos tortas (abiertas, en progreso, ...).
         // El título usa la etiqueta del <option> elegido para no duplicar
         // el diccionario de nombres en el JS.

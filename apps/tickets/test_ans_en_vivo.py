@@ -135,6 +135,17 @@ class AnsEnVivoEnLasVistasTest(TestCase):
             "Detalle en Mi panel",
         )
 
+    def test_mi_ticket_comparte_diseno_sin_acciones_de_staff(self):
+        from apps.tickets.models import TicketComentario
+
+        TicketComentario.objects.create(ticket=self.ticket, usuario=self.tecnico, comentario="Nota interna reservada", es_interno=True)
+        html = self._html(reverse("tickets:mi_ticket", args=[self.ticket.pk]), self.usuario)
+        for fragmento in ('class="ticket-detail-hero"', 'class="ticket-detail-grid"', 'id="ticket-descripcion"', 'id="ticket-seguimiento"', 'id="ticket-ficha"'):
+            self.assertIn(fragmento, html)
+        self.assertNotIn("Nota interna reservada", html)
+        self.assertNotIn(reverse("tickets:cambiar_estado", args=[self.ticket.pk]), html)
+        self.assertNotIn(reverse("tickets:ajustar_ans_ticket", args=[self.ticket.pk]), html)
+
     def test_lista(self):
         self._exige_reloj(self._html(reverse("tickets:lista"), self.admin), "Lista")
 

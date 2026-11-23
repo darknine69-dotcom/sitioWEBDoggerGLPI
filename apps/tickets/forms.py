@@ -354,7 +354,7 @@ class ConsultaTicketForm(forms.Form):
     codigo = forms.CharField(
         max_length=12,
         label="Codigo del ticket",
-        widget=forms.TextInput(attrs={"placeholder": "HD-0001", "style": "text-transform:uppercase"}),
+        widget=forms.TextInput(attrs={"placeholder": "DG-EN-0001 o HD-0001", "style": "text-transform:uppercase"}),
     )
 
 

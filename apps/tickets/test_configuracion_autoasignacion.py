@@ -122,6 +122,27 @@ class PantallaAutoasignacionTests(TestCase):
         self.assertEqual(list(perfil.puntos_cobertura.all()), [self.punto])
         self.assertEqual(list(perfil.categorias.all()), [self.categoria])
 
+    def test_lista_direcciones_y_guarda_cobertura_por_cuenta(self):
+        cuenta = get_user_model().objects.create_user("pdv@example.com", "Sede Norte", "clave", rol="usuario", ubicacion="Calle 25")
+        self.client.force_login(self.superusuario)
+        respuesta = self.client.get(self.url)
+        for dato in ("Sede Norte", "Calle 25", "pdv@example.com"):
+            self.assertContains(respuesta, dato)
+        respuesta = self.client.post(self.url, {"accion": "perfil", "tecnico": self.tecnico.pk, "habilitado": "on", "capacidad": 20, "cuentas_cobertura": [cuenta.pk], "categorias": [self.categoria.pk]})
+        self.assertEqual(respuesta.status_code, 302)
+        perfil = PerfilAutoasignacion.objects.get(tecnico=self.tecnico)
+        self.assertEqual(list(perfil.cuentas_cobertura.all()), [cuenta])
+        self.assertEqual(list(perfil.categorias.all()), [self.categoria])
+        respuesta = self.client.get(self.url, {"tecnico": self.tecnico.pk})
+        self.assertContains(respuesta, f'name="cuentas_cobertura" value="{cuenta.pk}" checked')
+
+    def test_cuentas_mantienen_seleccion_si_formulario_es_invalido(self):
+        cuenta = get_user_model().objects.create_user("pdv@example.com", "Sede Norte", "clave", rol="usuario", ubicacion="Calle 25")
+        self.client.force_login(self.superusuario)
+        respuesta = self.client.post(self.url, {"accion": "perfil", "tecnico": self.tecnico.pk, "habilitado": "on", "capacidad": 0, "cuentas_cobertura": [cuenta.pk]})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, f'name="cuentas_cobertura" value="{cuenta.pk}" checked')
+
     def test_panel_muestra_cobertura_y_carga_ponderada(self):
         self.client.force_login(self.superusuario)
         ConfiguracionAutoasignacion.objects.create(pk=1, peso_urgente=5, peso_alta=3)

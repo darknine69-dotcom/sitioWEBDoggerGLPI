@@ -32,6 +32,31 @@ class ServicioAsignacionTests(TestCase):
         self.assertEqual(resultado.motivo, "menor_ocupacion")
         self.assertEqual(DecisionAutoasignacion.objects.filter(ticket=self.ticket).count(), 1)
 
+    def test_cobertura_por_cuenta_registrada(self):
+        cuenta = get_user_model().objects.create_user("pdv@example.com", "Punto", "clave", rol="usuario", ubicacion="Calle 25")
+        perfil = PerfilAutoasignacion.objects.get(tecnico=self.tecnico)
+        perfil.cobertura_general = False
+        perfil.save(update_fields=["cobertura_general"])
+        perfil.cuentas_cobertura.add(cuenta)
+        self.ticket.solicitante_email = "PDV@example.com"
+        self.ticket.solicitante_punto = "Caja 3"
+        self.ticket.save(update_fields=["solicitante_email", "solicitante_punto"])
+        with patch.object(connection.features, "has_select_for_update", True), patch.object(connection.ops, "for_update_sql", return_value=""):
+            resultado = asignar_ticket(self.ticket.pk)
+        self.assertEqual(resultado.candidato.pk, self.tecnico.pk)
+
+    def test_cuenta_inactiva_no_amplia_cobertura(self):
+        cuenta = get_user_model().objects.create_user("pdv@example.com", "Punto", "clave", rol="usuario", activo=False)
+        perfil = PerfilAutoasignacion.objects.get(tecnico=self.tecnico)
+        perfil.cobertura_general = False
+        perfil.save(update_fields=["cobertura_general"])
+        perfil.cuentas_cobertura.add(cuenta)
+        self.ticket.solicitante_email = cuenta.email
+        self.ticket.save(update_fields=["solicitante_email"])
+        with patch.object(connection.features, "has_select_for_update", True), patch.object(connection.ops, "for_update_sql", return_value=""):
+            resultado = asignar_ticket(self.ticket.pk)
+        self.assertEqual(resultado.motivo, "sin_candidatos")
+
     def test_error_auditoria_revierte_ticket_y_rotacion(self):
         with patch.object(connection.features, "has_select_for_update", True), patch.object(connection.ops, "for_update_sql", return_value=""), patch.object(DecisionAutoasignacion.objects, "create", side_effect=RuntimeError("error")):
             # using() devuelve un queryset, por lo que se simula el fallo en su create.

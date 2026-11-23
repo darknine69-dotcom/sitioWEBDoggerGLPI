@@ -11,6 +11,12 @@
 <style>
 .lista-page .brand-titles { display: none; }
 .lista-page #filtrosTickets { scroll-margin-top: 96px; }
+.lista-page .ticket-table-wrap { scrollbar-width: thin; scrollbar-color: #a9b2bf transparent; }
+.lista-page .ticket-table-wrap::-webkit-scrollbar { height: 6px; }
+.lista-page .ticket-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.lista-page .ticket-table-wrap::-webkit-scrollbar-thumb { border-radius: 999px; background: #a9b2bf; }
+html[data-theme="dark"] .lista-page .ticket-table-wrap { scrollbar-color: #535d6b transparent; }
+html[data-theme="dark"] .lista-page .ticket-table-wrap::-webkit-scrollbar-thumb { background: #535d6b; }
 
 /* ---- Conmutador Lista / Cuadrícula ---- */
 .corp-view-toggle { display: inline-flex; padding: 3px; gap: 2px; background: #F4EFE6; border: 1px solid var(--line); border-radius: 10px; }
@@ -44,6 +50,12 @@
 .ticket-listing-head .head-icon .icon { width: 17px; height: 17px; }
 .ticket-listing-head h2 { margin: 0; color: #0F172A; font: 600 16px/1.2 var(--font-sans); }
 .ticket-total-badge { padding: 3px 8px; border-radius: 999px; background: #FEE2E2; color: #DC2626; font: 600 12px/1 var(--font-sans); }
+html[data-theme="dark"] .lista-page .ticket-listing-head .head-icon { background: #302125; color: #ff626a; }
+html[data-theme="dark"] .lista-page .ticket-listing-head h2 { color: #f0f2f7; }
+html[data-theme="dark"] .lista-page .ticket-total-badge { background: #51282f; color: #ffb3b9; }
+html[data-theme="dark"] .lista-page .per-page-bar label { color: #b6c1d0; }
+html[data-theme="dark"] .lista-page #perPageLista { background: #222936; color: #f0f2f7; border: 1px solid #414b59; color-scheme: dark; }
+html[data-theme="dark"] .lista-page #perPageLista option { background: #222936; color: #f0f2f7; }
 .ticket-listing-head .corp-view-toggle { margin-left: auto; }
 .ticket-listing-more { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #E2E8F0; border-radius: 9px; color: #64748B; background: #fff; }
 .ticket-listing-more .icon { width: 18px; height: 18px; }
@@ -131,6 +143,12 @@
 .lista-page .tickets-kpis .ticket-kpi:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 12px 25px var(--kpi-shadow) !important;
+}
+html[data-theme="dark"] .lista-page .tickets-kpis .ticket-kpi {
+    border-color: rgba(255, 255, 255, .1) !important;
+}
+html[data-theme="dark"] .lista-page .tickets-kpis .ticket-kpi:hover {
+    border-color: rgba(255, 255, 255, .2) !important;
 }
 .lista-page .tickets-kpis .ticket-kpi::before,
 .lista-page .tickets-kpis .ticket-kpi::after { display: none !important; }
@@ -443,10 +461,6 @@
         {% if q or filtro_estado or filtro_prioridad or filtro_categoria or filtro_tecnico or sv != "todas" or rango or mias %}
         <a href="{% url 'tickets:lista' %}" class="link-clear">✕ Limpiar</a>
         {% endif %}
-        <div class="corp-view-toggle" role="group" aria-label="Vista de resultados">
-            <button type="button" class="corp-view-btn" data-view="grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Tarjetas</button>
-            <button type="button" class="corp-view-btn is-active" data-view="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Lista</button>
-        </div>
         {% if es_admin %}
         <a class="btn btn-excel btn-sm btn-danger-outline" href="{% url 'tickets:exportar_admin' %}?{{ querystring }}"><svg class="icon"><use href="#i-excel"/></svg> Excel</a>
         {% endif %}

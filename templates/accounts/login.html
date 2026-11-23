@@ -45,7 +45,7 @@
                     {{ form.remember_me }}
                     <span>Recordarme</span>
                 </label>
-                <a href="{% url 'accounts:reset_solicitar' %}{% if form.username.value %}?email={{ form.username.value|urlencode }}{% endif %}" class="login-forgot-link">¿Olvidaste tu contraseña?</a>
+                <a href="{% url 'accounts:reset_solicitar' %}{% if form.username.value %}?email={{ form.username.value|urlencode }}{% endif %}" data-reset-url="{% url 'accounts:reset_solicitar' %}" class="login-forgot-link">¿Olvidaste tu contraseña?</a>
             </div>
             <label class="login-modo-observador{% if form.modo_observador.errors %} has-error{% endif %}">
                 {{ form.modo_observador }}
@@ -63,6 +63,10 @@
             <button type="submit" class="btn btn-primary">Iniciar sesión</button>
         </form>
 
+        <form method="post" action="{% url 'accounts:reset_solicitar' %}" id="preparar-recuperacion" hidden>
+            {% csrf_token %}<input type="hidden" name="accion" value="preparar_correo"><input type="hidden" name="email">
+        </form>
+
         <p class="login-register-link">
             ¿Eres nuevo aquí? <a href="{% url 'accounts:registro' %}">Crea una cuenta</a>
         </p>
@@ -75,6 +79,14 @@
 </div>
 
 <script>
+document.querySelector('.login-forgot-link').addEventListener('click', function (event) {
+    var correo = document.getElementById('{{ form.username.id_for_label|escapejs }}').value.trim();
+    if (!correo) return;
+    event.preventDefault();
+    var formulario = document.getElementById('preparar-recuperacion');
+    formulario.elements.email.value = correo;
+    formulario.submit();
+});
 function togglePassword(btn) {
     const input = btn.parentElement.querySelector('input');
     const eyeOpen = btn.querySelector('.eye-open');

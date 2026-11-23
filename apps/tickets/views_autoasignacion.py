@@ -29,11 +29,12 @@ class ReglasForm(forms.ModelForm):
 
 class PerfilForm(forms.ModelForm):
     tecnico = forms.ModelChoiceField(queryset=get_user_model().objects.none(), label="Técnico o administrador")
+    cuentas_cobertura = forms.ModelMultipleChoiceField(queryset=get_user_model().objects.none(), required=False, label="Cuentas y direcciones registradas")
 
     class Meta:
         model = PerfilAutoasignacion
-        fields = ("tecnico", "habilitado", "capacidad", "cobertura_general", "puntos_cobertura", "categorias")
-        labels = {"capacidad": "Capacidad máxima en puntos", "puntos_cobertura": "Puntos de venta", "categorias": "Especialidades"}
+        fields = ("tecnico", "habilitado", "capacidad", "cobertura_general", "puntos_cobertura", "cuentas_cobertura", "categorias")
+        labels = {"capacidad": "Capacidad máxima en puntos", "puntos_cobertura": "Puntos del catálogo", "categorias": "Categorías y especialidades"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,8 +51,14 @@ class PerfilForm(forms.ModelForm):
             puntos |= Q(pk__in=self.instance.puntos_cobertura.values_list("pk", flat=True))
         self.fields["categorias"].queryset = Categoria.objects.filter(categorias)
         self.fields["puntos_cobertura"].queryset = Punto.objects.filter(puntos)
-        self.fields["categorias"].help_text = "Sin selección: todas las categorías. Se conservan opciones guardadas aunque estén inactivas."
-        self.fields["puntos_cobertura"].help_text = "En cobertura restringida, un perfil habilitado necesita al menos un punto activo."
+        cuentas = Q(rol="usuario", activo=True, is_active=True)
+        if self.instance.pk:
+            cuentas |= Q(pk__in=self.instance.cuentas_cobertura.values_list("pk", flat=True))
+        self.fields["cuentas_cobertura"].queryset = get_user_model().objects.filter(cuentas).order_by("nombre", "email")
+        self.fields["cuentas_cobertura"].label_from_instance = lambda cuenta: f"{cuenta.nombre} · {cuenta.ubicacion or 'Sin dirección'} · {cuenta.email}"
+        self.fields["cuentas_cobertura"].help_text = "Selecciona las cuentas registradas que puede atender el técnico."
+        self.fields["categorias"].help_text = "Se muestran todas las categorías activas. Sin selección, el técnico atiende todas. Usa Ctrl o Cmd para seleccionar varias."
+        self.fields["puntos_cobertura"].help_text = "También puedes seleccionar puntos del catálogo; con cobertura restringida elige al menos un punto o cuenta activa."
 
     def clean(self):
         datos = super().clean()
@@ -61,7 +68,10 @@ class PerfilForm(forms.ModelForm):
         if datos.get("habilitado") and tecnico and (not tecnico.activo or not tecnico.is_active or tecnico.rol not in ("admin", "tecnico")):
             self.add_error("habilitado", "La cuenta debe estar activa y tener rol técnico o administrador.")
         puntos = datos.get("puntos_cobertura")
-        if datos.get("habilitado") and not datos.get("cobertura_general") and (not puntos or not puntos.filter(activo=True).exists()):
+        cuentas = datos.get("cuentas_cobertura")
+        puntos_activos = puntos is not None and puntos.filter(activo=True).exists()
+        cuentas_activas = cuentas is not None and cuentas.filter(rol="usuario", activo=True, is_active=True).exists()
+        if datos.get("habilitado") and not datos.get("cobertura_general") and not (puntos_activos or cuentas_activas):
             self.add_error("puntos_cobertura", "Selecciona puntos o habilita cobertura general.")
         return datos
 
@@ -124,6 +134,7 @@ def configuracion_autoasignacion(request):
                     perfil.save(update_fields=["habilitado", "capacidad", "cobertura_general"])
                     perfil.categorias.set(perfil_form.cleaned_data["categorias"])
                     perfil.puntos_cobertura.set(perfil_form.cleaned_data["puntos_cobertura"])
+                    perfil.cuentas_cobertura.set(perfil_form.cleaned_data["cuentas_cobertura"])
                 messages.success(request, "Perfil de asignación guardado.")
                 return redirect("tickets:configuracion_autoasignacion")
         else:
@@ -137,11 +148,16 @@ def configuracion_autoasignacion(request):
             cargas[tecnico] = None
         elif cargas.get(tecnico, 0) is not None:
             cargas[tecnico] = cargas.get(tecnico, 0) + fila["total"] * pesos[fila["prioridad"]]
-    perfiles = list(PerfilAutoasignacion.objects.select_related("tecnico").prefetch_related("categorias", "puntos_cobertura").order_by("tecnico__nombre"))
+    perfiles = list(PerfilAutoasignacion.objects.select_related("tecnico").prefetch_related("categorias", "puntos_cobertura", "cuentas_cobertura").order_by("tecnico__nombre"))
     for perfil in perfiles:
         perfil.carga_actual = cargas.get(perfil.tecnico_id, 0)
         perfil.ocupacion_actual = round(100 * perfil.carga_actual / perfil.capacidad, 1) if perfil.carga_actual is not None and perfil.capacidad else None
+    cuentas_seleccionadas = {str(valor) for valor in (perfil_form["cuentas_cobertura"].value() or [])}
+    cuentas_disponibles = list(perfil_form.fields["cuentas_cobertura"].queryset)
+    for cuenta in cuentas_disponibles:
+        cuenta.seleccionada_en_cobertura = str(cuenta.pk) in cuentas_seleccionadas
     return render(request, "tickets/configuracion_autoasignacion.html", {
         "config": config, "reglas_form": reglas_form, "perfil_form": perfil_form,
-        "perfiles": perfiles, "decisiones": DecisionAutoasignacion.objects.select_related("ticket", "tecnico")[:50],
+        "perfiles": perfiles, "cuentas_disponibles": cuentas_disponibles,
+        "decisiones": DecisionAutoasignacion.objects.select_related("ticket", "tecnico")[:50],
     })
