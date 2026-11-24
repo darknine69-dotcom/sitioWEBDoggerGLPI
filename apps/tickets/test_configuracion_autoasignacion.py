@@ -18,13 +18,40 @@ class PantallaAutoasignacionTests(TestCase):
         self.punto = Punto.objects.create(nombre="Norte")
         self.url = reverse("tickets:configuracion_autoasignacion")
 
-    def test_solo_superusuario_accede(self):
+    def test_enlace_y_vista_solo_para_administradores_activos(self):
+        usuarios = get_user_model().objects
+        observador = usuarios.create_user("obs@example.com", "Observador", "clave", rol="observador")
+        punto = usuarios.create_user("punto@example.com", "Punto", "clave", rol="usuario")
+        for usuario, permitido in ((self.admin, True), (self.superusuario, True), (self.tecnico, False), (observador, False), (punto, False)):
+            with self.subTest(rol=usuario.rol, superusuario=usuario.is_superuser):
+                self.client.force_login(usuario)
+                ajustes = self.client.get(reverse("accounts:ajustes"))
+                self.assertEqual(ajustes.status_code, 200)
+                if permitido:
+                    self.assertContains(ajustes, f'href="{self.url}"')
+                else:
+                    self.assertNotContains(ajustes, f'href="{self.url}"')
+                self.assertEqual(self.client.get(self.url).status_code, 200 if permitido else 403)
+
+    def test_admin_inactivo_no_puede_acceder(self):
+        self.admin.activo = False
+        self.admin.save(update_fields=["activo"])
         self.client.force_login(self.admin)
+        self.assertNotContains(self.client.get(reverse("accounts:ajustes")), f'href="{self.url}"')
         self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_admin_no_superusuario_no_puede_activar_motor(self):
+        self.client.force_login(self.admin)
+        respuesta = self.client.get(self.url)
+        self.assertNotContains(respuesta, 'value="activar"')
+        self.assertEqual(self.client.post(self.url, {"accion": "activar"}).status_code, 403)
+        self.assertFalse(ConfiguracionAutoasignacion.objects.filter(pk=1, activa=True).exists())
+
+    def test_roles_sin_permiso_no_pueden_enviar_acciones(self):
         self.client.force_login(self.tecnico)
-        self.assertEqual(self.client.get(self.url).status_code, 403)
-        self.client.force_login(self.superusuario)
-        self.assertEqual(self.client.get(self.url).status_code, 200)
+        for accion in ("activar", "desactivar", "reglas", "perfil"):
+            with self.subTest(accion=accion):
+                self.assertEqual(self.client.post(self.url, {"accion": accion}).status_code, 403)
 
     def test_muestra_miga_de_pan_de_configuracion(self):
         self.client.force_login(self.superusuario)

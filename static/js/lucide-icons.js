@@ -55,7 +55,7 @@
     window.DoggerIcons = { icon: icono, hydrate: hidratar, names: nombres };
     /* Un solo catálogo semántico para toda aparición de categorías. */
     function categoria(texto) {
-        var t = String(texto || "").toLowerCase(), icon = "FolderClosed", tone = "slate";
+        var t = String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""), icon = "FolderClosed", tone = "slate";
         if (/ventas|pedido/.test(t)) { icon="ShoppingCart"; tone="rose"; }
         else if (/producci|bodega/.test(t)) { icon="Package"; tone="rose"; }
         else if (/contabil|pago/.test(t)) { icon="Calculator"; tone="rose"; }
@@ -85,11 +85,17 @@
         else if (/actualiza|parche/.test(t)) { icon="RefreshCw"; tone="teal"; }
         else if (/creacion.*usuario|solicitud.*equipo/.test(t)) { icon="UserPlus"; tone="violet"; }
         else if (/acceso|usuario/.test(t)) { icon="ShieldCheck"; tone="violet"; }
+        else if (/administrativo/.test(t)) { icon="UsersRound"; tone="violet"; }
+        else if (/endpoint|equipo/.test(t)) { icon="Laptop"; tone="orange"; }
+        else if (/infraestructura/.test(t)) { icon="Server"; tone="blue"; }
         return { icon: icon, tone: tone };
     }
     function decorarCategorias(raiz) {
         (raiz || document).querySelectorAll("[data-category-label]").forEach(function (elemento) {
-            var spec = categoria((elemento.dataset.categoryGroup || "") + " " + elemento.dataset.categoryLabel);
+            var spec = categoria(elemento.dataset.categoryLabel);
+            if (spec.icon === "FolderClosed" && elemento.dataset.categoryGroup) {
+                spec = categoria(elemento.dataset.categoryGroup);
+            }
             var destino = elemento.querySelector("[data-category-icon]");
             if (!destino) return;
             destino.className = "category-shared-icon cat-tone-" + spec.tone;

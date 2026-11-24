@@ -143,6 +143,9 @@ class UserRegisterView(View):
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
+            from apps.tickets.services.vinculacion_glpi import vincular_cuenta_nueva
+            if not vincular_cuenta_nueva(user):
+                messages.warning(request, "Tu cuenta fue creada; la vinculación con GLPI está pendiente.")
             login(request, user)
             return redirect("tickets:mi_panel")
         return self.render_view(request, form)
@@ -343,6 +346,47 @@ def permisos_roles(request):
 
 
 @login_required
+@require_POST
+def gestionar_superusuario(request):
+    """Solo un superusuario activo puede delegar el acceso total de Django."""
+    from django.core.exceptions import PermissionDenied
+    from django.db import transaction
+    from django.contrib.admin.models import CHANGE, LogEntry
+    from django.contrib.contenttypes.models import ContentType
+
+    actor = request.user
+    if not (actor.is_active and actor.activo and actor.rol == "admin" and actor.is_superuser):
+        raise PermissionDenied
+    accion = request.POST.get("accion")
+    identificador = request.POST.get("usuario", "")
+    if accion not in ("conceder", "retirar") or not identificador.isdigit():
+        raise PermissionDenied
+    if not actor.check_password(request.POST.get("confirmar_password", "")):
+        messages.error(request, "Contraseña incorrecta; no se modificaron los permisos.")
+        return redirect(reverse("accounts:ajustes") + "#pagina")
+    with transaction.atomic():
+        actor_actual = User.objects.select_for_update().get(pk=actor.pk)
+        if not (actor_actual.is_active and actor_actual.activo and actor_actual.rol == "admin" and actor_actual.is_superuser):
+            raise PermissionDenied
+        destinatario = User.objects.select_for_update().filter(Q(rol_base="admin") | Q(rol_base="", rol="admin"), pk=int(identificador)).first()
+        if destinatario is None or destinatario.pk == actor.pk:
+            raise PermissionDenied
+        conceder = accion == "conceder"
+        if conceder and not (destinatario.activo and destinatario.is_active):
+            raise PermissionDenied
+        if destinatario.is_superuser != conceder or (conceder and not destinatario.is_staff):
+            destinatario.is_superuser = conceder
+            campos = ["is_superuser"]
+            if conceder:
+                destinatario.is_staff = True
+                campos.append("is_staff")
+            destinatario.save(update_fields=campos)
+            LogEntry.objects.log_action(user_id=actor.pk, content_type_id=ContentType.objects.get_for_model(User).pk, object_id=str(destinatario.pk), object_repr=str(destinatario)[:200], action_flag=CHANGE, change_message="Acceso de superusuario concedido" if conceder else "Acceso de superusuario retirado")
+    messages.success(request, "Permiso de superusuario actualizado.")
+    return redirect(reverse("accounts:ajustes") + "#pagina")
+
+
+@login_required
 def ajustes_cuenta(request):
     user = request.user
     glpi_enabled = _glpi_available() and bool(getattr(user, "glpi_user_id", None))
@@ -425,6 +469,9 @@ def ajustes_cuenta(request):
         ctx["perfil_ticket_total"] = Ticket.objects.filter(solicitante_email__iexact=user.email).count()
     if user.rol == "admin":
         from apps.tickets.models import ConfigSitio
+
+        if user.is_superuser and user.activo and user.is_active:
+            ctx["administradores_django"] = User.objects.filter(Q(rol_base="admin") | Q(rol_base="", rol="admin")).exclude(pk=user.pk).order_by("nombre", "email")
 
         ctx["config_sitio"] = ConfigSitio.cargar()
         from django.conf import settings as dj_settings
@@ -777,6 +824,7 @@ def solicitar_reset(request):
                 return redirect("accounts:login")
             try:
                 token = ResetPasswordToken.generar(usuario)
+                request.session.pop("reset_pwd_verificado", None)
                 request.session["reset_pwd_email"] = usuario.email
                 _enviar_codigo_reset(request, usuario, token)
             except Exception as exc:
@@ -827,15 +875,54 @@ def solicitar_reset(request):
     )
 
 
+def enlace_reset_password(request, firma):
+    from django.core import signing
+    try:
+        token_id = signing.loads(firma, salt="dogger-reset-enlace", max_age=1800)
+        token = ResetPasswordToken.objects.select_related("usuario").get(pk=token_id, usado=False, usuario__activo=True, usuario__is_active=True)
+        if token.expirado:
+            raise signing.BadSignature
+    except (signing.BadSignature, ResetPasswordToken.DoesNotExist, ValueError, TypeError):
+        messages.error(request, "El enlace ha caducado o ya fue utilizado. Solicita un código nuevo.")
+        return redirect("accounts:reset_solicitar")
+    request.session.pop("reset_pwd_verificado", None)
+    request.session["reset_pwd_email"] = token.usuario.email
+    return redirect("accounts:restablecer_password")
+
+
 def restablecer_password(request):
-    """Paso 2 — solo se ingresa el código; al validarlo se inicia sesión
-    y se fuerza el cambio de contraseña con una ventana emergente."""
+    """Verifica el código y cambia la contraseña sin iniciar sesión."""
     email = request.session.get("reset_pwd_email")
     if not email:
         messages.info(request, "Primero solicita un código de verificación.")
         return redirect("accounts:reset_solicitar")
 
     correo_mascara = _enmascarar_correo(email)
+
+    verificado = request.session.get("reset_pwd_verificado")
+    if verificado:
+        token = ResetPasswordToken.objects.select_related("usuario").filter(pk=verificado, usuario__email__iexact=email, usuario__activo=True, usuario__is_active=True, usado=False).first()
+        if not token or token.expirado:
+            request.session.pop("reset_pwd_verificado", None)
+            messages.error(request, "El código ha caducado. Solicita uno nuevo.")
+            return redirect("accounts:reset_solicitar")
+        form_clave = CambiarPasswordForzadoForm(request.POST or None)
+        if request.method == "POST" and form_clave.is_valid():
+            from django.db import transaction
+            with transaction.atomic():
+                token = ResetPasswordToken.objects.select_for_update().select_related("usuario").filter(pk=verificado, usuario__email__iexact=email, usuario__activo=True, usuario__is_active=True, usado=False).first()
+                if not token or token.expirado:
+                    request.session.pop("reset_pwd_verificado", None)
+                    messages.error(request, "El código ha caducado o ya fue utilizado.")
+                    return redirect("accounts:reset_solicitar")
+                token.usuario.set_password(form_clave.cleaned_data["password_nueva"])
+                token.usuario.save(update_fields=["password"])
+                ResetPasswordToken.objects.filter(usuario=token.usuario, usado=False).update(usado=True)
+            request.session.pop("reset_pwd_verificado", None)
+            request.session.pop("reset_pwd_email", None)
+            messages.success(request, "Contraseña actualizada. Ya puedes iniciar sesión.")
+            return redirect("accounts:login")
+        return render(request, "accounts/reset_confirmar.html", {"form_clave": form_clave, "correo_mascara": correo_mascara})
 
     if request.method == "POST":
         llave_reset = f"{ip_del_request(request)}|{email}"
@@ -876,16 +963,9 @@ def restablecer_password(request):
                     {"form": form, "correo_mascara": correo_mascara},
                 )
 
-            # El código es válido: hábilitalo y fuerza un cambio de contraseña
             limpiar("reset", llave_reset)
-            token.usado = True
-            token.save(update_fields=["usado"])
-            usuario.set_unusable_password()
-            usuario.save(update_fields=["password"])
-            login(request, usuario)
-            request.session.pop("reset_pwd_email", None)
-            request.session["force_password_change"] = True
-            return redirect(landing_por_rol(usuario))
+            request.session["reset_pwd_verificado"] = token.pk
+            return redirect("accounts:restablecer_password")
 
         return render(
             request,
@@ -914,6 +994,7 @@ def _enviar_codigo_reset(request, usuario, token):
     """Envía el correo del código con la plantilla HTML corporativa de Dogger."""
     from django.template.loader import render_to_string
     from django.templatetags.static import static
+    from django.core import signing
 
     codigo = token.codigo
 
@@ -921,6 +1002,7 @@ def _enviar_codigo_reset(request, usuario, token):
         f"Hola {usuario.nombre}:\n\n"
         f"Tu código para restablecer la contraseña en Dogger HelpDesk es: {codigo}\n\n"
         "Este código es válido por 30 minutos.\n"
+        f"Abre el formulario: {request.build_absolute_uri(reverse('accounts:enlace_reset_password', args=[signing.dumps(token.pk, salt='dogger-reset-enlace')]))}\n"
         "Si no solicitaste este cambio, ignora este mensaje."
     )
     html = render_to_string(
@@ -929,7 +1011,7 @@ def _enviar_codigo_reset(request, usuario, token):
             "usuario": usuario,
             "codigo": codigo,
             "logo_url": request.build_absolute_uri(static("images/dogger-logo.png")),
-            "login_url": request.build_absolute_uri(reverse("accounts:login")),
+            "login_url": request.build_absolute_uri(reverse("accounts:enlace_reset_password", args=[signing.dumps(token.pk, salt="dogger-reset-enlace")])),
         },
     )
     try:

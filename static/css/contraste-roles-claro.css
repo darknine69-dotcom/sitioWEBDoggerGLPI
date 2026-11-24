@@ -1,0 +1,316 @@
+/* Perfiles de Dogger en modo claro; no altera las superficies del modo oscuro. */
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) {
+    --role-light-ink: #17243a;
+    --role-light-muted: #425773;
+    --role-light-border: #c4d0df;
+    --light-page: #f4f6f9;
+    --light-surface: #fff;
+    --light-header: #f8fafc;
+    --light-divider: #d5dce5;
+    --light-row-divider: #dce2ea;
+    --light-row-hover: #f1f5f9;
+    --light-chart-grid: #cbd5e1;
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.modal-box,.confirm-box,.force-pwd-modal,.ax-modal-card,.mon-folder-dialog,.mon-point-dialog,.aud-modal-caja) {
+    background: #fff;
+    color: var(--role-light-ink);
+    border: 1px solid var(--role-light-border);
+    box-shadow: 0 18px 48px rgba(15, 23, 42, .22);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.modal-head,.modal-footer,.aud-modal-pie) {
+    background: #f2f5f9;
+    border-color: var(--role-light-border);
+    color: var(--role-light-ink);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.modal-box,.confirm-box,.force-pwd-modal,.aud-modal-caja) :is(h2,h3,h4,label) {
+    color: var(--role-light-ink);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.modal-box,.confirm-box,.force-pwd-modal,.aud-modal-caja) :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+    background: #fff;
+    border-color: #a8b9ce;
+    color: var(--role-light-ink);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.data-table,.tickets-table,.tec-matrix,.pv-press-table) thead th {
+    background: #e8eef6;
+    color: #263e5c;
+    border-color: var(--role-light-border);
+}
+html[data-theme="light"] body[data-role="usuario"] :is(.pv-card,.pv-kpi,.corp-card,.corp-table-card) {
+    border-color: #cbd7e5;
+    box-shadow: 0 5px 18px rgba(31, 49, 75, .09);
+}
+html[data-theme="light"] body[data-role="usuario"] :is(.pv-kpi-main b,.pv-kpi-main strong,.pv-card > header,.pv-ranking b,.pv-ranking strong,.pv-activity-copy b) { color: var(--role-light-ink); }
+html[data-theme="light"] body[data-role="usuario"] :is(.pv-kpi-bottom,.pv-activity-copy small,.pv-activity time,.pv-press-table small) { color: var(--role-light-muted); }
+html[data-theme="light"] body[data-role="tecnico"] :is(.tec-list-card,.tec-chat,.table-card,.chart-card) {
+    background: #fff;
+    border-color: var(--role-light-border);
+    color: var(--role-light-ink);
+    box-shadow: 0 5px 18px rgba(31, 49, 75, .09);
+}
+html[data-theme="light"] body[data-role="tecnico"] :is(.tec-list-title h3,.tec-item-title,.tec-chat-title,.section-title) { color: var(--role-light-ink); }
+html[data-theme="light"] body[data-role="tecnico"] :is(.tec-item-sub,.tec-chat-sub,.tec-count,.tec-panel-empty,.tec-empty-chat,.chart-empty) { color: var(--role-light-muted); }
+
+/* Administración: bordes y texto de lectura sin cambiar indicadores semánticos. */
+html[data-theme="light"] body[data-role="admin"] :is(.table-card,.chart-card,.rpt-filter-card,.side-card,.auto-card) {
+    border-color: var(--role-light-border);
+    box-shadow: 0 5px 18px rgba(31, 49, 75, .09);
+}
+html[data-theme="light"] body[data-role="admin"] :is(.obs-tabla,.pivot-table,.auto-config table) thead th {
+    background: #e8eef6;
+    color: #263e5c;
+    border-color: var(--role-light-border);
+}
+html[data-theme="light"] body[data-role="admin"] :is(.table-card,.chart-card,.rpt-filter-card,.side-card) :is(h2,h3,h4) {
+    color: var(--role-light-ink);
+}
+html[data-theme="light"] body[data-role="admin"] :is(.modal-box,.confirm-box,.force-pwd-modal) :is(.modal-note,.form-help,.help-text) {
+    color: var(--role-light-muted);
+}
+
+/* Superficies y tablas compartidas por los cuatro perfiles. */
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) {
+    background-color: var(--light-page);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.table-card,.chart-card,.rpt-filter-card,.side-card,.corp-card,.tec-list-card,.tec-chat,.auto-card,.pv-card) {
+    border-color: var(--light-divider);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .05);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.chart-card-head,.tec-list-head,.tec-chat-head,.corp-card-head) {
+    background-color: var(--light-header);
+    border-bottom: 1px solid var(--light-divider);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.data-table,.tickets-table,.obs-tabla,.pivot-table,.tec-matrix,.pv-press-table,.auto-config table) thead th {
+    background-color: #eaf0f6;
+    color: #263e5c;
+    border-bottom: 1px solid #bdc9d8;
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.data-table,.tickets-table,.obs-tabla,.pivot-table,.tec-matrix,.pv-press-table,.auto-config table) tbody td {
+    border-bottom: 1px solid var(--light-row-divider);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.data-table,.tickets-table,.obs-tabla,.pivot-table,.pv-press-table) tbody tr:hover {
+    background-color: var(--light-row-hover);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.modal-actions,.aud-modal-pie) {
+    border-top: 1px solid var(--light-divider);
+    background-color: var(--light-header);
+}
+html[data-theme="light"] body:is([data-role="usuario"],[data-role="tecnico"],[data-role="admin"],[data-role="observador"]) :is(.chart-empty,.chart-card-head p,.pv-period-legend,.pv-bar-item small) {
+    color: var(--role-light-muted);
+}
+html[data-theme="light"] body[data-role="usuario"] .pv-period-grid line { stroke: var(--light-chart-grid); }
+html[data-theme="light"] body[data-role="usuario"] .pv-period-line text { fill: var(--role-light-muted); }
+html[data-theme="light"] body[data-role="usuario"] .pv-bars { border-color: var(--light-chart-grid); }
+
+/* Lista de tickets del técnico: el borde original de KPI usa !important. */
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .tickets-kpis .ticket-kpi {
+    border-color: #d2dce6 !important;
+    box-shadow: 0 3px 12px rgba(28, 45, 66, .11) !important;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] :is(.ticket-filter-panel,.ticket-listing-card) {
+    border: 1px solid #d2dce6;
+    box-shadow: 0 3px 12px rgba(28, 45, 66, .08);
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-listing-head {
+    background: #dfe7f0;
+    border-bottom-color: transparent;
+    border-radius: 17px 17px 0 0;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-listing-card .ty-results[data-view="lista"] {
+    padding: 0;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-row :is(.search-field,select) {
+    border-color: #d2dce6;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] :is(.modal-box,.confirm-box) {
+    border: 1px solid #d2dce6;
+    box-shadow: 0 20px 52px rgba(15, 23, 42, .24);
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-table tbody td {
+    border-bottom: 1px solid #ccd7e3;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-table thead th {
+    background: #dfe7f0;
+    color: #263e5c;
+    border-bottom: 1px solid #d4dee9;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-table tbody tr:hover > td {
+    background-color: #eaf1f8;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .pagination-bar {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-table .status-pill {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    color: #596473;
+    font-weight: 600;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-table .status-abierto { color: #b34242; }
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-table .status-en-progreso { color: #966000; }
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-table .status-resuelto { color: #28764c; }
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-table .status-cerrado { color: #65615c; }
+/* Iconos SVG monocromáticos alineados con su etiqueta, en ambos temas. */
+body.lista-page[data-role="tecnico"] .ticket-table :is(.ty-prio,.status-pill) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+body.lista-page[data-role="tecnico"] .ticket-table .status-pills {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+body.lista-page[data-role="tecnico"] .ticket-table .status-pills .status-pill + .status-pill {
+    margin-left: 0;
+}
+body.lista-page[data-role="tecnico"] .ticket-table :is(.ty-prio,.status-pill)::before {
+    content: "";
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    flex: 0 0 13px;
+    background-color: currentColor;
+    mask: var(--ticket-label-icon) center / contain no-repeat;
+    -webkit-mask: var(--ticket-label-icon) center / contain no-repeat;
+}
+body.lista-page[data-role="tecnico"] .ticket-table .ty-prio-urgente { --ticket-label-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22c-4 0-7-2.7-7-6.5 0-2.5 1.4-4.5 3-6.2.3 2.1 1.3 2.5 2 2.6C9 7.8 11 4 13 2c.1 3.3 1.7 4.8 3.2 6.5 1.6 1.8 2.8 4 2.8 7 0 3.8-3 6.5-7 6.5Z'/%3E%3C/svg%3E"); }
+body.lista-page[data-role="tecnico"] .ticket-table .ty-prio-alta { --ticket-label-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 15 7-7 7 7M5 20l7-7 7 7'/%3E%3C/svg%3E"); }
+body.lista-page[data-role="tecnico"] .ticket-table .ty-prio-media { --ticket-label-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M5 9h14M5 15h14'/%3E%3C/svg%3E"); }
+body.lista-page[data-role="tecnico"] .ticket-table .ty-prio-baja { --ticket-label-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 9 7 7 7-7'/%3E%3C/svg%3E"); }
+body.lista-page[data-role="tecnico"] .ticket-table .status-abierto { --ticket-label-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z'/%3E%3C/svg%3E"); }
+body.lista-page[data-role="tecnico"] .ticket-table .status-en-progreso { --ticket-label-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E"); }
+body.lista-page[data-role="tecnico"] .ticket-table .status-resuelto { --ticket-label-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='m8 12 3 3 5-6'/%3E%3C/svg%3E"); }
+body.lista-page[data-role="tecnico"] .ticket-table .status-cerrado { --ticket-label-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='10' width='14' height='11' rx='2'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E"); }
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-listing-head .corp-view-toggle {
+    background: #e1e8f0;
+    border-color: #c3cfdd;
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-listing-head .corp-view-btn { color: #435775; }
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-listing-head .corp-view-btn.is-active {
+    background: #34475f;
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, .2);
+}
+html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-listing-more {
+    color: #435775;
+    border-color: #c3cfdd;
+    background: #f8fafc;
+}
+/* Una línea de filtros cuando hay espacio; en tablet y móvil se conservan los saltos existentes. */
+@media (min-width: 1300px) {
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .ticket-filter-row--primary { display: contents; }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .ticket-filter-row--secondary {
+        display: grid;
+        grid-template-columns: auto auto;
+        align-items: center;
+        justify-items: end;
+        gap: 3px 9px;
+        flex: none;
+        margin: 0 0 0 auto;
+    }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .search-field { flex: 1 1 200px; min-width: 155px; }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .custom-dropdown { flex: 0 1 145px; min-width: 105px; }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .custom-dropdown > summary { min-height: 40px; padding: 0 9px; font-size: 12px; }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .custom-dropdown > summary span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .ticket-filter-row--secondary .btn-primary { grid-column: 2; grid-row: 1; height: 36px; padding: 0 13px; }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .mias-check { grid-column: 1; grid-row: 1; height: 36px; font-size: 11px; }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .toolbar-count { grid-column: 2; grid-row: 2; margin: 0; white-space: nowrap; font-size: 10px; }
+    html[data-theme="light"] body.lista-page[data-role="tecnico"] .ticket-filter-panel .link-clear { grid-column: 1; grid-row: 2; justify-self: start; font-size: 10px; }
+}
+
+/* Edición de subcategorías: un solo contorno por campo y altura compacta. */
+.cats-manager .inline-edit.open {
+    display: grid;
+    grid-template-columns: minmax(115px, 1fr) minmax(125px, 1fr) minmax(240px, 2.3fr) minmax(85px, .65fr) minmax(70px, .55fr) minmax(80px, .65fr) minmax(145px, 1fr);
+    gap: 7px;
+    padding: 9px 12px 11px;
+    align-items: start;
+}
+.cats-manager .inline-edit :is(input,select,textarea) {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    height: 36px;
+    padding: 7px 9px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: none;
+    font-size: 12px;
+}
+.cats-manager .inline-edit .cat-edit-description { min-width: 0; gap: 3px; }
+.cats-manager .inline-edit .cat-edit-field { display: grid; min-width: 0; gap: 3px; margin: 0; }
+.cats-manager .inline-edit .cat-edit-field > span { color: var(--ink-muted); font-size: 10px; font-weight: 800; letter-spacing: .04em; line-height: 1.3; text-transform: uppercase; }
+.cats-manager .inline-edit .cat-edit-field .custom-dropdown { width: 100%; min-width: 0; }
+.cats-manager .inline-edit .cat-edit-field .custom-dropdown > summary { box-sizing: border-box; min-height: 36px; padding: 0 9px; border-radius: 8px; font-size: 12px; }
+.cats-manager .inline-edit .cat-edit-field .custom-dropdown > summary > span { overflow: hidden; min-width: 0; text-overflow: ellipsis; white-space: nowrap; }
+.cats-manager .inline-edit .cat-edit-field .custom-dropdown-options { right: 0; left: auto; width: max(100%, 235px); max-width: min(320px, 85vw); box-sizing: border-box; }
+.cats-manager .inline-edit .cat-edit-field .custom-dropdown-options button { font-size: 12px; overflow-wrap: anywhere; }
+.cats-manager .cat-group-card:has(.inline-edit .custom-dropdown[open]) { overflow: visible; position: relative; z-index: 30; }
+
+/* Categorías: superficies y divisiones discretas, solo en modo claro. */
+html[data-theme="light"] .cat-stats .cat-stat {
+    border-color: #d5dce5;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .05);
+}
+html[data-theme="light"] .cat-stats .cat-stat small { color: #526174; }
+html[data-theme="light"] .cat-stats .cat-stat-main { background: linear-gradient(120deg, #fff 12%, #ffe7e2 100%); }
+html[data-theme="light"] .cat-stats .cat-stat-active { background: linear-gradient(120deg, #fff 12%, #dff3e8 100%); }
+html[data-theme="light"] .cat-stats .cat-stat-inactive { background: linear-gradient(120deg, #fff 12%, #e8ecf2 100%); }
+html[data-theme="light"] .cat-stats .cat-stat::before { opacity: 1; }
+html[data-theme="light"] .cats-manager .cat-group-card {
+    background: #fff;
+    border-color: #d5dce5;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .05);
+}
+html[data-theme="light"] .cats-manager .cat-group-head {
+    background: linear-gradient(90deg, #f8fafc, #fff);
+    border-color: #dce2ea;
+    color: #1f2937;
+}
+html[data-theme="light"] .cats-manager .cat-group-head:hover { background: #f1f5f9; }
+html[data-theme="light"] .cats-manager :is(.cat-sub-cubre, .cat-count-cell) { color: #526174; }
+html[data-theme="light"] .cats-manager .cat-sub-table td { border-color: #dce2ea; }
+html[data-theme="light"] .cats-manager .cat-sub-table .cat-fila:hover { background: #f1f5f9; }
+html[data-theme="light"] .cats-manager .cat-group-create {
+    background: #f8fafc;
+    border-color: #dce2ea;
+}
+html[data-theme="light"] .cats-manager :is(.cat-new-form, .cat-inline-create) {
+    border-color: #d5dce5;
+}
+html[data-theme="light"] .cats-manager :is(.inline-edit input, .inline-edit select, .inline-edit textarea, .cat-inline-create-fields input, .cat-inline-create-fields select, .cat-inline-create-fields textarea) {
+    border-color: #c5d0de;
+    background-color: #fff;
+    color: #1f2937;
+}
+html[data-theme="dark"] .cats-manager .inline-edit .cat-edit-field .custom-dropdown > summary { background: #202731; color: #f1f5f9; border: 1px solid #46515e; box-shadow: none; }
+html[data-theme="dark"] .cats-manager .inline-edit .cat-edit-field .custom-dropdown-options { background: #202731; border-color: #46515e; }
+.cats-manager .inline-edit .cat-edit-description textarea { min-height: 48px; height: 48px; }
+.cats-manager .inline-edit .cat-edit-description small { line-height: 1.3; }
+.cats-manager .inline-edit .field-id { width: 100%; }
+.cats-manager .inline-edit-actions { grid-column: 1 / -1; justify-content: flex-end; }
+.cats-manager .inline-edit-actions .btn { min-height: 36px; padding: 7px 12px; }
+html[data-theme="dark"] .cats-manager .inline-edit :is(input,select,textarea) {
+    border: 1px solid #46515e;
+    background: #202731;
+    color: #f1f5f9;
+    box-shadow: none;
+}
+.cats-manager .inline-edit :is(input,select,textarea):focus-visible {
+    outline: 2px solid #dc2626;
+    outline-offset: 2px;
+}
+@media (max-width: 1100px) { .cats-manager .inline-edit.open { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .cats-manager .inline-edit.open { grid-template-columns: 1fr; } }

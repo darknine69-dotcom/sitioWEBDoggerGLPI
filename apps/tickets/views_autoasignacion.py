@@ -1,4 +1,4 @@
-"""Configuración de autoasignación para superusuarios de Dogger."""
+"""Configuración de autoasignación para administradores activos."""
 from django import forms
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -78,8 +78,7 @@ class PerfilForm(forms.ModelForm):
 
 @login_required
 def configuracion_autoasignacion(request):
-    # Igual que el administrador existente: no ampliar permisos a otros roles.
-    if not (request.user.is_active and request.user.is_superuser):
+    if not (request.user.is_active and request.user.activo and request.user.rol == "admin"):
         raise PermissionDenied
     config = ConfiguracionAutoasignacion.objects.filter(pk=1).first()
     reglas_form = ReglasForm(instance=config)
@@ -89,6 +88,8 @@ def configuracion_autoasignacion(request):
     if request.method == "POST":
         accion = request.POST.get("accion")
         if accion == "activar":
+            if not request.user.is_superuser:
+                raise PermissionDenied
             from django.db import connection
             if not connection.features.has_select_for_update:
                 messages.error(request, "No se puede activar: la base de datos no admite el bloqueo requerido.")

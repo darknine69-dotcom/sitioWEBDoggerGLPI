@@ -4237,6 +4237,9 @@ a.dash-hov-zonas.is-active { border-color: #7C3AED; }
     border-bottom:1px solid var(--line); cursor:pointer; user-select:none;
 }
 .cat-group-head .cat-toggle { transition: transform .18s ease; }
+.cat-group-icon { flex: none; align-self: flex-start; margin-top: 2px; }
+.cat-group-icon .category-shared-icon { width: 28px; height: 28px; border-radius: 9px; }
+.cat-group-icon .category-shared-icon .icon { width: 16px; height: 16px; }
 .cat-group-card.collapsed .cat-toggle .icon { transform: rotate(-90deg); }
 .cat-toggle {
     display: inline-flex;
@@ -6485,6 +6488,7 @@ button.icon-only:disabled, .icon-only[aria-disabled="true"] { opacity:.48; curso
     margin-bottom: 20px;
 }
 .cat-stat {
+    --cat-circuit: rgba(214, 43, 31, .16);
     position: relative;
     display: flex;
     align-items: center;
@@ -6497,6 +6501,22 @@ button.icon-only:disabled, .icon-only[aria-disabled="true"] { opacity:.48; curso
     background: linear-gradient(135deg, #fff, #FBF7F0);
     box-shadow: 0 8px 22px rgba(57, 39, 24, .07);
 }
+.cat-stat::before {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 48%;
+    pointer-events: none;
+    content: "";
+    opacity: .65;
+    background:
+        radial-gradient(circle at 68% 25%, var(--cat-circuit) 0 2px, transparent 2.5px),
+        radial-gradient(circle at 87% 51%, var(--cat-circuit) 0 2px, transparent 2.5px),
+        radial-gradient(circle at 55% 76%, var(--cat-circuit) 0 2px, transparent 2.5px),
+        linear-gradient(var(--cat-circuit), var(--cat-circuit)) 68% 25% / 1px 26% no-repeat,
+        linear-gradient(var(--cat-circuit), var(--cat-circuit)) 87% 51% / 19% 1px no-repeat,
+        linear-gradient(var(--cat-circuit), var(--cat-circuit)) 55% 76% / 32% 1px no-repeat,
+        linear-gradient(var(--cat-circuit), var(--cat-circuit)) 87% 51% / 1px 25% no-repeat;
+}
 .cat-stat::after {
     position: absolute;
     right: -16px;
@@ -6507,11 +6527,12 @@ button.icon-only:disabled, .icon-only[aria-disabled="true"] { opacity:.48; curso
     border-radius: 50%;
     content: "";
 }
-.cat-stat-active { background: linear-gradient(135deg, #fff, #F0F8F2); }
+.cat-stat-active { --cat-circuit: rgba(47, 125, 79, .18); background: linear-gradient(135deg, #fff, #F0F8F2); }
 .cat-stat-active::after { border-color: rgba(47, 125, 79, .08); }
-.cat-stat-inactive { background: linear-gradient(135deg, #fff, #F6F3EF); }
+.cat-stat-inactive { --cat-circuit: rgba(107, 98, 89, .18); background: linear-gradient(135deg, #fff, #F6F3EF); }
 .cat-stat-inactive::after { border-color: rgba(107, 98, 89, .08); }
 .cat-stat-icon {
+    position: relative;
     display: grid;
     place-items: center;
     width: 48px;
@@ -6521,11 +6542,12 @@ button.icon-only:disabled, .icon-only[aria-disabled="true"] { opacity:.48; curso
     border-radius: 15px;
     background: #FFF0E9;
     color: var(--dogger-red);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 3px 8px rgba(15, 23, 42, .08);
 }
 .cat-stat-active .cat-stat-icon { border-color: rgba(47, 125, 79, .14); background: #E5F3E9; color: #2F7D4F; }
 .cat-stat-inactive .cat-stat-icon { border-color: rgba(107, 98, 89, .13); background: #EEEAE5; color: #6B6259; }
 .cat-stat-icon .icon { width: 22px; height: 22px; }
-.cat-stat > span:last-child { display: grid; gap: 3px; }
+.cat-stat > span:last-child { position: relative; display: grid; gap: 3px; }
 .cat-stat strong { color: var(--ink); font-family: var(--font-display); font-size: 28px; line-height: 1; }
 .cat-stat small { color: var(--ink-muted); font-size: 11px; font-weight: 800; letter-spacing: .045em; text-transform: uppercase; }
 .cats-manager > .cat-new-form {
@@ -8619,6 +8641,8 @@ html[data-navcompact="1"] .sidebar-edge { left: 84px; }
 /* ---- Secciones y enlaces ---- */
 .sidebar-nav {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -8756,6 +8780,24 @@ html[data-navcompact="1"] .sidebar-foot { display: none; }
 .rol-cambio-btn .icon { width: 14px; height: 14px; flex: none; }
 .rol-cambio-btn:hover { background: rgba(255, 255, 255, .19); border-color: rgba(255, 255, 255, .34); transform: translateY(-1px); }
 .rol-cambio-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.sidebar-role-switch { flex: none; margin: auto 12px 14px; padding-top: 36px; }
+.sidebar-role-switch .rol-cambio-btn {
+  display: flex; width: 100%; height: auto; min-height: 42px; justify-content: center;
+  gap: 10px; padding: 9px 12px; border: 0; border-radius: 999px;
+  background: linear-gradient(135deg, #FFC72C 0%, #F5A623 100%);
+  color: #4A1206; font-size: 13px; font-weight: 800;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .18), 0 8px 18px rgba(0, 0, 0, .18);
+}
+.sidebar-role-switch .rol-cambio-btn .icon { width: 20px; height: 20px; }
+.sidebar-role-switch .rol-cambio-btn:hover {
+  background: linear-gradient(135deg, #FFC72C 0%, #F5A623 100%);
+  filter: brightness(1.06); transform: translateY(-1px);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .18), 0 12px 24px rgba(0, 0, 0, .24);
+}
+.sidebar-role-switch .rol-cambio-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(0, 0, 0, .2); }
+html[data-navcompact="1"] .sidebar-role-switch { margin: auto 4px 12px; padding-top: 24px; }
+html[data-navcompact="1"] .sidebar-role-switch .rol-cambio-btn { justify-content: center; padding: 9px; }
+html[data-navcompact="1"] .sidebar-role-switch .rol-cambio-txt { display: none; }
 /* Encabezado claro (portal y login): el botón va con los colores de siempre. */
 .brand-header .rol-cambio-btn { background: #F5F2EC; border-color: var(--line); color: var(--ink); }
 .brand-header .rol-cambio-btn:hover { background: #EBE6DD; border-color: #D8D2C7; }

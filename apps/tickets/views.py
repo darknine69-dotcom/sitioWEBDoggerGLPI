@@ -96,7 +96,7 @@ from .services.tecnicos import mapeados_del_tecnico, puede_calificar
 
 
 # Opciones del selector "Filas". El 6 es el predeterminado en todas las vistas.
-PER_PAGE_OPCIONES = {6, 5, 9, 10, 20, 50, 0}
+PER_PAGE_OPCIONES = {6, 5, 9, 10, 15, 20, 50, 0}
 PER_PAGE_DEFECTO = 6
 
 logger = logging.getLogger(__name__)
@@ -2409,8 +2409,6 @@ def _aplicar_usuario_panel(user, form, password):
     user.nombre = form.cleaned_data["nombre"]
     user.email = form.cleaned_data["email"]
     user.rol = form.cleaned_data["rol"]
-    glpi_id = form.cleaned_data.get("glpi_user_id")
-    user.glpi_user_id = glpi_id or None
     user.telefono = (form.cleaned_data.get("telefono") or "").strip()
     user.ubicacion = (form.cleaned_data.get("ubicacion") or "").strip()
     user.activo = form.cleaned_data.get("activo", False)
@@ -2524,6 +2522,9 @@ def usuario_guardar(request):
             messages.error(request, f"No se pudo crear la cuenta: {exc}")
             return redirect("tickets:usuarios")
         _aplicar_usuario_panel(user, form, password=None)
+        from apps.tickets.services.vinculacion_glpi import vincular_cuenta_nueva
+        if not vincular_cuenta_nueva(user):
+            messages.warning(request, "Cuenta creada; la vinculación con GLPI está pendiente.")
         messages.success(request, f"Cuenta '{user.nombre}' creada ({user.get_rol_display()}).")
     else:
         _aplicar_usuario_panel(instancia, form, password=password or None)
@@ -4949,7 +4950,7 @@ def lista_tickets(request):
 
     # La bandeja prioriza densidad legible: cinco filas como valor inicial.
     pp_lista = _resolve_per_page(request, "per_page", 5)
-    if q or sv in ("vencen-hoy", "vencidas"):
+    if (q or sv in ("vencen-hoy", "vencidas")) and "per_page" not in request.GET:
         pp_lista = 0
     page_obj = _paginar(
         qs.annotate(_prioridad_orden=orden_prioridad_annotation()).order_by(

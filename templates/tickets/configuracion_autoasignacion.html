@@ -12,7 +12,7 @@
       <h2>Estado del motor <span class="auto-status-badge {% if config.activa %}is-active{% endif %}">{% if config.activa %}Activado{% else %}Desactivado{% endif %}</span></h2>
       <p>{% if config.activa %}Los tickets se asignan según las reglas y la capacidad disponible.{% else %}La asignación automática está desactivada.{% endif %}</p>
     </div>
-    <form method="post" class="auto-form">{% csrf_token %}{% if config.activa %}<input type="hidden" name="accion" value="desactivar"><button type="submit">Desactivar motor</button>{% else %}<input type="hidden" name="accion" value="activar"><button type="submit">Activar motor</button>{% endif %}</form>
+    {% if config.activa or request.user.is_superuser %}<form method="post" class="auto-form">{% csrf_token %}{% if config.activa %}<input type="hidden" name="accion" value="desactivar"><button type="submit">Desactivar motor</button>{% else %}<input type="hidden" name="accion" value="activar"><button type="submit">Activar motor</button>{% endif %}</form>{% else %}<p>Solo un superusuario puede activar el motor.</p>{% endif %}
   </section>
   <div class="auto-grid">
     <section class="auto-card">

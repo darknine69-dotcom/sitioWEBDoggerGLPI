@@ -377,8 +377,8 @@
         }
 
         var data, opts;
-        var textoGrafico = temaOscuro() ? '#c2cddd' : '#53647a';
-        var lineasGrafico = temaOscuro() ? 'rgba(190,205,225,.18)' : 'rgba(70,85,105,.16)';
+        var textoGrafico = temaOscuro() ? '#c2cddd' : '#425773';
+        var lineasGrafico = temaOscuro() ? 'rgba(190,205,225,.18)' : '#cbd5e1';
         var scalesX = { grid: { display: false }, ticks: { color: textoGrafico, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } };
         var scalesY = { beginAtZero: true, grid: { color: lineasGrafico }, ticks: { color: textoGrafico, precision: 0 } };
         var hasMulti = (multi.datasets && multi.datasets.length > 1) || widget === 'linea' || widget === 'sla' || widget === 'comp20' || widget === 'recibidas' || widget === 'completadas';

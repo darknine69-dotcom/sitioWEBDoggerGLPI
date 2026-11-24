@@ -40,9 +40,9 @@
             </div>
 
             <nav class="settings-nav">
-                {% if request.user.is_superuser %}
+                {% if request.user.rol == 'admin' and request.user.activo and request.user.is_active %}
                 <a href="{% url 'tickets:configuracion_autoasignacion' %}" class="settings-nav-link">
-                    <svg class="icon icon-sm"><use href="#i-settings"/></svg> Asignación automática
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v4M5 17v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/></svg> Asignación automática
                 </a>
                 {% endif %}
                 <a href="#perfil" class="settings-nav-link active" data-settings-tab="perfil">
@@ -538,6 +538,28 @@
                 <div class="settings-panel-header pagina-hero">
                     <span class="pagina-head-icon"><svg class="icon"><use href="#i-monitor"/></svg></span><div class="pagina-hero-copy"><h3>Configuración de la página</h3><p>Personaliza la información de contacto, redes sociales y permisos de tu cuenta.</p></div><div class="pagina-hero-art" aria-hidden="true"><span class="pagina-art-window"><i></i><i></i><i></i></span><span class="pagina-art-gear"><svg class="icon"><use href="#i-settings"/></svg></span><span class="pagina-art-spark">✦</span></div>
                 </div>
+                {% if request.user.is_superuser and request.user.activo and request.user.is_active %}
+                <div class="pagina-section django-access">
+                    <div class="django-access-head">
+                        <span class="django-access-icon" aria-hidden="true"><svg class="icon"><use href="#i-lock"/></svg></span>
+                        <div class="django-access-heading"><h3>Administración de Django</h3><p>Acceso avanzado para soporte y solución de errores.</p></div>
+                        {% if request.user.is_staff %}<a href="{% url 'admin:index' %}" class="django-access-link">Abrir administrador <span aria-hidden="true">↗</span></a>{% else %}<small>Tu cuenta necesita permiso de personal (staff) para abrir el administrador.</small>{% endif %}
+                    </div>
+                    <div class="django-access-warning"><strong>Acceso total</strong><span>Concédelo únicamente a administradores de confianza.</span></div>
+                    <form class="django-access-form" method="post" action="{% url 'accounts:gestionar_superusuario' %}" onsubmit="return confirm('¿Confirmas el cambio de acceso total de Django para esta cuenta?');">
+                        {% csrf_token %}
+                        <div class="django-access-fields"><div class="django-access-field"><label for="django-admin-cuenta">Administrador de la página</label>
+                        <select id="django-admin-cuenta" name="usuario" required>
+                            <option value="">Selecciona una cuenta</option>
+                            {% for cuenta in administradores_django %}<option value="{{ cuenta.pk }}">{{ cuenta.nombre }} · {{ cuenta.email }} · {% if cuenta.is_superuser %}Superusuario{% else %}Sin acceso total{% endif %}{% if not cuenta.activo or not cuenta.is_active %} · Inactivo{% endif %}</option>{% endfor %}
+                        </select></div>
+                        <div class="django-access-field"><label for="django-admin-password">Confirma tu contraseña</label>
+                        <input id="django-admin-password" type="password" name="confirmar_password" autocomplete="current-password" required></div></div>
+                        <div class="django-access-actions"><span>El cambio quedará registrado.</span><div><button class="django-access-revoke" type="submit" name="accion" value="retirar">Retirar acceso</button>
+                        <button class="django-access-grant" type="submit" name="accion" value="conceder">Conceder acceso</button></div></div>
+                    </form>
+                </div>
+                {% endif %}
                 <form method="post" action="{% url 'accounts:configuracion_pagina' %}" class="settings-form pagina-config-form" id="pagina-config-form">
                     {% csrf_token %}
                     {# Marca de que viene este formulario + valor por defecto del interruptor. #}

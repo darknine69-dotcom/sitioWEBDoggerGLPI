@@ -205,6 +205,40 @@ class GlpiClient:
                 logger.warning("No se pudo asignar el correo al usuario GLPI #%s", glpi_id)
         return glpi_id
 
+    def find_unique_user_by_email(self, email: str) -> int | None:
+        """Devuelve una coincidencia exacta o None solo si GLPI confirma cero resultados."""
+        email = (email or "").strip().casefold()
+        respuesta = requests.get(
+            f"{self.base_url}/search/User", headers=self._headers(),
+            params={"criteria[0][field]": "5", "criteria[0][searchtype]": "contains", "criteria[0][value]": email, "forcedisplay[0]": "5", "range": "0-99"},
+            timeout=self.timeout,
+        )
+        if respuesta.status_code != 200:
+            raise GlpiError("No se pudo verificar el correo en GLPI; vinculación pendiente.")
+        try:
+            contenido = respuesta.json()
+            filas = contenido.get("data") or []
+            total = int(contenido["totalcount"])
+        except (ValueError, TypeError, KeyError, AttributeError):
+            raise GlpiError("GLPI no confirmó el resultado de la búsqueda; vinculación pendiente.")
+        if total == 0:
+            return None
+        filas = list(filas.values()) if isinstance(filas, dict) else filas
+        if not isinstance(filas, list) or len(filas) != total:
+            raise GlpiError("La búsqueda de GLPI está incompleta; vinculación pendiente.")
+        ids = set()
+        for fila in filas:
+            if not isinstance(fila, dict) or "5" not in fila:
+                raise GlpiError("GLPI no devolvió correos verificables; vinculación pendiente.")
+            if str(fila["5"]).strip().casefold() == email:
+                try:
+                    ids.add(int(fila["id"]))
+                except (KeyError, TypeError, ValueError):
+                    raise GlpiError("GLPI no devolvió un ID verificable.")
+        if len(ids) != 1:
+            raise GlpiError("El correo no tiene una coincidencia exacta única en GLPI; vinculación pendiente.")
+        return ids.pop()
+
     def create_itil_category(self, name: str) -> int:
         """Crea una categoría ItilCategory en GLPI. Retorna el id creado."""
         if not name:

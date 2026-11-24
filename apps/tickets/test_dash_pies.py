@@ -55,6 +55,16 @@ class DashPiesTest(SmokeTestCase):
     def _dash(self):
         return json.loads(_build_tecnico_dashboard(self.tecnico.id))
 
+    def test_lista_permite_quince_y_todos_con_busqueda(self):
+        for i in range(17):
+            self._ticket(Ticket.Estado.ABIERTO, Ticket.Prioridad.BAJA, self.cat_a, f"Caso prueba {i}")
+        for cantidad, esperado in ((5, 5), (10, 10), (15, 15), (0, 17)):
+            with self.subTest(cantidad=cantidad):
+                respuesta = self.client.get(reverse("tickets:lista"), {"per_page": cantidad, "q": "Caso prueba"})
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertEqual(len(respuesta.context["page_obj"].object_list), esperado)
+                self.assertEqual(respuesta.context["per_page"], cantidad)
+
     @staticmethod
     def _mapa(items):
         return {i["label"]: i["value"] for i in items}

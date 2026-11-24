@@ -49,13 +49,14 @@
     {% block extra_css %}{% endblock %}
     <link rel="stylesheet" href="{% asset 'css/dark-surfaces.css' %}">
     <link rel="stylesheet" href="{% asset 'css/layout-premium.css' %}">
+    <link rel="stylesheet" href="{% asset 'css/contraste-roles-claro.css' %}">
     <style>
         /* Los indicadores conservan sus datos y gráficas, sin comparativos. */
         .dash-stat-trend, .mon-kpi-trend, .pan-kpi-trend,
         .usr-kpi-trend, .pv-variation { display:none !important; }
     </style>
 </head>
-<body class="{% block body_class %}{% endblock %}" data-tooltips="{% if request.user.tooltips_habilitado %}1{% else %}0{% endif %}"
+<body class="{% block body_class %}{% endblock %}" data-role="{% if request.user.is_authenticated %}{{ request.user.rol }}{% endif %}" data-tooltips="{% if request.user.tooltips_habilitado %}1{% else %}0{% endif %}"
       {% if request.user.is_authenticated %}data-url-latido="{% url 'accounts:latido' %}"{% endif %}>
 <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
 
@@ -383,6 +384,15 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                 {% endif %}
             </div>
             {% endif %}
+            {% if request.user.cambio_rol_habilitado %}
+            <div class="sidebar-role-switch">
+                <button type="button" class="rol-cambio-btn" data-open-modal="#rolModal"
+                        title="Cambiar de rol" aria-label="Cambiar de rol" aria-haspopup="dialog">
+                    <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3.5 18v-1a5.5 5.5 0 0 1 8.3-4.7M15 15h6m-2.5-2.5L21 15l-2.5 2.5M20 20h-6m2.5-2.5L14 20l2.5 2.5"/></svg>
+                    <span class="rol-cambio-txt">Cambiar rol</span>
+                </button>
+            </div>
+            {% endif %}
         </nav>
 
     </aside>
@@ -475,17 +485,6 @@ el JS falla o se queda colgado, se oculta solo por tiempo de seguridad.{% endcom
                     </form>
                 </div>
             </div>
-            {% if request.user.cambio_rol_habilitado %}
-            {% comment %}Solo se ve si el administrador encendió la casilla
-            «Cambiar de rol» en la ficha de esta cuenta: el botón está en la
-            barra superior de cualquier vista y abre la ventana para elegir
-            el rol nuevo.{% endcomment %}
-            <button type="button" class="rol-cambio-btn" data-open-modal="#rolModal"
-                    title="Cambiar de rol" aria-label="Cambiar de rol" aria-haspopup="dialog">
-                <svg class="icon"><use href="#i-refresh"/></svg>
-                <span class="rol-cambio-txt">Cambiar rol</span>
-            </button>
-            {% endif %}
             </div>
         </div>
         {% endif %}
